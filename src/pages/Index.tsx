@@ -178,7 +178,7 @@ const Index = () => {
                   Find Talent <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
                 <Button variant="outline" size="lg" className="text-base">
-                  Become a Digger
+                  Build My Digs
                 </Button>
               </div>
               <div className="flex items-center gap-8 pt-4">
