@@ -14,7 +14,297 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          parent_category_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          parent_category_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          parent_category_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_category_id_fkey"
+            columns: ["parent_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digger_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          digger_id: string
+          id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          digger_id: string
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          digger_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digger_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digger_categories_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digger_profiles: {
+        Row: {
+          average_rating: number | null
+          bio: string | null
+          created_at: string
+          hourly_rate: number | null
+          id: string
+          monthly_inquiries: number | null
+          portfolio_url: string | null
+          profession: string
+          profile_image_url: string | null
+          total_ratings: number | null
+          updated_at: string
+          user_id: string
+          years_experience: number | null
+        }
+        Insert: {
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string
+          hourly_rate?: number | null
+          id?: string
+          monthly_inquiries?: number | null
+          portfolio_url?: string | null
+          profession: string
+          profile_image_url?: string | null
+          total_ratings?: number | null
+          updated_at?: string
+          user_id: string
+          years_experience?: number | null
+        }
+        Update: {
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string
+          hourly_rate?: number | null
+          id?: string
+          monthly_inquiries?: number | null
+          portfolio_url?: string | null
+          profession?: string
+          profile_image_url?: string | null
+          total_ratings?: number | null
+          updated_at?: string
+          user_id?: string
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digger_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gigs: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          category_id: string | null
+          consumer_id: string
+          created_at: string
+          deadline: string | null
+          description: string
+          id: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category_id?: string | null
+          consumer_id: string
+          created_at?: string
+          deadline?: string | null
+          description: string
+          id?: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category_id?: string | null
+          consumer_id?: string
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gigs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_type: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+          user_type: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
+      ratings: {
+        Row: {
+          consumer_id: string
+          created_at: string
+          digger_id: string
+          id: string
+          rating: number
+          review_text: string | null
+        }
+        Insert: {
+          consumer_id: string
+          created_at?: string
+          digger_id: string
+          id?: string
+          rating: number
+          review_text?: string | null
+        }
+        Update: {
+          consumer_id?: string
+          created_at?: string
+          digger_id?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      references: {
+        Row: {
+          created_at: string
+          digger_id: string
+          id: string
+          is_verified: boolean | null
+          project_description: string | null
+          reference_email: string
+          reference_name: string
+          reference_phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          digger_id: string
+          id?: string
+          is_verified?: boolean | null
+          project_description?: string | null
+          reference_email: string
+          reference_name: string
+          reference_phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          digger_id?: string
+          id?: string
+          is_verified?: boolean | null
+          project_description?: string | null
+          reference_email?: string
+          reference_name?: string
+          reference_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "references_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
