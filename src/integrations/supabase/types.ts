@@ -89,7 +89,6 @@ export type Database = {
           created_at: string
           hourly_rate: number | null
           id: string
-          monthly_inquiries: number | null
           portfolio_url: string | null
           profession: string
           profile_image_url: string | null
@@ -104,7 +103,6 @@ export type Database = {
           created_at?: string
           hourly_rate?: number | null
           id?: string
-          monthly_inquiries?: number | null
           portfolio_url?: string | null
           profession: string
           profile_image_url?: string | null
@@ -119,7 +117,6 @@ export type Database = {
           created_at?: string
           hourly_rate?: number | null
           id?: string
-          monthly_inquiries?: number | null
           portfolio_url?: string | null
           profession?: string
           profile_image_url?: string | null
@@ -191,6 +188,48 @@ export type Database = {
             columns: ["consumer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_purchases: {
+        Row: {
+          consumer_id: string
+          digger_id: string
+          gig_id: string
+          id: string
+          purchase_price: number
+          purchased_at: string
+        }
+        Insert: {
+          consumer_id: string
+          digger_id: string
+          gig_id: string
+          id?: string
+          purchase_price: number
+          purchased_at?: string
+        }
+        Update: {
+          consumer_id?: string
+          digger_id?: string
+          gig_id?: string
+          id?: string
+          purchase_price?: number
+          purchased_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_purchases_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_purchases_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -310,7 +349,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_lead_price: {
+        Args: { gig_budget_max: number; gig_budget_min: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
