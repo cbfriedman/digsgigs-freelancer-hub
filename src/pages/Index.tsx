@@ -1,3 +1,6 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DiggerCard } from "@/components/DiggerCard";
@@ -10,11 +13,51 @@ import {
   TrendingUp, 
   Shield,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  LogOut
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { toast } from "sonner";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [isDigger, setIsDigger] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkUserType(session.user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkUserType(session.user.id);
+      } else {
+        setIsDigger(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkUserType = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_type")
+      .eq("id", userId)
+      .single();
+    
+    setIsDigger(data?.user_type === "digger");
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out successfully");
+  };
   const sampleDiggers = [
     {
       name: "Sarah Chen",
@@ -86,8 +129,24 @@ const Index = () => {
             digsandgiggs
           </h1>
           <div className="flex items-center gap-4">
-            <Button variant="ghost">Sign In</Button>
-            <Button variant="hero">Get Started</Button>
+            {user ? (
+              <>
+                {isDigger && (
+                  <Button variant="outline" onClick={() => navigate("/digger-registration")}>
+                    Complete Profile
+                  </Button>
+                )}
+                <Button variant="ghost" onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
+                <Button variant="hero" onClick={() => navigate("/auth")}>Get Started</Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
