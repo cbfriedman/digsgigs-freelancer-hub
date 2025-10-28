@@ -1,0 +1,267 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import { ArrowLeft, Search, Star, DollarSign, Briefcase } from "lucide-react";
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Digger {
+  id: string;
+  user_id: string;
+  profession: string;
+  bio: string | null;
+  hourly_rate: number | null;
+  years_experience: number | null;
+  average_rating: number;
+  total_ratings: number;
+  profile_image_url: string | null;
+  profiles: {
+    full_name: string | null;
+  };
+  digger_categories: {
+    categories: {
+      name: string;
+    };
+  }[];
+}
+
+const BrowseDiggers = () => {
+  const navigate = useNavigate();
+  const [diggers, setDiggers] = useState<Digger[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("rating");
+
+  useEffect(() => {
+    loadData();
+  }, [selectedCategory, sortBy]);
+
+  const loadData = async () => {
+    setLoading(true);
+
+    const { data: categoriesData } = await supabase
+      .from("categories")
+      .select("id, name")
+      .is("parent_category_id", null)
+      .order("name");
+
+    setCategories(categoriesData || []);
+
+    let diggerIds: string[] | null = null;
+
+    if (selectedCategory !== "all") {
+      const { data: categoryDiggers } = await supabase
+        .from("digger_categories")
+        .select("digger_id")
+        .eq("category_id", selectedCategory);
+      
+      diggerIds = categoryDiggers?.map(cd => cd.digger_id) || [];
+      
+      if (diggerIds.length === 0) {
+        setDiggers([]);
+        setLoading(false);
+        return;
+      }
+    }
+
+    let query = supabase
+      .from("digger_profiles")
+      .select(`
+        *,
+        profiles!digger_profiles_user_id_fkey (full_name),
+        digger_categories (
+          categories (name)
+        )
+      `);
+
+    if (diggerIds) {
+      query = query.in("id", diggerIds);
+    }
+
+    if (sortBy === "rating") {
+      query = query.order("average_rating", { ascending: false });
+    } else if (sortBy === "experience") {
+      query = query.order("years_experience", { ascending: false });
+    } else if (sortBy === "rate") {
+      query = query.order("hourly_rate", { ascending: true });
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      toast.error("Failed to load diggers");
+      setLoading(false);
+      return;
+    }
+
+    setDiggers(data || []);
+    setLoading(false);
+  };
+
+  const filteredDiggers = diggers.filter((digger) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      digger.profession.toLowerCase().includes(searchLower) ||
+      digger.profiles?.full_name?.toLowerCase().includes(searchLower) ||
+      digger.bio?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const getInitials = (name: string | null) => {
+    if (!name) return "DG";
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 
+            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            digsandgiggs
+          </h1>
+          <Button variant="ghost" onClick={() => navigate("/")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Button>
+        </div>
+      </nav>
+
+      <div className="container mx-auto px-4 py-12">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Browse Talent</h1>
+          <p className="text-muted-foreground">Find the perfect freelancer for your project</p>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search by name, profession, or skills..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="rating">Highest Rated</SelectItem>
+              <SelectItem value="experience">Most Experience</SelectItem>
+              <SelectItem value="rate">Lowest Rate</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading diggers...</p>
+          </div>
+        ) : filteredDiggers.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">No diggers found. Try adjusting your filters.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredDiggers.map((digger) => (
+              <Card 
+                key={digger.id} 
+                className="hover:shadow-[var(--shadow-hover)] transition-all duration-300 cursor-pointer"
+                onClick={() => navigate(`/digger/${digger.id}`)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={digger.profile_image_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {getInitials(digger.profiles?.full_name || null)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg truncate">
+                        {digger.profiles?.full_name || "Anonymous"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground truncate">{digger.profession}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 mb-4 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-accent text-accent" />
+                      <span className="font-medium">{digger.average_rating.toFixed(1)}</span>
+                      <span className="text-muted-foreground">({digger.total_ratings})</span>
+                    </div>
+                    {digger.hourly_rate && (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <DollarSign className="h-4 w-4" />
+                        <span>${digger.hourly_rate}/hr</span>
+                      </div>
+                    )}
+                    {digger.years_experience && (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Briefcase className="h-4 w-4" />
+                        <span>{digger.years_experience}y</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {digger.bio && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                      {digger.bio}
+                    </p>
+                  )}
+
+                  {digger.digger_categories.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {digger.digger_categories.slice(0, 3).map((dc, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {dc.categories.name}
+                        </Badge>
+                      ))}
+                      {digger.digger_categories.length > 3 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{digger.digger_categories.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default BrowseDiggers;

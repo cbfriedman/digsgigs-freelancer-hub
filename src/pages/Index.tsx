@@ -131,9 +131,14 @@ const Index = () => {
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                {isDigger && (
+                {isDigger ? (
                   <Button variant="outline" onClick={() => navigate("/digger-registration")}>
                     Complete Profile
+                  </Button>
+                ) : (
+                  <Button onClick={() => navigate("/post-gig")}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Post a Gig
                   </Button>
                 )}
                 <Button variant="ghost" onClick={handleSignOut}>
@@ -337,7 +342,7 @@ const Index = () => {
           </div>
 
           <div className="text-center mt-12">
-            <Button variant="outline" size="lg">
+            <Button variant="outline" size="lg" onClick={() => navigate("/browse-diggers")}>
               Browse All Diggers <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
@@ -362,7 +367,7 @@ const Index = () => {
           </div>
 
           <div className="text-center mt-12">
-            <Button variant="outline" size="lg">
+            <Button variant="outline" size="lg" onClick={() => navigate("/browse-gigs")}>
               View All Gigs <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
