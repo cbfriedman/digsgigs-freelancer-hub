@@ -149,7 +149,7 @@ const Index = () => {
             ) : (
               <>
                 <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
-                <Button variant="hero" onClick={() => navigate("/auth")}>Get Started</Button>
+                <Button variant="hero" onClick={() => navigate("/auth?redirect=/post-gig")}>Get Started</Button>
               </>
             )}
           </div>
@@ -174,10 +174,20 @@ const Index = () => {
                 A two-sided marketplace built for the modern gig economy.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button variant="hero" size="lg" className="text-base">
+                <Button 
+                  variant="hero" 
+                  size="lg" 
+                  className="text-base"
+                  onClick={() => user ? navigate("/browse-diggers") : navigate("/auth?redirect=/browse-diggers")}
+                >
                   Find Talent <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-                <Button variant="outline" size="lg" className="text-base">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="text-base"
+                  onClick={() => user ? navigate("/digger-registration") : navigate("/auth?type=digger&redirect=/digger-registration")}
+                >
                   Build My Digs
                 </Button>
               </div>
@@ -422,13 +432,19 @@ const Index = () => {
                 Join thousands of diggers and clients connecting on digsandgiggs today.
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
-                <Button variant="hero" size="lg" className="text-base bg-white text-primary hover:bg-white/90">
+                <Button 
+                  variant="hero" 
+                  size="lg" 
+                  className="text-base bg-white text-primary hover:bg-white/90"
+                  onClick={() => user ? navigate("/digger-registration") : navigate("/auth?type=digger&redirect=/digger-registration")}
+                >
                   Create Your Dig <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
                 <Button 
                   variant="outline" 
                   size="lg" 
                   className="text-base border-white/30 text-white hover:bg-white/10"
+                  onClick={() => user ? navigate("/post-gig") : navigate("/auth?redirect=/post-gig")}
                 >
                   Post a Gig
                 </Button>
