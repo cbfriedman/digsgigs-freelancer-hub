@@ -214,11 +214,15 @@ const DiggerDetail = () => {
                     <Separator className="my-6" />
                     <div>
                       <h2 className="text-lg font-semibold mb-3">Portfolio</h2>
-                      <div className="flex items-center gap-2 text-muted-foreground">
+                      <a 
+                        href={digger.portfolio_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-primary hover:underline"
+                      >
                         <Globe className="h-4 w-4" />
-                        <span className="blur-sm select-none">{digger.portfolio_url}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2">Portfolio available after posting a gig</p>
+                        View Portfolio
+                      </a>
                     </div>
                   </>
                 )}
@@ -236,7 +240,6 @@ const DiggerDetail = () => {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h3 className="font-semibold">{ref.reference_name}</h3>
-                          <p className="text-sm text-muted-foreground">Contact hidden for privacy</p>
                         </div>
                         {ref.is_verified && (
                           <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
