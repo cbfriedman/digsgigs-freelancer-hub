@@ -31,6 +31,7 @@ const DiggerRegistration = () => {
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
   
   const [formData, setFormData] = useState({
+    handle: "",
     business_name: "",
     phone: "",
     location: "",
@@ -41,6 +42,8 @@ const DiggerRegistration = () => {
     hourly_rate_max: "",
     years_experience: "",
     availability: "",
+    is_insured: false,
+    is_bonded: false,
   });
 
   useEffect(() => {
@@ -123,6 +126,7 @@ const DiggerRegistration = () => {
         .from("digger_profiles")
         .insert({
           user_id: session.user.id,
+          handle: formData.handle,
           business_name: formData.business_name,
           phone: formData.phone,
           location: formData.location,
@@ -133,6 +137,8 @@ const DiggerRegistration = () => {
           hourly_rate_max: formData.hourly_rate_max ? parseFloat(formData.hourly_rate_max) : null,
           years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
           availability: formData.availability || null,
+          is_insured: formData.is_insured,
+          is_bonded: formData.is_bonded,
         })
         .select()
         .single();
@@ -197,7 +203,21 @@ const DiggerRegistration = () => {
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold">Basic Information</h3>
                 <div className="space-y-2">
-                  <Label htmlFor="business_name">Business Name *</Label>
+                  <Label htmlFor="handle">Display Handle *</Label>
+                  <Input
+                    id="handle"
+                    value={formData.handle}
+                    onChange={(e) => setFormData({ ...formData, handle: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                    placeholder="e.g., electrician_mike, lawyer_susan, designer_alex"
+                    required
+                    maxLength={30}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Choose a unique username. Your real name/business will stay private. Only lowercase letters, numbers, and underscores.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="business_name">Business Name (Private) *</Label>
                   <Input
                     id="business_name"
                     value={formData.business_name}
@@ -205,6 +225,9 @@ const DiggerRegistration = () => {
                     placeholder="Your business or professional name"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    This is kept private and not shown to consumers
+                  </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -303,6 +326,38 @@ const DiggerRegistration = () => {
                     placeholder="https://yourwebsite.com"
                   />
                 </div>
+              </div>
+
+              <Separator />
+
+              {/* Trust Signals */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold">Professional Credentials</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="is_insured"
+                      checked={formData.is_insured}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_insured: checked as boolean })}
+                    />
+                    <Label htmlFor="is_insured" className="cursor-pointer">
+                      I am insured
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="is_bonded"
+                      checked={formData.is_bonded}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_bonded: checked as boolean })}
+                    />
+                    <Label htmlFor="is_bonded" className="cursor-pointer">
+                      I am bonded
+                    </Label>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  These badges will be displayed on your profile to build trust with consumers
+                </p>
               </div>
 
               <Separator />

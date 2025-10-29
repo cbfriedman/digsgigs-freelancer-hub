@@ -89,22 +89,28 @@ export type Database = {
           bio: string | null
           business_name: string
           certifications: string[] | null
+          completion_rate: number | null
           created_at: string
+          handle: string | null
           hourly_rate: number | null
           hourly_rate_max: number | null
           hourly_rate_min: number | null
           id: string
+          is_bonded: boolean | null
+          is_insured: boolean | null
           location: string
           phone: string
           portfolio_url: string | null
           portfolio_urls: string[] | null
           profession: string
           profile_image_url: string | null
+          response_time_hours: number | null
           skills: string[] | null
           total_ratings: number | null
           updated_at: string
           user_id: string
           verified: boolean | null
+          work_photos: string[] | null
           years_experience: number | null
         }
         Insert: {
@@ -113,22 +119,28 @@ export type Database = {
           bio?: string | null
           business_name: string
           certifications?: string[] | null
+          completion_rate?: number | null
           created_at?: string
+          handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
           hourly_rate_min?: number | null
           id?: string
+          is_bonded?: boolean | null
+          is_insured?: boolean | null
           location: string
           phone: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
           profession: string
           profile_image_url?: string | null
+          response_time_hours?: number | null
           skills?: string[] | null
           total_ratings?: number | null
           updated_at?: string
           user_id: string
           verified?: boolean | null
+          work_photos?: string[] | null
           years_experience?: number | null
         }
         Update: {
@@ -137,22 +149,28 @@ export type Database = {
           bio?: string | null
           business_name?: string
           certifications?: string[] | null
+          completion_rate?: number | null
           created_at?: string
+          handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
           hourly_rate_min?: number | null
           id?: string
+          is_bonded?: boolean | null
+          is_insured?: boolean | null
           location?: string
           phone?: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
           profession?: string
           profile_image_url?: string | null
+          response_time_hours?: number | null
           skills?: string[] | null
           total_ratings?: number | null
           updated_at?: string
           user_id?: string
           verified?: boolean | null
+          work_photos?: string[] | null
           years_experience?: number | null
         }
         Relationships: [

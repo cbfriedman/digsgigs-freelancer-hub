@@ -18,13 +18,19 @@ interface Category {
 interface Digger {
   id: string;
   user_id: string;
+  handle: string | null;
   profession: string;
   bio: string | null;
   hourly_rate: number | null;
+  hourly_rate_min: number | null;
+  hourly_rate_max: number | null;
   years_experience: number | null;
   average_rating: number;
   total_ratings: number;
   profile_image_url: string | null;
+  verified: boolean;
+  is_insured: boolean;
+  is_bonded: boolean;
   profiles: {
     full_name: string | null;
   };
@@ -114,14 +120,14 @@ const BrowseDiggers = () => {
     const searchLower = searchTerm.toLowerCase();
     return (
       digger.profession.toLowerCase().includes(searchLower) ||
-      digger.profiles?.full_name?.toLowerCase().includes(searchLower) ||
+      digger.handle?.toLowerCase().includes(searchLower) ||
       digger.bio?.toLowerCase().includes(searchLower)
     );
   });
 
-  const getInitials = (name: string | null) => {
-    if (!name) return "DG";
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const getInitials = (handle: string | null) => {
+    if (!handle) return "DG";
+    return handle.slice(0, 2).toUpperCase();
   };
 
   return (
@@ -198,18 +204,37 @@ const BrowseDiggers = () => {
                 className="hover:shadow-[var(--shadow-hover)] transition-all duration-300 cursor-pointer"
                 onClick={() => navigate(`/digger/${digger.id}`)}
               >
-                <CardContent className="p-6">
+                 <CardContent className="p-6">
                   <div className="flex items-start gap-4 mb-4">
                     <Avatar className="h-16 w-16">
                       <AvatarImage src={digger.profile_image_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary">
-                        {getInitials(digger.profiles?.full_name || null)}
+                        {getInitials(digger.handle)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg truncate">
-                        {digger.profiles?.full_name || "Anonymous"}
-                      </h3>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-semibold text-lg truncate">
+                          @{digger.handle || "anonymous"}
+                        </h3>
+                        <div className="flex gap-1 shrink-0">
+                          {digger.verified && (
+                            <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">
+                              ✓
+                            </Badge>
+                          )}
+                          {digger.is_insured && (
+                            <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs">
+                              I
+                            </Badge>
+                          )}
+                          {digger.is_bonded && (
+                            <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-xs">
+                              B
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                       <p className="text-sm text-muted-foreground truncate">{digger.profession}</p>
                     </div>
                   </div>
@@ -220,7 +245,12 @@ const BrowseDiggers = () => {
                       <span className="font-medium">{digger.average_rating.toFixed(1)}</span>
                       <span className="text-muted-foreground">({digger.total_ratings})</span>
                     </div>
-                    {digger.hourly_rate && (
+                    {(digger.hourly_rate_min && digger.hourly_rate_max) ? (
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <DollarSign className="h-4 w-4" />
+                        <span>${digger.hourly_rate_min}-${digger.hourly_rate_max}/hr</span>
+                      </div>
+                    ) : digger.hourly_rate && (
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <DollarSign className="h-4 w-4" />
                         <span>${digger.hourly_rate}/hr</span>

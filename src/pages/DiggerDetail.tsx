@@ -21,14 +21,22 @@ interface Reference {
 interface Digger {
   id: string;
   user_id: string;
+  handle: string | null;
   profession: string;
   bio: string | null;
   hourly_rate: number | null;
+  hourly_rate_min: number | null;
+  hourly_rate_max: number | null;
   years_experience: number | null;
   average_rating: number;
   total_ratings: number;
   profile_image_url: string | null;
   portfolio_url: string | null;
+  work_photos: string[] | null;
+  completion_rate: number | null;
+  response_time_hours: number | null;
+  is_insured: boolean;
+  is_bonded: boolean;
   profiles: {
     full_name: string | null;
     email: string;
@@ -100,9 +108,19 @@ const DiggerDetail = () => {
     toast.success("Contact information will be available after purchasing this lead");
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return "DG";
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const getInitials = (handle: string | null) => {
+    if (!handle) return "DG";
+    return handle.slice(0, 2).toUpperCase();
+  };
+
+  const formatHourlyRate = () => {
+    if (digger?.hourly_rate_min && digger?.hourly_rate_max) {
+      return `$${digger.hourly_rate_min}-${digger.hourly_rate_max}/hr`;
+    }
+    if (digger?.hourly_rate) {
+      return `$${digger.hourly_rate}/hr`;
+    }
+    return null;
   };
 
   if (loading) {
@@ -153,12 +171,12 @@ const DiggerDetail = () => {
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={digger.profile_image_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                      {getInitials(digger.profiles?.full_name || null)}
+                      {getInitials(digger.handle)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <h1 className="text-3xl font-bold mb-2">
-                      {digger.profiles?.full_name || "Anonymous"}
+                      @{digger.handle || "anonymous"}
                     </h1>
                     <p className="text-xl text-muted-foreground mb-4">{digger.profession}</p>
                     <div className="flex flex-wrap items-center gap-4">
@@ -167,10 +185,10 @@ const DiggerDetail = () => {
                         <span className="font-semibold text-lg">{digger.average_rating.toFixed(1)}</span>
                         <span className="text-muted-foreground">({digger.total_ratings} reviews)</span>
                       </div>
-                      {digger.hourly_rate && (
+                      {formatHourlyRate() && (
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-5 w-5 text-muted-foreground" />
-                          <span className="font-semibold">${digger.hourly_rate}/hr</span>
+                          <span className="font-semibold">{formatHourlyRate()}</span>
                         </div>
                       )}
                       {digger.years_experience && (
@@ -178,6 +196,28 @@ const DiggerDetail = () => {
                           <Briefcase className="h-5 w-5 text-muted-foreground" />
                           <span>{digger.years_experience} years experience</span>
                         </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {digger.is_insured && (
+                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
+                          ✓ Insured
+                        </Badge>
+                      )}
+                      {digger.is_bonded && (
+                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
+                          ✓ Bonded
+                        </Badge>
+                      )}
+                      {digger.completion_rate !== null && (
+                        <Badge variant="secondary">
+                          {digger.completion_rate}% Completion Rate
+                        </Badge>
+                      )}
+                      {digger.response_time_hours !== null && (
+                        <Badge variant="secondary">
+                          Responds in {digger.response_time_hours}h
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -203,6 +243,25 @@ const DiggerDetail = () => {
                           <Badge key={idx} variant="secondary" className="text-sm px-3 py-1">
                             {dc.categories.name}
                           </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {digger.work_photos && digger.work_photos.length > 0 && (
+                  <>
+                    <Separator className="my-6" />
+                    <div>
+                      <h2 className="text-lg font-semibold mb-3">Past Work</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {digger.work_photos.map((photo, idx) => (
+                          <img
+                            key={idx}
+                            src={photo}
+                            alt={`Work sample ${idx + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border border-border"
+                          />
                         ))}
                       </div>
                     </div>
