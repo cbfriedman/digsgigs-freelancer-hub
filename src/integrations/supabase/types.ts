@@ -84,45 +84,75 @@ export type Database = {
       }
       digger_profiles: {
         Row: {
+          availability: string | null
           average_rating: number | null
           bio: string | null
+          business_name: string
+          certifications: string[] | null
           created_at: string
           hourly_rate: number | null
+          hourly_rate_max: number | null
+          hourly_rate_min: number | null
           id: string
+          location: string
+          phone: string
           portfolio_url: string | null
+          portfolio_urls: string[] | null
           profession: string
           profile_image_url: string | null
+          skills: string[] | null
           total_ratings: number | null
           updated_at: string
           user_id: string
+          verified: boolean | null
           years_experience: number | null
         }
         Insert: {
+          availability?: string | null
           average_rating?: number | null
           bio?: string | null
+          business_name: string
+          certifications?: string[] | null
           created_at?: string
           hourly_rate?: number | null
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
           id?: string
+          location: string
+          phone: string
           portfolio_url?: string | null
+          portfolio_urls?: string[] | null
           profession: string
           profile_image_url?: string | null
+          skills?: string[] | null
           total_ratings?: number | null
           updated_at?: string
           user_id: string
+          verified?: boolean | null
           years_experience?: number | null
         }
         Update: {
+          availability?: string | null
           average_rating?: number | null
           bio?: string | null
+          business_name?: string
+          certifications?: string[] | null
           created_at?: string
           hourly_rate?: number | null
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
           id?: string
+          location?: string
+          phone?: string
           portfolio_url?: string | null
+          portfolio_urls?: string[] | null
           profession?: string
           profile_image_url?: string | null
+          skills?: string[] | null
           total_ratings?: number | null
           updated_at?: string
           user_id?: string
+          verified?: boolean | null
           years_experience?: number | null
         }
         Relationships: [
@@ -141,11 +171,15 @@ export type Database = {
           budget_min: number | null
           category_id: string | null
           consumer_id: string
+          contact_preferences: string | null
           created_at: string
           deadline: string | null
           description: string
           id: string
+          images: string[] | null
+          location: string
           status: string | null
+          timeline: string | null
           title: string
           updated_at: string
         }
@@ -154,11 +188,15 @@ export type Database = {
           budget_min?: number | null
           category_id?: string | null
           consumer_id: string
+          contact_preferences?: string | null
           created_at?: string
           deadline?: string | null
           description: string
           id?: string
+          images?: string[] | null
+          location: string
           status?: string | null
+          timeline?: string | null
           title: string
           updated_at?: string
         }
@@ -167,11 +205,15 @@ export type Database = {
           budget_min?: number | null
           category_id?: string | null
           consumer_id?: string
+          contact_preferences?: string | null
           created_at?: string
           deadline?: string | null
           description?: string
           id?: string
+          images?: string[] | null
+          location?: string
           status?: string | null
+          timeline?: string | null
           title?: string
           updated_at?: string
         }
@@ -194,28 +236,37 @@ export type Database = {
       }
       lead_purchases: {
         Row: {
+          amount_paid: number
           consumer_id: string
           digger_id: string
           gig_id: string
           id: string
           purchase_price: number
           purchased_at: string
+          status: string | null
+          stripe_payment_id: string | null
         }
         Insert: {
+          amount_paid: number
           consumer_id: string
           digger_id: string
           gig_id: string
           id?: string
           purchase_price: number
           purchased_at?: string
+          status?: string | null
+          stripe_payment_id?: string | null
         }
         Update: {
+          amount_paid?: number
           consumer_id?: string
           digger_id?: string
           gig_id?: string
           id?: string
           purchase_price?: number
           purchased_at?: string
+          status?: string | null
+          stripe_payment_id?: string | null
         }
         Relationships: [
           {
@@ -266,6 +317,7 @@ export type Database = {
           consumer_id: string
           created_at: string
           digger_id: string
+          gig_id: string | null
           id: string
           rating: number
           review_text: string | null
@@ -274,6 +326,7 @@ export type Database = {
           consumer_id: string
           created_at?: string
           digger_id: string
+          gig_id?: string | null
           id?: string
           rating: number
           review_text?: string | null
@@ -282,6 +335,7 @@ export type Database = {
           consumer_id?: string
           created_at?: string
           digger_id?: string
+          gig_id?: string | null
           id?: string
           rating?: number
           review_text?: string | null
@@ -301,6 +355,13 @@ export type Database = {
             referencedRelation: "digger_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ratings_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       references: {
@@ -309,30 +370,36 @@ export type Database = {
           digger_id: string
           id: string
           is_verified: boolean | null
+          notes: string | null
           project_description: string | null
           reference_email: string
           reference_name: string
           reference_phone: string | null
+          relationship: string | null
         }
         Insert: {
           created_at?: string
           digger_id: string
           id?: string
           is_verified?: boolean | null
+          notes?: string | null
           project_description?: string | null
           reference_email: string
           reference_name: string
           reference_phone?: string | null
+          relationship?: string | null
         }
         Update: {
           created_at?: string
           digger_id?: string
           id?: string
           is_verified?: boolean | null
+          notes?: string | null
           project_description?: string | null
           reference_email?: string
           reference_name?: string
           reference_phone?: string | null
+          relationship?: string | null
         }
         Relationships: [
           {
