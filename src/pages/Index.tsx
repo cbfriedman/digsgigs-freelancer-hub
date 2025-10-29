@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DiggerCard } from "@/components/DiggerCard";
 import { GigCard } from "@/components/GigCard";
+import { Footer } from "@/components/Footer";
 import { 
   Search, 
   Users, 
@@ -15,7 +16,8 @@ import {
   ArrowRight,
   CheckCircle2,
   LogOut,
-  Mail
+  Mail,
+  HelpCircle
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { toast } from "sonner";
@@ -130,6 +132,10 @@ const Index = () => {
             digsandgiggs
           </h1>
           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/how-it-works")}>
+              <HelpCircle className="mr-2 h-4 w-4" />
+              How It Works
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/contact")}>
               <Mail className="mr-2 h-4 w-4" />
               Contact
@@ -460,50 +466,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-12 bg-secondary/20">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
-                digsandgiggs
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Connecting talented freelancers with opportunities worldwide.
-              </p>
-            </div>
-            <div>
-              <h5 className="font-semibold mb-4">For Diggers</h5>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Create Profile</li>
-                <li>Browse Gigs</li>
-                <li>Pricing</li>
-                <li>Success Stories</li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-semibold mb-4">For Clients</h5>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Post a Gig</li>
-                <li>Find Talent</li>
-                <li>How It Works</li>
-                <li>Support</li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="font-semibold mb-4">Company</h5>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>About Us</li>
-                <li>Blog</li>
-                <li>Careers</li>
-                <li>Contact</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-border/50 pt-8 text-center text-sm text-muted-foreground">
-            <p>© 2025 digsandgiggs. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

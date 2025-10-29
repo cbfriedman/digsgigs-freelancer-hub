@@ -14,6 +14,9 @@ import GigDetail from "./pages/GigDetail";
 import MyLeads from "./pages/MyLeads";
 import MyGigs from "./pages/MyGigs";
 import Contact from "./pages/Contact";
+import HowItWorks from "./pages/HowItWorks";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +39,9 @@ const App = () => (
           <Route path="/my-leads" element={<MyLeads />} />
           <Route path="/my-gigs" element={<MyGigs />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -46,6 +46,7 @@ const DiggerRegistration = () => {
     is_insured: false,
     is_bonded: false,
     is_licensed: "not_required" as "yes" | "no" | "not_required",
+    acceptTerms: false,
   });
 
   useEffect(() => {
@@ -114,6 +115,11 @@ const DiggerRegistration = () => {
     
     if (selectedCategories.length === 0) {
       toast.error("Please select at least one category");
+      return;
+    }
+
+    if (!formData.acceptTerms) {
+      toast.error("Please accept the Terms of Service to continue");
       return;
     }
 
@@ -499,6 +505,39 @@ const DiggerRegistration = () => {
                 <Button type="button" variant="outline" onClick={addReference} className="w-full">
                   Add Another Reference
                 </Button>
+              </div>
+
+              <Separator />
+
+              {/* Terms Acceptance */}
+              <div className="space-y-4">
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="acceptTerms"
+                    checked={formData.acceptTerms}
+                    onCheckedChange={(checked) => setFormData({ ...formData, acceptTerms: checked as boolean })}
+                    required
+                  />
+                  <Label htmlFor="acceptTerms" className="cursor-pointer leading-relaxed">
+                    I agree to the{" "}
+                    <button
+                      type="button"
+                      onClick={() => window.open("/terms", "_blank")}
+                      className="text-primary hover:underline"
+                    >
+                      Terms of Service
+                    </button>{" "}
+                    and{" "}
+                    <button
+                      type="button"
+                      onClick={() => window.open("/privacy", "_blank")}
+                      className="text-primary hover:underline"
+                    >
+                      Privacy Policy
+                    </button>
+                    . I understand that DiggsAndGiggs is a marketplace platform and all work agreements are between me and the client directly.
+                  </Label>
+                </div>
               </div>
 
               <Separator />

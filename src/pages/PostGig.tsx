@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Briefcase } from "lucide-react";
 import { z } from "zod";
@@ -40,6 +41,7 @@ const PostGig = () => {
     category_id: "",
     deadline: "",
     contact_preferences: "",
+    acceptTerms: false,
   });
 
   useEffect(() => {
@@ -83,6 +85,12 @@ const PostGig = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.acceptTerms) {
+      toast.error("Please accept the Terms of Service to continue");
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -286,6 +294,37 @@ const PostGig = () => {
                   value={formData.contact_preferences}
                   onChange={(e) => setFormData({ ...formData, contact_preferences: e.target.value })}
                 />
+              </div>
+
+              {/* Terms Acceptance */}
+              <div className="space-y-4 pt-4">
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="acceptTerms"
+                    checked={formData.acceptTerms}
+                    onCheckedChange={(checked) => setFormData({ ...formData, acceptTerms: checked as boolean })}
+                    required
+                  />
+                  <Label htmlFor="acceptTerms" className="cursor-pointer leading-relaxed">
+                    I agree to the{" "}
+                    <button
+                      type="button"
+                      onClick={() => window.open("/terms", "_blank")}
+                      className="text-primary hover:underline"
+                    >
+                      Terms of Service
+                    </button>{" "}
+                    and{" "}
+                    <button
+                      type="button"
+                      onClick={() => window.open("/privacy", "_blank")}
+                      className="text-primary hover:underline"
+                    >
+                      Privacy Policy
+                    </button>
+                    . I understand that DiggsAndGiggs is a marketplace platform and all work agreements are between me and the service provider directly.
+                  </Label>
+                </div>
               </div>
 
               <div className="flex gap-4 pt-4">
