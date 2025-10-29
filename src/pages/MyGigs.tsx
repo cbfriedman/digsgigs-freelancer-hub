@@ -40,8 +40,12 @@ interface LeadIssue {
   description: string;
   status: string;
   created_at: string;
+  refund_percentage: number;
   digger_profiles: {
     business_name: string;
+  };
+  lead_purchases: {
+    amount_paid: number;
   };
 }
 
@@ -108,7 +112,7 @@ const MyGigs = () => {
       .from("lead_issues")
       .select(`
         *,
-        lead_purchases!inner(gig_id),
+        lead_purchases!inner(gig_id, amount_paid),
         digger_profiles!inner(business_name)
       `)
       .eq("lead_purchases.gig_id", gig.id)
@@ -152,11 +156,9 @@ const MyGigs = () => {
 
   const getIssueTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      wrong_info: "Wrong Information",
-      no_response: "No Response",
-      already_filled: "Position Already Filled",
-      duplicate: "Duplicate Lead",
-      other: "Other Issue",
+      mistake: "Posted by Mistake",
+      changed_mind: "Changed Mind",
+      already_filled: "Already Found Digger",
     };
     return labels[type] || type;
   };
@@ -323,6 +325,19 @@ const MyGigs = () => {
                       </Badge>
                     </div>
                     <p className="text-sm mb-3">{issue.description}</p>
+                    <div className="flex gap-4 text-sm mb-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Amount Paid</p>
+                        <p className="font-medium">${issue.lead_purchases.amount_paid.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Refund Amount</p>
+                        <p className="font-medium text-primary">
+                          ${((issue.lead_purchases.amount_paid * issue.refund_percentage) / 100).toFixed(2)} 
+                          ({issue.refund_percentage}%)
+                        </p>
+                      </div>
+                    </div>
                     <p className="text-xs text-muted-foreground mb-3">
                       Reported {formatDistanceToNow(new Date(issue.created_at), { addSuffix: true })}
                     </p>

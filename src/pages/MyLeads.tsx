@@ -133,6 +133,14 @@ const MyLeads = () => {
       return;
     }
 
+    // Set refund percentage based on issue type
+    let refundPercentage = 0;
+    if (issueType === "mistake" || issueType === "changed_mind") {
+      refundPercentage = 100;
+    } else if (issueType === "already_filled") {
+      refundPercentage = 50;
+    }
+
     const { error } = await supabase
       .from("lead_issues")
       .insert({
@@ -140,6 +148,7 @@ const MyLeads = () => {
         digger_id: selectedLead.digger_id,
         issue_type: issueType,
         description: issueDescription.trim(),
+        refund_percentage: refundPercentage,
       });
 
     if (error) {
@@ -354,11 +363,9 @@ const MyLeads = () => {
                                       <SelectValue placeholder="Select issue type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="wrong_info">Wrong Information</SelectItem>
-                                      <SelectItem value="no_response">Client Not Responding</SelectItem>
-                                      <SelectItem value="already_filled">Position Already Filled</SelectItem>
-                                      <SelectItem value="duplicate">Duplicate Lead</SelectItem>
-                                      <SelectItem value="other">Other Issue</SelectItem>
+                                      <SelectItem value="mistake">Posted by Mistake (100% refund)</SelectItem>
+                                      <SelectItem value="changed_mind">Changed Mind (100% refund)</SelectItem>
+                                      <SelectItem value="already_filled">Already Found a Digger (50% refund)</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>

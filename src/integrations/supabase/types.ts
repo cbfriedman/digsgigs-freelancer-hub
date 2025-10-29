@@ -245,6 +245,7 @@ export type Database = {
           id: string
           issue_type: string
           lead_purchase_id: string
+          refund_percentage: number | null
           resolution_notes: string | null
           resolved_at: string | null
           resolved_by: string | null
@@ -257,6 +258,7 @@ export type Database = {
           id?: string
           issue_type: string
           lead_purchase_id: string
+          refund_percentage?: number | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -269,6 +271,7 @@ export type Database = {
           id?: string
           issue_type?: string
           lead_purchase_id?: string
+          refund_percentage?: number | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
