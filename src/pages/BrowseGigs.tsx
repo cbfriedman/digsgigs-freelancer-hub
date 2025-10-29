@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Search, DollarSign, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface Category {
@@ -24,6 +24,7 @@ interface Gig {
   budget_max: number | null;
   deadline: string | null;
   status: string;
+  purchase_count: number;
   created_at: string;
   categories: {
     name: string;
@@ -208,8 +209,14 @@ const BrowseGigs = () => {
                         )}
                       </div>
                     </div>
-                    <div className="lg:text-right">
+                    <div className="lg:text-right space-y-2">
                       <Badge variant="secondary">Open</Badge>
+                      {gig.purchase_count > 0 && (
+                        <Badge variant="outline" className="flex items-center gap-1 ml-2">
+                          <Users className="h-3 w-3" />
+                          {gig.purchase_count}
+                        </Badge>
+                      )}
                       <p className="text-sm text-muted-foreground mt-2">
                         Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}
                       </p>

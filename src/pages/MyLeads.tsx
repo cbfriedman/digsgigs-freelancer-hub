@@ -5,13 +5,32 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, DollarSign, Calendar, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowLeft, DollarSign, Calendar, Mail, Phone, MapPin, AlertCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { formatDistanceToNow } from "date-fns";
 
 interface PurchasedLead {
   id: string;
   amount_paid: number;
   purchased_at: string;
+  digger_id: string;
   gigs: {
     id: string;
     title: string;
@@ -26,12 +45,20 @@ interface PurchasedLead {
       email: string;
     };
   };
+  lead_issues: Array<{
+    id: string;
+    status: string;
+  }>;
 }
 
 const MyLeads = () => {
   const navigate = useNavigate();
   const [leads, setLeads] = useState<PurchasedLead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<PurchasedLead | null>(null);
+  const [issueType, setIssueType] = useState("");
+  const [issueDescription, setIssueDescription] = useState("");
 
   useEffect(() => {
     loadLeads();
@@ -66,6 +93,7 @@ const MyLeads = () => {
         id,
         amount_paid,
         purchased_at,
+        digger_id,
         gigs (
           id,
           title,
@@ -79,6 +107,10 @@ const MyLeads = () => {
             full_name,
             email
           )
+        ),
+        lead_issues (
+          id,
+          status
         )
       `)
       .eq("digger_id", diggerProfile.id)
@@ -95,12 +127,48 @@ const MyLeads = () => {
     setLoading(false);
   };
 
+  const handleReportIssue = async () => {
+    if (!selectedLead || !issueType || !issueDescription.trim()) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("lead_issues")
+      .insert({
+        lead_purchase_id: selectedLead.id,
+        digger_id: selectedLead.digger_id,
+        issue_type: issueType,
+        description: issueDescription.trim(),
+      });
+
+    if (error) {
+      console.error("Error reporting issue:", error);
+      toast.error("Failed to report issue");
+    } else {
+      toast.success("Issue reported successfully. The client will review your request.");
+      setReportDialogOpen(false);
+      setIssueType("");
+      setIssueDescription("");
+      loadLeads();
+    }
+  };
+
   const formatBudget = (min: number | null, max: number | null) => {
     if (!min && !max) return "Budget not specified";
     if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
     if (min) return `From $${min.toLocaleString()}`;
     if (max) return `Up to $${max.toLocaleString()}`;
     return "";
+  };
+
+  const hasReportedIssue = (lead: PurchasedLead) => {
+    return lead.lead_issues && lead.lead_issues.length > 0;
+  };
+
+  const getIssueStatus = (lead: PurchasedLead) => {
+    if (!lead.lead_issues || lead.lead_issues.length === 0) return null;
+    return lead.lead_issues[0].status;
   };
 
   if (loading) {
@@ -243,13 +311,82 @@ const MyLeads = () => {
                         </div>
                       </div>
 
-                      <Button 
-                        className="w-full" 
-                        onClick={() => window.location.href = `mailto:${lead.gigs.profiles.email}?subject=Regarding: ${lead.gigs.title}`}
-                      >
-                        <Mail className="mr-2 h-4 w-4" />
-                        Send Email
-                      </Button>
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full" 
+                          onClick={() => window.location.href = `mailto:${lead.gigs.profiles.email}?subject=Regarding: ${lead.gigs.title}`}
+                        >
+                          <Mail className="mr-2 h-4 w-4" />
+                          Send Email
+                        </Button>
+
+                        {hasReportedIssue(lead) ? (
+                          <Button variant="outline" className="w-full" disabled>
+                            Issue {getIssueStatus(lead) === "pending" ? "Pending Review" : 
+                                  getIssueStatus(lead) === "approved" ? "Approved" : "Rejected"}
+                          </Button>
+                        ) : (
+                          <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                className="w-full"
+                                onClick={() => setSelectedLead(lead)}
+                              >
+                                <AlertCircle className="mr-2 h-4 w-4" />
+                                Report Issue
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Report Lead Issue</DialogTitle>
+                                <DialogDescription>
+                                  If this lead has incorrect information or other issues, report it for review. 
+                                  Approved reports may receive a refund.
+                                </DialogDescription>
+                              </DialogHeader>
+
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="issue-type">Issue Type</Label>
+                                  <Select value={issueType} onValueChange={setIssueType}>
+                                    <SelectTrigger id="issue-type">
+                                      <SelectValue placeholder="Select issue type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="wrong_info">Wrong Information</SelectItem>
+                                      <SelectItem value="no_response">Client Not Responding</SelectItem>
+                                      <SelectItem value="already_filled">Position Already Filled</SelectItem>
+                                      <SelectItem value="duplicate">Duplicate Lead</SelectItem>
+                                      <SelectItem value="other">Other Issue</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="description">Description</Label>
+                                  <Textarea
+                                    id="description"
+                                    placeholder="Please describe the issue in detail..."
+                                    value={issueDescription}
+                                    onChange={(e) => setIssueDescription(e.target.value)}
+                                    rows={4}
+                                  />
+                                </div>
+                              </div>
+
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={handleReportIssue}>
+                                  Submit Report
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>

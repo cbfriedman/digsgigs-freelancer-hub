@@ -178,6 +178,7 @@ export type Database = {
           id: string
           images: string[] | null
           location: string
+          purchase_count: number | null
           status: string | null
           timeline: string | null
           title: string
@@ -195,6 +196,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           location: string
+          purchase_count?: number | null
           status?: string | null
           timeline?: string | null
           title: string
@@ -212,6 +214,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           location?: string
+          purchase_count?: number | null
           status?: string | null
           timeline?: string | null
           title?: string
@@ -230,6 +233,60 @@ export type Database = {
             columns: ["consumer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_issues: {
+        Row: {
+          created_at: string
+          description: string
+          digger_id: string
+          id: string
+          issue_type: string
+          lead_purchase_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          digger_id: string
+          id?: string
+          issue_type: string
+          lead_purchase_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          digger_id?: string
+          id?: string
+          issue_type?: string
+          lead_purchase_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_issues_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_issues_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
             referencedColumns: ["id"]
           },
         ]
