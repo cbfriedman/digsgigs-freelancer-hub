@@ -39,7 +39,21 @@ const GigDetail = () => {
 
   useEffect(() => {
     loadData();
+    checkPaymentStatus();
   }, [id]);
+
+  const checkPaymentStatus = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      toast.success('Payment successful! You can now access the client contact information.');
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (paymentStatus === 'cancelled') {
+      toast.info('Payment was cancelled');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  };
 
   const loadData = async () => {
     if (!id) return;
@@ -99,7 +113,56 @@ const GigDetail = () => {
       return;
     }
 
-    toast.info("Lead purchase will be enabled with Stripe integration");
+    try {
+      // Get digger profile
+      const { data: diggerProfile } = await supabase
+        .from("digger_profiles")
+        .select("id")
+        .eq("user_id", currentUser.id)
+        .single();
+
+      if (!diggerProfile) {
+        toast.error("Please complete your digger profile first");
+        navigate("/digger-registration");
+        return;
+      }
+
+      // Check if already purchased
+      const { data: existingPurchase } = await supabase
+        .from("lead_purchases")
+        .select("id")
+        .eq("gig_id", id)
+        .eq("digger_id", diggerProfile.id)
+        .single();
+
+      if (existingPurchase) {
+        toast.error("You have already purchased this lead");
+        return;
+      }
+
+      toast.loading("Creating checkout session...");
+
+      // Create Stripe checkout session
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          gigId: id,
+          diggerId: diggerProfile.id,
+          amount: leadPrice,
+          gigTitle: gig?.title || 'Gig Lead',
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      toast.error(error.message || "Failed to create checkout session");
+    }
   };
 
   const formatBudget = (min: number | null, max: number | null) => {

@@ -11,6 +11,7 @@ import BrowseDiggers from "./pages/BrowseDiggers";
 import BrowseGigs from "./pages/BrowseGigs";
 import DiggerDetail from "./pages/DiggerDetail";
 import GigDetail from "./pages/GigDetail";
+import MyLeads from "./pages/MyLeads";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/browse-gigs" element={<BrowseGigs />} />
           <Route path="/digger/:id" element={<DiggerDetail />} />
           <Route path="/gig/:id" element={<GigDetail />} />
+          <Route path="/my-leads" element={<MyLeads />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
