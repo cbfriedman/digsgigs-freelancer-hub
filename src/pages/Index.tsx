@@ -14,7 +14,8 @@ import {
   Shield,
   ArrowRight,
   CheckCircle2,
-  LogOut
+  LogOut,
+  Mail
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { toast } from "sonner";
@@ -129,6 +130,10 @@ const Index = () => {
             digsandgiggs
           </h1>
           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/contact")}>
+              <Mail className="mr-2 h-4 w-4" />
+              Contact
+            </Button>
             {user ? (
               <>
                 {isDigger ? (

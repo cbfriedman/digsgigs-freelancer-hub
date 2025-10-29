@@ -13,6 +13,7 @@ import DiggerDetail from "./pages/DiggerDetail";
 import GigDetail from "./pages/GigDetail";
 import MyLeads from "./pages/MyLeads";
 import MyGigs from "./pages/MyGigs";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/gig/:id" element={<GigDetail />} />
           <Route path="/my-leads" element={<MyLeads />} />
           <Route path="/my-gigs" element={<MyGigs />} />
+          <Route path="/contact" element={<Contact />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
