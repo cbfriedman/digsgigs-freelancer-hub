@@ -18,6 +18,11 @@ interface Reference {
   is_verified: boolean;
 }
 
+interface ReferenceRequest {
+  id: string;
+  status: string;
+}
+
 interface Digger {
   id: string;
   user_id: string;
@@ -37,6 +42,7 @@ interface Digger {
   response_time_hours: number | null;
   is_insured: boolean;
   is_bonded: boolean;
+  is_licensed: string;
   profiles: {
     full_name: string | null;
     email: string;
@@ -54,6 +60,7 @@ const DiggerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [digger, setDigger] = useState<Digger | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
+  const [referenceRequests, setReferenceRequests] = useState<Record<string, ReferenceRequest>>({});
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -94,6 +101,22 @@ const DiggerDetail = () => {
 
     setReferences(referencesData || []);
     setLoading(false);
+
+    // Load reference contact requests if user is logged in
+    if (session?.user) {
+      const { data: requestsData } = await supabase
+        .from("reference_contact_requests")
+        .select("id, reference_id, status")
+        .eq("consumer_id", session.user.id);
+      
+      if (requestsData) {
+        const requestsMap: Record<string, ReferenceRequest> = {};
+        requestsData.forEach((req: any) => {
+          requestsMap[req.reference_id] = { id: req.id, status: req.status };
+        });
+        setReferenceRequests(requestsMap);
+      }
+    }
   };
 
   const handleContactDigger = async () => {
@@ -106,6 +129,39 @@ const DiggerDetail = () => {
     if (!digger) return;
 
     toast.success("Contact information will be available after purchasing this lead");
+  };
+
+  const handleRequestReferenceContact = async (referenceId: string) => {
+    if (!currentUser) {
+      toast.error("Please sign in to request reference contact");
+      navigate("/auth");
+      return;
+    }
+
+    if (!digger) return;
+
+    try {
+      const { error } = await supabase
+        .from("reference_contact_requests")
+        .insert({
+          reference_id: referenceId,
+          consumer_id: currentUser.id,
+          digger_id: digger.id,
+        });
+
+      if (error) throw error;
+
+      toast.success("Request sent! The digger will be notified.");
+      
+      // Reload data to update request status
+      loadData();
+    } catch (error: any) {
+      if (error.code === '23505') {
+        toast.error("You've already requested this reference contact");
+      } else {
+        toast.error("Failed to send request");
+      }
+    }
   };
 
   const getInitials = (handle: string | null) => {
@@ -209,6 +265,16 @@ const DiggerDetail = () => {
                           ✓ Bonded
                         </Badge>
                       )}
+                      {digger.is_licensed === 'yes' && (
+                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                          ✓ Licensed
+                        </Badge>
+                      )}
+                      {digger.is_licensed === 'no' && (
+                        <Badge variant="secondary" className="bg-gray-500/10 text-gray-600 border-gray-500/20">
+                          Not Licensed
+                        </Badge>
+                      )}
                       {digger.completion_rate !== null && (
                         <Badge variant="secondary">
                           {digger.completion_rate}% Completion Rate
@@ -294,23 +360,61 @@ const DiggerDetail = () => {
                   <CardTitle>Client References</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {references.map((ref) => (
-                    <div key={ref.id} className="border border-border rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold">{ref.reference_name}</h3>
+                  {references.map((ref) => {
+                    const request = referenceRequests[ref.id];
+                    const canShowContact = request?.status === 'approved';
+                    
+                    return (
+                      <div key={ref.id} className="border border-border rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{ref.reference_name}</h3>
+                            {canShowContact ? (
+                              <>
+                                <p className="text-sm text-muted-foreground">{ref.reference_email}</p>
+                                {ref.reference_phone && (
+                                  <p className="text-sm text-muted-foreground">{ref.reference_phone}</p>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-sm text-muted-foreground italic">Contact hidden</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {ref.is_verified && (
+                              <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
+                                Verified
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        {ref.is_verified && (
-                          <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
-                            Verified
-                          </Badge>
+                        {ref.project_description && (
+                          <p className="text-sm text-muted-foreground mt-2">{ref.project_description}</p>
+                        )}
+                        {currentUser && !canShowContact && (
+                          <div className="mt-3">
+                            {!request ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleRequestReferenceContact(ref.id)}
+                              >
+                                Request Contact Info
+                              </Button>
+                            ) : request.status === 'pending' ? (
+                              <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                                Request Pending
+                              </Badge>
+                            ) : request.status === 'rejected' ? (
+                              <Badge variant="secondary" className="bg-red-500/10 text-red-600 border-red-500/20">
+                                Request Declined
+                              </Badge>
+                            ) : null}
+                          </div>
                         )}
                       </div>
-                      {ref.project_description && (
-                        <p className="text-sm text-muted-foreground mt-2">{ref.project_description}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </CardContent>
               </Card>
             )}

@@ -98,6 +98,7 @@ export type Database = {
           id: string
           is_bonded: boolean | null
           is_insured: boolean | null
+          is_licensed: string | null
           location: string
           phone: string
           portfolio_url: string | null
@@ -128,6 +129,7 @@ export type Database = {
           id?: string
           is_bonded?: boolean | null
           is_insured?: boolean | null
+          is_licensed?: string | null
           location: string
           phone: string
           portfolio_url?: string | null
@@ -158,6 +160,7 @@ export type Database = {
           id?: string
           is_bonded?: boolean | null
           is_insured?: boolean | null
+          is_licensed?: string | null
           location?: string
           phone?: string
           portfolio_url?: string | null
@@ -438,6 +441,44 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reference_contact_requests: {
+        Row: {
+          consumer_id: string
+          digger_id: string
+          id: string
+          reference_id: string
+          requested_at: string
+          responded_at: string | null
+          status: string
+        }
+        Insert: {
+          consumer_id: string
+          digger_id: string
+          id?: string
+          reference_id: string
+          requested_at?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Update: {
+          consumer_id?: string
+          digger_id?: string
+          id?: string
+          reference_id?: string
+          requested_at?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_contact_requests_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "references"
             referencedColumns: ["id"]
           },
         ]

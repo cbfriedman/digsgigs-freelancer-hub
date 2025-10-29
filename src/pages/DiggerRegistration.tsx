@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Category {
   id: string;
@@ -44,6 +45,7 @@ const DiggerRegistration = () => {
     availability: "",
     is_insured: false,
     is_bonded: false,
+    is_licensed: "not_required" as "yes" | "no" | "not_required",
   });
 
   useEffect(() => {
@@ -139,6 +141,7 @@ const DiggerRegistration = () => {
           availability: formData.availability || null,
           is_insured: formData.is_insured,
           is_bonded: formData.is_bonded,
+          is_licensed: formData.is_licensed,
         })
         .select()
         .single();
@@ -355,8 +358,36 @@ const DiggerRegistration = () => {
                     </Label>
                   </div>
                 </div>
+                
+                <div className="space-y-2">
+                  <Label>Licensed Status</Label>
+                  <RadioGroup 
+                    value={formData.is_licensed} 
+                    onValueChange={(value) => setFormData({ ...formData, is_licensed: value as "yes" | "no" | "not_required" })}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="yes" id="licensed_yes" />
+                      <Label htmlFor="licensed_yes" className="cursor-pointer font-normal">
+                        Yes, I am licensed
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="no" id="licensed_no" />
+                      <Label htmlFor="licensed_no" className="cursor-pointer font-normal">
+                        No, I am not licensed
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="not_required" id="licensed_not_required" />
+                      <Label htmlFor="licensed_not_required" className="cursor-pointer font-normal">
+                        License not required for my profession
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
                 <p className="text-sm text-muted-foreground">
-                  These badges will be displayed on your profile to build trust with consumers
+                  These credentials will be displayed on your profile to build trust with consumers
                 </p>
               </div>
 

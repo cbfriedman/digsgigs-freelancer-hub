@@ -31,6 +31,7 @@ interface Digger {
   verified: boolean;
   is_insured: boolean;
   is_bonded: boolean;
+  is_licensed: string;
   profiles: {
     full_name: string | null;
   };
@@ -231,6 +232,11 @@ const BrowseDiggers = () => {
                           {digger.is_bonded && (
                             <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-xs">
                               B
+                            </Badge>
+                          )}
+                          {digger.is_licensed === 'yes' && (
+                            <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">
+                              L
                             </Badge>
                           )}
                         </div>
