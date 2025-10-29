@@ -214,15 +214,11 @@ const DiggerDetail = () => {
                     <Separator className="my-6" />
                     <div>
                       <h2 className="text-lg font-semibold mb-3">Portfolio</h2>
-                      <a 
-                        href={digger.portfolio_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-primary hover:underline"
-                      >
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <Globe className="h-4 w-4" />
-                        {digger.portfolio_url}
-                      </a>
+                        <span className="blur-sm select-none">{digger.portfolio_url}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">Portfolio available after posting a gig</p>
                     </div>
                   </>
                 )}
@@ -232,7 +228,7 @@ const DiggerDetail = () => {
             {references.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>References</CardTitle>
+                  <CardTitle>Client References</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {references.map((ref) => (
@@ -240,10 +236,7 @@ const DiggerDetail = () => {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h3 className="font-semibold">{ref.reference_name}</h3>
-                          <p className="text-sm text-muted-foreground">{ref.reference_email}</p>
-                          {ref.reference_phone && (
-                            <p className="text-sm text-muted-foreground">{ref.reference_phone}</p>
-                          )}
+                          <p className="text-sm text-muted-foreground">Contact hidden for privacy</p>
                         </div>
                         {ref.is_verified && (
                           <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
@@ -267,13 +260,12 @@ const DiggerDetail = () => {
                 <Button 
                   className="w-full mb-4" 
                   size="lg"
-                  onClick={handleContactDigger}
+                  onClick={() => navigate("/post-gig")}
                 >
-                  <Mail className="mr-2 h-5 w-5" />
-                  Contact Digger
+                  Post a Gig to Connect
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Contact information will be revealed after purchase
+                  Post your project and this digger can contact you by purchasing your lead
                 </p>
               </CardContent>
             </Card>
