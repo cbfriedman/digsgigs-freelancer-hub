@@ -31,11 +31,16 @@ const DiggerRegistration = () => {
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
   
   const [formData, setFormData] = useState({
+    business_name: "",
+    phone: "",
+    location: "",
     profession: "",
     bio: "",
     portfolio_url: "",
-    hourly_rate: "",
+    hourly_rate_min: "",
+    hourly_rate_max: "",
     years_experience: "",
+    availability: "",
   });
 
   useEffect(() => {
@@ -118,11 +123,16 @@ const DiggerRegistration = () => {
         .from("digger_profiles")
         .insert({
           user_id: session.user.id,
+          business_name: formData.business_name,
+          phone: formData.phone,
+          location: formData.location,
           profession: formData.profession,
           bio: formData.bio,
           portfolio_url: formData.portfolio_url || null,
-          hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+          hourly_rate_min: formData.hourly_rate_min ? parseFloat(formData.hourly_rate_min) : null,
+          hourly_rate_max: formData.hourly_rate_max ? parseFloat(formData.hourly_rate_max) : null,
           years_experience: formData.years_experience ? parseInt(formData.years_experience) : null,
+          availability: formData.availability || null,
         })
         .select()
         .single();
@@ -187,6 +197,39 @@ const DiggerRegistration = () => {
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold">Basic Information</h3>
                 <div className="space-y-2">
+                  <Label htmlFor="business_name">Business Name *</Label>
+                  <Input
+                    id="business_name"
+                    value={formData.business_name}
+                    onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+                    placeholder="Your business or professional name"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+1 (555) 123-4567"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location *</Label>
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="City, State"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="profession">Primary Profession *</Label>
                   <Input
                     id="profession"
@@ -209,26 +252,46 @@ const DiggerRegistration = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
+                    <Label htmlFor="hourly_rate_min">Hourly Rate Min ($)</Label>
                     <Input
-                      id="hourly_rate"
+                      id="hourly_rate_min"
                       type="number"
                       step="0.01"
-                      value={formData.hourly_rate}
-                      onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })}
+                      value={formData.hourly_rate_min}
+                      onChange={(e) => setFormData({ ...formData, hourly_rate_min: e.target.value })}
                       placeholder="50.00"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="years_experience">Years of Experience</Label>
+                    <Label htmlFor="hourly_rate_max">Hourly Rate Max ($)</Label>
                     <Input
-                      id="years_experience"
+                      id="hourly_rate_max"
                       type="number"
-                      value={formData.years_experience}
-                      onChange={(e) => setFormData({ ...formData, years_experience: e.target.value })}
-                      placeholder="5"
+                      step="0.01"
+                      value={formData.hourly_rate_max}
+                      onChange={(e) => setFormData({ ...formData, hourly_rate_max: e.target.value })}
+                      placeholder="150.00"
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="years_experience">Years of Experience</Label>
+                  <Input
+                    id="years_experience"
+                    type="number"
+                    value={formData.years_experience}
+                    onChange={(e) => setFormData({ ...formData, years_experience: e.target.value })}
+                    placeholder="5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="availability">Availability</Label>
+                  <Input
+                    id="availability"
+                    value={formData.availability}
+                    onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
+                    placeholder="e.g., Full-time, Part-time, Weekends"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="portfolio_url">Portfolio/Website URL</Label>

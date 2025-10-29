@@ -33,10 +33,13 @@ const PostGig = () => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    location: "",
+    timeline: "",
     budget_min: "",
     budget_max: "",
     category_id: "",
     deadline: "",
+    contact_preferences: "",
   });
 
   useEffect(() => {
@@ -107,10 +110,13 @@ const PostGig = () => {
         consumer_id: session.user.id,
         title: validatedData.title,
         description: validatedData.description,
+        location: formData.location,
+        timeline: formData.timeline,
         budget_min: validatedData.budget_min,
         budget_max: validatedData.budget_max,
         category_id: validatedData.category_id,
         deadline: validatedData.deadline,
+        contact_preferences: formData.contact_preferences || null,
         status: "open",
       });
 
@@ -193,6 +199,28 @@ const PostGig = () => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="location">Location *</Label>
+                <Input
+                  id="location"
+                  placeholder="City, State or Zip Code"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="timeline">Project Timeline *</Label>
+                <Input
+                  id="timeline"
+                  placeholder="e.g., 2-3 weeks, ASAP, Flexible"
+                  value={formData.timeline}
+                  onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select
                   value={formData.category_id}
@@ -247,6 +275,16 @@ const PostGig = () => {
                   value={formData.deadline}
                   onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contact_preferences">Contact Preferences</Label>
+                <Input
+                  id="contact_preferences"
+                  placeholder="e.g., Email only, Phone preferred, Text messages OK"
+                  value={formData.contact_preferences}
+                  onChange={(e) => setFormData({ ...formData, contact_preferences: e.target.value })}
                 />
               </div>
 
