@@ -193,6 +193,14 @@ const Auth = () => {
                 </form>
               ) : (
                 <div className="space-y-4">
+                  <div className="text-center mb-4 p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-semibold text-foreground">For both Diggers and Consumers</span>
+                      <br />
+                      Service providers and clients use the same login
+                    </p>
+                  </div>
+
                   <div className="space-y-3">
                     <Button
                       type="button"
