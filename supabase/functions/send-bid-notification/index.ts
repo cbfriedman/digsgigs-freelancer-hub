@@ -62,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (gigOwnerEmail) {
         emailResponse = await resend.emails.send({
-          from: "CFContracting <onboarding@resend.dev>",
+          from: "digsandgigs <onboarding@resend.dev>",
           to: [gigOwnerEmail],
           subject: `New Bid on Your Gig: ${gig.title}`,
           html: `
@@ -78,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
             
             <p>Log in to view the full proposal and accept the bid if you're interested!</p>
             
-            <p>Best regards,<br>The CFContracting Team</p>
+            <p>Best regards,<br>The digsandgigs Team</p>
           `,
         });
       }
@@ -88,7 +88,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (diggerEmail) {
         emailResponse = await resend.emails.send({
-          from: "CFContracting <onboarding@resend.dev>",
+          from: "digsandgigs <onboarding@resend.dev>",
           to: [diggerEmail],
           subject: `Your Bid Was Accepted: ${gig.title}`,
           html: `
@@ -103,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
             
             <p>The client is excited to work with you. Log in to view the full project details and get started!</p>
             
-            <p>Best regards,<br>The CFContracting Team</p>
+            <p>Best regards,<br>The digsandgigs Team</p>
           `,
         });
       }
