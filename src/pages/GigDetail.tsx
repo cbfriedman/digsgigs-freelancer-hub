@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { ArrowLeft, DollarSign, Calendar, Tag, User, Briefcase } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, DollarSign, Calendar, Tag, User, Loader2, Award } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { BidForm } from "@/components/BidForm";
+import { BidsList } from "@/components/BidsList";
 
 interface Gig {
   id: string;
@@ -19,6 +21,7 @@ interface Gig {
   deadline: string | null;
   status: string;
   created_at: string;
+  location: string;
   categories: {
     name: string;
     description: string | null;
@@ -31,29 +34,20 @@ interface Gig {
 const GigDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
   const [gig, setGig] = useState<Gig | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isDigger, setIsDigger] = useState(false);
-  const [leadPrice, setLeadPrice] = useState<number>(50);
+  const [isOwner, setIsOwner] = useState(false);
+  const [diggerId, setDiggerId] = useState<string | null>(null);
+  const [existingBid, setExistingBid] = useState<any>(null);
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
+  const [commissionRate, setCommissionRate] = useState<number>(0.20);
 
   useEffect(() => {
     loadData();
-    checkPaymentStatus();
   }, [id]);
-
-  const checkPaymentStatus = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    
-    if (paymentStatus === 'success') {
-      toast.success('Payment successful! You can now access the client contact information.');
-      window.history.replaceState({}, '', window.location.pathname);
-    } else if (paymentStatus === 'cancelled') {
-      toast.info('Payment was cancelled');
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  };
 
   const loadData = async () => {
     if (!id) return;
@@ -68,7 +62,41 @@ const GigDetail = () => {
         .eq("id", session.user.id)
         .single();
       
-      setIsDigger(profile?.user_type === "digger");
+      const userIsDigger = profile?.user_type === "digger";
+      setIsDigger(userIsDigger);
+
+      if (userIsDigger) {
+        // Get digger profile and subscription status
+        const { data: diggerProfile } = await supabase
+          .from("digger_profiles")
+          .select("id, subscription_tier")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (diggerProfile) {
+          setDiggerId(diggerProfile.id);
+          setSubscriptionTier(diggerProfile.subscription_tier || 'free');
+          
+          // Set commission rate based on tier
+          if (diggerProfile.subscription_tier === 'premium') {
+            setCommissionRate(0.05);
+          } else if (diggerProfile.subscription_tier === 'pro') {
+            setCommissionRate(0.10);
+          } else {
+            setCommissionRate(0.20);
+          }
+
+          // Check for existing bid
+          const { data: bid } = await supabase
+            .from("bids")
+            .select("*")
+            .eq("gig_id", id)
+            .eq("digger_id", diggerProfile.id)
+            .single();
+
+          setExistingBid(bid);
+        }
+      }
     }
 
     const { data: gigData, error: gigError } = await supabase
@@ -82,113 +110,41 @@ const GigDetail = () => {
       .single();
 
     if (gigError || !gigData) {
-      toast.error("Gig not found");
+      toast({
+        title: "Gig not found",
+        variant: "destructive",
+      });
       navigate("/browse-gigs");
       return;
     }
 
     setGig(gigData);
-
-    const { data: priceData } = await supabase.rpc("calculate_lead_price", {
-      gig_budget_min: gigData.budget_min,
-      gig_budget_max: gigData.budget_max,
-    });
-
-    if (priceData) {
-      setLeadPrice(priceData);
-    }
-
+    setIsOwner(session?.user?.id === gigData.consumer_id);
     setLoading(false);
   };
 
-  const handlePurchaseLead = async () => {
-    if (!currentUser) {
-      toast.error("Please sign in to purchase this lead");
-      navigate("/auth");
-      return;
-    }
-
-    if (!isDigger) {
-      toast.error("Only diggers can purchase leads");
-      return;
-    }
-
-    try {
-      // Get digger profile
-      const { data: diggerProfile } = await supabase
-        .from("digger_profiles")
-        .select("id")
-        .eq("user_id", currentUser.id)
-        .single();
-
-      if (!diggerProfile) {
-        toast.error("Please complete your digger profile first");
-        navigate("/digger-registration");
-        return;
-      }
-
-      // Check if already purchased
-      const { data: existingPurchase } = await supabase
-        .from("lead_purchases")
-        .select("id")
-        .eq("gig_id", id)
-        .eq("digger_id", diggerProfile.id)
-        .single();
-
-      if (existingPurchase) {
-        toast.error("You have already purchased this lead");
-        return;
-      }
-
-      toast.loading("Creating checkout session...");
-
-      // Create Stripe checkout session
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: {
-          gigId: id,
-          diggerId: diggerProfile.id,
-          amount: leadPrice,
-          gigTitle: gig?.title || 'Gig Lead',
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
-      }
-    } catch (error: any) {
-      console.error('Purchase error:', error);
-      toast.error(error.message || "Failed to create checkout session");
-    }
+  const formatBudget = (min: number | null, max: number | null): string => {
+    if (!min && !max) return "Budget not specified";
+    if (!max) return `$${min?.toLocaleString()}+`;
+    if (!min) return `Up to $${max?.toLocaleString()}`;
+    return `$${min?.toLocaleString()} - $${max?.toLocaleString()}`;
   };
 
-  const formatBudget = (min: number | null, max: number | null) => {
-    if (!min && !max) return "Budget not specified";
-    if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
-    if (min) return `From $${min.toLocaleString()}`;
-    if (max) return `Up to $${max.toLocaleString()}`;
-    return "";
+  const getTierBadgeColor = (tier: string) => {
+    switch (tier) {
+      case 'premium':
+        return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
+      case 'pro':
+        return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
+      default:
+        return 'bg-muted';
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <nav className="border-b border-border/50">
-          <div className="container mx-auto px-4 py-4">
-            <h1 
-              className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-              onClick={() => navigate("/")}
-            >
-              digsandgiggs
-            </h1>
-          </div>
-        </nav>
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -197,134 +153,195 @@ const GigDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-            onClick={() => navigate("/")}
+      <nav className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 py-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="gap-2"
           >
-            digsandgiggs
-          </h1>
-          <Button variant="ghost" onClick={() => navigate("/browse-gigs")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Browse
+            <ArrowLeft className="w-4 h-4" />
+            Back
           </Button>
         </div>
       </nav>
 
-      <div className="container mx-auto px-4 py-12 max-w-5xl">
+      <main className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <Card>
-              <CardContent className="p-8">
-                <div className="mb-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h1 className="text-3xl font-bold mb-2">{gig.title}</h1>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <User className="h-4 w-4" />
-                        <span>Posted by {gig.profiles?.full_name || "Anonymous"}</span>
-                        <span>•</span>
-                        <span>{formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}</span>
-                      </div>
-                    </div>
-                    <Badge variant={gig.status === "open" ? "secondary" : "outline"}>
-                      {gig.status}
-                    </Badge>
-                  </div>
-
-                  <div className="flex flex-wrap gap-4 text-sm mb-6">
-                    {gig.categories && (
-                      <div className="flex items-center gap-1">
-                        <Tag className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{gig.categories.name}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{formatBudget(gig.budget_min, gig.budget_max)}</span>
-                    </div>
-                    {gig.deadline && (
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Due {new Date(gig.deadline).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                  </div>
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <Badge variant={gig.status === 'open' ? 'default' : 'secondary'}>
+                    {gig.status}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}
+                  </span>
+                </div>
+                <CardTitle className="text-3xl">{gig.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-2">Description</h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{gig.description}</p>
                 </div>
 
-                <Separator className="my-6" />
+                <Separator />
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="w-5 h-5 text-primary mt-0.5" />
+                    <div>
+                      <div className="font-semibold">Budget</div>
+                      <div className="text-muted-foreground">
+                        {formatBudget(gig.budget_min, gig.budget_max)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {gig.deadline && (
+                    <div className="flex items-start gap-3">
+                      <Calendar className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <div className="font-semibold">Deadline</div>
+                        <div className="text-muted-foreground">
+                          {new Date(gig.deadline).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {gig.categories && (
+                    <div className="flex items-start gap-3">
+                      <Tag className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <div className="font-semibold">Category</div>
+                        <div className="text-muted-foreground">{gig.categories.name}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {gig.location && (
+                    <div className="flex items-start gap-3">
+                      <User className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <div className="font-semibold">Location</div>
+                        <div className="text-muted-foreground">{gig.location}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
 
                 <div>
-                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Briefcase className="h-5 w-5" />
-                    Project Description
-                  </h2>
-                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {gig.description}
-                  </p>
+                  <div className="font-semibold mb-2">Posted by</div>
+                  <div className="text-muted-foreground">
+                    {gig.profiles.full_name || 'Anonymous'}
+                  </div>
                 </div>
-
-                {gig.categories?.description && (
-                  <>
-                    <Separator className="my-6" />
-                    <div>
-                      <h2 className="text-lg font-semibold mb-3">Category Info</h2>
-                      <p className="text-sm text-muted-foreground">
-                        {gig.categories.description}
-                      </p>
-                    </div>
-                  </>
-                )}
               </CardContent>
             </Card>
+
+            {/* Bids Section */}
+            {(isOwner || isDigger) && (
+              <BidsList gigId={id!} isOwner={isOwner} />
+            )}
           </div>
 
-          <div className="lg:col-span-1">
-            <Card className="sticky top-24">
-              <CardHeader>
-                <CardTitle className="text-center">Purchase Lead</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-primary mb-2">
-                    ${leadPrice.toFixed(2)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    One-time fee for client contact info
-                  </p>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Price calculation:</span>
-                    <span className="font-medium">0.5% of budget</span>
+          <div className="space-y-6">
+            {/* Subscription Info for Diggers */}
+            {isDigger && (
+              <Card className={getTierBadgeColor(subscriptionTier)}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5" />
+                    <CardTitle className="text-lg">
+                      {subscriptionTier === 'free' ? 'Free Tier' :
+                       subscriptionTier === 'pro' ? 'Pro Member' :
+                       'Premium Member'}
+                    </CardTitle>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Minimum:</span>
-                    <span className="font-medium">$50.00</span>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Commission Rate:</span>
+                      <span className="font-bold">{(commissionRate * 100).toFixed(0)}%</span>
+                    </div>
+                    {subscriptionTier === 'free' && (
+                      <Button
+                        variant="secondary"
+                        className="w-full mt-4"
+                        onClick={() => navigate('/subscription')}
+                      >
+                        Upgrade to Lower Fees
+                      </Button>
+                    )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            )}
 
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={handlePurchaseLead}
-                  disabled={!isDigger || gig.status !== "open"}
-                >
-                  {!currentUser ? "Sign In to Purchase" : !isDigger ? "Diggers Only" : "Purchase Lead"}
-                </Button>
-                
-                <p className="text-xs text-muted-foreground text-center">
-                  You'll receive the client's contact information immediately after purchase
-                </p>
-              </CardContent>
-            </Card>
+            {/* Bid Form */}
+            {isDigger && diggerId && gig.status === 'open' && !existingBid && (
+              <BidForm
+                gigId={id!}
+                diggerId={diggerId}
+                onSuccess={() => {
+                  toast({
+                    title: "Bid submitted!",
+                    description: "The client will review your bid.",
+                  });
+                  loadData();
+                }}
+              />
+            )}
+
+            {existingBid && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Bid</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                    <span>Amount:</span>
+                    <span className="font-bold">${existingBid.amount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Timeline:</span>
+                    <span>{existingBid.timeline}</span>
+                  </div>
+                  <Badge variant={
+                    existingBid.status === 'accepted' ? 'default' :
+                    existingBid.status === 'rejected' ? 'destructive' :
+                    'secondary'
+                  }>
+                    {existingBid.status}
+                  </Badge>
+                </CardContent>
+              </Card>
+            )}
+
+            {!isDigger && !isOwner && gig.status === 'open' && (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-muted-foreground mb-4">
+                    Want to bid on this gig?
+                  </p>
+                  <Button
+                    className="w-full"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Sign In as Digger
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
