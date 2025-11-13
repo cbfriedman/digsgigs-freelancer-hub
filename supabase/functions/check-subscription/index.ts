@@ -53,7 +53,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: false,
         tier: 'free',
-        commission_rate: 0.20
+        commission_rate: 0.30
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -79,7 +79,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         subscribed: false,
         tier: 'free',
-        commission_rate: 0.20
+        commission_rate: 0.30
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -111,7 +111,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         subscribed: false,
         tier: 'free',
-        commission_rate: 0.20
+        commission_rate: 0.30
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -126,11 +126,11 @@ serve(async (req) => {
 
     // Determine tier and commission rate based on product ID
     let tier = 'free';
-    let commissionRate = 0.20;
+    let commissionRate = 0.30;
     
     if (productId === 'prod_TPyUnTApWI764D') { // Pro tier
       tier = 'pro';
-      commissionRate = 0.10;
+      commissionRate = 0.15;
     } else if (productId === 'prod_TPyUCJBfmNqCrQ') { // Premium tier
       tier = 'premium';
       commissionRate = 0.05;

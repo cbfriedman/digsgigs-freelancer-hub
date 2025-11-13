@@ -11,11 +11,11 @@ const TIERS = {
   free: {
     name: 'Free',
     price: '$0',
-    commission: '20%',
+    commission: '30%',
     priceId: null,
     features: [
       'Unlimited bidding on gigs',
-      '20% commission on completed work',
+      '30% commission on completed work',
       'Basic profile features',
       'Standard support'
     ]
@@ -23,14 +23,15 @@ const TIERS = {
   pro: {
     name: 'Pro',
     price: '$20',
-    commission: '10%',
+    commission: '15%',
     priceId: 'price_1ST8X5RuFpm7XGfur2qH1ZpC',
     productId: 'prod_TPyUnTApWI764D',
     features: [
       'Unlimited bidding on gigs',
-      '10% commission on completed work',
+      '15% commission on completed work',
       'Priority support',
-      'Featured in search results'
+      'Featured in search results',
+      'Enhanced profile visibility'
     ]
   },
   premium: {
