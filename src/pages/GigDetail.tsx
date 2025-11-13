@@ -81,9 +81,9 @@ const GigDetail = () => {
           if ((diggerProfile as any)?.subscription_tier === 'premium') {
             setCommissionRate(0.05);
           } else if ((diggerProfile as any)?.subscription_tier === 'pro') {
-            setCommissionRate(0.10);
+            setCommissionRate(0.15);
           } else {
-            setCommissionRate(0.20);
+            setCommissionRate(0.30);
           }
 
           // Check for existing bid
