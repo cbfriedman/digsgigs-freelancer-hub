@@ -135,6 +135,9 @@ const Index = () => {
             digsandgiggs
           </h1>
           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")}>
+              Pricing
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/how-it-works")}>
               <HelpCircle className="mr-2 h-4 w-4" />
               How It Works
