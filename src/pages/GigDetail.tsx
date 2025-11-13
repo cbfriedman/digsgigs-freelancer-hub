@@ -68,19 +68,19 @@ const GigDetail = () => {
       if (userIsDigger) {
         // Get digger profile and subscription status
         const { data: diggerProfile } = await supabase
-          .from("digger_profiles")
+          .from("digger_profiles" as any)
           .select("id, subscription_tier")
           .eq("user_id", session.user.id)
           .single();
 
         if (diggerProfile) {
-          setDiggerId(diggerProfile.id);
-          setSubscriptionTier(diggerProfile.subscription_tier || 'free');
+          setDiggerId((diggerProfile as any)?.id);
+          setSubscriptionTier((diggerProfile as any)?.subscription_tier || 'free');
           
           // Set commission rate based on tier
-          if (diggerProfile.subscription_tier === 'premium') {
+          if ((diggerProfile as any)?.subscription_tier === 'premium') {
             setCommissionRate(0.05);
-          } else if (diggerProfile.subscription_tier === 'pro') {
+          } else if ((diggerProfile as any)?.subscription_tier === 'pro') {
             setCommissionRate(0.10);
           } else {
             setCommissionRate(0.20);
@@ -88,13 +88,13 @@ const GigDetail = () => {
 
           // Check for existing bid
           const { data: bid } = await supabase
-            .from("bids")
+            .from("bids" as any)
             .select("*")
             .eq("gig_id", id)
-            .eq("digger_id", diggerProfile.id)
+            .eq("digger_id", (diggerProfile as any)?.id)
             .single();
 
-          setExistingBid(bid);
+          setExistingBid(bid as any);
         }
       }
     }

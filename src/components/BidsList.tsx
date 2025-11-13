@@ -42,7 +42,7 @@ export const BidsList = ({ gigId, isOwner }: BidsListProps) => {
   const loadBids = async () => {
     try {
       const { data, error } = await supabase
-        .from('bids')
+        .from('bids' as any)
         .select(`
           *,
           digger_profiles (
@@ -58,7 +58,7 @@ export const BidsList = ({ gigId, isOwner }: BidsListProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setBids(data || []);
+      setBids((data as any) || []);
     } catch (error) {
       console.error('Error loading bids:', error);
     } finally {
@@ -70,8 +70,17 @@ export const BidsList = ({ gigId, isOwner }: BidsListProps) => {
     setAccepting(bidId);
     
     try {
+      // Get bid details before updating
+      const { data: bidData, error: bidError } = await supabase
+        .from('bids' as any)
+        .select('amount, timeline, digger_id')
+        .eq('id', bidId)
+        .single();
+
+      if (bidError) throw bidError;
+
       const { error } = await supabase
-        .from('bids')
+        .from('bids' as any)
         .update({ status: 'accepted' })
         .eq('id', bidId);
 
@@ -79,9 +88,26 @@ export const BidsList = ({ gigId, isOwner }: BidsListProps) => {
 
       // Update gig status to in_progress
       await supabase
-        .from('gigs')
+        .from('gigs' as any)
         .update({ status: 'in_progress' })
         .eq('id', gigId);
+
+      // Send email notification
+      try {
+        await supabase.functions.invoke('send-bid-notification', {
+          body: {
+            type: 'accepted',
+            bidId,
+            gigId,
+            diggerId: (bidData as any)?.digger_id,
+            amount: (bidData as any)?.amount,
+            timeline: (bidData as any)?.timeline,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't fail the acceptance if email fails
+      }
 
       toast({
         title: "Bid accepted!",
