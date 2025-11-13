@@ -11,11 +11,12 @@ const TIERS = {
   free: {
     name: 'Free',
     price: '$0',
-    commission: '30%',
+    commission: '9% ($5 min)',
     priceId: null,
     features: [
       'Unlimited bidding on gigs',
-      '30% commission on completed work',
+      '9% commission on completed work',
+      '$5 minimum fee per transaction',
       'Basic profile features',
       'Standard support'
     ]
@@ -23,12 +24,13 @@ const TIERS = {
   pro: {
     name: 'Pro',
     price: '$20',
-    commission: '15%',
+    commission: '7% ($5 min)',
     priceId: 'price_1ST8X5RuFpm7XGfur2qH1ZpC',
     productId: 'prod_TPyUnTApWI764D',
     features: [
       'Unlimited bidding on gigs',
-      '15% commission on completed work',
+      '7% commission on completed work',
+      '$5 minimum fee per transaction',
       'Priority support',
       'Featured in search results',
       'Enhanced profile visibility'
@@ -36,13 +38,14 @@ const TIERS = {
   },
   premium: {
     name: 'Premium',
-    price: '$50',
-    commission: '5%',
+    price: '$150',
+    commission: '0%',
     priceId: 'price_1ST8XORuFpm7XGfu5bUQgd0B',
     productId: 'prod_TPyUCJBfmNqCrQ',
     features: [
       'Unlimited bidding on gigs',
-      '5% commission on completed work',
+      '0% commission - keep 100% of earnings',
+      'No transaction fees',
       'Priority support',
       'Featured profile placement',
       'Advanced analytics',
