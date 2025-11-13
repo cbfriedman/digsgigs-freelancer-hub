@@ -23,13 +23,13 @@ const TIERS = {
   },
   pro: {
     name: 'Pro',
-    price: '$20',
-    commission: '7% ($5 min)',
+    price: '$10',
+    commission: '4% ($5 min)',
     priceId: 'price_1ST8X5RuFpm7XGfur2qH1ZpC',
     productId: 'prod_TPyUnTApWI764D',
     features: [
       'Unlimited bidding on gigs',
-      '7% commission on completed work',
+      '4% commission on completed work',
       '$5 minimum fee per transaction',
       'Priority support',
       'Featured in search results',
