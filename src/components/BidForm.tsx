@@ -36,17 +36,36 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('bids')
+      const { data: bidData, error } = await supabase
+        .from('bids' as any)
         .insert({
           gig_id: gigId,
           digger_id: diggerId,
           amount: parseFloat(amount),
           timeline,
           proposal,
-        });
+        } as any)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Send email notification
+      try {
+        await supabase.functions.invoke('send-bid-notification', {
+          body: {
+            type: 'submitted',
+            bidId: (bidData as any)?.id,
+            gigId,
+            diggerId,
+            amount: parseFloat(amount),
+            timeline,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't fail the bid submission if email fails
+      }
 
       toast({
         title: "Bid submitted!",
