@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { DiggerCard } from "@/components/DiggerCard";
 import { GigCard } from "@/components/GigCard";
 import { Footer } from "@/components/Footer";
@@ -318,56 +320,80 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            {/* For Diggers */}
-            <div className="space-y-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-primary-foreground" />
-                </div>
-                <h4 className="text-2xl font-bold mb-2">For Diggers</h4>
-                <p className="text-muted-foreground">Showcase your skills and grow your business</p>
-              </div>
-              <div className="space-y-4">
-                {[
-                  "Create your professional dig profile",
-                  "Upload portfolio and showcase expertise",
-                  "Get discovered by quality clients",
-                  "Receive invitations to bid on projects",
-                  "Build your reputation with ratings"
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
-                    <span className="text-foreground">{step}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <Carousel className="max-w-4xl mx-auto">
+            <CarouselContent>
+              {/* Step 1: For Diggers - Create Profile */}
+              <CarouselItem>
+                <Card className="border-2 border-primary/20">
+                  <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                    <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                      <Users className="w-10 h-10 text-primary-foreground" />
+                    </div>
+                    <Badge className="mb-4 bg-primary/10 text-primary">Step 1 - Diggers</Badge>
+                    <h4 className="text-2xl font-bold mb-4 text-center">Create Your Profile</h4>
+                    <p className="text-muted-foreground text-center max-w-md">
+                      Showcase your skills, upload your portfolio, and let clients discover your expertise. Build a professional presence that attracts quality opportunities.
+                    </p>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
 
-            {/* For Clients */}
-            <div className="space-y-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Briefcase className="w-8 h-8 text-accent-foreground" />
-                </div>
-                <h4 className="text-2xl font-bold mb-2">For Clients</h4>
-                <p className="text-muted-foreground">Find the perfect talent for your project</p>
-              </div>
-              <div className="space-y-4">
-                {[
-                  "Post your gig with detailed requirements",
-                  "Search our database of verified diggers",
-                  "Invite handpicked talent to bid",
-                  "Review proposals and portfolios",
-                  "Rate your experience after completion"
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-foreground">{step}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+              {/* Step 2: For Diggers - Browse & Purchase */}
+              <CarouselItem>
+                <Card className="border-2 border-primary/20">
+                  <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                    <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                      <Search className="w-10 h-10 text-primary-foreground" />
+                    </div>
+                    <Badge className="mb-4 bg-primary/10 text-primary">Step 2 - Diggers</Badge>
+                    <h4 className="text-2xl font-bold mb-4 text-center">Browse & Purchase Leads</h4>
+                    <p className="text-muted-foreground text-center max-w-md">
+                      Explore available gigs, purchase leads that match your expertise, and connect directly with potential clients. You only pay when you find opportunities worth pursuing.
+                    </p>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+
+              {/* Step 3: For Clients - Post Gig */}
+              <CarouselItem>
+                <Card className="border-2 border-accent/20">
+                  <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                    <div className="w-20 h-20 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                      <Briefcase className="w-10 h-10 text-accent-foreground" />
+                    </div>
+                    <Badge className="mb-4 bg-accent/10 text-accent">Step 1 - Clients</Badge>
+                    <h4 className="text-2xl font-bold mb-4 text-center">Post Your Gig</h4>
+                    <p className="text-muted-foreground text-center max-w-md">
+                      Describe your project needs, set your budget and timeline. Our platform makes it easy to attract the right talent with detailed, professional gig postings.
+                    </p>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+
+              {/* Step 4: For Clients - Get Contacted */}
+              <CarouselItem>
+                <Card className="border-2 border-accent/20">
+                  <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                    <div className="w-20 h-20 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                      <Star className="w-10 h-10 text-accent-foreground" />
+                    </div>
+                    <Badge className="mb-4 bg-accent/10 text-accent">Step 2 - Clients</Badge>
+                    <h4 className="text-2xl font-bold mb-4 text-center">Review & Choose</h4>
+                    <p className="text-muted-foreground text-center max-w-md">
+                      Qualified diggers purchase your lead and reach out. Review their profiles, portfolios, and ratings to choose the perfect match for your project.
+                    </p>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselPrevious className="bg-background hover:bg-muted" />
+            <CarouselNext className="bg-background hover:bg-muted" />
+          </Carousel>
+
+          <div className="text-center mt-8">
+            <Button variant="outline" size="lg" onClick={() => navigate("/how-it-works")}>
+              View Full Details <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         </div>
       </section>
