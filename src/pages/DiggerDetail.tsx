@@ -369,16 +369,7 @@ const DiggerDetail = () => {
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
                             <h3 className="font-semibold">{ref.reference_name}</h3>
-                            {canShowContact ? (
-                              <>
-                                <p className="text-sm text-muted-foreground">{ref.reference_email}</p>
-                                {ref.reference_phone && (
-                                  <p className="text-sm text-muted-foreground">{ref.reference_phone}</p>
-                                )}
-                              </>
-                            ) : (
-                              <p className="text-sm text-muted-foreground italic">Contact hidden</p>
-                            )}
+                            <p className="text-sm text-muted-foreground italic">Reference verified by platform</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {ref.is_verified && (
@@ -390,27 +381,6 @@ const DiggerDetail = () => {
                         </div>
                         {ref.project_description && (
                           <p className="text-sm text-muted-foreground mt-2">{ref.project_description}</p>
-                        )}
-                        {currentUser && !canShowContact && (
-                          <div className="mt-3">
-                            {!request ? (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleRequestReferenceContact(ref.id)}
-                              >
-                                Request Contact Info
-                              </Button>
-                            ) : request.status === 'pending' ? (
-                              <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-                                Request Pending
-                              </Badge>
-                            ) : request.status === 'rejected' ? (
-                              <Badge variant="secondary" className="bg-red-500/10 text-red-600 border-red-500/20">
-                                Request Declined
-                              </Badge>
-                            ) : null}
-                          </div>
                         )}
                       </div>
                     );

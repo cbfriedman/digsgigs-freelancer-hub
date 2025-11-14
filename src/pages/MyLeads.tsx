@@ -342,33 +342,21 @@ const MyLeads = () => {
                               {lead.gigs.profiles.full_name || "Not provided"}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Email</p>
-                            <a 
-                              href={`mailto:${lead.gigs.profiles.email}`}
-                              className="font-medium text-primary hover:underline"
-                            >
-                              {lead.gigs.profiles.email}
-                            </a>
+                          <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                            <p className="text-sm text-muted-foreground">
+                              Contact information is protected. Use our platform messaging to communicate with the gig poster.
+                            </p>
                           </div>
-                          {lead.gigs.contact_preferences && (
-                            <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Preferred Contact Method
-                              </p>
-                              <p className="text-sm">{lead.gigs.contact_preferences}</p>
-                            </div>
-                          )}
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <Button 
                           className="w-full" 
-                          onClick={() => window.location.href = `mailto:${lead.gigs.profiles.email}?subject=Regarding: ${lead.gigs.title}`}
+                          onClick={() => toast.info("Platform messaging coming soon! For now, use the contact preferences specified by the gig poster.")}
                         >
                           <Mail className="mr-2 h-4 w-4" />
-                          Send Email
+                          Contact via Platform
                         </Button>
 
                         {hasReportedIssue(lead) ? (
