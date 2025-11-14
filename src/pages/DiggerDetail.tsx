@@ -131,32 +131,32 @@ const DiggerDetail = () => {
     try {
       // Check if conversation already exists with this digger
       const { data: existingConv } = await supabase
-        .from("conversations")
+        .from("conversations" as any)
         .select("id")
         .eq("digger_id", digger.id)
         .eq("consumer_id", currentUser.id)
         .maybeSingle();
 
       if (existingConv) {
-        navigate(`/messages?conversation=${existingConv.id}`);
+        navigate(`/messages?conversation=${(existingConv as any).id}`);
         return;
       }
 
       // Create new conversation without a specific gig
       const { data: newConv, error } = await supabase
-        .from("conversations")
+        .from("conversations" as any)
         .insert({
           digger_id: digger.id,
           consumer_id: currentUser.id,
           gig_id: null,
-        })
+        } as any)
         .select()
         .single();
 
       if (error) throw error;
 
       toast.success("Conversation started!");
-      navigate(`/messages?conversation=${newConv.id}`);
+      navigate(`/messages?conversation=${(newConv as any).id}`);
     } catch (error: any) {
       toast.error("Error starting conversation: " + error.message);
     }

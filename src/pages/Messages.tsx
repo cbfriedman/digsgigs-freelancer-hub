@@ -71,7 +71,7 @@ export default function Messages() {
   const loadConversations = async () => {
     try {
       const { data, error } = await supabase
-        .from("conversations")
+        .from("conversations" as any)
         .select(`
           *,
           gigs(title),
@@ -80,7 +80,7 @@ export default function Messages() {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      setConversations(data || []);
+      setConversations(data as any || []);
     } catch (error: any) {
       toast({
         title: "Error loading conversations",
@@ -95,18 +95,18 @@ export default function Messages() {
   const loadMessages = async (conversationId: string) => {
     try {
       const { data, error } = await supabase
-        .from("messages")
+        .from("messages" as any)
         .select("*")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      setMessages(data as any || []);
 
       // Mark messages as read
       await supabase
-        .from("messages")
-        .update({ read_at: new Date().toISOString() })
+        .from("messages" as any)
+        .update({ read_at: new Date().toISOString() } as any)
         .eq("conversation_id", conversationId)
         .neq("sender_id", currentUser?.id)
         .is("read_at", null);
@@ -145,11 +145,11 @@ export default function Messages() {
     if (!newMessage.trim() || !selectedConversation) return;
 
     try {
-      const { error } = await supabase.from("messages").insert({
+      const { error } = await supabase.from("messages" as any).insert({
         conversation_id: selectedConversation,
         sender_id: currentUser?.id,
         content: newMessage.trim(),
-      });
+      } as any);
 
       if (error) throw error;
       setNewMessage("");

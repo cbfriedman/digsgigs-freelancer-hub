@@ -11,12 +11,12 @@ import { StepVisual } from "@/components/StepVisual";
 // Import step screenshots
 import step1PostGig from "@/assets/step1-post-gig.jpg";
 import step2GetDiscovered from "@/assets/step2-get-discovered.jpg";
-import step3ReceiveContacts from "@/assets/step3-receive-contacts.jpg";
+import step3ReceiveContacts from "@/assets/step3-platform-messaging.jpg";
 import step4ChooseHire from "@/assets/step4-choose-hire.jpg";
 import diggerStep1Profile from "@/assets/digger-step1-profile.jpg";
 import diggerStep2Browse from "@/assets/digger-step2-browse.jpg";
-import diggerStep3Purchase from "@/assets/digger-step3-purchase.jpg";
-import diggerStep4Connect from "@/assets/digger-step4-connect.jpg";
+import diggerStep3Purchase from "@/assets/step3-messaging.jpg";
+import diggerStep4Connect from "@/assets/digger-step4-send-proposal.jpg";
 import diggerStep5Complete from "@/assets/digger-step5-complete.jpg";
 
 const HowItWorks = () => {

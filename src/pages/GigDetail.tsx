@@ -156,7 +156,7 @@ const GigDetail = () => {
     try {
       // Check if conversation already exists
       const { data: existingConv } = await supabase
-        .from("conversations")
+        .from("conversations" as any)
         .select("id")
         .eq("gig_id", id!)
         .eq("digger_id", diggerId)
@@ -164,24 +164,24 @@ const GigDetail = () => {
         .maybeSingle();
 
       if (existingConv) {
-        navigate(`/messages?conversation=${existingConv.id}`);
+        navigate(`/messages?conversation=${(existingConv as any).id}`);
         return;
       }
 
       // Create new conversation
       const { data: newConv, error } = await supabase
-        .from("conversations")
+        .from("conversations" as any)
         .insert({
           gig_id: id,
           digger_id: diggerId,
           consumer_id: gig.consumer_id,
-        })
+        } as any)
         .select()
         .single();
 
       if (error) throw error;
 
-      navigate(`/messages?conversation=${newConv.id}`);
+      navigate(`/messages?conversation=${(newConv as any).id}`);
     } catch (error: any) {
       toast({
         title: "Error starting conversation",
