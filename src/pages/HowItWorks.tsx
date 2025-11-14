@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { ArrowLeft, Users, Briefcase, DollarSign, Star, CheckCircle2 } from "lucide-react";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { StepVisual } from "@/components/StepVisual";
 
 // Import step screenshots
 import step1PostGig from "@/assets/step1-post-gig.jpg";
@@ -124,19 +126,13 @@ const HowItWorks = () => {
               <h2 className="text-3xl font-bold text-center mb-8 animate-fade-in">
                 See How It Works for Clients
               </h2>
-              <Carousel className="max-w-5xl mx-auto relative">
+              <Carousel opts={{ loop: true }} className="max-w-5xl mx-auto relative">
                 <CarouselContent>
                   {clientSteps.map((step, index) => (
                      <CarouselItem key={index}>
                        <div className="space-y-8 px-4">
                          {/* Image Container */}
-                         <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
-                           <img
-                             src={step.image}
-                             alt={step.title}
-                             className="w-full h-auto object-contain"
-                           />
-                         </div>
+                         <StepVisual kind="client" step={step.number} />
                          
                          {/* Instructions Below Image - More Prominent */}
                          <Card className="border-2 border-primary/30 bg-card/95 backdrop-blur-sm shadow-lg animate-scale-in">
@@ -156,8 +152,8 @@ const HowItWorks = () => {
                      </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="-left-4 md:-left-12 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
-                <CarouselNext className="-right-4 md:-right-12 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
+                <CarouselPrevious className="left-3 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
+                <CarouselNext className="right-3 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
               </Carousel>
               <p className="text-center text-muted-foreground mt-6">← Use arrows to navigate →</p>
             </div>
@@ -228,13 +224,17 @@ const HowItWorks = () => {
                      <CarouselItem key={index}>
                        <div className="space-y-8 px-4">
                          {/* Image Container */}
-                         <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
-                           <img
-                             src={step.image}
-                             alt={step.title}
-                             className="w-full h-auto object-contain"
-                           />
-                         </div>
+                          <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
+                            <AspectRatio ratio={16 / 9}>
+                              <img
+                                src={step.image}
+                                alt={step.title}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            </AspectRatio>
+                          </div>
                          
                          {/* Instructions Below Image - More Prominent */}
                          <Card className="border-2 border-primary/30 bg-card/95 backdrop-blur-sm shadow-lg animate-scale-in">
@@ -254,8 +254,8 @@ const HowItWorks = () => {
                      </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="-left-4 md:-left-12 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
-                <CarouselNext className="-right-4 md:-right-12 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
+                <CarouselPrevious className="left-3 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
+                <CarouselNext className="right-3 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
               </Carousel>
               <p className="text-center text-muted-foreground mt-6">← Use arrows to navigate →</p>
             </div>
