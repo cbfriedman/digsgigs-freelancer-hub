@@ -12,10 +12,34 @@ serve(async (req) => {
   }
 
   try {
-    const { gigId, diggerId, amount, gigTitle } = await req.json();
+    const { gigId, diggerId, gigTitle, tier } = await req.json();
 
-    if (!gigId || !diggerId || !amount) {
+    if (!gigId || !diggerId) {
       throw new Error('Missing required parameters');
+    }
+
+    // Calculate lead cost based on digger's tier
+    let leadCost = 3; // Default: free tier
+    if (tier === 'premium') {
+      leadCost = 0;
+    } else if (tier === 'pro') {
+      leadCost = 2;
+    }
+
+    // If lead is free for premium users, skip Stripe
+    if (leadCost === 0) {
+      return new Response(
+        JSON.stringify({ 
+          sessionId: null, 
+          url: null, 
+          leadCost: 0,
+          message: 'Free lead for premium users'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
     }
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -30,9 +54,9 @@ serve(async (req) => {
             currency: 'usd',
             product_data: {
               name: `Lead Purchase: ${gigTitle}`,
-              description: 'Access to client contact information',
+              description: `Access to client contact information - ${tier} tier ($${leadCost})`,
             },
-            unit_amount: Math.round(amount * 100), // Convert to cents
+            unit_amount: Math.round(leadCost * 100), // Convert to cents
           },
           quantity: 1,
         },
@@ -43,7 +67,8 @@ serve(async (req) => {
       metadata: {
         gigId,
         diggerId,
-        amount: amount.toString(),
+        amount: leadCost.toString(),
+        tier,
       },
     });
 

@@ -11,12 +11,12 @@ const TIERS = {
   free: {
     name: 'Free',
     price: '$0',
-    commission: '9% ($5 min)',
+    leadCost: '$3',
     priceId: null,
     features: [
       'Unlimited bidding on gigs',
-      '9% commission on completed work',
-      '$5 minimum fee per transaction',
+      '$3 per lead purchase',
+      'Set daily/weekly/monthly lead limits',
       'Basic profile features',
       'Standard support'
     ]
@@ -24,13 +24,13 @@ const TIERS = {
   pro: {
     name: 'Pro',
     price: '$10',
-    commission: '4% ($5 min)',
+    leadCost: '$2',
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
     productId: 'prod_TQ0mK76zTAwoQc',
     features: [
       'Unlimited bidding on gigs',
-      '4% commission on completed work',
-      '$5 minimum fee per transaction',
+      '$2 per lead purchase',
+      'Set daily/weekly/monthly lead limits',
       'Priority support',
       'Featured in search results',
       'Enhanced profile visibility'
@@ -39,13 +39,13 @@ const TIERS = {
   premium: {
     name: 'Premium',
     price: '$150',
-    commission: '0%',
+    leadCost: '$0',
     priceId: 'price_1STAn5RuFpm7XGfuMrGHEspf',
     productId: 'prod_TQ0oKMEtoOhHO7',
     features: [
       'Unlimited bidding on gigs',
-      '0% commission - keep 100% of earnings',
-      'No transaction fees',
+      'FREE lead purchases',
+      'Unlimited lead access',
       'Priority support',
       'Featured profile placement',
       'Advanced analytics',
@@ -241,7 +241,7 @@ export default function Subscription() {
                     {tier.price !== '$0' && <span className="text-muted-foreground">/month</span>}
                   </div>
                   <CardDescription className="text-lg font-semibold text-foreground">
-                    {tier.commission} commission
+                    {tier.leadCost} per lead
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">

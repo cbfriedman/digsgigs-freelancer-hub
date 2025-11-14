@@ -13,15 +13,14 @@ const TIERS = {
     name: 'Free',
     price: '$0',
     priceValue: 0,
-    commission: '9% ($5 min)',
-    commissionValue: 9,
-    minimumFee: 5,
+    leadCost: '$3',
+    leadCostValue: 3,
     priceId: null,
     popular: false,
     features: [
       'Unlimited bidding on gigs',
-      '9% commission on completed work',
-      '$5 minimum fee per transaction',
+      '$3 per lead purchase',
+      'Set daily/weekly/monthly lead limits',
       'Basic profile features',
       'Standard support',
       'Access to all gig categories'
@@ -31,16 +30,15 @@ const TIERS = {
     name: 'Pro',
     price: '$10',
     priceValue: 10,
-    commission: '4% ($5 min)',
-    commissionValue: 4,
-    minimumFee: 5,
+    leadCost: '$2',
+    leadCostValue: 2,
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
     productId: 'prod_TQ0mK76zTAwoQc',
     popular: true,
     features: [
       'Unlimited bidding on gigs',
-      '4% commission on completed work',
-      '$5 minimum fee per transaction',
+      '$2 per lead purchase',
+      'Set daily/weekly/monthly lead limits',
       'Priority support',
       'Featured in search results',
       'Enhanced profile visibility',
@@ -51,16 +49,15 @@ const TIERS = {
     name: 'Premium',
     price: '$150',
     priceValue: 150,
-    commission: '0%',
-    commissionValue: 0,
-    minimumFee: 0,
+    leadCost: '$0',
+    leadCostValue: 0,
     priceId: 'price_1STAn5RuFpm7XGfuMrGHEspf',
     productId: 'prod_TQ0oKMEtoOhHO7',
     popular: false,
     features: [
       'Unlimited bidding on gigs',
-      '0% commission - keep 100% of earnings',
-      'No transaction fees',
+      'FREE lead purchases',
+      'Unlimited lead access',
       'Priority support',
       'Featured profile placement',
       'Advanced analytics',
@@ -270,7 +267,7 @@ export default function Pricing() {
                     <span className="text-muted-foreground">/month</span>
                   </div>
                   <CardDescription className="text-lg font-semibold mt-2">
-                    {tier.commission} commission
+                    {tier.leadCost} per lead
                   </CardDescription>
                 </CardHeader>
 
@@ -315,37 +312,40 @@ export default function Pricing() {
             ))}
           </div>
 
-          {/* Savings Calculator */}
+          {/* Lead Cost Calculator */}
           <div className="mt-16 max-w-4xl mx-auto">
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
               <CardHeader>
-                <CardTitle className="text-center">See Your Potential Savings</CardTitle>
+                <CardTitle className="text-center">Compare Lead Costs</CardTitle>
                 <CardDescription className="text-center">
-                  Compare how much you keep on a $1,000 completed gig
+                  See how much you pay per lead on each tier
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-6">
                   {Object.entries(TIERS).map(([key, tier]) => {
-                    const gigAmount = 1000;
-                    const commission = (gigAmount * tier.commissionValue) / 100;
-                    const youKeep = gigAmount - commission;
-                    const monthlyCost = tier.priceValue;
+                    const monthlyFee = tier.priceValue;
+                    const leadCost = tier.leadCostValue;
+                    
+                    // Calculate break-even for 10 leads
+                    const leadsPerMonth = 10;
+                    const totalLeadCost = leadCost * leadsPerMonth;
+                    const totalCost = monthlyFee + totalLeadCost;
                     
                     return (
                       <div key={key} className="text-center space-y-2">
                         <h4 className="font-semibold text-lg">{tier.name}</h4>
                         <div className="text-sm text-muted-foreground">
-                          Monthly: {tier.price}
+                          Monthly Fee: {tier.price}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Commission: ${commission.toFixed(2)}
+                          Per Lead: {tier.leadCost}
                         </div>
                         <div className="text-2xl font-bold text-primary">
-                          ${youKeep.toFixed(2)}
+                          10 Leads: ${totalCost.toFixed(2)}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          you keep per $1k gig
+                          total monthly cost
                         </div>
                       </div>
                     );
