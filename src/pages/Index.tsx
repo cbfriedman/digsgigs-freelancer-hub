@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   LogOut,
   Mail,
-  HelpCircle
+  HelpCircle,
+  Receipt
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { toast } from "sonner";
@@ -148,6 +149,10 @@ const Index = () => {
             </Button>
             {user ? (
               <>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/transactions")}>
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Transactions
+                </Button>
                 {isDigger ? (
                   <Button variant="outline" onClick={() => navigate("/digger-registration")}>
                     Complete Profile

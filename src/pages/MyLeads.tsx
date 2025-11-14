@@ -219,10 +219,17 @@ const MyLeads = () => {
 
       <div className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">My Purchased Leads</h1>
-          <p className="text-muted-foreground">
-            Manage and contact your purchased leads
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">My Purchased Leads</h1>
+              <p className="text-muted-foreground">
+                Manage and contact your purchased leads
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => navigate("/transactions")}>
+              View Transaction History
+            </Button>
+          </div>
         </div>
 
         {leads.length === 0 ? (

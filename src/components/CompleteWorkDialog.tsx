@@ -79,7 +79,7 @@ export const CompleteWorkDialog = ({
 
       toast({
         title: "Work completed!",
-        description: `Transaction created successfully. Digger will receive $${data.transaction.digger_payout.toFixed(2)}`,
+        description: `Transaction created successfully. Digger will receive $${data.transaction.digger_payout.toFixed(2)}. View it in Transaction History.`,
       });
 
       setOpen(false);
