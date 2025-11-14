@@ -127,37 +127,37 @@ const HowItWorks = () => {
               <Carousel className="max-w-5xl mx-auto relative">
                 <CarouselContent>
                   {clientSteps.map((step, index) => (
-                    <CarouselItem key={index}>
-                      <div className="space-y-6 px-4">
-                        {/* Image Container */}
-                        <div className="rounded-xl overflow-hidden shadow-2xl bg-muted animate-fade-in">
-                          <img
-                            src={step.image}
-                            alt={step.title}
-                            className="w-full h-auto object-contain"
-                          />
-                        </div>
-                        
-                        {/* Instructions Below Image */}
-                        <Card className="border-2 border-primary/20 animate-scale-in">
-                          <CardContent className="p-6">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <Badge className="text-lg px-4 py-1 font-semibold bg-primary text-primary-foreground">
-                                  Step {step.number}
-                                </Badge>
-                                <h3 className="text-2xl font-bold">{step.title}</h3>
-                              </div>
-                              <p className="text-lg text-muted-foreground leading-relaxed">{step.description}</p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </CarouselItem>
+                     <CarouselItem key={index}>
+                       <div className="space-y-8 px-4">
+                         {/* Image Container */}
+                         <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
+                           <img
+                             src={step.image}
+                             alt={step.title}
+                             className="w-full h-auto object-contain"
+                           />
+                         </div>
+                         
+                         {/* Instructions Below Image - More Prominent */}
+                         <Card className="border-2 border-primary/30 bg-card/95 backdrop-blur-sm shadow-lg animate-scale-in">
+                           <CardContent className="p-8">
+                             <div className="space-y-4">
+                               <div className="flex items-center gap-4">
+                                 <Badge className="text-xl px-5 py-2 font-bold bg-primary text-primary-foreground shadow-md">
+                                   Step {step.number}
+                                 </Badge>
+                                 <h3 className="text-3xl font-bold">{step.title}</h3>
+                               </div>
+                               <p className="text-xl text-foreground/80 leading-relaxed font-medium">{step.description}</p>
+                             </div>
+                           </CardContent>
+                         </Card>
+                       </div>
+                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="left-0 bg-background hover:bg-muted" />
-                <CarouselNext className="right-0 bg-background hover:bg-muted" />
+                <CarouselPrevious className="-left-4 md:-left-12 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
+                <CarouselNext className="-right-4 md:-right-12 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
               </Carousel>
               <p className="text-center text-muted-foreground mt-6">← Use arrows to navigate →</p>
             </div>
@@ -225,37 +225,37 @@ const HowItWorks = () => {
               <Carousel className="max-w-5xl mx-auto relative">
                 <CarouselContent>
                   {diggerSteps.map((step, index) => (
-                    <CarouselItem key={index}>
-                      <div className="space-y-6 px-4">
-                        {/* Image Container */}
-                        <div className="rounded-xl overflow-hidden shadow-2xl bg-muted animate-fade-in">
-                          <img
-                            src={step.image}
-                            alt={step.title}
-                            className="w-full h-auto object-contain"
-                          />
-                        </div>
-                        
-                        {/* Instructions Below Image */}
-                        <Card className="border-2 border-primary/20 animate-scale-in">
-                          <CardContent className="p-6">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <Badge className="text-lg px-4 py-1 font-semibold bg-primary text-primary-foreground">
-                                  Step {step.number}
-                                </Badge>
-                                <h3 className="text-2xl font-bold">{step.title}</h3>
-                              </div>
-                              <p className="text-lg text-muted-foreground leading-relaxed">{step.description}</p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </CarouselItem>
+                     <CarouselItem key={index}>
+                       <div className="space-y-8 px-4">
+                         {/* Image Container */}
+                         <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
+                           <img
+                             src={step.image}
+                             alt={step.title}
+                             className="w-full h-auto object-contain"
+                           />
+                         </div>
+                         
+                         {/* Instructions Below Image - More Prominent */}
+                         <Card className="border-2 border-primary/30 bg-card/95 backdrop-blur-sm shadow-lg animate-scale-in">
+                           <CardContent className="p-8">
+                             <div className="space-y-4">
+                               <div className="flex items-center gap-4">
+                                 <Badge className="text-xl px-5 py-2 font-bold bg-primary text-primary-foreground shadow-md">
+                                   Step {step.number}
+                                 </Badge>
+                                 <h3 className="text-3xl font-bold">{step.title}</h3>
+                               </div>
+                               <p className="text-xl text-foreground/80 leading-relaxed font-medium">{step.description}</p>
+                             </div>
+                           </CardContent>
+                         </Card>
+                       </div>
+                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="left-0 bg-background hover:bg-muted" />
-                <CarouselNext className="right-0 bg-background hover:bg-muted" />
+                <CarouselPrevious className="-left-4 md:-left-12 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
+                <CarouselNext className="-right-4 md:-right-12 bg-background/90 hover:bg-primary hover:text-primary-foreground border-2 shadow-lg transition-colors" />
               </Carousel>
               <p className="text-center text-muted-foreground mt-6">← Use arrows to navigate →</p>
             </div>
