@@ -238,7 +238,7 @@ const GigDetail = () => {
 
             {/* Bids Section */}
             {(isOwner || isDigger) && (
-              <BidsList gigId={id!} isOwner={isOwner} />
+              <BidsList gigId={id!} gigTitle={gig.title} isOwner={isOwner} />
             )}
           </div>
 
