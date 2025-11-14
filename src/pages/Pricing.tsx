@@ -34,8 +34,8 @@ const TIERS = {
     commission: '4% ($5 min)',
     commissionValue: 4,
     minimumFee: 5,
-    priceId: 'price_1ST8X5RuFpm7XGfur2qH1ZpC',
-    productId: 'prod_TPyUnTApWI764D',
+    priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
+    productId: 'prod_TQ0mK76zTAwoQc',
     popular: true,
     features: [
       'Unlimited bidding on gigs',
@@ -54,8 +54,8 @@ const TIERS = {
     commission: '0%',
     commissionValue: 0,
     minimumFee: 0,
-    priceId: 'price_1ST8XORuFpm7XGfu5bUQgd0B',
-    productId: 'prod_TPyUCJBfmNqCrQ',
+    priceId: 'price_1STAn5RuFpm7XGfuMrGHEspf',
+    productId: 'prod_TQ0oKMEtoOhHO7',
     popular: false,
     features: [
       'Unlimited bidding on gigs',
