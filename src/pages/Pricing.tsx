@@ -355,6 +355,76 @@ export default function Pricing() {
             </Card>
           </div>
 
+          {/* Fee Transparency */}
+          <div className="mt-16 max-w-4xl mx-auto">
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-center">How Payments Work</CardTitle>
+                <CardDescription className="text-center">
+                  Clear, transparent pricing with no hidden fees
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-semibold flex items-center gap-2">
+                      <span className="bg-primary/10 text-primary rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">1</span>
+                      Diggers Pay Commission
+                    </h3>
+                    <p className="text-muted-foreground">
+                      When you complete a gig, you pay our platform commission based on your subscription tier. That's it - no other fees for diggers.
+                    </p>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                        <span>Free: 9% commission ($5 minimum)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                        <span>Pro: 4% commission ($5 minimum)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                        <span>Premium: 0% commission - keep everything</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-semibold flex items-center gap-2">
+                      <span className="bg-accent/10 text-accent rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">2</span>
+                      Giggers Pay Processing
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Clients (giggers) pay a standard ~3% payment processing fee when funding a gig. This covers credit card and payment gateway costs.
+                    </p>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                        <span>Added transparently at checkout</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                        <span>Standard across all platforms</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                        <span>Covers secure payment processing</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/10">
+                  <p className="text-sm text-center">
+                    <strong>Example:</strong> On a $1,000 gig with Pro plan, the digger keeps $960 (after 4% commission), 
+                    and the gigger pays ~$30 in processing fees when funding the project.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* FAQ Section */}
           <div className="mt-16 max-w-3xl mx-auto space-y-6">
             <h2 className="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
