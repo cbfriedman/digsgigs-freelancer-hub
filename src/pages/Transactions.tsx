@@ -17,9 +17,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { exportToCSV, exportToPDF } from "@/utils/exportTransactions";
 
@@ -57,6 +58,7 @@ const Transactions = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'all' | '30' | '90' | '180'>('all');
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -266,6 +268,55 @@ const Transactions = () => {
     });
   };
 
+  const handleEmailReport = async () => {
+    if (filteredTransactions.length === 0) {
+      toast({
+        title: "No transactions to send",
+        description: "Apply different filters to see transactions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingEmail(true);
+
+    try {
+      const dateRangeText = dateRange !== 'all' 
+        ? `Last ${dateRange} days` 
+        : 'All time';
+
+      const stats = userType === 'digger' ? {
+        totalEarnings,
+        totalCommission,
+      } : undefined;
+
+      const { data, error } = await supabase.functions.invoke('send-transaction-report', {
+        body: {
+          transactions: filteredTransactions,
+          userType,
+          stats,
+          dateRange: dateRangeText,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Report sent!",
+        description: `Transaction report with ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} has been sent to your email`,
+      });
+    } catch (error: any) {
+      console.error('Error sending email report:', error);
+      toast({
+        title: "Failed to send email",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -310,12 +361,26 @@ const Transactions = () => {
               {transactions.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      <Download className="w-4 h-4 mr-2" />
-                      Export
+                    <Button variant="outline" disabled={sendingEmail}>
+                      {sendingEmail ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Export
+                        </>
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleEmailReport}>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email Report
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleExportCSV}>
                       <FileSpreadsheet className="w-4 h-4 mr-2" />
                       Export as CSV
@@ -481,7 +546,7 @@ const Transactions = () => {
                 </p>
                 {filteredTransactions.length > 0 && (
                   <p className="text-xs">
-                    💡 Use the Export button to download as CSV or PDF
+                    💡 Export as CSV/PDF or email the report to yourself
                   </p>
                 )}
               </div>
