@@ -147,22 +147,34 @@ const HowItWorks = () => {
               <div className="flex items-start gap-4">
                 <DollarSign className="w-8 h-8 text-primary shrink-0" />
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Pay-Per-Lead Pricing</h3>
+                  <h3 className="text-lg font-semibold mb-2">Pay-Per-Lead + Commission</h3>
                   <p className="text-muted-foreground mb-4">
-                    Only pay when you purchase a lead. No monthly subscriptions to start. Lead prices are calculated at <strong>$50 minimum or 0.5% of the gig's lower budget range</strong> (whichever is higher).
+                    Purchase leads for <strong>$50 minimum or 0.5% of the gig's lower budget</strong> (whichever is higher). When you complete work, pay a small commission based on your subscription tier.
                   </p>
-                  <div className="space-y-2">
+                  <div className="space-y-3 mb-4">
+                    <div className="font-semibold text-sm">Lead Pricing Examples:</div>
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-primary" />
-                      <span className="text-sm">Example: $5,000 gig = $50 lead price (0.5% = $25, but minimum is $50)</span>
+                      <span className="text-sm">$5,000 gig = $50 lead price</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-primary" />
-                      <span className="text-sm">Example: $20,000 gig = $100 lead price (0.5% = $100)</span>
+                      <span className="text-sm">$20,000 gig = $100 lead price</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="font-semibold text-sm">Commission on Completed Work:</div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                      <span className="text-sm">Free: 9% commission ($5 min)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-primary" />
-                      <span className="text-sm">No hidden fees or commissions on the work itself</span>
+                      <span className="text-sm">Pro ($10/mo): 4% commission ($5 min)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                      <span className="text-sm">Premium ($150/mo): 0% commission - keep 100%</span>
                     </div>
                   </div>
                 </div>
