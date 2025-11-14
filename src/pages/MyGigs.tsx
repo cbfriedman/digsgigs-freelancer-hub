@@ -208,7 +208,12 @@ const MyGigs = () => {
               Manage your posted gigs and review lead requests
             </p>
           </div>
-          <Button onClick={() => navigate("/post-gig")}>Post New Gig</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/transactions")}>
+              View Transactions
+            </Button>
+            <Button onClick={() => navigate("/post-gig")}>Post New Gig</Button>
+          </div>
         </div>
 
         {gigs.length === 0 ? (
