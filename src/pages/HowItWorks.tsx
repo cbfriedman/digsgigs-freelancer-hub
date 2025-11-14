@@ -51,18 +51,23 @@ const HowItWorks = () => {
             {/* Video Section */}
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-center mb-6">Watch How It Works for Clients</h2>
-              <div className="aspect-video max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-border">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                  title="How It Works for Clients"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                ></iframe>
-              </div>
+              <Card className="aspect-video max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-border bg-muted/30">
+                <CardContent className="flex items-center justify-center h-full p-8">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                      <Briefcase className="w-10 h-10 text-primary" />
+                    </div>
+                    <h3 className="text-2xl font-semibold">Client Tutorial Video</h3>
+                    <p className="text-muted-foreground max-w-md">
+                      Replace this placeholder with your instructional video URL in the code.
+                      <br />
+                      <code className="text-xs bg-background/50 px-2 py-1 rounded mt-2 inline-block">
+                        src/pages/HowItWorks.tsx (line ~55)
+                      </code>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <section>
@@ -143,18 +148,23 @@ const HowItWorks = () => {
             {/* Video Section */}
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-center mb-6">Watch How It Works for Diggers</h2>
-              <div className="aspect-video max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-border">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                  title="How It Works for Diggers"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                ></iframe>
-              </div>
+              <Card className="aspect-video max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-border bg-muted/30">
+                <CardContent className="flex items-center justify-center h-full p-8">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mx-auto">
+                      <Users className="w-10 h-10 text-accent" />
+                    </div>
+                    <h3 className="text-2xl font-semibold">Digger Tutorial Video</h3>
+                    <p className="text-muted-foreground max-w-md">
+                      Replace this placeholder with your instructional video URL in the code.
+                      <br />
+                      <code className="text-xs bg-background/50 px-2 py-1 rounded mt-2 inline-block">
+                        src/pages/HowItWorks.tsx (line ~147)
+                      </code>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             <section>
