@@ -59,6 +59,7 @@ const Transactions = () => {
   const [dateRange, setDateRange] = useState<'all' | '30' | '90' | '180'>('all');
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [triggeringMonthly, setTriggeringMonthly] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -317,6 +318,32 @@ const Transactions = () => {
     }
   };
 
+  const handleTriggerMonthlyReports = async () => {
+    setTriggeringMonthly(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-monthly-reports', {
+        body: {},
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Monthly reports triggered!",
+        description: data?.message || "Monthly reports are being sent to all users with transactions from last month",
+      });
+    } catch (error: any) {
+      console.error('Error triggering monthly reports:', error);
+      toast({
+        title: "Failed to trigger reports",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    } finally {
+      setTriggeringMonthly(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -359,38 +386,58 @@ const Transactions = () => {
               
               {/* Export Dropdown */}
               {transactions.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" disabled={sendingEmail}>
-                      {sendingEmail ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4 mr-2" />
-                          Export
-                        </>
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleEmailReport}>
-                      <Mail className="w-4 h-4 mr-2" />
-                      Email Report
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleExportCSV}>
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
-                      Export as CSV
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleExportPDF}>
-                      <FileText className="w-4 h-4 mr-2" />
-                      Export as PDF
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" disabled={sendingEmail || triggeringMonthly}>
+                        {sendingEmail ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4 mr-2" />
+                            Export
+                          </>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleEmailReport}>
+                        <Mail className="w-4 h-4 mr-2" />
+                        Email Report
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleExportCSV}>
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        Export as CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportPDF}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Export as PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={handleTriggerMonthlyReports}
+                    disabled={triggeringMonthly || sendingEmail}
+                  >
+                    {triggeringMonthly ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Triggering...
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Test Monthly Reports
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
 
