@@ -236,6 +236,74 @@ const GigDetail = () => {
               </CardContent>
             </Card>
 
+            {/* Budget Analysis for Diggers */}
+            {isDigger && gig.budget_min && (
+              <Card className="bg-accent/5 border-accent/20">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-accent" />
+                    Budget Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {gig.budget_min && gig.budget_max ? (
+                        <>
+                          This gig has a budget range of <strong className="text-foreground">${gig.budget_min.toLocaleString()} - ${gig.budget_max.toLocaleString()}</strong>.
+                          {gig.budget_min < 1000 && " This is a smaller project, great for quick turnaround work."}
+                          {gig.budget_min >= 1000 && gig.budget_min < 5000 && " This is a mid-sized project with good earning potential."}
+                          {gig.budget_min >= 5000 && " This is a substantial project with significant earning potential."}
+                        </>
+                      ) : (
+                        <>
+                          This gig has a minimum budget of <strong className="text-foreground">${gig.budget_min.toLocaleString()}+</strong>.
+                          {gig.budget_min < 1000 && " This is a smaller project, great for quick turnaround work."}
+                          {gig.budget_min >= 1000 && gig.budget_min < 5000 && " This is a mid-sized project with good earning potential."}
+                          {gig.budget_min >= 5000 && " This is a substantial project with significant earning potential."}
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">Your Potential Earnings ({subscriptionTier} tier):</p>
+                    {(() => {
+                      const minCommission = calculateCommission(gig.budget_min, subscriptionTier);
+                      const maxCommission = gig.budget_max ? calculateCommission(gig.budget_max, subscriptionTier) : null;
+                      
+                      return (
+                        <div className="bg-background/50 rounded-lg p-3 space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">If you bid ${gig.budget_min.toLocaleString()}:</span>
+                            <span className="font-semibold text-accent">${minCommission.diggerPayout.toLocaleString()}</span>
+                          </div>
+                          {maxCommission && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">If you bid ${gig.budget_max!.toLocaleString()}:</span>
+                              <span className="font-semibold text-accent">${maxCommission.diggerPayout.toLocaleString()}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                            <span>Platform fee: {(minCommission.rate * 100).toFixed(0)}%</span>
+                            <span>Min fee: ${minCommission.minimumFee}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {subscriptionTier === 'free' && (
+                    <div className="text-xs text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/10">
+                      💡 Tip: Upgrade to Pro (4% fee) or Premium (0% fee) to keep more of your earnings!
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Bids Section */}
             {(isOwner || isDigger) && (
               <BidsList gigId={id!} gigTitle={gig.title} isOwner={isOwner} />
