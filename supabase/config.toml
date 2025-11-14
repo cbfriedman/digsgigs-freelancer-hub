@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.create-transaction]
 verify_jwt = true
+
+[functions.send-transaction-report]
+verify_jwt = true
