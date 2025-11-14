@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, DollarSign, Calendar, Mail, Phone, MapPin, AlertCircle } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 import {
   Dialog,
   DialogContent,
@@ -53,16 +54,45 @@ interface PurchasedLead {
 
 const MyLeads = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { clearCart } = useCart();
   const [leads, setLeads] = useState<PurchasedLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<PurchasedLead | null>(null);
   const [issueType, setIssueType] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
+  const [submittingIssue, setSubmittingIssue] = useState(false);
 
   useEffect(() => {
+    const handleBulkPurchaseSuccess = async () => {
+      const sessionId = searchParams.get("session_id");
+      const bulkPurchase = searchParams.get("bulk_purchase");
+      
+      if (bulkPurchase === "success" && sessionId) {
+        try {
+          const { data, error } = await supabase.functions.invoke("process-bulk-purchase", {
+            body: { sessionId },
+          });
+
+          if (error) throw error;
+
+          toast.success(`Successfully purchased ${data.purchaseCount} leads!`);
+          clearCart();
+          loadLeads();
+          
+          // Clear query params
+          window.history.replaceState({}, '', '/my-leads');
+        } catch (error: any) {
+          console.error("Error processing bulk purchase:", error);
+          toast.error(error.message || "Failed to process purchases");
+        }
+      }
+    };
+
+    handleBulkPurchaseSuccess();
     loadLeads();
-  }, []);
+  }, [searchParams]);
 
   const loadLeads = async () => {
     const { data: { session } } = await supabase.auth.getSession();

@@ -1,0 +1,153 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[BULK-LEAD-PURCHASE] ${step}${detailsStr}`);
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
+
+  try {
+    logStep("Function started");
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("No authorization header");
+    
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData } = await supabaseClient.auth.getUser(token);
+    const user = userData.user;
+    if (!user?.email) throw new Error("User not authenticated");
+    logStep("User authenticated", { userId: user.id });
+
+    // Get digger profile
+    const { data: diggerProfile, error: profileError } = await supabaseClient
+      .from("digger_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileError || !diggerProfile) {
+      throw new Error("Digger profile not found");
+    }
+    logStep("Digger profile found", { diggerId: diggerProfile.id });
+
+    // Parse request body to get gig IDs
+    const { gigIds } = await req.json();
+    if (!gigIds || !Array.isArray(gigIds) || gigIds.length === 0) {
+      throw new Error("No gig IDs provided");
+    }
+    logStep("Processing gigs", { count: gigIds.length, gigIds });
+
+    // Fetch gig details and calculate prices
+    const { data: gigs, error: gigsError } = await supabaseClient
+      .from("gigs")
+      .select("id, title, budget_min, budget_max, consumer_id")
+      .in("id", gigIds);
+
+    if (gigsError || !gigs || gigs.length === 0) {
+      throw new Error("Failed to fetch gig details");
+    }
+    logStep("Gigs fetched", { count: gigs.length });
+
+    // Check for existing purchases
+    const { data: existingPurchases } = await supabaseClient
+      .from("lead_purchases")
+      .select("gig_id")
+      .eq("digger_id", diggerProfile.id)
+      .in("gig_id", gigIds);
+
+    const alreadyPurchasedIds = existingPurchases?.map(p => p.gig_id) || [];
+    if (alreadyPurchasedIds.length > 0) {
+      throw new Error(`You have already purchased leads for some of these gigs: ${alreadyPurchasedIds.join(", ")}`);
+    }
+
+    // Calculate prices for each lead
+    const lineItems = gigs.map(gig => {
+      const { data: priceData } = supabaseClient.rpc('calculate_lead_price', {
+        gig_budget_min: gig.budget_min || 0,
+        gig_budget_max: gig.budget_max || 0
+      });
+      
+      const leadPrice = gig.budget_min ? Math.max(50, (gig.budget_min * 0.005)) : 50;
+      const priceInCents = Math.round(leadPrice * 100);
+
+      return {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Lead: ${gig.title}`,
+            description: `Contact information for gig opportunity`,
+            metadata: {
+              gig_id: gig.id,
+              digger_id: diggerProfile.id,
+              consumer_id: gig.consumer_id,
+            }
+          },
+          unit_amount: priceInCents,
+        },
+        quantity: 1,
+      };
+    });
+
+    logStep("Line items created", { itemCount: lineItems.length });
+
+    // Initialize Stripe
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2025-08-27.basil",
+    });
+
+    // Check if customer exists
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    let customerId;
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+      logStep("Existing customer found", { customerId });
+    } else {
+      logStep("No existing customer, will create in checkout");
+    }
+
+    // Create checkout session
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_email: customerId ? undefined : user.email,
+      line_items: lineItems,
+      mode: "payment",
+      success_url: `${req.headers.get("origin")}/my-leads?bulk_purchase=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get("origin")}/browse-gigs?bulk_purchase=cancelled`,
+      metadata: {
+        digger_id: diggerProfile.id,
+        user_id: user.id,
+        gig_ids: gigIds.join(","),
+      },
+    });
+
+    logStep("Checkout session created", { sessionId: session.id });
+
+    return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message: errorMessage });
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
+  }
+});

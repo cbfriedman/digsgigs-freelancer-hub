@@ -6,9 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users } from "lucide-react";
+import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useCart } from "@/contexts/CartContext";
+import { CartDrawer } from "@/components/CartDrawer";
 
 interface Category {
   id: string;
@@ -42,6 +45,8 @@ const BrowseGigs = () => {
   const [diggerProfile, setDiggerProfile] = useState<any>(null);
   const [leadsPurchasedThisPeriod, setLeadsPurchasedThisPeriod] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const { addToCart, removeFromCart, isInCart, cartCount } = useCart();
 
   useEffect(() => {
     loadDiggerData();
@@ -182,12 +187,29 @@ const BrowseGigs = () => {
           >
             digsandgiggs
           </h1>
-          <Button variant="ghost" onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setCartOpen(true)}
+              className="relative"
+            >
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Cart
+              {cartCount > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {cartCount}
+                </Badge>
+              )}
+            </Button>
+            <Button variant="ghost" onClick={() => navigate("/")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
+          </div>
         </div>
       </nav>
+      
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
@@ -267,16 +289,46 @@ const BrowseGigs = () => {
             {displayGigs.map((gig) => {
               const isOld = isOldGig(gig.created_at);
               const showSpecialPrice = isOld && limitReached && (diggerProfile as any)?.lead_limit_enabled;
+              const inCart = isInCart(gig.id);
               
               return (
               <Card 
                 key={gig.id} 
-                className="hover:shadow-[var(--shadow-hover)] transition-all duration-300 cursor-pointer"
-                onClick={() => navigate(`/gig/${gig.id}`)}
+                className="hover:shadow-[var(--shadow-hover)] transition-all duration-300 relative"
               >
                 <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                  <div className="absolute top-6 left-6 z-10" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={inCart}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          addToCart({
+                            id: gig.id,
+                            title: gig.title,
+                            budget_min: gig.budget_min,
+                            budget_max: gig.budget_max,
+                            location: "",
+                            description: gig.description,
+                          });
+                          toast.success("Added to cart");
+                        } else {
+                          removeFromCart(gig.id);
+                          toast.success("Removed from cart");
+                        }
+                      }}
+                      className="h-5 w-5 bg-background border-2"
+                    />
+                  </div>
+                  <div 
+                    className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 ml-10 cursor-pointer"
+                    onClick={() => navigate(`/gig/${gig.id}`)}
+                  >
                     <div className="flex-1 min-w-0">
+                      {inCart && (
+                        <Badge variant="secondary" className="mb-2">
+                          In Cart
+                        </Badge>
+                      )}
                       <h3 className="text-xl font-semibold mb-2 hover:text-primary transition-colors">
                         {gig.title}
                       </h3>
