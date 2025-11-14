@@ -131,18 +131,24 @@ const HowItWorks = () => {
                   {clientSteps.map((step, index) => (
                      <CarouselItem key={index}>
                        <div className="space-y-8 px-4">
-                         {/* Image Container */}
-                         <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
-                           <AspectRatio ratio={16 / 9}>
-                             <img
-                               src={step.image}
-                               alt={step.title}
-                               className="h-full w-full object-cover"
-                               loading="lazy"
-                               decoding="async"
-                             />
-                           </AspectRatio>
-                         </div>
+                          {step.number === 2 ? (
+                            <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in p-6">
+                              <DemoGigGrid />
+                            </div>
+                          ) : (
+                            <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
+                              <AspectRatio ratio={16 / 9}>
+                                <img
+                                  src={step.image}
+                                  alt={step.title}
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </AspectRatio>
+                            </div>
+                          )}
+
                          
                          {/* Instructions Below Image - More Prominent */}
                          <Card className="border-2 border-primary/30 bg-card/95 backdrop-blur-sm shadow-lg animate-scale-in">
