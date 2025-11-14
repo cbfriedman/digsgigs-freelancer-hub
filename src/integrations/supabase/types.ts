@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      bids: {
+        Row: {
+          amount: number
+          created_at: string
+          digger_id: string
+          gig_id: string
+          id: string
+          proposal: string
+          status: string
+          timeline: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          digger_id: string
+          gig_id: string
+          id?: string
+          proposal: string
+          status?: string
+          timeline: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          digger_id?: string
+          gig_id?: string
+          id?: string
+          proposal?: string
+          status?: string
+          timeline?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bids_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bids_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -42,6 +93,48 @@ export type Database = {
             columns: ["parent_category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          consumer_id: string
+          created_at: string
+          digger_id: string | null
+          gig_id: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          consumer_id: string
+          created_at?: string
+          digger_id?: string | null
+          gig_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          consumer_id?: string
+          created_at?: string
+          digger_id?: string | null
+          gig_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -99,6 +192,9 @@ export type Database = {
           is_bonded: boolean | null
           is_insured: boolean | null
           is_licensed: string | null
+          lead_limit: number | null
+          lead_limit_enabled: boolean | null
+          lead_limit_period: string | null
           location: string
           phone: string
           portfolio_url: string | null
@@ -107,6 +203,10 @@ export type Database = {
           profile_image_url: string | null
           response_time_hours: number | null
           skills: string[] | null
+          stripe_customer_id: string | null
+          subscription_end_date: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
           total_ratings: number | null
           updated_at: string
           user_id: string
@@ -130,6 +230,9 @@ export type Database = {
           is_bonded?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
+          lead_limit?: number | null
+          lead_limit_enabled?: boolean | null
+          lead_limit_period?: string | null
           location: string
           phone: string
           portfolio_url?: string | null
@@ -138,6 +241,10 @@ export type Database = {
           profile_image_url?: string | null
           response_time_hours?: number | null
           skills?: string[] | null
+          stripe_customer_id?: string | null
+          subscription_end_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
           total_ratings?: number | null
           updated_at?: string
           user_id: string
@@ -161,6 +268,9 @@ export type Database = {
           is_bonded?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
+          lead_limit?: number | null
+          lead_limit_enabled?: boolean | null
+          lead_limit_period?: string | null
           location?: string
           phone?: string
           portfolio_url?: string | null
@@ -169,6 +279,10 @@ export type Database = {
           profile_image_url?: string | null
           response_time_hours?: number | null
           skills?: string[] | null
+          stripe_customer_id?: string | null
+          subscription_end_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
           total_ratings?: number | null
           updated_at?: string
           user_id?: string
@@ -185,6 +299,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_preferences: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          report_frequency: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          report_frequency?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          report_frequency?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       gigs: {
         Row: {
@@ -366,6 +507,41 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -526,6 +702,83 @@ export type Database = {
             columns: ["digger_id"]
             isOneToOne: false
             referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          bid_id: string
+          commission_amount: number
+          commission_rate: number
+          completed_at: string | null
+          consumer_id: string
+          created_at: string
+          digger_id: string
+          digger_payout: number
+          gig_id: string
+          id: string
+          status: string
+          stripe_payment_intent_id: string | null
+          total_amount: number
+        }
+        Insert: {
+          bid_id: string
+          commission_amount: number
+          commission_rate: number
+          completed_at?: string | null
+          consumer_id: string
+          created_at?: string
+          digger_id: string
+          digger_payout: number
+          gig_id: string
+          id?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          total_amount: number
+        }
+        Update: {
+          bid_id?: string
+          commission_amount?: number
+          commission_rate?: number
+          completed_at?: string | null
+          consumer_id?: string
+          created_at?: string
+          digger_id?: string
+          digger_payout?: number
+          gig_id?: string
+          id?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
         ]
