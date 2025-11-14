@@ -25,8 +25,8 @@ const TIERS = {
     name: 'Pro',
     price: '$10',
     commission: '4% ($5 min)',
-    priceId: 'price_1ST8X5RuFpm7XGfur2qH1ZpC',
-    productId: 'prod_TPyUnTApWI764D',
+    priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
+    productId: 'prod_TQ0mK76zTAwoQc',
     features: [
       'Unlimited bidding on gigs',
       '4% commission on completed work',
@@ -40,8 +40,8 @@ const TIERS = {
     name: 'Premium',
     price: '$150',
     commission: '0%',
-    priceId: 'price_1ST8XORuFpm7XGfu5bUQgd0B',
-    productId: 'prod_TPyUCJBfmNqCrQ',
+    priceId: 'price_1STAn5RuFpm7XGfuMrGHEspf',
+    productId: 'prod_TQ0oKMEtoOhHO7',
     features: [
       'Unlimited bidding on gigs',
       '0% commission - keep 100% of earnings',

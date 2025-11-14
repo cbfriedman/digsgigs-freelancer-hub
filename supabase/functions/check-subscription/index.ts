@@ -53,7 +53,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: false,
         tier: 'free',
-        commission_rate: 0.30
+        commission_rate: 0.09
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -79,7 +79,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         subscribed: false,
         tier: 'free',
-        commission_rate: 0.30
+        commission_rate: 0.09
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -111,7 +111,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         subscribed: false,
         tier: 'free',
-        commission_rate: 0.30
+        commission_rate: 0.09
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -126,14 +126,14 @@ serve(async (req) => {
 
     // Determine tier and commission rate based on product ID
     let tier = 'free';
-    let commissionRate = 0.30;
+    let commissionRate = 0.09;
     
-    if (productId === 'prod_TPyUnTApWI764D') { // Pro tier
+    if (productId === 'prod_TQ0mK76zTAwoQc') { // Pro tier
       tier = 'pro';
-      commissionRate = 0.15;
-    } else if (productId === 'prod_TPyUCJBfmNqCrQ') { // Premium tier
+      commissionRate = 0.04;
+    } else if (productId === 'prod_TQ0oKMEtoOhHO7') { // Premium tier
       tier = 'premium';
-      commissionRate = 0.05;
+      commissionRate = 0.00;
     }
 
     // Update digger profile
