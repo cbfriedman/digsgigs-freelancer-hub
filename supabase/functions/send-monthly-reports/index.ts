@@ -207,23 +207,41 @@ serve(async (req) => {
     logStep("Transactions fetched", { count: transactions.length });
 
     // Group transactions by user
-    const userTransactions = new Map<string, { email: string; userType: string; transactions: any[] }>();
+    const userTransactions = new Map<string, { email: string; userType: string; transactions: any[]; userId: string }>();
 
     for (const tx of transactions) {
       // Add for digger
       if (tx.digger_id) {
         const { data: diggerProfile } = await supabaseClient
           .from('profiles')
-          .select('email, user_type')
+          .select('id, email, user_type')
           .eq('id', tx.digger_id)
           .single();
 
         if (diggerProfile?.email) {
+          // Check email preferences
+          const { data: prefs } = await supabaseClient
+            .from('email_preferences')
+            .select('enabled, report_frequency')
+            .eq('user_id', diggerProfile.id)
+            .single();
+
+          // Skip if user has disabled emails or frequency is not monthly
+          if (!prefs?.enabled || prefs.report_frequency !== 'monthly') {
+            logStep("Skipping digger due to preferences", { 
+              userId: diggerProfile.id, 
+              enabled: prefs?.enabled, 
+              frequency: prefs?.report_frequency 
+            });
+            continue;
+          }
+
           if (!userTransactions.has(tx.digger_id)) {
             userTransactions.set(tx.digger_id, {
               email: diggerProfile.email,
               userType: 'digger',
-              transactions: []
+              transactions: [],
+              userId: diggerProfile.id
             });
           }
           userTransactions.get(tx.digger_id)?.transactions.push(tx);
@@ -234,16 +252,34 @@ serve(async (req) => {
       if (tx.consumer_id) {
         const { data: consumerProfile } = await supabaseClient
           .from('profiles')
-          .select('email, user_type')
+          .select('id, email, user_type')
           .eq('id', tx.consumer_id)
           .single();
 
         if (consumerProfile?.email) {
+          // Check email preferences
+          const { data: prefs } = await supabaseClient
+            .from('email_preferences')
+            .select('enabled, report_frequency')
+            .eq('user_id', consumerProfile.id)
+            .single();
+
+          // Skip if user has disabled emails or frequency is not monthly
+          if (!prefs?.enabled || prefs.report_frequency !== 'monthly') {
+            logStep("Skipping consumer due to preferences", { 
+              userId: consumerProfile.id, 
+              enabled: prefs?.enabled, 
+              frequency: prefs?.report_frequency 
+            });
+            continue;
+          }
+
           if (!userTransactions.has(tx.consumer_id)) {
             userTransactions.set(tx.consumer_id, {
               email: consumerProfile.email,
               userType: 'consumer',
-              transactions: []
+              transactions: [],
+              userId: consumerProfile.id
             });
           }
           userTransactions.get(tx.consumer_id)?.transactions.push(tx);
@@ -255,6 +291,8 @@ serve(async (req) => {
 
     // Send emails to each user
     const emailResults = [];
+    let skippedCount = 0;
+    
     for (const [userId, userData] of userTransactions) {
       const { email, userType, transactions: userTxs } = userData;
 
@@ -294,7 +332,8 @@ serve(async (req) => {
     logStep("Monthly reports completed", { 
       total: emailResults.length, 
       successful: successCount,
-      failed: emailResults.length - successCount
+      failed: emailResults.length - successCount,
+      skippedDueToPreferences: skippedCount
     });
 
     return new Response(JSON.stringify({ 
