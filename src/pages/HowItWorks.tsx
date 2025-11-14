@@ -37,14 +37,14 @@ const HowItWorks = () => {
     },
     {
       number: 3,
-      title: "Receive Contact Requests",
-      description: "Interested diggers purchase your lead to unlock your contact information. You'll receive notifications when someone wants to connect.",
+      title: "Connect via Platform Messaging",
+      description: "Interested diggers can message you directly through the platform. You'll receive notifications when someone wants to discuss your project.",
       image: step3ReceiveContacts,
     },
     {
       number: 4,
       title: "Choose & Hire",
-      description: "Review profiles, compare portfolios, and select the digger that best matches your needs. Connect directly and complete your project.",
+      description: "Review proposals through our messaging system, compare portfolios, and select the digger that best matches your needs. All communication stays secure on the platform.",
       image: step4ChooseHire,
     },
   ];
@@ -64,14 +64,14 @@ const HowItWorks = () => {
     },
     {
       number: 3,
-      title: "Purchase Lead",
-      description: "Invest in quality leads by purchasing contact information. Only pay for opportunities you're genuinely interested in pursuing.",
+      title: "Initiate Contact",
+      description: "Message clients directly through our secure platform. Start conversations about opportunities that match your expertise.",
       image: diggerStep3Purchase,
     },
     {
       number: 4,
-      title: "Connect & Close",
-      description: "Reach out to the client directly with your proposal. Build relationships and close deals on your own terms.",
+      title: "Send Proposal & Close",
+      description: "Share your proposal through platform messaging. Build relationships and negotiate terms securely within our system.",
       image: diggerStep4Connect,
     },
     {
