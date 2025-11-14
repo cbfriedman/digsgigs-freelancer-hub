@@ -21,12 +21,16 @@ import {
   Receipt
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
+import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
 import { toast } from "sonner";
 
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [isDigger, setIsDigger] = useState(false);
+  const [showOnboardingChoice, setShowOnboardingChoice] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,7 +59,26 @@ const Index = () => {
       .eq("id", userId)
       .single();
     
-    setIsDigger(data?.user_type === "digger");
+    const isDiggerUser = data?.user_type === "digger";
+    setIsDigger(isDiggerUser);
+    
+    // Check if this is a new digger who hasn't seen onboarding
+    if (isDiggerUser) {
+      const hasSeenOnboarding = localStorage.getItem(`onboarding_seen_${userId}`);
+      if (!hasSeenOnboarding) {
+        setShowOnboardingChoice(true);
+      } else {
+        setShowChecklist(true);
+      }
+    }
+  };
+
+  const handleOnboardingDismiss = () => {
+    setShowOnboardingChoice(false);
+    setShowChecklist(true);
+    if (user?.id) {
+      localStorage.setItem(`onboarding_seen_${user.id}`, 'true');
+    }
   };
 
   const handleSignOut = async () => {
@@ -171,9 +194,14 @@ const Index = () => {
                   Transactions
                 </Button>
                 {isDigger && (
-                  <Button variant="ghost" size="sm" onClick={() => navigate("/lead-limits")}>
-                    Lead Limits
-                  </Button>
+                  <>
+                    <Button variant="ghost" size="sm" onClick={() => navigate("/lead-limits")}>
+                      Lead Limits
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => navigate("/digger-guide")}>
+                      Digger Guide
+                    </Button>
+                  </>
                 )}
                 {isDigger ? (
                   <Button variant="outline" onClick={() => navigate("/digger-registration")}>
@@ -261,6 +289,23 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Digger Onboarding - Show choice dialog or checklist */}
+      {isDigger && showOnboardingChoice && (
+        <section className="py-8 bg-background">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <DiggerOnboardingChoice onDismiss={handleOnboardingDismiss} />
+          </div>
+        </section>
+      )}
+
+      {isDigger && !showOnboardingChoice && showChecklist && (
+        <section className="py-8 bg-background">
+          <div className="container mx-auto px-4 max-w-3xl">
+            <DiggerOnboardingChecklist />
+          </div>
+        </section>
+      )}
 
       {/* How It Works */}
       <section className="py-20 bg-secondary/30">
