@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { ArrowLeft, DollarSign, Calendar, Tag, User, Loader2, Award } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidForm } from "@/components/BidForm";
@@ -35,6 +36,7 @@ const GigDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { calculateCommission } = useCommissionCalculator();
   const [gig, setGig] = useState<Gig | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -42,8 +44,7 @@ const GigDetail = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [diggerId, setDiggerId] = useState<string | null>(null);
   const [existingBid, setExistingBid] = useState<any>(null);
-  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
-  const [commissionRate, setCommissionRate] = useState<number>(0.20);
+  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'premium'>('free');
 
   useEffect(() => {
     loadData();
@@ -76,15 +77,6 @@ const GigDetail = () => {
         if (diggerProfile) {
           setDiggerId((diggerProfile as any)?.id);
           setSubscriptionTier((diggerProfile as any)?.subscription_tier || 'free');
-          
-          // Set commission rate based on tier
-          if ((diggerProfile as any)?.subscription_tier === 'premium') {
-            setCommissionRate(0.05);
-          } else if ((diggerProfile as any)?.subscription_tier === 'pro') {
-            setCommissionRate(0.15);
-          } else {
-            setCommissionRate(0.30);
-          }
 
           // Check for existing bid
           const { data: bid } = await supabase
@@ -268,8 +260,20 @@ const GigDetail = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Commission Rate:</span>
-                      <span className="font-bold">{(commissionRate * 100).toFixed(0)}%</span>
+                      <span className="font-bold">
+                        {subscriptionTier === 'premium' ? '0%' : 
+                         subscriptionTier === 'pro' ? '4%' : '9%'}
+                        {subscriptionTier !== 'premium' && ' ($5 min)'}
+                      </span>
                     </div>
+                    {gig?.budget_min && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>On ${gig.budget_min.toLocaleString()} gig:</span>
+                        <span>
+                          ${calculateCommission(gig.budget_min, subscriptionTier).commissionAmount.toFixed(2)} commission
+                        </span>
+                      </div>
+                    )}
                     {subscriptionTier === 'free' && (
                       <Button
                         variant="secondary"

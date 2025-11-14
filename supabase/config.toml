@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.send-bid-notification]
 verify_jwt = true
+
+[functions.calculate-commission]
+verify_jwt = false
