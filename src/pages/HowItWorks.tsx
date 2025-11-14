@@ -7,6 +7,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ArrowLeft, Users, Briefcase, DollarSign, Star, CheckCircle2 } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { StepVisual } from "@/components/StepVisual";
+import DemoGigGrid from "@/components/DemoGigGrid";
 
 // Import step screenshots
 import step1PostGig from "@/assets/step1-post-gig-new.jpg";
