@@ -78,11 +78,6 @@ serve(async (req) => {
 
     // Calculate prices for each lead
     const lineItems = gigs.map(gig => {
-      const { data: priceData } = supabaseClient.rpc('calculate_lead_price', {
-        gig_budget_min: gig.budget_min || 0,
-        gig_budget_max: gig.budget_max || 0
-      });
-      
       const leadPrice = gig.budget_min ? Math.max(50, (gig.budget_min * 0.005)) : 50;
       const priceInCents = Math.round(leadPrice * 100);
 
