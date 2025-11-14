@@ -6,7 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface Transaction {
@@ -39,10 +46,61 @@ const Transactions = () => {
   const [diggerId, setDiggerId] = useState<string | null>(null);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [totalCommission, setTotalCommission] = useState(0);
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<'all' | '30' | '90' | '180'>('all');
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
     checkAuthAndLoad();
   }, []);
+
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [transactions, sortBy, filterStatus, dateRange]);
+
+  const applyFiltersAndSort = () => {
+    let filtered = [...transactions];
+
+    // Apply date range filter
+    if (dateRange !== 'all') {
+      const daysAgo = parseInt(dateRange);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+      filtered = filtered.filter(tx => new Date(tx.created_at) >= cutoffDate);
+    }
+
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(tx => tx.status === filterStatus);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'date-asc':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'amount-desc':
+          return b.total_amount - a.total_amount;
+        case 'amount-asc':
+          return a.total_amount - b.total_amount;
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredTransactions(filtered);
+
+    // Update stats for diggers based on filtered data
+    if (userType === 'digger') {
+      const earnings = filtered.reduce((sum, tx) => sum + (tx.digger_payout || 0), 0);
+      const commission = filtered.reduce((sum, tx) => sum + (tx.commission_amount || 0), 0);
+      setTotalEarnings(earnings);
+      setTotalCommission(commission);
+    }
+  };
 
   const checkAuthAndLoad = async () => {
     try {
@@ -214,7 +272,9 @@ const Transactions = () => {
                     ${totalEarnings.toFixed(2)}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    After commission
+                    {dateRange !== 'all' 
+                      ? `In last ${dateRange} days`
+                      : 'After commission'}
                   </p>
                 </CardContent>
               </Card>
@@ -230,7 +290,9 @@ const Transactions = () => {
                     ${totalCommission.toFixed(2)}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Platform fees
+                    {dateRange !== 'all' 
+                      ? `In last ${dateRange} days`
+                      : 'Platform fees'}
                   </p>
                 </CardContent>
               </Card>
@@ -243,10 +305,12 @@ const Transactions = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {transactions.length}
+                    {filteredTransactions.length}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Total transactions
+                    {dateRange !== 'all' 
+                      ? `In last ${dateRange} days`
+                      : 'Total transactions'}
                   </p>
                 </CardContent>
               </Card>
@@ -275,9 +339,97 @@ const Transactions = () => {
 
           {/* Transactions List */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-semibold">All Transactions</h2>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">All Transactions</h2>
+                {(dateRange !== 'all' || filterStatus !== 'all' || sortBy !== 'date-desc') && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-sm text-muted-foreground"
+                    onClick={() => {
+                      setFilterStatus('all');
+                      setDateRange('all');
+                      setSortBy('date-desc');
+                    }}
+                  >
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+              
+              <div className="flex gap-2 flex-wrap">
+                {/* Date Range Filter */}
+                <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
+                  <SelectTrigger className="w-[160px]">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Time period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="30">Last 30 Days</SelectItem>
+                    <SelectItem value="90">Last 90 Days</SelectItem>
+                    <SelectItem value="180">Last 6 Months</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Status Filter */}
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[160px]">
+                    <SlidersHorizontal className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Sort Options */}
+                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                  <SelectTrigger className="w-[200px]">
+                    <ArrowUpDown className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date-desc">Date: Newest First</SelectItem>
+                    <SelectItem value="date-asc">Date: Oldest First</SelectItem>
+                    <SelectItem value="amount-desc">Amount: High to Low</SelectItem>
+                    <SelectItem value="amount-asc">Amount: Low to High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Results count */}
+            {transactions.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Showing {filteredTransactions.length} of {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+              </p>
+            )}
             
-            {transactions.length === 0 ? (
+            {filteredTransactions.length === 0 && transactions.length > 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Receipt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium mb-2">No transactions match your filters</p>
+                  <p className="text-muted-foreground mb-4">
+                    Try adjusting your filters to see more results
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setFilterStatus('all');
+                      setDateRange('all');
+                      setSortBy('date-desc');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : filteredTransactions.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Receipt className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -293,7 +445,7 @@ const Transactions = () => {
                 </CardContent>
               </Card>
             ) : (
-              transactions.map((transaction) => (
+              filteredTransactions.map((transaction) => (
                 <Card key={transaction.id}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
