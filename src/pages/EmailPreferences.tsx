@@ -48,7 +48,7 @@ const EmailPreferences = () => {
 
   const loadPreferences = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('email_preferences')
         .select('*')
         .single();
@@ -58,14 +58,14 @@ const EmailPreferences = () => {
       }
 
       if (data) {
-        setPreferences(data as EmailPreference);
+        setPreferences(data);
         setEnabled(data.enabled);
-        setFrequency(data.report_frequency as 'none' | 'weekly' | 'monthly' | 'quarterly');
+        setFrequency(data.report_frequency);
       } else {
         // Create default preferences if none exist
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: newPrefs, error: insertError } = await supabase
+          const { data: newPrefs, error: insertError } = await (supabase as any)
             .from('email_preferences')
             .insert({
               user_id: user.id,
@@ -77,7 +77,7 @@ const EmailPreferences = () => {
 
           if (insertError) throw insertError;
           
-          setPreferences(newPrefs as EmailPreference);
+          setPreferences(newPrefs);
           setEnabled(true);
           setFrequency('monthly');
         }
@@ -96,7 +96,7 @@ const EmailPreferences = () => {
     setSaving(true);
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('email_preferences')
         .update({
           enabled,
