@@ -41,7 +41,7 @@ serve(async (req) => {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      const { gigId, diggerId, amount } = session.metadata || {};
+      const { gigId, diggerId, amount, tier } = session.metadata || {};
 
       if (!gigId || !diggerId || !amount) {
         throw new Error('Missing metadata in session');
@@ -52,13 +52,29 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
+      // Get the consumer_id for this gig
+      const { data: gigData } = await supabaseClient
+        .from('gigs')
+        .select('consumer_id')
+        .eq('id', gigId)
+        .single();
+
+      if (!gigData) {
+        throw new Error('Gig not found');
+      }
+
+      // Calculate purchase price based on tier
+      const purchasePrice = parseFloat(amount);
+
       // Record the purchase
       const { error: insertError } = await supabaseClient
         .from('lead_purchases')
         .insert({
           gig_id: gigId,
           digger_id: diggerId,
-          amount_paid: parseFloat(amount),
+          consumer_id: gigData.consumer_id,
+          amount_paid: purchasePrice,
+          purchase_price: purchasePrice,
           stripe_payment_id: session.payment_intent as string,
           status: 'completed',
         });
@@ -68,7 +84,7 @@ serve(async (req) => {
         throw insertError;
       }
 
-      console.log('Lead purchase recorded successfully');
+      console.log('Lead purchase recorded successfully', { tier, amount: purchasePrice });
     }
 
     return new Response(
