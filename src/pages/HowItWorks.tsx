@@ -9,7 +9,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { StepVisual } from "@/components/StepVisual";
 
 // Import step screenshots
-import step1PostGig from "@/assets/step1-post-gig.jpg";
+import step1PostGig from "@/assets/step1-post-gig-new.jpg";
 import step2GetDiscovered from "@/assets/step2-get-discovered.jpg";
 import step3ReceiveContacts from "@/assets/step3-platform-messaging.jpg";
 import step4ChooseHire from "@/assets/step4-choose-hire.jpg";
