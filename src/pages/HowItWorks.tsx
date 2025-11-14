@@ -4,10 +4,81 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { ArrowLeft, Users, Briefcase, DollarSign, Star, CheckCircle2, Search, FileText, Eye, MessageCircle, Handshake } from "lucide-react";
+import { ArrowLeft, Users, Briefcase, DollarSign, Star, CheckCircle2 } from "lucide-react";
+
+// Import step screenshots
+import step1PostGig from "@/assets/step1-post-gig.jpg";
+import step2GetDiscovered from "@/assets/step2-get-discovered.jpg";
+import step3ReceiveContacts from "@/assets/step3-receive-contacts.jpg";
+import step4ChooseHire from "@/assets/step4-choose-hire.jpg";
+import diggerStep1Profile from "@/assets/digger-step1-profile.jpg";
+import diggerStep2Browse from "@/assets/digger-step2-browse.jpg";
+import diggerStep3Purchase from "@/assets/digger-step3-purchase.jpg";
+import diggerStep4Connect from "@/assets/digger-step4-connect.jpg";
+import diggerStep5Complete from "@/assets/digger-step5-complete.jpg";
 
 const HowItWorks = () => {
   const navigate = useNavigate();
+
+  const clientSteps = [
+    {
+      number: 1,
+      title: "Post Your Gig",
+      description: "Create a detailed posting with your project description, budget range, timeline, and any specific requirements. Add documents or images if needed.",
+      image: step1PostGig,
+    },
+    {
+      number: 2,
+      title: "Get Discovered",
+      description: "Your gig appears in search results where skilled diggers can find it. They can view your project details and decide if they're the right fit.",
+      image: step2GetDiscovered,
+    },
+    {
+      number: 3,
+      title: "Receive Contact Requests",
+      description: "Interested diggers purchase your lead to unlock your contact information. You'll receive notifications when someone wants to connect.",
+      image: step3ReceiveContacts,
+    },
+    {
+      number: 4,
+      title: "Choose & Hire",
+      description: "Review profiles, compare portfolios, and select the digger that best matches your needs. Connect directly and complete your project.",
+      image: step4ChooseHire,
+    },
+  ];
+
+  const diggerSteps = [
+    {
+      number: 1,
+      title: "Create Your Profile",
+      description: "Build a professional profile showcasing your skills, experience, and portfolio. Stand out to potential clients with detailed credentials.",
+      image: diggerStep1Profile,
+    },
+    {
+      number: 2,
+      title: "Browse Opportunities",
+      description: "Explore available gigs that match your expertise. Filter by budget, timeline, and category to find the perfect projects.",
+      image: diggerStep2Browse,
+    },
+    {
+      number: 3,
+      title: "Purchase Lead",
+      description: "Invest in quality leads by purchasing contact information. Only pay for opportunities you're genuinely interested in pursuing.",
+      image: diggerStep3Purchase,
+    },
+    {
+      number: 4,
+      title: "Connect & Close",
+      description: "Reach out to the client directly with your proposal. Build relationships and close deals on your own terms.",
+      image: diggerStep4Connect,
+    },
+    {
+      number: 5,
+      title: "Complete & Get Paid",
+      description: "Deliver exceptional work, build your reputation, and grow your business. Success leads to more opportunities and higher ratings.",
+      image: diggerStep5Complete,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,7 +98,7 @@ const HowItWorks = () => {
       </nav>
 
       <div className="container mx-auto px-4 py-12 max-w-6xl">
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 animate-fade-in">
           <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">How It Works</Badge>
           <h1 className="text-5xl font-bold mb-4">Simple, Fair, Transparent</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -49,377 +120,288 @@ const HowItWorks = () => {
 
           {/* For Giggers (Clients) */}
           <TabsContent value="giggers" className="space-y-12">
-            {/* Interactive Carousel */}
             <div className="mb-12">
-              <h2 className="text-3xl font-bold text-center mb-6">See How It Works for Clients</h2>
-              <Carousel className="max-w-4xl mx-auto">
+              <h2 className="text-3xl font-bold text-center mb-8 animate-fade-in">
+                See How It Works for Clients
+              </h2>
+              <Carousel className="max-w-5xl mx-auto">
                 <CarouselContent>
-                  <CarouselItem>
-                    <Card className="border-2 border-primary/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <FileText className="w-12 h-12 text-primary-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-primary/10 text-primary">Step 1</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Post Your Gig</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Create a detailed posting with your project description, budget range, timeline, and any specific requirements. Add documents or images if needed.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                  
-                  <CarouselItem>
-                    <Card className="border-2 border-accent/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <Eye className="w-12 h-12 text-accent-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-accent/10 text-accent">Step 2</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Get Discovered</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Your gig appears in search results where skilled diggers can find it. They can view your project details and decide if they're the right fit.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                  
-                  <CarouselItem>
-                    <Card className="border-2 border-primary/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <MessageCircle className="w-12 h-12 text-primary-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-primary/10 text-primary">Step 3</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Receive Contact Requests</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Interested diggers purchase your lead to unlock your contact information. You'll receive notifications when someone wants to connect.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                  
-                  <CarouselItem>
-                    <Card className="border-2 border-accent/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <Handshake className="w-12 h-12 text-accent-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-accent/10 text-accent">Step 4</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Choose & Hire</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Review profiles, discuss project details, and hire the professional that best fits your needs. Negotiate terms directly - completely free!
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
+                  {clientSteps.map((step, index) => (
+                    <CarouselItem key={index}>
+                      <Card className="border-2 border-primary/20 overflow-hidden animate-fade-in">
+                        <CardContent className="p-0">
+                          <div className="relative">
+                            <img 
+                              src={step.image} 
+                              alt={step.title}
+                              className="w-full h-[400px] object-cover animate-scale-in"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/50 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-8 animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+                              <Badge className="mb-3 bg-primary text-primary-foreground">
+                                Step {step.number}
+                              </Badge>
+                              <h3 className="text-3xl font-bold mb-3 text-foreground">
+                                {step.title}
+                              </h3>
+                              <p className="text-foreground/90 text-lg max-w-2xl">
+                                {step.description}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  ))}
                 </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
+                <CarouselPrevious className="bg-background hover:bg-muted -left-12" />
+                <CarouselNext className="bg-background hover:bg-muted -right-12" />
               </Carousel>
-              <p className="text-center text-sm text-muted-foreground mt-4">← Swipe or click arrows to navigate →</p>
+              <p className="text-center text-muted-foreground mt-6">← Swipe or click arrows to navigate →</p>
             </div>
 
-            <section>
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center">
-                  <Briefcase className="w-6 h-6 text-accent" />
+            {/* Detailed Steps */}
+            <div className="grid gap-8 max-w-4xl mx-auto">
+              <h3 className="text-2xl font-bold text-center">Detailed Process</h3>
+              
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Briefcase className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold mb-2">Post Gigs & Connect with Pros</h4>
+                    <p className="text-muted-foreground">
+                      Create comprehensive project listings that attract the right talent. Set your budget,
+                      timeline, and requirements. Quality diggers will discover your opportunities and
+                      reach out when they're a perfect match.
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold">Post Gigs & Connect with Pros</h2>
-              </div>
+              </Card>
 
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                      <span className="text-2xl font-bold text-primary">1</span>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Post Your Gig</h3>
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Star className="w-6 h-6 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold mb-2">Review & Select</h4>
                     <p className="text-muted-foreground">
-                      Create a detailed gig posting describing your project needs, budget, and timeline. Include any relevant documents or requirements.
+                      When diggers purchase your lead, you'll receive their complete profile, portfolio,
+                      and contact information. Review their credentials, past work, and ratings before
+                      making your decision.
                     </p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
+              </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                      <span className="text-2xl font-bold text-primary">2</span>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Get Discovered</h3>
-                    <p className="text-muted-foreground">
-                      Your gig appears in search results. Interested diggers can view details and decide if they're a good fit for your project.
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold mb-2">Completely Free for Clients</h4>
+                    <p className="text-muted-foreground mb-3">
+                      Post unlimited gigs at no cost. You only connect with diggers who are serious
+                      enough to invest in reaching you. This ensures you receive quality proposals
+                      from motivated professionals.
                     </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                      <span className="text-2xl font-bold text-primary">3</span>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Connect & Hire</h3>
-                    <p className="text-muted-foreground">
-                      Diggers purchase your lead to access your contact info. Review their profiles, discuss the project, and hire the best fit.
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card className="bg-accent/5 border-accent/20">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <DollarSign className="w-8 h-8 text-accent shrink-0" />
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Completely Free for Clients</h3>
-                      <p className="text-muted-foreground">
-                        Posting gigs is completely free. No hidden fees, no commissions. You only pay what you agree with the digger for the actual work.
+                    <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
+                      <p className="text-sm font-semibold text-accent-foreground">
+                        💰 No posting fees • No subscription required • No hidden costs
                       </p>
                     </div>
                   </div>
-                </CardContent>
+                </div>
               </Card>
-            </section>
+            </div>
 
-            {/* CTA for Giggers */}
-            <div className="text-center pt-8">
-              <h2 className="text-3xl font-bold mb-4">Ready to Post Your Gig?</h2>
-              <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Connect with skilled professionals today - it's completely free!
-              </p>
-              <Button size="lg" onClick={() => navigate("/auth?redirect=/post-gig")}>
-                Post a Gig Now
+            <div className="text-center mt-12">
+              <Button size="lg" onClick={() => navigate("/post-gig")} className="group">
+                Post Your First Gig
+                <ArrowLeft className="ml-2 h-4 w-4 rotate-180 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
           </TabsContent>
 
           {/* For Diggers (Service Providers) */}
           <TabsContent value="diggers" className="space-y-12">
-            {/* Interactive Carousel */}
             <div className="mb-12">
-              <h2 className="text-3xl font-bold text-center mb-6">See How It Works for Diggers</h2>
-              <Carousel className="max-w-4xl mx-auto">
+              <h2 className="text-3xl font-bold text-center mb-8 animate-fade-in">
+                See How It Works for Service Providers
+              </h2>
+              <Carousel className="max-w-5xl mx-auto">
                 <CarouselContent>
-                  <CarouselItem>
-                    <Card className="border-2 border-accent/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <Users className="w-12 h-12 text-accent-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-accent/10 text-accent">Step 1</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Create Your Profile</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Choose a unique handle, showcase your skills and expertise, upload portfolio samples, and add verified references. Your real identity stays protected.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                  
-                  <CarouselItem>
-                    <Card className="border-2 border-primary/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <Search className="w-12 h-12 text-primary-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-primary/10 text-primary">Step 2</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Browse Opportunities</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Search and filter gigs by category, budget, location, and requirements. Find projects that match your skills - no bidding wars or price competition.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                  
-                  <CarouselItem>
-                    <Card className="border-2 border-accent/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <DollarSign className="w-12 h-12 text-accent-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-accent/10 text-accent">Step 3</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Purchase Lead</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Pay a small upfront fee ($50 min or 0.5% of budget) to unlock the client's contact information and project details. Check your lead limits first.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                  
-                  <CarouselItem>
-                    <Card className="border-2 border-primary/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <MessageCircle className="w-12 h-12 text-primary-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-primary/10 text-primary">Step 4</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Connect & Close</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Reach out to the client directly, discuss project scope and timeline, negotiate your price, and close the deal on your terms.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
-                  
-                  <CarouselItem>
-                    <Card className="border-2 border-accent/20">
-                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
-                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
-                          <Star className="w-12 h-12 text-accent-foreground" />
-                        </div>
-                        <Badge className="mb-4 bg-accent/10 text-accent">Step 5</Badge>
-                        <h3 className="text-3xl font-bold mb-4 text-center">Complete & Get Paid</h3>
-                        <p className="text-muted-foreground text-center max-w-md text-lg">
-                          Deliver excellent work, get paid by the client, then report completion on the platform. A small commission applies based on your subscription tier.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </CarouselItem>
+                  {diggerSteps.map((step, index) => (
+                    <CarouselItem key={index}>
+                      <Card className="border-2 border-accent/20 overflow-hidden animate-fade-in">
+                        <CardContent className="p-0">
+                          <div className="relative">
+                            <img 
+                              src={step.image} 
+                              alt={step.title}
+                              className="w-full h-[400px] object-cover animate-scale-in"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/50 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-8 animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+                              <Badge className="mb-3 bg-accent text-accent-foreground">
+                                Step {step.number}
+                              </Badge>
+                              <h3 className="text-3xl font-bold mb-3 text-foreground">
+                                {step.title}
+                              </h3>
+                              <p className="text-foreground/90 text-lg max-w-2xl">
+                                {step.description}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  ))}
                 </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
+                <CarouselPrevious className="bg-background hover:bg-muted -left-12" />
+                <CarouselNext className="bg-background hover:bg-muted -right-12" />
               </Carousel>
-              <p className="text-center text-sm text-muted-foreground mt-4">← Swipe or click arrows to navigate →</p>
+              <p className="text-center text-muted-foreground mt-6">← Swipe or click arrows to navigate →</p>
             </div>
 
-            <section>
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Users className="w-6 h-6 text-primary" />
+            {/* Detailed Steps for Diggers */}
+            <div className="grid gap-8 max-w-4xl mx-auto">
+              <h3 className="text-2xl font-bold text-center">Detailed Process</h3>
+              
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold mb-2">Build Your Professional Presence</h4>
+                    <p className="text-muted-foreground">
+                      Create a standout profile with your portfolio, skills, and experience. Add your
+                      best work samples and detailed descriptions. A strong profile attracts better
+                      opportunities and helps you stand out from the competition.
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-3xl font-bold">Find Gigs & Grow Your Business</h2>
-              </div>
+              </Card>
 
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                      <span className="text-2xl font-bold text-accent">1</span>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Create Your Profile</h3>
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-6 h-6 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold mb-2">Invest in Quality Leads</h4>
                     <p className="text-muted-foreground">
-                      Choose a handle, showcase your skills, upload portfolio work, and add client references. Your identity stays protected.
+                      Browse available projects and purchase leads that match your expertise. Lead
+                      prices vary based on project value, but you only pay when you find opportunities
+                      worth pursuing. No monthly fees or subscriptions.
                     </p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
+              </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                      <span className="text-2xl font-bold text-accent">2</span>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Browse Opportunities</h3>
-                    <p className="text-muted-foreground">
-                      Search for gigs matching your expertise. Filter by category, budget, and location. No bidding wars or race-to-the-bottom pricing.
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold mb-2">Pay-Per-Lead + Commission</h4>
+                    <p className="text-muted-foreground mb-4">
+                      Our transparent pricing model ensures fairness for everyone. You pay a small
+                      upfront fee to access client information, plus a percentage of your earnings
+                      upon project completion.
                     </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                      <span className="text-2xl font-bold text-accent">3</span>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Purchase & Connect</h3>
-                    <p className="text-muted-foreground">
-                      Pay a small fee to access client contact info. Reach out, discuss the project, and close the deal on your terms.
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <DollarSign className="w-8 h-8 text-primary shrink-0" />
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Pay-Per-Lead + Commission</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Purchase leads for <strong>$50 minimum or 0.5% of the gig's lower budget</strong> (whichever is higher). When you complete work, pay a small commission based on your subscription tier.
-                      </p>
-                      <div className="space-y-3 mb-4">
-                        <div className="font-semibold text-sm">Lead Pricing Examples:</div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-primary" />
-                          <span className="text-sm">$5,000 gig = $50 lead price</span>
+                    <div className="space-y-3">
+                      <div className="bg-secondary rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold">Lead Cost</span>
+                          <span className="text-primary font-bold">$25-$50</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-primary" />
-                          <span className="text-sm">$20,000 gig = $100 lead price</span>
-                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          One-time fee to unlock client contact info
+                        </p>
                       </div>
-                      <div className="space-y-3">
-                        <div className="font-semibold text-sm">Commission on Completed Work:</div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-primary" />
-                          <span className="text-sm">Free: 10% commission ($5 min)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-primary" />
-                          <span className="text-sm">Pro ($10/mo): 4% commission ($5 min)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-primary" />
-                          <span className="text-sm">Premium ($150/mo): 0% commission - keep 100%</span>
+                      <div className="bg-secondary rounded-lg p-4">
+                        <div className="font-semibold mb-3">Commission Tiers:</div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Projects under $1,000</span>
+                            <span className="font-semibold">10%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>$1,000 - $5,000</span>
+                            <span className="font-semibold">8%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Over $5,000</span>
+                            <span className="font-semibold">5%</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </CardContent>
+                </div>
               </Card>
-            </section>
+            </div>
 
-            {/* CTA for Diggers */}
-            <div className="text-center pt-8">
-              <h2 className="text-3xl font-bold mb-4">Ready to Find Your Next Gig?</h2>
-              <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Join thousands of professionals growing their business on DiggsAndGiggs
-              </p>
-              <Button size="lg" onClick={() => navigate("/auth?type=digger&redirect=/digger-registration")}>
+            <div className="text-center mt-12">
+              <Button size="lg" onClick={() => navigate("/digger-registration")} className="group">
                 Become a Digger
+                <ArrowLeft className="ml-2 h-4 w-4 rotate-180 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
           </TabsContent>
         </Tabs>
 
-        {/* Trust & Safety - Shared Section */}
-        <section className="mt-20 mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Trust & Safety</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              We've built protections for both sides of the marketplace
+        {/* Trust & Safety Section */}
+        <div className="mt-20 pt-12 border-t border-border">
+          <div className="text-center mb-12 animate-fade-in">
+            <Badge className="mb-4 bg-accent/10 text-accent border-accent/20">Trust & Safety</Badge>
+            <h2 className="text-4xl font-bold mb-4">Built on Trust</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Your security and privacy are our top priorities.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Search className="w-8 h-8 text-primary shrink-0" />
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Identity Protection</h3>
-                    <p className="text-muted-foreground">
-                      Diggers use handles instead of real names. Contact information is only shared after lead purchase, preventing direct bypass of the platform.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <Card className="p-6 hover:shadow-lg transition-shadow">
+              <h4 className="text-xl font-bold mb-3">🔒 Identity Protection</h4>
+              <p className="text-muted-foreground">
+                Your contact information remains private until you choose to share it. Diggers
+                must invest to access your details, ensuring serious inquiries only.
+              </p>
             </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Star className="w-8 h-8 text-accent shrink-0" />
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Verified Credentials</h3>
-                    <p className="text-muted-foreground">
-                      Diggers can display insurance, bonding, and licensing status. References are verified and contact info can be requested through the platform.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
+            <Card className="p-6 hover:shadow-lg transition-shadow">
+              <h4 className="text-xl font-bold mb-3">✓ Verified Credentials</h4>
+              <p className="text-muted-foreground">
+                Review portfolios, ratings, and past work before connecting. Our rating system
+                helps you make informed decisions based on real experiences.
+              </p>
             </Card>
           </div>
-        </section>
+        </div>
+
+        <div className="mt-16 text-center">
+          <Card className="p-8 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+            <h3 className="text-2xl font-bold mb-4">Ready to Get Started?</h3>
+            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Join thousands of professionals and clients who trust DiggsAndGiggs for their project needs.
+            </p>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Button size="lg" onClick={() => navigate("/post-gig")}>
+                Post a Gig
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate("/digger-registration")}>
+                Become a Digger
+              </Button>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
