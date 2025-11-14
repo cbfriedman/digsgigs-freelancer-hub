@@ -226,9 +226,14 @@ const MyLeads = () => {
                 Manage and contact your purchased leads
               </p>
             </div>
-            <Button variant="outline" onClick={() => navigate("/transactions")}>
-              View Transaction History
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/lead-limits")}>
+                Manage Lead Limits
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/transactions")}>
+                View Transaction History
+              </Button>
+            </div>
           </div>
         </div>
 

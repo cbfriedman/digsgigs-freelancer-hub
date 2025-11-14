@@ -170,6 +170,11 @@ const Index = () => {
                   <Receipt className="mr-2 h-4 w-4" />
                   Transactions
                 </Button>
+                {isDigger && (
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/lead-limits")}>
+                    Lead Limits
+                  </Button>
+                )}
                 {isDigger ? (
                   <Button variant="outline" onClick={() => navigate("/digger-registration")}>
                     Complete Profile
