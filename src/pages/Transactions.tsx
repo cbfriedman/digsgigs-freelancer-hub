@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { exportToCSV, exportToPDF } from "@/utils/exportTransactions";
 
@@ -387,6 +387,14 @@ const Transactions = () => {
               {/* Export Dropdown */}
               {transactions.length > 0 && (
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/email-preferences')}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Email Preferences
+                  </Button>
+                  
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" disabled={sendingEmail || triggeringMonthly}>
