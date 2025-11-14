@@ -12,15 +12,19 @@ serve(async (req) => {
   }
 
   try {
-    const { gigId, diggerId, gigTitle, tier } = await req.json();
+    const { gigId, diggerId, gigTitle, tier, isOldLead } = await req.json();
 
     if (!gigId || !diggerId) {
       throw new Error('Missing required parameters');
     }
 
-    // Calculate lead cost based on digger's tier
+    // Calculate lead cost based on lead age and digger's tier
     let leadCost = 3; // Default: free tier
-    if (tier === 'premium') {
+    
+    if (isOldLead) {
+      // Old leads (>24h) are always $1
+      leadCost = 1;
+    } else if (tier === 'premium') {
       leadCost = 0;
     } else if (tier === 'pro') {
       leadCost = 2;
@@ -54,7 +58,9 @@ serve(async (req) => {
             currency: 'usd',
             product_data: {
               name: `Lead Purchase: ${gigTitle}`,
-              description: `Access to client contact information - ${tier} tier ($${leadCost})`,
+              description: isOldLead 
+                ? `Access to client contact information - Old lead special ($1)` 
+                : `Access to client contact information - ${tier} tier ($${leadCost})`,
             },
             unit_amount: Math.round(leadCost * 100), // Convert to cents
           },
@@ -69,6 +75,7 @@ serve(async (req) => {
         diggerId,
         amount: leadCost.toString(),
         tier,
+        isOldLead: isOldLead ? 'true' : 'false',
       },
     });
 

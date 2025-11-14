@@ -39,10 +39,64 @@ const BrowseGigs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [budgetFilter, setBudgetFilter] = useState<string>("all");
+  const [diggerProfile, setDiggerProfile] = useState<any>(null);
+  const [leadsPurchasedThisPeriod, setLeadsPurchasedThisPeriod] = useState(0);
+  const [limitReached, setLimitReached] = useState(false);
+
+  useEffect(() => {
+    loadDiggerData();
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, [selectedCategory, budgetFilter]);
+  }, [selectedCategory, budgetFilter, diggerProfile]);
+
+  const loadDiggerData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get digger profile with lead limit settings
+      const { data: profile } = await supabase
+        .from('digger_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile) {
+        setDiggerProfile(profile);
+
+        // Count leads purchased in current period
+        if ((profile as any).lead_limit_enabled && (profile as any).lead_limit) {
+          const now = new Date();
+          let startDate = new Date();
+
+          if ((profile as any).lead_limit_period === 'daily') {
+            startDate.setHours(0, 0, 0, 0);
+          } else if ((profile as any).lead_limit_period === 'weekly') {
+            const day = startDate.getDay();
+            startDate.setDate(startDate.getDate() - day);
+            startDate.setHours(0, 0, 0, 0);
+          } else {
+            startDate.setDate(1);
+            startDate.setHours(0, 0, 0, 0);
+          }
+
+          const { data: purchases } = await supabase
+            .from('lead_purchases')
+            .select('id')
+            .eq('digger_id', profile.id)
+            .gte('purchased_at', startDate.toISOString());
+
+          const purchaseCount = purchases?.length || 0;
+          setLeadsPurchasedThisPeriod(purchaseCount);
+          setLimitReached(purchaseCount >= (profile as any).lead_limit);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading digger data:', error);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -98,6 +152,18 @@ const BrowseGigs = () => {
     );
   });
 
+  const isOldGig = (createdAt: string) => {
+    const gigAge = Date.now() - new Date(createdAt).getTime();
+    return gigAge > 24 * 60 * 60 * 1000; // >24 hours
+  };
+
+  const newGigs = filteredGigs.filter(gig => !isOldGig(gig.created_at));
+  const oldGigs = filteredGigs.filter(gig => isOldGig(gig.created_at));
+
+  const displayGigs = limitReached && (diggerProfile as any)?.lead_limit_enabled 
+    ? oldGigs  // If limit reached, only show old gigs
+    : filteredGigs; // Otherwise show all gigs
+
   const formatBudget = (min: number | null, max: number | null) => {
     if (!min && !max) return "Budget not specified";
     if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
@@ -127,6 +193,25 @@ const BrowseGigs = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Browse Gigs</h1>
           <p className="text-muted-foreground">Find projects that match your skills</p>
+          {(diggerProfile as any)?.lead_limit_enabled && (
+            <div className="mt-4">
+              <Badge variant={limitReached ? "destructive" : "secondary"} className="text-sm">
+                Leads this period: {leadsPurchasedThisPeriod} / {(diggerProfile as any).lead_limit}
+              </Badge>
+              {limitReached && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Limit reached. Showing older gigs (&gt;24h) at $1 each. New gigs will appear after your period resets or{' '}
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto font-normal underline"
+                    onClick={() => navigate('/lead-limits')}
+                  >
+                    increase your limit
+                  </Button>.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -167,15 +252,23 @@ const BrowseGigs = () => {
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading gigs...</p>
           </div>
-        ) : filteredGigs.length === 0 ? (
+        ) : displayGigs.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No gigs found. Try adjusting your filters.</p>
+              <p className="text-muted-foreground">
+                {limitReached 
+                  ? "No older gigs available. Check back later or increase your lead limit."
+                  : "No gigs found. Try adjusting your filters."}
+              </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {filteredGigs.map((gig) => (
+            {displayGigs.map((gig) => {
+              const isOld = isOldGig(gig.created_at);
+              const showSpecialPrice = isOld && limitReached && (diggerProfile as any)?.lead_limit_enabled;
+              
+              return (
               <Card 
                 key={gig.id} 
                 className="hover:shadow-[var(--shadow-hover)] transition-all duration-300 cursor-pointer"
@@ -210,21 +303,24 @@ const BrowseGigs = () => {
                       </div>
                     </div>
                     <div className="lg:text-right space-y-2">
-                      <Badge variant="secondary">Open</Badge>
-                      {gig.purchase_count > 0 && (
-                        <Badge variant="outline" className="flex items-center gap-1 ml-2">
-                          <Users className="h-3 w-3" />
-                          {gig.purchase_count}
+                      {showSpecialPrice && (
+                        <Badge variant="default" className="mb-2 bg-accent text-accent-foreground">
+                          Old Lead - $1
                         </Badge>
                       )}
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}
-                      </p>
+                      <Badge variant="secondary" className="mb-2">
+                        <Users className="h-3 w-3 mr-1" />
+                        {gig.purchase_count} {gig.purchase_count === 1 ? 'digger' : 'diggers'} interested
+                      </Badge>
+                      <div className="text-sm text-muted-foreground">
+                        Posted {formatDistanceToNow(new Date(gig.created_at))} ago
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
