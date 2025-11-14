@@ -13,8 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { exportToCSV, exportToPDF } from "@/utils/exportTransactions";
 
 interface Transaction {
   id: string;
@@ -219,6 +226,46 @@ const Transactions = () => {
     return 'Free';
   };
 
+  const handleExportCSV = () => {
+    if (filteredTransactions.length === 0) {
+      toast({
+        title: "No transactions to export",
+        description: "Apply different filters to see transactions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    exportToCSV(filteredTransactions, userType!, 'transactions');
+    toast({
+      title: "Export successful",
+      description: `Downloaded ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} as CSV`,
+    });
+  };
+
+  const handleExportPDF = () => {
+    if (filteredTransactions.length === 0) {
+      toast({
+        title: "No transactions to export",
+        description: "Apply different filters to see transactions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const stats = userType === 'digger' ? {
+      totalEarnings,
+      totalCommission,
+      transactionCount: filteredTransactions.length
+    } : undefined;
+
+    exportToPDF(filteredTransactions, userType!, stats, 'transactions');
+    toast({
+      title: "Export successful",
+      description: `Downloaded ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} as PDF`,
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -247,16 +294,40 @@ const Transactions = () => {
       </nav>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-5xl mx-auto space-y-8">
-          {/* Header */}
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Transaction History</h1>
-            <p className="text-muted-foreground">
-              {userType === 'digger' 
-                ? 'View your completed work and earnings breakdown'
-                : 'View your payment history for completed gigs'}
-            </p>
-          </div>
+          <div className="max-w-5xl mx-auto space-y-8">
+            {/* Header */}
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h1 className="text-4xl font-bold mb-2">Transaction History</h1>
+                <p className="text-muted-foreground">
+                  {userType === 'digger' 
+                    ? 'View your completed work and earnings breakdown'
+                    : 'View your payment history for completed gigs'}
+                </p>
+              </div>
+              
+              {/* Export Dropdown */}
+              {transactions.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Download className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleExportCSV}>
+                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                      Export as CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportPDF}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export as PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
 
           {/* Stats for Diggers */}
           {userType === 'digger' && (
@@ -402,11 +473,18 @@ const Transactions = () => {
               </div>
             </div>
 
-            {/* Results count */}
+            {/* Results count and export info */}
             {transactions.length > 0 && (
-              <p className="text-sm text-muted-foreground">
-                Showing {filteredTransactions.length} of {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
-              </p>
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <p>
+                  Showing {filteredTransactions.length} of {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+                </p>
+                {filteredTransactions.length > 0 && (
+                  <p className="text-xs">
+                    💡 Use the Export button to download as CSV or PDF
+                  </p>
+                )}
+              </div>
             )}
             
             {filteredTransactions.length === 0 && transactions.length > 0 ? (
