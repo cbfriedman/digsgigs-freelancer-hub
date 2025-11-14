@@ -117,11 +117,28 @@ const Index = () => {
   ];
 
   const pricingTiers = [
-    { inquiries: "0-10", price: "$0", label: "Starter" },
-    { inquiries: "11-25", price: "$29", label: "Growing" },
-    { inquiries: "26-50", price: "$49", label: "Professional" },
-    { inquiries: "51-100", price: "$79", label: "Expert" },
-    { inquiries: "100+", price: "$99", label: "Elite" }
+    { 
+      name: "Free", 
+      price: "$0",
+      leadCost: "$3/lead", 
+      commission: "9% + $5 min",
+      features: ["Pay per lead", "Commission on work"]
+    },
+    { 
+      name: "Pro", 
+      price: "$10",
+      leadCost: "$2/lead", 
+      commission: "4% + $5 min",
+      popular: true,
+      features: ["Lower lead cost", "Lower commission"]
+    },
+    { 
+      name: "Premium", 
+      price: "$150",
+      leadCost: "FREE", 
+      commission: "0%",
+      features: ["Free leads", "No commission"]
+    }
   ];
 
   return (
@@ -411,32 +428,57 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">Pricing</Badge>
-            <h3 className="text-4xl font-bold mb-4">Pay As You Grow</h3>
+            <h3 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h3>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Fair, transparent pricing that scales with your success. Only pay based on monthly inquiries received.
+              Pay per lead to view contact info, plus commission only when you complete work.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-5 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {pricingTiers.map((tier, i) => (
               <div 
                 key={i} 
-                className={`p-6 rounded-xl border transition-all duration-300 hover:shadow-[var(--shadow-hover)] ${
-                  i === 2 ? 'border-primary bg-primary/5 scale-105' : 'border-border/50'
+                className={`p-8 rounded-xl border transition-all duration-300 hover:shadow-[var(--shadow-hover)] ${
+                  tier.popular ? 'border-primary bg-primary/5 scale-105' : 'border-border/50'
                 }`}
               >
-                <div className="text-center">
-                  <h4 className="font-bold text-lg mb-2">{tier.label}</h4>
-                  <div className="text-3xl font-bold text-primary mb-2">{tier.price}</div>
+                {tier.popular && (
+                  <Badge className="mb-4 bg-primary text-primary-foreground">Most Popular</Badge>
+                )}
+                <div className="text-center mb-6">
+                  <h4 className="font-bold text-2xl mb-2">{tier.name}</h4>
+                  <div className="text-4xl font-bold text-primary mb-2">{tier.price}</div>
                   <div className="text-sm text-muted-foreground mb-4">/month</div>
-                  <div className="text-sm font-medium">{tier.inquiries} inquiries</div>
+                  <div className="space-y-2 text-sm">
+                    <div className="font-semibold text-foreground">{tier.leadCost}</div>
+                    <div className="text-muted-foreground">{tier.commission} commission</div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {tier.features.map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                      <span>{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
 
+          <div className="text-center mt-12">
+            <Button 
+              size="lg"
+              onClick={() => navigate("/pricing")}
+              className="gap-2"
+            >
+              View Full Pricing Details
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+
           <p className="text-center text-sm text-muted-foreground mt-8 max-w-2xl mx-auto">
-            * Clients post gigs for free. Diggers only pay when they receive project inquiries or bid invitations.
+            * Clients post gigs for free. Diggers pay per lead to access contact info, then pay commission only on completed work.
           </p>
         </div>
       </section>
