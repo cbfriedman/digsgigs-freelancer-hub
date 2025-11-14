@@ -53,10 +53,10 @@ export default function LeadLimits() {
       if (error) throw error;
 
       if (diggerProfile) {
-        setDiggerId(diggerProfile.id);
-        setLeadLimitEnabled(diggerProfile.lead_limit_enabled || false);
-        setLeadLimit(diggerProfile.lead_limit?.toString() || '10');
-        setPeriod((diggerProfile.lead_limit_period as 'daily' | 'weekly' | 'monthly') || 'monthly');
+        setDiggerId((diggerProfile as any).id);
+        setLeadLimitEnabled((diggerProfile as any).lead_limit_enabled || false);
+        setLeadLimit((diggerProfile as any).lead_limit?.toString() || '10');
+        setPeriod(((diggerProfile as any).lead_limit_period as 'daily' | 'weekly' | 'monthly') || 'monthly');
       }
     } catch (error) {
       console.error('Error loading lead limits:', error);
@@ -80,7 +80,7 @@ export default function LeadLimits() {
           lead_limit_enabled: leadLimitEnabled,
           lead_limit: leadLimitEnabled ? parseInt(leadLimit) : null,
           lead_limit_period: period,
-        })
+        } as any)
         .eq('id', diggerId);
 
       if (error) throw error;
