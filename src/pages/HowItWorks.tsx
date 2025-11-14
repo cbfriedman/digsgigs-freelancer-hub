@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, Briefcase, DollarSign, Star, CheckCircle2, Search } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { ArrowLeft, Users, Briefcase, DollarSign, Star, CheckCircle2, Search, FileText, Eye, MessageCircle, Handshake } from "lucide-react";
 
 const HowItWorks = () => {
   const navigate = useNavigate();
@@ -48,26 +49,75 @@ const HowItWorks = () => {
 
           {/* For Giggers (Clients) */}
           <TabsContent value="giggers" className="space-y-12">
-            {/* Video Section */}
+            {/* Interactive Carousel */}
             <div className="mb-12">
-              <h2 className="text-3xl font-bold text-center mb-6">Watch How It Works for Clients</h2>
-              <Card className="aspect-video max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-border bg-muted/30">
-                <CardContent className="flex items-center justify-center h-full p-8">
-                  <div className="text-center space-y-4">
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                      <Briefcase className="w-10 h-10 text-primary" />
-                    </div>
-                    <h3 className="text-2xl font-semibold">Client Tutorial Video</h3>
-                    <p className="text-muted-foreground max-w-md">
-                      Replace this placeholder with your instructional video URL in the code.
-                      <br />
-                      <code className="text-xs bg-background/50 px-2 py-1 rounded mt-2 inline-block">
-                        src/pages/HowItWorks.tsx (line ~55)
-                      </code>
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <h2 className="text-3xl font-bold text-center mb-6">See How It Works for Clients</h2>
+              <Carousel className="max-w-4xl mx-auto">
+                <CarouselContent>
+                  <CarouselItem>
+                    <Card className="border-2 border-primary/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <FileText className="w-12 h-12 text-primary-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-primary/10 text-primary">Step 1</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Post Your Gig</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Create a detailed posting with your project description, budget range, timeline, and any specific requirements. Add documents or images if needed.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                  
+                  <CarouselItem>
+                    <Card className="border-2 border-accent/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <Eye className="w-12 h-12 text-accent-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-accent/10 text-accent">Step 2</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Get Discovered</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Your gig appears in search results where skilled diggers can find it. They can view your project details and decide if they're the right fit.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                  
+                  <CarouselItem>
+                    <Card className="border-2 border-primary/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <MessageCircle className="w-12 h-12 text-primary-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-primary/10 text-primary">Step 3</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Receive Contact Requests</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Interested diggers purchase your lead to unlock your contact information. You'll receive notifications when someone wants to connect.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                  
+                  <CarouselItem>
+                    <Card className="border-2 border-accent/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <Handshake className="w-12 h-12 text-accent-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-accent/10 text-accent">Step 4</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Choose & Hire</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Review profiles, discuss project details, and hire the professional that best fits your needs. Negotiate terms directly - completely free!
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+              <p className="text-center text-sm text-muted-foreground mt-4">← Swipe or click arrows to navigate →</p>
             </div>
 
             <section>
@@ -145,26 +195,90 @@ const HowItWorks = () => {
 
           {/* For Diggers (Service Providers) */}
           <TabsContent value="diggers" className="space-y-12">
-            {/* Video Section */}
+            {/* Interactive Carousel */}
             <div className="mb-12">
-              <h2 className="text-3xl font-bold text-center mb-6">Watch How It Works for Diggers</h2>
-              <Card className="aspect-video max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg border border-border bg-muted/30">
-                <CardContent className="flex items-center justify-center h-full p-8">
-                  <div className="text-center space-y-4">
-                    <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mx-auto">
-                      <Users className="w-10 h-10 text-accent" />
-                    </div>
-                    <h3 className="text-2xl font-semibold">Digger Tutorial Video</h3>
-                    <p className="text-muted-foreground max-w-md">
-                      Replace this placeholder with your instructional video URL in the code.
-                      <br />
-                      <code className="text-xs bg-background/50 px-2 py-1 rounded mt-2 inline-block">
-                        src/pages/HowItWorks.tsx (line ~147)
-                      </code>
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <h2 className="text-3xl font-bold text-center mb-6">See How It Works for Diggers</h2>
+              <Carousel className="max-w-4xl mx-auto">
+                <CarouselContent>
+                  <CarouselItem>
+                    <Card className="border-2 border-accent/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <Users className="w-12 h-12 text-accent-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-accent/10 text-accent">Step 1</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Create Your Profile</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Choose a unique handle, showcase your skills and expertise, upload portfolio samples, and add verified references. Your real identity stays protected.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                  
+                  <CarouselItem>
+                    <Card className="border-2 border-primary/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <Search className="w-12 h-12 text-primary-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-primary/10 text-primary">Step 2</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Browse Opportunities</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Search and filter gigs by category, budget, location, and requirements. Find projects that match your skills - no bidding wars or price competition.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                  
+                  <CarouselItem>
+                    <Card className="border-2 border-accent/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <DollarSign className="w-12 h-12 text-accent-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-accent/10 text-accent">Step 3</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Purchase Lead</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Pay a small upfront fee ($50 min or 0.5% of budget) to unlock the client's contact information and project details. Check your lead limits first.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                  
+                  <CarouselItem>
+                    <Card className="border-2 border-primary/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <MessageCircle className="w-12 h-12 text-primary-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-primary/10 text-primary">Step 4</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Connect & Close</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Reach out to the client directly, discuss project scope and timeline, negotiate your price, and close the deal on your terms.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                  
+                  <CarouselItem>
+                    <Card className="border-2 border-accent/20">
+                      <CardContent className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                        <div className="w-24 h-24 bg-gradient-to-br from-accent to-accent/60 rounded-2xl flex items-center justify-center mb-6 animate-scale-in shadow-lg">
+                          <Star className="w-12 h-12 text-accent-foreground" />
+                        </div>
+                        <Badge className="mb-4 bg-accent/10 text-accent">Step 5</Badge>
+                        <h3 className="text-3xl font-bold mb-4 text-center">Complete & Get Paid</h3>
+                        <p className="text-muted-foreground text-center max-w-md text-lg">
+                          Deliver excellent work, get paid by the client, then report completion on the platform. A small commission applies based on your subscription tier.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+              <p className="text-center text-sm text-muted-foreground mt-4">← Swipe or click arrows to navigate →</p>
             </div>
 
             <section>
