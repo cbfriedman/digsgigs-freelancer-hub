@@ -10,14 +10,14 @@ import { StepVisual } from "@/components/StepVisual";
 
 // Import step screenshots
 import step1PostGig from "@/assets/step1-post-gig-new.jpg";
-import step2GetDiscovered from "@/assets/step2-get-discovered.jpg";
+import step2GetDiscovered from "@/assets/step2-browse-gigs.jpg";
 import step3ReceiveContacts from "@/assets/step3-platform-messaging.jpg";
-import step4ChooseHire from "@/assets/step4-choose-hire.jpg";
-import diggerStep1Profile from "@/assets/digger-step1-profile.jpg";
-import diggerStep2Browse from "@/assets/digger-step2-browse.jpg";
+import step4ChooseHire from "@/assets/step4-hire-digger.jpg";
+import diggerStep1Profile from "@/assets/digger-step1-create-profile.jpg";
+import diggerStep2Browse from "@/assets/digger-step2-browse-gigs.jpg";
 import diggerStep3Purchase from "@/assets/step3-messaging.jpg";
 import diggerStep4Connect from "@/assets/digger-step4-send-proposal.jpg";
-import diggerStep5Complete from "@/assets/digger-step5-complete.jpg";
+import diggerStep5Complete from "@/assets/digger-step5-get-paid.jpg";
 
 const HowItWorks = () => {
   const navigate = useNavigate();
