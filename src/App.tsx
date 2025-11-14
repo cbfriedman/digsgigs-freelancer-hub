@@ -23,6 +23,7 @@ import Transactions from "./pages/Transactions";
 import EmailPreferences from "./pages/EmailPreferences";
 import LeadLimits from "./pages/LeadLimits";
 import DiggerGuide from "./pages/DiggerGuide";
+import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/email-preferences" element={<EmailPreferences />} />
           <Route path="/lead-limits" element={<LeadLimits />} />
           <Route path="/digger-guide" element={<DiggerGuide />} />
+          <Route path="/messages" element={<Messages />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

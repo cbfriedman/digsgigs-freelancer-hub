@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
-import { ArrowLeft, DollarSign, Calendar, Tag, User, Loader2, Award } from "lucide-react";
+import { ArrowLeft, DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidForm } from "@/components/BidForm";
 import { BidsList } from "@/components/BidsList";
@@ -130,6 +130,64 @@ const GigDetail = () => {
         return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
       default:
         return 'bg-muted';
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to send messages",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (!diggerId) {
+      toast({
+        title: "Digger profile required",
+        description: "Please complete your digger registration first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Check if conversation already exists
+      const { data: existingConv } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("gig_id", id!)
+        .eq("digger_id", diggerId)
+        .eq("consumer_id", gig.consumer_id)
+        .maybeSingle();
+
+      if (existingConv) {
+        navigate(`/messages?conversation=${existingConv.id}`);
+        return;
+      }
+
+      // Create new conversation
+      const { data: newConv, error } = await supabase
+        .from("conversations")
+        .insert({
+          gig_id: id,
+          digger_id: diggerId,
+          consumer_id: gig.consumer_id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      navigate(`/messages?conversation=${newConv.id}`);
+    } catch (error: any) {
+      toast({
+        title: "Error starting conversation",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -358,17 +416,27 @@ const GigDetail = () => {
 
             {/* Bid Form */}
             {isDigger && diggerId && gig.status === 'open' && !existingBid && (
-              <BidForm
-                gigId={id!}
-                diggerId={diggerId}
-                onSuccess={() => {
-                  toast({
-                    title: "Bid submitted!",
-                    description: "The client will review your bid.",
-                  });
-                  loadData();
-                }}
-              />
+              <>
+                <Button
+                  variant="outline"
+                  className="w-full mb-4"
+                  onClick={handleSendMessage}
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Send Message to Client
+                </Button>
+                <BidForm
+                  gigId={id!}
+                  diggerId={diggerId}
+                  onSuccess={() => {
+                    toast({
+                      title: "Bid submitted!",
+                      description: "The client will review your bid.",
+                    });
+                    loadData();
+                  }}
+                />
+              </>
             )}
 
             {existingBid && (

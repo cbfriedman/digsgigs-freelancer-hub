@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail } from "lucide-react";
+import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare } from "lucide-react";
 
 interface Reference {
   id: string;
@@ -119,16 +119,47 @@ const DiggerDetail = () => {
     }
   };
 
-  const handleContactDigger = async () => {
+  const handleSendMessage = async () => {
     if (!currentUser) {
-      toast.error("Please sign in to contact this digger");
+      toast.error("Please sign in to send messages");
       navigate("/auth");
       return;
     }
 
     if (!digger) return;
 
-    toast.success("Contact information will be available after purchasing this lead");
+    try {
+      // Check if conversation already exists with this digger
+      const { data: existingConv } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("digger_id", digger.id)
+        .eq("consumer_id", currentUser.id)
+        .maybeSingle();
+
+      if (existingConv) {
+        navigate(`/messages?conversation=${existingConv.id}`);
+        return;
+      }
+
+      // Create new conversation without a specific gig
+      const { data: newConv, error } = await supabase
+        .from("conversations")
+        .insert({
+          digger_id: digger.id,
+          consumer_id: currentUser.id,
+          gig_id: null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Conversation started!");
+      navigate(`/messages?conversation=${newConv.id}`);
+    } catch (error: any) {
+      toast.error("Error starting conversation: " + error.message);
+    }
   };
 
   const handleRequestReferenceContact = async (referenceId: string) => {
@@ -396,12 +427,13 @@ const DiggerDetail = () => {
                 <Button 
                   className="w-full mb-4" 
                   size="lg"
-                  onClick={() => navigate("/post-gig")}
+                  onClick={handleSendMessage}
                 >
-                  Post a Gig to Connect
+                  <MessageSquare className="mr-2 h-5 w-5" />
+                  Send Message
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Post your project and this digger can contact you by purchasing your lead
+                  Start a conversation to discuss your project with this digger
                 </p>
               </CardContent>
             </Card>
