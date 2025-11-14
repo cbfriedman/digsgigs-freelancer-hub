@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
 import { Loader2, Star } from "lucide-react";
 
 interface Bid {
@@ -26,10 +27,11 @@ interface Bid {
 
 interface BidsListProps {
   gigId: string;
+  gigTitle: string;
   isOwner: boolean;
 }
 
-export const BidsList = ({ gigId, isOwner }: BidsListProps) => {
+export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
   const { toast } = useToast();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,26 +194,39 @@ export const BidsList = ({ gigId, isOwner }: BidsListProps) => {
               <Badge variant={
                 bid.status === 'accepted' ? 'default' :
                 bid.status === 'rejected' ? 'destructive' :
+                bid.status === 'completed' ? 'default' :
                 'secondary'
               }>
                 {bid.status}
               </Badge>
 
-              {isOwner && bid.status === 'pending' && (
-                <Button
-                  onClick={() => handleAcceptBid(bid.id)}
-                  disabled={accepting === bid.id}
-                >
-                  {accepting === bid.id ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Accepting...
-                    </>
-                  ) : (
-                    'Accept Bid'
-                  )}
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {isOwner && bid.status === 'pending' && (
+                  <Button
+                    onClick={() => handleAcceptBid(bid.id)}
+                    disabled={accepting === bid.id}
+                  >
+                    {accepting === bid.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Accepting...
+                      </>
+                    ) : (
+                      'Accept Bid'
+                    )}
+                  </Button>
+                )}
+
+                {isOwner && bid.status === 'accepted' && (
+                  <CompleteWorkDialog
+                    bidId={bid.id}
+                    bidAmount={bid.amount}
+                    diggerId={bid.digger_profiles.id}
+                    gigTitle={gigTitle}
+                    onComplete={loadBids}
+                  />
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
