@@ -9,6 +9,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { StepVisual } from "@/components/StepVisual";
 import DemoGigGrid from "@/components/DemoGigGrid";
 import DemoDiggerGrid from "@/components/DemoDiggerGrid";
+import RegistrationCategoryDemo from "@/components/RegistrationCategoryDemo";
 
 // Import step screenshots
 import step1PostGig from "@/assets/step1-post-gig-new.jpg";
@@ -268,18 +269,32 @@ const HowItWorks = () => {
                   {diggerSteps.map((step, index) => (
                      <CarouselItem key={index}>
                        <div className="space-y-8 px-4">
-                         {/* Image Container */}
-                          <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
-                            <AspectRatio ratio={16 / 9}>
-                              <img
-                                src={step.image}
-                                alt={step.title}
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            </AspectRatio>
-                          </div>
+                         {/* Image Container or Interactive Demo */}
+                          {step.number === 1 ? (
+                            <div className="rounded-2xl overflow-hidden bg-background border-2 border-border animate-fade-in p-8">
+                              <div className="space-y-4">
+                                <h4 className="text-2xl font-semibold text-center mb-6">
+                                  Multi-Category Registration
+                                </h4>
+                                <p className="text-center text-muted-foreground mb-6">
+                                  Select multiple categories to maximize your gig opportunities
+                                </p>
+                                <RegistrationCategoryDemo />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
+                              <AspectRatio ratio={16 / 9}>
+                                <img
+                                  src={step.image}
+                                  alt={step.title}
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </AspectRatio>
+                            </div>
+                          )}
                          
                          {/* Instructions Below Image - More Prominent */}
                          <Card className="border-2 border-primary/30 bg-card/95 backdrop-blur-sm shadow-lg animate-scale-in">
