@@ -124,7 +124,14 @@ const BrowseGigs = () => {
       .order("created_at", { ascending: false });
 
     if (selectedCategory !== "all") {
-      query = query.eq("category_id", selectedCategory);
+      // Get all subcategories of the selected parent category
+      const { data: subcategories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("parent_category_id", selectedCategory);
+      
+      const categoryIds = [selectedCategory, ...(subcategories?.map(sc => sc.id) || [])];
+      query = query.in("category_id", categoryIds);
     }
 
     if (budgetFilter !== "all") {
