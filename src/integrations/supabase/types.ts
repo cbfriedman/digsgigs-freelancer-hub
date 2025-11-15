@@ -543,6 +543,30 @@ export type Database = {
           },
         ]
       }
+      login_attempts: {
+        Row: {
+          attempt_type: string
+          attempted_at: string
+          id: string
+          identifier: string
+          success: boolean | null
+        }
+        Insert: {
+          attempt_type: string
+          attempted_at?: string
+          id?: string
+          identifier: string
+          success?: boolean | null
+        }
+        Update: {
+          attempt_type?: string
+          attempted_at?: string
+          id?: string
+          identifier?: string
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -884,6 +908,16 @@ export type Database = {
         Args: { gig_budget_max: number; gig_budget_min: number }
         Returns: number
       }
+      check_rate_limit: {
+        Args: {
+          p_attempt_type: string
+          p_identifier: string
+          p_max_attempts?: number
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
+      cleanup_old_login_attempts: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

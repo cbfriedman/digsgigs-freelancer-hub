@@ -126,9 +126,38 @@ const Auth = () => {
         password: password,
       });
 
+      // SECURITY: Check rate limit before attempting login
+      const { data: isRateLimited, error: rateLimitError } = await supabase.rpc(
+        'check_rate_limit',
+        {
+          p_identifier: validated.email,
+          p_attempt_type: 'email',
+          p_max_attempts: 5,
+          p_window_minutes: 15
+        }
+      );
+
+      if (rateLimitError) {
+        console.error('Rate limit check error:', rateLimitError);
+      }
+
+      if (isRateLimited) {
+        toast.error("Too many login attempts. Please try again in 15 minutes.");
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email: validated.email,
         password: validated.password,
+      });
+
+      // Log the login attempt
+      const attemptSuccess = !error;
+      await supabase.from('login_attempts').insert({
+        identifier: validated.email,
+        attempt_type: 'email',
+        success: attemptSuccess
       });
 
       if (error) {

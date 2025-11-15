@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.send-profile-reminders]
 verify_jwt = true
+
+[functions.cleanup-login-attempts]
+verify_jwt = false
