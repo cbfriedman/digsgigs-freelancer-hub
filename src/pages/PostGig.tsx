@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Briefcase } from "lucide-react";
 import { z } from "zod";
+import { GigCategorySelector } from "@/components/GigCategorySelector";
 
 const gigSchema = z.object({
   title: z.string().trim().min(10, "Title must be at least 10 characters").max(100, "Title must be less than 100 characters"),
@@ -21,16 +21,9 @@ const gigSchema = z.object({
   deadline: z.string().optional(),
 });
 
-interface Category {
-  id: string;
-  name: string;
-  description: string | null;
-}
-
 const PostGig = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -45,10 +38,10 @@ const PostGig = () => {
   });
 
   useEffect(() => {
-    checkAuthAndLoadData();
+    checkAuth();
   }, []);
 
-  const checkAuthAndLoadData = async () => {
+  const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
@@ -68,19 +61,6 @@ const PostGig = () => {
       navigate("/");
       return;
     }
-
-    const { data: categoriesData, error } = await supabase
-      .from("categories")
-      .select("id, name, description")
-      .is("parent_category_id", null)
-      .order("name");
-
-    if (error) {
-      toast.error("Failed to load categories");
-      return;
-    }
-
-    setCategories(categoriesData || []);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,25 +208,10 @@ const PostGig = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category_id}
-                  onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                  required
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <GigCategorySelector
+                value={formData.category_id}
+                onChange={(categoryId) => setFormData({ ...formData, category_id: categoryId })}
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
