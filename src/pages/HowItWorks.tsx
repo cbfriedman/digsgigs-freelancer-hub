@@ -8,6 +8,7 @@ import { ArrowLeft, Users, Briefcase, DollarSign, Star, CheckCircle2 } from "luc
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { StepVisual } from "@/components/StepVisual";
 import DemoGigGrid from "@/components/DemoGigGrid";
+import DemoDiggerGrid from "@/components/DemoDiggerGrid";
 
 // Import step screenshots
 import step1PostGig from "@/assets/step1-post-gig-new.jpg";
@@ -136,26 +137,29 @@ const HowItWorks = () => {
                             <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in p-6">
                               <div className="mb-6">
                                 <h3 className="text-xl font-semibold mb-4 text-center">
-                                  See how your gig appears to Diggers
+                                  See how Diggers with multiple categories appear for your gig
                                 </h3>
+                                <p className="text-center text-muted-foreground mb-4 text-sm">
+                                  Diggers can register in multiple categories and will appear when their skills match your needs
+                                </p>
                                 <Tabs defaultValue="construction" className="w-full">
                                   <TabsList className="grid w-full grid-cols-4 mb-6">
-                                    <TabsTrigger value="construction">Construction</TabsTrigger>
-                                    <TabsTrigger value="web">Web Dev</TabsTrigger>
-                                    <TabsTrigger value="architecture">Architecture</TabsTrigger>
-                                    <TabsTrigger value="legal">Legal</TabsTrigger>
+                                    <TabsTrigger value="construction">Construction Gig</TabsTrigger>
+                                    <TabsTrigger value="web">Web Dev Gig</TabsTrigger>
+                                    <TabsTrigger value="architecture">Architecture Gig</TabsTrigger>
+                                    <TabsTrigger value="legal">Legal Gig</TabsTrigger>
                                   </TabsList>
                                   <TabsContent value="construction">
-                                    <DemoGigGrid category="construction" />
+                                    <DemoDiggerGrid gigCategory="construction" />
                                   </TabsContent>
                                   <TabsContent value="web">
-                                    <DemoGigGrid category="web" />
+                                    <DemoDiggerGrid gigCategory="web" />
                                   </TabsContent>
                                   <TabsContent value="architecture">
-                                    <DemoGigGrid category="architecture" />
+                                    <DemoDiggerGrid gigCategory="architecture" />
                                   </TabsContent>
                                   <TabsContent value="legal">
-                                    <DemoGigGrid category="legal" />
+                                    <DemoDiggerGrid gigCategory="legal" />
                                   </TabsContent>
                                 </Tabs>
                               </div>
