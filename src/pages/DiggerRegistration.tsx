@@ -10,10 +10,13 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 
-interface Category {
+interface IndustryCode {
   id: string;
-  name: string;
+  code_type: "SIC" | "NAICS";
+  code: string;
+  title: string;
   description: string | null;
 }
 
@@ -27,8 +30,9 @@ interface Reference {
 const DiggerRegistration = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedIndustryCode, setSelectedIndustryCode] = useState<IndustryCode | null>(null);
+  const [customOccupationTitle, setCustomOccupationTitle] = useState("");
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
   
   const [formData, setFormData] = useState({
@@ -72,26 +76,6 @@ const DiggerRegistration = () => {
       navigate("/");
       return;
     }
-
-    // Load categories
-    const { data: categoriesData, error } = await supabase
-      .from("categories")
-      .select("*")
-      .order("name");
-
-    if (error) {
-      toast.error("Failed to load categories");
-    } else {
-      setCategories(categoriesData || []);
-    }
-  };
-
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
-    );
   };
 
   const addReference = () => {
@@ -113,8 +97,8 @@ const DiggerRegistration = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (selectedCategories.length === 0) {
-      toast.error("Please select at least one category");
+    if (selectedCategories.length === 0 && !selectedIndustryCode) {
+      toast.error("Please select at least one category or industry code");
       return;
     }
 
@@ -148,6 +132,9 @@ const DiggerRegistration = () => {
           is_insured: formData.is_insured,
           is_bonded: formData.is_bonded,
           is_licensed: formData.is_licensed,
+          sic_code: selectedIndustryCode?.code_type === "SIC" ? selectedIndustryCode.code : null,
+          naics_code: selectedIndustryCode?.code_type === "NAICS" ? selectedIndustryCode.code : null,
+          custom_occupation_title: customOccupationTitle || null,
         })
         .select()
         .single();
@@ -400,39 +387,14 @@ const DiggerRegistration = () => {
               <Separator />
 
               {/* Categories */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-xl font-semibold">Select Categories *</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Select all categories you want to register under. Each category will be a separate "Dig".
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto border rounded-md p-4">
-                  {categories.map((category) => (
-                    <div key={category.id} className="flex items-start space-x-2">
-                      <Checkbox
-                        id={category.id}
-                        checked={selectedCategories.includes(category.id)}
-                        onCheckedChange={() => handleCategoryToggle(category.id)}
-                      />
-                      <div className="grid gap-1 leading-none">
-                        <Label
-                          htmlFor={category.id}
-                          className="text-sm font-medium leading-none cursor-pointer"
-                        >
-                          {category.name}
-                        </Label>
-                        {category.description && (
-                          <p className="text-xs text-muted-foreground">{category.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Selected categories: {selectedCategories.length}
-                </p>
-              </div>
+              <RegistrationCategorySelector
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+                onIndustryCodeChange={(code, title) => {
+                  setSelectedIndustryCode(code);
+                  setCustomOccupationTitle(title);
+                }}
+              />
 
               <Separator />
 
