@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,11 +13,54 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Extract and verify authenticated user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !user) {
+      console.error('Invalid authentication token:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Not authenticated' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { gigId, diggerId, gigTitle, tier, isOldLead } = await req.json();
 
     if (!gigId || !diggerId) {
       throw new Error('Missing required parameters');
     }
+
+    // SECURITY: Verify diggerId belongs to authenticated user
+    const { data: diggerProfile, error: profileError } = await supabaseClient
+      .from('digger_profiles')
+      .select('id, user_id')
+      .eq('id', diggerId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError || !diggerProfile) {
+      console.error('Unauthorized: Digger profile does not belong to user', { userId: user.id, diggerId });
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Digger profile does not belong to user' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Authorization verified:', { userId: user.id, diggerId, gigId });
 
     // Calculate lead cost based on lead age and digger's tier
     let leadCost = 3; // Default: free tier
@@ -79,7 +123,7 @@ serve(async (req) => {
       },
     });
 
-    console.log('Checkout session created:', session.id);
+    console.log('Checkout session created:', { sessionId: session.id, userId: user.id, gigId, diggerId });
 
     return new Response(
       JSON.stringify({ sessionId: session.id, url: session.url }),

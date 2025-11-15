@@ -66,9 +66,45 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Starting profile completion reminder job");
-    
+    // SECURITY: Verify admin authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      console.error('Invalid authentication token:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Not authenticated' }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    // SECURITY: Check admin role
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (roleError || !roleData) {
+      console.error('User is not an admin:', user.id);
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
+    console.log(`Admin ${user.id} initiated profile completion reminder job`);
     
     // Get all digger profiles with their user data
     const { data: diggers, error: diggersError } = await supabase
