@@ -132,9 +132,33 @@ const HowItWorks = () => {
                   {clientSteps.map((step, index) => (
                      <CarouselItem key={index}>
                        <div className="space-y-8 px-4">
-                          {step.number === 2 ? (
+                  {step.number === 2 ? (
                             <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in p-6">
-                              <DemoGigGrid />
+                              <div className="mb-6">
+                                <h3 className="text-xl font-semibold mb-4 text-center">
+                                  See how your gig appears to Diggers
+                                </h3>
+                                <Tabs defaultValue="construction" className="w-full">
+                                  <TabsList className="grid w-full grid-cols-4 mb-6">
+                                    <TabsTrigger value="construction">Construction</TabsTrigger>
+                                    <TabsTrigger value="web">Web Dev</TabsTrigger>
+                                    <TabsTrigger value="architecture">Architecture</TabsTrigger>
+                                    <TabsTrigger value="legal">Legal</TabsTrigger>
+                                  </TabsList>
+                                  <TabsContent value="construction">
+                                    <DemoGigGrid category="construction" />
+                                  </TabsContent>
+                                  <TabsContent value="web">
+                                    <DemoGigGrid category="web" />
+                                  </TabsContent>
+                                  <TabsContent value="architecture">
+                                    <DemoGigGrid category="architecture" />
+                                  </TabsContent>
+                                  <TabsContent value="legal">
+                                    <DemoGigGrid category="legal" />
+                                  </TabsContent>
+                                </Tabs>
+                              </div>
                             </div>
                           ) : (
                             <div className="rounded-2xl overflow-hidden shadow-2xl bg-muted/50 border-2 border-border animate-fade-in">
