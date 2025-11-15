@@ -578,6 +578,41 @@ export type Database = {
           },
         ]
       }
+      profile_completion_reminders: {
+        Row: {
+          created_at: string
+          digger_id: string
+          id: string
+          profile_completion_at_send: number
+          reminder_type: string
+          sent_at: string
+        }
+        Insert: {
+          created_at?: string
+          digger_id: string
+          id?: string
+          profile_completion_at_send: number
+          reminder_type: string
+          sent_at?: string
+        }
+        Update: {
+          created_at?: string
+          digger_id?: string
+          id?: string
+          profile_completion_at_send?: number
+          reminder_type?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_completion_reminders_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
