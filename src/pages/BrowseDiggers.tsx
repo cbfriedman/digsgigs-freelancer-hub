@@ -13,6 +13,7 @@ import { ArrowLeft, Search, Star, DollarSign, Briefcase } from "lucide-react";
 interface Category {
   id: string;
   name: string;
+  parent_category_id: string | null;
 }
 
 interface Digger {
@@ -32,6 +33,9 @@ interface Digger {
   is_insured: boolean;
   is_bonded: boolean;
   is_licensed: string;
+  sic_code: string | null;
+  naics_code: string | null;
+  custom_occupation_title: string | null;
   profiles: {
     full_name: string | null;
   };
@@ -58,9 +62,10 @@ const BrowseDiggers = () => {
   const loadData = async () => {
     setLoading(true);
 
+    // Load parent categories only
     const { data: categoriesData } = await supabase
       .from("categories")
-      .select("id, name")
+      .select("id, name, parent_category_id")
       .is("parent_category_id", null)
       .order("name");
 
@@ -69,10 +74,18 @@ const BrowseDiggers = () => {
     let diggerIds: string[] | null = null;
 
     if (selectedCategory !== "all") {
+      // Get all subcategories of the selected parent category
+      const { data: subcategories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("parent_category_id", selectedCategory);
+      
+      const categoryIds = [selectedCategory, ...(subcategories?.map(sc => sc.id) || [])];
+      
       const { data: categoryDiggers } = await supabase
         .from("digger_categories")
         .select("digger_id")
-        .eq("category_id", selectedCategory);
+        .in("category_id", categoryIds);
       
       diggerIds = categoryDiggers?.map(cd => cd.digger_id) || [];
       
@@ -119,12 +132,31 @@ const BrowseDiggers = () => {
 
   const filteredDiggers = diggers.filter((digger) => {
     const searchLower = searchTerm.toLowerCase();
+    const customOccupation = digger.custom_occupation_title || "";
     return (
       digger.profession.toLowerCase().includes(searchLower) ||
       digger.handle?.toLowerCase().includes(searchLower) ||
-      digger.bio?.toLowerCase().includes(searchLower)
+      digger.bio?.toLowerCase().includes(searchLower) ||
+      customOccupation.toLowerCase().includes(searchLower)
     );
   });
+
+  const getDisplayProfession = (digger: Digger) => {
+    if (digger.custom_occupation_title) {
+      return digger.custom_occupation_title;
+    }
+    return digger.profession;
+  };
+
+  const getOccupationBadge = (digger: Digger) => {
+    if (digger.sic_code) {
+      return `SIC: ${digger.sic_code}`;
+    }
+    if (digger.naics_code) {
+      return `NAICS: ${digger.naics_code}`;
+    }
+    return null;
+  };
 
   const getInitials = (handle: string | null) => {
     if (!handle) return "DG";
@@ -241,7 +273,12 @@ const BrowseDiggers = () => {
                           )}
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{digger.profession}</p>
+                      <p className="text-sm text-muted-foreground truncate">{getDisplayProfession(digger)}</p>
+                      {getOccupationBadge(digger) && (
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {getOccupationBadge(digger)}
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
