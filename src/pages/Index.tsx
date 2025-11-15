@@ -44,6 +44,7 @@ const Index = () => {
   const [showOnboardingChoice, setShowOnboardingChoice] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [userName, setUserName] = useState<string>("");
+  const [profileCompletion, setProfileCompletion] = useState<number>(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -65,6 +66,35 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const calculateProfileCompletion = (profile: any) => {
+    if (!profile) return 0;
+    
+    const fields = [
+      profile.business_name,
+      profile.phone,
+      profile.location,
+      profile.profession,
+      profile.bio,
+      profile.hourly_rate_min,
+      profile.hourly_rate_max,
+      profile.years_experience,
+      profile.availability,
+      profile.portfolio_urls && profile.portfolio_urls.length > 0,
+      profile.skills && profile.skills.length > 0,
+      profile.certifications && profile.certifications.length > 0,
+      profile.is_insured !== null,
+      profile.is_bonded !== null,
+      profile.sic_code || profile.naics_code,
+    ];
+    
+    const completedFields = fields.filter(field => {
+      if (typeof field === 'boolean') return field;
+      return field !== null && field !== undefined && field !== '';
+    }).length;
+    
+    return Math.round((completedFields / fields.length) * 100);
+  };
+
   const checkUserType = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
@@ -76,8 +106,18 @@ const Index = () => {
     setIsDigger(isDiggerUser);
     setUserName(data?.full_name || data?.email || "User");
     
-    // Check if this is a new digger who hasn't seen onboarding
+    // Fetch digger profile for completion calculation
     if (isDiggerUser) {
+      const { data: diggerProfile } = await supabase
+        .from("digger_profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      
+      if (diggerProfile) {
+        setProfileCompletion(calculateProfileCompletion(diggerProfile));
+      }
+      
       const hasSeenOnboarding = localStorage.getItem(`onboarding_seen_${userId}`);
       if (!hasSeenOnboarding) {
         setShowOnboardingChoice(true);
@@ -236,9 +276,17 @@ const Index = () => {
                     <DropdownMenuSeparator />
                     {isDigger && (
                       <>
-                        <DropdownMenuItem onClick={() => navigate("/edit-profile")}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Profile
+                        <DropdownMenuItem onClick={() => navigate("/edit-profile")} className="flex justify-between">
+                          <div className="flex items-center">
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Profile
+                          </div>
+                          <Badge 
+                            variant={profileCompletion === 100 ? "default" : "secondary"}
+                            className="ml-2"
+                          >
+                            {profileCompletion}%
+                          </Badge>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate("/my-leads")}>
                           <FileText className="mr-2 h-4 w-4" />
