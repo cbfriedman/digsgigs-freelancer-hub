@@ -9,6 +9,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, Send, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { z } from "zod";
+
+// SECURITY: Input validation schema
+const messageSchema = z.object({
+  content: z.string()
+    .trim()
+    .min(1, "Message cannot be empty")
+    .max(5000, "Message must be less than 5000 characters"),
+});
 
 interface Conversation {
   id: string;
@@ -145,20 +154,33 @@ export default function Messages() {
     if (!newMessage.trim() || !selectedConversation) return;
 
     try {
+      // SECURITY: Validate message content
+      const validated = messageSchema.parse({
+        content: newMessage,
+      });
+
       const { error } = await supabase.from("messages" as any).insert({
         conversation_id: selectedConversation,
         sender_id: currentUser?.id,
-        content: newMessage.trim(),
+        content: validated.content,
       } as any);
 
       if (error) throw error;
       setNewMessage("");
     } catch (error: any) {
-      toast({
-        title: "Error sending message",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Invalid message",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error sending message",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -277,16 +299,22 @@ export default function Messages() {
                   ))}
                 </ScrollArea>
                 <div className="p-4 border-t border-border">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Type your message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                    />
-                    <Button onClick={sendMessage} size="icon">
-                      <Send className="h-4 w-4" />
-                    </Button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type your message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                        maxLength={5000}
+                      />
+                      <Button onClick={sendMessage} size="icon">
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-right">
+                      {newMessage.length}/5000 characters
+                    </p>
                   </div>
                 </div>
               </CardContent>

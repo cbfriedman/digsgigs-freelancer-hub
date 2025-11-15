@@ -7,6 +7,23 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { z } from "zod";
+
+// SECURITY: Input validation schema
+const bidSchema = z.object({
+  amount: z.number()
+    .positive("Amount must be greater than 0")
+    .max(1000000, "Amount must be less than $1,000,000")
+    .refine((val) => Number.isFinite(val), "Amount must be a valid number"),
+  timeline: z.string()
+    .trim()
+    .min(3, "Timeline must be at least 3 characters")
+    .max(100, "Timeline must be less than 100 characters"),
+  proposal: z.string()
+    .trim()
+    .min(50, "Proposal must be at least 50 characters")
+    .max(5000, "Proposal must be less than 5000 characters"),
+});
 
 interface BidFormProps {
   gigId: string;
@@ -36,14 +53,21 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
     setLoading(true);
 
     try {
+      // SECURITY: Validate inputs before submission
+      const validated = bidSchema.parse({
+        amount: parseFloat(amount),
+        timeline: timeline,
+        proposal: proposal,
+      });
+
       const { data: bidData, error } = await supabase
         .from('bids' as any)
         .insert({
           gig_id: gigId,
           digger_id: diggerId,
-          amount: parseFloat(amount),
-          timeline,
-          proposal,
+          amount: validated.amount,
+          timeline: validated.timeline,
+          proposal: validated.proposal,
         } as any)
         .select()
         .single();
@@ -58,8 +82,8 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
             bidId: (bidData as any)?.id,
             gigId,
             diggerId,
-            amount: parseFloat(amount),
-            timeline,
+            amount: validated.amount,
+            timeline: validated.timeline,
           },
         });
       } catch (emailError) {
@@ -75,11 +99,21 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
       onSuccess();
     } catch (error: any) {
       console.error('Error submitting bid:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to submit bid",
-        variant: "destructive",
-      });
+      
+      if (error instanceof z.ZodError) {
+        // Show validation errors
+        toast({
+          title: "Invalid input",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to submit bid",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -121,7 +155,7 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="proposal">Proposal</Label>
+            <Label htmlFor="proposal">Proposal (minimum 50 characters)</Label>
             <Textarea
               id="proposal"
               placeholder="Describe your approach, experience, and why you're the best fit for this project..."
@@ -129,7 +163,11 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
               onChange={(e) => setProposal(e.target.value)}
               rows={6}
               required
+              maxLength={5000}
             />
+            <p className="text-xs text-muted-foreground">
+              {proposal.length}/5000 characters
+            </p>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
