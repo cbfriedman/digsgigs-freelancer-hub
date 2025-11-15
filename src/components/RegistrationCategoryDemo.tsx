@@ -3,6 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import IndustryCodeLookup from "./IndustryCodeLookup";
+
+interface IndustryCode {
+  id: string;
+  code_type: "SIC" | "NAICS";
+  code: string;
+  title: string;
+  description: string | null;
+}
 
 const categories = [
   { id: "1", name: "Construction", description: "General contracting, carpentry, remodeling" },
@@ -17,18 +28,38 @@ const categories = [
   { id: "10", name: "Business Law", description: "Corporate and business legal services" },
   { id: "11", name: "Intellectual Property", description: "Patents, trademarks, and copyrights" },
   { id: "12", name: "Real Estate Law", description: "Property and real estate legal matters" },
+  { id: "others", name: "Other Professions", description: "Select using SIC or NAICS industry codes" },
 ];
 
 export const RegistrationCategoryDemo = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["1", "2", "5"]);
+  const [showCodeDialog, setShowCodeDialog] = useState(false);
+  const [selectedCode, setSelectedCode] = useState<IndustryCode | null>(null);
+  const [customTitle, setCustomTitle] = useState("");
 
   const handleCategoryToggle = (categoryId: string) => {
+    if (categoryId === "others") {
+      setShowCodeDialog(true);
+      return;
+    }
+    
     setSelectedCategories((prev) =>
       prev.includes(categoryId)
         ? prev.filter((id) => id !== categoryId)
         : [...prev, categoryId]
     );
   };
+
+  const handleCodeSelect = (code: IndustryCode, title: string) => {
+    setSelectedCode(code);
+    setCustomTitle(title);
+    if (!selectedCategories.includes("others")) {
+      setSelectedCategories((prev) => [...prev, "others"]);
+    }
+    setShowCodeDialog(false);
+  };
+
+  const hasOthersSelected = selectedCategories.includes("others");
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -42,23 +73,57 @@ export const RegistrationCategoryDemo = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto border rounded-md p-4 bg-muted/20">
           {categories.map((category) => (
             <div key={category.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
-              <Checkbox
-                id={category.id}
-                checked={selectedCategories.includes(category.id)}
-                onCheckedChange={() => handleCategoryToggle(category.id)}
-                className="mt-1"
-              />
-              <div className="grid gap-1 leading-none flex-1">
-                <Label
-                  htmlFor={category.id}
-                  className="text-sm font-medium leading-none cursor-pointer"
-                >
-                  {category.name}
-                </Label>
-                {category.description && (
-                  <p className="text-xs text-muted-foreground">{category.description}</p>
-                )}
-              </div>
+              {category.id === "others" ? (
+                <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-left h-auto p-3"
+                      onClick={() => handleCategoryToggle(category.id)}
+                    >
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{category.name}</div>
+                        <p className="text-xs text-muted-foreground mt-1">{category.description}</p>
+                        {hasOthersSelected && selectedCode && (
+                          <Badge variant="secondary" className="mt-2 text-xs">
+                            {selectedCode.code_type}: {selectedCode.code} - {customTitle}
+                          </Badge>
+                        )}
+                      </div>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Select Your Industry Code</DialogTitle>
+                    </DialogHeader>
+                    <IndustryCodeLookup 
+                      onSelect={handleCodeSelect}
+                      selectedCode={selectedCode}
+                      customTitle={customTitle}
+                    />
+                  </DialogContent>
+                </Dialog>
+              ) : (
+                <>
+                  <Checkbox
+                    id={category.id}
+                    checked={selectedCategories.includes(category.id)}
+                    onCheckedChange={() => handleCategoryToggle(category.id)}
+                    className="mt-1"
+                  />
+                  <div className="grid gap-1 leading-none flex-1">
+                    <Label
+                      htmlFor={category.id}
+                      className="text-sm font-medium leading-none cursor-pointer"
+                    >
+                      {category.name}
+                    </Label>
+                    {category.description && (
+                      <p className="text-xs text-muted-foreground">{category.description}</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -70,8 +135,15 @@ export const RegistrationCategoryDemo = () => {
           <div className="flex flex-wrap gap-2">
             {selectedCategories.length > 0 ? (
               selectedCategories.map((id) => {
+                if (id === "others" && selectedCode) {
+                  return (
+                    <Badge key={id} variant="secondary" className="text-sm px-3 py-1">
+                      {customTitle} ({selectedCode.code_type}: {selectedCode.code})
+                    </Badge>
+                  );
+                }
                 const category = categories.find((c) => c.id === id);
-                return category ? (
+                return category && category.id !== "others" ? (
                   <Badge key={id} variant="secondary" className="text-sm px-3 py-1">
                     {category.name}
                   </Badge>
