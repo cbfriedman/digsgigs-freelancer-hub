@@ -15,6 +15,7 @@ serve(async (req) => {
   const signature = req.headers.get('stripe-signature');
   
   if (!signature) {
+    console.error('Webhook error: Missing stripe-signature header');
     return new Response(
       JSON.stringify({ error: 'No signature' }),
       { status: 400, headers: corsHeaders }
@@ -22,19 +23,37 @@ serve(async (req) => {
   }
 
   try {
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+
+    // SECURITY: Make webhook secret mandatory
+    if (!webhookSecret) {
+      console.error('CRITICAL: STRIPE_WEBHOOK_SECRET is not configured');
+      throw new Error('Webhook secret is not configured. Contact administrator.');
+    }
+
+    if (!stripeSecretKey) {
+      console.error('CRITICAL: STRIPE_SECRET_KEY is not configured');
+      throw new Error('Stripe configuration error');
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
 
     const body = await req.text();
-    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
+    // SECURITY: Always validate webhook signatures
     let event: Stripe.Event;
-
-    if (webhookSecret) {
+    try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } else {
-      event = JSON.parse(body);
+      console.log('Webhook signature validated successfully');
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      return new Response(
+        JSON.stringify({ error: 'Invalid signature' }),
+        { status: 401, headers: corsHeaders }
+      );
     }
 
     console.log('Webhook event type:', event.type);
@@ -53,13 +72,14 @@ serve(async (req) => {
       );
 
       // Get the consumer_id for this gig
-      const { data: gigData } = await supabaseClient
+      const { data: gigData, error: gigError } = await supabaseClient
         .from('gigs')
         .select('consumer_id')
         .eq('id', gigId)
         .single();
 
-      if (!gigData) {
+      if (gigError || !gigData) {
+        console.error('Error fetching gig:', gigError);
         throw new Error('Gig not found');
       }
 
@@ -84,7 +104,7 @@ serve(async (req) => {
         throw insertError;
       }
 
-      console.log('Lead purchase recorded successfully', { tier, amount: purchasePrice });
+      console.log('Lead purchase recorded successfully', { tier, amount: purchasePrice, gigId, diggerId });
     }
 
     return new Response(
