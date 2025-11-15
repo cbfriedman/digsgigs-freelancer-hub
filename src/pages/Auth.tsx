@@ -31,6 +31,14 @@ const signUpSchema = authSchema.extend({
     .max(100, "Full name must be less than 100 characters"),
 });
 
+const phoneSchema = z.object({
+  phone: z.string()
+    .trim()
+    .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format. Use international format (e.g., +1234567890)")
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must be less than 15 digits"),
+});
+
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -38,6 +46,8 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
   const [showPassword, setShowPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [showResetForm, setShowResetForm] = useState(false);
@@ -177,6 +187,71 @@ const Auth = () => {
         toast.error(error.errors[0].message);
       } else {
         toast.error(error.message || "An error occurred during sign in");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhoneSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // SECURITY: Validate phone number
+      const validated = phoneSchema.parse({ phone });
+
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: validated.phone,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("Verification code sent to your phone!");
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || "An error occurred during phone sign in");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhoneSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // SECURITY: Validate phone number and full name
+      const validatedPhone = phoneSchema.parse({ phone });
+      const validatedName = z.string().trim().min(2).max(100).parse(fullName);
+
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: validatedPhone.phone,
+        options: {
+          data: {
+            full_name: validatedName,
+            user_type: userType,
+          },
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("Verification code sent! Enter it to complete signup.");
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || "An error occurred during phone sign up");
       }
     } finally {
       setLoading(false);
@@ -346,12 +421,19 @@ const Auth = () => {
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
                       <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with email
+                        Or continue with
                       </span>
                     </div>
                   </div>
 
-                  <form onSubmit={handleSignIn} className="space-y-4">
+                  <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as "email" | "phone")} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                      <TabsTrigger value="email">Email</TabsTrigger>
+                      <TabsTrigger value="phone">Phone</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="email">
+                      <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="signin-email">Email</Label>
                       <Input
@@ -390,18 +472,42 @@ const Auth = () => {
                         </Button>
                       </div>
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Signing in..." : "Sign In"}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="link" 
-                      className="w-full text-sm" 
-                      onClick={() => setShowResetForm(true)}
-                    >
-                      Forgot password?
-                    </Button>
-                  </form>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? "Signing in..." : "Sign In"}
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          className="w-full text-sm" 
+                          onClick={() => setShowResetForm(true)}
+                        >
+                          Forgot password?
+                        </Button>
+                      </form>
+                    </TabsContent>
+
+                    <TabsContent value="phone">
+                      <form onSubmit={handlePhoneSignIn} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-phone">Phone Number</Label>
+                          <Input
+                            id="signin-phone"
+                            type="tel"
+                            placeholder="+1234567890"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Include country code (e.g., +1 for US)
+                          </p>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? "Sending code..." : "Send verification code"}
+                        </Button>
+                      </form>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               )}
             </TabsContent>
@@ -470,12 +576,19 @@ const Auth = () => {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-background px-2 text-muted-foreground">
-                      Or continue with email
+                      Or continue with
                     </span>
                   </div>
                 </div>
 
-                <form onSubmit={handleSignUp} className="space-y-4">
+                <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as "email" | "phone")} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="email">Email</TabsTrigger>
+                    <TabsTrigger value="phone">Phone</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="email">
+                    <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
                     <Input
@@ -526,10 +639,45 @@ const Auth = () => {
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Sign Up"}
-                  </Button>
-                </form>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? "Creating account..." : "Sign Up"}
+                      </Button>
+                    </form>
+                  </TabsContent>
+
+                  <TabsContent value="phone">
+                    <form onSubmit={handlePhoneSignUp} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-name-phone">Full Name</Label>
+                        <Input
+                          id="signup-name-phone"
+                          type="text"
+                          placeholder="John Doe"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-phone">Phone Number</Label>
+                        <Input
+                          id="signup-phone"
+                          type="tel"
+                          placeholder="+1234567890"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Include country code (e.g., +1 for US)
+                        </p>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? "Sending code..." : "Sign Up with Phone"}
+                      </Button>
+                    </form>
+                  </TabsContent>
+                </Tabs>
               </div>
             </TabsContent>
           </Tabs>
