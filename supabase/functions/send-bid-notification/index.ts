@@ -27,19 +27,41 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // SECURITY: Extract and verify authenticated user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      console.error('Invalid authentication token:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Not authenticated' }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
     const { type, bidId, gigId, diggerId, amount, timeline }: BidNotificationRequest = await req.json();
 
-    console.log('Processing bid notification:', { type, bidId, gigId, diggerId });
+    console.log('Processing bid notification:', { type, bidId, gigId, diggerId, userId: user.id });
 
     // Fetch gig details
     const { data: gig, error: gigError } = await supabase
       .from('gigs')
-      .select('title, user_id, profiles(email)')
+      .select('title, consumer_id, profiles(email)')
       .eq('id', gigId)
       .single();
 
     if (gigError || !gig) {
+      console.error('Failed to fetch gig:', gigError);
       throw new Error('Failed to fetch gig details');
     }
 
@@ -51,8 +73,32 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (diggerError || !digger) {
+      console.error('Failed to fetch digger:', diggerError);
       throw new Error('Failed to fetch digger details');
     }
+
+    // SECURITY: Authorization checks
+    if (type === 'submitted') {
+      // For submitted notifications: verify caller is the digger who owns the bid
+      if (digger.user_id !== user.id) {
+        console.error('Unauthorized: User is not the bid owner', { userId: user.id, diggerUserId: digger.user_id });
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: You can only send notifications for your own bids' }),
+          { status: 403, headers: corsHeaders }
+        );
+      }
+    } else if (type === 'accepted') {
+      // For accepted notifications: verify caller is the gig owner
+      if (gig.consumer_id !== user.id) {
+        console.error('Unauthorized: User is not the gig owner', { userId: user.id, gigOwnerId: gig.consumer_id });
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: You can only accept bids on your own gigs' }),
+          { status: 403, headers: corsHeaders }
+        );
+      }
+    }
+
+    console.log('Authorization verified for bid notification');
 
     let emailResponse;
 

@@ -10,6 +10,26 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Home } from "lucide-react";
+import { z } from "zod";
+
+// SECURITY: Input validation schemas
+const authSchema = z.object({
+  email: z.string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Invalid email format")
+    .max(255, "Email must be less than 255 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(100, "Password must be less than 100 characters"),
+});
+
+const signUpSchema = authSchema.extend({
+  fullName: z.string()
+    .trim()
+    .min(2, "Full name must be at least 2 characters")
+    .max(100, "Full name must be less than 100 characters"),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -51,25 +71,45 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // SECURITY: Validate inputs before submission
+      const validated = signUpSchema.parse({
+        email: email,
+        password: password,
+        fullName: fullName,
+      });
+
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: validated.email,
+        password: validated.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: fullName,
+            full_name: validated.fullName,
             user_type: userType,
           },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // User-friendly error messages
+        if (error.message.includes('already registered')) {
+          toast.error("This email is already registered. Please sign in instead.");
+        } else {
+          toast.error(error.message);
+        }
+        return;
+      }
 
       if (data.user) {
         toast.success("Account created! Redirecting...");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      if (error instanceof z.ZodError) {
+        // Show validation errors
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || "An error occurred during sign up");
+      }
     } finally {
       setLoading(false);
     }
@@ -80,15 +120,35 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // SECURITY: Validate inputs before submission
+      const validated = authSchema.parse({
+        email: email,
+        password: password,
       });
 
-      if (error) throw error;
+      const { error } = await supabase.auth.signInWithPassword({
+        email: validated.email,
+        password: validated.password,
+      });
+
+      if (error) {
+        // User-friendly error messages
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error("Invalid email or password. Please try again.");
+        } else {
+          toast.error(error.message);
+        }
+        return;
+      }
+      
       toast.success("Signed in successfully!");
     } catch (error: any) {
-      toast.error(error.message);
+      if (error instanceof z.ZodError) {
+        // Show validation errors
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || "An error occurred during sign in");
+      }
     } finally {
       setLoading(false);
     }
@@ -99,7 +159,11 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      // SECURITY: Validate email format
+      const emailValidation = z.string().trim().email("Invalid email format").max(255);
+      const validatedEmail = emailValidation.parse(resetEmail);
+
+      const { error } = await supabase.auth.resetPasswordForEmail(validatedEmail, {
         redirectTo: `${window.location.origin}/auth`,
       });
 
@@ -108,7 +172,11 @@ const Auth = () => {
       setShowResetForm(false);
       setResetEmail("");
     } catch (error: any) {
-      toast.error(error.message);
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || "An error occurred");
+      }
     } finally {
       setLoading(false);
     }
