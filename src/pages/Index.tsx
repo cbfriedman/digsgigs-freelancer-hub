@@ -18,8 +18,20 @@ import {
   LogOut,
   Mail,
   HelpCircle,
-  Receipt
+  Receipt,
+  User,
+  Edit,
+  FileText,
+  ChevronDown
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import heroImage from "@/assets/hero-image.jpg";
 import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
 import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
@@ -31,6 +43,7 @@ const Index = () => {
   const [isDigger, setIsDigger] = useState(false);
   const [showOnboardingChoice, setShowOnboardingChoice] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,12 +68,13 @@ const Index = () => {
   const checkUserType = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("user_type")
+      .select("user_type, full_name, email")
       .eq("id", userId)
       .single();
     
     const isDiggerUser = data?.user_type === "digger";
     setIsDigger(isDiggerUser);
+    setUserName(data?.full_name || data?.email || "User");
     
     // Check if this is a new digger who hasn't seen onboarding
     if (isDiggerUser) {
@@ -203,25 +217,46 @@ const Index = () => {
                     </Button>
                   </>
                 )}
-                {isDigger ? (
-                  <>
-                    <Button variant="outline" onClick={() => navigate("/edit-profile")}>
-                      Edit Profile
-                    </Button>
-                    <Button variant="outline" onClick={() => navigate("/digger-registration")}>
-                      Complete Profile
-                    </Button>
-                  </>
-                ) : (
+                {!isDigger && (
                   <Button onClick={() => navigate("/post-gig")}>
                     <Briefcase className="mr-2 h-4 w-4" />
                     Post a Gig
                   </Button>
                 )}
-                <Button variant="ghost" onClick={handleSignOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <User className="mr-2 h-4 w-4" />
+                      {userName}
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 bg-background z-50" align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {isDigger && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigate("/edit-profile")}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/my-leads")}>
+                          <FileText className="mr-2 h-4 w-4" />
+                          My Leads
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuItem onClick={() => navigate("/my-gigs")}>
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      My Gigs
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>
