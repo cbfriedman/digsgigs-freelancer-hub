@@ -204,9 +204,14 @@ const Index = () => {
                   </>
                 )}
                 {isDigger ? (
-                  <Button variant="outline" onClick={() => navigate("/digger-registration")}>
-                    Complete Profile
-                  </Button>
+                  <>
+                    <Button variant="outline" onClick={() => navigate("/edit-profile")}>
+                      Edit Profile
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate("/digger-registration")}>
+                      Complete Profile
+                    </Button>
+                  </>
                 ) : (
                   <Button onClick={() => navigate("/post-gig")}>
                     <Briefcase className="mr-2 h-4 w-4" />
