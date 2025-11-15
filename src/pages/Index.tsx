@@ -22,7 +22,8 @@ import {
   User,
   Edit,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Settings
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ const Index = () => {
   const [showChecklist, setShowChecklist] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [profileCompletion, setProfileCompletion] = useState<number>(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -105,6 +107,16 @@ const Index = () => {
     const isDiggerUser = data?.user_type === "digger";
     setIsDigger(isDiggerUser);
     setUserName(data?.full_name || data?.email || "User");
+    
+    // Check if user is admin
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    
+    setIsAdmin(!!roles);
     
     // Fetch digger profile for completion calculation
     if (isDiggerUser) {
@@ -302,6 +314,15 @@ const Index = () => {
                       <Briefcase className="mr-2 h-4 w-4" />
                       My Gigs
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate("/admin")}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
