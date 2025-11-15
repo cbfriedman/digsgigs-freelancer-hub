@@ -43,6 +43,9 @@ interface Digger {
   is_insured: boolean;
   is_bonded: boolean;
   is_licensed: string;
+  sic_code: string | null;
+  naics_code: string | null;
+  custom_occupation_title: string | null;
   profiles: {
     full_name: string | null;
     email: string;
@@ -210,6 +213,23 @@ const DiggerDetail = () => {
     return null;
   };
 
+  const getDisplayProfession = () => {
+    if (digger?.custom_occupation_title) {
+      return digger.custom_occupation_title;
+    }
+    return digger?.profession || "";
+  };
+
+  const getOccupationBadge = () => {
+    if (digger?.sic_code) {
+      return { label: "SIC Code", value: digger.sic_code };
+    }
+    if (digger?.naics_code) {
+      return { label: "NAICS Code", value: digger.naics_code };
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -265,7 +285,14 @@ const DiggerDetail = () => {
                     <h1 className="text-3xl font-bold mb-2">
                       @{digger.handle || "anonymous"}
                     </h1>
-                    <p className="text-xl text-muted-foreground mb-4">{digger.profession}</p>
+                    <div className="mb-4">
+                      <p className="text-xl text-muted-foreground">{getDisplayProfession()}</p>
+                      {getOccupationBadge() && (
+                        <Badge variant="outline" className="mt-2">
+                          {getOccupationBadge()?.label}: {getOccupationBadge()?.value}
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-4">
                       <div className="flex items-center gap-1">
                         <Star className="h-5 w-5 fill-accent text-accent" />
