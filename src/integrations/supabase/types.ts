@@ -184,6 +184,7 @@ export type Database = {
           certifications: string[] | null
           completion_rate: number | null
           created_at: string
+          custom_occupation_title: string | null
           handle: string | null
           hourly_rate: number | null
           hourly_rate_max: number | null
@@ -196,12 +197,14 @@ export type Database = {
           lead_limit_enabled: boolean | null
           lead_limit_period: string | null
           location: string
+          naics_code: string | null
           phone: string
           portfolio_url: string | null
           portfolio_urls: string[] | null
           profession: string
           profile_image_url: string | null
           response_time_hours: number | null
+          sic_code: string | null
           skills: string[] | null
           stripe_customer_id: string | null
           subscription_end_date: string | null
@@ -222,6 +225,7 @@ export type Database = {
           certifications?: string[] | null
           completion_rate?: number | null
           created_at?: string
+          custom_occupation_title?: string | null
           handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
@@ -234,12 +238,14 @@ export type Database = {
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
           location: string
+          naics_code?: string | null
           phone: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
           profession: string
           profile_image_url?: string | null
           response_time_hours?: number | null
+          sic_code?: string | null
           skills?: string[] | null
           stripe_customer_id?: string | null
           subscription_end_date?: string | null
@@ -260,6 +266,7 @@ export type Database = {
           certifications?: string[] | null
           completion_rate?: number | null
           created_at?: string
+          custom_occupation_title?: string | null
           handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
@@ -272,12 +279,14 @@ export type Database = {
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
           location?: string
+          naics_code?: string | null
           phone?: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
           profession?: string
           profile_image_url?: string | null
           response_time_hours?: number | null
+          sic_code?: string | null
           skills?: string[] | null
           stripe_customer_id?: string | null
           subscription_end_date?: string | null
@@ -398,6 +407,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      industry_codes: {
+        Row: {
+          code: string
+          code_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          code: string
+          code_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          code?: string
+          code_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
       }
       lead_issues: {
         Row: {
