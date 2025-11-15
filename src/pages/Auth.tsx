@@ -47,6 +47,8 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
   const [showPassword, setShowPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -210,6 +212,7 @@ const Auth = () => {
         return;
       }
 
+      setOtpSent(true);
       toast.success("Verification code sent to your phone!");
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -217,6 +220,59 @@ const Auth = () => {
       } else {
         toast.error(error.message || "An error occurred during phone sign in");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const otpValidation = z.string().trim().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must contain only digits");
+      const validatedOtp = otpValidation.parse(otp);
+
+      const { error } = await supabase.auth.verifyOtp({
+        phone,
+        token: validatedOtp,
+        type: 'sms',
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("Phone verified successfully!");
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || "An error occurred during verification");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      const validated = phoneSchema.parse({ phone });
+
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: validated.phone,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("New verification code sent!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to resend code");
     } finally {
       setLoading(false);
     }
@@ -246,6 +302,7 @@ const Auth = () => {
         return;
       }
 
+      setOtpSent(true);
       toast.success("Verification code sent! Enter it to complete signup.");
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -487,25 +544,71 @@ const Auth = () => {
                     </TabsContent>
 
                     <TabsContent value="phone">
-                      <form onSubmit={handlePhoneSignIn} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="signin-phone">Phone Number</Label>
-                          <Input
-                            id="signin-phone"
-                            type="tel"
-                            placeholder="+1234567890"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            required
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Include country code (e.g., +1 for US)
-                          </p>
-                        </div>
-                        <Button type="submit" className="w-full" disabled={loading}>
-                          {loading ? "Sending code..." : "Send verification code"}
-                        </Button>
-                      </form>
+                      {!otpSent ? (
+                        <form onSubmit={handlePhoneSignIn} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="signin-phone">Phone Number</Label>
+                            <Input
+                              id="signin-phone"
+                              type="tel"
+                              placeholder="+1234567890"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              required
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Include country code (e.g., +1 for US)
+                            </p>
+                          </div>
+                          <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? "Sending code..." : "Send verification code"}
+                          </Button>
+                        </form>
+                      ) : (
+                        <form onSubmit={handleVerifyOtp} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="otp-code">Verification Code</Label>
+                            <Input
+                              id="otp-code"
+                              type="text"
+                              placeholder="123456"
+                              value={otp}
+                              onChange={(e) => setOtp(e.target.value)}
+                              required
+                              maxLength={6}
+                              className="text-center text-lg tracking-widest"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Enter the 6-digit code sent to {phone}
+                            </p>
+                          </div>
+                          <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? "Verifying..." : "Verify Code"}
+                          </Button>
+                          <div className="flex items-center justify-between text-sm">
+                            <Button
+                              type="button"
+                              variant="link"
+                              className="p-0 h-auto"
+                              onClick={handleResendOtp}
+                              disabled={loading}
+                            >
+                              Resend code
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="link"
+                              className="p-0 h-auto"
+                              onClick={() => {
+                                setOtpSent(false);
+                                setOtp("");
+                              }}
+                            >
+                              Change number
+                            </Button>
+                          </div>
+                        </form>
+                      )}
                     </TabsContent>
                   </Tabs>
                 </div>
@@ -646,36 +749,82 @@ const Auth = () => {
                   </TabsContent>
 
                   <TabsContent value="phone">
-                    <form onSubmit={handlePhoneSignUp} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-name-phone">Full Name</Label>
-                        <Input
-                          id="signup-name-phone"
-                          type="text"
-                          placeholder="John Doe"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-phone">Phone Number</Label>
-                        <Input
-                          id="signup-phone"
-                          type="tel"
-                          placeholder="+1234567890"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          required
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Include country code (e.g., +1 for US)
-                        </p>
-                      </div>
-                      <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? "Sending code..." : "Sign Up with Phone"}
-                      </Button>
-                    </form>
+                    {!otpSent ? (
+                      <form onSubmit={handlePhoneSignUp} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-name-phone">Full Name</Label>
+                          <Input
+                            id="signup-name-phone"
+                            type="text"
+                            placeholder="John Doe"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-phone">Phone Number</Label>
+                          <Input
+                            id="signup-phone"
+                            type="tel"
+                            placeholder="+1234567890"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Include country code (e.g., +1 for US)
+                          </p>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? "Sending code..." : "Sign Up with Phone"}
+                        </Button>
+                      </form>
+                    ) : (
+                      <form onSubmit={handleVerifyOtp} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="otp-code-signup">Verification Code</Label>
+                          <Input
+                            id="otp-code-signup"
+                            type="text"
+                            placeholder="123456"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            required
+                            maxLength={6}
+                            className="text-center text-lg tracking-widest"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Enter the 6-digit code sent to {phone}
+                          </p>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? "Verifying..." : "Complete Sign Up"}
+                        </Button>
+                        <div className="flex items-center justify-between text-sm">
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="p-0 h-auto"
+                            onClick={handleResendOtp}
+                            disabled={loading}
+                          >
+                            Resend code
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="p-0 h-auto"
+                            onClick={() => {
+                              setOtpSent(false);
+                              setOtp("");
+                            }}
+                          >
+                            Change number
+                          </Button>
+                        </div>
+                      </form>
+                    )}
                   </TabsContent>
                 </Tabs>
               </div>
