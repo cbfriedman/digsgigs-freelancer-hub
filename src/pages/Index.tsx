@@ -283,7 +283,11 @@ const Index = () => {
                           </div>
                           <Badge 
                             variant={profileCompletion === 100 ? "default" : "secondary"}
-                            className="ml-2"
+                            className="ml-2 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate("/profile-completion");
+                            }}
                           >
                             {profileCompletion}%
                           </Badge>
