@@ -8,11 +8,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info } from "lucide-react";
+import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info, Map, List, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
+import { GigAdvancedFilters } from "@/components/GigAdvancedFilters";
+import { MapView } from "@/components/MapView";
+import { SavedSearchesList } from "@/components/SavedSearchesList";
 
 interface Category {
   id: string;
@@ -30,9 +34,19 @@ interface Gig {
   status: string;
   purchase_count: number;
   created_at: string;
+  location_lat?: number;
+  location_lng?: number;
   categories: {
     name: string;
   } | null;
+}
+
+interface GigFilters {
+  budgetRange: [number, number];
+  selectedCategories: string[];
+  locationRadius: number;
+  locationLat?: number;
+  locationLng?: number;
 }
 
 const BrowseGigs = () => {
@@ -47,6 +61,13 @@ const BrowseGigs = () => {
   const [leadsPurchasedThisPeriod, setLeadsPurchasedThisPeriod] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [advancedFilters, setAdvancedFilters] = useState<GigFilters>({
+    budgetRange: [0, 50000],
+    selectedCategories: [],
+    locationRadius: 50,
+  });
   const { addToCart, removeFromCart, isInCart, cartCount } = useCart();
 
   useEffect(() => {
@@ -55,7 +76,7 @@ const BrowseGigs = () => {
 
   useEffect(() => {
     loadData();
-  }, [selectedCategory, budgetFilter, diggerProfile]);
+  }, [selectedCategory, budgetFilter, diggerProfile, advancedFilters]);
 
   const loadDiggerData = async () => {
     try {
