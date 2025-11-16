@@ -35,7 +35,6 @@ interface DiggerAdvancedFiltersProps {
   categories: Category[];
   filters: DiggerFilters;
   onFiltersChange: (filters: DiggerFilters) => void;
-  onSaveSearch: () => void;
 }
 
 const COMMON_CERTIFICATIONS = [
@@ -53,7 +52,6 @@ export const DiggerAdvancedFilters = ({
   categories, 
   filters, 
   onFiltersChange,
-  onSaveSearch
 }: DiggerAdvancedFiltersProps) => {
   const [searchName, setSearchName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -108,7 +106,6 @@ export const DiggerAdvancedFilters = ({
 
       toast.success("Search saved successfully! You'll receive email alerts for matching professionals.");
       setSearchName("");
-      onSaveSearch();
     } catch (error) {
       console.error('Error saving search:', error);
       toast.error("Failed to save search");
