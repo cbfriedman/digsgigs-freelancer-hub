@@ -163,7 +163,7 @@ export default function PricingCalculator() {
         {showResults && (
           <>
           <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm border-l-4 border-l-primary">
             <thead>
               <tr className="border-b-2 border-border bg-primary/10">
                 <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
@@ -348,7 +348,7 @@ export default function PricingCalculator() {
           {showFreeEstimateResults && (
             <>
             <div className="overflow-x-auto mt-6">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm border-l-4 border-l-secondary">
                 <thead>
                   <tr className="border-b-2 border-border bg-secondary/10">
                     <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
