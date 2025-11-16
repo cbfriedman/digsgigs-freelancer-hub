@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
 import PricingCalculator from "@/components/PricingCalculator";
 import PlanRecommender from "@/components/PlanRecommender";
+import PricingCharts from "@/components/PricingCharts";
 
 const TIERS = {
   free: {
@@ -630,6 +631,11 @@ export default function Pricing() {
           {/* Interactive Cost Calculator */}
           <div className="mt-16 max-w-6xl mx-auto">
             <PricingCalculator />
+          </div>
+
+          {/* Visual Charts */}
+          <div className="mt-16 max-w-6xl mx-auto">
+            <PricingCharts />
           </div>
 
           {/* Plan Recommender */}
