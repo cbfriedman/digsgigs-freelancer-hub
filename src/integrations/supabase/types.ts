@@ -203,6 +203,8 @@ export type Database = {
           lead_limit_enabled: boolean | null
           lead_limit_period: string | null
           location: string
+          location_lat: number | null
+          location_lng: number | null
           naics_code: string | null
           offers_free_estimates: boolean | null
           phone: string
@@ -245,6 +247,8 @@ export type Database = {
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
           location: string
+          location_lat?: number | null
+          location_lng?: number | null
           naics_code?: string | null
           offers_free_estimates?: boolean | null
           phone: string
@@ -287,6 +291,8 @@ export type Database = {
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
           location?: string
+          location_lat?: number | null
+          location_lng?: number | null
           naics_code?: string | null
           offers_free_estimates?: boolean | null
           phone?: string
@@ -358,6 +364,8 @@ export type Database = {
           id: string
           images: string[] | null
           location: string
+          location_lat: number | null
+          location_lng: number | null
           purchase_count: number | null
           status: string | null
           timeline: string | null
@@ -376,6 +384,8 @@ export type Database = {
           id?: string
           images?: string[] | null
           location: string
+          location_lat?: number | null
+          location_lng?: number | null
           purchase_count?: number | null
           status?: string | null
           timeline?: string | null
@@ -394,6 +404,8 @@ export type Database = {
           id?: string
           images?: string[] | null
           location?: string
+          location_lat?: number | null
+          location_lng?: number | null
           purchase_count?: number | null
           status?: string | null
           timeline?: string | null
@@ -851,6 +863,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      saved_searches: {
+        Row: {
+          created_at: string
+          email_alerts_enabled: boolean
+          filters: Json
+          id: string
+          name: string
+          search_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_alerts_enabled?: boolean
+          filters: Json
+          id?: string
+          name: string
+          search_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_alerts_enabled?: boolean
+          filters?: Json
+          id?: string
+          name?: string
+          search_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       transactions: {
         Row: {
