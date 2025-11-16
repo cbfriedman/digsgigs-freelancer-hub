@@ -49,6 +49,7 @@ const Auth = () => {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
   const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
   const [showPassword, setShowPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -77,6 +78,16 @@ const Auth = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate, redirectTo]);
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (resendCountdown > 0) {
+      const timer = setTimeout(() => {
+        setResendCountdown(resendCountdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCountdown]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,6 +224,7 @@ const Auth = () => {
       }
 
       setOtpSent(true);
+      setResendCountdown(30);
       toast.success("Verification code sent to your phone!");
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -270,6 +282,7 @@ const Auth = () => {
         return;
       }
 
+      setResendCountdown(30);
       toast.success("New verification code sent!");
     } catch (error: any) {
       toast.error(error.message || "Failed to resend code");
@@ -303,6 +316,7 @@ const Auth = () => {
       }
 
       setOtpSent(true);
+      setResendCountdown(30);
       toast.success("Verification code sent! Enter it to complete signup.");
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -591,9 +605,9 @@ const Auth = () => {
                               variant="link"
                               className="p-0 h-auto"
                               onClick={handleResendOtp}
-                              disabled={loading}
+                              disabled={loading || resendCountdown > 0}
                             >
-                              Resend code
+                              {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend code"}
                             </Button>
                             <Button
                               type="button"
@@ -807,9 +821,9 @@ const Auth = () => {
                             variant="link"
                             className="p-0 h-auto"
                             onClick={handleResendOtp}
-                            disabled={loading}
+                            disabled={loading || resendCountdown > 0}
                           >
-                            Resend code
+                            {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend code"}
                           </Button>
                           <Button
                             type="button"
