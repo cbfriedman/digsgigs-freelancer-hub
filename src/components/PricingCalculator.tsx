@@ -45,7 +45,7 @@ export default function PricingCalculator() {
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
   
-  const jobs = Math.floor(leads * (conversionRate / 100));
+  const jobs = Math.round(leads * (conversionRate / 100));
 
   const calculateCosts = (tier: typeof TIERS.free) => {
     const monthlyFee = tier.priceValue;
@@ -256,7 +256,7 @@ export default function PricingCalculator() {
                 <td className="py-3 px-4 text-muted-foreground">Assumed number of conversions to Award</td>
                 {Object.entries(TIERS).map(([key, tier]) => (
                   <td key={key} className="text-right py-3 px-4">
-                    {Math.floor(leads * (conversionRate / 100))}
+                    {Math.round(leads * (conversionRate / 100))}
                   </td>
                 ))}
               </tr>

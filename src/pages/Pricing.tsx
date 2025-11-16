@@ -201,7 +201,7 @@ export default function Pricing() {
   };
 
   const calculateInteractiveCosts = () => {
-    const calculatedJobs = Math.floor(interactiveLeads * (conversionRate / 100));
+    const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
     const tiers = ['free', 'pro', 'premium'] as const;
     return tiers.map(tierKey => {
       const tier = TIERS[tierKey];
@@ -392,7 +392,7 @@ export default function Pricing() {
                   <div className="space-y-2">
                     <Label># of Jobs (Auto-calculated)</Label>
                     <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
-                      {Math.floor(interactiveLeads * (conversionRate / 100))}
+                      {Math.round(interactiveLeads * (conversionRate / 100))}
                     </div>
                   </div>
 
@@ -446,7 +446,7 @@ export default function Pricing() {
                           <td className="text-right p-3">${result.monthly}</td>
                           <td className="text-right p-3">${result.leadCosts.toFixed(2)}</td>
                           <td className="text-right p-3">${result.commissions.toFixed(2)}</td>
-                          <td className="text-right p-3">{Math.floor(interactiveLeads * (conversionRate / 100))}</td>
+                          <td className="text-right p-3">{Math.round(interactiveLeads * (conversionRate / 100))}</td>
                           <td className="text-right p-3 font-bold text-primary">${result.total.toFixed(2)}</td>
                         </tr>
                       ))}
