@@ -56,31 +56,31 @@ const HowItWorks = () => {
     {
       number: 1,
       title: "Create Your Profile",
-      description: "Build a professional profile showcasing your skills, experience, and portfolio. Stand out to potential clients with detailed credentials.",
+      description: "Build a professional profile showcasing your skills, experience, and portfolio. Set your hourly rate - this determines your lead costs (you pay 1 hour of your rate per lead, minimum $100). Review our pricing strategy guide to optimize your competitive positioning.",
       image: diggerStep1Profile,
     },
     {
       number: 2,
       title: "Browse Opportunities",
-      description: "Explore available gigs that match your expertise. Filter by budget, timeline, and category to find the perfect projects.",
+      description: "Explore available gigs that match your expertise. Your hourly rate creates competitive lead pricing - lower rates mean lower acquisition costs. Filter by budget, timeline, and category to find perfect projects. Pro members ($999/month) get unlimited free estimate requests.",
       image: diggerStep2Browse,
     },
     {
       number: 3,
-      title: "Initiate Contact",
-      description: "Message clients directly through our secure platform. Start conversations about opportunities that match your expertise.",
+      title: "Purchase Leads",
+      description: "Select gigs you want to pursue. For hourly-rate diggers, you pay 1 hour of your advertised rate per lead (minimum $100) - creating a fair race-to-the-bottom auction. Premium members get free leads. This investment gives you direct access to client contact information.",
       image: diggerStep3Purchase,
     },
     {
       number: 4,
       title: "Send Proposal & Close",
-      description: "Share your proposal through platform messaging. Build relationships and negotiate terms securely within our system.",
+      description: "Contact clients directly with their information. Share your proposal, showcase your expertise, and negotiate terms. Your competitive hourly rate helped you win this opportunity - now deliver value to build long-term client relationships.",
       image: diggerStep4Connect,
     },
     {
       number: 5,
       title: "Complete & Get Paid",
-      description: "Deliver exceptional work, build your reputation, and grow your business. Success leads to more opportunities and higher ratings.",
+      description: "Deliver exceptional work, earn reviews, and build your reputation. Track earnings through our transactions dashboard. Success leads to more opportunities, higher ratings, and the ability to optimize your hourly rate for maximum profitability.",
       image: diggerStep5Complete,
     },
   ];
@@ -331,7 +331,7 @@ const HowItWorks = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-xl mb-2">Create Your Profile</h4>
-                    <p className="text-muted-foreground">Build a professional profile showcasing your skills, experience, and portfolio. Stand out to potential clients with detailed credentials.</p>
+                    <p className="text-muted-foreground">Build a professional profile showcasing your skills, experience, and portfolio. Set your hourly rate - this determines your lead costs (1 hour of your rate per lead, minimum $100). Check our pricing strategy guide to optimize your positioning.</p>
                   </div>
                 </div>
               </Card>
@@ -343,7 +343,7 @@ const HowItWorks = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-xl mb-2">Browse Opportunities</h4>
-                    <p className="text-muted-foreground">Explore available gigs that match your expertise. Filter by budget, timeline, and category to find the perfect projects.</p>
+                    <p className="text-muted-foreground">Explore available gigs that match your expertise. Your hourly rate creates competitive lead pricing. Pro members ($999/month) get unlimited free estimate requests. Filter by budget, timeline, and category to find perfect projects.</p>
                   </div>
                 </div>
               </Card>
@@ -355,7 +355,7 @@ const HowItWorks = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-xl mb-2">Purchase Lead</h4>
-                    <p className="text-muted-foreground">Invest in quality leads by purchasing contact information. Only pay for opportunities you're genuinely interested in pursuing.</p>
+                    <p className="text-muted-foreground">Pay 1 hour of your advertised rate per lead (minimum $100). This hourly-rate auction creates fair competition - lower rates mean lower lead costs. Premium members get free leads. Your investment gives you direct client contact information.</p>
                   </div>
                 </div>
               </Card>
@@ -367,7 +367,7 @@ const HowItWorks = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-xl mb-2">Connect & Close</h4>
-                    <p className="text-muted-foreground">Reach out to the client directly with your proposal. Build relationships and close deals on your own terms.</p>
+                    <p className="text-muted-foreground">Reach out to the client directly with your proposal. Your competitive hourly rate helped you win this lead. Build relationships, showcase expertise, and close deals on your own terms.</p>
                   </div>
                 </div>
               </Card>
@@ -379,7 +379,7 @@ const HowItWorks = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-xl mb-2">Complete & Get Paid</h4>
-                    <p className="text-muted-foreground">Deliver exceptional work, build your reputation, and grow your business. Success leads to more opportunities and higher ratings.</p>
+                    <p className="text-muted-foreground">Deliver exceptional work, earn reviews, and build your reputation. Track earnings in your transactions dashboard. Success leads to more opportunities, higher ratings, and the ability to optimize your hourly rate strategy.</p>
                   </div>
                 </div>
               </Card>
