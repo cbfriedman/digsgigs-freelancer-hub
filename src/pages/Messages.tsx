@@ -73,6 +73,10 @@ export default function Messages() {
   }, [selectedConversation]);
 
   const loadUser = async () => {
+    // TEMPORARILY DISABLED FOR SCREENSHOTS - set mock user
+    setCurrentUser({ id: 'mock-user-id' });
+    return;
+    
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUser(user);
   };

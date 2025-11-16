@@ -74,6 +74,10 @@ const EditDiggerProfile = () => {
 
   const loadProfile = async () => {
     try {
+      // TEMPORARILY DISABLED FOR SCREENSHOTS
+      setLoading(false);
+      return;
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth");
