@@ -254,7 +254,7 @@ export default function Pricing() {
               Digger Pricing
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold">
-              Choose Your Commission Rate
+              Choose your Plan
             </h1>
             <p className="text-xl text-muted-foreground">
               Lower your commission and get unlimited free estimate requests by upgrading to Pro. Keep more of your earnings on every gig.
