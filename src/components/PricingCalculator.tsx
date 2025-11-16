@@ -43,7 +43,13 @@ export default function PricingCalculator() {
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
   
+  // Free Estimates state
+  const [freeEstimateLeads, setFreeEstimateLeads] = useState(15);
+  const [freeEstimateConversion, setFreeEstimateConversion] = useState(10);
+  const [showFreeEstimateResults, setShowFreeEstimateResults] = useState(false);
+  
   const jobs = Math.round(leads * (conversionRate / 100));
+  const freeEstimateJobs = Math.round(freeEstimateLeads * (freeEstimateConversion / 100));
 
   const calculateCosts = (tier: typeof TIERS.free) => {
     const monthlyFee = tier.priceValue;
@@ -266,9 +272,86 @@ export default function PricingCalculator() {
               </div>
             );
           })}
-        </div>
+         </div>
         </>
         )}
+
+        {/* Free Estimates Calculator */}
+        <div className="mt-8 pt-8 border-t border-border">
+          <h3 className="text-xl font-semibold mb-4">Free Estimates Calculator</h3>
+          
+          <div className="grid md:grid-cols-3 gap-4 p-6 bg-background rounded-lg border">
+            <div className="space-y-2">
+              <Label htmlFor="freeEstimateLeads">Leads Purchased</Label>
+              <Select 
+                value={freeEstimateLeads.toString()} 
+                onValueChange={(v) => setFreeEstimateLeads(Number(v))}
+              >
+                <SelectTrigger className="text-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50 max-h-[300px]">
+                  {Array.from({ length: 20 }, (_, i) => (i + 1) * 5).map(num => (
+                    <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="freeEstimateConversion">Conversion Rate</Label>
+              <Select 
+                value={freeEstimateConversion.toString()} 
+                onValueChange={(v) => setFreeEstimateConversion(Number(v))}
+              >
+                <SelectTrigger className="text-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  {[5, 10, 15, 20, 25].map(num => (
+                    <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="freeEstimateJobs">Jobs Awarded</Label>
+              <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
+                {freeEstimateJobs}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center mt-6">
+            <Button 
+              onClick={() => setShowFreeEstimateResults(true)}
+              size="lg"
+              className="px-8"
+            >
+              Calculate
+            </Button>
+          </div>
+
+          {showFreeEstimateResults && (
+            <div className="mt-6 p-6 bg-muted/50 rounded-lg">
+              <div className="grid md:grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Leads Purchased</p>
+                  <p className="text-2xl font-bold">{freeEstimateLeads}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Conversion Rate</p>
+                  <p className="text-2xl font-bold">{freeEstimateConversion}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Jobs Awarded</p>
+                  <p className="text-2xl font-bold text-primary">{freeEstimateJobs}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
