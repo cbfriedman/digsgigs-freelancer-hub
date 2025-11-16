@@ -81,14 +81,19 @@ export default function PricingCalculator() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-background rounded-lg border">
           <div className="space-y-2">
             <Label htmlFor="leads">Leads Purchased/Month</Label>
-            <Input
-              id="leads"
-              type="number"
-              min="0"
-              value={leads}
-              onChange={(e) => setLeads(Number(e.target.value))}
-              className="text-lg"
-            />
+            <Select 
+              value={leads.toString()} 
+              onValueChange={(v) => setLeads(Number(v))}
+            >
+              <SelectTrigger className="text-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50 max-h-[300px]">
+                {Array.from({ length: 20 }, (_, i) => (i + 1) * 5).map(num => (
+                  <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
