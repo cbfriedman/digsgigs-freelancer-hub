@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp, Mail, Calendar } from "lucide-react";
+import { TrendingUp, Mail, Calendar, Download, FileText } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { toast } from "sonner";
 
 interface AlertAnalytics {
   id: string;
@@ -22,6 +26,7 @@ export const SavedSearchAnalytics = ({ searchType }: SavedSearchAnalyticsProps) 
   const [loading, setLoading] = useState(true);
   const [totalAlerts, setTotalAlerts] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
+  const [searchNames, setSearchNames] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     loadAnalytics();
@@ -51,6 +56,19 @@ export const SavedSearchAnalytics = ({ searchType }: SavedSearchAnalyticsProps) 
       const alerts = data || [];
       setTotalAlerts(alerts.length);
       setTotalMatches(alerts.reduce((sum, alert) => sum + alert.matches_found, 0));
+
+      // Get search names
+      const searchIds = [...new Set(alerts.map(a => a.saved_search_id))];
+      const { data: searches } = await supabase
+        .from('saved_searches')
+        .select('id, name')
+        .in('id', searchIds);
+      
+      const names: { [key: string]: string } = {};
+      searches?.forEach(s => {
+        names[s.id] = s.name;
+      });
+      setSearchNames(names);
     } catch (error) {
       console.error('Error loading analytics:', error);
     } finally {
@@ -77,6 +95,84 @@ export const SavedSearchAnalytics = ({ searchType }: SavedSearchAnalyticsProps) 
     return acc;
   }, [] as { date: string; matches: number; alerts: number }[]);
 
+  const exportToCSV = () => {
+    try {
+      // Create CSV header
+      const header = ['Date', 'Search Name', 'Matches Found', 'Alert Sent At'];
+      
+      // Create CSV rows
+      const rows = analytics.map(alert => [
+        format(new Date(alert.sent_at), 'MMM dd, yyyy'),
+        searchNames[alert.saved_search_id] || 'Unknown',
+        alert.matches_found.toString(),
+        format(new Date(alert.sent_at), 'MMM dd, yyyy h:mm a'),
+      ]);
+
+      // Combine header and rows
+      const csvContent = [
+        header.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `saved-search-analytics-${searchType}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Analytics exported to CSV');
+    } catch (error) {
+      console.error('Error exporting to CSV:', error);
+      toast.error('Failed to export CSV');
+    }
+  };
+
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.text(`Saved Search Analytics - ${searchType === 'gigs' ? 'Gigs' : 'Diggers'}`, 14, 20);
+      
+      // Add summary stats
+      doc.setFontSize(12);
+      doc.text(`Report Generated: ${format(new Date(), 'MMM dd, yyyy')}`, 14, 30);
+      doc.text(`Total Alerts Sent: ${totalAlerts}`, 14, 38);
+      doc.text(`Total Matches Found: ${totalMatches}`, 14, 46);
+      doc.text(`Average Matches Per Alert: ${totalAlerts > 0 ? (totalMatches / totalAlerts).toFixed(1) : 0}`, 14, 54);
+
+      // Add table
+      const tableData = analytics.map(alert => [
+        format(new Date(alert.sent_at), 'MMM dd, yyyy'),
+        searchNames[alert.saved_search_id] || 'Unknown',
+        alert.matches_found.toString(),
+        format(new Date(alert.sent_at), 'h:mm a'),
+      ]);
+
+      autoTable(doc, {
+        head: [['Date', 'Search Name', 'Matches', 'Time']],
+        body: tableData,
+        startY: 65,
+        theme: 'grid',
+        headStyles: { fillColor: [99, 102, 241] },
+      });
+
+      // Save PDF
+      doc.save(`saved-search-analytics-${searchType}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      
+      toast.success('Analytics exported to PDF');
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast.error('Failed to export PDF');
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -101,6 +197,28 @@ export const SavedSearchAnalytics = ({ searchType }: SavedSearchAnalyticsProps) 
 
   return (
     <div className="space-y-4">
+      {/* Export Buttons */}
+      <div className="flex gap-2 justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportToCSV}
+          className="gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportToPDF}
+          className="gap-2"
+        >
+          <FileText className="h-4 w-4" />
+          Export PDF
+        </Button>
+      </div>
+
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
