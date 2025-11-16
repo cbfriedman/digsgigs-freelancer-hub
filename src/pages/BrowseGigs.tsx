@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -363,9 +364,22 @@ const BrowseGigs = () => {
                     </div>
                     <div className="lg:text-right space-y-2">
                       {diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min ? (
-                        <Badge variant="default" className="mb-2 bg-primary text-primary-foreground">
-                          Lead Cost: ${Math.max(100, diggerProfile.hourly_rate || diggerProfile.hourly_rate_min)} (min $100)
-                        </Badge>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="default" className="mb-2 bg-primary text-primary-foreground cursor-help inline-flex items-center gap-1">
+                                Lead Cost: ${Math.max(100, diggerProfile.hourly_rate || diggerProfile.hourly_rate_min)} (min $100)
+                                <Info className="h-3 w-3" />
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="font-semibold mb-1">Hourly Rate Auction</p>
+                              <p className="text-sm">
+                                You pay 1 hour of your advertised rate per lead (minimum $100). This creates competitive pricing - diggers with lower hourly rates compete better for leads, incentivizing market-rate pricing.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ) : showSpecialPrice ? (
                         <Badge variant="default" className="mb-2 bg-accent text-accent-foreground">
                           Old Lead - $1
