@@ -382,8 +382,8 @@ export default function Pricing() {
                   { 
                     label: 'Light Usage', 
                     leads: 5, 
-                    jobs: 1, 
-                    jobValue: 500, 
+                    jobs: 3, 
+                    jobValue: 1000, 
                     estimates: 3,
                     description: 'Part-time or starting out'
                   },
