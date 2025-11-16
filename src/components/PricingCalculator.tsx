@@ -19,7 +19,7 @@ const TIERS = {
     name: 'Pro',
     priceValue: 50,
     leadCostValue: 1.5,
-    commissionValue: 4,
+    commissionValue: 6,
     minimumFee: 5,
     estimateCost: 100,
     hourlyRateClickCost: 100,
