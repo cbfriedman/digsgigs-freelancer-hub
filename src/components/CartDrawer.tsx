@@ -5,7 +5,7 @@ import { X, ShoppingCart, Trash2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -151,7 +151,6 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                           </p>
                         )}
                         {(diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) && (
-                          <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Badge 
@@ -173,10 +172,9 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                                 </p>
                                 <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/pricing-strategy")}>
                                   View pricing strategies →
-                                </Button>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                              </Button>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-2">

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info, Map, List, Filter } from "lucide-react";
@@ -385,7 +385,6 @@ const BrowseGigs = () => {
                     </div>
                     <div className="lg:text-right space-y-2">
                       {diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min ? (
-                        <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Badge 
@@ -410,7 +409,6 @@ const BrowseGigs = () => {
                               </Button>
                             </TooltipContent>
                           </Tooltip>
-                        </TooltipProvider>
                       ) : showSpecialPrice ? (
                         <Badge variant="default" className="mb-2 bg-accent text-accent-foreground">
                           Old Lead - $1
