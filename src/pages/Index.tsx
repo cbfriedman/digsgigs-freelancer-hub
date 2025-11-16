@@ -23,7 +23,8 @@ import {
   Edit,
   FileText,
   ChevronDown,
-  Settings
+  Settings,
+  DollarSign
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -307,6 +308,10 @@ const Index = () => {
                         <DropdownMenuItem onClick={() => navigate("/my-leads")}>
                           <FileText className="mr-2 h-4 w-4" />
                           My Leads
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/my-bids")}>
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          My Bids
                         </DropdownMenuItem>
                       </>
                     )}

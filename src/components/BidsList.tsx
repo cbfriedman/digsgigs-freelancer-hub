@@ -57,7 +57,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
           )
         `)
         .eq('gig_id', gigId)
-        .order('created_at', { ascending: false });
+        .order('amount', { ascending: true }); // Race to the bottom - lowest bids first
 
       if (error) throw error;
       setBids((data as any) || []);
@@ -153,12 +153,27 @@ export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold">
-        Bids ({bids.length})
-      </h3>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-semibold">
+            Bids ({bids.length})
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Race to the bottom auction - Lowest bid shown first
+          </p>
+        </div>
+        {bids.length > 0 && (
+          <Badge variant="secondary" className="text-lg px-4 py-2">
+            Lowest: ${bids[0].amount.toLocaleString()}
+          </Badge>
+        )}
+      </div>
       
-      {bids.map((bid) => (
-        <Card key={bid.id}>
+      {bids.map((bid, index) => (
+        <Card 
+          key={bid.id}
+          className={index === 0 ? "border-primary border-2 shadow-lg" : ""}
+        >
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -167,7 +182,14 @@ export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
                   <AvatarFallback>{getInitials(bid.digger_profiles.handle)}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-lg">{bid.digger_profiles.handle}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">{bid.digger_profiles.handle}</CardTitle>
+                    {index === 0 && bid.status === 'pending' && (
+                      <Badge variant="default" className="bg-primary">
+                        Lowest Bid
+                      </Badge>
+                    )}
+                  </div>
                   <CardDescription>{bid.digger_profiles.profession}</CardDescription>
                   <div className="flex items-center gap-1 mt-1">
                     <Star className="w-4 h-4 fill-accent text-accent" />
@@ -179,7 +201,9 @@ export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-primary">${bid.amount.toLocaleString()}</div>
+                <div className={`text-2xl font-bold ${index === 0 ? 'text-primary' : 'text-foreground'}`}>
+                  ${bid.amount.toLocaleString()}
+                </div>
                 <div className="text-sm text-muted-foreground">{bid.timeline}</div>
               </div>
             </div>
@@ -195,6 +219,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
                 bid.status === 'accepted' ? 'default' :
                 bid.status === 'rejected' ? 'destructive' :
                 bid.status === 'completed' ? 'default' :
+                bid.status === 'withdrawn' ? 'outline' :
                 'secondary'
               }>
                 {bid.status}
