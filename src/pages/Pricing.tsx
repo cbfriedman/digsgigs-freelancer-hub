@@ -103,7 +103,6 @@ export default function Pricing() {
   const [user, setUser] = useState<any>(null);
   const [isDigger, setIsDigger] = useState(false);
   const [interactiveLeads, setInteractiveLeads] = useState(15);
-  const [interactiveJobs, setInteractiveJobs] = useState(2);
   const [interactiveJobValue, setInteractiveJobValue] = useState(1000);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
@@ -202,12 +201,13 @@ export default function Pricing() {
   };
 
   const calculateInteractiveCosts = () => {
+    const calculatedJobs = Math.floor(interactiveLeads * (conversionRate / 100));
     const tiers = ['free', 'pro', 'premium'] as const;
     return tiers.map(tierKey => {
       const tier = TIERS[tierKey];
       const leadCosts = interactiveLeads * tier.leadCostValue;
-      const commissions = interactiveJobs * (tier.commissionValue / 100) * interactiveJobValue;
-      const commissionWithMin = Math.max(commissions, interactiveJobs * tier.minimumFee);
+      const commissions = calculatedJobs * (tier.commissionValue / 100) * interactiveJobValue;
+      const commissionWithMin = Math.max(commissions, calculatedJobs * tier.minimumFee);
       const totalCost = tier.priceValue + leadCosts + commissionWithMin;
       
       return {
@@ -371,22 +371,29 @@ export default function Pricing() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Label># of Jobs</Label>
+                    <Label>Conversion Rate</Label>
                     <Select 
-                      value={interactiveJobs.toString()} 
-                      onValueChange={(v) => setInteractiveJobs(Number(v))}
+                      value={conversionRate.toString()} 
+                      onValueChange={(v) => setConversionRate(Number(v))}
                     >
                       <SelectTrigger className="bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-background z-50">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                        {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label># of Jobs (Auto-calculated)</Label>
+                    <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
+                      {Math.floor(interactiveLeads * (conversionRate / 100))}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -401,23 +408,6 @@ export default function Pricing() {
                       <SelectContent className="bg-background z-50">
                         {[500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 10000].map(num => (
                           <SelectItem key={num} value={num.toString()}>${num.toLocaleString()}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Conversion Rate</Label>
-                    <Select 
-                      value={conversionRate.toString()} 
-                      onValueChange={(v) => setConversionRate(Number(v))}
-                    >
-                      <SelectTrigger className="bg-background">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50">
-                        {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(num => (
-                          <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
