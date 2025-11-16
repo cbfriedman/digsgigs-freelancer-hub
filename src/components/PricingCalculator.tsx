@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calculator } from "lucide-react";
 
 const TIERS = {
@@ -42,6 +43,7 @@ export default function PricingCalculator() {
   const [jobValue, setJobValue] = useState(1000);
   const [estimates, setEstimates] = useState(10);
   const [hourlyClicks, setHourlyClicks] = useState(5);
+  const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
 
   const calculateCosts = (tier: typeof TIERS.free) => {
@@ -142,6 +144,23 @@ export default function PricingCalculator() {
               className="text-lg"
             />
           </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="conversionRate">Conversion Rate</Label>
+            <Select 
+              value={conversionRate.toString()} 
+              onValueChange={(v) => setConversionRate(Number(v))}
+            >
+              <SelectTrigger className="text-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(num => (
+                  <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Calculate Button */}
@@ -235,6 +254,15 @@ export default function PricingCalculator() {
                     </td>
                   );
                 })}
+              </tr>
+              
+              <tr className="border-b border-border/50">
+                <td className="py-3 px-4 text-muted-foreground">Assumed number of conversions to Award</td>
+                {Object.entries(TIERS).map(([key, tier]) => (
+                  <td key={key} className="text-right py-3 px-4">
+                    {Math.floor(leads * (conversionRate / 100))}
+                  </td>
+                ))}
               </tr>
               
               <tr className="border-b-2 border-border bg-primary/5">
