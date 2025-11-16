@@ -74,7 +74,7 @@ export default function PricingCalculator() {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
+    <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
       <CardHeader>
         <div className="flex items-center justify-center gap-2 mb-2">
           <Calculator className="h-6 w-6 text-primary" />
@@ -165,7 +165,7 @@ export default function PricingCalculator() {
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b-2 border-border">
+              <tr className="border-b-2 border-border bg-primary/10">
                 <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
                 {Object.entries(TIERS).map(([key, tier]) => (
                   <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
@@ -281,7 +281,7 @@ export default function PricingCalculator() {
         )}
 
         {/* Free Estimates Calculator */}
-        <div className="mt-8 pt-8 border-t border-border p-6 rounded-lg bg-gradient-to-br from-secondary/10 to-secondary/5 border border-secondary/30">
+        <div className="mt-8 pt-8 border-t border-border">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Calculator className="h-6 w-6 text-secondary" />
             <Badge className="bg-secondary">Free Estimates Calculator</Badge>
@@ -350,7 +350,7 @@ export default function PricingCalculator() {
             <div className="overflow-x-auto mt-6">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b-2 border-border">
+                  <tr className="border-b-2 border-border bg-secondary/10">
                     <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
                     {Object.entries(TIERS).map(([key, tier]) => (
                       <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
