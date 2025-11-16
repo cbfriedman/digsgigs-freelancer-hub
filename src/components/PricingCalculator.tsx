@@ -334,22 +334,95 @@ export default function PricingCalculator() {
           </div>
 
           {showFreeEstimateResults && (
-            <div className="mt-6 p-6 bg-muted/50 rounded-lg">
-              <div className="grid md:grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Leads Purchased</p>
-                  <p className="text-2xl font-bold">{freeEstimateLeads}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Conversion Rate</p>
-                  <p className="text-2xl font-bold">{freeEstimateConversion}%</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Jobs Awarded</p>
-                  <p className="text-2xl font-bold text-primary">{freeEstimateJobs}</p>
-                </div>
-              </div>
+            <>
+            <div className="overflow-x-auto mt-6">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-border">
+                    <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
+                    {Object.entries(TIERS).map(([key, tier]) => (
+                      <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 px-4 text-muted-foreground">Cost per Lead</td>
+                    {Object.entries(TIERS).map(([key, tier]) => (
+                      <td key={key} className="text-right py-3 px-4">
+                        {tier.estimateCost === 0 ? (
+                          <span className="text-green-600 font-semibold">FREE</span>
+                        ) : (
+                          `$${tier.estimateCost.toFixed(2)}`
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                  
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 px-4 text-muted-foreground">Leads Purchased</td>
+                    {Object.entries(TIERS).map(([key]) => (
+                      <td key={key} className="text-right py-3 px-4">
+                        {freeEstimateLeads}
+                      </td>
+                    ))}
+                  </tr>
+                  
+                  <tr className="border-b-2 border-border bg-primary/5">
+                    <td className="py-4 px-4 font-bold text-lg">Total Monthly Costs</td>
+                    {Object.entries(TIERS).map(([key, tier]) => {
+                      const totalCost = tier.estimateCost * freeEstimateLeads;
+                      return (
+                        <td key={key} className="text-right py-4 px-4 font-bold text-lg text-primary">
+                          {totalCost === 0 ? (
+                            <span className="text-green-600">FREE</span>
+                          ) : (
+                            `$${totalCost.toFixed(2)}`
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  
+                  <tr className="border-b border-border/50">
+                    <td className="py-3 px-4 text-muted-foreground">Jobs Awarded</td>
+                    {Object.entries(TIERS).map(([key]) => (
+                      <td key={key} className="text-right py-3 px-4">
+                        {freeEstimateJobs}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
             </div>
+
+            {/* Savings Comparison */}
+            <div className="grid md:grid-cols-2 gap-4 mt-6">
+              {Object.entries(TIERS).slice(1).map(([key, tier]) => {
+                const freeCost = TIERS.free.estimateCost * freeEstimateLeads;
+                const tierCost = tier.estimateCost * freeEstimateLeads;
+                const monthlySavings = freeCost - tierCost;
+                const annualSavings = monthlySavings * 12;
+                
+                return (
+                  <div key={key} className="p-4 border rounded-lg bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold">{tier.name} vs Free</span>
+                      <Badge className={monthlySavings > 0 ? 'bg-green-600' : 'bg-red-600'}>
+                        {monthlySavings > 0 ? 'Save' : 'Cost'} ${Math.abs(monthlySavings).toFixed(2)}/mo
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Annual {monthlySavings > 0 ? 'Savings' : 'Additional Cost'}: {' '}
+                      <span className={`font-bold ${monthlySavings > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${Math.abs(annualSavings).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            </>
           )}
         </div>
       </CardContent>
