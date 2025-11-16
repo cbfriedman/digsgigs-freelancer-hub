@@ -238,6 +238,9 @@ export default function Pricing() {
             <p className="text-xl text-muted-foreground">
               Lower your commission and get unlimited free estimate requests by upgrading to Pro. Keep more of your earnings on every gig.
             </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              💰 <strong>Pro members save thousands per year</strong> on estimate requests - see the savings table below
+            </p>
           </div>
         </div>
       </section>
@@ -294,6 +297,20 @@ export default function Pricing() {
                       </li>
                     ))}
                   </ul>
+
+                  {key === 'pro' && (
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-600/20">
+                      <div className="flex items-start gap-2">
+                        <Star className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-xs">
+                          <strong className="text-green-600">Huge Savings Potential:</strong>
+                          <p className="text-muted-foreground mt-1">
+                            With 20 estimate requests/month, save $12,132/year vs Free tier!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <Button
                     className="w-full"
@@ -366,6 +383,128 @@ export default function Pricing() {
                       </div>
                     );
                   })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Free Estimate Savings Comparison */}
+          <div className="mt-16 max-w-5xl mx-auto">
+            <Card className="border-green-600/20 bg-green-50/5">
+              <CardHeader>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Badge className="bg-green-600 text-white">Pro Member Benefit</Badge>
+                </div>
+                <CardTitle className="text-center text-2xl">Free Estimate Request Savings</CardTitle>
+                <CardDescription className="text-center">
+                  See how much you save with unlimited free estimate requests on the Pro plan
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-4 px-4 font-semibold">Estimate Requests/Month</th>
+                        <th className="text-right py-4 px-4 font-semibold">Free Tier Cost</th>
+                        <th className="text-right py-4 px-4 font-semibold">Pro Cost</th>
+                        <th className="text-right py-4 px-4 font-semibold text-green-600">Monthly Savings</th>
+                        <th className="text-right py-4 px-4 font-semibold text-green-600">Annual Savings</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { requests: 5, label: '5 (Light Usage)' },
+                        { requests: 10, label: '10 (Average)' },
+                        { requests: 15, label: '15 (Active)' },
+                        { requests: 20, label: '20 (Very Active)' },
+                        { requests: 30, label: '30 (Power User)' },
+                        { requests: 50, label: '50 (High Volume)' },
+                      ].map(({ requests, label }) => {
+                        const freeCost = requests * 100;
+                        const proCost = 999;
+                        const monthlySavings = freeCost - proCost;
+                        const annualSavings = (monthlySavings * 12);
+                        const breakEven = requests >= 10;
+                        
+                        return (
+                          <tr 
+                            key={requests} 
+                            className={`border-b ${breakEven ? 'bg-green-50/50' : ''}`}
+                          >
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{label}</span>
+                                {breakEven && requests === 10 && (
+                                  <Badge variant="outline" className="text-xs border-green-600 text-green-600">
+                                    Break-even
+                                  </Badge>
+                                )}
+                              </div>
+                            </td>
+                            <td className="text-right py-4 px-4 text-muted-foreground">
+                              ${freeCost.toLocaleString()}/mo
+                            </td>
+                            <td className="text-right py-4 px-4">
+                              ${proCost.toLocaleString()}/mo
+                            </td>
+                            <td className={`text-right py-4 px-4 font-semibold ${
+                              monthlySavings > 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {monthlySavings > 0 ? '+' : ''}${monthlySavings.toLocaleString()}/mo
+                            </td>
+                            <td className={`text-right py-4 px-4 font-bold ${
+                              annualSavings > 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {annualSavings > 0 ? '+' : ''}${annualSavings.toLocaleString()}/yr
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-6 grid md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Check className="h-5 w-5 text-green-600" />
+                      <h4 className="font-semibold">Break-Even at 10 Requests</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Send 10+ estimate requests per month and Pro pays for itself. Everything after that is pure savings!
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-green-50/50 rounded-lg border border-green-600/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Star className="h-5 w-5 text-green-600" />
+                      <h4 className="font-semibold text-green-600">Annual Savings Example</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      At just 20 requests/month, Pro members save <strong className="text-green-600">$12,132/year</strong> compared to Free tier!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Plus, Pro members also benefit from lower commission rates (4% vs 9%) and reduced lead costs ($2 vs $3)
+                  </p>
+                  <Button 
+                    size="lg"
+                    onClick={() => {
+                      if (user && isDigger) {
+                        handleSubscribe('pro', TIERS.pro.priceId);
+                      } else {
+                        navigate('/auth?type=digger');
+                      }
+                    }}
+                    disabled={currentTier === 'pro' || subscribing === 'pro'}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {currentTier === 'pro' ? 'Current Plan' : 'Upgrade to Pro - Save Now'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
