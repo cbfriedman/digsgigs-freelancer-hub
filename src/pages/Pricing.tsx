@@ -77,7 +77,7 @@ const TIERS = {
       '0% commission on completed work',
       'No transaction fees',
       '$0 charge for Free Estimate requests',
-      '$0 charge for hourly rate clicks',
+      '$100 per hourly rate click',
       'Priority support',
       'Featured profile placement',
       'Advanced analytics',
@@ -728,7 +728,7 @@ export default function Pricing() {
                       <h4 className="font-semibold text-yellow-700">Pro Tier</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Still <strong>$100 per estimate</strong>, but offset by lower lead and commission costs.
+                      $100 per estimate request and $100 per hourly click, but offset by lower lead and commission costs.
                     </p>
                   </div>
 
@@ -738,7 +738,7 @@ export default function Pricing() {
                       <h4 className="font-semibold text-green-600">Premium Tier</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      <strong className="text-green-600">FREE unlimited estimate requests!</strong> Plus zero commissions.
+                      <strong className="text-green-600">FREE estimate requests!</strong> Still $100 per hourly click, but zero commissions and free leads.
                     </p>
                   </div>
                 </div>
@@ -832,16 +832,16 @@ export default function Pricing() {
                       <Badge className="bg-green-600">Best Value</Badge>
                     </div>
                     <h3 className="text-lg font-semibold mb-3 text-green-700">Premium Tier</h3>
-                    <div className="text-3xl font-bold text-green-600 mb-2">FREE</div>
-                    <p className="text-sm text-muted-foreground mb-4">unlimited clicks!</p>
+                    <div className="text-3xl font-bold text-green-600 mb-2">$100</div>
+                    <p className="text-sm text-muted-foreground mb-4">per hourly click</p>
                     <ul className="text-sm space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
-                        <span><strong>No cost</strong> for estimate requests</span>
+                        <span><strong>FREE</strong> estimate requests</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
-                        <span><strong>No cost</strong> for hourly rate clicks</span>
+                        <span>$100 per hourly rate click</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
@@ -862,8 +862,8 @@ export default function Pricing() {
                       <h4 className="font-semibold text-blue-900 mb-2">Why is there a cost?</h4>
                       <p className="text-sm text-blue-800">
                         Free estimate requests and hourly rate clicks connect you directly with serious buyers who specifically chose you. 
-                        The fee ensures quality leads and filters out casual browsers. Premium members get these features 
-                        completely free as part of their subscription, making it the best choice for active professionals.
+                        The fee ensures quality leads and filters out casual browsers. Premium members still pay for hourly rate clicks 
+                        but benefit from free estimates, zero commission, and free leads.
                       </p>
                     </div>
                   </div>
