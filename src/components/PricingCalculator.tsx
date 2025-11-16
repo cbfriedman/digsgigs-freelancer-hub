@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Calculator } from "lucide-react";
 
 const TIERS = {
   free: {
     name: 'Free',
     priceValue: 0,
-    leadCostValue: 3,
+    leadCostValue: 8,
     commissionValue: 9,
     minimumFee: 5,
     estimateCost: 100,
@@ -18,7 +19,7 @@ const TIERS = {
   pro: {
     name: 'Pro',
     priceValue: 50,
-    leadCostValue: 1.5,
+    leadCostValue: 5,
     commissionValue: 6,
     minimumFee: 5,
     estimateCost: 100,
@@ -41,6 +42,7 @@ export default function PricingCalculator() {
   const [jobValue, setJobValue] = useState(1000);
   const [estimates, setEstimates] = useState(10);
   const [hourlyClicks, setHourlyClicks] = useState(5);
+  const [showResults, setShowResults] = useState(false);
 
   const calculateCosts = (tier: typeof TIERS.free) => {
     const monthlyFee = tier.priceValue;
@@ -72,7 +74,7 @@ export default function PricingCalculator() {
           <Calculator className="h-6 w-6 text-primary" />
           <Badge className="bg-primary">Interactive Tool</Badge>
         </div>
-        <CardTitle className="text-center text-2xl">Cost Calculator</CardTitle>
+        <CardTitle className="text-center text-2xl">Cost calculator for hourly bids</CardTitle>
         <CardDescription className="text-center">
           Enter your expected monthly activity to compare costs across plans
         </CardDescription>
@@ -142,8 +144,21 @@ export default function PricingCalculator() {
           </div>
         </div>
 
+        {/* Calculate Button */}
+        <div className="flex justify-center">
+          <Button 
+            onClick={() => setShowResults(true)}
+            size="lg"
+            className="px-8"
+          >
+            Calculate
+          </Button>
+        </div>
+
         {/* Results Table */}
-        <div className="overflow-x-auto">
+        {showResults && (
+          <>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-border">
@@ -289,6 +304,8 @@ export default function PricingCalculator() {
             );
           })}
         </div>
+        </>
+        )}
       </CardContent>
     </Card>
   );
