@@ -116,10 +116,10 @@ export default function PlanRecommender() {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/30">
+    <Card className="border-primary/20">
       <CardHeader>
         <div className="flex items-center justify-center gap-2 mb-2">
-          <Lightbulb className="h-6 w-6 text-accent-foreground" />
+          <Lightbulb className="h-6 w-6 text-primary" />
           <Badge className="bg-gradient-to-r from-primary to-accent">AI Powered</Badge>
         </div>
         <CardTitle className="text-center text-2xl">Plan Recommender</CardTitle>
