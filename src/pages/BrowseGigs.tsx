@@ -193,7 +193,7 @@ const BrowseGigs = () => {
             className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
             onClick={() => navigate("/")}
           >
-            digsandgiggs
+            digsandgigs
           </h1>
           <div className="flex items-center gap-4">
             <Button 

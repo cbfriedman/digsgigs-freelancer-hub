@@ -27,7 +27,7 @@ export const DiggerOnboardingChoice = ({ onDismiss }: DiggerOnboardingChoiceProp
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-2xl">Welcome to digsandgiggs! 🎉</CardTitle>
+            <CardTitle className="text-2xl">Welcome to digsandgigs! 🎉</CardTitle>
             <CardDescription className="mt-2">
               Choose how you'd like to learn about getting started as a digger
             </CardDescription>

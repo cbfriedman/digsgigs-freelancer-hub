@@ -9,7 +9,7 @@ export const Footer = () => {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              digsandgiggs
+              digsandgigs
             </h3>
             <p className="text-sm text-muted-foreground">
               Connecting skilled professionals with clients seeking expertise.
@@ -46,8 +46,8 @@ export const Footer = () => {
                 </button>
               </li>
               <li>
-                <a href="mailto:support@digsandgiggs.com" className="text-muted-foreground hover:text-foreground transition-colors">
-                  support@digsandgiggs.com
+                <a href="mailto:support@digsandgigs.com" className="text-muted-foreground hover:text-foreground transition-colors">
+                  support@digsandgigs.com
                 </a>
               </li>
             </ul>

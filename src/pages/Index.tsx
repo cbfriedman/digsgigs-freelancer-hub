@@ -240,7 +240,7 @@ const Index = () => {
             className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            digsandgiggs
+            digsandgigs
           </h1>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")}>
@@ -661,7 +661,7 @@ const Index = () => {
                 Ready to Transform Your Freelance Career?
               </h3>
               <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Join thousands of diggers and clients connecting on digsandgiggs today.
+                Join thousands of diggers and clients connecting on digsandgigs today.
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
                 <Button 

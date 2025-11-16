@@ -14,7 +14,7 @@ const PrivacyPolicy = () => {
             className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
             onClick={() => navigate("/")}
           >
-            digsandgiggs
+            digsandgigs
           </h1>
           <Button variant="ghost" onClick={() => navigate("/")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -119,7 +119,7 @@ const PrivacyPolicy = () => {
 
               <h3 className="text-lg font-semibold mb-2">6.2 Account Deletion</h3>
               <p className="text-muted-foreground mb-3">
-                You may request account deletion by contacting us at privacy@digsandgiggs.com. We will delete your personal data within 30 days, except where retention is required by law or to resolve disputes.
+                You may request account deletion by contacting us at privacy@digsandgigs.com. We will delete your personal data within 30 days, except where retention is required by law or to resolve disputes.
               </p>
 
               <h3 className="text-lg font-semibold mb-2">6.3 Marketing Communications</h3>
@@ -129,7 +129,7 @@ const PrivacyPolicy = () => {
 
               <h3 className="text-lg font-semibold mb-2">6.4 Data Portability</h3>
               <p className="text-muted-foreground">
-                You may request a copy of your data in a machine-readable format. Contact privacy@digsandgiggs.com for requests.
+                You may request a copy of your data in a machine-readable format. Contact privacy@digsandgigs.com for requests.
               </p>
             </section>
 
@@ -189,7 +189,7 @@ const PrivacyPolicy = () => {
                 For privacy-related questions or requests, contact us at:
               </p>
               <p className="text-muted-foreground mt-2">
-                <strong>Email:</strong> privacy@digsandgiggs.com<br />
+                <strong>Email:</strong> privacy@digsandgigs.com<br />
                 <strong>Mail:</strong> [Your Business Address]
               </p>
             </section>

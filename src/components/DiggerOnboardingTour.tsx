@@ -15,7 +15,7 @@ export const DiggerOnboardingTour = ({ run, onComplete }: DiggerOnboardingTourPr
       target: "body",
       content: (
         <div>
-          <h3 className="text-lg font-bold mb-2">Welcome to digsandgiggs! 🎉</h3>
+          <h3 className="text-lg font-bold mb-2">Welcome to digsandgigs! 🎉</h3>
           <p>Let's take a quick tour to help you get started as a digger and land your first gig.</p>
         </div>
       ),

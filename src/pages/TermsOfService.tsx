@@ -14,7 +14,7 @@ const TermsOfService = () => {
             className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
             onClick={() => navigate("/")}
           >
-            digsandgiggs
+            digsandgigs
           </h1>
           <Button variant="ghost" onClick={() => navigate("/")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -226,7 +226,7 @@ const TermsOfService = () => {
                 For questions about these Terms, contact us at:
               </p>
               <p className="text-muted-foreground mt-2">
-                <strong>Email:</strong> legal@digsandgiggs.com<br />
+                <strong>Email:</strong> legal@digsandgigs.com<br />
                 <strong>Mail:</strong> [Your Business Address]
               </p>
             </section>

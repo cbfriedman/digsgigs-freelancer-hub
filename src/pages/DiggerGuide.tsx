@@ -31,7 +31,7 @@ export default function DiggerGuide() {
             Digger's Journey
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Your step-by-step guide to landing your first gig and growing your business on digsandgiggs
+            Your step-by-step guide to landing your first gig and growing your business on digsandgigs
           </p>
         </div>
 
@@ -300,7 +300,7 @@ export default function DiggerGuide() {
           <CardContent className="p-8 text-center">
             <h3 className="text-2xl font-bold mb-3">Ready to Start?</h3>
             <p className="text-muted-foreground mb-6">
-              Join thousands of diggers already growing their business on digsandgiggs
+              Join thousands of diggers already growing their business on digsandgigs
             </p>
             <Button size="lg" onClick={() => navigate('/browse-gigs')} className="gap-2">
               Browse Available Gigs
