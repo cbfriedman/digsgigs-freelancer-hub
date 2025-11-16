@@ -17,6 +17,7 @@ interface FreeEstimateDigger {
   total_ratings: number;
   bio: string;
   location: string;
+  subscription_tier: string;
 }
 
 interface FreeEstimateDiggersProps {
@@ -46,7 +47,8 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
           average_rating,
           total_ratings,
           bio,
-          location
+          location,
+          subscription_tier
         `)
         .eq("offers_free_estimates", true)
         .limit(5);
@@ -92,10 +94,17 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
 
       if (error) throw error;
 
-      toast.success(
-        "Estimate requested! The digger will be notified and must pay $100 to accept.",
-        { duration: 5000 }
-      );
+      if (data.free) {
+        toast.success(
+          "Estimate requested! This digger is on Pro/Premium, so there's no charge.",
+          { duration: 5000 }
+        );
+      } else {
+        toast.success(
+          "Estimate requested! The digger will be notified and must pay $100 to accept.",
+          { duration: 5000 }
+        );
+      }
       
       // Reload to update the UI
       setTimeout(() => loadDiggers(), 1000);
@@ -135,11 +144,11 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
           <CardTitle className="text-xl">Get Free Estimates</CardTitle>
           <Badge variant="secondary" className="flex items-center gap-1">
             <DollarSign className="h-3 w-3" />
-            $100 per estimate
+            $100 per estimate (Free tier)
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          These professionals offer free estimates for this type of work
+          These professionals offer free estimates. Pro/Premium members provide estimates at no charge!
         </p>
       </CardHeader>
       <CardContent>
@@ -165,6 +174,11 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
                     <Badge variant="outline" className="text-xs">
                       Free Estimates
                     </Badge>
+                    {(digger.subscription_tier === 'pro' || digger.subscription_tier === 'premium') && (
+                      <Badge variant="default" className="text-xs bg-green-600">
+                        No Charge
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">{digger.profession}</p>
                   <div className="flex items-center gap-1 mt-1">
@@ -193,7 +207,7 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
                     Processing...
                   </>
                 ) : (
-                  "Get Estimate"
+                  "Request Estimate"
                 )}
               </Button>
             </div>

@@ -32,8 +32,8 @@ const TIERS = {
   },
   pro: {
     name: 'Pro',
-    price: '$10',
-    priceValue: 10,
+    price: '$999',
+    priceValue: 999,
     leadCost: '$2',
     leadCostValue: 2,
     commission: '4% ($5 min)',
@@ -47,6 +47,7 @@ const TIERS = {
       '$2 per lead purchase',
       '4% commission on completed work',
       '$5 minimum fee per transaction',
+      'Unlimited free estimate requests',
       'Priority support',
       'Featured in search results',
       'Enhanced profile visibility',
@@ -235,7 +236,7 @@ export default function Pricing() {
               Choose Your Commission Rate
             </h1>
             <p className="text-xl text-muted-foreground">
-              Lower your commission by upgrading your plan. The more you subscribe, the more you keep from every completed gig.
+              Lower your commission and get unlimited free estimate requests by upgrading to Pro. Keep more of your earnings on every gig.
             </p>
           </div>
         </div>

@@ -64,7 +64,7 @@ serve(async (req) => {
     // Verify digger offers free estimates
     const { data: diggerProfile } = await supabaseClient
       .from("digger_profiles")
-      .select("offers_free_estimates")
+      .select("offers_free_estimates, subscription_tier")
       .eq("id", diggerId)
       .single();
 
@@ -72,7 +72,41 @@ serve(async (req) => {
       throw new Error("This digger does not offer free estimates");
     }
 
-    // Create pending lead purchase
+    // Check if digger is Pro or Premium - they get unlimited free estimate requests
+    if (diggerProfile.subscription_tier === 'pro' || diggerProfile.subscription_tier === 'premium') {
+      // Free for Pro/Premium members - just create the lead purchase as completed
+      const { data: purchase, error: purchaseError } = await supabaseClient
+        .from("lead_purchases")
+        .insert({
+          gig_id: gigId,
+          digger_id: diggerId,
+          consumer_id: user.id,
+          purchase_price: 0,
+          amount_paid: 0,
+          status: "completed", // Free for Pro/Premium
+        })
+        .select()
+        .single();
+
+      if (purchaseError) {
+        throw new Error(`Failed to create estimate request: ${purchaseError.message}`);
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: "Estimate requested! The digger can now contact you at no charge.",
+          purchaseId: purchase.id,
+          free: true
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
+    // Create pending lead purchase for Free tier diggers
     const { data: purchase, error: purchaseError } = await supabaseClient
       .from("lead_purchases")
       .insert({
