@@ -14,7 +14,7 @@ const BreakevenCalculator = () => {
   const [hourlyRate, setHourlyRate] = useState(100);
 
   // Pro Plan Calculations
-  const proSubscription = 75;
+  const proSubscription = 100;
   const proLeadCost = leads * 1.5;
   const proEstimateCost = estimates * 100;
   const proHourlyClickCost = hourlyRateClicks * 100;
