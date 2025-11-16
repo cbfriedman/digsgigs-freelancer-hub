@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,11 +12,27 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, userId, sessionId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Initialize Supabase client
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // Save user message to database
+    const userMessage = messages[messages.length - 1];
+    if (userMessage.role === "user") {
+      await supabase.from("chat_messages").insert({
+        user_id: userId || null,
+        session_id: sessionId,
+        role: "user",
+        content: userMessage.content,
+      });
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -67,7 +84,57 @@ serve(async (req) => {
       );
     }
 
-    return new Response(response.body, {
+    // Stream the response and save assistant message when done
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let assistantMessage = "";
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              // Save assistant message to database
+              if (assistantMessage) {
+                await supabase.from("chat_messages").insert({
+                  user_id: userId || null,
+                  session_id: sessionId,
+                  role: "assistant",
+                  content: assistantMessage,
+                });
+              }
+              controller.close();
+              break;
+            }
+            
+            const chunk = decoder.decode(value, { stream: true });
+            controller.enqueue(value);
+            
+            // Extract content for saving
+            const lines = chunk.split("\n").filter(line => line.trim() !== "");
+            for (const line of lines) {
+              if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                try {
+                  const json = JSON.parse(line.slice(6));
+                  const content = json.choices?.[0]?.delta?.content;
+                  if (content) {
+                    assistantMessage += content;
+                  }
+                } catch (e) {
+                  // Ignore JSON parse errors
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Stream error:", error);
+          controller.error(error);
+        }
+      }
+    });
+
+    return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {

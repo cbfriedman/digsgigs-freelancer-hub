@@ -2,22 +2,41 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, X, Send, Bot, User } from "lucide-react";
+import { MessageSquare, X, Send, Bot, User, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
+// Generate or retrieve session ID for anonymous users
+const getSessionId = () => {
+  let sessionId = localStorage.getItem("chatbot_session_id");
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem("chatbot_session_id", sessionId);
+  }
+  return sessionId;
+};
+
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Load chat history when chatbot opens
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      loadChatHistory();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -25,12 +44,88 @@ export default function AIChatbot() {
     }
   }, [messages]);
 
+  const loadChatHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const sessionId = getSessionId();
+
+      const query = supabase
+        .from("chat_messages")
+        .select("role, content")
+        .order("created_at", { ascending: true })
+        .limit(50);
+
+      if (user) {
+        query.eq("user_id", user.id);
+      } else {
+        query.eq("session_id", sessionId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error loading chat history:", error);
+      } else if (data && data.length > 0) {
+        setMessages(data.map(msg => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content
+        })));
+      }
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const clearChatHistory = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const sessionId = getSessionId();
+
+      const query = supabase.from("chat_messages").delete();
+
+      if (user) {
+        query.eq("user_id", user.id);
+      } else {
+        query.eq("session_id", sessionId);
+      }
+
+      const { error } = await query;
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to clear chat history.",
+          variant: "destructive",
+        });
+      } else {
+        setMessages([]);
+        toast({
+          title: "Success",
+          description: "Chat history cleared.",
+        });
+      }
+    } catch (error) {
+      console.error("Error clearing chat history:", error);
+      toast({
+        title: "Error",
+        description: "Failed to clear chat history.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const streamChat = async (userMessage: string) => {
     const newMessages = [...messages, { role: "user" as const, content: userMessage }];
     setMessages(newMessages);
     setIsLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const sessionId = getSessionId();
+
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-bot`;
       const response = await fetch(CHAT_URL, {
         method: "POST",
@@ -38,7 +133,11 @@ export default function AIChatbot() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ 
+          messages: newMessages,
+          userId: user?.id,
+          sessionId: sessionId,
+        }),
       });
 
       if (!response.ok) {
@@ -163,18 +262,36 @@ export default function AIChatbot() {
               <Bot className="h-5 w-5 text-primary" />
               AI Assistant
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearChatHistory}
+                  title="Clear chat history"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
 
           <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-              {messages.length === 0 && (
+              {isLoadingHistory && (
+                <div className="text-center text-muted-foreground py-4">
+                  <p className="text-sm">Loading chat history...</p>
+                </div>
+              )}
+
+              {!isLoadingHistory && messages.length === 0 && (
                 <div className="text-center text-muted-foreground py-8">
                   <Bot className="h-12 w-12 mx-auto mb-4 text-primary" />
                   <p className="text-sm">
