@@ -37,6 +37,7 @@ interface DiggerProfile {
   is_insured: boolean;
   is_bonded: boolean;
   is_licensed: string;
+  offers_free_estimates: boolean;
   sic_code: string | null;
   naics_code: string | null;
   custom_occupation_title: string | null;
@@ -66,6 +67,7 @@ const EditDiggerProfile = () => {
     is_insured: false,
     is_bonded: false,
     is_licensed: "not_required" as "yes" | "no" | "not_required",
+    offers_free_estimates: false,
   });
 
   useEffect(() => {
@@ -126,6 +128,7 @@ const EditDiggerProfile = () => {
         is_insured: diggerProfile.is_insured || false,
         is_bonded: diggerProfile.is_bonded || false,
         is_licensed: diggerProfile.is_licensed as "yes" | "no" | "not_required",
+        offers_free_estimates: diggerProfile.offers_free_estimates || false,
       });
 
       // Load selected categories
@@ -196,6 +199,7 @@ const EditDiggerProfile = () => {
           is_insured: formData.is_insured,
           is_bonded: formData.is_bonded,
           is_licensed: formData.is_licensed,
+          offers_free_estimates: formData.offers_free_estimates,
           sic_code: selectedIndustryCode?.code_type === "SIC" ? selectedIndustryCode.code : null,
           naics_code: selectedIndustryCode?.code_type === "NAICS" ? selectedIndustryCode.code : null,
           custom_occupation_title: customOccupationTitle || null,
@@ -415,6 +419,20 @@ const EditDiggerProfile = () => {
                       I am bonded
                     </Label>
                   </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="offers_free_estimates"
+                      checked={formData.offers_free_estimates}
+                      onCheckedChange={(checked) => setFormData({ ...formData, offers_free_estimates: checked as boolean })}
+                    />
+                    <Label htmlFor="offers_free_estimates" className="cursor-pointer">
+                      I offer free estimates ($100 per lead)
+                    </Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    By offering free estimates, you'll be charged $100 when a customer requests an estimate from you.
+                  </p>
                 </div>
                 
                 <div className="space-y-2">

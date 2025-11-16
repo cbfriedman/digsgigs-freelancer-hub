@@ -11,6 +11,7 @@ import { ArrowLeft, DollarSign, Calendar, Tag, User, Loader2, Award, MessageSqua
 import { formatDistanceToNow } from "date-fns";
 import { BidForm } from "@/components/BidForm";
 import { BidsList } from "@/components/BidsList";
+import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
 
 interface Gig {
   id: string;
@@ -361,6 +362,12 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Free Estimate Diggers - shown to consumers and diggers */}
+            <FreeEstimateDiggers 
+              gigId={id!} 
+              categories={gig.categories?.name ? [gig.categories.name] : undefined}
+            />
 
             {/* Bids Section */}
             {(isOwner || isDigger) && (
