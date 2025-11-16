@@ -60,7 +60,7 @@ serve(async (req) => {
     } else if (tier === 'premium') {
       leadCost = 0; // $0 per lead
     } else if (tier === 'pro') {
-      leadCost = 2; // $2 per lead
+      leadCost = 1.5; // $1.50 per lead
     } else {
       leadCost = 3; // $3 per lead (free)
     }
