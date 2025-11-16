@@ -7,13 +7,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Star, DollarSign, Briefcase } from "lucide-react";
+import { ArrowLeft, Search, Star, DollarSign, Briefcase, Map } from "lucide-react";
+import { DiggerAdvancedFilters } from "@/components/DiggerAdvancedFilters";
+import { MapView } from "@/components/MapView";
+import { SavedSearchesList } from "@/components/SavedSearchesList";
 
 interface Category {
   id: string;
   name: string;
   parent_category_id: string | null;
+}
+
+interface DiggerFilters {
+  hourlyRateRange: [number, number];
+  selectedCategories: string[];
+  locationRadius: number;
+  locationLat?: number;
+  locationLng?: number;
+  minRating?: number;
+  certifications: string[];
+  maxResponseTime?: number;
+  availability?: string;
+  isInsured?: boolean;
+  isBonded?: boolean;
+  isLicensed?: boolean;
 }
 
 interface Digger {
@@ -36,6 +55,8 @@ interface Digger {
   sic_code: string | null;
   naics_code: string | null;
   custom_occupation_title: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
   profiles: {
     full_name: string | null;
   };
@@ -54,10 +75,23 @@ const BrowseDiggers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("rating");
+  const [activeView, setActiveView] = useState<"list" | "map">("list");
+  const [filters, setFilters] = useState<DiggerFilters>({
+    hourlyRateRange: [0, 500],
+    selectedCategories: [],
+    locationRadius: 25,
+    minRating: 0,
+    maxResponseTime: 72,
+    certifications: [],
+    availability: "any",
+    isInsured: false,
+    isBonded: false,
+    isLicensed: false,
+  });
 
   useEffect(() => {
     loadData();
-  }, [selectedCategory, sortBy]);
+  }, [selectedCategory, sortBy, filters]);
 
   const loadData = async () => {
     setLoading(true);
@@ -108,6 +142,35 @@ const BrowseDiggers = () => {
 
     if (diggerIds) {
       query = query.in("id", diggerIds);
+    }
+
+    // Apply advanced filters
+    if (filters.hourlyRateRange[0] > 0) {
+      query = query.gte("hourly_rate_min", filters.hourlyRateRange[0]);
+    }
+    if (filters.hourlyRateRange[1] < 500) {
+      query = query.lte("hourly_rate_max", filters.hourlyRateRange[1]);
+    }
+    if (filters.minRating && filters.minRating > 0) {
+      query = query.gte("average_rating", filters.minRating);
+    }
+    if (filters.maxResponseTime && filters.maxResponseTime < 72) {
+      query = query.lte("response_time_hours", filters.maxResponseTime);
+    }
+    if (filters.isInsured) {
+      query = query.eq("is_insured", true);
+    }
+    if (filters.isBonded) {
+      query = query.eq("is_bonded", true);
+    }
+    if (filters.isLicensed) {
+      query = query.not("is_licensed", "is", null);
+    }
+    if (filters.availability && filters.availability !== "any") {
+      query = query.eq("availability", filters.availability);
+    }
+    if (filters.certifications.length > 0) {
+      query = query.contains("certifications", filters.certifications);
     }
 
     if (sortBy === "rating") {
@@ -219,18 +282,46 @@ const BrowseDiggers = () => {
           </Select>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading diggers...</p>
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="md:col-span-1">
+            <DiggerAdvancedFilters
+              categories={categories}
+              filters={filters}
+              onFiltersChange={setFilters}
+              onSaveSearch={() => {}}
+            />
+            <SavedSearchesList 
+              searchType="diggers" 
+              onApplySearch={(appliedFilters) => setFilters(appliedFilters as DiggerFilters)}
+            />
           </div>
-        ) : filteredDiggers.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No diggers found. Try adjusting your filters.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          <div className="md:col-span-3">
+            <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "list" | "map")} className="mb-6">
+              <TabsList>
+                <TabsTrigger value="list">
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  List View
+                </TabsTrigger>
+                <TabsTrigger value="map">
+                  <Map className="h-4 w-4 mr-2" />
+                  Map View
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="list">
+                {loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading diggers...</p>
+                  </div>
+                ) : filteredDiggers.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <p className="text-muted-foreground">No diggers found. Try adjusting your filters.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-6">
             {filteredDiggers.map((digger) => (
               <Card 
                 key={digger.id} 
@@ -331,7 +422,23 @@ const BrowseDiggers = () => {
               </Card>
             ))}
           </div>
-        )}
+                )}
+              </TabsContent>
+
+              <TabsContent value="map">
+                <MapView 
+                  items={filteredDiggers.map(d => ({
+                    id: d.id,
+                    title: `@${d.handle || "anonymous"} - ${d.profession}`,
+                    location_lat: d.location_lat,
+                    location_lng: d.location_lng,
+                  }))}
+                  onMarkerClick={(id) => navigate(`/digger/${id}`)}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );

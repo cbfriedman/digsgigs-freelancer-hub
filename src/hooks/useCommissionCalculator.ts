@@ -1,6 +1,6 @@
 /**
  * Hook for calculating costs based on subscription tier
- * Lead Costs: Free ($3/lead), Pro ($2/lead), Premium ($0/lead)
+ * Lead Costs: Free ($3/lead), Pro ($1.50/lead), Premium ($0/lead)
  * Commissions: Free (9%, $5 min), Pro (4%, $5 min), Premium (0%, no min)
  */
 export const useCommissionCalculator = () => {
@@ -14,7 +14,7 @@ export const useCommissionCalculator = () => {
     if (tier === 'premium') {
       leadCost = 0; // $0 per lead
     } else if (tier === 'pro') {
-      leadCost = 2; // $2 per lead
+      leadCost = 1.5; // $1.50 per lead
     } else {
       leadCost = 3; // $3 per lead (free)
     }
