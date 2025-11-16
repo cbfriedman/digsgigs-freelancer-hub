@@ -27,14 +27,12 @@ interface GigAdvancedFiltersProps {
   categories: Category[];
   filters: GigFilters;
   onFiltersChange: (filters: GigFilters) => void;
-  onSaveSearch: () => void;
 }
 
 export const GigAdvancedFilters = ({ 
   categories, 
   filters, 
   onFiltersChange,
-  onSaveSearch
 }: GigAdvancedFiltersProps) => {
   const [searchName, setSearchName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -82,7 +80,6 @@ export const GigAdvancedFilters = ({
 
       toast.success("Search saved successfully! You'll receive email alerts for matching gigs.");
       setSearchName("");
-      onSaveSearch();
     } catch (error) {
       console.error('Error saving search:', error);
       toast.error("Failed to save search");

@@ -288,7 +288,6 @@ const BrowseDiggers = () => {
               categories={categories}
               filters={filters}
               onFiltersChange={setFilters}
-              onSaveSearch={() => {}}
             />
             <SavedSearchesList 
               searchType="diggers" 

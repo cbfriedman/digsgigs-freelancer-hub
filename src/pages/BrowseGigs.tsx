@@ -34,8 +34,8 @@ interface Gig {
   status: string;
   purchase_count: number;
   created_at: string;
-  location_lat?: number;
-  location_lng?: number;
+  location_lat?: number | null;
+  location_lng?: number | null;
   categories: {
     name: string;
   } | null;
@@ -146,7 +146,6 @@ const BrowseGigs = () => {
       .order("created_at", { ascending: false });
 
     if (selectedCategory !== "all") {
-      // Get all subcategories of the selected parent category
       const { data: subcategories } = await supabase
         .from("categories")
         .select("id")
@@ -164,6 +163,17 @@ const BrowseGigs = () => {
       } else if (budgetFilter === "over5k") {
         query = query.gte("budget_min", 5000);
       }
+    }
+
+    // Apply advanced filters
+    if (advancedFilters.budgetRange[0] > 0) {
+      query = query.gte("budget_min", advancedFilters.budgetRange[0]);
+    }
+    if (advancedFilters.budgetRange[1] < 50000) {
+      query = query.lte("budget_max", advancedFilters.budgetRange[1]);
+    }
+    if (advancedFilters.selectedCategories.length > 0) {
+      query = query.in("category_id", advancedFilters.selectedCategories);
     }
 
     const { data, error } = await query;
@@ -299,22 +309,49 @@ const BrowseGigs = () => {
           </Select>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading gigs...</p>
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="md:col-span-1">
+            <GigAdvancedFilters
+              categories={categories}
+              filters={advancedFilters}
+              onFiltersChange={setAdvancedFilters}
+            />
+            <SavedSearchesList 
+              searchType="gigs" 
+              onApplySearch={(appliedFilters) => setAdvancedFilters(appliedFilters as GigFilters)}
+            />
           </div>
-        ) : displayGigs.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">
-                {limitReached 
-                  ? "No older gigs available. Check back later or increase your lead limit."
-                  : "No gigs found. Try adjusting your filters."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
+
+          <div className="md:col-span-3">
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'map')} className="mb-6">
+              <TabsList>
+                <TabsTrigger value="list">
+                  <List className="h-4 w-4 mr-2" />
+                  List View
+                </TabsTrigger>
+                <TabsTrigger value="map">
+                  <Map className="h-4 w-4 mr-2" />
+                  Map View
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="list">
+                {loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading gigs...</p>
+                  </div>
+                ) : displayGigs.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <p className="text-muted-foreground">
+                        {limitReached 
+                          ? "No older gigs available. Check back later or increase your lead limit."
+                          : "No gigs found. Try adjusting your filters."}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
             {displayGigs.map((gig) => {
               const isOld = isOldGig(gig.created_at);
               const showSpecialPrice = isOld && limitReached && (diggerProfile as any)?.lead_limit_enabled;
@@ -424,11 +461,27 @@ const BrowseGigs = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
               );
             })}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="map">
+                <MapView 
+                  items={displayGigs.map(g => ({
+                    id: g.id,
+                    title: g.title,
+                    location_lat: g.location_lat,
+                    location_lng: g.location_lng,
+                  }))}
+                  onMarkerClick={(id) => navigate(`/gig/${id}`)}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
