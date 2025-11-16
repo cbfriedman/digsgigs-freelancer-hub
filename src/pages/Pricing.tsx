@@ -359,46 +359,263 @@ export default function Pricing() {
             ))}
           </div>
 
-          {/* Cost Calculator */}
-          <div className="mt-16 max-w-4xl mx-auto">
+          {/* Comprehensive Cost Breakdown */}
+          <div className="mt-16 max-w-6xl mx-auto">
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
               <CardHeader>
-                <CardTitle className="text-center">Total Cost Example</CardTitle>
+                <CardTitle className="text-center text-2xl">Complete Cost Breakdown by Usage Level</CardTitle>
                 <CardDescription className="text-center">
-                  10 leads purchased + $1,000 job completed
+                  Compare total monthly costs across different business activity levels
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-3 gap-6">
-                  {Object.entries(TIERS).map(([key, tier]) => {
-                    const monthlyFee = tier.priceValue;
-                    const leadCost = tier.leadCostValue;
-                    const leadsPerMonth = 10;
-                    const totalLeadCost = leadCost * leadsPerMonth;
-                    
-                    // Calculate commission on $1000 job
-                    const jobAmount = 1000;
-                    const commission = Math.max((jobAmount * tier.commissionValue) / 100, tier.minimumFee);
-                    
-                    const totalCost = monthlyFee + totalLeadCost + commission;
-                    
-                    return (
-                      <div key={key} className="text-center space-y-3">
-                        <h4 className="font-semibold text-lg">{tier.name}</h4>
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                          <div>Monthly: {tier.price}</div>
-                          <div>10 Leads: ${totalLeadCost.toFixed(2)}</div>
-                          <div>Commission: ${commission.toFixed(2)}</div>
-                        </div>
-                        <div className="text-2xl font-bold text-primary">
-                          Total: ${totalCost.toFixed(2)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          You keep: ${(jobAmount - commission).toFixed(2)} from job
-                        </div>
+              <CardContent className="space-y-8">
+                {[
+                  { 
+                    label: 'Light Usage', 
+                    leads: 5, 
+                    jobs: 1, 
+                    jobValue: 500, 
+                    estimates: 3,
+                    description: 'Part-time or starting out'
+                  },
+                  { 
+                    label: 'Moderate Usage', 
+                    leads: 15, 
+                    jobs: 2, 
+                    jobValue: 1000, 
+                    estimates: 10,
+                    description: 'Active professional'
+                  },
+                  { 
+                    label: 'High Volume', 
+                    leads: 30, 
+                    jobs: 4, 
+                    jobValue: 2000, 
+                    estimates: 20,
+                    description: 'Busy contractor'
+                  },
+                ].map((scenario, idx) => (
+                  <div key={idx} className="space-y-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="flex-1 h-px bg-border"></div>
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold">{scenario.label}</h3>
+                        <p className="text-xs text-muted-foreground">{scenario.description}</p>
                       </div>
-                    );
-                  })}
+                      <div className="flex-1 h-px bg-border"></div>
+                    </div>
+                    
+                    <div className="text-sm text-muted-foreground text-center mb-4">
+                      {scenario.leads} leads • {scenario.jobs} jobs (${scenario.jobValue.toLocaleString()} each) • {scenario.estimates} estimate requests/month
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b-2 border-border">
+                            <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
+                            {Object.entries(TIERS).map(([key, tier]) => (
+                              <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Monthly Subscription */}
+                          <tr className="border-b border-border/50">
+                            <td className="py-3 px-4 text-muted-foreground">Monthly Subscription</td>
+                            {Object.entries(TIERS).map(([key, tier]) => (
+                              <td key={key} className="text-right py-3 px-4">
+                                ${tier.priceValue.toFixed(2)}
+                              </td>
+                            ))}
+                          </tr>
+                          
+                          {/* Lead Purchases */}
+                          <tr className="border-b border-border/50">
+                            <td className="py-3 px-4 text-muted-foreground">
+                              Lead Purchases ({scenario.leads} × rate)
+                            </td>
+                            {Object.entries(TIERS).map(([key, tier]) => {
+                              const leadCost = tier.leadCostValue * scenario.leads;
+                              return (
+                                <td key={key} className="text-right py-3 px-4">
+                                  ${leadCost.toFixed(2)}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          
+                          {/* Commission on Jobs */}
+                          <tr className="border-b border-border/50">
+                            <td className="py-3 px-4 text-muted-foreground">
+                              Commission ({scenario.jobs} jobs at ${scenario.jobValue.toLocaleString()} each)
+                            </td>
+                            {Object.entries(TIERS).map(([key, tier]) => {
+                              const totalJobValue = scenario.jobValue * scenario.jobs;
+                              const commission = Math.max(
+                                (totalJobValue * tier.commissionValue) / 100, 
+                                tier.minimumFee * scenario.jobs
+                              );
+                              return (
+                                <td key={key} className="text-right py-3 px-4">
+                                  ${commission.toFixed(2)}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          
+                          {/* Estimate Requests */}
+                          <tr className="border-b border-border/50 bg-muted/20">
+                            <td className="py-3 px-4 text-muted-foreground font-medium">
+                              Free Estimate Requests ({scenario.estimates} requests)
+                            </td>
+                            {Object.entries(TIERS).map(([key, tier]) => {
+                              let estimateCost = 0;
+                              if (key === 'free' || key === 'pro') {
+                                estimateCost = scenario.estimates * 100;
+                              }
+                              return (
+                                <td key={key} className="text-right py-3 px-4 font-medium">
+                                  {estimateCost === 0 ? (
+                                    <span className="text-green-600">FREE</span>
+                                  ) : (
+                                    `$${estimateCost.toFixed(2)}`
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          
+                          {/* Total Monthly Costs */}
+                          <tr className="border-b-2 border-border bg-primary/5">
+                            <td className="py-4 px-4 font-bold text-lg">Total Monthly Costs</td>
+                            {Object.entries(TIERS).map(([key, tier]) => {
+                              const leadCost = tier.leadCostValue * scenario.leads;
+                              const totalJobValue = scenario.jobValue * scenario.jobs;
+                              const commission = Math.max(
+                                (totalJobValue * tier.commissionValue) / 100, 
+                                tier.minimumFee * scenario.jobs
+                              );
+                              let estimateCost = 0;
+                              if (key === 'free' || key === 'pro') {
+                                estimateCost = scenario.estimates * 100;
+                              }
+                              const total = tier.priceValue + leadCost + commission + estimateCost;
+                              return (
+                                <td key={key} className="text-right py-4 px-4 font-bold text-lg text-primary">
+                                  ${total.toFixed(2)}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          
+                          {/* Total Revenue */}
+                          <tr className="border-b border-border/50">
+                            <td className="py-3 px-4 text-muted-foreground">
+                              Total Job Revenue ({scenario.jobs} jobs)
+                            </td>
+                            {Object.entries(TIERS).map(([key]) => {
+                              const revenue = scenario.jobValue * scenario.jobs;
+                              return (
+                                <td key={key} className="text-right py-3 px-4">
+                                  ${revenue.toFixed(2)}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          
+                          {/* Net Earnings */}
+                          <tr className="bg-green-50 dark:bg-green-950/20">
+                            <td className="py-4 px-4 font-bold text-lg text-green-700 dark:text-green-400">
+                              Net Earnings (Revenue - Costs)
+                            </td>
+                            {Object.entries(TIERS).map(([key, tier]) => {
+                              const revenue = scenario.jobValue * scenario.jobs;
+                              const leadCost = tier.leadCostValue * scenario.leads;
+                              const totalJobValue = scenario.jobValue * scenario.jobs;
+                              const commission = Math.max(
+                                (totalJobValue * tier.commissionValue) / 100, 
+                                tier.minimumFee * scenario.jobs
+                              );
+                              let estimateCost = 0;
+                              if (key === 'free' || key === 'pro') {
+                                estimateCost = scenario.estimates * 100;
+                              }
+                              const totalCosts = tier.priceValue + leadCost + commission + estimateCost;
+                              const netEarnings = revenue - totalCosts;
+                              return (
+                                <td key={key} className="text-right py-4 px-4 font-bold text-lg text-green-600">
+                                  ${netEarnings.toFixed(2)}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Savings Comparison */}
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
+                      {Object.entries(TIERS).slice(1).map(([key, tier]) => {
+                        const freeTier = TIERS.free;
+                        
+                        // Calculate costs for both plans
+                        const calculateTotal = (t: typeof tier) => {
+                          const leadCost = t.leadCostValue * scenario.leads;
+                          const totalJobValue = scenario.jobValue * scenario.jobs;
+                          const commission = Math.max(
+                            (totalJobValue * t.commissionValue) / 100, 
+                            t.minimumFee * scenario.jobs
+                          );
+                          let estimateCost = 0;
+                          if (key === 'free' || key === 'pro' || t === freeTier) {
+                            estimateCost = scenario.estimates * 100;
+                          }
+                          return t.priceValue + leadCost + commission + estimateCost;
+                        };
+                        
+                        const freeTotal = calculateTotal(freeTier);
+                        const tierTotal = calculateTotal(tier);
+                        const savings = freeTotal - tierTotal;
+                        const annualSavings = savings * 12;
+                        
+                        return (
+                          <div key={key} className="p-4 border rounded-lg bg-card">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-semibold">{tier.name} vs Free</span>
+                              <Badge className={savings > 0 ? 'bg-green-600' : 'bg-red-600'}>
+                                {savings > 0 ? 'Save' : 'Cost'} ${Math.abs(savings).toFixed(2)}/mo
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Annual {savings > 0 ? 'Savings' : 'Additional Cost'}: {' '}
+                              <span className={`font-bold ${savings > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                ${Math.abs(annualSavings).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex gap-3">
+                    <div className="text-3xl">💡</div>
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-blue-900 dark:text-blue-100">Understanding Your Costs</h4>
+                      <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                        <li>• <strong>Monthly Subscription:</strong> Fixed fee charged monthly</li>
+                        <li>• <strong>Lead Purchases:</strong> Pay only when you actively purchase a lead</li>
+                        <li>• <strong>Commission:</strong> Charged only on completed, paid jobs</li>
+                        <li>• <strong>Estimate Requests:</strong> Charged when consumers request your contact info</li>
+                      </ul>
+                      <p className="text-sm text-blue-800 dark:text-blue-200 mt-3">
+                        <strong>Higher tiers = More savings</strong> as your business grows. Premium tier eliminates all per-transaction costs!
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
