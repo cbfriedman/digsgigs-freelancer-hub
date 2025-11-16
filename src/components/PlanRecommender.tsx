@@ -116,19 +116,19 @@ export default function PlanRecommender() {
   };
 
   return (
-    <Card className="border-primary/20">
-      <CardHeader>
+    <Card className="border-2 border-orange-500">
+      <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <Lightbulb className="h-6 w-6 text-primary" />
-          <Badge className="bg-gradient-to-r from-primary to-accent">AI Powered</Badge>
+          <Lightbulb className="h-6 w-6 text-white" />
+          <Badge className="bg-white text-orange-600">AI Powered</Badge>
         </div>
-        <CardTitle className="text-center text-2xl">Plan Recommender</CardTitle>
-        <CardDescription className="text-center">
+        <CardTitle className="text-center text-2xl text-white">Plan Recommender</CardTitle>
+        <CardDescription className="text-center text-orange-50">
           Get a personalized plan recommendation based on your business activity
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-primary/5 rounded-lg border border-primary/20">
+      <CardContent className="space-y-6 bg-white">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-white rounded-lg border border-primary/20">
           <div className="space-y-2">
             <Label htmlFor="rec-leads">Expected Leads/Month</Label>
             <Input

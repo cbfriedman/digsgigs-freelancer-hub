@@ -74,20 +74,20 @@ export default function PricingCalculator() {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
-      <CardHeader>
+    <Card className="border-2 border-blue-500">
+      <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <Calculator className="h-6 w-6 text-primary" />
-          <Badge className="bg-primary">Hourly Bids Calculator</Badge>
+          <Calculator className="h-6 w-6 text-white" />
+          <Badge className="bg-white text-blue-600">Hourly Bids Calculator</Badge>
         </div>
-        <CardTitle className="text-center text-2xl">Cost calculator for hourly bids</CardTitle>
-        <CardDescription className="text-center">
+        <CardTitle className="text-center text-2xl text-white">Cost calculator for hourly bids</CardTitle>
+        <CardDescription className="text-center text-blue-50">
           Enter your expected monthly activity to compare costs across plans
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 bg-white">
         {/* Input Fields */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-background rounded-lg border">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-white rounded-lg border">
           <div className="space-y-2">
             <Label htmlFor="leads">Leads Purchased/Month</Label>
             <Select 
@@ -163,9 +163,9 @@ export default function PricingCalculator() {
         {showResults && (
           <>
           <div className="overflow-x-auto">
-          <table className="w-full text-sm border-l-4 border-l-primary">
+          <table className="w-full text-sm border-l-4 border-l-blue-500">
             <thead>
-              <tr className="border-b-2 border-border bg-primary/10">
+              <tr className="border-b-2 border-border bg-blue-50">
                 <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
                 {Object.entries(TIERS).map(([key, tier]) => (
                   <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
@@ -281,17 +281,20 @@ export default function PricingCalculator() {
         )}
 
         {/* Free Estimates Calculator */}
-        <div className="mt-8 pt-8 border-t border-border">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Calculator className="h-6 w-6 text-secondary" />
-            <Badge className="bg-secondary">Free Estimates Calculator</Badge>
+        <div className="mt-8 pt-0 border-2 border-purple-500 rounded-lg">
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-t-lg">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Calculator className="h-6 w-6 text-white" />
+              <Badge className="bg-white text-purple-600">Free Estimates Calculator</Badge>
+            </div>
+            <h3 className="text-center text-2xl font-semibold mb-2 text-white">Cost Calculator for Free Estimates</h3>
+            <p className="text-center text-purple-50">
+              Calculate costs for free estimate leads across different plans
+            </p>
           </div>
-          <h3 className="text-center text-2xl font-semibold mb-2">Cost Calculator for Free Estimates</h3>
-          <CardDescription className="text-center mb-6">
-            Calculate costs for free estimate leads across different plans
-          </CardDescription>
           
-          <div className="grid md:grid-cols-3 gap-4 p-6 bg-background rounded-lg border">
+          <div className="p-6 bg-white">
+          <div className="grid md:grid-cols-3 gap-4 p-6 bg-white rounded-lg border">
             <div className="space-y-2">
               <Label htmlFor="freeEstimateLeads">Leads Purchased</Label>
               <Select 
@@ -348,9 +351,9 @@ export default function PricingCalculator() {
           {showFreeEstimateResults && (
             <>
             <div className="overflow-x-auto mt-6">
-              <table className="w-full text-sm border-l-4 border-l-secondary">
+              <table className="w-full text-sm border-l-4 border-l-purple-500">
                 <thead>
-                  <tr className="border-b-2 border-border bg-secondary/10">
+                  <tr className="border-b-2 border-border bg-purple-50">
                     <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
                     {Object.entries(TIERS).map(([key, tier]) => (
                       <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
@@ -477,6 +480,7 @@ export default function PricingCalculator() {
             </div>
             </>
           )}
+          </div>
         </div>
       </CardContent>
     </Card>
