@@ -66,11 +66,11 @@ serve(async (req) => {
     let leadCost = 3; // Default: free tier
     let leadDescription = '';
     
-    // If digger has hourly rate, charge 1 hour's worth (non-refundable)
+    // If digger has hourly rate, charge 1 hour's worth (minimum $100, non-refundable)
     if (diggerProfile.hourly_rate || diggerProfile.hourly_rate_min) {
       const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-      leadCost = hourlyRate;
-      leadDescription = `1 hour at $${hourlyRate}/hr`;
+      leadCost = Math.max(100, hourlyRate);
+      leadDescription = `1 hour at $${hourlyRate}/hr (min $100)`;
       console.log('Hourly rate lead cost calculated:', { hourlyRate, leadCost });
     } else if (isOldLead) {
       // Old leads (>24h) are always $1

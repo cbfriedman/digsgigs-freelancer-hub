@@ -49,14 +49,16 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
   const getLeadPrice = () => {
     if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
       const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-      return hourlyRate * cartItems.length;
+      const leadCost = Math.max(100, hourlyRate);
+      return leadCost * cartItems.length;
     }
     return totalPrice;
   };
 
   const getIndividualLeadPrice = (gig: any) => {
     if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
-      return diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      return Math.max(100, hourlyRate);
     }
     return calculateLeadPrice(gig.budget_min);
   };
@@ -149,7 +151,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                         )}
                         {(diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) && (
                           <Badge variant="outline" className="mt-2 text-xs">
-                            1 hour @ ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr
+                            1 hour @ ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr (min $100)
                           </Badge>
                         )}
                       </div>

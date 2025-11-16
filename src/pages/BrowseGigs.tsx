@@ -364,7 +364,7 @@ const BrowseGigs = () => {
                     <div className="lg:text-right space-y-2">
                       {diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min ? (
                         <Badge variant="default" className="mb-2 bg-primary text-primary-foreground">
-                          Lead Cost: ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min} (1 hour)
+                          Lead Cost: ${Math.max(100, diggerProfile.hourly_rate || diggerProfile.hourly_rate_min)} (min $100)
                         </Badge>
                       ) : showSpecialPrice ? (
                         <Badge variant="default" className="mb-2 bg-accent text-accent-foreground">
