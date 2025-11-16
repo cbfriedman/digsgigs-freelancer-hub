@@ -124,7 +124,8 @@ export default function PricingCalculator() {
           
           <div className="space-y-2">
             <Label htmlFor="jobs">Estimated number of Jobs Awarded (Auto-calculated)</Label>
-            <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
+            <div className="h-10 px-3 py-2 bg-primary/5 rounded-md border border-primary/20 flex items-center gap-2 text-lg font-semibold text-primary">
+              <Calculator className="h-4 w-4" />
               {jobs}
             </div>
           </div>
@@ -326,7 +327,8 @@ export default function PricingCalculator() {
 
             <div className="space-y-2">
               <Label htmlFor="freeEstimateJobs">Estimated number of Jobs Awarded (Auto-calculated)</Label>
-              <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
+              <div className="h-10 px-3 py-2 bg-primary/5 rounded-md border border-primary/20 flex items-center gap-2 text-lg font-semibold text-primary">
+                <Calculator className="h-4 w-4" />
                 {freeEstimateJobs}
               </div>
             </div>
