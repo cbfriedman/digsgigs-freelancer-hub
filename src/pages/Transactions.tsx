@@ -20,9 +20,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { exportToCSV, exportToPDF } from "@/utils/exportTransactions";
+import { RatingDialog } from "@/components/RatingDialog";
 
 interface Transaction {
   id: string;
@@ -33,7 +34,9 @@ interface Transaction {
   status: string;
   created_at: string;
   completed_at: string | null;
+  digger_id: string;
   gigs: {
+    id: string;
     title: string;
     consumer_id: string;
   };
@@ -60,6 +63,17 @@ const Transactions = () => {
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [triggeringMonthly, setTriggeringMonthly] = useState(false);
+  const [ratingDialog, setRatingDialog] = useState<{
+    open: boolean;
+    diggerId: string;
+    gigId: string;
+    gigTitle: string;
+  }>({
+    open: false,
+    diggerId: "",
+    gigId: "",
+    gigTitle: "",
+  });
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -174,6 +188,7 @@ const Transactions = () => {
         .select(`
           *,
           gigs (
+            id,
             title,
             consumer_id
           ),
@@ -729,6 +744,24 @@ const Transactions = () => {
                         </p>
                       </div>
                     )}
+
+                    {/* Rating Button for Consumers */}
+                    {userType === 'consumer' && transaction.status === 'completed' && (
+                      <div className="pt-4 border-t">
+                        <Button
+                          variant="outline"
+                          onClick={() => setRatingDialog({
+                            open: true,
+                            diggerId: transaction.digger_id,
+                            gigId: transaction.gigs.id,
+                            gigTitle: transaction.gigs.title,
+                          })}
+                        >
+                          <Star className="mr-2 h-4 w-4" />
+                          Rate Professional
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))
@@ -736,6 +769,20 @@ const Transactions = () => {
           </div>
         </div>
       </div>
+
+      <RatingDialog
+        open={ratingDialog.open}
+        onOpenChange={(open) => setRatingDialog({ ...ratingDialog, open })}
+        diggerId={ratingDialog.diggerId}
+        gigId={ratingDialog.gigId}
+        gigTitle={ratingDialog.gigTitle}
+        onSuccess={() => {
+          toast({
+            title: "Rating submitted",
+            description: "Thank you for your feedback!",
+          });
+        }}
+      />
     </div>
   );
 };

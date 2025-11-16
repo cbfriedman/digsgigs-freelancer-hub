@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
+import { RatingSummary } from "./RatingSummary";
 
 interface DiggerCardProps {
   name: string;
@@ -24,12 +24,8 @@ export const DiggerCard = ({ name, profession, expertise, rating, reviews, image
       <CardHeader>
         <CardTitle className="text-xl">{name}</CardTitle>
         <CardDescription className="text-base">{profession}</CardDescription>
-        <div className="flex items-center gap-2 mt-2">
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 fill-accent text-accent" />
-            <span className="font-semibold text-foreground">{rating}</span>
-          </div>
-          <span className="text-sm text-muted-foreground">({reviews} reviews)</span>
+        <div className="mt-2">
+          <RatingSummary averageRating={rating} totalRatings={reviews} />
         </div>
       </CardHeader>
       <CardContent>
