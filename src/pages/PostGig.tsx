@@ -42,6 +42,9 @@ const PostGig = () => {
   }, []);
 
   const checkAuth = async () => {
+    // TEMPORARILY DISABLED FOR SCREENSHOTS
+    return;
+    
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
