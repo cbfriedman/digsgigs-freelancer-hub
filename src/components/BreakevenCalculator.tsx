@@ -19,7 +19,7 @@ const BreakevenCalculator = () => {
   const proEstimateCost = estimates * 100;
   const proHourlyClickCost = hourlyRateClicks * 100;
   const proRevenue = jobs * avgJobValue;
-  const proCommission = proRevenue * 0.04;
+  const proCommission = proRevenue * 0.06;
   const proAwardFee = hourlyRateClicks * Math.max(hourlyRate, 100);
   const proTotalCosts = proSubscription + proLeadCost + proEstimateCost + proHourlyClickCost + proCommission + proAwardFee;
   const proNetEarnings = proRevenue - proTotalCosts;
@@ -265,7 +265,7 @@ const BreakevenCalculator = () => {
                 <span>${proHourlyClickCost.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Commission (4% of ${proRevenue.toLocaleString()})</span>
+                <span className="text-muted-foreground">Commission (6% of ${proRevenue.toLocaleString()})</span>
                 <span>${proCommission.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
