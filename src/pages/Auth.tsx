@@ -237,8 +237,9 @@ const Auth = () => {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (loading) return;
     setLoading(true);
 
     try {
@@ -265,6 +266,19 @@ const Auth = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOtpChange = (value: string) => {
+    // Only allow digits and limit to 6 characters
+    const sanitized = value.replace(/\D/g, '').slice(0, 6);
+    setOtp(sanitized);
+    
+    // Auto-submit when 6 digits are entered
+    if (sanitized.length === 6) {
+      setTimeout(() => {
+        handleVerifyOtp();
+      }, 100);
     }
   };
 
@@ -587,7 +601,7 @@ const Auth = () => {
                               type="text"
                               placeholder="123456"
                               value={otp}
-                              onChange={(e) => setOtp(e.target.value)}
+                              onChange={(e) => handleOtpChange(e.target.value)}
                               required
                               maxLength={6}
                               className="text-center text-lg tracking-widest"
@@ -803,7 +817,7 @@ const Auth = () => {
                             type="text"
                             placeholder="123456"
                             value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
+                            onChange={(e) => handleOtpChange(e.target.value)}
                             required
                             maxLength={6}
                             className="text-center text-lg tracking-widest"
