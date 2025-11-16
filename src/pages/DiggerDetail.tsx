@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare } from "lucide-react";
+import { RatingsList } from "@/components/RatingsList";
 
 interface Reference {
   id: string;
@@ -446,6 +447,15 @@ const DiggerDetail = () => {
                 </CardContent>
               </Card>
             )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Reviews & Ratings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RatingsList diggerId={id!} isDigger={currentUser?.id === digger.user_id} />
+              </CardContent>
+            </Card>
           </div>
 
           <div className="lg:col-span-1">

@@ -678,27 +678,33 @@ export type Database = {
           consumer_id: string
           created_at: string
           digger_id: string
+          digger_response: string | null
           gig_id: string | null
           id: string
           rating: number
+          responded_at: string | null
           review_text: string | null
         }
         Insert: {
           consumer_id: string
           created_at?: string
           digger_id: string
+          digger_response?: string | null
           gig_id?: string | null
           id?: string
           rating: number
+          responded_at?: string | null
           review_text?: string | null
         }
         Update: {
           consumer_id?: string
           created_at?: string
           digger_id?: string
+          digger_response?: string | null
           gig_id?: string | null
           id?: string
           rating?: number
+          responded_at?: string | null
           review_text?: string | null
         }
         Relationships: [
