@@ -69,8 +69,19 @@ serve(async (req) => {
             search.search_type,
             matches
           );
+          
+          // Log analytics
+          await supabase
+            .from("saved_search_alerts")
+            .insert({
+              saved_search_id: search.id,
+              user_id: search.user_id,
+              matches_found: matches.length,
+              search_type: search.search_type,
+            });
+          
           emailsSent++;
-          console.log(`Sent alert for search: ${search.name} to ${profile.email}`);
+          console.log(`Sent alert for search: ${search.name} to ${profile.email} (${matches.length} matches)`);
         }
       } catch (error) {
         console.error(`Error processing search ${search.id}:`, error);

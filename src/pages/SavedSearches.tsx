@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
+import { SavedSearchAnalytics } from "@/components/SavedSearchAnalytics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bookmark } from "lucide-react";
 
@@ -41,17 +42,23 @@ const SavedSearches = () => {
           </TabsList>
 
           <TabsContent value="gigs">
-            <SavedSearchesList
-              searchType="gigs"
-              onApplySearch={handleApplyGigSearch}
-            />
+            <div className="space-y-6">
+              <SavedSearchAnalytics searchType="gigs" />
+              <SavedSearchesList
+                searchType="gigs"
+                onApplySearch={handleApplyGigSearch}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="diggers">
-            <SavedSearchesList
-              searchType="diggers"
-              onApplySearch={handleApplyDiggerSearch}
-            />
+            <div className="space-y-6">
+              <SavedSearchAnalytics searchType="diggers" />
+              <SavedSearchesList
+                searchType="diggers"
+                onApplySearch={handleApplyDiggerSearch}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
