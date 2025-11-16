@@ -25,6 +25,7 @@ const TIERS = {
       '$3 per lead purchase',
       '9% commission on completed work',
       '$5 minimum fee per transaction',
+      '$100 per free estimate request',
       'Basic profile features',
       'Standard support',
       'Access to all gig categories'
@@ -47,7 +48,7 @@ const TIERS = {
       '$1.50 per lead purchase',
       '4% commission on completed work',
       '$5 minimum fee per transaction',
-      'Unlimited free estimate requests',
+      '$100 per free estimate request',
       'Priority support',
       'Featured in search results',
       'Enhanced profile visibility',
@@ -71,6 +72,7 @@ const TIERS = {
       'FREE lead purchases',
       '0% commission on completed work',
       'No transaction fees',
+      'FREE unlimited estimate requests',
       'Priority support',
       'Featured profile placement',
       'Advanced analytics',
@@ -436,24 +438,21 @@ export default function Pricing() {
                         { requests: 50, label: '50 (High Volume)' },
                       ].map(({ requests, label }) => {
                         const freeCost = requests * 100;
-                        const proCost = 999;
-                        const monthlySavings = freeCost - proCost;
-                        const annualSavings = (monthlySavings * 12);
-                        const breakEven = requests >= 10;
+                        const proCost = 50 + (requests * 100); // Pro is $50/month but still pays $100 per estimate
+                        const premiumCost = 999; // Premium gets FREE estimates
+                        const vsProSavings = freeCost - proCost;
+                        const vsPremiumSavings = freeCost - premiumCost;
+                        const proAnnualSavings = vsProSavings * 12;
+                        const premiumAnnualSavings = vsPremiumSavings * 12;
                         
                         return (
                           <tr 
                             key={requests} 
-                            className={`border-b ${breakEven ? 'bg-green-50/50' : ''}`}
+                            className="border-b hover:bg-muted/30"
                           >
                             <td className="py-4 px-4">
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{label}</span>
-                                {breakEven && requests === 10 && (
-                                  <Badge variant="outline" className="text-xs border-green-600 text-green-600">
-                                    Break-even
-                                  </Badge>
-                                )}
                               </div>
                             </td>
                             <td className="text-right py-4 px-4 text-muted-foreground">
@@ -463,14 +462,14 @@ export default function Pricing() {
                               ${proCost.toLocaleString()}/mo
                             </td>
                             <td className={`text-right py-4 px-4 font-semibold ${
-                              monthlySavings > 0 ? 'text-green-600' : 'text-red-600'
+                              vsProSavings > 0 ? 'text-green-600' : 'text-red-600'
                             }`}>
-                              {monthlySavings > 0 ? '+' : ''}${monthlySavings.toLocaleString()}/mo
+                              {vsProSavings > 0 ? '+' : ''}${vsProSavings.toLocaleString()}/mo
                             </td>
                             <td className={`text-right py-4 px-4 font-bold ${
-                              annualSavings > 0 ? 'text-green-600' : 'text-red-600'
+                              proAnnualSavings > 0 ? 'text-green-600' : 'text-red-600'
                             }`}>
-                              {annualSavings > 0 ? '+' : ''}${annualSavings.toLocaleString()}/yr
+                              {proAnnualSavings > 0 ? '+' : ''}${proAnnualSavings.toLocaleString()}/yr
                             </td>
                           </tr>
                         );
@@ -479,46 +478,151 @@ export default function Pricing() {
                   </table>
                 </div>
 
-                <div className="mt-6 grid md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                <div className="mt-6 grid md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-red-50/50 rounded-lg border border-red-600/20">
                     <div className="flex items-center gap-2 mb-2">
-                      <Check className="h-5 w-5 text-green-600" />
-                      <h4 className="font-semibold">Break-Even at 10 Requests</h4>
+                      <span className="text-2xl">⚠️</span>
+                      <h4 className="font-semibold text-red-600">Free Tier</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Send 10+ estimate requests per month and Pro pays for itself. Everything after that is pure savings!
+                      Pay <strong>$100 per estimate request</strong>. Costs add up quickly!
                     </p>
                   </div>
                   
+                  <div className="p-4 bg-yellow-50/50 rounded-lg border border-yellow-600/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">💰</span>
+                      <h4 className="font-semibold text-yellow-700">Pro Tier</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Still <strong>$100 per estimate</strong>, but offset by lower lead and commission costs.
+                    </p>
+                  </div>
+
                   <div className="p-4 bg-green-50/50 rounded-lg border border-green-600/20">
                     <div className="flex items-center gap-2 mb-2">
                       <Star className="h-5 w-5 text-green-600" />
-                      <h4 className="font-semibold text-green-600">Annual Savings Example</h4>
+                      <h4 className="font-semibold text-green-600">Premium Tier</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      At just 20 requests/month, Pro members save <strong className="text-green-600">$12,132/year</strong> compared to Free tier!
+                      <strong className="text-green-600">FREE unlimited estimate requests!</strong> Plus zero commissions.
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-6 text-center">
                   <p className="text-sm text-muted-foreground mb-4">
-                    Plus, Pro members also benefit from lower commission rates (4% vs 9%) and reduced lead costs ($2 vs $3)
+                    Premium tier offers the best value for high-volume users with FREE estimate requests + zero commissions on all work
                   </p>
                   <Button 
                     size="lg"
                     onClick={() => {
                       if (user && isDigger) {
-                        handleSubscribe('pro', TIERS.pro.priceId);
+                        handleSubscribe(TIERS.premium.priceId, 'premium');
                       } else {
                         navigate('/auth?type=digger');
                       }
                     }}
-                    disabled={currentTier === 'pro' || subscribing === 'pro'}
-                    className="bg-green-600 hover:bg-green-700"
+                    disabled={currentTier === 'premium' || subscribing === 'premium'}
+                    className="bg-gradient-to-r from-purple-600 to-primary hover:from-purple-700 hover:to-primary/90"
                   >
-                    {currentTier === 'pro' ? 'Current Plan' : 'Upgrade to Pro - Save Now'}
+                    {currentTier === 'premium' ? 'Current Plan' : 'Upgrade to Premium'}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* How Free Estimates Work */}
+          <div className="mt-16 max-w-4xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-center text-2xl">How Free Estimate Requests Work</CardTitle>
+                <CardDescription className="text-center">
+                  Understanding the cost of connecting with potential clients
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-muted-foreground">
+                    When a consumer (Gigger) requests a free estimate from you, they are showing serious interest in hiring you. 
+                    However, there is a cost for you to receive their contact information and connect with them:
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="p-6 border-2 border-red-200 rounded-lg bg-red-50/30">
+                    <h3 className="text-lg font-semibold mb-3 text-red-700">Free Tier</h3>
+                    <div className="text-3xl font-bold text-red-600 mb-2">$100</div>
+                    <p className="text-sm text-muted-foreground mb-4">per estimate request</p>
+                    <ul className="text-sm space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span>Pay when consumer requests your estimate</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span>Get full contact info immediately</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="p-6 border-2 border-yellow-200 rounded-lg bg-yellow-50/30">
+                    <h3 className="text-lg font-semibold mb-3 text-yellow-700">Pro Tier</h3>
+                    <div className="text-3xl font-bold text-yellow-600 mb-2">$100</div>
+                    <p className="text-sm text-muted-foreground mb-4">per estimate request</p>
+                    <ul className="text-sm space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span>Same $100 per request</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span>But save on leads ($1.50 vs $3)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span>Lower commission (4% vs 9%)</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="p-6 border-2 border-green-200 rounded-lg bg-green-50/30 relative overflow-hidden">
+                    <div className="absolute top-2 right-2">
+                      <Badge className="bg-green-600">Best Value</Badge>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-3 text-green-700">Premium Tier</h3>
+                    <div className="text-3xl font-bold text-green-600 mb-2">FREE</div>
+                    <p className="text-sm text-muted-foreground mb-4">unlimited requests!</p>
+                    <ul className="text-sm space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
+                        <span><strong>No cost</strong> for estimate requests</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
+                        <span>FREE lead purchases</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
+                        <span>Zero commission on work</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex gap-3">
+                    <div className="text-2xl">💡</div>
+                    <div>
+                      <h4 className="font-semibold text-blue-900 mb-2">Why is there a cost?</h4>
+                      <p className="text-sm text-blue-800">
+                        Free estimate requests connect you directly with serious buyers who specifically chose you. 
+                        The fee ensures quality leads and filters out casual browsers. Premium members get this feature 
+                        completely free as part of their subscription, making it the best choice for active professionals.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
