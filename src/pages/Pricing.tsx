@@ -623,7 +623,15 @@ export default function Pricing() {
               </CardContent>
             </Card>
           </div>
-                  <div key={idx} className="space-y-4">
+
+          {/* Light Usage - Hourly Based Plan */}
+          <div className="mt-16 max-w-6xl mx-auto">
+            <Card className="bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
+              <CardHeader>
+                <CardTitle className="text-center text-2xl">Light Usage - Hourly Based Plan</CardTitle>
+                <CardDescription className="text-center">
+                  Compare costs across different hourly rates (30 leads • 3 estimate requests/month)
+                </CardDescription>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="flex-1 h-px bg-border"></div>
                       <div className="text-center">
