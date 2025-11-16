@@ -105,6 +105,7 @@ export default function Pricing() {
   const [interactiveLeads, setInteractiveLeads] = useState(15);
   const [interactiveJobs, setInteractiveJobs] = useState(2);
   const [interactiveJobValue, setInteractiveJobValue] = useState(1000);
+  const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
@@ -353,7 +354,7 @@ export default function Pricing() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Interactive Controls */}
-                <div className="grid md:grid-cols-3 gap-6 p-6 bg-background/50 rounded-lg">
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-background/50 rounded-lg">
                   <div className="space-y-2">
                     <Label>Leads Purchased</Label>
                     <Select 
@@ -404,6 +405,23 @@ export default function Pricing() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>Conversion Rate</Label>
+                    <Select 
+                      value={conversionRate.toString()} 
+                      onValueChange={(v) => setConversionRate(Number(v))}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {/* Calculate Button */}
@@ -427,6 +445,7 @@ export default function Pricing() {
                         <th className="text-right p-3 font-semibold">Monthly Fee</th>
                         <th className="text-right p-3 font-semibold">Lead Costs</th>
                         <th className="text-right p-3 font-semibold">Commissions</th>
+                        <th className="text-right p-3 font-semibold">Assumed number of conversions to Award</th>
                         <th className="text-right p-3 font-semibold">Total</th>
                       </tr>
                     </thead>
@@ -437,6 +456,7 @@ export default function Pricing() {
                           <td className="text-right p-3">${result.monthly}</td>
                           <td className="text-right p-3">${result.leadCosts.toFixed(2)}</td>
                           <td className="text-right p-3">${result.commissions.toFixed(2)}</td>
+                          <td className="text-right p-3">{Math.floor(interactiveLeads * (conversionRate / 100))}</td>
                           <td className="text-right p-3 font-bold text-primary">${result.total.toFixed(2)}</td>
                         </tr>
                       ))}
