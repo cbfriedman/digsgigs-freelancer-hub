@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Check, ArrowLeft, Loader2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
+import PricingCalculator from "@/components/PricingCalculator";
+import PlanRecommender from "@/components/PlanRecommender";
 
 const TIERS = {
   free: {
@@ -26,6 +28,7 @@ const TIERS = {
       '9% commission on completed work',
       '$5 minimum fee per transaction',
       '$100 per free estimate request',
+      '$100 per hourly rate click',
       'Basic profile features',
       'Standard support',
       'Access to all gig categories'
@@ -49,6 +52,7 @@ const TIERS = {
       '4% commission on completed work',
       '$5 minimum fee per transaction',
       '$100 per free estimate request',
+      '$100 per hourly rate click',
       'Priority support',
       'Featured in search results',
       'Enhanced profile visibility',
@@ -73,6 +77,7 @@ const TIERS = {
       '0% commission on completed work',
       'No transaction fees',
       '$0 charge for Free Estimate requests',
+      '$0 charge for hourly rate clicks',
       'Priority support',
       'Featured profile placement',
       'Advanced analytics',
@@ -610,6 +615,7 @@ export default function Pricing() {
                         <li>• <strong>Lead Purchases:</strong> Pay only when you actively purchase a lead</li>
                         <li>• <strong>Commission:</strong> Charged only on completed, paid jobs</li>
                         <li>• <strong>Estimate Requests:</strong> Charged when consumers request your contact info</li>
+                        <li>• <strong>Hourly Rate Clicks:</strong> Charged when consumers click to see your hourly rate</li>
                       </ul>
                       <p className="text-sm text-blue-800 dark:text-blue-200 mt-3">
                         <strong>Higher tiers = More savings</strong> as your business grows. Premium tier eliminates all per-transaction costs!
@@ -619,6 +625,16 @@ export default function Pricing() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Interactive Cost Calculator */}
+          <div className="mt-16 max-w-6xl mx-auto">
+            <PricingCalculator />
+          </div>
+
+          {/* Plan Recommender */}
+          <div className="mt-16 max-w-6xl mx-auto">
+            <PlanRecommender />
           </div>
 
           {/* Free Estimate Savings Comparison */}
@@ -750,11 +766,11 @@ export default function Pricing() {
             </Card>
           </div>
 
-          {/* How Free Estimates Work */}
+          {/* How Free Estimates & Hourly Rate Clicks Work */}
           <div className="mt-16 max-w-4xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle className="text-center text-2xl">How Free Estimate Requests Work</CardTitle>
+                <CardTitle className="text-center text-2xl">How Free Estimate Requests & Hourly Rate Clicks Work</CardTitle>
                 <CardDescription className="text-center">
                   Understanding the cost of connecting with potential clients
                 </CardDescription>
@@ -762,20 +778,27 @@ export default function Pricing() {
               <CardContent className="space-y-6">
                 <div className="prose prose-sm max-w-none">
                   <p className="text-muted-foreground">
-                    When a consumer (Gigger) requests a free estimate from you, they are showing serious interest in hiring you. 
-                    However, there is a cost for you to receive their contact information and connect with them:
+                    When consumers interact with your profile, they show serious interest in hiring you. However, there is a cost for certain actions:
                   </p>
+                  <ul className="list-disc list-inside text-muted-foreground mt-2 space-y-1">
+                    <li><strong>Free Estimate Requests:</strong> When a consumer requests a free estimate, you receive their full contact information</li>
+                    <li><strong>Hourly Rate Clicks:</strong> When a consumer clicks to view your hourly rate details, they can contact you directly</li>
+                  </ul>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="p-6 border-2 border-red-200 rounded-lg bg-red-50/30">
                     <h3 className="text-lg font-semibold mb-3 text-red-700">Free Tier</h3>
                     <div className="text-3xl font-bold text-red-600 mb-2">$100</div>
-                    <p className="text-sm text-muted-foreground mb-4">per estimate request</p>
+                    <p className="text-sm text-muted-foreground mb-4">per estimate/hourly click</p>
                     <ul className="text-sm space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>Pay when consumer requests your estimate</span>
+                        <span>Pay per estimate request</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span>Pay per hourly rate click</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -787,11 +810,11 @@ export default function Pricing() {
                   <div className="p-6 border-2 border-yellow-200 rounded-lg bg-yellow-50/30">
                     <h3 className="text-lg font-semibold mb-3 text-yellow-700">Pro Tier</h3>
                     <div className="text-3xl font-bold text-yellow-600 mb-2">$100</div>
-                    <p className="text-sm text-muted-foreground mb-4">per estimate request</p>
+                    <p className="text-sm text-muted-foreground mb-4">per estimate/hourly click</p>
                     <ul className="text-sm space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>Same $100 per request</span>
+                        <span>Same $100 per click</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -810,11 +833,15 @@ export default function Pricing() {
                     </div>
                     <h3 className="text-lg font-semibold mb-3 text-green-700">Premium Tier</h3>
                     <div className="text-3xl font-bold text-green-600 mb-2">FREE</div>
-                    <p className="text-sm text-muted-foreground mb-4">unlimited requests!</p>
+                    <p className="text-sm text-muted-foreground mb-4">unlimited clicks!</p>
                     <ul className="text-sm space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
                         <span><strong>No cost</strong> for estimate requests</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
+                        <span><strong>No cost</strong> for hourly rate clicks</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
@@ -834,8 +861,8 @@ export default function Pricing() {
                     <div>
                       <h4 className="font-semibold text-blue-900 mb-2">Why is there a cost?</h4>
                       <p className="text-sm text-blue-800">
-                        Free estimate requests connect you directly with serious buyers who specifically chose you. 
-                        The fee ensures quality leads and filters out casual browsers. Premium members get this feature 
+                        Free estimate requests and hourly rate clicks connect you directly with serious buyers who specifically chose you. 
+                        The fee ensures quality leads and filters out casual browsers. Premium members get these features 
                         completely free as part of their subscription, making it the best choice for active professionals.
                       </p>
                     </div>
