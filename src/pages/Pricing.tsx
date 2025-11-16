@@ -381,15 +381,7 @@ export default function Pricing() {
               <CardContent className="space-y-8">
                 {[
                   { 
-                    label: 'Light Usage - Commission Based Plan', 
-                    leads: 30, 
-                    jobs: 3, 
-                    jobValue: 1500, 
-                    estimates: 3,
-                    description: 'Part-time or starting out'
-                  },
-                  { 
-                    label: 'Moderate Usage', 
+                    label: 'Light Usage - Commission Based', 
                     leads: 15, 
                     jobs: 2, 
                     jobValue: 1000, 
