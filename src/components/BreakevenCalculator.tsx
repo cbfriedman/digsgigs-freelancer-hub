@@ -25,7 +25,7 @@ const BreakevenCalculator = () => {
   const proNetEarnings = proRevenue - proTotalCosts;
 
   // Premium Plan Calculations
-  const premiumSubscription = 999;
+  const premiumSubscription = 750;
   const premiumLeadCost = 0;
   const premiumEstimateCost = 0;
   const premiumHourlyClickCost = 0;
