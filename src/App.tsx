@@ -26,6 +26,7 @@ import Transactions from "./pages/Transactions";
 import EmailPreferences from "./pages/EmailPreferences";
 import LeadLimits from "./pages/LeadLimits";
 import DiggerGuide from "./pages/DiggerGuide";
+import SavedSearches from "./pages/SavedSearches";
 import Messages from "./pages/Messages";
 import ProfileCompletion from "./pages/ProfileCompletion";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -68,6 +69,7 @@ const App = () => (
           <Route path="/profile-completion" element={<ProfileCompletion />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/saved-searches" element={<SavedSearches />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
