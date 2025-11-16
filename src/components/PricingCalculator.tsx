@@ -40,8 +40,6 @@ const TIERS = {
 export default function PricingCalculator() {
   const [leads, setLeads] = useState(15);
   const [hourlyRate, setHourlyRate] = useState(100);
-  const [estimates, setEstimates] = useState(10);
-  const [hourlyClicks, setHourlyClicks] = useState(5);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
   
@@ -52,9 +50,7 @@ export default function PricingCalculator() {
     const leadCost = tier.leadCostValue * leads;
     const totalJobValue = hourlyRate * jobs;
     const commission = Math.max((totalJobValue * tier.commissionValue) / 100, tier.minimumFee * jobs);
-    const estimateCost = tier.estimateCost * estimates;
-    const hourlyClickCost = tier.hourlyRateClickCost * hourlyClicks;
-    const totalCost = monthlyFee + leadCost + commission + estimateCost + hourlyClickCost;
+    const totalCost = monthlyFee + leadCost + commission;
     const revenue = totalJobValue;
     const netEarnings = revenue - totalCost;
 
@@ -62,8 +58,6 @@ export default function PricingCalculator() {
       monthlyFee,
       leadCost,
       commission,
-      estimateCost,
-      hourlyClickCost,
       totalCost,
       revenue,
       netEarnings,
@@ -84,7 +78,7 @@ export default function PricingCalculator() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Input Fields */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-background rounded-lg border">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-background rounded-lg border">
           <div className="space-y-2">
             <Label htmlFor="leads">Leads Purchased/Month</Label>
             <Input
@@ -115,7 +109,7 @@ export default function PricingCalculator() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="jobs">Jobs Completed/Month (Auto-calculated)</Label>
+            <Label htmlFor="jobs">Jobs Awarded (Auto-calculated)</Label>
             <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
               {jobs}
             </div>
@@ -136,30 +130,6 @@ export default function PricingCalculator() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="estimates">Free Estimate Requests/Month</Label>
-            <Input
-              id="estimates"
-              type="number"
-              min="0"
-              value={estimates}
-              onChange={(e) => setEstimates(Number(e.target.value))}
-              className="text-lg"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="hourlyClicks">Hourly Rate Clicks/Month</Label>
-            <Input
-              id="hourlyClicks"
-              type="number"
-              min="0"
-              value={hourlyClicks}
-              onChange={(e) => setHourlyClicks(Number(e.target.value))}
-              className="text-lg"
-            />
           </div>
         </div>
 
@@ -224,46 +194,6 @@ export default function PricingCalculator() {
                 })}
               </tr>
               
-              <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Free Estimate Requests</td>
-                {Object.entries(TIERS).map(([key, tier]) => {
-                  const costs = calculateCosts(tier);
-                  return (
-                    <td key={key} className="text-right py-3 px-4">
-                      {costs.estimateCost === 0 ? (
-                        <span className="text-green-600 font-semibold">FREE</span>
-                      ) : (
-                        `$${costs.estimateCost.toFixed(2)}`
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-              
-              <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Hourly Rate Clicks</td>
-                {Object.entries(TIERS).map(([key, tier]) => {
-                  const costs = calculateCosts(tier);
-                  return (
-                    <td key={key} className="text-right py-3 px-4">
-                      {costs.hourlyClickCost === 0 ? (
-                        <span className="text-green-600 font-semibold">FREE</span>
-                      ) : (
-                        `$${costs.hourlyClickCost.toFixed(2)}`
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-              
-              <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Assumed number of conversions to Award</td>
-                {Object.entries(TIERS).map(([key, tier]) => (
-                  <td key={key} className="text-right py-3 px-4">
-                    {Math.round(leads * (conversionRate / 100))}
-                  </td>
-                ))}
-              </tr>
               
               <tr className="border-b-2 border-border bg-primary/5">
                 <td className="py-4 px-4 font-bold text-lg">Total Monthly Costs</td>
