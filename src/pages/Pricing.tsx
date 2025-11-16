@@ -382,7 +382,7 @@ export default function Pricing() {
                 {[
                   { 
                     label: 'Light Usage', 
-                    leads: 5, 
+                    leads: 30, 
                     jobs: 3, 
                     jobValue: 1500, 
                     estimates: 3,
