@@ -13,6 +13,7 @@ import BrowseGigs from "./pages/BrowseGigs";
 import DiggerDetail from "./pages/DiggerDetail";
 import GigDetail from "./pages/GigDetail";
 import MyLeads from "./pages/MyLeads";
+import MyBids from "./pages/MyBids";
 import MyGigs from "./pages/MyGigs";
 import Contact from "./pages/Contact";
 import HowItWorks from "./pages/HowItWorks";
@@ -48,6 +49,7 @@ const App = () => (
           <Route path="/digger/:id" element={<DiggerDetail />} />
           <Route path="/gig/:id" element={<GigDetail />} />
           <Route path="/my-leads" element={<MyLeads />} />
+          <Route path="/my-bids" element={<MyBids />} />
           <Route path="/my-gigs" element={<MyGigs />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/how-it-works" element={<HowItWorks />} />

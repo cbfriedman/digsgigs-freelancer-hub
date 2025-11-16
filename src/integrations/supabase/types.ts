@@ -25,6 +25,8 @@ export type Database = {
           status: string
           timeline: string
           updated_at: string
+          withdrawal_penalty: number | null
+          withdrawn_at: string | null
         }
         Insert: {
           amount: number
@@ -36,6 +38,8 @@ export type Database = {
           status?: string
           timeline: string
           updated_at?: string
+          withdrawal_penalty?: number | null
+          withdrawn_at?: string | null
         }
         Update: {
           amount?: number
@@ -47,6 +51,8 @@ export type Database = {
           status?: string
           timeline?: string
           updated_at?: string
+          withdrawal_penalty?: number | null
+          withdrawn_at?: string | null
         }
         Relationships: [
           {
@@ -898,6 +904,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      withdrawal_penalties: {
+        Row: {
+          bid_id: string
+          created_at: string
+          digger_id: string
+          id: string
+          paid_at: string | null
+          penalty_amount: number
+          status: string
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          bid_id: string
+          created_at?: string
+          digger_id: string
+          id?: string
+          paid_at?: string | null
+          penalty_amount: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          bid_id?: string
+          created_at?: string
+          digger_id?: string
+          id?: string
+          paid_at?: string | null
+          penalty_amount?: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_penalties_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_penalties_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

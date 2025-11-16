@@ -35,3 +35,9 @@ verify_jwt = true
 
 [functions.cleanup-login-attempts]
 verify_jwt = false
+
+[functions.withdraw-bid]
+verify_jwt = true
+
+[functions.process-withdrawal-payment]
+verify_jwt = true

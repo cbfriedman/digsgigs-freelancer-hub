@@ -60,51 +60,117 @@ serve(async (req) => {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      const { gigId, diggerId, amount, tier } = session.metadata || {};
+      
+      // Check if this is a withdrawal penalty payment
+      const { penalty_id, bid_id, digger_id } = session.metadata || {};
+      
+      if (penalty_id && bid_id && digger_id) {
+        // This is a withdrawal penalty payment
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
 
-      if (!gigId || !diggerId || !amount) {
-        throw new Error('Missing metadata in session');
+        // Update penalty status
+        const { error: updatePenaltyError } = await supabaseClient
+          .from('withdrawal_penalties')
+          .update({
+            status: 'paid',
+            stripe_payment_intent_id: session.payment_intent as string,
+            paid_at: new Date().toISOString()
+          })
+          .eq('id', penalty_id);
+
+        if (updatePenaltyError) {
+          console.error('Error updating penalty:', updatePenaltyError);
+          throw updatePenaltyError;
+        }
+
+        // Get penalty amount
+        const { data: penaltyData } = await supabaseClient
+          .from('withdrawal_penalties')
+          .select('penalty_amount')
+          .eq('id', penalty_id)
+          .single();
+
+        // Update bid status to withdrawn
+        const { error: updateBidError } = await supabaseClient
+          .from('bids')
+          .update({
+            status: 'withdrawn',
+            withdrawn_at: new Date().toISOString(),
+            withdrawal_penalty: penaltyData?.penalty_amount
+          })
+          .eq('id', bid_id);
+
+        if (updateBidError) {
+          console.error('Error updating bid:', updateBidError);
+          throw updateBidError;
+        }
+
+        // Update gig status back to open
+        const { data: bidData } = await supabaseClient
+          .from('bids')
+          .select('gig_id')
+          .eq('id', bid_id)
+          .single();
+
+        if (bidData) {
+          await supabaseClient
+            .from('gigs')
+            .update({ status: 'open' })
+            .eq('id', bidData.gig_id);
+        }
+
+        console.log('Withdrawal penalty processed successfully', { penalty_id, bid_id, digger_id });
+      } else {
+        // This is a regular lead purchase
+        const { gigId, diggerId, amount, tier } = session.metadata || {};
+
+        if (!gigId || !diggerId || !amount) {
+          throw new Error('Missing metadata in session');
+        }
+
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+
+        // Get the consumer_id for this gig
+        const { data: gigData, error: gigError } = await supabaseClient
+          .from('gigs')
+          .select('consumer_id')
+          .eq('id', gigId)
+          .single();
+
+        if (gigError || !gigData) {
+          console.error('Error fetching gig:', gigError);
+          throw new Error('Gig not found');
+        }
+
+        // Calculate purchase price based on tier
+        const purchasePrice = parseFloat(amount);
+
+        // Record the purchase
+        const { error: insertError } = await supabaseClient
+          .from('lead_purchases')
+          .insert({
+            gig_id: gigId,
+            digger_id: diggerId,
+            consumer_id: gigData.consumer_id,
+            amount_paid: purchasePrice,
+            purchase_price: purchasePrice,
+            stripe_payment_id: session.payment_intent as string,
+            status: 'completed',
+          });
+
+        if (insertError) {
+          console.error('Error recording purchase:', insertError);
+          throw insertError;
+        }
+
+        console.log('Lead purchase recorded successfully', { tier, amount: purchasePrice, gigId, diggerId });
       }
-
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-
-      // Get the consumer_id for this gig
-      const { data: gigData, error: gigError } = await supabaseClient
-        .from('gigs')
-        .select('consumer_id')
-        .eq('id', gigId)
-        .single();
-
-      if (gigError || !gigData) {
-        console.error('Error fetching gig:', gigError);
-        throw new Error('Gig not found');
-      }
-
-      // Calculate purchase price based on tier
-      const purchasePrice = parseFloat(amount);
-
-      // Record the purchase
-      const { error: insertError } = await supabaseClient
-        .from('lead_purchases')
-        .insert({
-          gig_id: gigId,
-          digger_id: diggerId,
-          consumer_id: gigData.consumer_id,
-          amount_paid: purchasePrice,
-          purchase_price: purchasePrice,
-          stripe_payment_id: session.payment_intent as string,
-          status: 'completed',
-        });
-
-      if (insertError) {
-        console.error('Error recording purchase:', insertError);
-        throw insertError;
-      }
-
-      console.log('Lead purchase recorded successfully', { tier, amount: purchasePrice, gigId, diggerId });
     }
 
     return new Response(
