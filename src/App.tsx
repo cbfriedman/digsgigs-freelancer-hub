@@ -21,6 +21,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Subscription from "./pages/Subscription";
 import Pricing from "./pages/Pricing";
+import PricingStrategy from "./pages/PricingStrategy";
 import Transactions from "./pages/Transactions";
 import EmailPreferences from "./pages/EmailPreferences";
 import LeadLimits from "./pages/LeadLimits";
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/pricing-strategy" element={<PricingStrategy />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/email-preferences" element={<EmailPreferences />} />
           <Route path="/lead-limits" element={<LeadLimits />} />

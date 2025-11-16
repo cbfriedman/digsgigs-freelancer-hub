@@ -154,16 +154,26 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Badge variant="outline" className="mt-2 text-xs cursor-help inline-flex items-center gap-1">
+                                <Badge 
+                                  variant="outline" 
+                                  className="mt-2 text-xs cursor-help inline-flex items-center gap-1"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate("/pricing-strategy");
+                                  }}
+                                >
                                   1 hour @ ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr (min $100)
                                   <Info className="h-3 w-3" />
                                 </Badge>
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs">
                                 <p className="font-semibold mb-1">Why $100 minimum?</p>
-                                <p className="text-sm">
+                                <p className="text-sm mb-2">
                                   This prevents artificially low rates. Diggers compete on real value - lower rates mean lower lead costs, creating fair market competition.
                                 </p>
+                                <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/pricing-strategy")}>
+                                  View pricing strategies →
+                                </Button>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
