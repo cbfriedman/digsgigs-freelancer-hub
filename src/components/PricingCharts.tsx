@@ -17,7 +17,7 @@ const TIERS = {
   },
   pro: {
     name: 'Pro',
-    priceValue: 50,
+    priceValue: 75,
     leadCostValue: 1.5,
     commissionValue: 6,
     minimumFee: 5,
@@ -27,7 +27,7 @@ const TIERS = {
   },
   premium: {
     name: 'Premium',
-    priceValue: 750,
+    priceValue: 600,
     leadCostValue: 0,
     commissionValue: 0,
     minimumFee: 0,
