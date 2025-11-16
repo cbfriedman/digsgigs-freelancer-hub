@@ -32,6 +32,7 @@ interface PurchasedLead {
   amount_paid: number;
   purchased_at: string;
   digger_id: string;
+  status: string;
   gigs: {
     id: string;
     title: string;
@@ -116,7 +117,7 @@ const MyLeads = () => {
       return;
     }
 
-    // Get purchased leads
+    // Get purchased leads (both completed and pending)
     const { data, error } = await supabase
       .from("lead_purchases")
       .select(`
@@ -124,6 +125,7 @@ const MyLeads = () => {
         amount_paid,
         purchased_at,
         digger_id,
+        status,
         gigs (
           id,
           title,
@@ -144,7 +146,7 @@ const MyLeads = () => {
         )
       `)
       .eq("digger_id", diggerProfile.id)
-      .eq("status", "completed")
+      .in("status", ["completed", "pending"])
       .order("purchased_at", { ascending: false });
 
     if (error) {

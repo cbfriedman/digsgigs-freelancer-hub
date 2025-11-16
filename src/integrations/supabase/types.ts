@@ -204,6 +204,7 @@ export type Database = {
           lead_limit_period: string | null
           location: string
           naics_code: string | null
+          offers_free_estimates: boolean | null
           phone: string
           portfolio_url: string | null
           portfolio_urls: string[] | null
@@ -245,6 +246,7 @@ export type Database = {
           lead_limit_period?: string | null
           location: string
           naics_code?: string | null
+          offers_free_estimates?: boolean | null
           phone: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
@@ -286,6 +288,7 @@ export type Database = {
           lead_limit_period?: string | null
           location?: string
           naics_code?: string | null
+          offers_free_estimates?: boolean | null
           phone?: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null

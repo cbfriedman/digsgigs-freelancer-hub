@@ -41,3 +41,9 @@ verify_jwt = true
 
 [functions.process-withdrawal-payment]
 verify_jwt = true
+
+[functions.create-free-estimate-checkout]
+verify_jwt = true
+
+[functions.request-free-estimate]
+verify_jwt = true
