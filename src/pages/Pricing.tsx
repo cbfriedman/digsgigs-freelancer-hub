@@ -299,13 +299,27 @@ export default function Pricing() {
                   </ul>
 
                   {key === 'pro' && (
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-600/20">
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-600/20">
                       <div className="flex items-start gap-2">
                         <Star className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
                         <div className="text-xs">
-                          <strong className="text-green-600">Huge Savings Potential:</strong>
+                          <strong className="text-green-600">Huge Savings:</strong>
                           <p className="text-muted-foreground mt-1">
-                            With 20 estimate requests/month, save $12,132/year vs Free tier!
+                            Save $1.50/lead vs Free. At 20 leads/month = $360/year saved!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {key === 'premium' && (
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-600/20">
+                      <div className="flex items-start gap-2">
+                        <Star className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-xs">
+                          <strong className="text-green-600">Maximum Savings:</strong>
+                          <p className="text-muted-foreground mt-1">
+                            FREE leads + 0% commission. At 50 leads/month = $1,800/year saved vs Free!
                           </p>
                         </div>
                       </div>

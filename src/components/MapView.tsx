@@ -1,17 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
-// @ts-ignore - react-map-gl types
-import Map, { Marker, NavigationControl } from "react-map-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface MapViewProps {
   items: Array<{
     id: string;
-    location_lat?: number;
-    location_lng?: number;
+    location_lat?: number | null;
+    location_lng?: number | null;
     title?: string;
-    handle?: string;
   }>;
   onMarkerClick?: (id: string) => void;
   centerLat?: number;
@@ -26,72 +23,93 @@ export const MapView = ({
   centerLng = -98.5795,
   zoom = 4
 }: MapViewProps) => {
-  const mapRef = useRef<any>(null);
-  const [viewState, setViewState] = useState({
-    longitude: centerLng,
-    latitude: centerLat,
-    zoom: zoom
-  });
-
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  
   const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_KEY;
 
   useEffect(() => {
-    // Update map center when center coordinates change
-    if (centerLat && centerLng) {
-      setViewState(prev => ({
-        ...prev,
-        latitude: centerLat,
-        longitude: centerLng
-      }));
+    if (!mapContainerRef.current || !mapboxToken) return;
+
+    mapboxgl.accessToken = mapboxToken;
+    
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [centerLng, centerLat],
+      zoom: zoom,
+    });
+
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    mapRef.current = map;
+
+    return () => {
+      markersRef.current.forEach(marker => marker.remove());
+      map.remove();
+    };
+  }, [mapboxToken]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    const validItems = items.filter(item => 
+      item.location_lat != null && 
+      item.location_lng != null
+    );
+
+    validItems.forEach((item) => {
+      const el = document.createElement('div');
+      el.className = 'cursor-pointer';
+      el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="hsl(var(--primary))" stroke="white" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="white"/></svg>`;
+      
+      el.addEventListener('click', () => {
+        if (onMarkerClick) {
+          onMarkerClick(item.id);
+        }
+      });
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([item.location_lng!, item.location_lat!])
+        .addTo(mapRef.current!);
+
+      markersRef.current.push(marker);
+    });
+
+    if (validItems.length > 0 && mapRef.current) {
+      const bounds = new mapboxgl.LngLatBounds();
+      validItems.forEach(item => {
+        bounds.extend([item.location_lng!, item.location_lat!]);
+      });
+      mapRef.current.fitBounds(bounds, { padding: 50, maxZoom: 12 });
     }
-  }, [centerLat, centerLng]);
+  }, [items, onMarkerClick]);
+
+  useEffect(() => {
+    if (mapRef.current && centerLat && centerLng) {
+      mapRef.current.flyTo({
+        center: [centerLng, centerLat],
+        zoom: zoom,
+      });
+    }
+  }, [centerLat, centerLng, zoom]);
 
   if (!mapboxToken) {
     return (
-      <Card className="p-8 text-center">
-        <p className="text-muted-foreground">
-          Map view requires Mapbox configuration. Please add your Mapbox public key.
+      <Card className="p-6">
+        <p className="text-muted-foreground text-center">
+          Map functionality requires Mapbox configuration. Please add your MAPBOX_PUBLIC_KEY.
         </p>
       </Card>
     );
   }
 
-  const validItems = items.filter(item => 
-    item.location_lat && 
-    item.location_lng &&
-    !isNaN(item.location_lat) && 
-    !isNaN(item.location_lng)
-  );
-
   return (
     <Card className="overflow-hidden h-[600px]">
-      <Map
-        ref={mapRef}
-        {...viewState}
-        onMove={evt => setViewState(evt.viewState)}
-        mapboxAccessToken={mapboxToken}
-        style={{ width: '100%', height: '100%' }}
-        mapStyle="mapbox://styles/mapbox/light-v11"
-      >
-        <NavigationControl position="top-right" />
-        
-        {validItems.map((item) => (
-          <Marker
-            key={item.id}
-            longitude={item.location_lng!}
-            latitude={item.location_lat!}
-            anchor="bottom"
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
-              onMarkerClick?.(item.id);
-            }}
-          >
-            <div className="cursor-pointer transform hover:scale-110 transition-transform">
-              <MapPin className="h-8 w-8 text-primary fill-primary/20" />
-            </div>
-          </Marker>
-        ))}
-      </Map>
+      <div ref={mapContainerRef} className="w-full h-full" />
     </Card>
   );
 };
