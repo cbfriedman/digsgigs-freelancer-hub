@@ -44,10 +44,10 @@ serve(async (req) => {
       throw new Error('Missing required parameters');
     }
 
-    // SECURITY: Verify diggerId belongs to authenticated user
+    // SECURITY: Verify diggerId belongs to authenticated user and get hourly rate
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from('digger_profiles')
-      .select('id, user_id')
+      .select('id, user_id, hourly_rate, hourly_rate_min')
       .eq('id', diggerId)
       .eq('user_id', user.id)
       .single();
@@ -62,16 +62,28 @@ serve(async (req) => {
 
     console.log('Authorization verified:', { userId: user.id, diggerId, gigId });
 
-    // Calculate lead cost based on lead age and digger's tier
+    // Calculate lead cost based on hourly rate or tier
     let leadCost = 3; // Default: free tier
+    let leadDescription = '';
     
-    if (isOldLead) {
+    // If digger has hourly rate, charge 1 hour's worth (non-refundable)
+    if (diggerProfile.hourly_rate || diggerProfile.hourly_rate_min) {
+      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      leadCost = hourlyRate;
+      leadDescription = `1 hour at $${hourlyRate}/hr`;
+      console.log('Hourly rate lead cost calculated:', { hourlyRate, leadCost });
+    } else if (isOldLead) {
       // Old leads (>24h) are always $1
       leadCost = 1;
+      leadDescription = 'Old lead special';
     } else if (tier === 'premium') {
       leadCost = 0;
+      leadDescription = 'Premium tier';
     } else if (tier === 'pro') {
       leadCost = 2;
+      leadDescription = 'Pro tier';
+    } else {
+      leadDescription = 'Free tier';
     }
 
     // If lead is free for premium users, skip Stripe
@@ -102,9 +114,7 @@ serve(async (req) => {
             currency: 'usd',
             product_data: {
               name: `Lead Purchase: ${gigTitle}`,
-              description: isOldLead 
-                ? `Access to client contact information - Old lead special ($1)` 
-                : `Access to client contact information - ${tier} tier ($${leadCost})`,
+              description: `Access to client contact - ${leadDescription} ($${leadCost})`,
             },
             unit_amount: Math.round(leadCost * 100), // Convert to cents
           },

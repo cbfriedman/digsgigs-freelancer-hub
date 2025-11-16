@@ -34,17 +34,20 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
-    // Get digger profile
+    // Get digger profile with hourly rate
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from("digger_profiles")
-      .select("id")
+      .select("id, hourly_rate, hourly_rate_min")
       .eq("user_id", user.id)
       .single();
 
     if (profileError || !diggerProfile) {
       throw new Error("Digger profile not found");
     }
-    logStep("Digger profile found", { diggerId: diggerProfile.id });
+    logStep("Digger profile found", { 
+      diggerId: diggerProfile.id,
+      hourlyRate: diggerProfile.hourly_rate || diggerProfile.hourly_rate_min
+    });
 
     // Parse request body to get gig IDs
     const { gigIds } = await req.json();
@@ -76,9 +79,18 @@ serve(async (req) => {
       throw new Error(`You have already purchased leads for some of these gigs: ${alreadyPurchasedIds.join(", ")}`);
     }
 
-    // Calculate prices for each lead
+    // Calculate prices for each lead (hourly rate if available, else budget-based)
     const lineItems = gigs.map(gig => {
-      const leadPrice = gig.budget_min ? Math.max(50, (gig.budget_min * 0.005)) : 50;
+      let leadPrice: number;
+      
+      // If digger has hourly rate, use 1 hour's worth as lead cost
+      if (diggerProfile.hourly_rate || diggerProfile.hourly_rate_min) {
+        leadPrice = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      } else {
+        // Otherwise use budget-based calculation
+        leadPrice = gig.budget_min ? Math.max(50, (gig.budget_min * 0.005)) : 50;
+      }
+      
       const priceInCents = Math.round(leadPrice * 100);
 
       return {
@@ -86,11 +98,14 @@ serve(async (req) => {
           currency: "usd",
           product_data: {
             name: `Lead: ${gig.title}`,
-            description: `Contact information for gig opportunity`,
+            description: (diggerProfile.hourly_rate || diggerProfile.hourly_rate_min)
+              ? `1 hour at $${leadPrice}/hr (non-refundable)`
+              : `Contact information for gig opportunity`,
             metadata: {
               gig_id: gig.id,
               digger_id: diggerProfile.id,
               consumer_id: gig.consumer_id,
+              lead_price: leadPrice.toString(),
             }
           },
           unit_amount: priceInCents,

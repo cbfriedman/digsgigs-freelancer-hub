@@ -37,20 +37,27 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id });
 
-    // Get digger's subscription tier
+    // Get digger's subscription tier and hourly rate
     const { data: diggerProfile } = await supabaseClient
       .from('digger_profiles')
-      .select('subscription_tier')
+      .select('subscription_tier, hourly_rate, hourly_rate_min')
       .eq('user_id', user.id)
       .single();
 
     const tier = diggerProfile?.subscription_tier || 'free';
-    logStep("Digger tier retrieved", { tier });
+    logStep("Digger profile retrieved", { tier, hourlyRate: diggerProfile?.hourly_rate });
 
-    // Calculate lead cost based on tier
+    // Calculate lead cost based on hourly rate or tier
     let leadCost = 3; // Default: free tier ($3 per lead)
+    let isHourlyRate = false;
     
-    if (tier === 'premium') {
+    // If digger has hourly rate, charge 1 hour's worth
+    if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
+      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      leadCost = hourlyRate;
+      isHourlyRate = true;
+      logStep("Hourly rate lead cost", { hourlyRate, leadCost });
+    } else if (tier === 'premium') {
       leadCost = 0; // $0 per lead
     } else if (tier === 'pro') {
       leadCost = 2; // $2 per lead
@@ -58,11 +65,12 @@ serve(async (req) => {
       leadCost = 3; // $3 per lead (free)
     }
 
-    logStep("Lead cost calculated", { tier, leadCost });
+    logStep("Lead cost calculated", { tier, leadCost, isHourlyRate });
 
     return new Response(JSON.stringify({ 
       leadCost,
-      tier 
+      tier,
+      isHourlyRate
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
