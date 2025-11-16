@@ -51,12 +51,12 @@ serve(async (req) => {
     let leadCost = 3; // Default: free tier ($3 per lead)
     let isHourlyRate = false;
     
-    // If digger has hourly rate, charge 1 hour's worth
+    // If digger has hourly rate, charge 1 hour's worth (minimum $100)
     if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
       const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-      leadCost = hourlyRate;
+      leadCost = Math.max(100, hourlyRate);
       isHourlyRate = true;
-      logStep("Hourly rate lead cost", { hourlyRate, leadCost });
+      logStep("Hourly rate lead cost", { hourlyRate, leadCost, minimum: 100 });
     } else if (tier === 'premium') {
       leadCost = 0; // $0 per lead
     } else if (tier === 'pro') {

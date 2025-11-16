@@ -83,9 +83,10 @@ serve(async (req) => {
     const lineItems = gigs.map(gig => {
       let leadPrice: number;
       
-      // If digger has hourly rate, use 1 hour's worth as lead cost
+      // If digger has hourly rate, use 1 hour's worth as lead cost (minimum $100)
       if (diggerProfile.hourly_rate || diggerProfile.hourly_rate_min) {
-        leadPrice = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+        const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+        leadPrice = Math.max(100, hourlyRate);
       } else {
         // Otherwise use budget-based calculation
         leadPrice = gig.budget_min ? Math.max(50, (gig.budget_min * 0.005)) : 50;
