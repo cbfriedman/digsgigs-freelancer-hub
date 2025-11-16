@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { DiggerCard } from "@/components/DiggerCard";
 import { GigCard } from "@/components/GigCard";
 import { Footer } from "@/components/Footer";
+import { NotificationBell } from "@/components/NotificationBell";
 import { 
   Search, 
   Users, 
@@ -24,7 +25,8 @@ import {
   FileText,
   ChevronDown,
   Settings,
-  DollarSign
+  DollarSign,
+  Bell
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -256,6 +258,7 @@ const Index = () => {
             </Button>
             {user ? (
               <>
+                <NotificationBell />
                 <Button variant="ghost" size="sm" onClick={() => navigate("/transactions")}>
                   <Receipt className="mr-2 h-4 w-4" />
                   Transactions
@@ -318,6 +321,14 @@ const Index = () => {
                     <DropdownMenuItem onClick={() => navigate("/my-gigs")}>
                       <Briefcase className="mr-2 h-4 w-4" />
                       My Gigs
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/messages")}>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Messages
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/notifications")}>
+                      <Bell className="mr-2 h-4 w-4" />
+                      Notifications
                     </DropdownMenuItem>
                     {isAdmin && (
                       <>
