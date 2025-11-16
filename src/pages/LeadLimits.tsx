@@ -202,7 +202,7 @@ export default function LeadLimits() {
                   <AlertDescription>
                     <strong>Cost Estimate:</strong> With your current settings, you'll spend up to{' '}
                     <strong>${parseInt(leadLimit || '0') * 3}</strong> per {period} on leads 
-                    (Free tier: $3/lead). Upgrade to Pro ($2/lead) or Premium (FREE leads) to save more.
+                    (Free tier: $3/lead). Upgrade to Pro ($999/mo: $2/lead + unlimited free estimates) or Premium (FREE leads) to save more.
                   </AlertDescription>
                 </Alert>
               </>

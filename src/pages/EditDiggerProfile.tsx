@@ -427,11 +427,11 @@ const EditDiggerProfile = () => {
                       onCheckedChange={(checked) => setFormData({ ...formData, offers_free_estimates: checked as boolean })}
                     />
                     <Label htmlFor="offers_free_estimates" className="cursor-pointer">
-                      I offer free estimates ($100 per lead)
+                      I offer free estimates
                     </Label>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    By offering free estimates, you'll be charged $100 when a customer requests an estimate from you.
+                    <strong>Free tier:</strong> $100 per estimate request. <strong>Pro/Premium:</strong> Unlimited free estimates at no charge!
                   </p>
                 </div>
                 

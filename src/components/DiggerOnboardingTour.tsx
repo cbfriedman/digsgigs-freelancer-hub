@@ -47,7 +47,7 @@ export const DiggerOnboardingTour = ({ run, onComplete }: DiggerOnboardingTourPr
       content: (
         <div>
           <h3 className="text-lg font-bold mb-2">Browse Available Gigs</h3>
-          <p>Discover gigs that match your skills. Free tier: $3/lead, Pro: $2/lead, Premium: FREE leads!</p>
+          <p>Discover gigs that match your skills. Free tier: $3/lead, Pro ($999/mo): $2/lead + unlimited free estimates, Premium: FREE leads!</p>
         </div>
       ),
       placement: "bottom",
