@@ -325,7 +325,7 @@ export default function PricingCalculator() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="freeEstimateJobs">Estimated number of Jobs Awarded</Label>
+              <Label htmlFor="freeEstimateJobs">Estimated number of Jobs Awarded (Auto-calculated)</Label>
               <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
                 {freeEstimateJobs}
               </div>
@@ -394,7 +394,7 @@ export default function PricingCalculator() {
                   </tr>
                   
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Estimated number of Jobs Awarded</td>
+                    <td className="py-3 px-4 text-muted-foreground">Estimated number of Jobs Awarded (Auto-calculated)</td>
                     {Object.entries(TIERS).map(([key]) => (
                       <td key={key} className="text-right py-3 px-4">
                         {freeEstimateJobs}
