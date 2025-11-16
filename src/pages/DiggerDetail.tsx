@@ -239,7 +239,7 @@ const DiggerDetail = () => {
               className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
               onClick={() => navigate("/")}
             >
-              digsandgiggs
+              digsandgigs
             </h1>
           </div>
         </nav>
@@ -260,7 +260,7 @@ const DiggerDetail = () => {
             className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
             onClick={() => navigate("/")}
           >
-            digsandgiggs
+            digsandgigs
           </h1>
           <Button variant="ghost" onClick={() => navigate("/browse-diggers")}>
             <ArrowLeft className="mr-2 h-4 w-4" />

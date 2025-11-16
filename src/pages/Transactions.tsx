@@ -365,7 +365,7 @@ const Transactions = () => {
             Back to Home
           </Button>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            digsandgiggs
+            digsandgigs
           </h1>
           <div className="w-32" /> {/* Spacer for alignment */}
         </div>
