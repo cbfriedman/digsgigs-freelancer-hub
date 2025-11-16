@@ -346,7 +346,7 @@ export default function Pricing() {
           <div className="max-w-6xl mx-auto">
             <Card className="bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
               <CardHeader>
-                <CardTitle className="text-center text-2xl">Commissions Only</CardTitle>
+                <CardTitle className="text-center text-2xl">Leads Purchase + Commissions Calculator</CardTitle>
                 <CardDescription className="text-center">
                   Calculate your costs based on your activity
                 </CardDescription>
