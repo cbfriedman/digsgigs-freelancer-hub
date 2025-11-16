@@ -124,7 +124,7 @@ export default function PlanRecommender() {
         </div>
         <CardTitle className="text-center text-2xl text-white">Plan Recommender</CardTitle>
         <CardDescription className="text-center text-orange-50">
-          Get a personalized plan recommendation based on your business activity
+          Use this calculator to determine which plan is best for your business. Enter your expected monthly activity below to get a personalized recommendation.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 bg-white">
