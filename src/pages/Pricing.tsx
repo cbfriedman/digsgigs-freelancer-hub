@@ -10,6 +10,7 @@ import { Footer } from "@/components/Footer";
 import PricingCalculator from "@/components/PricingCalculator";
 import PlanRecommender from "@/components/PlanRecommender";
 import PricingCharts from "@/components/PricingCharts";
+import BreakevenCalculator from "@/components/BreakevenCalculator";
 
 const TIERS = {
   free: {
@@ -640,6 +641,11 @@ export default function Pricing() {
           {/* Visual Charts */}
           <div className="mt-16 max-w-6xl mx-auto">
             <PricingCharts />
+          </div>
+
+          {/* Premium 10% Breakeven Calculator */}
+          <div className="mt-16 max-w-6xl mx-auto">
+            <BreakevenCalculator />
           </div>
 
           {/* Plan Recommender */}
