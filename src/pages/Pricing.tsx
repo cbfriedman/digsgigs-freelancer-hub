@@ -105,6 +105,7 @@ export default function Pricing() {
   const [interactiveLeads, setInteractiveLeads] = useState(15);
   const [interactiveJobs, setInteractiveJobs] = useState(2);
   const [interactiveJobValue, setInteractiveJobValue] = useState(1000);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -405,8 +406,20 @@ export default function Pricing() {
                   </div>
                 </div>
 
+                {/* Calculate Button */}
+                <div className="flex justify-center">
+                  <Button 
+                    onClick={() => setShowResults(true)}
+                    size="lg"
+                    className="px-8"
+                  >
+                    Calculate
+                  </Button>
+                </div>
+
                 {/* Results Table */}
-                <div className="overflow-x-auto">
+                {showResults && (
+                  <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b-2 border-border">
@@ -430,6 +443,7 @@ export default function Pricing() {
                     </tbody>
                   </table>
                 </div>
+                )}
               </CardContent>
             </Card>
           </div>
