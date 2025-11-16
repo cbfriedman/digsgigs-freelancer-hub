@@ -1,5 +1,8 @@
 project_id = "ibyhvkfrbdwrnxutnkdy"
 
+[functions.send-saved-search-alerts]
+verify_jwt = false
+
 [functions.create-checkout-session]
 verify_jwt = true
 
