@@ -337,7 +337,17 @@ const EditDiggerProfile = () => {
 
               {/* Professional Details */}
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold">Professional Details</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold">Professional Details</h3>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => navigate("/pricing-strategy")}
+                    className="text-primary"
+                  >
+                    📊 Pricing Strategy Guide
+                  </Button>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="hourly_rate_min">Min Hourly Rate ($)</Label>
@@ -349,6 +359,9 @@ const EditDiggerProfile = () => {
                       onChange={(e) => setFormData({ ...formData, hourly_rate_min: e.target.value })}
                       placeholder="50.00"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Your rate determines lead costs (min $100)
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="hourly_rate_max">Max Hourly Rate ($)</Label>
