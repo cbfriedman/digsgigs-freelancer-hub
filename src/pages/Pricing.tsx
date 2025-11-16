@@ -381,7 +381,7 @@ export default function Pricing() {
               <CardContent className="space-y-8">
                 {[
                   { 
-                    label: 'Light Usage', 
+                    label: 'Light Usage - Commission Based Plan', 
                     leads: 30, 
                     jobs: 3, 
                     jobValue: 1500, 
@@ -627,6 +627,223 @@ export default function Pricing() {
                         <strong>Higher tiers = More savings</strong> as your business grows. Premium tier eliminates all per-transaction costs!
                       </p>
                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Light Usage - Hourly Based Plan */}
+          <div className="mt-16 max-w-6xl mx-auto">
+            <Card className="bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
+              <CardHeader>
+                <CardTitle className="text-center text-2xl">Light Usage - Hourly Based Plan</CardTitle>
+                <CardDescription className="text-center">
+                  Compare costs across different hourly rates (30 leads • 3 estimate requests/month)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {[50, 100, 150, 200, 250, 500, 750, 1000].map((hourlyRate) => {
+                  const leads = 30;
+                  const estimates = 3;
+                  const hourlyRateClicks = 3; // Assume all estimates result in hourly rate clicks
+                  
+                  return (
+                    <div key={hourlyRate} className="space-y-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex-1 h-px bg-border"></div>
+                        <div className="text-center">
+                          <h3 className="text-lg font-bold">${hourlyRate}/Hour Rate</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {leads} leads • {hourlyRateClicks} hourly clicks (awarded) • {estimates} estimate requests
+                          </p>
+                        </div>
+                        <div className="flex-1 h-px bg-border"></div>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b-2 border-border">
+                              <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
+                              {Object.entries(TIERS).map(([key, tier]) => (
+                                <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {/* Monthly Subscription */}
+                            <tr className="border-b border-border/50">
+                              <td className="py-3 px-4 text-muted-foreground">Monthly Subscription</td>
+                              {Object.entries(TIERS).map(([key, tier]) => (
+                                <td key={key} className="text-right py-3 px-4">
+                                  ${tier.priceValue.toFixed(2)}
+                                </td>
+                              ))}
+                            </tr>
+                            
+                            {/* Lead Purchases */}
+                            <tr className="border-b border-border/50">
+                              <td className="py-3 px-4 text-muted-foreground">
+                                Lead Purchases ({leads} × rate)
+                              </td>
+                              {Object.entries(TIERS).map(([key, tier]) => {
+                                const leadCost = tier.leadCostValue * leads;
+                                return (
+                                  <td key={key} className="text-right py-3 px-4">
+                                    ${leadCost.toFixed(2)}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                            
+                            {/* Estimate Requests */}
+                            <tr className="border-b border-border/50 bg-muted/20">
+                              <td className="py-3 px-4 text-muted-foreground font-medium">
+                                Free Estimate Requests ({estimates} requests)
+                              </td>
+                              {Object.entries(TIERS).map(([key, tier]) => {
+                                let estimateCost = 0;
+                                if (key === 'free' || key === 'pro') {
+                                  estimateCost = estimates * 100;
+                                }
+                                return (
+                                  <td key={key} className="text-right py-3 px-4 font-medium">
+                                    {estimateCost === 0 ? (
+                                      <span className="text-green-600">FREE</span>
+                                    ) : (
+                                      `$${estimateCost.toFixed(2)}`
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+
+                            {/* Hourly Rate Click Costs */}
+                            <tr className="border-b border-border/50 bg-muted/20">
+                              <td className="py-3 px-4 text-muted-foreground font-medium">
+                                Hourly Rate Click Costs ({hourlyRateClicks} clicks)
+                              </td>
+                              {Object.entries(TIERS).map(([key, tier]) => {
+                                let hourlyClickCost = 0;
+                                if (key === 'free' || key === 'pro') {
+                                  hourlyClickCost = hourlyRateClicks * 100;
+                                }
+                                return (
+                                  <td key={key} className="text-right py-3 px-4 font-medium">
+                                    {hourlyClickCost === 0 ? (
+                                      <span className="text-green-600">FREE</span>
+                                    ) : (
+                                      `$${hourlyClickCost.toFixed(2)}`
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+
+                            {/* Award Fees */}
+                            <tr className="border-b border-border/50 bg-amber-50 dark:bg-amber-950/20">
+                              <td className="py-3 px-4 text-muted-foreground font-medium">
+                                Award Fees ({hourlyRateClicks} × 1 hour rate, min $100)
+                              </td>
+                              {Object.entries(TIERS).map(([key]) => {
+                                const awardFee = hourlyRateClicks * Math.max(hourlyRate, 100);
+                                return (
+                                  <td key={key} className="text-right py-3 px-4 font-medium">
+                                    ${awardFee.toFixed(2)}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                            
+                            {/* Total Monthly Costs */}
+                            <tr className="border-t-2 border-border bg-muted/30">
+                              <td className="py-4 px-4 font-bold">Total Monthly Costs</td>
+                              {Object.entries(TIERS).map(([key, tier]) => {
+                                const leadCost = tier.leadCostValue * leads;
+                                let estimateCost = 0;
+                                if (key === 'free' || key === 'pro') {
+                                  estimateCost = estimates * 100;
+                                }
+                                let hourlyClickCost = 0;
+                                if (key === 'free' || key === 'pro') {
+                                  hourlyClickCost = hourlyRateClicks * 100;
+                                }
+                                const awardFee = hourlyRateClicks * Math.max(hourlyRate, 100);
+                                const totalCosts = tier.priceValue + leadCost + estimateCost + hourlyClickCost + awardFee;
+                                return (
+                                  <td key={key} className="text-right py-4 px-4 font-bold text-lg">
+                                    ${totalCosts.toFixed(2)}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Savings Comparison */}
+                      <div className="grid md:grid-cols-2 gap-4 mt-4">
+                        {Object.entries(TIERS).slice(1).map(([key, tier]) => {
+                          const freeTier = TIERS.free;
+                          
+                          const calculateTotal = (t: typeof tier) => {
+                            const leadCost = t.leadCostValue * leads;
+                            let estimateCost = 0;
+                            if (key === 'free' || key === 'pro') {
+                              estimateCost = estimates * 100;
+                            }
+                            let hourlyClickCost = 0;
+                            if (key === 'free' || key === 'pro') {
+                              hourlyClickCost = hourlyRateClicks * 100;
+                            }
+                            const awardFee = hourlyRateClicks * Math.max(hourlyRate, 100);
+                            return t.priceValue + leadCost + estimateCost + hourlyClickCost + awardFee;
+                          };
+                          
+                          const freeCost = calculateTotal(freeTier);
+                          const tierCost = calculateTotal(tier);
+                          const monthlySavings = freeCost - tierCost;
+                          const annualSavings = monthlySavings * 12;
+
+                          return (
+                            <Card key={key} className="bg-gradient-to-br from-primary/5 to-accent/5">
+                              <CardContent className="pt-6">
+                                <div className="text-center space-y-2">
+                                  <p className="text-sm font-semibold text-primary">{tier.name} vs Free</p>
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-muted-foreground">
+                                      Monthly: <span className="font-semibold text-green-600">${monthlySavings.toFixed(2)}/mo</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Annual: <span className="font-semibold text-green-600">${annualSavings.toFixed(2)}/year</span>
+                                    </p>
+                                  </div>
+                                  <Badge variant={monthlySavings > 0 ? "default" : "secondary"} className="text-xs">
+                                    {monthlySavings > 0 ? `Save ${((monthlySavings / freeCost) * 100).toFixed(0)}%` : 'No savings'}
+                                  </Badge>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Info Banner */}
+                <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">Understanding Hourly Rate Costs:</h4>
+                  <div className="space-y-3 text-sm text-blue-800 dark:text-blue-200">
+                    <ul className="space-y-2">
+                      <li>• <strong>Hourly Rate Click:</strong> Charged when consumers click to view your hourly rate ($100 per click on Free & Pro, FREE on Premium)</li>
+                      <li>• <strong>Award Fee:</strong> When awarded the hourly work, you pay 1 hour worth of your rate (minimum $100) - applies to ALL plans</li>
+                      <li>• <strong>Total Cost:</strong> Click cost + Award fee + Other platform fees</li>
+                    </ul>
+                    <p className="text-sm text-blue-800 dark:text-blue-200 mt-3 font-medium">
+                      💡 <strong>Higher hourly rates = Higher award fees.</strong> Premium plan saves you the most on click costs!
+                    </p>
                   </div>
                 </div>
               </CardContent>
