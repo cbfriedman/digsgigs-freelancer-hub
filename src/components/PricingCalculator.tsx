@@ -31,7 +31,7 @@ const TIERS = {
     commissionValue: 0,
     minimumFee: 0,
     estimateCost: 0,
-    hourlyRateClickCost: 0,
+    hourlyRateClickCost: 100,
   }
 };
 
