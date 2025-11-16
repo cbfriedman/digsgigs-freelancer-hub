@@ -75,7 +75,7 @@ export default function PricingCalculator() {
       <CardHeader>
         <div className="flex items-center justify-center gap-2 mb-2">
           <Calculator className="h-6 w-6 text-primary" />
-          <Badge className="bg-primary">Interactive Tool</Badge>
+          <Badge className="bg-primary">Hourly Bids Calculator</Badge>
         </div>
         <CardTitle className="text-center text-2xl">Cost calculator for hourly bids</CardTitle>
         <CardDescription className="text-center">
@@ -278,7 +278,13 @@ export default function PricingCalculator() {
 
         {/* Free Estimates Calculator */}
         <div className="mt-8 pt-8 border-t border-border">
-          <h3 className="text-xl font-semibold mb-4">Free Estimates Calculator</h3>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Calculator className="h-6 w-6 text-secondary" />
+            <Badge className="bg-secondary">Free Estimates Calculator</Badge>
+          </div>
+          <CardDescription className="text-center mb-6">
+            Calculate costs for free estimate leads across different plans
+          </CardDescription>
           
           <div className="grid md:grid-cols-3 gap-4 p-6 bg-background rounded-lg border">
             <div className="space-y-2">
