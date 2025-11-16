@@ -864,6 +864,44 @@ export type Database = {
           },
         ]
       }
+      saved_search_alerts: {
+        Row: {
+          created_at: string
+          id: string
+          matches_found: number
+          saved_search_id: string
+          search_type: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matches_found?: number
+          saved_search_id: string
+          search_type: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matches_found?: number
+          saved_search_id?: string
+          search_type?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_search_alerts_saved_search_id_fkey"
+            columns: ["saved_search_id"]
+            isOneToOne: false
+            referencedRelation: "saved_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_searches: {
         Row: {
           created_at: string
