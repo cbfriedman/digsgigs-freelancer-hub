@@ -10,8 +10,9 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, MapPin } from "lucide-react";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
+import { geocodeAddress } from "@/utils/geocoding";
 
 interface IndustryCode {
   id: string;
@@ -47,6 +48,7 @@ const EditDiggerProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [profileId, setProfileId] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedIndustryCode, setSelectedIndustryCode] = useState<IndustryCode | null>(null);
@@ -181,6 +183,24 @@ const EditDiggerProfile = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
+      // Geocode the location if it changed
+      let locationLat: number | undefined;
+      let locationLng: number | undefined;
+      
+      if (formData.location) {
+        setGeocoding(true);
+        const geocodeResult = await geocodeAddress(formData.location);
+        setGeocoding(false);
+        
+        if (geocodeResult) {
+          locationLat = geocodeResult.latitude;
+          locationLng = geocodeResult.longitude;
+          toast.success("Location geocoded successfully");
+        } else {
+          toast.error("Could not geocode location. Profile will be updated without map coordinates.");
+        }
+      }
+
       // Update digger profile
       const { error: profileError } = await supabase
         .from("digger_profiles")
@@ -189,6 +209,8 @@ const EditDiggerProfile = () => {
           business_name: formData.business_name,
           phone: formData.phone,
           location: formData.location,
+          location_lat: locationLat,
+          location_lng: locationLng,
           profession: formData.profession,
           bio: formData.bio || null,
           portfolio_url: formData.portfolio_url || null,
@@ -302,14 +324,20 @@ const EditDiggerProfile = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location *</Label>
+                  <Label htmlFor="location" className="flex items-center gap-2">
+                    Location *
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  </Label>
                   <Input
                     id="location"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="City, State"
+                    placeholder="City, State or Zip Code"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    We'll convert this to map coordinates for location-based filtering
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="profession">Profession *</Label>
@@ -500,8 +528,13 @@ const EditDiggerProfile = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={saving}>
-                  {saving ? (
+                <Button type="submit" disabled={saving || geocoding}>
+                  {geocoding ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Geocoding...
+                    </>
+                  ) : saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving...
