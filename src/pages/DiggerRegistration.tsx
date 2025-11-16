@@ -10,7 +10,9 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { MapPin } from "lucide-react";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
+import { geocodeAddress } from "@/utils/geocoding";
 
 interface IndustryCode {
   id: string;
@@ -30,6 +32,7 @@ interface Reference {
 const DiggerRegistration = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedIndustryCode, setSelectedIndustryCode] = useState<IndustryCode | null>(null);
   const [customOccupationTitle, setCustomOccupationTitle] = useState("");
@@ -116,6 +119,24 @@ const DiggerRegistration = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
+      // Geocode the location
+      let locationLat: number | undefined;
+      let locationLng: number | undefined;
+      
+      if (formData.location) {
+        setGeocoding(true);
+        const geocodeResult = await geocodeAddress(formData.location);
+        setGeocoding(false);
+        
+        if (geocodeResult) {
+          locationLat = geocodeResult.latitude;
+          locationLng = geocodeResult.longitude;
+          toast.success("Location geocoded successfully");
+        } else {
+          toast.error("Could not geocode location. Profile will be created without map coordinates.");
+        }
+      }
+
       // Create digger profile
       const { data: diggerProfile, error: profileError } = await supabase
         .from("digger_profiles")
@@ -125,6 +146,8 @@ const DiggerRegistration = () => {
           business_name: formData.business_name,
           phone: formData.phone,
           location: formData.location,
+          location_lat: locationLat,
+          location_lng: locationLng,
           profession: formData.profession,
           bio: formData.bio,
           portfolio_url: formData.portfolio_url || null,
@@ -241,14 +264,20 @@ const DiggerRegistration = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location *</Label>
+                    <Label htmlFor="location" className="flex items-center gap-2">
+                      Location *
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                    </Label>
                     <Input
                       id="location"
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="City, State"
+                      placeholder="City, State or Zip Code"
                       required
                     />
+                    <p className="text-xs text-muted-foreground">
+                      We'll convert this to map coordinates for location-based filtering
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-2">

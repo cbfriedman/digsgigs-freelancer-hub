@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Briefcase } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin } from "lucide-react";
 import { z } from "zod";
 import { GigCategorySelector } from "@/components/GigCategorySelector";
+import { geocodeAddress } from "@/utils/geocoding";
 
 const gigSchema = z.object({
   title: z.string().trim().min(10, "Title must be at least 10 characters").max(100, "Title must be less than 100 characters"),
@@ -24,6 +25,7 @@ const gigSchema = z.object({
 const PostGig = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -97,11 +99,31 @@ const PostGig = () => {
         return;
       }
 
+      // Geocode the location
+      let locationLat: number | undefined;
+      let locationLng: number | undefined;
+      
+      if (formData.location) {
+        setGeocoding(true);
+        const geocodeResult = await geocodeAddress(formData.location);
+        setGeocoding(false);
+        
+        if (geocodeResult) {
+          locationLat = geocodeResult.latitude;
+          locationLng = geocodeResult.longitude;
+          toast.success("Location geocoded successfully");
+        } else {
+          toast.error("Could not geocode location. Gig will be posted without map coordinates.");
+        }
+      }
+
       const { error } = await supabase.from("gigs").insert({
         consumer_id: session.user.id,
         title: validatedData.title,
         description: validatedData.description,
         location: formData.location,
+        location_lat: locationLat,
+        location_lng: locationLng,
         timeline: formData.timeline,
         budget_min: validatedData.budget_min,
         budget_max: validatedData.budget_max,
@@ -189,16 +211,22 @@ const PostGig = () => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="location">Location *</Label>
-                <Input
-                  id="location"
-                  placeholder="City, State or Zip Code"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="flex items-center gap-2">
+                    Location *
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  </Label>
+                  <Input
+                    id="location"
+                    placeholder="City, State or Zip Code"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    required
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    We'll convert this to map coordinates for location-based filtering
+                  </p>
+                </div>
 
               <div className="space-y-2">
                 <Label htmlFor="timeline">Project Timeline *</Label>
