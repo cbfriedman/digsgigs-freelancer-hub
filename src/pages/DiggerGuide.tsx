@@ -100,8 +100,8 @@ export default function DiggerGuide() {
                     <div className="flex gap-3 items-start">
                       <Settings className="h-5 w-5 text-primary mt-0.5" />
                       <div>
-                        <div className="font-medium">Professional Details</div>
-                        <div className="text-sm text-muted-foreground">Years of experience, hourly rate, bio</div>
+                        <div className="font-medium">Professional Details & Hourly Rate</div>
+                        <div className="text-sm text-muted-foreground">Years of experience, hourly rate (determines lead costs), bio. Set competitive rates using our pricing strategy guide.</div>
                       </div>
                     </div>
                     <div className="flex gap-3 items-start">
@@ -137,25 +137,39 @@ export default function DiggerGuide() {
                     Prevent overspending by setting daily, weekly, or monthly limits on how many leads you purchase.
                   </p>
                   <div className="bg-accent/10 p-4 rounded-lg border border-accent/20">
-                    <h4 className="font-semibold mb-3">Lead Pricing:</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Free Tier:</span>
-                        <span className="font-semibold">$3 per lead</span>
+                    <h4 className="font-semibold mb-3">Lead Pricing Models:</h4>
+                    <div className="space-y-3 text-sm">
+                      <div className="border-b pb-2">
+                        <span className="font-semibold block mb-1">Hourly Rate Auction (Recommended):</span>
+                        <span className="text-muted-foreground">Pay 1 hour of your advertised rate per lead (minimum $100). Lower rates = lower lead costs = competitive advantage.</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Pro Tier:</span>
-                        <span className="font-semibold">$2 per lead</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Premium Tier:</span>
-                        <span className="font-semibold text-accent">FREE leads!</span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t">
-                        <span>Old Leads (&gt;24h):</span>
-                        <span className="font-semibold">$1 per lead</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Free Tier (Fixed):</span>
+                          <span className="font-semibold">$3 per lead</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pro Tier ($999/mo):</span>
+                          <span className="font-semibold">$2 per lead + unlimited free estimates</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Premium Tier:</span>
+                          <span className="font-semibold text-accent">FREE leads!</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t">
+                          <span>Old Leads (&gt;24h):</span>
+                          <span className="font-semibold">$1 per lead</span>
+                        </div>
                       </div>
                     </div>
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="mt-2 p-0 h-auto"
+                      onClick={() => navigate('/pricing-strategy')}
+                    >
+                      View Pricing Strategy Guide →
+                    </Button>
                   </div>
                   <Button onClick={() => navigate('/lead-limits')} variant="outline" className="w-full">
                     Set Lead Limits
@@ -193,7 +207,7 @@ export default function DiggerGuide() {
                       <DollarSign className="h-5 w-5 text-primary mt-0.5" />
                       <div>
                         <div className="font-medium">Purchase Lead</div>
-                        <div className="text-sm text-muted-foreground">Pay to unlock client contact info and gig details</div>
+                        <div className="text-sm text-muted-foreground">Pay 1 hour of your rate (min $100) or fixed tier pricing to unlock client contact info and gig details</div>
                       </div>
                     </div>
                   </div>
