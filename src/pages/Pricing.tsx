@@ -72,7 +72,7 @@ const TIERS = {
       'FREE lead purchases',
       '0% commission on completed work',
       'No transaction fees',
-      'FREE unlimited estimate requests',
+      '$0 charge for Free Estimate requests',
       'Priority support',
       'Featured profile placement',
       'Advanced analytics',
