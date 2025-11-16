@@ -4,7 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, TrendingUp, Award, Check } from "lucide-react";
+import { Lightbulb, TrendingUp, Award, Check, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const TIERS = {
   free: {
@@ -122,7 +123,20 @@ export default function PlanRecommender() {
           <Lightbulb className="h-6 w-6 text-white" />
           <Badge className="bg-white text-orange-600">AI Powered</Badge>
         </div>
-        <CardTitle className="text-center text-2xl text-white">Plan Recommender</CardTitle>
+        <div className="flex items-center justify-center gap-2">
+          <CardTitle className="text-center text-2xl text-white">Plan Recommender</CardTitle>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-5 w-5 text-white cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold mb-2">How It Works:</p>
+                <p className="text-sm">The calculator compares total monthly costs across all three plans based on your inputs: monthly fee + (leads × cost) + (jobs × commission) + (estimates × cost) + (hourly clicks × cost). It then recommends the plan with the lowest total cost for your activity level.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <CardDescription className="text-center text-orange-50">
           Use this calculator to determine which plan is best for your business. Enter your expected monthly activity below to get a personalized recommendation.
         </CardDescription>
