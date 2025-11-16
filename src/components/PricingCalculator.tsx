@@ -74,7 +74,7 @@ export default function PricingCalculator() {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+    <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
       <CardHeader>
         <div className="flex items-center justify-center gap-2 mb-2">
           <Calculator className="h-6 w-6 text-primary" />
@@ -281,11 +281,12 @@ export default function PricingCalculator() {
         )}
 
         {/* Free Estimates Calculator */}
-        <div className="mt-8 pt-8 border-t border-border">
-          <div className="flex items-center justify-center gap-2 mb-4">
+        <div className="mt-8 pt-8 border-t border-border p-6 rounded-lg bg-gradient-to-br from-secondary/10 to-secondary/5 border border-secondary/30">
+          <div className="flex items-center justify-center gap-2 mb-2">
             <Calculator className="h-6 w-6 text-secondary" />
             <Badge className="bg-secondary">Free Estimates Calculator</Badge>
           </div>
+          <h3 className="text-center text-2xl font-semibold mb-2">Cost Calculator for Free Estimates</h3>
           <CardDescription className="text-center mb-6">
             Calculate costs for free estimate leads across different plans
           </CardDescription>
