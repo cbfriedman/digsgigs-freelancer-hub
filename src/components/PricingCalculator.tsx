@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator } from "lucide-react";
+import { Calculator, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const TIERS = {
   free: {
@@ -89,7 +90,19 @@ export default function PricingCalculator() {
         {/* Input Fields */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-white rounded-lg border">
           <div className="space-y-2">
-            <Label htmlFor="leads">Leads Purchased/Month</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="leads">Leads Purchased/Month</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">A lead is when a consumer clicks to view your contact information. Free: $8/lead, Pro: $5/lead, Premium: FREE</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Select 
               value={leads.toString()} 
               onValueChange={(v) => setLeads(Number(v))}
@@ -106,7 +119,19 @@ export default function PricingCalculator() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="conversionRate">Conversion Rate</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="conversionRate">Conversion Rate</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">The percentage of leads that convert into awarded jobs. Industry average is typically 10-15%.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Select 
               value={conversionRate.toString()} 
               onValueChange={(v) => setConversionRate(Number(v))}
@@ -131,7 +156,19 @@ export default function PricingCalculator() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">Your average hourly rate per job. Commission is calculated on total job revenue (hourly rate × hours). Free: 9% (min $5), Pro: 6% (min $5), Premium: 0%</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Select 
               value={hourlyRate.toString()} 
               onValueChange={(v) => setHourlyRate(Number(v))}
@@ -296,7 +333,19 @@ export default function PricingCalculator() {
           <div className="p-6 bg-white">
           <div className="grid md:grid-cols-3 gap-4 p-6 bg-white rounded-lg border">
             <div className="space-y-2">
-              <Label htmlFor="freeEstimateLeads">Leads Purchased</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="freeEstimateLeads">Leads Purchased</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">When you offer free estimates, consumers can request one directly. Free & Pro: $100/request, Premium: FREE</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Select 
                 value={freeEstimateLeads.toString()} 
                 onValueChange={(v) => setFreeEstimateLeads(Number(v))}
@@ -313,7 +362,19 @@ export default function PricingCalculator() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="freeEstimateConversion">Conversion Rate</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="freeEstimateConversion">Conversion Rate</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">The percentage of free estimate requests that convert into awarded jobs. Typically higher than standard leads since consumers are more committed.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Select 
                 value={freeEstimateConversion.toString()} 
                 onValueChange={(v) => setFreeEstimateConversion(Number(v))}
