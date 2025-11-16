@@ -362,11 +362,15 @@ const BrowseGigs = () => {
                       </div>
                     </div>
                     <div className="lg:text-right space-y-2">
-                      {showSpecialPrice && (
+                      {diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min ? (
+                        <Badge variant="default" className="mb-2 bg-primary text-primary-foreground">
+                          Lead Cost: ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min} (1 hour)
+                        </Badge>
+                      ) : showSpecialPrice ? (
                         <Badge variant="default" className="mb-2 bg-accent text-accent-foreground">
                           Old Lead - $1
                         </Badge>
-                      )}
+                      ) : null}
                       <Badge variant="secondary" className="mb-2">
                         <Users className="h-3 w-3 mr-1" />
                         {gig.purchase_count} {gig.purchase_count === 1 ? 'digger' : 'diggers'} interested

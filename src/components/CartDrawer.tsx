@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface CartDrawerProps {
@@ -24,7 +24,42 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
   const { cartItems, removeFromCart, clearCart, totalPrice, cartCount } = useCart();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [diggerProfile, setDiggerProfile] = useState<any>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadDiggerProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('digger_profiles')
+        .select('hourly_rate, hourly_rate_min')
+        .eq('user_id', user.id)
+        .single();
+
+      setDiggerProfile(data);
+    };
+
+    if (open) {
+      loadDiggerProfile();
+    }
+  }, [open]);
+
+  const getLeadPrice = () => {
+    if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
+      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      return hourlyRate * cartItems.length;
+    }
+    return totalPrice;
+  };
+
+  const getIndividualLeadPrice = (gig: any) => {
+    if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
+      return diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+    }
+    return calculateLeadPrice(gig.budget_min);
+  };
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
@@ -99,7 +134,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
           ) : (
             <>
               {cartItems.map((gig) => {
-                const leadPrice = calculateLeadPrice(gig.budget_min);
+                const leadPrice = getIndividualLeadPrice(gig);
                 return (
                   <Card key={gig.id} className="p-4">
                     <div className="flex justify-between items-start gap-3">
@@ -111,6 +146,11 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                             Budget: ${gig.budget_min.toLocaleString()}
                             {gig.budget_max ? ` - $${gig.budget_max.toLocaleString()}` : "+"}
                           </p>
+                        )}
+                        {(diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) && (
+                          <Badge variant="outline" className="mt-2 text-xs">
+                            1 hour @ ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr
+                          </Badge>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-2">
@@ -139,7 +179,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">Total:</span>
                 <span className="text-2xl font-bold text-primary">
-                  ${totalPrice.toFixed(2)}
+                  ${getLeadPrice().toFixed(2)}
                 </span>
               </div>
               
