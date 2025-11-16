@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Check, ArrowLeft, Loader2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
@@ -100,6 +101,9 @@ export default function Pricing() {
   const [currentTier, setCurrentTier] = useState<string>('free');
   const [user, setUser] = useState<any>(null);
   const [isDigger, setIsDigger] = useState(false);
+  const [interactiveLeads, setInteractiveLeads] = useState(15);
+  const [interactiveJobs, setInteractiveJobs] = useState(2);
+  const [interactiveJobValue, setInteractiveJobValue] = useState(1000);
 
   useEffect(() => {
     checkAuth();
@@ -373,30 +377,252 @@ export default function Pricing() {
           <div className="mt-16 max-w-6xl mx-auto">
             <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
               <CardHeader>
-                <CardTitle className="text-center text-2xl">Complete Cost Breakdown by Usage Level</CardTitle>
+                <CardTitle className="text-center text-2xl">Commissions Only - Interactive Calculator</CardTitle>
                 <CardDescription className="text-center">
-                  Compare total monthly costs across different business activity levels
+                  Adjust your leads and jobs to see real-time cost comparisons
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                {[
-                  { 
-                    label: 'Light Usage - Commission Based', 
-                    leads: 15, 
-                    jobs: 2, 
-                    jobValue: 1000, 
-                    estimates: 10,
-                    description: 'Active professional'
-                  },
-                  { 
-                    label: 'High Volume', 
-                    leads: 30, 
-                    jobs: 4, 
-                    jobValue: 2000, 
-                    estimates: 20,
-                    description: 'Busy contractor'
-                  },
-                ].map((scenario, idx) => (
+                {/* Interactive Controls */}
+                <div className="grid md:grid-cols-2 gap-6 p-6 bg-background rounded-lg border-2 border-primary/20">
+                  <div className="space-y-2">
+                    <Label htmlFor="leads-select" className="text-base font-semibold">
+                      Leads Purchased per Month
+                    </Label>
+                    <select
+                      id="leads-select"
+                      className="w-full px-4 py-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer"
+                      value={interactiveLeads}
+                      onChange={(e) => setInteractiveLeads(Number(e.target.value))}
+                    >
+                      {[5, 10, 15, 20, 25, 30, 40, 50, 75, 100].map(num => (
+                        <option key={num} value={num}>{num} leads</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="jobs-select" className="text-base font-semibold">
+                      Jobs Completed per Month
+                    </Label>
+                    <select
+                      id="jobs-select"
+                      className="w-full px-4 py-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer"
+                      value={interactiveJobs}
+                      onChange={(e) => setInteractiveJobs(Number(e.target.value))}
+                    >
+                      {[1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20].map(num => (
+                        <option key={num} value={num}>{num} jobs</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="jobvalue-select" className="text-base font-semibold">
+                      Average Job Value
+                    </Label>
+                    <select
+                      id="jobvalue-select"
+                      className="w-full px-4 py-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer"
+                      value={interactiveJobValue}
+                      onChange={(e) => setInteractiveJobValue(Number(e.target.value))}
+                    >
+                      {[500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000].map(num => (
+                        <option key={num} value={num}>${num.toLocaleString()}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <div className="w-full p-4 bg-primary/10 rounded-lg border border-primary/20">
+                      <p className="text-sm text-muted-foreground">Total Monthly Revenue</p>
+                      <p className="text-2xl font-bold text-primary">
+                        ${(interactiveJobs * interactiveJobValue).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cost Breakdown Table */}
+                <div className="space-y-4">
+                  <div className="text-sm text-muted-foreground text-center">
+                    {interactiveLeads} leads • {interactiveJobs} jobs (${interactiveJobValue.toLocaleString()} each)
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-border">
+                          <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
+                          {Object.entries(TIERS).map(([key, tier]) => (
+                            <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Monthly Subscription */}
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Monthly Subscription</td>
+                          {Object.entries(TIERS).map(([key, tier]) => (
+                            <td key={key} className="text-right py-3 px-4">
+                              ${tier.priceValue.toFixed(2)}
+                            </td>
+                          ))}
+                        </tr>
+                        
+                        {/* Lead Purchases */}
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">
+                            Lead Purchases ({interactiveLeads} × rate)
+                          </td>
+                          {Object.entries(TIERS).map(([key, tier]) => {
+                            const leadCost = tier.leadCostValue * interactiveLeads;
+                            return (
+                              <td key={key} className="text-right py-3 px-4">
+                                ${leadCost.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        
+                        {/* Commission on Jobs */}
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">
+                            Commission ({interactiveJobs} jobs at ${interactiveJobValue.toLocaleString()} each)
+                          </td>
+                          {Object.entries(TIERS).map(([key, tier]) => {
+                            const totalJobValue = interactiveJobValue * interactiveJobs;
+                            const commission = Math.max(
+                              (totalJobValue * tier.commissionValue) / 100, 
+                              tier.minimumFee * interactiveJobs
+                            );
+                            return (
+                              <td key={key} className="text-right py-3 px-4">
+                                ${commission.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        
+                        {/* Total Monthly Costs */}
+                        <tr className="border-t-2 border-border bg-muted/30">
+                          <td className="py-4 px-4 font-bold">Total Monthly Costs</td>
+                          {Object.entries(TIERS).map(([key, tier]) => {
+                            const leadCost = tier.leadCostValue * interactiveLeads;
+                            const totalJobValue = interactiveJobValue * interactiveJobs;
+                            const commission = Math.max(
+                              (totalJobValue * tier.commissionValue) / 100, 
+                              tier.minimumFee * interactiveJobs
+                            );
+                            const totalCosts = tier.priceValue + leadCost + commission;
+                            return (
+                              <td key={key} className="text-right py-4 px-4 font-bold text-lg">
+                                ${totalCosts.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+
+                        {/* Total Job Revenue */}
+                        <tr className="border-b border-border/50 bg-green-50 dark:bg-green-950/20">
+                          <td className="py-4 px-4 font-semibold text-green-700 dark:text-green-300">
+                            Total Job Revenue ({interactiveJobs} jobs)
+                          </td>
+                          {Object.entries(TIERS).map(([key]) => {
+                            const revenue = interactiveJobValue * interactiveJobs;
+                            return (
+                              <td key={key} className="text-right py-4 px-4 font-semibold text-green-700 dark:text-green-300">
+                                ${revenue.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+
+                        {/* Net Earnings */}
+                        <tr className="border-t-2 border-border bg-primary/5">
+                          <td className="py-4 px-4 font-bold text-primary">Net Earnings (Revenue - Costs)</td>
+                          {Object.entries(TIERS).map(([key, tier]) => {
+                            const leadCost = tier.leadCostValue * interactiveLeads;
+                            const totalJobValue = interactiveJobValue * interactiveJobs;
+                            const commission = Math.max(
+                              (totalJobValue * tier.commissionValue) / 100, 
+                              tier.minimumFee * interactiveJobs
+                            );
+                            const totalCosts = tier.priceValue + leadCost + commission;
+                            const revenue = interactiveJobValue * interactiveJobs;
+                            const netEarnings = revenue - totalCosts;
+                            return (
+                              <td key={key} className="text-right py-4 px-4 font-bold text-lg text-green-600">
+                                ${netEarnings.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Savings Comparison */}
+                  <div className="grid md:grid-cols-2 gap-4 mt-6">
+                    {Object.entries(TIERS).slice(1).map(([key, tier]) => {
+                      const freeTier = TIERS.free;
+                      
+                      const calculateTotal = (t: typeof tier) => {
+                        const leadCost = t.leadCostValue * interactiveLeads;
+                        const totalJobValue = interactiveJobValue * interactiveJobs;
+                        const commission = Math.max(
+                          (totalJobValue * t.commissionValue) / 100, 
+                          t.minimumFee * interactiveJobs
+                        );
+                        return t.priceValue + leadCost + commission;
+                      };
+                      
+                      const freeCost = calculateTotal(freeTier);
+                      const tierCost = calculateTotal(tier);
+                      const monthlySavings = freeCost - tierCost;
+                      const annualSavings = monthlySavings * 12;
+
+                      return (
+                        <Card key={key} className="bg-gradient-to-br from-primary/5 to-accent/5">
+                          <CardContent className="pt-6">
+                            <div className="text-center space-y-2">
+                              <p className="text-sm font-semibold text-primary">{tier.name} vs Free</p>
+                              <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                  Monthly: <span className="font-semibold text-green-600">${monthlySavings.toFixed(2)}/mo</span>
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Annual: <span className="font-semibold text-green-600">${annualSavings.toFixed(2)}/year</span>
+                                </p>
+                              </div>
+                              <Badge variant={monthlySavings > 0 ? "default" : "secondary"} className="text-xs">
+                                {monthlySavings > 0 ? `Save ${((monthlySavings / freeCost) * 100).toFixed(0)}%` : 'No savings'}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Info Banner */}
+                <div className="mt-6 p-6 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">Understanding Commission-Based Costs:</h4>
+                  <div className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
+                    <ul className="space-y-2">
+                      <li>• <strong>Lead Purchases:</strong> Pay only when you actively purchase a lead</li>
+                      <li>• <strong>Commission:</strong> Charged only on completed, paid jobs</li>
+                      <li>• <strong>No Estimate or Hourly Click Charges:</strong> This table shows commission-based work only</li>
+                    </ul>
+                    <p className="text-sm text-blue-800 dark:text-blue-200 mt-3">
+                      <strong>Higher tiers = More savings</strong> as your business grows. Premium tier eliminates all per-transaction costs!
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
                   <div key={idx} className="space-y-4">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="flex-1 h-px bg-border"></div>
