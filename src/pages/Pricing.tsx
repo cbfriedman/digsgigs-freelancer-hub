@@ -30,6 +30,7 @@ const TIERS = {
       '$5 minimum fee per transaction',
       '$100 per free estimate request',
       '$100 per hourly rate click',
+      '1 hour rate fee if awarded (min $100)',
       'Basic profile features',
       'Standard support',
       'Access to all gig categories'
@@ -54,6 +55,7 @@ const TIERS = {
       '$5 minimum fee per transaction',
       '$100 per free estimate request',
       '$100 per hourly rate click',
+      '1 hour rate fee if awarded (min $100)',
       'Priority support',
       'Featured in search results',
       'Enhanced profile visibility',
@@ -78,7 +80,8 @@ const TIERS = {
       '0% commission on completed work',
       'No transaction fees',
       '$0 charge for Free Estimate requests',
-      '$100 per hourly rate click',
+      'FREE hourly rate clicks',
+      '1 hour rate fee if awarded (min $100)',
       'Priority support',
       'Featured profile placement',
       'Advanced analytics',
@@ -617,6 +620,7 @@ export default function Pricing() {
                         <li>• <strong>Commission:</strong> Charged only on completed, paid jobs</li>
                         <li>• <strong>Estimate Requests:</strong> Charged when consumers request your contact info</li>
                         <li>• <strong>Hourly Rate Clicks:</strong> Charged when consumers click to see your hourly rate</li>
+                        <li>• <strong>Award Fee:</strong> When awarded hourly work, pay 1 hour of your rate (min $100) - applies to all plans</li>
                       </ul>
                       <p className="text-sm text-blue-800 dark:text-blue-200 mt-3">
                         <strong>Higher tiers = More savings</strong> as your business grows. Premium tier eliminates all per-transaction costs!
@@ -724,7 +728,7 @@ export default function Pricing() {
                       <h4 className="font-semibold text-red-600">Free Tier</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Pay <strong>$100 per estimate request</strong>. Costs add up quickly!
+                      Pay <strong>$100 per estimate request and hourly click</strong> + 1 hour rate fee when awarded (min $100). Costs add up quickly!
                     </p>
                   </div>
                   
@@ -734,7 +738,7 @@ export default function Pricing() {
                       <h4 className="font-semibold text-yellow-700">Pro Tier</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      $100 per estimate request and $100 per hourly click, but offset by lower lead and commission costs.
+                      $100 per estimate/hourly click + award fee when hired, but offset by lower lead and commission costs.
                     </p>
                   </div>
 
@@ -744,7 +748,7 @@ export default function Pricing() {
                       <h4 className="font-semibold text-green-600">Premium Tier</h4>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      <strong className="text-green-600">FREE estimate requests!</strong> Still $100 per hourly click, but zero commissions and free leads.
+                      <strong className="text-green-600">FREE estimate requests and hourly clicks!</strong> Award fee applies when hired. Plus zero commissions and free leads.
                     </p>
                   </div>
                 </div>
@@ -776,7 +780,7 @@ export default function Pricing() {
           <div className="mt-16 max-w-4xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle className="text-center text-2xl">How Free Estimate Requests & Hourly Rate Clicks Work</CardTitle>
+                <CardTitle className="text-center text-2xl">How Free Estimate Requests & Hourly Rate Charges Work</CardTitle>
                 <CardDescription className="text-center">
                   Understanding the cost of connecting with potential clients
                 </CardDescription>
@@ -784,11 +788,12 @@ export default function Pricing() {
               <CardContent className="space-y-6">
                 <div className="prose prose-sm max-w-none">
                   <p className="text-muted-foreground">
-                    When consumers interact with your profile, they show serious interest in hiring you. However, there is a cost for certain actions:
+                    When consumers interact with your profile, they show serious interest in hiring you. Here's how charges work:
                   </p>
-                  <ul className="list-disc list-inside text-muted-foreground mt-2 space-y-1">
+                  <ul className="list-disc list-inside text-muted-foreground mt-2 space-y-2">
                     <li><strong>Free Estimate Requests:</strong> When a consumer requests a free estimate, you receive their full contact information</li>
-                    <li><strong>Hourly Rate Clicks:</strong> When a consumer clicks to view your hourly rate details, they can contact you directly</li>
+                    <li><strong>Hourly Rate Clicks:</strong> When a consumer clicks to view your hourly rate, you pay per click</li>
+                    <li><strong>Hourly Rate Award Fee:</strong> If awarded work based on your hourly rate, you pay 1 hour worth of your hourly rate (minimum $100). This applies to all plans.</li>
                   </ul>
                 </div>
 
@@ -800,15 +805,15 @@ export default function Pricing() {
                     <ul className="text-sm space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>Pay per estimate request</span>
+                        <span>$100 per estimate request</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>Pay per hourly rate click</span>
+                        <span>$100 per hourly rate click</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>Get full contact info immediately</span>
+                        <span>+ 1 hour rate if awarded (min $100)</span>
                       </li>
                     </ul>
                   </div>
@@ -820,15 +825,19 @@ export default function Pricing() {
                     <ul className="text-sm space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>Same $100 per click</span>
+                        <span>$100 per estimate request</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>But save on leads ($1.50 vs $3)</span>
+                        <span>$100 per hourly rate click</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>Lower commission (4% vs 9%)</span>
+                        <span>+ 1 hour rate if awarded (min $100)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span>But save on leads & commission</span>
                       </li>
                     </ul>
                   </div>
@@ -838,8 +847,8 @@ export default function Pricing() {
                       <Badge className="bg-green-600">Best Value</Badge>
                     </div>
                     <h3 className="text-lg font-semibold mb-3 text-green-700">Premium Tier</h3>
-                    <div className="text-3xl font-bold text-green-600 mb-2">$100</div>
-                    <p className="text-sm text-muted-foreground mb-4">per hourly click</p>
+                    <div className="text-3xl font-bold text-green-600 mb-2">FREE</div>
+                    <p className="text-sm text-muted-foreground mb-4">hourly rate clicks!</p>
                     <ul className="text-sm space-y-2 text-muted-foreground">
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
@@ -847,15 +856,15 @@ export default function Pricing() {
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
-                        <span>$100 per hourly rate click</span>
+                        <span><strong>FREE</strong> hourly rate clicks</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <span>+ 1 hour rate if awarded (min $100)</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
-                        <span>FREE lead purchases</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
-                        <span>Zero commission on work</span>
+                        <span>FREE leads + zero commission</span>
                       </li>
                     </ul>
                   </div>
@@ -865,11 +874,25 @@ export default function Pricing() {
                   <div className="flex gap-3">
                     <div className="text-2xl">💡</div>
                     <div>
-                      <h4 className="font-semibold text-blue-900 mb-2">Why is there a cost?</h4>
-                      <p className="text-sm text-blue-800">
-                        Free estimate requests and hourly rate clicks connect you directly with serious buyers who specifically chose you. 
-                        The fee ensures quality leads and filters out casual browsers. Premium members still pay for hourly rate clicks 
-                        but benefit from free estimates, zero commission, and free leads.
+                      <h4 className="font-semibold text-blue-900 mb-2">Why these charges?</h4>
+                      <p className="text-sm text-blue-800 space-y-2">
+                        <span className="block">• <strong>Click fees</strong> connect you with serious buyers and filter casual browsers</span>
+                        <span className="block">• <strong>Award fees</strong> (1 hour minimum) ensure fair compensation for platform value when work is secured</span>
+                        <span className="block">• Premium members get FREE clicks but still pay award fees when winning hourly work</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex gap-3">
+                    <div className="text-2xl">📊</div>
+                    <div>
+                      <h4 className="font-semibold text-amber-900 mb-2">Award Fee Example</h4>
+                      <p className="text-sm text-amber-800">
+                        If your hourly rate is <strong>$75/hour</strong>, you'll pay <strong>$100</strong> when awarded (the minimum).<br/>
+                        If your rate is <strong>$150/hour</strong>, you'll pay <strong>$150</strong> when awarded (1 hour of your rate).<br/>
+                        This fee applies to <strong>all plans</strong> when you win work based on your hourly rate.
                       </p>
                     </div>
                   </div>
