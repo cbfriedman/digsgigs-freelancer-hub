@@ -1,10 +1,11 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
-import { X, ShoppingCart, Trash2 } from "lucide-react";
+import { X, ShoppingCart, Trash2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -150,9 +151,22 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                           </p>
                         )}
                         {(diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) && (
-                          <Badge variant="outline" className="mt-2 text-xs">
-                            1 hour @ ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr (min $100)
-                          </Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="mt-2 text-xs cursor-help inline-flex items-center gap-1">
+                                  1 hour @ ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr (min $100)
+                                  <Info className="h-3 w-3" />
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="font-semibold mb-1">Why $100 minimum?</p>
+                                <p className="text-sm">
+                                  This prevents artificially low rates. Diggers compete on real value - lower rates mean lower lead costs, creating fair market competition.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-2">
