@@ -39,7 +39,7 @@ const TIERS = {
 
 export default function PricingCalculator() {
   const [leads, setLeads] = useState(15);
-  const [jobValue, setJobValue] = useState(1000);
+  const [hourlyRate, setHourlyRate] = useState(100);
   const [estimates, setEstimates] = useState(10);
   const [hourlyClicks, setHourlyClicks] = useState(5);
   const [conversionRate, setConversionRate] = useState(10);
@@ -50,7 +50,7 @@ export default function PricingCalculator() {
   const calculateCosts = (tier: typeof TIERS.free) => {
     const monthlyFee = tier.priceValue;
     const leadCost = tier.leadCostValue * leads;
-    const totalJobValue = jobValue * jobs;
+    const totalJobValue = hourlyRate * jobs;
     const commission = Math.max((totalJobValue * tier.commissionValue) / 100, tier.minimumFee * jobs);
     const estimateCost = tier.estimateCost * estimates;
     const hourlyClickCost = tier.hourlyRateClickCost * hourlyClicks;
@@ -122,16 +122,20 @@ export default function PricingCalculator() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="jobValue">Average Job Value ($)</Label>
-            <Input
-              id="jobValue"
-              type="number"
-              min="0"
-              step="100"
-              value={jobValue}
-              onChange={(e) => setJobValue(Number(e.target.value))}
-              className="text-lg"
-            />
+            <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
+            <Select 
+              value={hourlyRate.toString()} 
+              onValueChange={(v) => setHourlyRate(Number(v))}
+            >
+              <SelectTrigger className="text-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50 max-h-[300px]">
+                {Array.from({ length: 100 }, (_, i) => (i + 1) * 10).map(num => (
+                  <SelectItem key={num} value={num.toString()}>${num}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
