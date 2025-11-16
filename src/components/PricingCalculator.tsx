@@ -39,12 +39,13 @@ const TIERS = {
 
 export default function PricingCalculator() {
   const [leads, setLeads] = useState(15);
-  const [jobs, setJobs] = useState(2);
   const [jobValue, setJobValue] = useState(1000);
   const [estimates, setEstimates] = useState(10);
   const [hourlyClicks, setHourlyClicks] = useState(5);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
+  
+  const jobs = Math.floor(leads * (conversionRate / 100));
 
   const calculateCosts = (tier: typeof TIERS.free) => {
     const monthlyFee = tier.priceValue;
@@ -97,15 +98,27 @@ export default function PricingCalculator() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="jobs">Jobs Completed/Month</Label>
-            <Input
-              id="jobs"
-              type="number"
-              min="0"
-              value={jobs}
-              onChange={(e) => setJobs(Number(e.target.value))}
-              className="text-lg"
-            />
+            <Label htmlFor="conversionRate">Conversion Rate</Label>
+            <Select 
+              value={conversionRate.toString()} 
+              onValueChange={(v) => setConversionRate(Number(v))}
+            >
+              <SelectTrigger className="text-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(num => (
+                  <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="jobs">Jobs Completed/Month (Auto-calculated)</Label>
+            <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
+              {jobs}
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -143,23 +156,6 @@ export default function PricingCalculator() {
               onChange={(e) => setHourlyClicks(Number(e.target.value))}
               className="text-lg"
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="conversionRate">Conversion Rate</Label>
-            <Select 
-              value={conversionRate.toString()} 
-              onValueChange={(v) => setConversionRate(Number(v))}
-            >
-              <SelectTrigger className="text-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                {[2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(num => (
-                  <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
