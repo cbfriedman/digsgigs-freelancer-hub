@@ -422,10 +422,6 @@ const BrowseGigs = () => {
                             <span>{gig.categories.name}</span>
                           </div>
                         )}
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <DollarSign className="h-4 w-4" />
-                          <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
-                        </div>
                         {gig.deadline && (
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Calendar className="h-4 w-4" />

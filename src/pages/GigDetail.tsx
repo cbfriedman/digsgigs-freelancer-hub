@@ -274,16 +274,6 @@ const GigDetail = () => {
                 <Separator />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="w-5 h-5 text-primary mt-0.5" />
-                    <div>
-                      <div className="font-semibold">Budget</div>
-                      <div className="text-muted-foreground">
-                        {formatBudget(gig.budget_min, gig.budget_max)}
-                      </div>
-                    </div>
-                  </div>
-
                   {gig.deadline && (
                     <div className="flex items-start gap-3">
                       <Calendar className="w-5 h-5 text-primary mt-0.5" />

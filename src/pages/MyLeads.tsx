@@ -257,10 +257,6 @@ const MyLeads = () => {
                         </p>
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span>{formatBudget(lead.gigs.budget_min, lead.gigs.budget_max)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
                             <span>{lead.gigs.location}</span>
                           </div>
