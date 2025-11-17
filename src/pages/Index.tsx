@@ -418,6 +418,7 @@ const Index = () => {
                 src={heroImage} 
                 alt="Freelancers collaborating" 
                 className="relative rounded-2xl shadow-2xl w-full"
+                loading="lazy"
               />
             </div>
           </div>

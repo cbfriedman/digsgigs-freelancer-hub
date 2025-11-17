@@ -202,6 +202,7 @@ export default function Blog() {
                         src={post.featured_image}
                         alt={post.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
                       />
                       {post.category && (
                         <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground">
