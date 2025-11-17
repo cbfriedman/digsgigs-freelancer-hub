@@ -12,9 +12,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MapPin, Info, Briefcase, X, Star } from "lucide-react";
+import { MapPin, Info, Briefcase, X, Star, GripVertical } from "lucide-react";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 import { geocodeAddress } from "@/utils/geocoding";
+import { 
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface IndustryCode {
   id: string;
@@ -31,6 +48,104 @@ interface Reference {
   description: string;
 }
 
+// Sortable Profession Card Component
+interface SortableProfessionCardProps {
+  code: IndustryCode;
+  index: number;
+  isPrimary: boolean;
+  customTitle: string;
+  onTogglePrimary: (index: number) => void;
+  onRemove: (index: number) => void;
+}
+
+const SortableProfessionCard = ({ 
+  code, 
+  index, 
+  isPrimary, 
+  customTitle,
+  onTogglePrimary, 
+  onRemove 
+}: SortableProfessionCardProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: code.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-start gap-3 p-3 bg-background rounded-lg border border-border group hover:border-primary/30 transition-all ${
+        isDragging ? 'shadow-lg z-50' : ''
+      }`}
+    >
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
+        type="button"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={`h-8 w-8 p-0 flex-shrink-0 ${
+          isPrimary 
+            ? 'text-yellow-500 hover:text-yellow-600' 
+            : 'text-muted-foreground hover:text-yellow-500'
+        }`}
+        onClick={() => onTogglePrimary(index)}
+        type="button"
+        title={isPrimary ? "Primary profession" : "Set as primary"}
+      >
+        <Star className={`h-4 w-4 ${isPrimary ? 'fill-yellow-500' : ''}`} />
+      </Button>
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="font-semibold text-foreground">
+            {customTitle || code.title}
+          </span>
+          {isPrimary && (
+            <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+              Primary
+            </Badge>
+          )}
+          <Badge variant="secondary" className="text-xs">
+            {code.code_type}: {code.code}
+          </Badge>
+        </div>
+        {code.description && (
+          <p className="text-sm text-muted-foreground">
+            {code.description}
+          </p>
+        )}
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+        onClick={() => onRemove(index)}
+        type="button"
+      >
+        <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+      </Button>
+    </div>
+  );
+};
+
 const DiggerRegistration = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -43,6 +158,14 @@ const DiggerRegistration = () => {
   const [primaryProfessionIndex, setPrimaryProfessionIndex] = useState<number>(0);
   const [lastRemovedProfession, setLastRemovedProfession] = useState<{ code: IndustryCode; title: string; index: number } | null>(null);
   const [undoTimeoutId, setUndoTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   
   const [formData, setFormData] = useState({
     handle: "",
@@ -158,6 +281,38 @@ const DiggerRegistration = () => {
     toast.success("Primary profession updated", {
       description: `${professionName} is now your primary profession.`,
     });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = selectedIndustryCodes.findIndex(code => code.id === active.id);
+    const newIndex = selectedIndustryCodes.findIndex(code => code.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newCodes = arrayMove(selectedIndustryCodes, oldIndex, newIndex);
+      const newTitles = arrayMove(customOccupationTitles, oldIndex, newIndex);
+      
+      setSelectedIndustryCodes(newCodes);
+      setCustomOccupationTitles(newTitles);
+
+      // Update primary profession index if it was affected
+      if (primaryProfessionIndex === oldIndex) {
+        setPrimaryProfessionIndex(newIndex);
+      } else if (oldIndex < primaryProfessionIndex && newIndex >= primaryProfessionIndex) {
+        setPrimaryProfessionIndex(primaryProfessionIndex - 1);
+      } else if (oldIndex > primaryProfessionIndex && newIndex <= primaryProfessionIndex) {
+        setPrimaryProfessionIndex(primaryProfessionIndex + 1);
+      }
+
+      toast.success("Profession order updated", {
+        description: "Drag and drop to continue reordering your professions.",
+      });
+    }
   };
 
   const handleUndoRemove = () => {
@@ -389,7 +544,7 @@ const DiggerRegistration = () => {
 
                 {/* Selected Professions Summary */}
                 {(selectedIndustryCodes.length > 0 || customOccupationTitles.length > 0) && (
-                  <Card className="border-primary/20 bg-primary/5">
+                  <Card className="border-primary/20 bg-primary/5 animate-fade-in">
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Briefcase className="h-5 w-5 text-primary" />
@@ -397,63 +552,35 @@ const DiggerRegistration = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        {selectedIndustryCodes.map((code, index) => (
-                          <div 
-                            key={code.id} 
-                            className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border group hover:border-primary/30 transition-colors"
-                          >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`h-8 w-8 p-0 flex-shrink-0 ${
-                                primaryProfessionIndex === index 
-                                  ? 'text-yellow-500 hover:text-yellow-600' 
-                                  : 'text-muted-foreground hover:text-yellow-500'
-                              }`}
-                              onClick={() => togglePrimaryProfession(index)}
-                              type="button"
-                              title={primaryProfessionIndex === index ? "Primary profession" : "Set as primary"}
-                            >
-                              <Star className={`h-4 w-4 ${primaryProfessionIndex === index ? 'fill-yellow-500' : ''}`} />
-                            </Button>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="font-semibold text-foreground">
-                                  {customOccupationTitles[index] || code.title}
-                                </span>
-                                {primaryProfessionIndex === index && (
-                                  <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
-                                    Primary
-                                  </Badge>
-                                )}
-                                <Badge variant="secondary" className="text-xs">
-                                  {code.code_type}: {code.code}
-                                </Badge>
-                              </div>
-                              {code.description && (
-                                <p className="text-sm text-muted-foreground">
-                                  {code.description}
-                                </p>
-                              )}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                              onClick={() => setProfessionToRemove(index)}
-                              type="button"
-                            >
-                              <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                            </Button>
+                      <DndContext 
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext 
+                          items={selectedIndustryCodes.map(code => code.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="space-y-3">
+                            {selectedIndustryCodes.map((code, index) => (
+                              <SortableProfessionCard
+                                key={code.id}
+                                code={code}
+                                index={index}
+                                isPrimary={primaryProfessionIndex === index}
+                                customTitle={customOccupationTitles[index]}
+                                onTogglePrimary={togglePrimaryProfession}
+                                onRemove={setProfessionToRemove}
+                              />
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </SortableContext>
+                      </DndContext>
                       <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
                         <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                         <p>
-                          These professions will be used to match you with relevant gigs. 
-                          Click the <Star className="h-3 w-3 inline mx-1" /> to mark your primary specialty, which will appear first on your profile.
+                          Drag <GripVertical className="h-3 w-3 inline mx-1" /> to reorder professions. 
+                          Click <Star className="h-3 w-3 inline mx-1" /> to mark your primary specialty.
                         </p>
                       </div>
                     </CardContent>
