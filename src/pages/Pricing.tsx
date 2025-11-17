@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Loader2, Star } from "lucide-react";
+import { Check, Loader2, Star, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
 import PricingCalculator from "@/components/PricingCalculator";
@@ -14,6 +14,7 @@ import PlanRecommender from "@/components/PlanRecommender";
 import PricingCharts from "@/components/PricingCharts";
 import BreakevenCalculator from "@/components/BreakevenCalculator";
 import { Navigation } from "@/components/Navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TIERS = {
   free: {
@@ -98,51 +99,24 @@ const TIERS = {
 export default function Pricing() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
+  const { user, isDigger, subscriptionStatus, loading: authLoading, checkSubscription } = useAuth();
   const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [currentTier, setCurrentTier] = useState<string>('free');
-  const [user, setUser] = useState<any>(null);
-  const [isDigger, setIsDigger] = useState(false);
   const [interactiveLeads, setInteractiveLeads] = useState(15);
   const [interactiveJobValue, setInteractiveJobValue] = useState(1000);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const currentTier = subscriptionStatus?.subscription_tier || 'free';
 
-  const checkAuth = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', user.id)
-          .single();
-
-        if (profile?.user_type === 'digger') {
-          setIsDigger(true);
-          
-          const { data: diggerProfile } = await supabase
-            .from('digger_profiles')
-            .select('subscription_tier')
-            .eq('user_id', user.id)
-            .single();
-
-          if (diggerProfile?.subscription_tier) {
-            setCurrentTier(diggerProfile.subscription_tier);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error checking auth:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleRefreshSubscription = async () => {
+    setRefreshing(true);
+    await checkSubscription();
+    setRefreshing(false);
+    toast({
+      title: "Subscription Updated",
+      description: "Your subscription status has been refreshed.",
+    });
   };
 
   const handleSubscribe = async (tier: string, priceId: string | null) => {
@@ -222,7 +196,7 @@ export default function Pricing() {
     });
   };
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -251,6 +225,25 @@ export default function Pricing() {
             <p className="text-sm text-muted-foreground mt-2">
               💰 <strong>Pro members save thousands per year</strong> on estimate requests - see the savings table below
             </p>
+            
+            {/* Subscription Status and Refresh */}
+            {isDigger && subscriptionStatus && (
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <Badge variant={subscriptionStatus.subscription_status === 'active' ? 'default' : 'secondary'}>
+                  Current: {subscriptionStatus.subscription_tier.charAt(0).toUpperCase() + subscriptionStatus.subscription_tier.slice(1)} Plan
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshSubscription}
+                  disabled={refreshing}
+                  className="gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  Refresh Status
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </section>
