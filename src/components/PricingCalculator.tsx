@@ -70,10 +70,10 @@ export default function PricingCalculator() {
     const costPerAward = costPerAwardIndividual * jobs;
     
     // No commission on hourly bids
-    const totalCost = upfrontLeadCost + costPerAward;
+    const totalCost = monthlyFee + upfrontLeadCost + costPerAward;
     const totalJobValue = hourlyRate * hoursPerJob * jobs;
     const revenue = totalJobValue;
-    const netEarnings = revenue - totalCost - monthlyFee;
+    const netEarnings = revenue - totalCost;
 
     return {
       monthlyFee,
