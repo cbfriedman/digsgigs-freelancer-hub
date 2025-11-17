@@ -38,7 +38,7 @@ serve(async (req) => {
     // Get digger details and verify they offer free estimates
     const { data: diggerProfile, error: diggerError } = await supabaseClient
       .from("digger_profiles")
-      .select("id, user_id, handle, offers_free_estimates")
+      .select("id, user_id, handle, offers_free_estimates, subscription_tier")
       .eq("id", diggerId)
       .single();
 
@@ -49,6 +49,17 @@ serve(async (req) => {
     if (!diggerProfile.offers_free_estimates) {
       throw new Error("This digger does not offer free estimates");
     }
+
+    // Determine price based on subscription tier
+    const tierPricing = {
+      free: 15000, // $150 in cents
+      pro: 10000,  // $100 in cents
+      premium: 5000 // $50 in cents
+    };
+    
+    const subscriptionTier = diggerProfile.subscription_tier || 'free';
+    const priceInCents = tierPricing[subscriptionTier as keyof typeof tierPricing] || tierPricing.free;
+    const priceInDollars = priceInCents / 100;
 
     // Get digger user email for Stripe customer
     const { data: diggerUser, error: diggerUserError } = await supabaseClient.auth.admin.getUserById(
@@ -99,7 +110,7 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    // Create Stripe checkout session for $100 free estimate lead
+    // Create Stripe checkout session with tier-based pricing
     // This will be sent to the digger to pay
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -108,10 +119,10 @@ serve(async (req) => {
         {
           price_data: {
             currency: "usd",
-            unit_amount: 10000, // $100.00 in cents
+            unit_amount: priceInCents,
             product_data: {
               name: "Free Estimate Lead",
-              description: `Lead for gig: ${gig.title}`,
+              description: `Lead for gig: ${gig.title} (${subscriptionTier.charAt(0).toUpperCase() + subscriptionTier.slice(1)} tier)`,
             },
           },
           quantity: 1,
@@ -121,9 +132,10 @@ serve(async (req) => {
       metadata: {
         gigId: gigId,
         diggerId: diggerId,
-        amount: "100",
+        amount: priceInDollars.toString(),
         type: "free_estimate",
         consumer_id: user.id,
+        subscription_tier: subscriptionTier,
       },
       success_url: `${req.headers.get("origin")}/gig/${gigId}?estimate=sent`,
       cancel_url: `${req.headers.get("origin")}/gig/${gigId}?estimate=cancelled`,
@@ -132,8 +144,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         checkoutUrl: session.url,
-        amount: 100,
-        diggerEmail: diggerUser.user.email
+        amount: priceInDollars,
+        diggerEmail: diggerUser.user.email,
+        subscriptionTier: subscriptionTier
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
