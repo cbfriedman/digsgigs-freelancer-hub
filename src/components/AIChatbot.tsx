@@ -28,6 +28,10 @@ export default function AIChatbot() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isIconHidden, setIsIconHidden] = useState(false);
+  const [iconPosition, setIconPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -241,16 +245,87 @@ export default function AIChatbot() {
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button[data-close]')) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - iconPosition.x,
+      y: e.clientY - iconPosition.y,
+    });
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return;
+    setIconPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragStart]);
+
   return (
     <>
       {/* Floating Button */}
-      {!isOpen && (
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
-          size="icon"
+      {!isOpen && !isIconHidden && (
+        <div
+          onMouseDown={handleMouseDown}
+          style={{
+            position: 'fixed',
+            bottom: iconPosition.y !== 0 ? 'auto' : '24px',
+            right: iconPosition.x !== 0 ? 'auto' : '24px',
+            left: iconPosition.x !== 0 ? `${iconPosition.x}px` : 'auto',
+            top: iconPosition.y !== 0 ? `${iconPosition.y}px` : 'auto',
+            cursor: isDragging ? 'grabbing' : 'grab',
+            zIndex: 50,
+          }}
+          className="group"
         >
-          <MessageSquare className="h-6 w-6" />
+          <Button
+            onClick={() => !isDragging && setIsOpen(true)}
+            className="relative h-20 px-6 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <MessageSquare className="h-6 w-6 mr-2" />
+            <span className="font-medium">Chat with us</span>
+          </Button>
+          <Button
+            data-close
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsIconHidden(true);
+            }}
+            variant="ghost"
+            size="icon"
+            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* Show hidden icon button */}
+      {isIconHidden && !isOpen && (
+        <Button
+          onClick={() => setIsIconHidden(false)}
+          variant="outline"
+          size="sm"
+          className="fixed bottom-6 right-6 shadow-lg z-50"
+        >
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Show Chat
         </Button>
       )}
 
