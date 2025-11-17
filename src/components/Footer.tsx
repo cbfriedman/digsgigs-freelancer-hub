@@ -46,6 +46,11 @@ export const Footer = () => {
             <h4 className="font-semibold mb-3">Support</h4>
             <ul className="space-y-2 text-sm">
               <li>
+                <button onClick={() => navigate("/faq")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  FAQ
+                </button>
+              </li>
+              <li>
                 <button onClick={() => navigate("/contact")} className="text-muted-foreground hover:text-foreground transition-colors">
                   Contact Us
                 </button>
