@@ -51,6 +51,7 @@ const AdminDashboard = () => {
   const [triggeringJob, setTriggeringJob] = useState(false);
   const [keywordRequests, setKeywordRequests] = useState<KeywordRequest[]>([]);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -212,6 +213,31 @@ const AdminDashboard = () => {
       toast.error("Failed to update request");
     } finally {
       setProcessingRequest(null);
+    }
+  };
+
+  const sendTestEmail = async () => {
+    setSendingTestEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('notify-keyword-request', {
+        body: { 
+          profession: 'Test Profession (Software Developer)',
+          requestId: 'test-' + Date.now()
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Test email sent successfully!", {
+        description: data?.emailsSent ? `Sent to ${data.emailsSent} admin(s)` : "Check admin inboxes"
+      });
+    } catch (error: any) {
+      console.error("Error sending test email:", error);
+      toast.error("Failed to send test email", {
+        description: error?.message || "Check console for details"
+      });
+    } finally {
+      setSendingTestEmail(false);
     }
   };
 
@@ -421,7 +447,7 @@ const AdminDashboard = () => {
 
           <TabsContent value="requests" className="space-y-6">
             <Card>
-              <CardHeader>
+               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
@@ -432,14 +458,34 @@ const AdminDashboard = () => {
                       User requests for new keyword suggestions by profession
                     </CardDescription>
                   </div>
-                  <Button
-                    onClick={loadKeywordRequests}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={sendTestEmail}
+                      disabled={sendingTestEmail}
+                      variant="default"
+                      size="sm"
+                    >
+                      {sendingTestEmail ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="h-4 w-4 mr-2" />
+                          Test Email
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={loadKeywordRequests}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -526,6 +572,15 @@ const AdminDashboard = () => {
                     <p className="text-sm text-muted-foreground">
                       Once you've added keywords to the suggestion system, mark requests as "Complete" to track which professions have been addressed.
                     </p>
+                    <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-md">
+                      <p className="text-sm font-medium text-primary mb-1">
+                        <Mail className="h-3 w-3 inline mr-1" />
+                        Test Email Feature
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Click "Test Email" to send a sample keyword request notification to all admin users. This helps verify that your email configuration is working correctly.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
