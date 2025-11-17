@@ -58,7 +58,7 @@ serve(async (req) => {
       commissionRate = 0.00; // 0% commission
       minimumFee = 0; // No minimum
     } else if (tier === 'pro') {
-      commissionRate = 0.04; // 4% commission
+      commissionRate = 0.06; // 6% commission
       minimumFee = 5; // $5 minimum
     } else {
       commissionRate = 0.09; // 9% commission (free)

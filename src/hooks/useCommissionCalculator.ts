@@ -4,7 +4,7 @@
  * Pricing Models:
  * - 'commission': Tier-based lead costs upfront + commission on completed work
  *   - Free: $3/lead + 9% commission ($5 min)
- *   - Pro: $1.50/lead + 4% commission ($5 min)
+ *   - Pro: $1.50/lead + 6% commission ($5 min)
  *   - Premium: $0/lead + 0% commission
  * 
  * - 'hourly': Tier-based lead cost upfront + hourly rate when awarded
@@ -51,7 +51,7 @@ export const useCommissionCalculator = () => {
       commissionRate = 0.00; // 0% commission
       minimumFee = 0; // No minimum
     } else if (tier === 'pro') {
-      commissionRate = 0.04; // 4% commission
+      commissionRate = 0.06; // 6% commission
       minimumFee = 5; // $5 minimum
     } else {
       commissionRate = 0.09; // 9% commission (free)
