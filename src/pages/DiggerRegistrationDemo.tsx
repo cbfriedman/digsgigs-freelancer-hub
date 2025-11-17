@@ -14,6 +14,8 @@ export default function DiggerRegistrationDemo() {
   const [profession, setProfession] = useState("");
   const [location, setLocation] = useState("");
   const [phone, setPhone] = useState("");
+  const [servicesDescription, setServicesDescription] = useState("");
+  const [keywordInput, setKeywordInput] = useState("");
   const [bio, setBio] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -59,10 +61,17 @@ export default function DiggerRegistrationDemo() {
     
     if (!keywords.some(k => k.toLowerCase() === lowerKeyword)) {
       setKeywords([...keywords, lowerKeyword]);
-      setBio(prev => prev ? `${prev}, ${lowerKeyword}` : lowerKeyword);
       toast.success(`Added keyword: "${lowerKeyword}"`, {
         description: "Demo mode - keyword usage not tracked",
       });
+    }
+  };
+
+  const handleKeywordInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && keywordInput.trim()) {
+      e.preventDefault();
+      handleAddKeyword(keywordInput);
+      setKeywordInput("");
     }
   };
 
@@ -114,6 +123,64 @@ export default function DiggerRegistrationDemo() {
             </div>
 
             <div>
+              <label htmlFor="servicesDescription" className="block text-sm font-medium mb-2">
+                Describe Your Services in Detail
+              </label>
+              <Textarea
+                id="servicesDescription"
+                value={servicesDescription}
+                onChange={(e) => setServicesDescription(e.target.value)}
+                placeholder="Detail the specific services you offer, your specialties, and what makes your work unique..."
+                className="min-h-[120px]"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="keywordInput" className="block text-sm font-medium mb-2">
+                Add Keywords
+              </label>
+              <div className="space-y-2">
+                <Input
+                  id="keywordInput"
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyPress={handleKeywordInputKeyPress}
+                  placeholder="Type a keyword and press Enter (e.g., residential, commercial, licensed)"
+                />
+                {keywords.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {keywords.map((keyword, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                      >
+                        {keyword}
+                        <button
+                          type="button"
+                          onClick={() => setKeywords(keywords.filter((_, i) => i !== index))}
+                          className="hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {keywords.length} keyword{keywords.length !== 1 ? 's' : ''} added
+                </p>
+              </div>
+            </div>
+
+            {keywordSuggestions.length > 0 && (
+              <KeywordSuggestions
+                suggestions={keywordSuggestions}
+                currentKeywords={keywords}
+                onAddKeyword={handleAddKeyword}
+              />
+            )}
+
+            <div>
               <label className="block text-sm font-medium mb-2">
                 Service Categories (Demo)
               </label>
@@ -151,40 +218,16 @@ export default function DiggerRegistrationDemo() {
 
             <div>
               <label htmlFor="bio" className="block text-sm font-medium mb-2">
-                Bio & Keywords
+                Bio & Additional Information
               </label>
-              <p className="text-sm text-muted-foreground mb-2">
-                {keywords.length > 0 && (
-                  <span className="font-medium text-primary">
-                    {keywords.length} keyword{keywords.length !== 1 ? 's' : ''} added
-                  </span>
-                )}
-              </p>
               <Textarea
                 id="bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell potential clients about your experience, skills, and services..."
-                className="min-h-[150px]"
+                placeholder="Add any additional information about your business, experience, or credentials..."
+                className="min-h-[100px]"
               />
-              {bio && keywords.length > 0 && (
-                <div className="mt-2 p-3 bg-muted rounded-md">
-                  <p className="text-sm whitespace-pre-wrap">
-                    {highlightKeywords(bio).split('**').map((part, i) => 
-                      i % 2 === 0 ? part : <mark key={i} className="bg-primary/20 px-1 rounded">{part}</mark>
-                    )}
-                  </p>
-                </div>
-              )}
             </div>
-
-            {keywordSuggestions.length > 0 && (
-              <KeywordSuggestions
-                suggestions={keywordSuggestions}
-                currentKeywords={keywords}
-                onAddKeyword={handleAddKeyword}
-              />
-            )}
 
             <Button
               type="submit"
