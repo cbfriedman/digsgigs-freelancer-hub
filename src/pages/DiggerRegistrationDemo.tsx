@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
+import { IndustryCodeLookup } from "@/components/IndustryCodeLookup";
 
 export default function DiggerRegistrationDemo() {
   const [businessName, setBusinessName] = useState("");
@@ -20,6 +21,13 @@ export default function DiggerRegistrationDemo() {
   const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedIndustryCode, setSelectedIndustryCode] = useState<{
+    id: string;
+    code_type: "SIC" | "NAICS";
+    code: string;
+    title: string;
+    description: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (profession || categoryNames.length > 0) {
@@ -101,15 +109,19 @@ export default function DiggerRegistrationDemo() {
             </div>
 
             <div>
-              <label htmlFor="profession" className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-2">
                 Primary Profession *
               </label>
-              <Input
-                id="profession"
-                value={profession}
-                onChange={(e) => setProfession(e.target.value)}
-                required
-                placeholder="e.g., Plumber, Electrician, Carpenter"
+              <p className="text-sm text-muted-foreground mb-3">
+                Search for your profession using industry codes or enter it manually
+              </p>
+              <IndustryCodeLookup
+                onSelect={(code) => {
+                  setSelectedIndustryCode(code);
+                  setProfession(code.title);
+                }}
+                selectedCode={selectedIndustryCode}
+                customTitle={profession}
               />
             </div>
 
