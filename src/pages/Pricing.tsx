@@ -390,31 +390,126 @@ export default function Pricing() {
                 {/* Results Table */}
                 {showResults && (
                   <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b-2 border-border">
-                        <th className="text-left p-3 font-semibold">Plan</th>
-                        <th className="text-right p-3 font-semibold">Monthly Fee</th>
-                        <th className="text-right p-3 font-semibold">Lead Costs</th>
-                        <th className="text-right p-3 font-semibold">Commissions</th>
-                        <th className="text-right p-3 font-semibold">Assumed number of conversions to Award</th>
-                        <th className="text-right p-3 font-semibold">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {calculateInteractiveCosts().map((result, idx) => (
-                        <tr key={result.name} className={`border-b border-border ${idx === 1 ? 'bg-primary/5' : ''}`}>
-                          <td className="p-3 font-medium">{result.name}</td>
-                          <td className="text-right p-3">${result.monthly}</td>
-                          <td className="text-right p-3">${result.leadCosts.toFixed(2)}</td>
-                          <td className="text-right p-3">${result.commissions.toFixed(2)}</td>
-                          <td className="text-right p-3">{Math.round(interactiveLeads * (conversionRate / 100))}</td>
-                          <td className="text-right p-3 font-bold text-primary">${result.total.toFixed(2)}</td>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-border bg-muted/50">
+                          <th className="text-left py-3 px-4 font-semibold">Estimated P&L</th>
+                          {Object.entries(TIERS).map(([key, tier]) => (
+                            <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b-2 border-border bg-green-50 dark:bg-green-950/20">
+                          <td className="py-4 px-4 font-bold text-lg text-green-700 dark:text-green-400">
+                            Total Estimated Revenues
+                          </td>
+                          {calculateInteractiveCosts().map((result) => {
+                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
+                            const totalRevenue = calculatedJobs * interactiveJobValue;
+                            return (
+                              <td key={result.name} className="text-right py-4 px-4 font-bold text-lg text-green-600">
+                                ${totalRevenue.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Monthly Subscription Fee</td>
+                          {calculateInteractiveCosts().map((result) => (
+                            <td key={result.name} className="text-right py-3 px-4">
+                              ${result.monthly}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Upfront Lead Cost</td>
+                          {Object.entries(TIERS).map(([key, tier]) => (
+                            <td key={key} className="text-right py-3 px-4">
+                              {tier.leadCostValue === 0 ? (
+                                <span className="text-green-600 font-semibold">FREE</span>
+                              ) : (
+                                `$${tier.leadCostValue.toFixed(2)}`
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Leads Purchased</td>
+                          {Object.entries(TIERS).map(([key]) => (
+                            <td key={key} className="text-right py-3 px-4">
+                              {interactiveLeads}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Total Lead Costs</td>
+                          {calculateInteractiveCosts().map((result) => (
+                            <td key={result.name} className="text-right py-3 px-4">
+                              {result.leadCosts === 0 ? (
+                                <span className="text-green-600 font-semibold">FREE</span>
+                              ) : (
+                                `$${result.leadCosts.toFixed(2)}`
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Jobs Awarded</td>
+                          {Object.entries(TIERS).map(([key]) => (
+                            <td key={key} className="text-right py-3 px-4">
+                              {Math.round(interactiveLeads * (conversionRate / 100))}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Commission Rate</td>
+                          {Object.entries(TIERS).map(([key, tier]) => (
+                            <td key={key} className="text-right py-3 px-4">
+                              {tier.commissionValue}%
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Total Commissions</td>
+                          {calculateInteractiveCosts().map((result) => (
+                            <td key={result.name} className="text-right py-3 px-4">
+                              {result.commissions === 0 ? (
+                                <span className="text-green-600 font-semibold">$0.00</span>
+                              ) : (
+                                `$${result.commissions.toFixed(2)}`
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b-2 border-border bg-red-50 dark:bg-red-950/20">
+                          <td className="py-4 px-4 font-bold text-lg text-red-700 dark:text-red-400">
+                            Total Costs
+                          </td>
+                          {calculateInteractiveCosts().map((result) => (
+                            <td key={result.name} className="text-right py-4 px-4 font-bold text-lg text-red-600">
+                              ${result.total.toFixed(2)}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b-2 border-border bg-blue-50 dark:bg-blue-950/20">
+                          <td className="py-4 px-4 font-bold text-xl text-blue-700 dark:text-blue-400">
+                            Net Earnings
+                          </td>
+                          {calculateInteractiveCosts().map((result) => {
+                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
+                            const totalRevenue = calculatedJobs * interactiveJobValue;
+                            const netEarnings = totalRevenue - result.total;
+                            return (
+                              <td key={result.name} className="text-right py-4 px-4 font-bold text-xl text-blue-600">
+                                ${netEarnings.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </CardContent>
             </Card>
