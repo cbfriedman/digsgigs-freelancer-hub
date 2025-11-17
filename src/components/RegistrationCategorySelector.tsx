@@ -140,7 +140,7 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
           
           <AccordionItem value="others" className="border-b-0">
             <AccordionTrigger className="text-base font-semibold hover:no-underline">
-              Other Professions
+              Primary Profession
             </AccordionTrigger>
             <AccordionContent>
               <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
@@ -178,7 +178,7 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
       <div className="pt-2">
         <p className="text-sm font-medium mb-2">
           Selected: {selectedCategories.length} {selectedCategories.length === 1 ? 'specialty' : 'specialties'}
-          {hasOthersSelected && ' + 1 custom profession'}
+          {hasOthersSelected && ' + 1 primary profession'}
         </p>
         <div className="flex flex-wrap gap-2">
           {selectedCategories.length > 0 || hasOthersSelected ? (
