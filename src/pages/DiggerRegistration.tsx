@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ const DiggerRegistration = () => {
   const [selectedIndustryCodes, setSelectedIndustryCodes] = useState<IndustryCode[]>([]);
   const [customOccupationTitles, setCustomOccupationTitles] = useState<string[]>([]);
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
+  const [professionToRemove, setProfessionToRemove] = useState<number | null>(null);
   
   const [formData, setFormData] = useState({
     handle: "",
@@ -110,6 +112,13 @@ const DiggerRegistration = () => {
     const newTitles = customOccupationTitles.filter((_, i) => i !== index);
     setSelectedIndustryCodes(newCodes);
     setCustomOccupationTitles(newTitles);
+    setProfessionToRemove(null);
+  };
+
+  const confirmRemoveProfession = () => {
+    if (professionToRemove !== null) {
+      removeProfession(professionToRemove);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -340,7 +349,7 @@ const DiggerRegistration = () => {
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => removeProfession(index)}
+                              onClick={() => setProfessionToRemove(index)}
                               type="button"
                             >
                               <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
@@ -747,6 +756,30 @@ const DiggerRegistration = () => {
             </form>
           </CardContent>
         </Card>
+
+        {/* Remove Profession Confirmation Dialog */}
+        <AlertDialog open={professionToRemove !== null} onOpenChange={(open) => !open && setProfessionToRemove(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Primary Profession?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {professionToRemove !== null && (
+                  <>
+                    Are you sure you want to remove <strong>{customOccupationTitles[professionToRemove] || selectedIndustryCodes[professionToRemove]?.title}</strong>?
+                    <br /><br />
+                    This will affect which gigs you receive notifications for. You can add it back later if needed.
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmRemoveProfession} className="bg-destructive hover:bg-destructive/90">
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
