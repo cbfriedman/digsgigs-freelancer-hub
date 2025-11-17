@@ -15,6 +15,7 @@ import PlanRecommender from "@/components/PlanRecommender";
 import PricingCharts from "@/components/PricingCharts";
 import BreakevenCalculator from "@/components/BreakevenCalculator";
 import PricingModelComparison from "@/components/PricingModelComparison";
+import ProjectCostCalculator from "@/components/ProjectCostCalculator";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -568,6 +569,7 @@ export default function Pricing() {
 
       {/* Additional Components */}
       <PricingModelComparison />
+      <ProjectCostCalculator />
       
       <div className="container mx-auto px-4 space-y-16 py-16">
         <PricingCalculator />
