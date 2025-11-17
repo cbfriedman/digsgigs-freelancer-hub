@@ -11,6 +11,8 @@ import DemoGigGrid from "@/components/DemoGigGrid";
 import DemoDiggerGrid from "@/components/DemoDiggerGrid";
 import RegistrationCategoryDemo from "@/components/RegistrationCategoryDemo";
 import { Navigation } from "@/components/Navigation";
+import SEOHead from "@/components/SEOHead";
+import { generateFAQSchema } from "@/components/StructuredData";
 
 // Import step screenshots
 import step1PostGig from "@/assets/step1-post-gig-new.jpg";
@@ -88,6 +90,16 @@ const HowItWorks = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="How It Works - Simple Process for Clients & Service Professionals"
+        description="Learn how digsandgigs connects clients with service professionals. Step-by-step guide for posting gigs, finding projects, managing payments, and building your business. Simple, fair, and transparent."
+        keywords="how it works, getting started, post gigs, find work, service marketplace guide, contractor platform, freelance platform"
+        structuredData={generateFAQSchema([
+          { question: "How do clients post gigs?", answer: "Clients create a free account, post their project details including budget and timeline, and receive proposals from qualified professionals." },
+          { question: "How do professionals find work?", answer: "Professionals create a profile, browse available gigs, purchase leads for projects they're interested in, and submit proposals to clients." },
+          { question: "How does payment work?", answer: "We offer two payment models: fixed-price contracts with escrow protection, and hourly rate projects with flexible billing." }
+        ])}
+      />
       <Navigation showBackButton backLabel="Back to Home" />
 
       <div className="container mx-auto px-4 py-12 max-w-6xl">
