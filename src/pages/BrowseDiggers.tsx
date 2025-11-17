@@ -34,6 +34,7 @@ interface DiggerFilters {
   isInsured?: boolean;
   isBonded?: boolean;
   isLicensed?: boolean;
+  offersFreeEstimates?: boolean;
 }
 
 interface Digger {
@@ -53,6 +54,7 @@ interface Digger {
   is_insured: boolean;
   is_bonded: boolean;
   is_licensed: string;
+  offers_free_estimates: boolean | null;
   sic_code: string | null;
   naics_code: string | null;
   custom_occupation_title: string | null;
@@ -88,6 +90,7 @@ const BrowseDiggers = () => {
     isInsured: false,
     isBonded: false,
     isLicensed: false,
+    offersFreeEstimates: false,
   });
 
   useEffect(() => {
@@ -172,6 +175,9 @@ const BrowseDiggers = () => {
     }
     if (filters.certifications.length > 0) {
       query = query.contains("certifications", filters.certifications);
+    }
+    if (filters.offersFreeEstimates) {
+      query = query.eq("offers_free_estimates", true);
     }
 
     if (sortBy === "rating") {
@@ -268,6 +274,14 @@ const BrowseDiggers = () => {
               <SelectItem value="rate">Lowest Rate</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            variant={filters.offersFreeEstimates ? "default" : "outline"}
+            onClick={() => setFilters({ ...filters, offersFreeEstimates: !filters.offersFreeEstimates })}
+            className="w-full md:w-auto"
+          >
+            <DollarSign className="h-4 w-4 mr-2" />
+            Free Estimates
+          </Button>
         </div>
 
         <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -349,9 +363,19 @@ const BrowseDiggers = () => {
                               L
                             </Badge>
                           )}
+                          {digger.offers_free_estimates && (
+                            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
+                              <DollarSign className="h-3 w-3" />
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground truncate">{getDisplayProfession(digger)}</p>
+                      {digger.offers_free_estimates && (
+                        <Badge variant="outline" className="text-xs mt-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                          Free Estimates
+                        </Badge>
+                      )}
                       {getOccupationBadge(digger) && (
                         <Badge variant="outline" className="text-xs mt-1">
                           {getOccupationBadge(digger)}

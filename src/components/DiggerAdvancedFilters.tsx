@@ -29,6 +29,7 @@ interface DiggerFilters {
   isInsured?: boolean;
   isBonded?: boolean;
   isLicensed?: boolean;
+  offersFreeEstimates?: boolean;
 }
 
 interface DiggerAdvancedFiltersProps {
@@ -248,6 +249,16 @@ export const DiggerAdvancedFilters = ({
               />
               <label htmlFor="licensed" className="text-sm cursor-pointer">
                 Licensed
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="free-estimates"
+                checked={filters.offersFreeEstimates || false}
+                onCheckedChange={(checked) => onFiltersChange({ ...filters, offersFreeEstimates: checked as boolean })}
+              />
+              <label htmlFor="free-estimates" className="text-sm cursor-pointer">
+                Offers Free Estimates
               </label>
             </div>
           </div>
