@@ -96,7 +96,8 @@ export const generateWebsiteSchema = () => {
 export const generateLocalBusinessSchema = (data: LocalBusinessData) => {
   const schema: any = {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
+    "@type": ["LocalBusiness", "ProfessionalService"],
+    "@id": data.url,
     "name": data.name,
     "description": data.description,
     "url": data.url,
@@ -104,7 +105,10 @@ export const generateLocalBusinessSchema = (data: LocalBusinessData) => {
 
   if (data.telephone) schema.telephone = data.telephone;
   if (data.priceRange) schema.priceRange = data.priceRange;
-  if (data.image) schema.image = data.image;
+  if (data.image) {
+    schema.image = data.image;
+    schema.logo = data.image;
+  }
 
   if (data.address) {
     schema.address = {
@@ -121,11 +125,13 @@ export const generateLocalBusinessSchema = (data: LocalBusinessData) => {
     };
   }
 
-  if (data.aggregateRating) {
+  if (data.aggregateRating && data.aggregateRating.reviewCount > 0) {
     schema.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: data.aggregateRating.ratingValue,
-      reviewCount: data.aggregateRating.reviewCount
+      reviewCount: data.aggregateRating.reviewCount,
+      bestRating: 5,
+      worstRating: 1
     };
   }
 
