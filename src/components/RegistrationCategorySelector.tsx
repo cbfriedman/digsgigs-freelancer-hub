@@ -31,18 +31,18 @@ interface CategoryGroup {
 interface RegistrationCategorySelectorProps {
   selectedCategories: string[];
   onCategoriesChange: (categories: string[]) => void;
-  onIndustryCodeChange?: (code: IndustryCode | null, title: string) => void;
+  onIndustryCodesChange?: (codes: IndustryCode[], titles: string[]) => void;
 }
 
 export const RegistrationCategorySelector: React.FC<RegistrationCategorySelectorProps> = ({
   selectedCategories,
   onCategoriesChange,
-  onIndustryCodeChange,
+  onIndustryCodesChange,
 }) => {
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
-  const [selectedCode, setSelectedCode] = useState<IndustryCode | null>(null);
-  const [customTitle, setCustomTitle] = useState("");
+  const [selectedCodes, setSelectedCodes] = useState<IndustryCode[]>([]);
+  const [customTitles, setCustomTitles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -81,16 +81,29 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
   };
 
   const handleCodeSelect = (code: IndustryCode, title: string) => {
-    setSelectedCode(code);
-    setCustomTitle(title);
+    const newCodes = [...selectedCodes, code];
+    const newTitles = [...customTitles, title];
+    setSelectedCodes(newCodes);
+    setCustomTitles(newTitles);
     setShowCodeDialog(false);
     
-    if (onIndustryCodeChange) {
-      onIndustryCodeChange(code, title);
+    if (onIndustryCodesChange) {
+      onIndustryCodesChange(newCodes, newTitles);
     }
   };
 
-  const hasOthersSelected = selectedCode !== null;
+  const handleRemoveCode = (index: number) => {
+    const newCodes = selectedCodes.filter((_, i) => i !== index);
+    const newTitles = customTitles.filter((_, i) => i !== index);
+    setSelectedCodes(newCodes);
+    setCustomTitles(newTitles);
+    
+    if (onIndustryCodesChange) {
+      onIndustryCodesChange(newCodes, newTitles);
+    }
+  };
+
+  const hasOthersSelected = selectedCodes.length > 0;
 
   return (
     <div className="space-y-4">
@@ -150,11 +163,19 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
                     className="w-full justify-start text-left h-auto p-3"
                   >
                     <div className="flex-1">
-                      <div className="text-sm font-medium">Select using SIC or NAICS industry codes</div>
-                      {hasOthersSelected && selectedCode && (
-                        <Badge variant="secondary" className="mt-2 text-xs">
-                          {selectedCode.code_type}: {selectedCode.code} - {customTitle}
-                        </Badge>
+                      <div className="text-sm font-medium">
+                        {selectedCodes.length === 0 
+                          ? "Select using SIC or NAICS industry codes" 
+                          : `Add another profession (${selectedCodes.length} selected)`}
+                      </div>
+                      {hasOthersSelected && (
+                        <div className="mt-2 space-y-1">
+                          {selectedCodes.map((code, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs mr-1">
+                              {code.code_type}: {code.code} - {customTitles[index]}
+                            </Badge>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </Button>
@@ -165,8 +186,8 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
                   </DialogHeader>
                   <IndustryCodeLookup 
                     onSelect={handleCodeSelect}
-                    selectedCode={selectedCode}
-                    customTitle={customTitle}
+                    selectedCode={null}
+                    customTitle=""
                   />
                 </DialogContent>
               </Dialog>
@@ -193,11 +214,16 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
                   </Badge>
                 ) : null;
               })}
-              {hasOthersSelected && selectedCode && (
-                <Badge variant="secondary" className="text-sm px-3 py-1">
-                  {customTitle} ({selectedCode.code_type}: {selectedCode.code})
+              {selectedCodes.map((code, index) => (
+                <Badge 
+                  key={index} 
+                  variant="secondary"
+                  className="text-sm px-3 py-1 cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={() => handleRemoveCode(index)}
+                >
+                  {customTitles[index]} ({code.code_type}: {code.code}) ×
                 </Badge>
-              )}
+              ))}
             </>
           ) : (
             <p className="text-sm text-muted-foreground italic">No specialties selected yet</p>

@@ -468,7 +468,7 @@ export type Database = {
           location: string
           location_lat: number | null
           location_lng: number | null
-          naics_code: string | null
+          naics_code: string[] | null
           offers_free_estimates: boolean | null
           phone: string
           portfolio_url: string | null
@@ -477,7 +477,7 @@ export type Database = {
           profession: string
           profile_image_url: string | null
           response_time_hours: number | null
-          sic_code: string | null
+          sic_code: string[] | null
           skills: string[] | null
           stripe_connect_account_id: string | null
           stripe_connect_charges_enabled: boolean | null
@@ -516,7 +516,7 @@ export type Database = {
           location: string
           location_lat?: number | null
           location_lng?: number | null
-          naics_code?: string | null
+          naics_code?: string[] | null
           offers_free_estimates?: boolean | null
           phone: string
           portfolio_url?: string | null
@@ -525,7 +525,7 @@ export type Database = {
           profession: string
           profile_image_url?: string | null
           response_time_hours?: number | null
-          sic_code?: string | null
+          sic_code?: string[] | null
           skills?: string[] | null
           stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
@@ -564,7 +564,7 @@ export type Database = {
           location?: string
           location_lat?: number | null
           location_lng?: number | null
-          naics_code?: string | null
+          naics_code?: string[] | null
           offers_free_estimates?: boolean | null
           phone?: string
           portfolio_url?: string | null
@@ -573,7 +573,7 @@ export type Database = {
           profession?: string
           profile_image_url?: string | null
           response_time_hours?: number | null
-          sic_code?: string | null
+          sic_code?: string[] | null
           skills?: string[] | null
           stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
