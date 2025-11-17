@@ -343,7 +343,7 @@ const HowItWorks = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-xl mb-2">Purchase Lead</h4>
-                    <p className="text-muted-foreground">Pay 1 hour of your advertised rate per lead (minimum $100). This hourly-rate auction creates fair competition - lower rates mean lower lead costs. Premium members get free leads. Your investment gives you direct client contact information.</p>
+                    <p className="text-muted-foreground">Pay tier-based cost upfront ($3 Free, $1.50 Pro, $0 Premium). When awarded, 1 hour of your rate is charged (no minimum). Set any hourly rate you want. Premium members get free leads.</p>
                   </div>
                 </div>
               </Card>
