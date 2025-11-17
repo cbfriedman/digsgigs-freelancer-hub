@@ -55,6 +55,7 @@ interface Digger {
   is_bonded: boolean;
   is_licensed: string;
   offers_free_estimates: boolean | null;
+  subscription_tier: string | null;
   sic_code: string | null;
   naics_code: string | null;
   custom_occupation_title: string | null;
@@ -228,6 +229,16 @@ const BrowseDiggers = () => {
     return null;
   };
 
+  const getFreeEstimatePrice = (subscriptionTier: string | null) => {
+    const tierPricing = {
+      free: 150,
+      pro: 100,
+      premium: 50
+    };
+    
+    return tierPricing[subscriptionTier as keyof typeof tierPricing] || 150;
+  };
+
   const getInitials = (handle: string | null) => {
     if (!handle) return "DG";
     return handle.slice(0, 2).toUpperCase();
@@ -372,9 +383,15 @@ const BrowseDiggers = () => {
                       </div>
                       <p className="text-sm text-muted-foreground truncate">{getDisplayProfession(digger)}</p>
                       {digger.offers_free_estimates && (
-                        <Badge variant="outline" className="text-xs mt-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                          Free Estimates
-                        </Badge>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            Free Estimate
+                          </Badge>
+                          <Badge variant="default" className="text-xs bg-primary">
+                            ${getFreeEstimatePrice(digger.subscription_tier)}
+                          </Badge>
+                        </div>
                       )}
                       {getOccupationBadge(digger) && (
                         <Badge variant="outline" className="text-xs mt-1">
