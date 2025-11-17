@@ -63,18 +63,18 @@ export default function PricingCalculator() {
     // Free: 3 hours, Pro: 2 hours, Premium: 1 hour
     const hoursCharged = tier.name === 'free' ? 3 : tier.name === 'pro' ? 2 : 1;
     const upfrontLeadCost = tier.leadCostValue * leads;
-    const awardedJobsCost = hourlyRate * hoursCharged * jobs;
-    const leadCost = upfrontLeadCost + awardedJobsCost;
+    const costPerClick = hourlyRate * hoursCharged * jobs;
     
     // No commission on hourly bids
-    const totalCost = monthlyFee + leadCost;
+    const totalCost = monthlyFee + upfrontLeadCost + costPerClick;
     const totalJobValue = hourlyRate * hoursPerJob * jobs;
     const revenue = totalJobValue;
     const netEarnings = revenue - totalCost;
 
     return {
       monthlyFee,
-      leadCost,
+      upfrontLeadCost,
+      costPerClick,
       totalCost,
       revenue,
       netEarnings,
@@ -259,12 +259,42 @@ export default function PricingCalculator() {
               </tr>
               
               <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Lead Purchases</td>
+                <td className="py-3 px-4 text-muted-foreground">Cost per Lead</td>
                 {Object.entries(TIERS).map(([key, tier]) => {
                   const costs = calculateCosts(tier);
                   return (
                     <td key={key} className="text-right py-3 px-4">
-                      ${costs.leadCost.toFixed(2)}
+                      ${costs.upfrontLeadCost.toFixed(2)}
+                    </td>
+                  );
+                })}
+              </tr>
+              
+              <tr className="border-b border-border/50">
+                <td className="py-3 px-4 text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    Cost per Click
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Hourly charge on awarded leads: Free (3 hrs), Pro (2 hrs), Premium (1 hr)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </td>
+                {Object.entries(TIERS).map(([key, tier]) => {
+                  const costs = calculateCosts(tier);
+                  const hoursCharged = tier.name === 'free' ? 3 : tier.name === 'pro' ? 2 : 1;
+                  return (
+                    <td key={key} className="text-right py-3 px-4">
+                      ${costs.costPerClick.toFixed(2)}
+                      <div className="text-xs text-muted-foreground">
+                        ({hoursCharged} hrs × ${hourlyRate})
+                      </div>
                     </td>
                   );
                 })}
