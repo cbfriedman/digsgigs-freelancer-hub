@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bell, Save, Lightbulb, Users, AlertTriangle, MessageSquare, Shield } from "lucide-react";
+import { ArrowLeft, Bell, Save, Lightbulb, Users, AlertTriangle, MessageSquare, Shield, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
@@ -16,6 +16,8 @@ interface NotificationPreferences {
   bid_notifications_enabled: boolean;
   system_alerts_enabled: boolean;
   report_frequency: string;
+  digest_enabled?: boolean;
+  digest_frequency?: 'daily' | 'weekly';
 }
 
 const AdminNotificationPreferences = () => {
@@ -30,6 +32,8 @@ const AdminNotificationPreferences = () => {
     bid_notifications_enabled: true,
     system_alerts_enabled: true,
     report_frequency: "weekly",
+    digest_enabled: false,
+    digest_frequency: "daily",
   });
 
   useEffect(() => {
@@ -301,6 +305,89 @@ const AdminNotificationPreferences = () => {
               <Separator />
 
               <div className="flex justify-end pt-4">
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  size="lg"
+                >
+                  {saving ? (
+                    <>
+                      <Save className="mr-2 h-4 w-4 animate-pulse" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Preferences
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Email Digest Settings Card */}
+          <Card className="mt-6">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-primary" />
+                <CardTitle>Email Digest Settings</CardTitle>
+              </div>
+              <CardDescription>
+                Batch multiple notifications into a single summary email instead of receiving individual notifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Digest Toggle */}
+              <div className="flex items-start justify-between space-x-4">
+                <div className="flex items-start space-x-3 flex-1">
+                  <Mail className="h-5 w-5 text-primary mt-1" />
+                  <div className="space-y-1">
+                    <Label htmlFor="digest_enabled" className="text-base font-medium">
+                      Enable Email Digest
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive batched notifications instead of individual emails for each event
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="digest_enabled"
+                  checked={preferences.digest_enabled ?? false}
+                  onCheckedChange={() => togglePreference("digest_enabled")}
+                />
+              </div>
+
+              {/* Digest Frequency Selector */}
+              {preferences.digest_enabled && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <Label htmlFor="digest_frequency" className="text-base font-medium">
+                      Digest Frequency
+                    </Label>
+                    <select
+                      id="digest_frequency"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      value={preferences.digest_frequency ?? 'daily'}
+                      onChange={(e) => setPreferences(prev => ({
+                        ...prev,
+                        digest_frequency: e.target.value as 'daily' | 'weekly'
+                      }))}
+                    >
+                      <option value="daily">Daily (sent at 9 AM)</option>
+                      <option value="weekly">Weekly (sent Monday at 9 AM)</option>
+                    </select>
+                    <p className="text-sm text-muted-foreground">
+                      Choose how often you want to receive digest emails with batched notifications
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+              <div className="flex justify-end">
                 <Button
                   onClick={handleSave}
                   disabled={saving}

@@ -609,6 +609,8 @@ export type Database = {
         Row: {
           bid_notifications_enabled: boolean
           created_at: string
+          digest_enabled: boolean | null
+          digest_frequency: string | null
           enabled: boolean
           id: string
           keyword_requests_enabled: boolean
@@ -622,6 +624,8 @@ export type Database = {
         Insert: {
           bid_notifications_enabled?: boolean
           created_at?: string
+          digest_enabled?: boolean | null
+          digest_frequency?: string | null
           enabled?: boolean
           id?: string
           keyword_requests_enabled?: boolean
@@ -635,6 +639,8 @@ export type Database = {
         Update: {
           bid_notifications_enabled?: boolean
           created_at?: string
+          digest_enabled?: boolean | null
+          digest_frequency?: string | null
           enabled?: boolean
           id?: string
           keyword_requests_enabled?: boolean
@@ -1116,6 +1122,38 @@ export type Database = {
             columns: ["escrow_contract_id"]
             isOneToOne: false
             referencedRelation: "escrow_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_digest_queue: {
+        Row: {
+          created_at: string | null
+          id: string
+          notification_id: string
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notification_id: string
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notification_id?: string
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_digest_queue_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: true
+            referencedRelation: "notifications"
             referencedColumns: ["id"]
           },
         ]
