@@ -10,6 +10,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import SEOHead from "@/components/SEOHead";
 import { generateOrganizationSchema, generateWebsiteSchema } from "@/components/StructuredData";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import {
   Search, 
   Users, 
@@ -414,11 +415,14 @@ const Index = () => {
             </div>
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-accent/20 rounded-3xl blur-3xl"></div>
-              <img 
+              <OptimizedImage
                 src={heroImage} 
                 alt="Freelancers collaborating" 
+                width={1200}
+                height={800}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
                 className="relative rounded-2xl shadow-2xl w-full"
-                loading="lazy"
               />
             </div>
           </div>
