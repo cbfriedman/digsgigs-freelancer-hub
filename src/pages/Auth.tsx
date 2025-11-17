@@ -86,16 +86,16 @@ const Auth = () => {
       }
     });
 
-    // Also detect recovery or expired links via URL hash (fallback)
+    // Detect recovery or expired links via URL hash
     if (typeof window !== 'undefined') {
       const hash = window.location.hash || '';
       if (hash.includes('type=recovery')) {
         setShowNewPasswordForm(true);
       }
+      // If expired/error link detected, auto-open reset form
       if (hash.includes('error=access_denied') || hash.includes('error=')) {
         setShowResetForm(true);
-        // Optional: inform user link expired
-        try { toast.error('Reset link expired. Please request a new one.'); } catch {}
+        toast.error('Reset link expired. Please request a new one.');
       }
     }
 
@@ -439,7 +439,7 @@ const Auth = () => {
       const validatedEmail = emailValidation.parse(email);
       const { error } = await supabase.auth.signInWithOtp({
         email: validatedEmail,
-        options: { redirectTo: `${window.location.origin}/` },
+        options: { emailRedirectTo: `${window.location.origin}/` },
       });
       if (error) throw error;
       toast.success("Magic sign-in link sent! Check your inbox.");
@@ -470,6 +470,8 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center relative">
@@ -501,6 +503,16 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="signin">
+              {/* Expired Link Banner */}
+              {typeof window !== 'undefined' && (window.location.hash.includes('error=access_denied') || window.location.hash.includes('error=')) && (
+                <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <p className="text-sm font-semibold text-destructive mb-1">Reset Link Expired</p>
+                  <p className="text-xs text-muted-foreground">
+                    Your password reset link has expired. Click "Forgot password?" below to request a new one.
+                  </p>
+                </div>
+              )}
+              
               {showNewPasswordForm ? (
                 <form onSubmit={handleUpdatePassword} className="space-y-4">
                   <div className="space-y-2">
