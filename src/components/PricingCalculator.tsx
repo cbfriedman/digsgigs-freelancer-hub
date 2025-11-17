@@ -47,7 +47,7 @@ const TIERS = {
 export default function PricingCalculator() {
   const [leads, setLeads] = useState(15);
   const [hourlyRate, setHourlyRate] = useState(100);
-  const [hoursPerJob, setHoursPerJob] = useState(5);
+  const [hoursPerJob, setHoursPerJob] = useState(10);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
   
