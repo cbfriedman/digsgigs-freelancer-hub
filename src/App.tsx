@@ -32,6 +32,7 @@ import Messages from "./pages/Messages";
 import ProfileCompletion from "./pages/ProfileCompletion";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminNotificationPreferences from "./pages/AdminNotificationPreferences";
+import AdminUserManagement from "./pages/AdminUserManagement";
 import Notifications from "./pages/Notifications";
 import TestAIMatching from "./pages/TestAIMatching";
 import E2ETestSuite from "./pages/E2ETestSuite";
@@ -82,6 +83,7 @@ const App = () => (
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/notification-preferences" element={<AdminNotificationPreferences />} />
+          <Route path="/admin/users" element={<AdminUserManagement />} />
           <Route path="/saved-searches" element={<SavedSearches />} />
           <Route path="/test-ai-matching" element={<TestAIMatching />} />
           <Route path="/e2e-test" element={<E2ETestSuite />} />
