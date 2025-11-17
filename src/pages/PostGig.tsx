@@ -141,7 +141,7 @@ const PostGig = () => {
 
       if (error) throw error;
 
-      // Match industry codes using AI
+      // Match diggers using AI semantic matching
       toast.info("Analyzing gig and matching with relevant professionals...");
       
       try {
@@ -157,32 +157,42 @@ const PostGig = () => {
         }
 
         const { data: matchData, error: matchError } = await supabase.functions.invoke(
-          "match-industry-codes",
+          "match-diggers-semantic",
           {
             body: {
-              title: validatedData.title,
-              description: validatedData.description,
-              category: categoryName,
+              gig_title: validatedData.title,
+              gig_description: validatedData.description,
+              gig_category: categoryName,
             },
           }
         );
 
-        if (!matchError && matchData) {
-          // Update the gig with matched codes
-          await supabase
-            .from("gigs")
-            .update({
-              sic_codes: matchData.sic_codes,
-              naics_codes: matchData.naics_codes,
-              ai_matched_codes: true,
-            })
-            .eq("id", gigData.id);
+        if (!matchError && matchData?.matches && matchData.matches.length > 0) {
+          console.log(`AI semantic matching found ${matchData.matches.length} relevant diggers`);
           
-          console.log("AI matched codes:", matchData);
+          // Send notifications to matched diggers
+          for (const match of matchData.matches) {
+            try {
+              await supabase.rpc('create_notification', {
+                p_user_id: match.user_id,
+                p_title: 'New Gig Match',
+                p_message: `${match.business_name}, we found a gig that matches your expertise! "${validatedData.title}"`,
+                p_type: 'new_gig',
+                p_link: `/gig/${gigData.id}`,
+                p_metadata: {
+                  gig_id: gigData.id,
+                  confidence: match.confidence,
+                  reasoning: match.reasoning
+                }
+              });
+            } catch (notifError) {
+              console.error('Error sending notification:', notifError);
+            }
+          }
         }
       } catch (matchError) {
-        console.error("Error matching codes:", matchError);
-        // Don't fail the gig posting if code matching fails
+        console.error("Error matching diggers:", matchError);
+        // Don't fail the gig posting if matching fails
       }
 
       toast.success("Gig posted and matched with relevant professionals!");
