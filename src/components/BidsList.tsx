@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
+import { EscrowContractDialog } from "@/components/EscrowContractDialog";
 import { Loader2, Star } from "lucide-react";
 
 interface Bid {
@@ -29,13 +30,16 @@ interface BidsListProps {
   gigId: string;
   gigTitle: string;
   isOwner: boolean;
+  isFixedPrice?: boolean;
 }
 
-export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
+export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: BidsListProps) => {
   const { toast } = useToast();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [escrowDialogOpen, setEscrowDialogOpen] = useState(false);
+  const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
 
   useEffect(() => {
     loadBids();
@@ -113,10 +117,21 @@ export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
 
       toast({
         title: "Bid accepted!",
-        description: "The digger has been notified.",
+        description: isFixedPrice 
+          ? "Now set up the escrow contract with milestones."
+          : "The digger has been notified.",
       });
 
       loadBids();
+
+      // If fixed price, open escrow dialog
+      if (isFixedPrice) {
+        const acceptedBid = bids.find(b => b.id === bidId);
+        if (acceptedBid) {
+          setSelectedBid(acceptedBid);
+          setEscrowDialogOpen(true);
+        }
+      }
     } catch (error: any) {
       console.error('Error accepting bid:', error);
       toast({
@@ -242,7 +257,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
                   </Button>
                 )}
 
-                {isOwner && bid.status === 'accepted' && (
+                {isOwner && bid.status === 'accepted' && !isFixedPrice && (
                   <CompleteWorkDialog
                     bidId={bid.id}
                     bidAmount={bid.amount}
@@ -256,6 +271,17 @@ export const BidsList = ({ gigId, gigTitle, isOwner }: BidsListProps) => {
           </CardContent>
         </Card>
       ))}
+
+      {selectedBid && (
+        <EscrowContractDialog
+          open={escrowDialogOpen}
+          onOpenChange={setEscrowDialogOpen}
+          bidId={selectedBid.id}
+          bidAmount={selectedBid.amount}
+          gigTitle={gigTitle}
+          onComplete={loadBids}
+        />
+      )}
     </div>
   );
 };
