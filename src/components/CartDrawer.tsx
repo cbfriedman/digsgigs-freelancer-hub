@@ -161,14 +161,14 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                                     navigate("/pricing-strategy");
                                   }}
                                 >
-                                  1 hour @ ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr (min $100)
+                                  Upfront: Tier cost. Awarded: ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr
                                   <Info className="h-3 w-3" />
                                 </Badge>
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs">
-                                <p className="font-semibold mb-1">Why $100 minimum?</p>
+                                <p className="font-semibold mb-1">Hourly Pricing Model</p>
                                 <p className="text-sm mb-2">
-                                  This prevents artificially low rates. Diggers compete on real value - lower rates mean lower lead costs, creating fair market competition.
+                                  Pay tier-based cost upfront (Free: $3, Pro: $1.50, Premium: $0). When awarded the job, pay an additional 1 hour of your rate. No commission on completed work.
                                 </p>
                                 <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/pricing-strategy")}>
                                   View pricing strategies →

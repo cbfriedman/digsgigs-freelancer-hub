@@ -20,7 +20,7 @@ const BreakevenCalculator = () => {
   const proHourlyClickCost = hourlyRateClicks * 100;
   const proRevenue = jobs * avgJobValue;
   const proCommission = proRevenue * 0.06;
-  const proAwardFee = hourlyRateClicks * Math.max(hourlyRate, 100);
+  const proAwardFee = hourlyRateClicks * hourlyRate; // No minimum
   const proTotalCosts = proSubscription + proLeadCost + proEstimateCost + proHourlyClickCost + proCommission + proAwardFee;
   const proNetEarnings = proRevenue - proTotalCosts;
 
@@ -31,7 +31,7 @@ const BreakevenCalculator = () => {
   const premiumHourlyClickCost = 0;
   const premiumRevenue = jobs * avgJobValue;
   const premiumCommission = 0;
-  const premiumAwardFee = hourlyRateClicks * Math.max(hourlyRate, 100);
+  const premiumAwardFee = hourlyRateClicks * hourlyRate; // No minimum
   const premiumTotalCosts = premiumSubscription + premiumAwardFee;
   const premiumNetEarnings = premiumRevenue - premiumTotalCosts;
 
@@ -269,7 +269,7 @@ const BreakevenCalculator = () => {
                 <span>${proCommission.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Award Fees ({hourlyRateClicks} × ${Math.max(hourlyRate, 100)})</span>
+                <span className="text-muted-foreground">Award Fees ({hourlyRateClicks} × ${hourlyRate})</span>
                 <span>${proAwardFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-border font-semibold">
@@ -308,7 +308,7 @@ const BreakevenCalculator = () => {
                 <span className="text-green-600 font-semibold">$0.00</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Award Fees ({hourlyRateClicks} × ${Math.max(hourlyRate, 100)})</span>
+                <span className="text-muted-foreground">Award Fees ({hourlyRateClicks} × ${hourlyRate})</span>
                 <span>${premiumAwardFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-border font-semibold">
