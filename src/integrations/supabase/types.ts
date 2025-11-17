@@ -237,6 +237,7 @@ export type Database = {
           phone: string
           portfolio_url: string | null
           portfolio_urls: string[] | null
+          pricing_model: string | null
           profession: string
           profile_image_url: string | null
           response_time_hours: number | null
@@ -281,6 +282,7 @@ export type Database = {
           phone: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
+          pricing_model?: string | null
           profession: string
           profile_image_url?: string | null
           response_time_hours?: number | null
@@ -325,6 +327,7 @@ export type Database = {
           phone?: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
+          pricing_model?: string | null
           profession?: string
           profile_image_url?: string | null
           response_time_hours?: number | null
