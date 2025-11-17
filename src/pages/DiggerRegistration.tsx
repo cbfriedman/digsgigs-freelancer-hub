@@ -54,6 +54,8 @@ const DiggerRegistration = () => {
     is_bonded: false,
     is_licensed: "not_required" as "yes" | "no" | "not_required",
     offers_free_estimates: false,
+    offers_commission_bidding: true,
+    offers_hourly_work: false,
     pricing_model: "both" as "commission" | "hourly" | "both",
     acceptTerms: false,
   });
@@ -139,6 +141,16 @@ const DiggerRegistration = () => {
         }
       }
 
+      // Determine pricing model based on selections
+      let pricingModel: "commission" | "hourly" | "both" = "commission";
+      if (formData.offers_commission_bidding && formData.offers_hourly_work) {
+        pricingModel = "both";
+      } else if (formData.offers_hourly_work) {
+        pricingModel = "hourly";
+      } else {
+        pricingModel = "commission";
+      }
+
       // Create digger profile
       const { data: diggerProfile, error: profileError } = await supabase
         .from("digger_profiles")
@@ -161,7 +173,7 @@ const DiggerRegistration = () => {
           is_bonded: formData.is_bonded,
           is_licensed: formData.is_licensed,
           offers_free_estimates: formData.offers_free_estimates,
-          pricing_model: formData.pricing_model,
+          pricing_model: pricingModel,
           sic_code: selectedIndustryCode?.code_type === "SIC" ? selectedIndustryCode.code : null,
           naics_code: selectedIndustryCode?.code_type === "NAICS" ? selectedIndustryCode.code : null,
           custom_occupation_title: customOccupationTitle || null,
@@ -373,11 +385,11 @@ const DiggerRegistration = () => {
                       <span className="font-semibold text-primary">1. Commission-Based Gigs (Bidding)</span>
                     </div>
                     <p className="text-muted-foreground ml-4">
-                      Bid on projects and pay a commission only when you complete the work. You can participate in bidding regardless of your other settings.
+                      Bid on projects and pay a commission only when you complete the work.
                     </p>
                     <div className="ml-4 space-y-1 text-muted-foreground">
-                      <p>• <strong>Lead Cost:</strong> Free tier ($3/lead), Pro ($1.50/lead), Premium ($0/lead)</p>
-                      <p>• <strong>Commission:</strong> Free tier (9%, $5 min), Pro (4%, $5 min), Premium (0%)</p>
+                      <p>• <strong>Lead Cost:</strong> Free tier ($5/lead), Pro ($3/lead), Premium ($0/lead)</p>
+                      <p>• <strong>Commission:</strong> Free tier (9%), Pro (6%), Premium (0%)</p>
                     </div>
                   </div>
 
@@ -401,56 +413,68 @@ const DiggerRegistration = () => {
                 </div>
 
                 <div className="space-y-4 mt-4">
-                  <div className="flex items-center space-x-2 p-3 bg-background rounded-lg border border-border">
-                    <Checkbox
-                      id="offers_free_estimates"
-                      checked={formData.offers_free_estimates}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, offers_free_estimates: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="offers_free_estimates" className="cursor-pointer font-medium">
-                      I offer free estimates to potential clients
-                    </Label>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Note: Offering free estimates is a great way to attract clients across all industries!
+                  <Label className="text-base font-semibold">Select Your Service Options</Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Choose which types of work you want to offer. You can select multiple options.
                   </p>
-                
-                  <div className="space-y-4 mt-4">
-                    <Label className="text-base font-semibold">Choose Your Lead Pricing Model</Label>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Select how you want to be charged for leads. You'll always have access to commission-based bidding.
-                    </p>
-                    <RadioGroup
-                      value={formData.pricing_model}
-                      onValueChange={(value) => setFormData({ ...formData, pricing_model: value as "commission" | "hourly" | "both" })}
-                      className="space-y-3"
-                    >
-                      <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
-                        <RadioGroupItem value="commission" id="commission-only" className="mt-1" />
-                        <div className="flex-1">
-                          <Label htmlFor="commission-only" className="cursor-pointer font-medium">
-                            Commission-Based Only (Bidding)
-                          </Label>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Pay tier-based lead costs (Free: $3, Pro: $1.50, Premium: $0) plus commission when jobs complete
-                          </p>
-                        </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
+                      <Checkbox
+                        id="offers_commission_bidding"
+                        checked={formData.offers_commission_bidding}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, offers_commission_bidding: checked as boolean })
+                        }
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="offers_commission_bidding" className="cursor-pointer font-medium">
+                          Commission-Based Gigs (Bidding)
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Pay tier-based lead costs (Free: $5, Pro: $3, Premium: $0) plus commission when jobs complete (Free: 9%, Pro: 6%, Premium: 0%)
+                        </p>
                       </div>
-                      
-                      <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
-                        <RadioGroupItem value="hourly" id="hourly-only" className="mt-1" />
-                        <div className="flex-1">
-                          <Label htmlFor="hourly-only" className="cursor-pointer font-medium">
-                            Hourly Rate Work Only
-                          </Label>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Upfront: Tier-based lead cost. When awarded: Additional 1 hour of your rate. No commission.
-                          </p>
-                        </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
+                      <Checkbox
+                        id="offers_hourly_work"
+                        checked={formData.offers_hourly_work}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, offers_hourly_work: checked as boolean })
+                        }
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="offers_hourly_work" className="cursor-pointer font-medium">
+                          Hourly Rate Work
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Display your hourly rate range. No commission charged on hourly contracts.
+                        </p>
                       </div>
-                    </RadioGroup>
+                    </div>
+
+                    <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
+                      <Checkbox
+                        id="offers_free_estimates"
+                        checked={formData.offers_free_estimates}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, offers_free_estimates: checked as boolean })
+                        }
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="offers_free_estimates" className="cursor-pointer font-medium">
+                          Free Estimates
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Market yourself as offering free estimates - no charges apply
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
