@@ -383,6 +383,7 @@ export type Database = {
       }
       gigs: {
         Row: {
+          ai_matched_codes: boolean | null
           budget_max: number | null
           budget_min: number | null
           category_id: string | null
@@ -396,13 +397,16 @@ export type Database = {
           location: string
           location_lat: number | null
           location_lng: number | null
+          naics_codes: string[] | null
           purchase_count: number | null
+          sic_codes: string[] | null
           status: string | null
           timeline: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          ai_matched_codes?: boolean | null
           budget_max?: number | null
           budget_min?: number | null
           category_id?: string | null
@@ -416,13 +420,16 @@ export type Database = {
           location: string
           location_lat?: number | null
           location_lng?: number | null
+          naics_codes?: string[] | null
           purchase_count?: number | null
+          sic_codes?: string[] | null
           status?: string | null
           timeline?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          ai_matched_codes?: boolean | null
           budget_max?: number | null
           budget_min?: number | null
           category_id?: string | null
@@ -436,7 +443,9 @@ export type Database = {
           location?: string
           location_lat?: number | null
           location_lng?: number | null
+          naics_codes?: string[] | null
           purchase_count?: number | null
+          sic_codes?: string[] | null
           status?: string | null
           timeline?: string | null
           title?: string
