@@ -244,13 +244,26 @@ export default function PricingCalculator() {
           <table className="w-full text-sm border-l-4 border-l-blue-500">
             <thead>
               <tr className="border-b-2 border-border bg-blue-50">
-                <th className="text-left py-3 px-4 font-semibold">Cost Component</th>
+                <th className="text-left py-3 px-4 font-semibold">Estimated P&L</th>
                 {Object.entries(TIERS).map(([key, tier]) => (
                   <th key={key} className="text-right py-3 px-4 font-semibold">{tier.name}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
+              <tr className="border-b-2 border-border bg-green-50 dark:bg-green-950/20">
+                <td className="py-4 px-4 font-bold text-lg text-green-700 dark:text-green-400">
+                  Estimated Revenues
+                </td>
+                {Object.entries(TIERS).map(([key, tier]) => {
+                  const costs = calculateCosts(tier);
+                  return (
+                    <td key={key} className="text-right py-4 px-4 font-bold text-lg text-green-600">
+                      ${costs.revenue.toFixed(2)}
+                    </td>
+                  );
+                })}
+              </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 px-4 text-muted-foreground">Monthly Subscription</td>
                 {Object.entries(TIERS).map(([key, tier]) => {
@@ -338,19 +351,7 @@ export default function PricingCalculator() {
                 })}
               </tr>
               
-              <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Total Job Revenue</td>
-                {Object.entries(TIERS).map(([key, tier]) => {
-                  const costs = calculateCosts(tier);
-                  return (
-                    <td key={key} className="text-right py-3 px-4">
-                      ${costs.revenue.toFixed(2)}
-                    </td>
-                  );
-                })}
-              </tr>
-              
-              <tr className="bg-green-50 dark:bg-green-950/20">
+              <tr className="bg-green-50 dark:bg-green-950/20 border-t-2 border-border">
                 <td className="py-4 px-4 font-bold text-lg text-green-700 dark:text-green-400">
                   Net Earnings
                 </td>
