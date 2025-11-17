@@ -14,7 +14,7 @@ import { RegistrationCategorySelector } from "@/components/RegistrationCategoryS
 import { Loader2, Tag } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
-import { generateKeywordSuggestions } from "@/utils/keywordSuggestions";
+import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
 
 const DiggerRegistration = () => {
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ const DiggerRegistration = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [keywordsInput, setKeywordsInput] = useState("");
+  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   
   // Parse keywords from input
   const keywords = keywordsInput
@@ -36,9 +37,17 @@ const DiggerRegistration = () => {
     .filter(k => k.length > 0);
 
   // Generate keyword suggestions based on profession and categories
-  const keywordSuggestions = useMemo(() => {
-    if (!profession && categoryNames.length === 0) return [];
-    return generateKeywordSuggestions(profession, categoryNames);
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      if (!profession && categoryNames.length === 0) {
+        setKeywordSuggestions([]);
+        return;
+      }
+      const suggestions = await generateEnhancedKeywordSuggestions(profession, categoryNames);
+      setKeywordSuggestions(suggestions);
+    };
+
+    loadSuggestions();
   }, [profession, categoryNames]);
 
   // Fetch category names when selected categories change
@@ -154,7 +163,7 @@ const DiggerRegistration = () => {
   };
 
   // Add a suggested keyword
-  const handleAddKeyword = (keyword: string) => {
+  const handleAddKeyword = async (keyword: string) => {
     const currentKeywords = keywordsInput
       .split(/[,;]/)
       .map(k => k.trim())
@@ -166,6 +175,18 @@ const DiggerRegistration = () => {
         : keyword;
       setKeywordsInput(newKeywordsInput);
       toast.success(`Added "${keyword}" to keywords`);
+      
+      // Track keyword usage for analytics
+      try {
+        await supabase.rpc('track_keyword_usage', {
+          p_keyword: keyword,
+          p_profession: profession || null,
+          p_category_name: categoryNames.length > 0 ? categoryNames[0] : null
+        });
+      } catch (error) {
+        console.error('Error tracking keyword usage:', error);
+        // Don't show error to user, this is background analytics
+      }
     }
   };
 

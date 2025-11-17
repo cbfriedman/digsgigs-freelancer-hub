@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ReminderStats {
   total: number;
@@ -202,27 +204,37 @@ const AdminDashboard = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Manage profile completion reminders</p>
+              <p className="text-muted-foreground">Manage reminders and analytics</p>
             </div>
           </div>
-          <Button
-            onClick={triggerReminderJob}
-            disabled={triggeringJob}
-            size="lg"
-          >
-            {triggeringJob ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Running...
-              </>
-            ) : (
-              <>
-                <Mail className="mr-2 h-4 w-4" />
-                Trigger Reminder Job
-              </>
-            )}
-          </Button>
         </div>
+
+        <Tabs defaultValue="reminders" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="reminders">Profile Reminders</TabsTrigger>
+            <TabsTrigger value="keywords">Keyword Analytics</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="reminders" className="space-y-6">
+            <div className="flex justify-end">
+              <Button
+                onClick={triggerReminderJob}
+                disabled={triggeringJob}
+                size="lg"
+              >
+                {triggeringJob ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Trigger Reminder Job
+                  </>
+                )}
+              </Button>
+            </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -349,6 +361,12 @@ const AdminDashboard = () => {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="keywords">
+            <KeywordAnalyticsDashboard />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

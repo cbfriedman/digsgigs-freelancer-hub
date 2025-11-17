@@ -825,6 +825,36 @@ export type Database = {
         }
         Relationships: []
       }
+      keyword_analytics: {
+        Row: {
+          category_name: string | null
+          created_at: string
+          id: string
+          keyword: string
+          last_used_at: string
+          profession: string | null
+          times_used: number
+        }
+        Insert: {
+          category_name?: string | null
+          created_at?: string
+          id?: string
+          keyword: string
+          last_used_at?: string
+          profession?: string | null
+          times_used?: number
+        }
+        Update: {
+          category_name?: string | null
+          created_at?: string
+          id?: string
+          keyword?: string
+          last_used_at?: string
+          profession?: string | null
+          times_used?: number
+        }
+        Relationships: []
+      }
       lead_issues: {
         Row: {
           created_at: string
@@ -1568,6 +1598,14 @@ export type Database = {
       }
       increment_blog_post_views: {
         Args: { post_slug: string }
+        Returns: undefined
+      }
+      track_keyword_usage: {
+        Args: {
+          p_category_name?: string
+          p_keyword: string
+          p_profession?: string
+        }
         Returns: undefined
       }
     }
