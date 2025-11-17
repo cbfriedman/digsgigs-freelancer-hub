@@ -376,7 +376,7 @@ export default function Pricing() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-background z-50">
-                        {[500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 10000].map(num => (
+                        {[500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 10000].map(num => (
                           <SelectItem key={num} value={num.toString()}>${num.toLocaleString()}</SelectItem>
                         ))}
                       </SelectContent>
