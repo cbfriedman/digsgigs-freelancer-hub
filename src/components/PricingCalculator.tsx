@@ -63,7 +63,8 @@ export default function PricingCalculator() {
     // Free: 3 hours, Pro: 2 hours, Premium: 1 hour
     const hoursCharged = tier.name === 'free' ? 3 : tier.name === 'pro' ? 2 : 1;
     const upfrontLeadCost = tier.leadCostValue * leads;
-    const costPerAward = hourlyRate * hoursCharged * jobs;
+    const costPerAwardIndividual = hourlyRate * hoursCharged;
+    const costPerAward = costPerAwardIndividual * jobs;
     
     // No commission on hourly bids
     const totalCost = monthlyFee + upfrontLeadCost + costPerAward;
@@ -74,6 +75,7 @@ export default function PricingCalculator() {
     return {
       monthlyFee,
       upfrontLeadCost,
+      costPerAwardIndividual,
       costPerAward,
       totalCost,
       revenue,
@@ -291,10 +293,22 @@ export default function PricingCalculator() {
                   const hoursCharged = tier.name === 'free' ? 3 : tier.name === 'pro' ? 2 : 1;
                   return (
                     <td key={key} className="text-right py-3 px-4">
-                      ${costs.costPerAward.toFixed(2)}
+                      ${costs.costPerAwardIndividual.toFixed(2)}
                       <div className="text-xs text-muted-foreground">
                         ({hoursCharged} {hoursCharged === 1 ? 'hr' : 'hrs'} × ${hourlyRate})
                       </div>
+                    </td>
+                  );
+                })}
+              </tr>
+              
+              <tr className="border-b border-border/50">
+                <td className="py-3 px-4 text-muted-foreground">Total Award Costs</td>
+                {Object.entries(TIERS).map(([key, tier]) => {
+                  const costs = calculateCosts(tier);
+                  return (
+                    <td key={key} className="text-right py-3 px-4">
+                      ${costs.costPerAward.toFixed(2)}
                     </td>
                   );
                 })}
