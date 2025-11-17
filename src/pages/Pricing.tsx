@@ -25,17 +25,13 @@ const TIERS = {
     leadCostValue: 5,
     commission: '9%',
     commissionValue: 9,
+    freeEstimateCost: '$150',
+    hourlyRateCharge: '3 hours',
     minimumFee: 0,
     priceId: null,
     productId: null,
     popular: false,
-    features: [
-      'Unlimited bidding on gigs',
-      '$5 per lead purchase',
-      '9% commission on completed work',
-      '$150 per Free Estimate listing',
-      '3-hour rate charge when awarded (hourly)',
-    ],
+    features: [],
   },
   pro: {
     name: 'Pro',
@@ -45,17 +41,13 @@ const TIERS = {
     leadCostValue: 3,
     commission: '6%',
     commissionValue: 6,
+    freeEstimateCost: '$100',
+    hourlyRateCharge: '2 hours',
     minimumFee: 0,
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
     productId: 'prod_TQ0mK76zTAwoQc',
     popular: true,
-    features: [
-      'Unlimited bidding on gigs',
-      '$3 per lead purchase',
-      '6% commission on completed work',
-      '$100 per Free Estimate listing',
-      '2-hour rate charge when awarded (hourly)',
-    ],
+    features: [],
   },
   premium: {
     name: 'Premium',
@@ -65,17 +57,13 @@ const TIERS = {
     leadCostValue: 0,
     commission: '0%',
     commissionValue: 0,
+    freeEstimateCost: '$50',
+    hourlyRateCharge: '1 hour',
     minimumFee: 0,
     priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
     productId: 'prod_TQ0mVQT1H5f1zg',
     popular: false,
-    features: [
-      'Unlimited bidding on gigs',
-      'Free lead purchases',
-      'No commission on completed work',
-      '$50 per Free Estimate listing',
-      '1-hour rate charge when awarded (hourly)',
-    ],
+    features: [],
   },
 };
 
@@ -280,16 +268,26 @@ export default function Pricing() {
                       <span className="text-sm font-medium">Commission:</span>
                       <span className="font-bold text-primary">{tier.commission}</span>
                     </div>
+                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
+                      <span className="text-sm font-medium">Free Estimate:</span>
+                      <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
+                      <span className="text-sm font-medium">Hourly Award Charge:</span>
+                      <span className="font-bold text-primary">{tier.hourlyRateCharge}</span>
+                    </div>
                   </div>
 
-                  <ul className="space-y-3">
-                    {tier.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {tier.features.length > 0 && (
+                    <ul className="space-y-3">
+                      {tier.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                          <span className="text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   <Button
                     onClick={() => handleSubscribe(key, tier.priceId)}
