@@ -25,8 +25,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             digsandgigs
           </h1>
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <ArrowUp className="absolute -top-8 left-1/2 -translate-x-1/2 h-5 w-5 text-primary animate-bounce" />
+            <div className="relative pt-10">
+              <ArrowUp className="absolute -top-2 left-1/2 -translate-x-1/2 h-6 w-6 text-primary animate-pulse drop-shadow-lg" />
               <Button 
                 variant="default" 
                 onClick={() => setChatOpen(true)}
