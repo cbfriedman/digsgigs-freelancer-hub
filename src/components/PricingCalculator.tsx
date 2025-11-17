@@ -47,7 +47,7 @@ const TIERS = {
 export default function PricingCalculator() {
   const [leads, setLeads] = useState(15);
   const [hourlyRate, setHourlyRate] = useState(100);
-  const [hoursPerJob, setHoursPerJob] = useState(3);
+  const [hoursPerJob, setHoursPerJob] = useState(5);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
   
@@ -218,8 +218,8 @@ export default function PricingCalculator() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
-                {[1, 2, 3, 4, 5, 8, 10, 15, 20, 30, 40, 50].map(num => (
-                  <SelectItem key={num} value={num.toString()}>{num} {num === 1 ? 'hour' : 'hours'}</SelectItem>
+                {[5, 10, 15, 20, 25, 30, 35, 40].map(num => (
+                  <SelectItem key={num} value={num.toString()}>{num} hours</SelectItem>
                 ))}
               </SelectContent>
             </Select>
