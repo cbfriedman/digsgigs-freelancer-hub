@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
 
     // Send email to admins
     const emailResponse = await resend.emails.send({
-      from: 'Digsandgigs <onboarding@resend.dev>',
+      from: 'Digsandgigs <noreply@digsandgigs.net>',
       to: notifyEmails,
       subject: `New Keyword Request: ${profession}`,
       html: `

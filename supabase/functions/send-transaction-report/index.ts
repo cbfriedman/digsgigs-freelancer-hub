@@ -200,7 +200,7 @@ serve(async (req) => {
 
     // Send email
     const emailResponse = await resend.emails.send({
-      from: 'digsandgiggs <onboarding@resend.dev>',
+      from: 'Digsandgigs <noreply@digsandgigs.net>',
       to: [user.email],
       subject: `Your Transaction Report - ${transactions.length} transaction${transactions.length !== 1 ? 's' : ''}`,
       html,
