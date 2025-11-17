@@ -257,7 +257,7 @@ export default function Pricing() {
               Choose your Plan
             </h1>
             <p className="text-xl text-muted-foreground">
-              Lower your commission and get unlimited free estimate requests by upgrading to Pro. Keep more of your earnings on every gig.
+              Select the plan that best fits your business needs. Upgrade to lower costs, reduce commissions, and maximize your earnings on every project.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               💰 <strong>Pro members save thousands per year</strong> on estimate requests - see the savings table below
