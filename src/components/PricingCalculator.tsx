@@ -63,7 +63,7 @@ export default function PricingCalculator() {
   const calculateCosts = (tier: typeof TIERS.free) => {
     const monthlyFee = tier.priceValue;
     
-    // For hourly bids: upfront lead cost + hourly charge when awarded
+    // For hourly bids: upfront lead cost + hourly award upcharge when awarded
     // Free: 3 hours, Pro: 2 hours, Premium: 1 hour
     const hoursCharged = tier.hoursPerAward ?? 1;
     const upfrontLeadCost = tier.leadCostValue * leads;
@@ -295,14 +295,14 @@ export default function PricingCalculator() {
               <tr className="border-b border-border/50">
                 <td className="py-3 px-4 text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    Cost per Award
+                    Hourly Award Upcharge
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Hourly charge on awarded leads: Free (3 hrs), Pro (2 hrs), Premium (1 hr)</p>
+                          <p>Hourly award upcharge on awarded leads: Free (3 hrs), Pro (2 hrs), Premium (1 hr)</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -323,7 +323,7 @@ export default function PricingCalculator() {
               </tr>
               
               <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Total Award Cost per Transaction</td>
+                <td className="py-3 px-4 text-muted-foreground">Total Hourly Award Upcharge</td>
                 {Object.entries(TIERS).map(([key, tier]) => {
                   const costs = calculateCosts(tier);
                   return (
@@ -552,7 +552,7 @@ export default function PricingCalculator() {
                     })}
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Upfront Estimate Request Cost</td>
+                    <td className="py-3 px-4 text-muted-foreground">Free Estimate Upcharge</td>
                     {Object.entries(TIERS).map(([key, tier]) => (
                       <td key={key} className="text-right py-3 px-4">
                         {tier.estimateCost === 0 ? (
