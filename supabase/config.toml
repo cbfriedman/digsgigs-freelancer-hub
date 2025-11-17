@@ -52,4 +52,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.match-industry-codes]
-verify_jwt = true
+verify_jwt = false
+
+[functions.test-ai-matching]
+verify_jwt = false
