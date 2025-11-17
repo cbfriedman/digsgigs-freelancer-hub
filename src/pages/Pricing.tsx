@@ -72,9 +72,9 @@ export default function Pricing() {
   const { toast } = useToast();
   const { user, isDigger, subscriptionStatus, loading: authLoading, checkSubscription } = useAuth();
   const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [interactiveLeads, setInteractiveLeads] = useState(30);
-  const [interactiveJobValue, setInteractiveJobValue] = useState(1000);
-  const [conversionRate, setConversionRate] = useState(15);
+  const [interactiveLeads, setInteractiveLeads] = useState(50);
+  const [interactiveJobValue, setInteractiveJobValue] = useState(2000);
+  const [conversionRate, setConversionRate] = useState(20);
   const [showResults, setShowResults] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
