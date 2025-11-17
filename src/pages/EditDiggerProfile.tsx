@@ -408,7 +408,7 @@ const EditDiggerProfile = () => {
                       placeholder="50.00"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Hourly leads cost 1 hour of your rate
+                      Hourly leads cost tier rate + 1 hour of your rate
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -546,7 +546,7 @@ const EditDiggerProfile = () => {
                             Hourly Rate Work Only
                           </Label>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Lead cost = 1 hour of your rate. No commission on completed work.
+                            Lead cost = tier rate + 1 hour of your rate. No commission on completed work.
                           </p>
                         </div>
                       </div>
