@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MapPin } from "lucide-react";
+import { MapPin, Info, Briefcase } from "lucide-react";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 import { geocodeAddress } from "@/utils/geocoding";
 
@@ -296,6 +297,51 @@ const DiggerRegistration = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Selected Professions Summary */}
+                {(selectedIndustryCodes.length > 0 || customOccupationTitles.length > 0) && (
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Briefcase className="h-5 w-5 text-primary" />
+                        Selected Primary Professions ({selectedIndustryCodes.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {selectedIndustryCodes.map((code, index) => (
+                          <div 
+                            key={code.id} 
+                            className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-foreground">
+                                  {customOccupationTitles[index] || code.title}
+                                </span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {code.code_type}: {code.code}
+                                </Badge>
+                              </div>
+                              {code.description && (
+                                <p className="text-sm text-muted-foreground">
+                                  {code.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+                        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <p>
+                          These professions will be used to match you with relevant gigs. 
+                          You'll receive notifications when gigs match your expertise.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Primary Professions Selection */}
                 <div className="space-y-4 border border-primary/20 rounded-lg p-4 bg-primary/5">
