@@ -28,10 +28,11 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
   selectedCode,
   customTitle = "",
 }) => {
-  const [codeType, setCodeType] = useState<"SIC" | "NAICS">("NAICS");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<IndustryCode[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualCodeType, setManualCodeType] = useState<"SIC" | "NAICS">("NAICS");
   const [manualCode, setManualCode] = useState("");
   const [manualTitle, setManualTitle] = useState(customTitle);
 
@@ -46,9 +47,8 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
       const { data, error } = await supabase
         .from("industry_codes")
         .select("*")
-        .eq("code_type", codeType)
         .or(`code.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
-        .limit(20);
+        .limit(40);
 
       if (error) throw error;
 
@@ -72,7 +72,7 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
 
     const customCode: IndustryCode = {
       id: `custom-${manualCode}`,
-      code_type: codeType,
+      code_type: manualCodeType,
       code: manualCode,
       title: manualTitle,
       description: null,
@@ -80,6 +80,7 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
 
     onSelect(customCode, manualTitle);
     toast.success("Custom occupation added");
+    setShowManualEntry(false);
   };
 
   const handleClearSelection = () => {
@@ -93,21 +94,10 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
     <div className="space-y-6">
       <div className="space-y-4">
         <div>
-          <Label className="text-base font-semibold mb-3 block">Select Code Type</Label>
-          <RadioGroup value={codeType} onValueChange={(val) => setCodeType(val as "SIC" | "NAICS")}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="NAICS" id="naics" />
-              <Label htmlFor="naics" className="cursor-pointer font-normal">
-                NAICS (North American Industry Classification System)
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="SIC" id="sic" />
-              <Label htmlFor="sic" className="cursor-pointer font-normal">
-                SIC (Standard Industrial Classification)
-              </Label>
-            </div>
-          </RadioGroup>
+          <Label className="text-base font-semibold mb-3 block">Search for Your Occupation</Label>
+          <p className="text-sm text-muted-foreground mb-3">
+            Enter your profession to see all related industry codes
+          </p>
         </div>
 
         {selectedCode && (
@@ -137,10 +127,9 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
         )}
 
         <div className="space-y-3">
-          <Label className="text-base font-semibold">Search by Code or Occupation</Label>
           <div className="flex gap-2">
             <Input
-              placeholder={`Search ${codeType} codes or titles...`}
+              placeholder="e.g., Software Developer, Plumber, Accountant..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -178,16 +167,54 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
           )}
         </div>
 
-        <div className="pt-4 border-t">
-          <Label className="text-base font-semibold mb-3 block">Or Enter Manually</Label>
-          <div className="space-y-3">
+        {!showManualEntry && (
+          <div className="pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowManualEntry(true)}
+              className="w-full"
+            >
+              Can't find your occupation? Enter manually
+            </Button>
+          </div>
+        )}
+
+        {showManualEntry && (
+          <div className="pt-4 border-t space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold">Enter Manually</Label>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowManualEntry(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+            <div>
+              <Label className="text-sm mb-2 block">Select Code Type</Label>
+              <RadioGroup value={manualCodeType} onValueChange={(val) => setManualCodeType(val as "SIC" | "NAICS")}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="NAICS" id="manual-naics" />
+                  <Label htmlFor="manual-naics" className="cursor-pointer font-normal text-sm">
+                    NAICS
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="SIC" id="manual-sic" />
+                  <Label htmlFor="manual-sic" className="cursor-pointer font-normal text-sm">
+                    SIC
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
             <div>
               <Label htmlFor="manual-code" className="text-sm">
-                {codeType} Code
+                {manualCodeType} Code
               </Label>
               <Input
                 id="manual-code"
-                placeholder={`e.g., ${codeType === "NAICS" ? "541511" : "7371"}`}
+                placeholder={`e.g., ${manualCodeType === "NAICS" ? "541511" : "7371"}`}
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
               />
@@ -207,7 +234,7 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
               Add Custom Occupation
             </Button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
