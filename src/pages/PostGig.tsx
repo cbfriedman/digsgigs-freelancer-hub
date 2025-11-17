@@ -13,6 +13,7 @@ import { z } from "zod";
 import { GigCategorySelector } from "@/components/GigCategorySelector";
 import { geocodeAddress } from "@/utils/geocoding";
 import { Navigation } from "@/components/Navigation";
+import SEOHead from "@/components/SEOHead";
 
 const gigSchema = z.object({
   title: z.string().trim().min(10, "Title must be at least 10 characters").max(100, "Title must be less than 100 characters"),
@@ -199,6 +200,11 @@ const PostGig = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Post a Gig - Find Qualified Service Professionals"
+        description="Post your project and connect with skilled service professionals. Get competitive bids from verified contractors, freelancers, and service providers. Free to post, only pay when you hire."
+        keywords="post project, hire contractor, find professional, post job, get quotes, service request"
+      />
       <Navigation showBackButton backLabel="Back to Home" />
 
       <div className="container mx-auto px-4 py-12 max-w-3xl">
