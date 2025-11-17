@@ -35,6 +35,7 @@ import TestAIMatching from "./pages/TestAIMatching";
 import E2ETestSuite from "./pages/E2ETestSuite";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
+import Sitemap from "./pages/Sitemap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => (
           <Route path="/e2e-test" element={<E2ETestSuite />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/sitemap.xml" element={<Sitemap />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
