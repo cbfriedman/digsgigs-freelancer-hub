@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MapPin, Info, Briefcase } from "lucide-react";
+import { MapPin, Info, Briefcase, X } from "lucide-react";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 import { geocodeAddress } from "@/utils/geocoding";
 
@@ -103,6 +103,13 @@ const DiggerRegistration = () => {
     if (references.length > 1) {
       setReferences(references.filter((_, i) => i !== index));
     }
+  };
+
+  const removeProfession = (index: number) => {
+    const newCodes = selectedIndustryCodes.filter((_, i) => i !== index);
+    const newTitles = customOccupationTitles.filter((_, i) => i !== index);
+    setSelectedIndustryCodes(newCodes);
+    setCustomOccupationTitles(newTitles);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -312,7 +319,7 @@ const DiggerRegistration = () => {
                         {selectedIndustryCodes.map((code, index) => (
                           <div 
                             key={code.id} 
-                            className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border"
+                            className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border group hover:border-primary/30 transition-colors"
                           >
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
@@ -329,6 +336,15 @@ const DiggerRegistration = () => {
                                 </p>
                               )}
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeProfession(index)}
+                              type="button"
+                            >
+                              <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                            </Button>
                           </div>
                         ))}
                       </div>
