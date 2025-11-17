@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 import { Loader2, Tag } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { KeywordSuggestions } from "@/components/KeywordSuggestions";
+import { generateKeywordSuggestions } from "@/utils/keywordSuggestions";
 
 const DiggerRegistration = () => {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ const DiggerRegistration = () => {
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [keywordsInput, setKeywordsInput] = useState("");
   
   // Parse keywords from input
@@ -31,6 +34,33 @@ const DiggerRegistration = () => {
     .split(/[,;]/)
     .map(k => k.trim())
     .filter(k => k.length > 0);
+
+  // Generate keyword suggestions based on profession and categories
+  const keywordSuggestions = useMemo(() => {
+    if (!profession && categoryNames.length === 0) return [];
+    return generateKeywordSuggestions(profession, categoryNames);
+  }, [profession, categoryNames]);
+
+  // Fetch category names when selected categories change
+  useEffect(() => {
+    const fetchCategoryNames = async () => {
+      if (selectedCategories.length === 0) {
+        setCategoryNames([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name")
+        .in("id", selectedCategories);
+
+      if (!error && data) {
+        setCategoryNames(data.map(cat => cat.name));
+      }
+    };
+
+    fetchCategoryNames();
+  }, [selectedCategories]);
 
   useEffect(() => {
     if (!user) {
@@ -121,6 +151,22 @@ const DiggerRegistration = () => {
     }
     
     return parts;
+  };
+
+  // Add a suggested keyword
+  const handleAddKeyword = (keyword: string) => {
+    const currentKeywords = keywordsInput
+      .split(/[,;]/)
+      .map(k => k.trim())
+      .filter(k => k.length > 0);
+    
+    if (!currentKeywords.some(kw => kw.toLowerCase() === keyword.toLowerCase())) {
+      const newKeywordsInput = currentKeywords.length > 0 
+        ? `${keywordsInput.trim()}, ${keyword}`
+        : keyword;
+      setKeywordsInput(newKeywordsInput);
+      toast.success(`Added "${keyword}" to keywords`);
+    }
   };
 
   return (
@@ -227,6 +273,16 @@ const DiggerRegistration = () => {
               <p className="text-xs text-muted-foreground">
                 Add relevant keywords to improve matching with gigs. Use commas or semicolons to separate keywords.
               </p>
+              
+              {/* Keyword Suggestions */}
+              {(profession || selectedCategories.length > 0) && (
+                <KeywordSuggestions
+                  suggestions={keywordSuggestions}
+                  currentKeywords={keywords}
+                  onAddKeyword={handleAddKeyword}
+                />
+              )}
+              
               {keywords.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {keywords.map((keyword, index) => (
