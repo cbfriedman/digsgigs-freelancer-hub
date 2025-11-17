@@ -459,7 +459,10 @@ const Index = () => {
 
           <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
             {/* For Diggers */}
-            <div className="space-y-8">
+            <div 
+              className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 hover:-translate-y-1"
+              onClick={() => navigate("/digger-registration")}
+            >
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-primary-foreground" />
@@ -481,10 +484,17 @@ const Index = () => {
                   </div>
                 ))}
               </div>
+              <div className="flex items-center justify-center gap-2 text-primary font-medium pt-4">
+                <span>Get Started as Digger</span>
+                <ArrowRight className="w-5 h-5" />
+              </div>
             </div>
 
             {/* For Clients */}
-            <div className="space-y-8">
+            <div 
+              className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-accent/50 hover:-translate-y-1"
+              onClick={() => navigate("/auth?redirect=/post-gig")}
+            >
               <div className="text-center">
                 <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Briefcase className="w-8 h-8 text-accent-foreground" />
@@ -505,6 +515,10 @@ const Index = () => {
                     <span className="text-foreground">{step}</span>
                   </div>
                 ))}
+              </div>
+              <div className="flex items-center justify-center gap-2 text-accent font-medium pt-4">
+                <span>Get Started as Client</span>
+                <ArrowRight className="w-5 h-5" />
               </div>
             </div>
           </div>
