@@ -33,6 +33,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Notifications from "./pages/Notifications";
 import TestAIMatching from "./pages/TestAIMatching";
 import E2ETestSuite from "./pages/E2ETestSuite";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +76,8 @@ const App = () => (
           <Route path="/saved-searches" element={<SavedSearches />} />
           <Route path="/test-ai-matching" element={<TestAIMatching />} />
           <Route path="/e2e-test" element={<E2ETestSuite />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

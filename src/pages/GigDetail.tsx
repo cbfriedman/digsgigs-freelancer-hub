@@ -12,6 +12,8 @@ import { formatDistanceToNow } from "date-fns";
 import { BidForm } from "@/components/BidForm";
 import { BidsList } from "@/components/BidsList";
 import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
+import SEOHead from "@/components/SEOHead";
+import { generateJobPostingSchema } from "@/components/StructuredData";
 
 interface Gig {
   id: string;
@@ -202,8 +204,31 @@ const GigDetail = () => {
 
   if (!gig) return null;
 
+  const budgetText = gig.budget_min && gig.budget_max 
+    ? `$${gig.budget_min.toLocaleString()} - $${gig.budget_max.toLocaleString()}`
+    : gig.budget_min 
+    ? `From $${gig.budget_min.toLocaleString()}`
+    : 'Budget negotiable';
+
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title={`${gig.title} - Service Project in ${gig.location}`}
+        description={`${gig.description.substring(0, 150)}... Budget: ${budgetText}. Posted ${formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}. Find qualified professionals on digsandgigs.`}
+        keywords={`${gig.title}, ${gig.location}, service project, hire contractor, ${gig.categories?.name || 'services'}`}
+        structuredData={generateJobPostingSchema({
+          title: gig.title,
+          description: gig.description,
+          location: gig.location,
+          datePosted: gig.created_at,
+          validThrough: gig.deadline || undefined,
+          baseSalary: gig.budget_min ? {
+            value: gig.budget_min,
+            currency: "USD",
+            unitText: "PROJECT"
+          } : undefined
+        })}
+      />
       <nav className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <Button

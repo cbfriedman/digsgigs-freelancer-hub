@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { Navigation } from "@/components/Navigation";
+import SEOHead from "@/components/SEOHead";
+import { generateLocalBusinessSchema } from "@/components/StructuredData";
 
 interface Reference {
   id: string;
@@ -29,8 +31,11 @@ interface Digger {
   id: string;
   user_id: string;
   handle: string | null;
+  business_name: string;
   profession: string;
   bio: string | null;
+  location: string;
+  phone: string;
   hourly_rate: number | null;
   hourly_rate_min: number | null;
   hourly_rate_max: number | null;
@@ -40,6 +45,7 @@ interface Digger {
   profile_image_url: string | null;
   portfolio_url: string | null;
   work_photos: string[] | null;
+  skills: string[] | null;
   completion_rate: number | null;
   response_time_hours: number | null;
   is_insured: boolean;
@@ -48,6 +54,8 @@ interface Digger {
   sic_code: string | null;
   naics_code: string | null;
   custom_occupation_title: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
   profiles: {
     full_name: string | null;
     email: string;
@@ -254,8 +262,36 @@ const DiggerDetail = () => {
 
   if (!digger) return null;
 
+  const displayProfession = digger.custom_occupation_title || digger.profession;
+
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title={`${digger.business_name} - ${displayProfession} in ${digger.location}`}
+        description={`${digger.bio || `Professional ${displayProfession} services in ${digger.location}`}. ${digger.average_rating ? `Rated ${digger.average_rating}/5 stars` : 'Available for hire'}. ${digger.hourly_rate ? `Starting at $${digger.hourly_rate}/hour` : 'Contact for pricing'}.`}
+        keywords={`${displayProfession}, ${digger.location}, contractor, service professional, ${digger.skills?.join(', ') || ''}`}
+        ogType="profile"
+        ogImage={digger.profile_image_url || undefined}
+        structuredData={generateLocalBusinessSchema({
+          name: digger.business_name,
+          description: digger.bio || `Professional ${displayProfession} services`,
+          url: window.location.href,
+          telephone: digger.phone,
+          address: {
+            addressLocality: digger.location
+          },
+          geo: digger.location_lat && digger.location_lng ? {
+            latitude: digger.location_lat,
+            longitude: digger.location_lng
+          } : undefined,
+          priceRange: digger.hourly_rate ? `$${digger.hourly_rate}+` : undefined,
+          aggregateRating: digger.average_rating ? {
+            ratingValue: digger.average_rating,
+            reviewCount: digger.total_ratings || 0
+          } : undefined,
+          image: digger.profile_image_url || undefined
+        })}
+      />
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 

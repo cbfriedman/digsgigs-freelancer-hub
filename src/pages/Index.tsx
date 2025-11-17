@@ -243,6 +243,9 @@ const Index = () => {
             digsandgigs
           </h1>
           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/blog")}>
+              Blog
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")}>
               Pricing
             </Button>
