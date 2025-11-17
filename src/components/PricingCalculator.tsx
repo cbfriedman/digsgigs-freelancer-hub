@@ -306,7 +306,7 @@ export default function PricingCalculator() {
               </tr>
               
               <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Total Award Costs</td>
+                <td className="py-3 px-4 text-muted-foreground">Total Award Cost per Transaction</td>
                 {Object.entries(TIERS).map(([key, tier]) => {
                   const costs = calculateCosts(tier);
                   return (
@@ -315,6 +315,15 @@ export default function PricingCalculator() {
                     </td>
                   );
                 })}
+              </tr>
+              
+              <tr className="border-b border-border/50">
+                <td className="py-3 px-4 text-muted-foreground">Number of Transactions per Month</td>
+                {Object.entries(TIERS).map(([key]) => (
+                  <td key={key} className="text-right py-3 px-4">
+                    {jobs}
+                  </td>
+                ))}
               </tr>
               
               <tr className="border-b-2 border-border bg-primary/5">
