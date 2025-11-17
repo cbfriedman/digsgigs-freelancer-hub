@@ -15,9 +15,9 @@ const TIERS = {
     leadCostValue: 5,
     commissionValue: 9,
     minimumFee: 0,
-    estimateCost: 0,
+    estimateCost: 100,
     hourlyRateClickCost: 0,
-    jobAwardedCost: 0,
+    jobAwardedCost: 100,
   },
   pro: {
     name: 'Pro',
@@ -25,9 +25,9 @@ const TIERS = {
     leadCostValue: 3,
     commissionValue: 6,
     minimumFee: 0,
-    estimateCost: 0,
+    estimateCost: 100,
     hourlyRateClickCost: 0,
-    jobAwardedCost: 0,
+    jobAwardedCost: 100,
   },
   premium: {
     name: 'Premium',
@@ -476,7 +476,7 @@ export default function PricingCalculator() {
                 </thead>
                 <tbody>
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Cost per Lead</td>
+                    <td className="py-3 px-4 text-muted-foreground">Upfront Estimate Request Cost</td>
                     {Object.entries(TIERS).map(([key, tier]) => (
                       <td key={key} className="text-right py-3 px-4">
                         {tier.estimateCost === 0 ? (
@@ -498,7 +498,7 @@ export default function PricingCalculator() {
                   </tr>
                   
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Total Lead Costs</td>
+                    <td className="py-3 px-4 text-muted-foreground">Total Upfront Costs</td>
                     {Object.entries(TIERS).map(([key, tier]) => {
                       const totalLeadCost = tier.estimateCost * freeEstimateLeads;
                       return (
@@ -523,21 +523,43 @@ export default function PricingCalculator() {
                   </tr>
                   
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Cost per Job Awarded</td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        Cost per Award
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Cost charged when a job is awarded</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </td>
                     {Object.entries(TIERS).map(([key, tier]) => (
                       <td key={key} className="text-right py-3 px-4">
-                        ${tier.jobAwardedCost.toFixed(2)}
+                        {tier.jobAwardedCost === 0 ? (
+                          <span className="text-green-600 font-semibold">FREE</span>
+                        ) : (
+                          `$${tier.jobAwardedCost.toFixed(2)}`
+                        )}
                       </td>
                     ))}
                   </tr>
                   
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Total Job Awarded Costs</td>
+                    <td className="py-3 px-4 text-muted-foreground">Total Award Costs</td>
                     {Object.entries(TIERS).map(([key, tier]) => {
                       const totalJobCost = tier.jobAwardedCost * freeEstimateJobs;
                       return (
                         <td key={key} className="text-right py-3 px-4">
-                          ${totalJobCost.toFixed(2)}
+                          {totalJobCost === 0 ? (
+                            <span className="text-green-600 font-semibold">FREE</span>
+                          ) : (
+                            `$${totalJobCost.toFixed(2)}`
+                          )}
                         </td>
                       );
                     })}
