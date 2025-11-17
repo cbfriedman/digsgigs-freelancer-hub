@@ -302,7 +302,7 @@ export default function Pricing() {
           <div className="max-w-6xl mx-auto">
             <Card className="bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
               <CardHeader>
-                <CardTitle className="text-center text-2xl">Leads Purchase Calculator</CardTitle>
+                <CardTitle className="text-center text-2xl">Fixed-Price Contracts Calculator</CardTitle>
                 <CardDescription className="text-center">
                   Calculate your costs based on your activity
                 </CardDescription>
@@ -465,6 +465,19 @@ export default function Pricing() {
                             </td>
                           ))}
                         </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Escrow Fees (5% of revenue)</td>
+                          {calculateInteractiveCosts().map((result) => {
+                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
+                            const totalRevenue = calculatedJobs * interactiveJobValue;
+                            const escrowFee = totalRevenue * 0.05;
+                            return (
+                              <td key={result.name} className="text-right py-3 px-4">
+                                ${escrowFee.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
                         <tr className="border-b-2 border-border bg-blue-50 dark:bg-blue-950/20">
                           <td className="py-4 px-4 font-bold text-xl text-blue-700 dark:text-blue-400">
                             Net Earnings
@@ -472,7 +485,8 @@ export default function Pricing() {
                           {calculateInteractiveCosts().map((result) => {
                             const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
                             const totalRevenue = calculatedJobs * interactiveJobValue;
-                            const netEarnings = totalRevenue - result.total;
+                            const escrowFee = totalRevenue * 0.05;
+                            const netEarnings = totalRevenue - result.total - escrowFee;
                             return (
                               <td key={result.name} className="text-right py-4 px-4 font-bold text-xl text-blue-600">
                                 ${netEarnings.toFixed(2)}
