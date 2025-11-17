@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Mail, MessageSquare, Phone } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
+import SEOHead from "@/components/SEOHead";
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -46,6 +47,11 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Contact Us - Get Support & Assistance"
+        description="Have questions about digsandgigs? Contact our support team for help with your account, pricing, or any other inquiries. We're here to help clients and service professionals succeed."
+        keywords="contact us, customer support, help desk, get help, support team, contact digsandgigs"
+      />
       <Navigation showBackButton backLabel="Back to Home" />
 
       <div className="container mx-auto px-4 py-12 max-w-6xl">

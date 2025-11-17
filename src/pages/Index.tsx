@@ -8,7 +8,9 @@ import { GigCard } from "@/components/GigCard";
 import { Footer } from "@/components/Footer";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
+import SEOHead from "@/components/SEOHead";
+import { generateOrganizationSchema, generateWebsiteSchema } from "@/components/StructuredData";
+import {
   Search, 
   Users, 
   Briefcase, 
@@ -219,6 +221,18 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Connect Skilled Service Professionals with Local Clients"
+        description="digsandgigs connects skilled service professionals (diggers) with clients seeking local services. Post gigs, browse qualified diggers, and grow your business with transparent pricing. No subscriptions required."
+        keywords="local services, service marketplace, hire professionals, post gigs, contractors, freelancers, lead generation, service providers, home services"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@graph": [
+            generateOrganizationSchema(),
+            generateWebsiteSchema()
+          ]
+        }}
+      />
       {/* Navigation */}
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

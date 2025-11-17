@@ -18,6 +18,8 @@ import PricingModelComparison from "@/components/PricingModelComparison";
 import ProjectCostCalculator from "@/components/ProjectCostCalculator";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import SEOHead from "@/components/SEOHead";
+import { generateFAQSchema } from "@/components/StructuredData";
 
 const TIERS = {
   free: {
@@ -177,6 +179,16 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Pricing Plans - Transparent Subscription & Lead Costs"
+        description="Compare pricing plans for service professionals on digsandgigs. Choose from Free, Pro, or Premium tiers with transparent lead costs, no hidden fees, and flexible monthly subscriptions. Calculate your ROI with our interactive pricing calculator."
+        keywords="pricing plans, lead costs, subscription tiers, service professional pricing, contractor leads, freelance pricing, transparent pricing"
+        structuredData={generateFAQSchema([
+          { question: "What are the subscription tiers?", answer: "We offer Free ($0/month), Pro ($99/month), and Premium ($599/month) tiers with different lead costs and features." },
+          { question: "How much do leads cost?", answer: "Lead costs vary by tier: Free tier leads cost $60, Pro tier leads cost $40, and Premium tier leads are FREE." },
+          { question: "Is there a commission on completed jobs?", answer: "Commission rates depend on your tier: Free (9%), Pro (6%), Premium (0%)." }
+        ])}
+      />
       {/* Navigation */}
       <Navigation showBackButton backLabel="Back to Home" />
 

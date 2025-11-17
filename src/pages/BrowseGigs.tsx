@@ -17,6 +17,8 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { GigAdvancedFilters } from "@/components/GigAdvancedFilters";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
+import SEOHead from "@/components/SEOHead";
+import { generateBreadcrumbSchema } from "@/components/StructuredData";
 
 interface Category {
   id: string;
@@ -218,6 +220,15 @@ const BrowseGigs = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Browse Local Service Gigs - Find Projects & Jobs"
+        description="Discover local service projects and gigs posted by clients. Search by category, location, and budget. Connect with clients seeking professionals for plumbing, electrical, landscaping, handyman services, and more."
+        keywords="service gigs, local jobs, contractor projects, freelance gigs, home service jobs, find work, service opportunities"
+        structuredData={generateBreadcrumbSchema([
+          { name: "Home", url: "https://digsandgigs.com" },
+          { name: "Browse Gigs", url: "https://digsandgigs.com/browse-gigs" }
+        ])}
+      />
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 
