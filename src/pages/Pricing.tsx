@@ -352,7 +352,7 @@ export default function Pricing() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Average Job Value</Label>
+                    <Label>Average Revenues per job</Label>
                     <Select 
                       value={interactiveJobValue.toString()} 
                       onValueChange={(v) => setInteractiveJobValue(Number(v))}
