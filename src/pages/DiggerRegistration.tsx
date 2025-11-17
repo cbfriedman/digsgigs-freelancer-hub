@@ -71,6 +71,7 @@ const DiggerRegistration = () => {
     is_bonded: false,
     is_licensed: "not_required" as "yes" | "no" | "not_required",
     offers_free_estimates: false,
+    pricing_model: "both" as "commission" | "hourly" | "both",
     acceptTerms: false,
   });
 
@@ -177,6 +178,7 @@ const DiggerRegistration = () => {
           is_bonded: formData.is_bonded,
           is_licensed: formData.is_licensed,
           offers_free_estimates: formData.offers_free_estimates,
+          pricing_model: formData.pricing_model,
           sic_code: selectedIndustryCode?.code_type === "SIC" ? selectedIndustryCode.code : null,
           naics_code: selectedIndustryCode?.code_type === "NAICS" ? selectedIndustryCode.code : null,
           custom_occupation_title: customOccupationTitle || null,
@@ -438,9 +440,41 @@ const DiggerRegistration = () => {
                 )}
                 
                 {!hasConstructionCategory && (
-                  <p className="text-xs text-muted-foreground mt-4">
-                    Note: Setting hourly rates is optional. All diggers can participate in commission-based bidding.
-                  </p>
+                  <div className="space-y-4 mt-4">
+                    <Label className="text-base font-semibold">Choose Your Lead Pricing Model</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select how you want to be charged for leads. You'll always have access to commission-based bidding.
+                    </p>
+                    <RadioGroup
+                      value={formData.pricing_model}
+                      onValueChange={(value) => setFormData({ ...formData, pricing_model: value as "commission" | "hourly" | "both" })}
+                      className="space-y-3"
+                    >
+                      <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
+                        <RadioGroupItem value="commission" id="commission-only" className="mt-1" />
+                        <div className="flex-1">
+                          <Label htmlFor="commission-only" className="cursor-pointer font-medium">
+                            Commission-Based Only (Bidding)
+                          </Label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Pay tier-based lead costs (Free: $3, Pro: $1.50, Premium: $0) plus commission when jobs complete
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
+                        <RadioGroupItem value="hourly" id="hourly-only" className="mt-1" />
+                        <div className="flex-1">
+                          <Label htmlFor="hourly-only" className="cursor-pointer font-medium">
+                            Hourly Rate Work Only
+                          </Label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Lead cost = 1 hour of your rate (minimum $100). No commission on completed work.
+                          </p>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
                 )}
               </div>
 

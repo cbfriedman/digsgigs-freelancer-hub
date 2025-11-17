@@ -1,7 +1,15 @@
 /**
- * Hook for calculating costs based on subscription tier
- * Lead Costs: Free ($3/lead), Pro ($1.50/lead), Premium ($0/lead)
- * Commissions: Free (9%, $5 min), Pro (4%, $5 min), Premium (0%, no min)
+ * Hook for calculating costs based on subscription tier and pricing model
+ * 
+ * Pricing Models:
+ * - 'commission': Tier-based lead costs + commission on completed work
+ *   - Free: $3/lead + 9% commission ($5 min)
+ *   - Pro: $1.50/lead + 4% commission ($5 min)
+ *   - Premium: $0/lead + 0% commission
+ * 
+ * - 'hourly': Hourly rate-based lead costs (1 hour, min $100) + no commission
+ * 
+ * - 'both': (Construction/Trades) Combination of both models available
  */
 export const useCommissionCalculator = () => {
   const calculateLeadCost = (
