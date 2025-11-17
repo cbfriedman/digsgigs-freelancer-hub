@@ -37,6 +37,7 @@ import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import AdminBlog from "./pages/AdminBlog";
 import Sitemap from "./pages/Sitemap";
+import SitemapXML from "./pages/SitemapXML";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
@@ -84,7 +85,8 @@ const App = () => (
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/admin/blog" element={<AdminBlog />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/sitemap.xml" element={<Sitemap />} />
+          <Route path="/sitemap" element={<Sitemap />} />
+          <Route path="/sitemap.xml" element={<SitemapXML />} />
           <Route path="/escrow-dashboard" element={<EscrowDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
