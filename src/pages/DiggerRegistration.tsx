@@ -151,8 +151,7 @@ const DiggerRegistration = () => {
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedIndustryCodes, setSelectedIndustryCodes] = useState<IndustryCode[]>([]);
-  const [customOccupationTitles, setCustomOccupationTitles] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<string>("");
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
   const [professionToRemove, setProfessionToRemove] = useState<number | null>(null);
   const [primaryProfessionIndex, setPrimaryProfessionIndex] = useState<number>(0);
@@ -596,14 +595,10 @@ const DiggerRegistration = () => {
                       Click "Select Primary Profession" to add multiple professions.
                     </p>
                   </div>
-                  <RegistrationCategorySelector
-                    selectedCategories={selectedCategories}
-                    onCategoriesChange={setSelectedCategories}
-                    onIndustryCodesChange={(codes, titles) => {
-                      setSelectedIndustryCodes(codes);
-                      setCustomOccupationTitles(titles);
-                    }}
-                  />
+                <RegistrationCategorySelector
+                  selectedCategories={selectedCategories}
+                  onCategoriesChange={setSelectedCategories}
+                />
                 </div>
 
                 <div className="space-y-2">

@@ -462,6 +462,7 @@ export type Database = {
           is_bonded: boolean | null
           is_insured: boolean | null
           is_licensed: string | null
+          keywords: string[] | null
           lead_limit: number | null
           lead_limit_enabled: boolean | null
           lead_limit_period: string | null
@@ -511,6 +512,7 @@ export type Database = {
           is_bonded?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
+          keywords?: string[] | null
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
@@ -560,6 +562,7 @@ export type Database = {
           is_bonded?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
+          keywords?: string[] | null
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
