@@ -7,7 +7,10 @@
  *   - Pro: $1.50/lead + 4% commission ($5 min)
  *   - Premium: $0/lead + 0% commission
  * 
- * - 'hourly': Hourly rate-based lead costs (1 hour of rate) + no commission
+ * - 'hourly': Tier rate + hourly rate for leads, no commission
+ *   - Free: $3 + hourly rate
+ *   - Pro: $1.50 + hourly rate
+ *   - Premium: $0 + hourly rate
  * 
  * - 'both': (Construction/Trades) Combination of both models available
  */

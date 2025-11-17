@@ -469,7 +469,7 @@ const DiggerRegistration = () => {
                             Hourly Rate Work Only
                           </Label>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Lead cost = 1 hour of your rate. No commission on completed work.
+                            Lead cost = tier rate + 1 hour of your rate. No commission on completed work.
                           </p>
                         </div>
                       </div>
