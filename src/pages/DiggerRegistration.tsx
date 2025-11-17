@@ -37,41 +37,6 @@ const DiggerRegistration = () => {
   const [selectedIndustryCode, setSelectedIndustryCode] = useState<IndustryCode | null>(null);
   const [customOccupationTitle, setCustomOccupationTitle] = useState("");
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
-
-  // Parent category IDs where free estimates apply (Construction & Brokers)
-  const FREE_ESTIMATES_PARENT_IDS = [
-    'e6466529-cc0f-4d8f-bc84-30d0cd7f824b', // Construction
-    '15312798-04ef-408f-b97a-e64920e2c15a', // Brokers & Consultants
-  ];
-
-  // State to track categories with parent info
-  const [categoryParentMap, setCategoryParentMap] = useState<Record<string, string | null>>({});
-
-  // Fetch categories with parent relationships on mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('id, parent_category_id');
-      
-      if (data) {
-        const parentMap: Record<string, string | null> = {};
-        data.forEach(cat => {
-          parentMap[cat.id] = cat.parent_category_id;
-        });
-        setCategoryParentMap(parentMap);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  // Check if any selected categories belong to Construction or Brokers & Consultants
-  const hasEligibleCategory = selectedCategories.some(catId => {
-    const parentId = categoryParentMap[catId];
-    // Check if it's a parent category itself or belongs to an eligible parent
-    return FREE_ESTIMATES_PARENT_IDS.includes(catId) || 
-           (parentId && FREE_ESTIMATES_PARENT_IDS.includes(parentId));
-  });
   
   const [formData, setFormData] = useState({
     handle: "",
@@ -425,39 +390,33 @@ const DiggerRegistration = () => {
                     </p>
                   </div>
 
-                  {hasEligibleCategory && (
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2">
-                        <span className="font-semibold text-primary">3. Free Estimates (Construction/Brokers)</span>
-                      </div>
-                      <p className="text-muted-foreground ml-4">
-                        Market yourself as offering free estimates. This is a profile feature to attract clients - no charges apply.
-                      </p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold text-primary">3. Free Estimates</span>
                     </div>
-                  )}
-                </div>
-
-                {hasEligibleCategory && (
-                  <div className="space-y-4 mt-4">
-                    <div className="flex items-center space-x-2 p-3 bg-background rounded-lg border border-border">
-                      <Checkbox
-                        id="offers_free_estimates"
-                        checked={formData.offers_free_estimates}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, offers_free_estimates: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="offers_free_estimates" className="cursor-pointer font-medium">
-                        I offer free estimates to potential clients
-                      </Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Note: Free estimates are a great way to attract clients!
+                    <p className="text-muted-foreground ml-4">
+                      Market yourself as offering free estimates. This is a profile feature to attract clients - no charges apply.
                     </p>
                   </div>
-                )}
+                </div>
+
+                <div className="space-y-4 mt-4">
+                  <div className="flex items-center space-x-2 p-3 bg-background rounded-lg border border-border">
+                    <Checkbox
+                      id="offers_free_estimates"
+                      checked={formData.offers_free_estimates}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, offers_free_estimates: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="offers_free_estimates" className="cursor-pointer font-medium">
+                      I offer free estimates to potential clients
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Note: Offering free estimates is a great way to attract clients across all industries!
+                  </p>
                 
-                {!hasEligibleCategory && (
                   <div className="space-y-4 mt-4">
                     <Label className="text-base font-semibold">Choose Your Lead Pricing Model</Label>
                     <p className="text-sm text-muted-foreground mb-3">
@@ -480,7 +439,7 @@ const DiggerRegistration = () => {
                         </div>
                       </div>
                       
-                        <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
+                      <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
                         <RadioGroupItem value="hourly" id="hourly-only" className="mt-1" />
                         <div className="flex-1">
                           <Label htmlFor="hourly-only" className="cursor-pointer font-medium">
@@ -493,7 +452,7 @@ const DiggerRegistration = () => {
                       </div>
                     </RadioGroup>
                   </div>
-                )}
+                </div>
               </div>
 
               <Separator />
