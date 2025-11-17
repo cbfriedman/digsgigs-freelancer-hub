@@ -49,47 +49,39 @@ serve(async (req) => {
     logStep("Digger profile retrieved", { tier, hourlyRate: diggerProfile?.hourly_rate, pricingModel });
 
     // Calculate lead cost based on pricing model
+    // For all pricing models, upfront cost is tier-based only
+    // Hourly rate is charged separately when lead is awarded
     let leadCost = 3; // Default: free tier ($3 per lead)
     let isHourlyRate = false;
     
-    // Get tier-based cost first
-    let tierBasedCost = 3; // Default free tier
+    // Get tier-based cost (this is what's charged upfront)
     if (tier === 'premium') {
-      tierBasedCost = 0;
+      leadCost = 0;
     } else if (tier === 'pro') {
-      tierBasedCost = 1.5;
+      leadCost = 1.5;
+    } else {
+      leadCost = 3; // Free tier
     }
     
-    // If pricing model is 'hourly', charge tier cost + hourly rate
-    if (pricingModel === 'hourly') {
-      if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
-        const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-        leadCost = tierBasedCost + hourlyRate;
-        isHourlyRate = true;
-        logStep("Hourly rate lead cost", { tierBasedCost, hourlyRate, totalLeadCost: leadCost });
-      } else {
-        // No hourly rate set, fall back to tier-based only
-        leadCost = tierBasedCost;
-        logStep("Hourly pricing selected but no rate set, using tier-based pricing only", { leadCost });
-      }
-    } 
-    // If pricing model is 'commission', use tier-based pricing only
-    else if (pricingModel === 'commission') {
-      leadCost = tierBasedCost;
-      logStep("Commission-based lead cost", { tier, leadCost });
-    }
-    // If pricing model is 'both' (construction/trades), charge tier cost + hourly rate if set
-    else if (pricingModel === 'both') {
-      if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
-        const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-        leadCost = tierBasedCost + hourlyRate;
-        isHourlyRate = true;
-        logStep("Both pricing - tier + hourly rate lead cost", { tierBasedCost, hourlyRate, totalLeadCost: leadCost });
-      } else {
-        // No hourly rate set, use tier-based only
-        leadCost = tierBasedCost;
-        logStep("Both pricing - tier-based lead cost only", { tier, leadCost });
-      }
+    // Log pricing model for tracking, but upfront cost is always tier-based
+    if (pricingModel === 'hourly' && (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min)) {
+      isHourlyRate = true;
+      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      logStep("Hourly pricing - upfront tier cost only", { 
+        tierBasedCost: leadCost, 
+        hourlyRate, 
+        note: "Hourly rate charged when awarded" 
+      });
+    } else if (pricingModel === 'both' && (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min)) {
+      isHourlyRate = true;
+      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      logStep("Both pricing - upfront tier cost only", { 
+        tierBasedCost: leadCost, 
+        hourlyRate, 
+        note: "Hourly rate charged when awarded" 
+      });
+    } else {
+      logStep("Commission pricing - tier-based lead cost", { tier, leadCost });
     }
 
     logStep("Lead cost calculated", { tier, leadCost, isHourlyRate });
