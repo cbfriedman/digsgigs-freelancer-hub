@@ -40,6 +40,8 @@ const DiggerRegistration = () => {
   const [customOccupationTitles, setCustomOccupationTitles] = useState<string[]>([]);
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
   const [professionToRemove, setProfessionToRemove] = useState<number | null>(null);
+  const [lastRemovedProfession, setLastRemovedProfession] = useState<{ code: IndustryCode; title: string; index: number } | null>(null);
+  const [undoTimeoutId, setUndoTimeoutId] = useState<NodeJS.Timeout | null>(null);
   
   const [formData, setFormData] = useState({
     handle: "",
@@ -108,11 +110,65 @@ const DiggerRegistration = () => {
   };
 
   const removeProfession = (index: number) => {
+    // Store the removed profession for undo
+    const removedCode = selectedIndustryCodes[index];
+    const removedTitle = customOccupationTitles[index];
+    setLastRemovedProfession({ code: removedCode, title: removedTitle, index });
+
+    // Remove from arrays
     const newCodes = selectedIndustryCodes.filter((_, i) => i !== index);
     const newTitles = customOccupationTitles.filter((_, i) => i !== index);
     setSelectedIndustryCodes(newCodes);
     setCustomOccupationTitles(newTitles);
     setProfessionToRemove(null);
+
+    // Clear any existing timeout
+    if (undoTimeoutId) {
+      clearTimeout(undoTimeoutId);
+    }
+
+    // Set timeout to clear undo option after 5 seconds
+    const timeoutId = setTimeout(() => {
+      setLastRemovedProfession(null);
+    }, 5000);
+    setUndoTimeoutId(timeoutId);
+
+    // Show toast with undo option
+    toast.success("Profession removed", {
+      description: `${removedTitle || removedCode.title} has been removed from your profile.`,
+      action: {
+        label: "Undo",
+        onClick: handleUndoRemove,
+      },
+      duration: 5000,
+    });
+  };
+
+  const handleUndoRemove = () => {
+    if (!lastRemovedProfession) return;
+
+    // Clear the timeout
+    if (undoTimeoutId) {
+      clearTimeout(undoTimeoutId);
+      setUndoTimeoutId(null);
+    }
+
+    const { code, title, index } = lastRemovedProfession;
+
+    // Restore the profession at its original position
+    const newCodes = [...selectedIndustryCodes];
+    const newTitles = [...customOccupationTitles];
+    
+    newCodes.splice(index, 0, code);
+    newTitles.splice(index, 0, title);
+
+    setSelectedIndustryCodes(newCodes);
+    setCustomOccupationTitles(newTitles);
+    setLastRemovedProfession(null);
+
+    toast.success("Profession restored", {
+      description: `${title || code.title} has been restored to your profile.`,
+    });
   };
 
   const confirmRemoveProfession = () => {
