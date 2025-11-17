@@ -35,6 +35,7 @@ import TestAIMatching from "./pages/TestAIMatching";
 import E2ETestSuite from "./pages/E2ETestSuite";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
+import AdminBlog from "./pages/AdminBlog";
 import Sitemap from "./pages/Sitemap";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
@@ -80,6 +81,7 @@ const App = () => (
           <Route path="/e2e-test" element={<E2ETestSuite />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/admin/blog" element={<AdminBlog />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/sitemap.xml" element={<Sitemap />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
