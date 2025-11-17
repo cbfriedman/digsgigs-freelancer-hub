@@ -88,23 +88,20 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
         return;
       }
 
+      // Get the digger's subscription tier for the price
+      const digger = diggers.find(d => d.id === diggerId);
+      const price = getFreeEstimatePrice(digger?.subscription_tier || 'free');
+
       const { data, error } = await supabase.functions.invoke("request-free-estimate", {
         body: { gigId, diggerId },
       });
 
       if (error) throw error;
 
-      if (data.free) {
-        toast.success(
-          "Estimate requested! This digger is on Pro/Premium, so there's no charge.",
-          { duration: 5000 }
-        );
-      } else {
-        toast.success(
-          "Estimate requested! The digger will be notified and must pay $100 to accept.",
-          { duration: 5000 }
-        );
-      }
+      toast.success(
+        `Estimate requested! The digger will be notified and must pay $${price} to accept.`,
+        { duration: 5000 }
+      );
       
       // Reload to update the UI
       setTimeout(() => loadDiggers(), 1000);
@@ -123,6 +120,16 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getFreeEstimatePrice = (subscriptionTier: string) => {
+    const tierPricing = {
+      free: 150,
+      pro: 100,
+      premium: 50
+    };
+    
+    return tierPricing[subscriptionTier as keyof typeof tierPricing] || 150;
   };
 
   if (loading) {
@@ -144,11 +151,11 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
           <CardTitle className="text-xl">Get Free Estimates</CardTitle>
           <Badge variant="secondary" className="flex items-center gap-1">
             <DollarSign className="h-3 w-3" />
-            $100 per estimate (Free tier)
+            Pricing by tier
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          These professionals offer free estimates. Pro/Premium members provide estimates at no charge!
+          These professionals offer free estimates. Pricing: Free tier $150 • Pro $100 • Premium $50
         </p>
       </CardHeader>
       <CardContent>
@@ -164,21 +171,20 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
                   <AvatarFallback>{getInitials(digger.handle)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h4 
                       className="font-semibold hover:text-primary cursor-pointer"
                       onClick={() => navigate(`/digger/${digger.id}`)}
                     >
                       {digger.handle}
                     </h4>
-                    <Badge variant="outline" className="text-xs">
-                      Free Estimates
+                    <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                      <DollarSign className="h-3 w-3 mr-1" />
+                      Free Estimate
                     </Badge>
-                    {(digger.subscription_tier === 'pro' || digger.subscription_tier === 'premium') && (
-                      <Badge variant="default" className="text-xs bg-green-600">
-                        No Charge
-                      </Badge>
-                    )}
+                    <Badge variant="default" className="text-xs font-semibold bg-primary">
+                      ${getFreeEstimatePrice(digger.subscription_tier)}
+                    </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{digger.profession}</p>
                   <div className="flex items-center gap-1 mt-1">
