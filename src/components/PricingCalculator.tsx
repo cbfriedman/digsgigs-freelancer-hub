@@ -63,10 +63,10 @@ export default function PricingCalculator() {
     // Free: 3 hours, Pro: 2 hours, Premium: 1 hour
     const hoursCharged = tier.name === 'free' ? 3 : tier.name === 'pro' ? 2 : 1;
     const upfrontLeadCost = tier.leadCostValue * leads;
-    const costPerClick = hourlyRate * hoursCharged * jobs;
+    const costPerAward = hourlyRate * hoursCharged * jobs;
     
     // No commission on hourly bids
-    const totalCost = monthlyFee + upfrontLeadCost + costPerClick;
+    const totalCost = monthlyFee + upfrontLeadCost + costPerAward;
     const totalJobValue = hourlyRate * hoursPerJob * jobs;
     const revenue = totalJobValue;
     const netEarnings = revenue - totalCost;
@@ -74,7 +74,7 @@ export default function PricingCalculator() {
     return {
       monthlyFee,
       upfrontLeadCost,
-      costPerClick,
+      costPerAward,
       totalCost,
       revenue,
       netEarnings,
@@ -273,7 +273,7 @@ export default function PricingCalculator() {
               <tr className="border-b border-border/50">
                 <td className="py-3 px-4 text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    Cost per Click
+                    Cost per Award
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -291,7 +291,7 @@ export default function PricingCalculator() {
                   const hoursCharged = tier.name === 'free' ? 3 : tier.name === 'pro' ? 2 : 1;
                   return (
                     <td key={key} className="text-right py-3 px-4">
-                      ${costs.costPerClick.toFixed(2)}
+                      ${costs.costPerAward.toFixed(2)}
                       <div className="text-xs text-muted-foreground">
                         ({hoursCharged} hrs × ${hourlyRate})
                       </div>
