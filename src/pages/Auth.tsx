@@ -54,6 +54,9 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [showResetForm, setShowResetForm] = useState(false);
+  const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   
   const redirectTo = searchParams.get("redirect") || "/";
   const defaultUserType = searchParams.get("type") as "digger" | "consumer" || "consumer";
@@ -64,17 +67,29 @@ const Auth = () => {
                     "DiggsAndGiggs";
 
   useEffect(() => {
+    // If already authenticated (and not in recovery), redirect
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      const isRecovery = typeof window !== 'undefined' && window.location.hash.includes('type=recovery');
+      if (session && !isRecovery) {
         navigate(redirectTo);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // Show new password form instead of redirecting
+        setShowNewPasswordForm(true);
+        return;
+      }
       if (session) {
         navigate(redirectTo);
       }
     });
+
+    // Also detect recovery via URL hash (fallback)
+    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
+      setShowNewPasswordForm(true);
+    }
 
     return () => subscription.unsubscribe();
   }, [navigate, redirectTo]);
@@ -371,6 +386,46 @@ const Auth = () => {
     }
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const schema = z.object({
+        newPassword: z.string().min(8, "Password must be at least 8 characters").max(100),
+        confirmNewPassword: z.string(),
+      }).refine((data) => data.newPassword === data.confirmNewPassword, {
+        message: "Passwords do not match",
+        path: ["confirmNewPassword"],
+      });
+
+      schema.parse({ newPassword, confirmNewPassword });
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password updated! Please sign in with your new password.");
+      // Clear fields and hide form
+      setShowNewPasswordForm(false);
+      setNewPassword("");
+      setConfirmNewPassword("");
+      // Remove recovery hash to avoid re-trigger
+      if (typeof window !== 'undefined') {
+        window.location.hash = '';
+      }
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || "Failed to update password");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSocialLogin = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
     setLoading(true);
     try {
@@ -423,7 +478,41 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="signin">
-              {showResetForm ? (
+              {showNewPasswordForm ? (
+                <form onSubmit={handleUpdatePassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Updating..." : "Update Password"}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="w-full" 
+                    onClick={() => setShowNewPasswordForm(false)}
+                  >
+                    Back to Sign In
+                  </Button>
+                </form>
+              ) : showResetForm ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="reset-email">Email</Label>
