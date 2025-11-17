@@ -56,6 +56,7 @@ interface Digger {
   sic_code: string[] | null;
   naics_code: string[] | null;
   custom_occupation_title: string | null;
+  primary_profession_index: number | null;
   location_lat: number | null;
   location_lng: number | null;
   profiles: {
@@ -226,19 +227,47 @@ const DiggerDetail = () => {
   };
 
   const getDisplayProfession = () => {
+    // If we have a custom occupation title, use it
     if (digger?.custom_occupation_title) {
-      return digger.custom_occupation_title;
+      const titles = digger.custom_occupation_title.split(", ");
+      const primaryIndex = digger.primary_profession_index || 0;
+      // Return the primary profession if valid index, otherwise return first
+      return titles[primaryIndex] || titles[0] || digger.custom_occupation_title;
     }
+    
+    // Otherwise, fetch from industry codes based on primary index
+    const primaryIndex = digger?.primary_profession_index || 0;
+    const allCodes = [
+      ...(digger?.sic_code || []),
+      ...(digger?.naics_code || [])
+    ];
+    
+    if (allCodes.length > primaryIndex) {
+      // This will be resolved by getOccupationBadge
+      return digger?.profession || "";
+    }
+    
     return digger?.profession || "";
   };
 
   const getOccupationBadge = () => {
-    if (digger?.sic_code && digger.sic_code.length > 0) {
-      return { label: "SIC Code", value: digger.sic_code.join(", ") };
+    const primaryIndex = digger?.primary_profession_index || 0;
+    
+    // Combine SIC and NAICS codes to respect primary index
+    const allCodes = [
+      ...(digger?.sic_code || []).map(code => ({ type: "SIC", code })),
+      ...(digger?.naics_code || []).map(code => ({ type: "NAICS", code }))
+    ];
+    
+    if (allCodes.length > 0) {
+      const primaryCode = allCodes[primaryIndex] || allCodes[0];
+      return { 
+        label: `${primaryCode.type} Code`, 
+        value: primaryCode.code,
+        isPrimary: primaryIndex < allCodes.length
+      };
     }
-    if (digger?.naics_code && digger.naics_code.length > 0) {
-      return { label: "NAICS Code", value: digger.naics_code.join(", ") };
-    }
+    
     return null;
   };
 
@@ -264,7 +293,8 @@ const DiggerDetail = () => {
 
   if (!digger) return null;
 
-  const displayProfession = digger.custom_occupation_title || digger.profession;
+  const displayProfession = getDisplayProfession();
+  const occupationBadge = getOccupationBadge();
 
   return (
     <div className="min-h-screen bg-background">
@@ -333,10 +363,16 @@ const DiggerDetail = () => {
                       @{digger.handle || "anonymous"}
                     </h1>
                     <div className="mb-4">
-                      <p className="text-xl text-muted-foreground">{getDisplayProfession()}</p>
-                      {getOccupationBadge() && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-xl text-muted-foreground">{getDisplayProfession()}</p>
+                        <Badge variant="default" className="bg-primary text-primary-foreground">
+                          <Star className="h-3 w-3 mr-1 fill-current" />
+                          Primary Specialty
+                        </Badge>
+                      </div>
+                      {occupationBadge && (
                         <Badge variant="outline" className="mt-2">
-                          {getOccupationBadge()?.label}: {getOccupationBadge()?.value}
+                          {occupationBadge.label}: {occupationBadge.value}
                         </Badge>
                       )}
                     </div>

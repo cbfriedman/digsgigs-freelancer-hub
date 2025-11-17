@@ -266,6 +266,7 @@ const DiggerRegistration = () => {
           sic_code: selectedIndustryCodes.filter(c => c.code_type === "SIC").map(c => c.code),
           naics_code: selectedIndustryCodes.filter(c => c.code_type === "NAICS").map(c => c.code),
           custom_occupation_title: customOccupationTitles.length > 0 ? customOccupationTitles.join(", ") : null,
+          primary_profession_index: primaryProfessionIndex,
         })
         .select()
         .single();

@@ -474,6 +474,7 @@ export type Database = {
           portfolio_url: string | null
           portfolio_urls: string[] | null
           pricing_model: string | null
+          primary_profession_index: number | null
           profession: string
           profile_image_url: string | null
           response_time_hours: number | null
@@ -522,6 +523,7 @@ export type Database = {
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
           pricing_model?: string | null
+          primary_profession_index?: number | null
           profession: string
           profile_image_url?: string | null
           response_time_hours?: number | null
@@ -570,6 +572,7 @@ export type Database = {
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
           pricing_model?: string | null
+          primary_profession_index?: number | null
           profession?: string
           profile_image_url?: string | null
           response_time_hours?: number | null

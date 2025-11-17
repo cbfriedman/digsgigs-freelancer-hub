@@ -42,6 +42,7 @@ interface DiggerProfile {
   sic_code: string[] | null;
   naics_code: string[] | null;
   custom_occupation_title: string | null;
+  primary_profession_index: number | null;
 }
 
 const EditDiggerProfile = () => {
@@ -53,6 +54,7 @@ const EditDiggerProfile = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedIndustryCodes, setSelectedIndustryCodes] = useState<IndustryCode[]>([]);
   const [customOccupationTitles, setCustomOccupationTitles] = useState<string[]>([]);
+  const [primaryProfessionIndex, setPrimaryProfessionIndex] = useState<number>(0);
 
   // Construction/Trades category IDs where free estimates apply
   const CONSTRUCTION_CATEGORY_IDS = [
@@ -208,6 +210,9 @@ const EditDiggerProfile = () => {
       } else {
         setCustomOccupationTitles(loadedTitles);
       }
+
+      // Load primary profession index
+      setPrimaryProfessionIndex(diggerProfile.primary_profession_index || 0);
     } catch (error: any) {
       toast.error(error.message);
       navigate("/");
@@ -273,6 +278,7 @@ const EditDiggerProfile = () => {
           sic_code: selectedIndustryCodes.filter(c => c.code_type === "SIC").map(c => c.code),
           naics_code: selectedIndustryCodes.filter(c => c.code_type === "NAICS").map(c => c.code),
           custom_occupation_title: customOccupationTitles.length > 0 ? customOccupationTitles.join(", ") : null,
+          primary_profession_index: primaryProfessionIndex,
         })
         .eq("id", profileId);
 
