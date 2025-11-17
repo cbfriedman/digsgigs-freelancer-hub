@@ -34,7 +34,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 <MessageSquare className="h-4 w-4" />
                 Chat with us
               </Button>
-              <ArrowUp className="absolute -bottom-6 left-1/2 -translate-x-1/2 h-6 w-6 text-primary animate-pulse drop-shadow-lg" />
+              <ArrowUp className="absolute -bottom-6 left-1/2 -translate-x-1/2 h-6 w-6 text-accent animate-pulse drop-shadow-[0_0_8px_hsl(var(--accent))] filter brightness-125" />
             </div>
             {showBackButton && (
               <Button variant="ghost" onClick={() => navigate(backTo)}>
