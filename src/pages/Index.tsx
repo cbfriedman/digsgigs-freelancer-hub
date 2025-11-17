@@ -7,6 +7,7 @@ import { DiggerCard } from "@/components/DiggerCard";
 import { GigCard } from "@/components/GigCard";
 import { Footer } from "@/components/Footer";
 import { NotificationBell } from "@/components/NotificationBell";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Search, 
   Users, 
@@ -44,8 +45,7 @@ import { toast } from "sonner";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-  const [isDigger, setIsDigger] = useState(false);
+  const { user, isDigger, signOut } = useAuth();
   const [showOnboardingChoice, setShowOnboardingChoice] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [userName, setUserName] = useState<string>("");
@@ -53,24 +53,10 @@ const Index = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkUserType(session.user.id);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkUserType(session.user.id);
-      } else {
-        setIsDigger(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    if (user) {
+      checkUserProfile(user.id);
+    }
+  }, [user]);
 
   const calculateProfileCompletion = (profile: any) => {
     if (!profile) return 0;
@@ -101,15 +87,13 @@ const Index = () => {
     return Math.round((completedFields / fields.length) * 100);
   };
 
-  const checkUserType = async (userId: string) => {
+  const checkUserProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
       .select("user_type, full_name, email")
       .eq("id", userId)
       .single();
     
-    const isDiggerUser = data?.user_type === "digger";
-    setIsDigger(isDiggerUser);
     setUserName(data?.full_name || data?.email || "User");
     
     // Check if user is admin
@@ -123,7 +107,7 @@ const Index = () => {
     setIsAdmin(!!roles);
     
     // Fetch digger profile for completion calculation
-    if (isDiggerUser) {
+    if (isDigger) {
       const { data: diggerProfile } = await supabase
         .from("digger_profiles")
         .select("*")
@@ -152,8 +136,7 @@ const Index = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast.success("Signed out successfully");
+    await signOut();
   };
   const sampleDiggers = [
     {
