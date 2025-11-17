@@ -118,25 +118,73 @@ const PostGig = () => {
         }
       }
 
-      const { error } = await supabase.from("gigs").insert({
-        consumer_id: session.user.id,
-        title: validatedData.title,
-        description: validatedData.description,
-        location: formData.location,
-        location_lat: locationLat,
-        location_lng: locationLng,
-        timeline: formData.timeline,
-        budget_min: validatedData.budget_min,
-        budget_max: validatedData.budget_max,
-        category_id: validatedData.category_id,
-        deadline: validatedData.deadline,
-        contact_preferences: formData.contact_preferences || null,
-        status: "open",
-      });
+      const { data: gigData, error } = await supabase
+        .from("gigs")
+        .insert({
+          consumer_id: session.user.id,
+          title: validatedData.title,
+          description: validatedData.description,
+          location: formData.location,
+          location_lat: locationLat,
+          location_lng: locationLng,
+          timeline: formData.timeline,
+          budget_min: validatedData.budget_min,
+          budget_max: validatedData.budget_max,
+          category_id: validatedData.category_id,
+          deadline: validatedData.deadline,
+          contact_preferences: formData.contact_preferences || null,
+          status: "open",
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success("Gig posted successfully!");
+      // Match industry codes using AI
+      toast.info("Analyzing gig and matching with relevant professionals...");
+      
+      try {
+        // Get category name for better matching
+        let categoryName = "";
+        if (validatedData.category_id) {
+          const { data: categoryData } = await supabase
+            .from("categories")
+            .select("name")
+            .eq("id", validatedData.category_id)
+            .single();
+          categoryName = categoryData?.name || "";
+        }
+
+        const { data: matchData, error: matchError } = await supabase.functions.invoke(
+          "match-industry-codes",
+          {
+            body: {
+              title: validatedData.title,
+              description: validatedData.description,
+              category: categoryName,
+            },
+          }
+        );
+
+        if (!matchError && matchData) {
+          // Update the gig with matched codes
+          await supabase
+            .from("gigs")
+            .update({
+              sic_codes: matchData.sic_codes,
+              naics_codes: matchData.naics_codes,
+              ai_matched_codes: true,
+            })
+            .eq("id", gigData.id);
+          
+          console.log("AI matched codes:", matchData);
+        }
+      } catch (matchError) {
+        console.error("Error matching codes:", matchError);
+        // Don't fail the gig posting if code matching fails
+      }
+
+      toast.success("Gig posted and matched with relevant professionals!");
       navigate("/");
     } catch (error) {
       if (error instanceof z.ZodError) {
