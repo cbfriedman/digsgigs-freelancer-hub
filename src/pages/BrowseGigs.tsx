@@ -66,6 +66,8 @@ const BrowseGigs = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [userBids, setUserBids] = useState<Set<string>>(new Set());
+  const [userLeadPurchases, setUserLeadPurchases] = useState<Set<string>>(new Set());
   const [advancedFilters, setAdvancedFilters] = useState<GigFilters>({
     budgetRange: [0, 50000],
     selectedCategories: [],
@@ -95,6 +97,27 @@ const BrowseGigs = () => {
 
       if (profile) {
         setDiggerProfile(profile);
+
+        // Fetch user's bids
+        const { data: bids } = await supabase
+          .from('bids')
+          .select('gig_id')
+          .eq('digger_id', profile.id);
+
+        if (bids) {
+          setUserBids(new Set(bids.map(b => b.gig_id)));
+        }
+
+        // Fetch user's lead purchases
+        const { data: purchases } = await supabase
+          .from('lead_purchases')
+          .select('gig_id')
+          .eq('digger_id', profile.id)
+          .eq('status', 'completed');
+
+        if (purchases) {
+          setUserLeadPurchases(new Set(purchases.map(p => p.gig_id)));
+        }
 
         // Count leads purchased in current period
         if ((profile as any).lead_limit_enabled && (profile as any).lead_limit) {
@@ -202,6 +225,13 @@ const BrowseGigs = () => {
   const isOldGig = (createdAt: string) => {
     const gigAge = Date.now() - new Date(createdAt).getTime();
     return gigAge > 24 * 60 * 60 * 1000; // >24 hours
+  };
+
+  const canSeeBudget = (gigId: string) => {
+    // Non-diggers can always see budget
+    if (!diggerProfile) return true;
+    // Diggers can see budget if they've bid or purchased the lead
+    return userBids.has(gigId) || userLeadPurchases.has(gigId);
   };
 
   const newGigs = filteredGigs.filter(gig => !isOldGig(gig.created_at));
@@ -422,6 +452,17 @@ const BrowseGigs = () => {
                             <span>{gig.categories.name}</span>
                           </div>
                         )}
+                        {canSeeBudget(gig.id) ? (
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <DollarSign className="h-4 w-4" />
+                            <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
+                          </div>
+                        ) : diggerProfile ? (
+                          <div className="flex items-center gap-1 text-muted-foreground italic">
+                            <DollarSign className="h-4 w-4" />
+                            <span className="text-xs">Submit bid to view</span>
+                          </div>
+                        ) : null}
                         {gig.deadline && (
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Calendar className="h-4 w-4" />

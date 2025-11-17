@@ -49,6 +49,8 @@ const GigDetail = () => {
   const [diggerId, setDiggerId] = useState<string | null>(null);
   const [existingBid, setExistingBid] = useState<any>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'premium'>('free');
+  const [canSeeBudget, setCanSeeBudget] = useState(false);
+  const [hasLeadPurchase, setHasLeadPurchase] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -91,7 +93,24 @@ const GigDetail = () => {
             .single();
 
           setExistingBid(bid as any);
+
+          // Check if digger has purchased this lead
+          const { data: leadPurchase } = await supabase
+            .from("lead_purchases")
+            .select("id")
+            .eq("gig_id", id)
+            .eq("digger_id", (diggerProfile as any)?.id)
+            .eq("status", "completed")
+            .single();
+
+          setHasLeadPurchase(!!leadPurchase);
+
+          // Can see budget if they've bid OR purchased the lead
+          setCanSeeBudget(!!bid || !!leadPurchase);
         }
+      } else {
+        // Non-diggers (consumers) can always see budget
+        setCanSeeBudget(true);
       }
     }
 
@@ -274,6 +293,30 @@ const GigDetail = () => {
                 <Separator />
 
                 <div className="grid md:grid-cols-2 gap-4">
+                  {canSeeBudget && (
+                    <div className="flex items-start gap-3">
+                      <DollarSign className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <div className="font-semibold">Budget</div>
+                        <div className="text-muted-foreground">
+                          {formatBudget(gig.budget_min, gig.budget_max)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!canSeeBudget && isDigger && (
+                    <div className="flex items-start gap-3">
+                      <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <div className="font-semibold">Budget</div>
+                        <div className="text-sm text-muted-foreground italic">
+                          Submit a bid to view budget
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {gig.deadline && (
                     <div className="flex items-start gap-3">
                       <Calendar className="w-5 h-5 text-primary mt-0.5" />
