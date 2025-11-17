@@ -287,6 +287,7 @@ export default function BlogPost() {
                   src={post.featured_image}
                   alt={post.title}
                   className="w-full h-auto"
+                  loading="lazy"
                 />
               </div>
             )}
@@ -359,6 +360,7 @@ export default function BlogPost() {
                           src={relatedPost.featured_image}
                           alt={relatedPost.title}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                         />
                       </div>
                     )}

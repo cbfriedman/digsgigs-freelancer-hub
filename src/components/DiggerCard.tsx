@@ -19,6 +19,7 @@ export const DiggerCard = ({ name, profession, expertise, rating, reviews, image
           src={image} 
           alt={name} 
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          loading="lazy"
         />
       </div>
       <CardHeader>
