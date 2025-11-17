@@ -383,8 +383,9 @@ export default function Pricing() {
 
                 {/* Results Table */}
                 {showResults && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                  <TooltipProvider>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b-2 border-border bg-muted/50">
                           <th className="text-left py-3 px-4 font-semibold">Estimated P&L</th>
@@ -409,7 +410,19 @@ export default function Pricing() {
                           })}
                         </tr>
                         <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">Monthly Subscription Fee</td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Monthly Subscription Fee
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>The fixed monthly cost for your subscription tier. This gives you access to leads and platform features.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
                           {calculateInteractiveCosts().map((result) => (
                             <td key={result.name} className="text-right py-3 px-4">
                               ${result.monthly}
@@ -417,7 +430,19 @@ export default function Pricing() {
                           ))}
                         </tr>
                         <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">Upfront Lead Cost</td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Upfront Lead Cost
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>The cost per lead contact you purchase. This is a one-time fee for each lead you choose to pursue.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
                           {Object.entries(TIERS).map(([key, tier]) => (
                             <td key={key} className="text-right py-3 px-4">
                               {tier.leadCostValue === 0 ? (
@@ -437,7 +462,19 @@ export default function Pricing() {
                           ))}
                         </tr>
                         <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">Total Lead Costs</td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Total Lead Costs
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>The total amount spent on purchasing all leads (Lead Cost × Number of Leads).</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
                           {calculateInteractiveCosts().map((result) => (
                             <td key={result.name} className="text-right py-3 px-4">
                               {result.leadCosts === 0 ? (
@@ -458,7 +495,17 @@ export default function Pricing() {
                         </tr>
                         <tr className="border-b-2 border-border bg-red-50 dark:bg-red-950/20">
                           <td className="py-4 px-4 font-bold text-lg text-red-700 dark:text-red-400">
-                            Total Costs
+                            <div className="flex items-center gap-2">
+                              Total Costs
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>The sum of your monthly subscription fee and all lead costs before revenue and escrow fees.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
                           </td>
                           {calculateInteractiveCosts().map((result) => (
                             <td key={result.name} className="text-right py-4 px-4 font-bold text-lg text-red-600">
@@ -470,16 +517,14 @@ export default function Pricing() {
                           <td className="py-3 px-4 text-muted-foreground">
                             <div className="flex items-center gap-2">
                               Escrow Fees (5% of revenue)
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs">
-                                    <p>This 5% fee is charged on milestone payments for fixed-price contracts with escrow. The fee is deducted from each milestone payment before releasing funds to the professional.</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>This 5% fee is charged on milestone payments for fixed-price contracts with escrow. The fee is deducted from each milestone payment before releasing funds to the professional.</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
                           </td>
                           {calculateInteractiveCosts().map((result) => {
@@ -512,6 +557,7 @@ export default function Pricing() {
                       </tbody>
                     </table>
                   </div>
+                  </TooltipProvider>
                 )}
               </CardContent>
             </Card>
