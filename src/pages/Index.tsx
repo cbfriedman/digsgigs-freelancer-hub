@@ -380,22 +380,37 @@ const Index = () => {
                 Connect skilled freelancers (diggers) with clients seeking expertise. 
                 A two-sided marketplace built for the modern gig economy.
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-4">
+                  <Button 
+                    variant="hero" 
+                    size="lg" 
+                    className="text-base"
+                    onClick={() => user ? navigate("/browse-diggers") : navigate("/auth?redirect=/browse-diggers")}
+                  >
+                    Find Talent <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="text-base"
+                    onClick={() => user ? navigate("/digger-registration") : navigate("/auth?type=digger&redirect=/digger-registration")}
+                  >
+                    Build My Digs
+                  </Button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-border"></div>
+                  <span className="text-sm text-muted-foreground">or</span>
+                  <div className="h-px flex-1 bg-border"></div>
+                </div>
                 <Button 
-                  variant="hero" 
+                  variant="ghost" 
                   size="lg" 
-                  className="text-base"
-                  onClick={() => user ? navigate("/browse-diggers") : navigate("/auth?redirect=/browse-diggers")}
+                  className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 w-full sm:w-auto"
+                  onClick={() => navigate("/digger-registration-demo")}
                 >
-                  Find Talent <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="text-base"
-                  onClick={() => user ? navigate("/digger-registration") : navigate("/auth?type=digger&redirect=/digger-registration")}
-                >
-                  Build My Digs
+                  🧪 Try Demo Registration (No Login Required)
                 </Button>
               </div>
               <div className="flex items-center gap-8 pt-4">
