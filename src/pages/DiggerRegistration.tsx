@@ -53,6 +53,7 @@ const DiggerRegistration = () => {
     is_insured: false,
     is_bonded: false,
     is_licensed: "not_required" as "yes" | "no" | "not_required",
+    offers_free_estimates: false,
     acceptTerms: false,
   });
 
@@ -158,6 +159,7 @@ const DiggerRegistration = () => {
           is_insured: formData.is_insured,
           is_bonded: formData.is_bonded,
           is_licensed: formData.is_licensed,
+          offers_free_estimates: formData.offers_free_estimates,
           sic_code: selectedIndustryCode?.code_type === "SIC" ? selectedIndustryCode.code : null,
           naics_code: selectedIndustryCode?.code_type === "NAICS" ? selectedIndustryCode.code : null,
           custom_occupation_title: customOccupationTitle || null,
@@ -353,6 +355,65 @@ const DiggerRegistration = () => {
                     onChange={(e) => setFormData({ ...formData, portfolio_url: e.target.value })}
                     placeholder="https://yourwebsite.com"
                   />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Payment & Service Options */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold">Payment & Service Options</h3>
+                <div className="bg-muted/50 p-4 rounded-lg space-y-4 text-sm border border-border">
+                  <p className="font-medium text-base">Choose how you want to work on the platform:</p>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold text-primary">1. Commission-Based Gigs (Bidding)</span>
+                    </div>
+                    <p className="text-muted-foreground ml-4">
+                      Bid on projects and pay a commission only when you complete the work. You can participate in bidding regardless of your other settings.
+                    </p>
+                    <div className="ml-4 space-y-1 text-muted-foreground">
+                      <p>• <strong>Lead Cost:</strong> Free tier ($3/lead), Pro ($1.50/lead), Premium ($0/lead)</p>
+                      <p>• <strong>Commission:</strong> Free tier (9%, $5 min), Pro (4%, $5 min), Premium (0%)</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold text-primary">2. Hourly Work</span>
+                    </div>
+                    <p className="text-muted-foreground ml-4">
+                      Display your hourly rate range. Clients can hire you directly for hourly work. No commission charged on hourly contracts.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold text-primary">3. Free Estimates</span>
+                    </div>
+                    <p className="text-muted-foreground ml-4">
+                      Market yourself as offering free estimates. This is just a profile feature to attract clients - no charges apply.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mt-4">
+                  <div className="flex items-center space-x-2 p-3 bg-background rounded-lg border border-border">
+                    <Checkbox
+                      id="offers_free_estimates"
+                      checked={formData.offers_free_estimates}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, offers_free_estimates: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="offers_free_estimates" className="cursor-pointer font-medium">
+                      I offer free estimates to potential clients
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Note: Setting hourly rates and offering free estimates are optional. All diggers can participate in commission-based bidding.
+                  </p>
                 </div>
               </div>
 
