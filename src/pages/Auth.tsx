@@ -69,7 +69,8 @@ const Auth = () => {
   useEffect(() => {
     // If already authenticated (and not in recovery), redirect
     supabase.auth.getSession().then(({ data: { session } }) => {
-      const isRecovery = typeof window !== 'undefined' && window.location.hash.includes('type=recovery');
+      const hash = typeof window !== 'undefined' ? window.location.hash : '';
+      const isRecovery = hash.includes('type=recovery');
       if (session && !isRecovery) {
         navigate(redirectTo);
       }
@@ -77,7 +78,6 @@ const Auth = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        // Show new password form instead of redirecting
         setShowNewPasswordForm(true);
         return;
       }
@@ -86,9 +86,17 @@ const Auth = () => {
       }
     });
 
-    // Also detect recovery via URL hash (fallback)
-    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
-      setShowNewPasswordForm(true);
+    // Also detect recovery or expired links via URL hash (fallback)
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash || '';
+      if (hash.includes('type=recovery')) {
+        setShowNewPasswordForm(true);
+      }
+      if (hash.includes('error=access_denied') || hash.includes('error=')) {
+        setShowResetForm(true);
+        // Optional: inform user link expired
+        try { toast.error('Reset link expired. Please request a new one.'); } catch {}
+      }
     }
 
     return () => subscription.unsubscribe();
@@ -407,11 +415,9 @@ const Auth = () => {
       if (error) throw error;
 
       toast.success("Password updated! Please sign in with your new password.");
-      // Clear fields and hide form
       setShowNewPasswordForm(false);
       setNewPassword("");
       setConfirmNewPassword("");
-      // Remove recovery hash to avoid re-trigger
       if (typeof window !== 'undefined') {
         window.location.hash = '';
       }
@@ -426,6 +432,27 @@ const Auth = () => {
     }
   };
 
+  const handleMagicLink = async () => {
+    setLoading(true);
+    try {
+      const emailValidation = z.string().trim().email("Invalid email format").max(255);
+      const validatedEmail = emailValidation.parse(email);
+      const { error } = await supabase.auth.signInWithOtp({
+        email: validatedEmail,
+        options: { redirectTo: `${window.location.origin}/` },
+      });
+      if (error) throw error;
+      toast.success("Magic sign-in link sent! Check your inbox.");
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || "Failed to send magic link");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleSocialLogin = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
     setLoading(true);
     try {
@@ -433,20 +460,16 @@ const Auth = () => {
         provider,
         options: {
           redirectTo: `${window.location.origin}/`,
-          queryParams: userType === 'digger' ? {
-            user_type: 'digger'
-          } : undefined,
+          queryParams: userType === 'digger' ? { user_type: 'digger' } : undefined,
         },
       });
-
       if (error) throw error;
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to sign in');
+    } finally {
       setLoading(false);
     }
   };
-
-  return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center relative">
