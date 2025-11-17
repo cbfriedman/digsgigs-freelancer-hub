@@ -14,8 +14,11 @@ serve(async (req) => {
 
   try {
     const { title, description, category } = await req.json();
+    
+    console.log("[MATCH-INDUSTRY-CODES] Starting AI matching:", { title, description, category });
 
     if (!title || !description) {
+      console.error("[MATCH-INDUSTRY-CODES] Missing required fields");
       return new Response(
         JSON.stringify({ error: "Title and description are required" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -39,9 +42,11 @@ serve(async (req) => {
       .limit(1000);
 
     if (codesError) {
-      console.error("Error fetching industry codes:", codesError);
+      console.error("[MATCH-INDUSTRY-CODES] Error fetching industry codes:", codesError);
       throw new Error("Failed to fetch industry codes");
     }
+    
+    console.log(`[MATCH-INDUSTRY-CODES] Fetched ${industryCodes.length} industry codes for AI context`);
 
     // Build a concise reference of codes
     const codeReference = industryCodes
@@ -137,7 +142,11 @@ Analyze this gig and return the most relevant SIC and NAICS codes.`;
 
     const result = JSON.parse(toolCall.function.arguments);
     
-    console.log("AI matched codes:", result);
+    console.log("[MATCH-INDUSTRY-CODES] AI matched codes successfully:", {
+      sic_codes: result.sic_codes,
+      naics_codes: result.naics_codes,
+      reasoning: result.reasoning
+    });
 
     return new Response(
       JSON.stringify({
@@ -149,7 +158,7 @@ Analyze this gig and return the most relevant SIC and NAICS codes.`;
     );
 
   } catch (error) {
-    console.error("Error in match-industry-codes:", error);
+    console.error("[MATCH-INDUSTRY-CODES] Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
