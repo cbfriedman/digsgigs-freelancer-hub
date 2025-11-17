@@ -2,15 +2,15 @@
  * Hook for calculating costs based on subscription tier and pricing model
  * 
  * Pricing Models:
- * - 'commission': Tier-based lead costs + commission on completed work
+ * - 'commission': Tier-based lead costs upfront + commission on completed work
  *   - Free: $3/lead + 9% commission ($5 min)
  *   - Pro: $1.50/lead + 4% commission ($5 min)
  *   - Premium: $0/lead + 0% commission
  * 
- * - 'hourly': Tier rate + hourly rate for leads, no commission
- *   - Free: $3 + hourly rate
- *   - Pro: $1.50 + hourly rate
- *   - Premium: $0 + hourly rate
+ * - 'hourly': Tier-based lead cost upfront + hourly rate when awarded
+ *   - Upfront: Free ($3), Pro ($1.50), Premium ($0)
+ *   - When awarded: 1 hour of digger's rate
+ *   - No commission on completed work
  * 
  * - 'both': (Construction/Trades) Combination of both models available
  */
