@@ -54,6 +54,7 @@ export default function PricingCalculator() {
   // Free Estimates state
   const [freeEstimateLeads, setFreeEstimateLeads] = useState(15);
   const [freeEstimateConversion, setFreeEstimateConversion] = useState(10);
+  const [freeEstimateAvgRevenue, setFreeEstimateAvgRevenue] = useState(1000);
   const [showFreeEstimateResults, setShowFreeEstimateResults] = useState(false);
   
   const jobs = Math.round(leads * (conversionRate / 100));
@@ -411,7 +412,7 @@ export default function PricingCalculator() {
           </div>
           
           <div className="p-6 bg-white">
-          <div className="grid md:grid-cols-3 gap-4 p-6 bg-white rounded-lg border">
+          <div className="grid md:grid-cols-4 gap-4 p-6 bg-white rounded-lg border">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label htmlFor="freeEstimateLeads">Leads Purchased</Label>
@@ -465,6 +466,35 @@ export default function PricingCalculator() {
                 <SelectContent className="bg-background z-50">
                   {[5, 10, 15, 20, 25].map(num => (
                     <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="freeEstimateAvgRevenue">Average Revenues per Job</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">The average revenue you earn per completed job</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select 
+                value={freeEstimateAvgRevenue.toString()} 
+                onValueChange={(v) => setFreeEstimateAvgRevenue(Number(v))}
+              >
+                <SelectTrigger className="text-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50 max-h-[300px]">
+                  {Array.from({ length: 20 }, (_, i) => (i + 1) * 250).map(num => (
+                    <SelectItem key={num} value={num.toString()}>${num.toLocaleString()}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
