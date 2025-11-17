@@ -56,9 +56,9 @@ serve(async (req) => {
     if (pricingModel === 'hourly') {
       if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
         const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-        leadCost = Math.max(100, hourlyRate);
+        leadCost = hourlyRate;
         isHourlyRate = true;
-        logStep("Hourly rate lead cost", { hourlyRate, leadCost, minimum: 100 });
+        logStep("Hourly rate lead cost", { hourlyRate, leadCost });
       } else {
         // No hourly rate set, fall back to tier-based
         logStep("Hourly pricing selected but no rate set, using tier-based pricing");
@@ -86,9 +86,9 @@ serve(async (req) => {
     else if (pricingModel === 'both') {
       if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
         const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-        leadCost = Math.max(100, hourlyRate);
+        leadCost = hourlyRate;
         isHourlyRate = true;
-        logStep("Both pricing - hourly rate lead cost", { hourlyRate, leadCost, minimum: 100 });
+        logStep("Both pricing - hourly rate lead cost", { hourlyRate, leadCost });
       } else {
         // No hourly rate set, use tier-based
         if (tier === 'premium') {
