@@ -268,6 +268,9 @@ export default function Pricing() {
                       <span className="text-sm font-medium">Commission:</span>
                       <span className="font-bold text-primary">{tier.commission}</span>
                     </div>
+                    <p className="text-xs text-muted-foreground italic mt-1 px-3">
+                      * Commissions apply only to standard lead purchases, not to Hourly Rates or Free Estimates
+                    </p>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <span className="text-sm font-medium">Free Estimate:</span>
                       <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
@@ -313,6 +316,9 @@ export default function Pricing() {
                 <CardDescription className="text-center">
                   Calculate your costs based on your activity
                 </CardDescription>
+                <p className="text-center text-sm text-muted-foreground italic mt-2">
+                  Note: Commissions apply only to standard lead purchases, not to Hourly Rates or Free Estimates
+                </p>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Interactive Controls */}
