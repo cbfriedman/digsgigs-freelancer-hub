@@ -53,8 +53,8 @@ interface Digger {
   is_insured: boolean;
   is_bonded: boolean;
   is_licensed: string;
-  sic_code: string | null;
-  naics_code: string | null;
+  sic_code: string[] | null;
+  naics_code: string[] | null;
   custom_occupation_title: string | null;
   location_lat: number | null;
   location_lng: number | null;
@@ -233,11 +233,11 @@ const DiggerDetail = () => {
   };
 
   const getOccupationBadge = () => {
-    if (digger?.sic_code) {
-      return { label: "SIC Code", value: digger.sic_code };
+    if (digger?.sic_code && digger.sic_code.length > 0) {
+      return { label: "SIC Code", value: digger.sic_code.join(", ") };
     }
-    if (digger?.naics_code) {
-      return { label: "NAICS Code", value: digger.naics_code };
+    if (digger?.naics_code && digger.naics_code.length > 0) {
+      return { label: "NAICS Code", value: digger.naics_code.join(", ") };
     }
     return null;
   };

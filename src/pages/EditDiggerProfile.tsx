@@ -39,8 +39,8 @@ interface DiggerProfile {
   is_bonded: boolean;
   is_licensed: string;
   offers_free_estimates: boolean;
-  sic_code: string | null;
-  naics_code: string | null;
+  sic_code: string[] | null;
+  naics_code: string[] | null;
   custom_occupation_title: string | null;
 }
 
@@ -51,8 +51,8 @@ const EditDiggerProfile = () => {
   const [geocoding, setGeocoding] = useState(false);
   const [profileId, setProfileId] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedIndustryCode, setSelectedIndustryCode] = useState<IndustryCode | null>(null);
-  const [customOccupationTitle, setCustomOccupationTitle] = useState("");
+  const [selectedIndustryCodes, setSelectedIndustryCodes] = useState<IndustryCode[]>([]);
+  const [customOccupationTitles, setCustomOccupationTitles] = useState<string[]>([]);
 
   // Construction/Trades category IDs where free estimates apply
   const CONSTRUCTION_CATEGORY_IDS = [
@@ -160,25 +160,53 @@ const EditDiggerProfile = () => {
 
       setSelectedCategories(categoriesData?.map(c => c.category_id) || []);
 
-      // Set industry code if exists
-      if (diggerProfile.sic_code || diggerProfile.naics_code) {
-        const codeType = diggerProfile.sic_code ? "SIC" : "NAICS";
-        const code = diggerProfile.sic_code || diggerProfile.naics_code;
-        
-        const { data: industryCode } = await supabase
-          .from("industry_codes")
-          .select("*")
-          .eq("code_type", codeType)
-          .eq("code", code)
-          .single();
+      // Load industry codes if they exist
+      const loadedCodes: IndustryCode[] = [];
+      const loadedTitles: string[] = [];
 
-        if (industryCode) {
-          setSelectedIndustryCode({
-            ...industryCode,
-            code_type: industryCode.code_type as "SIC" | "NAICS"
-          });
-          setCustomOccupationTitle(diggerProfile.custom_occupation_title || industryCode.title);
+      if (diggerProfile.sic_code && diggerProfile.sic_code.length > 0) {
+        for (const code of diggerProfile.sic_code) {
+          const { data: industryCode } = await supabase
+            .from("industry_codes")
+            .select("*")
+            .eq("code_type", "SIC")
+            .eq("code", code)
+            .single();
+          
+          if (industryCode) {
+            loadedCodes.push({
+              ...industryCode,
+              code_type: "SIC"
+            });
+            loadedTitles.push(industryCode.title);
+          }
         }
+      }
+
+      if (diggerProfile.naics_code && diggerProfile.naics_code.length > 0) {
+        for (const code of diggerProfile.naics_code) {
+          const { data: industryCode } = await supabase
+            .from("industry_codes")
+            .select("*")
+            .eq("code_type", "NAICS")
+            .eq("code", code)
+            .single();
+          
+          if (industryCode) {
+            loadedCodes.push({
+              ...industryCode,
+              code_type: "NAICS"
+            });
+            loadedTitles.push(industryCode.title);
+          }
+        }
+      }
+
+      setSelectedIndustryCodes(loadedCodes);
+      if (diggerProfile.custom_occupation_title) {
+        setCustomOccupationTitles(diggerProfile.custom_occupation_title.split(", "));
+      } else {
+        setCustomOccupationTitles(loadedTitles);
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -191,7 +219,7 @@ const EditDiggerProfile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (selectedCategories.length === 0 && !selectedIndustryCode) {
+    if (selectedCategories.length === 0 && selectedIndustryCodes.length === 0) {
       toast.error("Please select at least one category or industry code");
       return;
     }
@@ -242,9 +270,9 @@ const EditDiggerProfile = () => {
           is_licensed: formData.is_licensed,
           offers_free_estimates: formData.offers_free_estimates,
           pricing_model: formData.pricing_model,
-          sic_code: selectedIndustryCode?.code_type === "SIC" ? selectedIndustryCode.code : null,
-          naics_code: selectedIndustryCode?.code_type === "NAICS" ? selectedIndustryCode.code : null,
-          custom_occupation_title: customOccupationTitle || null,
+          sic_code: selectedIndustryCodes.filter(c => c.code_type === "SIC").map(c => c.code),
+          naics_code: selectedIndustryCodes.filter(c => c.code_type === "NAICS").map(c => c.code),
+          custom_occupation_title: customOccupationTitles.length > 0 ? customOccupationTitles.join(", ") : null,
         })
         .eq("id", profileId);
 
@@ -617,9 +645,9 @@ const EditDiggerProfile = () => {
               <RegistrationCategorySelector
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
-                onIndustryCodeChange={(code, title) => {
-                  setSelectedIndustryCode(code);
-                  setCustomOccupationTitle(title);
+                onIndustryCodesChange={(codes, titles) => {
+                  setSelectedIndustryCodes(codes);
+                  setCustomOccupationTitles(titles);
                 }}
               />
 

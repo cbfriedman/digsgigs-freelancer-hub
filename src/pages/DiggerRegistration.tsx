@@ -34,8 +34,8 @@ const DiggerRegistration = () => {
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedIndustryCode, setSelectedIndustryCode] = useState<IndustryCode | null>(null);
-  const [customOccupationTitle, setCustomOccupationTitle] = useState("");
+  const [selectedIndustryCodes, setSelectedIndustryCodes] = useState<IndustryCode[]>([]);
+  const [customOccupationTitles, setCustomOccupationTitles] = useState<string[]>([]);
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
   
   const [formData, setFormData] = useState({
@@ -107,7 +107,7 @@ const DiggerRegistration = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (selectedCategories.length === 0 && !selectedIndustryCode) {
+    if (selectedCategories.length === 0 && selectedIndustryCodes.length === 0) {
       toast.error("Please select at least one category or industry code");
       return;
     }
@@ -174,9 +174,9 @@ const DiggerRegistration = () => {
           is_licensed: formData.is_licensed,
           offers_free_estimates: formData.offers_free_estimates,
           pricing_model: pricingModel,
-          sic_code: selectedIndustryCode?.code_type === "SIC" ? selectedIndustryCode.code : null,
-          naics_code: selectedIndustryCode?.code_type === "NAICS" ? selectedIndustryCode.code : null,
-          custom_occupation_title: customOccupationTitle || null,
+          sic_code: selectedIndustryCodes.filter(c => c.code_type === "SIC").map(c => c.code),
+          naics_code: selectedIndustryCodes.filter(c => c.code_type === "NAICS").map(c => c.code),
+          custom_occupation_title: customOccupationTitles.length > 0 ? customOccupationTitles.join(", ") : null,
         })
         .select()
         .single();
@@ -550,9 +550,9 @@ const DiggerRegistration = () => {
               <RegistrationCategorySelector
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
-                onIndustryCodeChange={(code, title) => {
-                  setSelectedIndustryCode(code);
-                  setCustomOccupationTitle(title);
+                onIndustryCodesChange={(codes, titles) => {
+                  setSelectedIndustryCodes(codes);
+                  setCustomOccupationTitles(titles);
                 }}
               />
 

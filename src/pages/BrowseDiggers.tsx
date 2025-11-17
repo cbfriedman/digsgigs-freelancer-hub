@@ -59,8 +59,8 @@ interface Digger {
   is_licensed: string;
   offers_free_estimates: boolean | null;
   subscription_tier: string | null;
-  sic_code: string | null;
-  naics_code: string | null;
+  sic_code: string[] | null;
+  naics_code: string[] | null;
   custom_occupation_title: string | null;
   location_lat: number | null;
   location_lng: number | null;
@@ -223,11 +223,11 @@ const BrowseDiggers = () => {
   };
 
   const getOccupationBadge = (digger: Digger) => {
-    if (digger.sic_code) {
-      return `SIC: ${digger.sic_code}`;
+    if (digger.sic_code && digger.sic_code.length > 0) {
+      return `SIC: ${digger.sic_code.join(", ")}`;
     }
-    if (digger.naics_code) {
-      return `NAICS: ${digger.naics_code}`;
+    if (digger.naics_code && digger.naics_code.length > 0) {
+      return `NAICS: ${digger.naics_code.join(", ")}`;
     }
     return null;
   };
