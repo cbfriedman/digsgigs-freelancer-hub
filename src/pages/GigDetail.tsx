@@ -371,7 +371,12 @@ const GigDetail = () => {
 
             {/* Bids Section */}
             {(isOwner || isDigger) && (
-              <BidsList gigId={id!} gigTitle={gig.title} isOwner={isOwner} />
+              <BidsList 
+                gigId={id!} 
+                gigTitle={gig.title} 
+                isOwner={isOwner}
+                isFixedPrice={!!(gig.budget_min && gig.budget_max)}
+              />
             )}
           </div>
 

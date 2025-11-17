@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ArrowLeft, DollarSign, Calendar, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { WithdrawBidDialog } from "@/components/WithdrawBidDialog";
+import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 
 interface Bid {
   id: string;
@@ -145,6 +146,7 @@ const MyBids = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <StripeConnectBanner />
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"

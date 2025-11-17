@@ -243,6 +243,9 @@ export type Database = {
           response_time_hours: number | null
           sic_code: string | null
           skills: string[] | null
+          stripe_connect_account_id: string | null
+          stripe_connect_charges_enabled: boolean | null
+          stripe_connect_onboarded: boolean | null
           stripe_customer_id: string | null
           subscription_end_date: string | null
           subscription_status: string | null
@@ -288,6 +291,9 @@ export type Database = {
           response_time_hours?: number | null
           sic_code?: string | null
           skills?: string[] | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean | null
+          stripe_connect_onboarded?: boolean | null
           stripe_customer_id?: string | null
           subscription_end_date?: string | null
           subscription_status?: string | null
@@ -333,6 +339,9 @@ export type Database = {
           response_time_hours?: number | null
           sic_code?: string | null
           skills?: string[] | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean | null
+          stripe_connect_onboarded?: boolean | null
           stripe_customer_id?: string | null
           subscription_end_date?: string | null
           subscription_status?: string | null
@@ -380,6 +389,73 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      escrow_contracts: {
+        Row: {
+          completed_at: string | null
+          consumer_id: string
+          created_at: string
+          digger_id: string
+          funded_at: string | null
+          gig_id: string
+          id: string
+          platform_fee_amount: number
+          platform_fee_percentage: number | null
+          status: string
+          stripe_payment_intent_id: string | null
+          total_amount: number
+        }
+        Insert: {
+          completed_at?: string | null
+          consumer_id: string
+          created_at?: string
+          digger_id: string
+          funded_at?: string | null
+          gig_id: string
+          id?: string
+          platform_fee_amount: number
+          platform_fee_percentage?: number | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          total_amount: number
+        }
+        Update: {
+          completed_at?: string | null
+          consumer_id?: string
+          created_at?: string
+          digger_id?: string
+          funded_at?: string | null
+          gig_id?: string
+          id?: string
+          platform_fee_amount?: number
+          platform_fee_percentage?: number | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_contracts_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_contracts_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_contracts_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gigs: {
         Row: {
@@ -658,6 +734,56 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      milestone_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          digger_payout: number
+          escrow_contract_id: string
+          id: string
+          milestone_number: number
+          platform_fee: number
+          released_at: string | null
+          status: string
+          stripe_transfer_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          digger_payout: number
+          escrow_contract_id: string
+          id?: string
+          milestone_number: number
+          platform_fee: number
+          released_at?: string | null
+          status?: string
+          stripe_transfer_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          digger_payout?: number
+          escrow_contract_id?: string
+          id?: string
+          milestone_number?: number
+          platform_fee?: number
+          released_at?: string | null
+          status?: string
+          stripe_transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestone_payments_escrow_contract_id_fkey"
+            columns: ["escrow_contract_id"]
+            isOneToOne: false
+            referencedRelation: "escrow_contracts"
             referencedColumns: ["id"]
           },
         ]
@@ -984,8 +1110,11 @@ export type Database = {
           created_at: string
           digger_id: string
           digger_payout: number
+          escrow_contract_id: string | null
           gig_id: string
           id: string
+          is_escrow: boolean | null
+          milestone_payment_id: string | null
           status: string
           stripe_payment_intent_id: string | null
           total_amount: number
@@ -999,8 +1128,11 @@ export type Database = {
           created_at?: string
           digger_id: string
           digger_payout: number
+          escrow_contract_id?: string | null
           gig_id: string
           id?: string
+          is_escrow?: boolean | null
+          milestone_payment_id?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           total_amount: number
@@ -1014,8 +1146,11 @@ export type Database = {
           created_at?: string
           digger_id?: string
           digger_payout?: number
+          escrow_contract_id?: string | null
           gig_id?: string
           id?: string
+          is_escrow?: boolean | null
+          milestone_payment_id?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           total_amount?: number
@@ -1043,10 +1178,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_escrow_contract_id_fkey"
+            columns: ["escrow_contract_id"]
+            isOneToOne: false
+            referencedRelation: "escrow_contracts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_milestone_payment_id_fkey"
+            columns: ["milestone_payment_id"]
+            isOneToOne: false
+            referencedRelation: "milestone_payments"
             referencedColumns: ["id"]
           },
         ]
