@@ -108,7 +108,7 @@ const DiggerRegistration = () => {
     e.preventDefault();
     
     if (selectedCategories.length === 0 && selectedIndustryCodes.length === 0) {
-      toast.error("Please select at least one category or industry code");
+      toast.error("Please select at least one primary profession using the 'Select Primary Profession' button");
       return;
     }
 
@@ -296,15 +296,37 @@ const DiggerRegistration = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Primary Professions Selection */}
+                <div className="space-y-4 border border-primary/20 rounded-lg p-4 bg-primary/5">
+                  <div>
+                    <Label className="text-base font-semibold">Primary Professions *</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Select all professions you offer. This helps us match you with relevant gigs. 
+                      Click "Select Primary Profession" to add multiple professions.
+                    </p>
+                  </div>
+                  <RegistrationCategorySelector
+                    selectedCategories={selectedCategories}
+                    onCategoriesChange={setSelectedCategories}
+                    onIndustryCodesChange={(codes, titles) => {
+                      setSelectedIndustryCodes(codes);
+                      setCustomOccupationTitles(titles);
+                    }}
+                  />
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="profession">Primary Profession *</Label>
+                  <Label htmlFor="profession">Professional Title (Optional)</Label>
                   <Input
                     id="profession"
                     value={formData.profession}
                     onChange={(e) => setFormData({ ...formData, profession: e.target.value })}
-                    placeholder="e.g., Licensed Electrician, Attorney, Web Developer"
-                    required
+                    placeholder="e.g., Licensed Master Electrician"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    A custom title to display on your profile (e.g., "Master Plumber" or "Certified Arborist")
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio *</Label>
@@ -543,18 +565,6 @@ const DiggerRegistration = () => {
                   These credentials will be displayed on your profile to build trust with consumers
                 </p>
               </div>
-
-              <Separator />
-
-              {/* Categories */}
-              <RegistrationCategorySelector
-                selectedCategories={selectedCategories}
-                onCategoriesChange={setSelectedCategories}
-                onIndustryCodesChange={(codes, titles) => {
-                  setSelectedIndustryCodes(codes);
-                  setCustomOccupationTitles(titles);
-                }}
-              />
 
               <Separator />
 
