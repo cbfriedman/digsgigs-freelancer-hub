@@ -432,14 +432,14 @@ const BrowseGigs = () => {
                                   navigate("/pricing-strategy");
                                 }}
                               >
-                                Lead Cost: ${Math.max(100, diggerProfile.hourly_rate || diggerProfile.hourly_rate_min)} (min $100)
+                                Upfront: Tier cost. Awarded: ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr
                                 <Info className="h-3 w-3" />
                               </Badge>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="font-semibold mb-1">Hourly Rate Auction</p>
+                              <p className="font-semibold mb-1">Hourly Pricing Model</p>
                               <p className="text-sm mb-2">
-                                You pay 1 hour of your advertised rate per lead (minimum $100). This creates competitive pricing - diggers with lower hourly rates compete better for leads, incentivizing market-rate pricing.
+                                You pay tier-based cost upfront (Free: $3, Pro: $1.50, Premium: $0). When awarded the job, pay an additional 1 hour of your rate. No commission on completed work.
                               </p>
                               <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/pricing-strategy")}>
                                 Learn pricing strategies →
