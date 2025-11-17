@@ -135,49 +135,53 @@ export default function DiggerRegistrationDemo() {
               />
             </div>
 
-            <div>
-              <label htmlFor="keywordInput" className="block text-sm font-medium mb-2">
-                Add Keywords
-              </label>
-              <div className="space-y-2">
-                <Input
-                  id="keywordInput"
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  onKeyPress={handleKeywordInputKeyPress}
-                  placeholder="Type a keyword and press Enter (e.g., residential, commercial, licensed)"
-                />
-                {keywords.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {keywords.map((keyword, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
-                      >
-                        {keyword}
-                        <button
-                          type="button"
-                          onClick={() => setKeywords(keywords.filter((_, i) => i !== index))}
-                          className="hover:text-destructive"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
+            {profession && (
+              <>
+                <div>
+                  <label htmlFor="keywordInput" className="block text-sm font-medium mb-2">
+                    Add Keywords
+                  </label>
+                  <div className="space-y-2">
+                    <Input
+                      id="keywordInput"
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      onKeyPress={handleKeywordInputKeyPress}
+                      placeholder="Type a keyword and press Enter (e.g., residential, commercial, licensed)"
+                    />
+                    {keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {keywords.map((keyword, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                          >
+                            {keyword}
+                            <button
+                              type="button"
+                              onClick={() => setKeywords(keywords.filter((_, i) => i !== index))}
+                              className="hover:text-destructive"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {keywords.length} keyword{keywords.length !== 1 ? 's' : ''} added
+                    </p>
                   </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {keywords.length} keyword{keywords.length !== 1 ? 's' : ''} added
-                </p>
-              </div>
-            </div>
+                </div>
 
-            {keywordSuggestions.length > 0 && (
-              <KeywordSuggestions
-                suggestions={keywordSuggestions}
-                currentKeywords={keywords}
-                onAddKeyword={handleAddKeyword}
-              />
+                {keywordSuggestions.length > 0 && (
+                  <KeywordSuggestions
+                    suggestions={keywordSuggestions}
+                    currentKeywords={keywords}
+                    onAddKeyword={handleAddKeyword}
+                  />
+                )}
+              </>
             )}
 
             <div>
