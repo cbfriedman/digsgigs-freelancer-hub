@@ -69,10 +69,39 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Filter admins based on notification preferences
+    const { data: prefsData } = await supabase
+      .from('email_preferences')
+      .select('user_id, keyword_requests_enabled')
+      .in('user_id', adminRoles.map(r => r.user_id))
+      .eq('keyword_requests_enabled', true);
+
+    const enabledUserIds = new Set(prefsData?.map(p => p.user_id) || []);
+    
+    // Get emails only for admins who have this notification enabled
+    const filteredAdminProfiles = adminProfiles?.filter(profile => {
+      const adminRole = adminRoles.find(r => r.user_id === adminProfiles.find(p => p.email === profile.email)?.email);
+      const userId = adminRoles.find(r => {
+        const matchingProfile = adminProfiles.find(p => p.email === profile.email);
+        return matchingProfile;
+      })?.user_id;
+      return userId && (enabledUserIds.size === 0 || enabledUserIds.has(userId));
+    });
+
+    const notifyEmails = filteredAdminProfiles?.map(p => p.email) || [];
+
+    if (notifyEmails.length === 0) {
+      console.log('No admins with keyword notifications enabled');
+      return new Response(
+        JSON.stringify({ message: 'No admins to notify (all have disabled this notification)' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Send email to admins
     const emailResponse = await resend.emails.send({
       from: 'Digsandgigs <onboarding@resend.dev>',
-      to: adminEmails,
+      to: notifyEmails,
       subject: `New Keyword Request: ${profession}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -118,7 +147,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         message: 'Admins notified successfully',
-        emailsSent: adminEmails.length 
+        emailsSent: notifyEmails.length 
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

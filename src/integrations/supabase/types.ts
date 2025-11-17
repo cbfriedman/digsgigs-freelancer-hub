@@ -607,26 +607,41 @@ export type Database = {
       }
       email_preferences: {
         Row: {
+          bid_notifications_enabled: boolean
           created_at: string
           enabled: boolean
           id: string
+          keyword_requests_enabled: boolean
+          lead_issues_enabled: boolean
+          profile_reminders_enabled: boolean
           report_frequency: string
+          system_alerts_enabled: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          bid_notifications_enabled?: boolean
           created_at?: string
           enabled?: boolean
           id?: string
+          keyword_requests_enabled?: boolean
+          lead_issues_enabled?: boolean
+          profile_reminders_enabled?: boolean
           report_frequency?: string
+          system_alerts_enabled?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          bid_notifications_enabled?: boolean
           created_at?: string
           enabled?: boolean
           id?: string
+          keyword_requests_enabled?: boolean
+          lead_issues_enabled?: boolean
+          profile_reminders_enabled?: boolean
           report_frequency?: string
+          system_alerts_enabled?: boolean
           updated_at?: string
           user_id?: string
         }
