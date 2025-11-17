@@ -28,7 +28,6 @@ export default function AIChatbot() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [isIconHidden, setIsIconHidden] = useState(false);
   const [iconPosition, setIconPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -246,7 +245,6 @@ export default function AIChatbot() {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button[data-close]')) return;
     setIsDragging(true);
     setDragStart({
       x: e.clientX - iconPosition.x,
@@ -280,7 +278,7 @@ export default function AIChatbot() {
   return (
     <>
       {/* Floating Button */}
-      {!isOpen && !isIconHidden && (
+      {!isOpen && (
         <div
           onMouseDown={handleMouseDown}
           style={{
@@ -292,7 +290,7 @@ export default function AIChatbot() {
             cursor: isDragging ? 'grabbing' : 'grab',
             zIndex: 50,
           }}
-          className="group"
+          className="animate-in fade-in duration-300"
         >
           <Button
             onClick={() => !isDragging && setIsOpen(true)}
@@ -301,32 +299,7 @@ export default function AIChatbot() {
             <MessageSquare className="h-6 w-6 mr-2" />
             <span className="font-medium">Chat with us</span>
           </Button>
-          <Button
-            data-close
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsIconHidden(true);
-            }}
-            variant="ghost"
-            size="icon"
-            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <X className="h-3 w-3" />
-          </Button>
         </div>
-      )}
-
-      {/* Show hidden icon button */}
-      {isIconHidden && !isOpen && (
-        <Button
-          onClick={() => setIsIconHidden(false)}
-          variant="outline"
-          size="sm"
-          className="fixed bottom-6 right-6 shadow-lg z-50"
-        >
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Show Chat
-        </Button>
       )}
 
 
