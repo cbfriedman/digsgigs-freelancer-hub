@@ -501,7 +501,7 @@ export default function PricingCalculator() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="freeEstimateJobs">Free Estimate Requests</Label>
+              <Label htmlFor="freeEstimateJobs">Free Estimate Requests (Auto-calculated)</Label>
               <div className="h-10 px-3 py-2 bg-primary/5 rounded-md border border-primary/20 flex items-center gap-2 text-lg font-semibold text-primary">
                 <Calculator className="h-4 w-4" />
                 {freeEstimateJobs}
