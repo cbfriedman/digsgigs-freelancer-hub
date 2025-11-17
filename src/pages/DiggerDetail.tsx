@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
+import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { generateLocalBusinessSchema } from "@/components/StructuredData";
@@ -498,27 +499,44 @@ const DiggerDetail = () => {
                 <CardTitle>Reviews & Ratings</CardTitle>
               </CardHeader>
               <CardContent>
-                <RatingsList diggerId={id!} isDigger={currentUser?.id === digger.user_id} />
+                <RatingsList 
+                  diggerId={id!} 
+                  isDigger={currentUser?.id === digger.user_id}
+                  diggerName={digger.business_name}
+                />
               </CardContent>
             </Card>
           </div>
 
           <div className="lg:col-span-1">
-            <Card className="sticky top-24">
-              <CardContent className="p-6">
-                <Button 
-                  className="w-full mb-4" 
-                  size="lg"
-                  onClick={handleSendMessage}
-                >
-                  <MessageSquare className="mr-2 h-5 w-5" />
-                  Send Message
-                </Button>
-                <p className="text-xs text-muted-foreground text-center">
-                  Start a conversation to discuss your project with this digger
-                </p>
-              </CardContent>
-            </Card>
+            <div className="space-y-6 sticky top-24">
+              <Card>
+                <CardContent className="p-6">
+                  <Button 
+                    className="w-full mb-4" 
+                    size="lg"
+                    onClick={handleSendMessage}
+                  >
+                    <MessageSquare className="mr-2 h-5 w-5" />
+                    Send Message
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Start a conversation to discuss your project with this digger
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Google Search Preview */}
+              {digger.total_ratings > 0 && (
+                <RichSnippetPreview
+                  businessName={digger.business_name}
+                  rating={digger.average_rating}
+                  reviewCount={digger.total_ratings}
+                  priceRange={formatHourlyRate() || undefined}
+                  location={digger.location}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
