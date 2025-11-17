@@ -20,31 +20,6 @@ const RETURN_REASONS = [
     id: "mismatch",
     label: "Lead does not match my occupation",
     description: "This gig doesn't match my professional qualifications (verified by AI)"
-  },
-  {
-    id: "duplicate",
-    label: "Duplicate lead",
-    description: "I've already received this lead"
-  },
-  {
-    id: "poor_quality",
-    label: "Poor quality lead",
-    description: "Incomplete information or unrealistic requirements"
-  },
-  {
-    id: "already_filled",
-    label: "Position already filled",
-    description: "The client has already hired someone"
-  },
-  {
-    id: "unresponsive",
-    label: "Unresponsive client",
-    description: "Client doesn't respond to contact attempts"
-  },
-  {
-    id: "other",
-    label: "Other",
-    description: "Specify your reason below"
   }
 ];
 
@@ -60,10 +35,6 @@ export const LeadReturnDialog = ({ leadPurchaseId, gigTitle, onSuccess, buttonCl
       return;
     }
 
-    if (selectedReason === "other" && !description.trim()) {
-      toast.error("Please provide a description for your return request");
-      return;
-    }
 
     setSubmitting(true);
 
@@ -173,7 +144,7 @@ export const LeadReturnDialog = ({ leadPurchaseId, gigTitle, onSuccess, buttonCl
 
           <div className="space-y-2">
             <Label htmlFor="description">
-              Additional Details {selectedReason === "other" && "*"}
+              Additional Details (Optional)
             </Label>
             <Textarea
               id="description"
@@ -192,9 +163,6 @@ export const LeadReturnDialog = ({ leadPurchaseId, gigTitle, onSuccess, buttonCl
             <p className="text-sm font-medium">Refund Policy</p>
             <ul className="text-sm text-muted-foreground space-y-1">
               <li>• AI-verified occupation mismatches: Instant 100% credit</li>
-              <li>• Duplicate leads: 100% credit after verification</li>
-              <li>• Poor quality/unresponsive: Case-by-case review</li>
-              <li>• Other reasons: Manual review within 24-48 hours</li>
             </ul>
           </div>
         </div>
