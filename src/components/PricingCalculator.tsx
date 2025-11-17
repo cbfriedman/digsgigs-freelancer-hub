@@ -45,15 +45,15 @@ const TIERS = {
 };
 
 export default function PricingCalculator() {
-  const [leads, setLeads] = useState(40);
+  const [leads, setLeads] = useState(30);
   const [hourlyRate, setHourlyRate] = useState(100);
   const [hoursPerJob, setHoursPerJob] = useState(10);
-  const [conversionRate, setConversionRate] = useState(10);
+  const [conversionRate, setConversionRate] = useState(15);
   const [showResults, setShowResults] = useState(false);
   
   // Free Estimates state
-  const [freeEstimateLeads, setFreeEstimateLeads] = useState(15);
-  const [freeEstimateConversion, setFreeEstimateConversion] = useState(10);
+  const [freeEstimateLeads, setFreeEstimateLeads] = useState(30);
+  const [freeEstimateConversion, setFreeEstimateConversion] = useState(15);
   const [freeEstimateAvgRevenue, setFreeEstimateAvgRevenue] = useState(1000);
   const [showFreeEstimateResults, setShowFreeEstimateResults] = useState(false);
   
