@@ -21,6 +21,24 @@ export const KeywordSuggestions = ({
     )
   );
 
+  if (availableSuggestions.length === 0 && suggestions.length === 0) {
+    return (
+      <Card className="p-4 bg-muted/50 border-muted">
+        <div className="flex items-start gap-2">
+          <Lightbulb className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground mb-1">
+              No Keyword Suggestions Available
+            </p>
+            <p className="text-xs text-muted-foreground">
+              We don't have pre-defined suggestions for this profession yet. Please add your own custom keywords that describe your services and expertise.
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   if (availableSuggestions.length === 0) {
     return null;
   }
