@@ -25,7 +25,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             digsandgigs
           </h1>
           <div className="flex items-center gap-4">
-            <div className="relative pb-6">
+            <div className="relative">
               <Button 
                 variant="default" 
                 onClick={() => setChatOpen(true)}
@@ -34,7 +34,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 <MessageSquare className="h-4 w-4" />
                 Chat with us
               </Button>
-              <ArrowUp className="absolute bottom-0 left-1/2 -translate-x-1/2 h-6 w-6 text-primary animate-pulse drop-shadow-lg" />
+              <ArrowUp className="absolute -bottom-6 left-1/2 -translate-x-1/2 h-6 w-6 text-primary animate-pulse drop-shadow-lg" />
             </div>
             {showBackButton && (
               <Button variant="ghost" onClick={() => navigate(backTo)}>
