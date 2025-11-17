@@ -19,6 +19,7 @@ import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
 import SEOHead from "@/components/SEOHead";
 import { generateBreadcrumbSchema } from "@/components/StructuredData";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface Category {
   id: string;
@@ -262,6 +263,8 @@ const BrowseGigs = () => {
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
       <div className="container mx-auto px-4 py-12">
+        <Breadcrumb items={[{ label: "Browse Gigs", href: "/browse-gigs" }]} />
+        
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Browse Gigs</h1>
           <p className="text-muted-foreground">Find projects that match your skills</p>
