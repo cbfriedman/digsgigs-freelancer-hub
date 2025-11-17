@@ -152,7 +152,7 @@ export default function PricingCalculator() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
-                {[5, 10, 15, 20, 25].map(num => (
+                {[10, 15, 20, 25].map(num => (
                   <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
                 ))}
               </SelectContent>
