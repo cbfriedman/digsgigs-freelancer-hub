@@ -13,6 +13,7 @@ import { ArrowLeft, Search, Star, DollarSign, Briefcase, Map } from "lucide-reac
 import { DiggerAdvancedFilters } from "@/components/DiggerAdvancedFilters";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
+import { Navigation } from "@/components/Navigation";
 
 interface Category {
   id: string;
@@ -228,20 +229,7 @@ const BrowseDiggers = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            digsandgigs
-          </h1>
-          <Button variant="ghost" onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
-      </nav>
+      <Navigation showBackButton backLabel="Back to Home" />
 
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">

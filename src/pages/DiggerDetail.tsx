@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
+import { Navigation } from "@/components/Navigation";
 
 interface Reference {
   id: string;

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, DollarSign, Calendar, Tag, Users, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Navigation } from "@/components/Navigation";
 import {
   AlertDialog,
   AlertDialogAction,

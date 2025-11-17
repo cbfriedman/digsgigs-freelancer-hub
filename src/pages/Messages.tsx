@@ -10,6 +10,7 @@ import { ArrowLeft, Send, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
+import { Navigation } from "@/components/Navigation";
 
 // SECURITY: Input validation schema
 const messageSchema = z.object({

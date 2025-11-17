@@ -4,12 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { ArrowLeft, Users, Briefcase, DollarSign, Star, CheckCircle2 } from "lucide-react";
+import { Users, Briefcase, DollarSign, Star, CheckCircle2 } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { StepVisual } from "@/components/StepVisual";
 import DemoGigGrid from "@/components/DemoGigGrid";
 import DemoDiggerGrid from "@/components/DemoDiggerGrid";
 import RegistrationCategoryDemo from "@/components/RegistrationCategoryDemo";
+import { Navigation } from "@/components/Navigation";
 
 // Import step screenshots
 import step1PostGig from "@/assets/step1-post-gig-new.jpg";
@@ -87,20 +88,7 @@ const HowItWorks = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            digsandgigs
-          </h1>
-          <Button variant="ghost" onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
-      </nav>
+      <Navigation showBackButton backLabel="Back to Home" />
 
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         <div className="text-center mb-16 animate-fade-in">
