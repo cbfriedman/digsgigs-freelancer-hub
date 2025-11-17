@@ -12,6 +12,7 @@ import { RatingsList } from "@/components/RatingsList";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { generateLocalBusinessSchema } from "@/components/StructuredData";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface Reference {
   id: string;
@@ -308,6 +309,13 @@ const DiggerDetail = () => {
       </nav>
 
       <div className="container mx-auto px-4 py-12 max-w-5xl">
+        <Breadcrumb 
+          items={[
+            { label: "Browse Diggers", href: "/browse-diggers" },
+            { label: digger.business_name, href: `/digger/${digger.id}` }
+          ]} 
+        />
+        
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <Card>

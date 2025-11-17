@@ -16,6 +16,7 @@ import { SavedSearchesList } from "@/components/SavedSearchesList";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { generateBreadcrumbSchema } from "@/components/StructuredData";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 interface Category {
   id: string;
@@ -260,6 +261,8 @@ const BrowseDiggers = () => {
       <Navigation showBackButton backLabel="Back to Home" />
 
       <div className="container mx-auto px-4 py-12">
+        <Breadcrumb items={[{ label: "Browse Diggers", href: "/browse-diggers" }]} />
+        
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Browse Talent</h1>
           <p className="text-muted-foreground">Find the perfect freelancer for your project</p>
