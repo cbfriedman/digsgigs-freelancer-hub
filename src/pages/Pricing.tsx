@@ -188,7 +188,8 @@ export default function Pricing() {
   };
 
   const getButtonText = (tier: string, priceId: string | null) => {
-    if (!user || !isDigger) return 'Sign Up as Digger';
+    const tierName = TIERS[tier as keyof typeof TIERS].name;
+    if (!user || !isDigger) return `Sign Up as Digger - ${tierName}`;
     if (currentTier === tier) return 'Current Plan';
     if (!priceId) return 'Current Plan';
     if (subscribing === tier) return <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>;
@@ -317,8 +318,7 @@ export default function Pricing() {
                   <Button
                     onClick={() => handleSubscribe(key, tier.priceId)}
                     disabled={isButtonDisabled(key, tier.priceId)}
-                    className="w-full"
-                    variant={tier.popular ? "default" : "outline"}
+                    className="w-full bg-primary hover:bg-primary/90"
                   >
                     {getButtonText(key, tier.priceId)}
                   </Button>
