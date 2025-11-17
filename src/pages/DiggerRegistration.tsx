@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MapPin, Info, Briefcase, X } from "lucide-react";
+import { MapPin, Info, Briefcase, X, Star } from "lucide-react";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 import { geocodeAddress } from "@/utils/geocoding";
 
@@ -40,6 +40,7 @@ const DiggerRegistration = () => {
   const [customOccupationTitles, setCustomOccupationTitles] = useState<string[]>([]);
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
   const [professionToRemove, setProfessionToRemove] = useState<number | null>(null);
+  const [primaryProfessionIndex, setPrimaryProfessionIndex] = useState<number>(0);
   const [lastRemovedProfession, setLastRemovedProfession] = useState<{ code: IndustryCode; title: string; index: number } | null>(null);
   const [undoTimeoutId, setUndoTimeoutId] = useState<NodeJS.Timeout | null>(null);
   
@@ -122,6 +123,13 @@ const DiggerRegistration = () => {
     setCustomOccupationTitles(newTitles);
     setProfessionToRemove(null);
 
+    // Adjust primary index if needed
+    if (primaryProfessionIndex === index) {
+      setPrimaryProfessionIndex(0);
+    } else if (primaryProfessionIndex > index) {
+      setPrimaryProfessionIndex(primaryProfessionIndex - 1);
+    }
+
     // Clear any existing timeout
     if (undoTimeoutId) {
       clearTimeout(undoTimeoutId);
@@ -141,6 +149,14 @@ const DiggerRegistration = () => {
         onClick: handleUndoRemove,
       },
       duration: 5000,
+    });
+  };
+
+  const togglePrimaryProfession = (index: number) => {
+    setPrimaryProfessionIndex(index);
+    const professionName = customOccupationTitles[index] || selectedIndustryCodes[index]?.title;
+    toast.success("Primary profession updated", {
+      description: `${professionName} is now your primary profession.`,
     });
   };
 
@@ -386,11 +402,30 @@ const DiggerRegistration = () => {
                             key={code.id} 
                             className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border group hover:border-primary/30 transition-colors"
                           >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`h-8 w-8 p-0 flex-shrink-0 ${
+                                primaryProfessionIndex === index 
+                                  ? 'text-yellow-500 hover:text-yellow-600' 
+                                  : 'text-muted-foreground hover:text-yellow-500'
+                              }`}
+                              onClick={() => togglePrimaryProfession(index)}
+                              type="button"
+                              title={primaryProfessionIndex === index ? "Primary profession" : "Set as primary"}
+                            >
+                              <Star className={`h-4 w-4 ${primaryProfessionIndex === index ? 'fill-yellow-500' : ''}`} />
+                            </Button>
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span className="font-semibold text-foreground">
                                   {customOccupationTitles[index] || code.title}
                                 </span>
+                                {primaryProfessionIndex === index && (
+                                  <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+                                    Primary
+                                  </Badge>
+                                )}
                                 <Badge variant="secondary" className="text-xs">
                                   {code.code_type}: {code.code}
                                 </Badge>
@@ -404,7 +439,7 @@ const DiggerRegistration = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                               onClick={() => setProfessionToRemove(index)}
                               type="button"
                             >
@@ -417,7 +452,7 @@ const DiggerRegistration = () => {
                         <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                         <p>
                           These professions will be used to match you with relevant gigs. 
-                          You'll receive notifications when gigs match your expertise.
+                          Click the <Star className="h-3 w-3 inline mx-1" /> to mark your primary specialty, which will appear first on your profile.
                         </p>
                       </div>
                     </CardContent>
