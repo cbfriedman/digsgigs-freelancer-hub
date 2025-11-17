@@ -38,22 +38,40 @@ const DiggerRegistration = () => {
   const [customOccupationTitle, setCustomOccupationTitle] = useState("");
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
 
-  // Construction/Trades category IDs where free estimates apply
-  const CONSTRUCTION_CATEGORY_IDS = [
-    'e6466529-cc0f-4d8f-bc84-30d0cd7f824b', // Construction (parent)
-    'dab95fcc-a8ca-4cd4-b26f-96b6ff8a9bc0', // Electrical
-    'e1e2aeb3-06f1-48c7-95ca-07929af7ef60', // General Building
-    'c491164e-1054-4533-af24-490e2f6f7b10', // HVAC
-    'ef88b721-6399-4844-a043-8cc7fa7a1234', // Landscaping
-    '9491c946-5e2a-4189-a4f7-a23d5feb0a69', // Plumbing
-    'f21b476d-54dc-4990-a16f-7024bf72de5b', // Civil Engineering
-    '5ff074c0-f689-403c-9e7c-76b175dc2352', // Landscape Architecture
+  // Parent category IDs where free estimates apply (Construction & Brokers)
+  const FREE_ESTIMATES_PARENT_IDS = [
+    'e6466529-cc0f-4d8f-bc84-30d0cd7f824b', // Construction
+    '15312798-04ef-408f-b97a-e64920e2c15a', // Brokers & Consultants
   ];
 
-  // Check if any selected categories are construction-related
-  const hasConstructionCategory = selectedCategories.some(catId => 
-    CONSTRUCTION_CATEGORY_IDS.includes(catId)
-  );
+  // State to track categories with parent info
+  const [categoryParentMap, setCategoryParentMap] = useState<Record<string, string | null>>({});
+
+  // Fetch categories with parent relationships on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, parent_category_id');
+      
+      if (data) {
+        const parentMap: Record<string, string | null> = {};
+        data.forEach(cat => {
+          parentMap[cat.id] = cat.parent_category_id;
+        });
+        setCategoryParentMap(parentMap);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Check if any selected categories belong to Construction or Brokers & Consultants
+  const hasEligibleCategory = selectedCategories.some(catId => {
+    const parentId = categoryParentMap[catId];
+    // Check if it's a parent category itself or belongs to an eligible parent
+    return FREE_ESTIMATES_PARENT_IDS.includes(catId) || 
+           (parentId && FREE_ESTIMATES_PARENT_IDS.includes(parentId));
+  });
   
   const [formData, setFormData] = useState({
     handle: "",
@@ -407,19 +425,19 @@ const DiggerRegistration = () => {
                     </p>
                   </div>
 
-                  {hasConstructionCategory && (
+                  {hasEligibleCategory && (
                     <div className="space-y-2">
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-primary">3. Free Estimates (Construction/Trades)</span>
+                        <span className="font-semibold text-primary">3. Free Estimates (Construction/Brokers)</span>
                       </div>
                       <p className="text-muted-foreground ml-4">
-                        Market yourself as offering free estimates for construction projects. This is a profile feature to attract clients - no charges apply.
+                        Market yourself as offering free estimates. This is a profile feature to attract clients - no charges apply.
                       </p>
                     </div>
                   )}
                 </div>
 
-                {hasConstructionCategory && (
+                {hasEligibleCategory && (
                   <div className="space-y-4 mt-4">
                     <div className="flex items-center space-x-2 p-3 bg-background rounded-lg border border-border">
                       <Checkbox
@@ -434,12 +452,12 @@ const DiggerRegistration = () => {
                       </Label>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Note: Free estimates are a great way to attract construction/trades clients!
+                      Note: Free estimates are a great way to attract clients!
                     </p>
                   </div>
                 )}
                 
-                {!hasConstructionCategory && (
+                {!hasEligibleCategory && (
                   <div className="space-y-4 mt-4">
                     <Label className="text-base font-semibold">Choose Your Lead Pricing Model</Label>
                     <p className="text-sm text-muted-foreground mb-3">
