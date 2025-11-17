@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RatingSummary } from "./RatingSummary";
+import { OptimizedImage } from "./OptimizedImage";
 
 interface DiggerCardProps {
   name: string;
@@ -15,11 +16,13 @@ export const DiggerCard = ({ name, profession, expertise, rating, reviews, image
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-hover)] border-border/50">
       <div className="relative h-48 overflow-hidden">
-        <img 
+        <OptimizedImage
           src={image} 
-          alt={name} 
+          alt={name}
+          width={400}
+          height={300}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-          loading="lazy"
         />
       </div>
       <CardHeader>

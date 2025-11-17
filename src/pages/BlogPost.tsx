@@ -9,6 +9,7 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { generateReviewSchema } from "@/components/StructuredData";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { Calendar, User, Eye, Clock, Share2, Facebook, Twitter, Linkedin, Link2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -283,11 +284,14 @@ export default function BlogPost() {
             {/* Featured Image */}
             {post.featured_image && (
               <div className="mb-12 rounded-lg overflow-hidden">
-                <img
+                <OptimizedImage
                   src={post.featured_image}
                   alt={post.title}
+                  width={1200}
+                  height={630}
+                  sizes="(max-width: 768px) 100vw, 800px"
+                  priority
                   className="w-full h-auto"
-                  loading="lazy"
                 />
               </div>
             )}
@@ -356,11 +360,13 @@ export default function BlogPost() {
                   >
                     {relatedPost.featured_image && (
                       <div className="h-40 overflow-hidden">
-                        <img
+                        <OptimizedImage
                           src={relatedPost.featured_image}
                           alt={relatedPost.title}
+                          width={400}
+                          height={300}
+                          sizes="(max-width: 768px) 100vw, 33vw"
                           className="w-full h-full object-cover"
-                          loading="lazy"
                         />
                       </div>
                     )}

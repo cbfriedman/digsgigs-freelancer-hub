@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { Search, Calendar, User, Eye, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -198,11 +199,13 @@ export default function Blog() {
                 >
                   {post.featured_image && (
                     <div className="relative h-48 overflow-hidden">
-                      <img
+                      <OptimizedImage
                         src={post.featured_image}
                         alt={post.title}
+                        width={600}
+                        height={400}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
                       />
                       {post.category && (
                         <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground">
