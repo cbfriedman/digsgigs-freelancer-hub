@@ -39,6 +39,7 @@ import AdminBlog from "./pages/AdminBlog";
 import Sitemap from "./pages/Sitemap";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
+import EscrowDashboard from "./pages/EscrowDashboard";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => (
           <Route path="/admin/blog" element={<AdminBlog />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/sitemap.xml" element={<Sitemap />} />
+          <Route path="/escrow-dashboard" element={<EscrowDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
