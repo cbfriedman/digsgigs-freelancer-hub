@@ -308,7 +308,7 @@ serve(async (req) => {
 
       try {
         const emailResponse = await resend.emails.send({
-          from: 'digsandgiggs <onboarding@resend.dev>',
+          from: 'Digsandgigs <noreply@digsandgigs.net>',
           to: [email],
           subject: `Your Monthly Transaction Report - ${dateRange}`,
           html,

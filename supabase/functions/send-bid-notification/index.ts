@@ -108,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (gigOwnerEmail) {
         emailResponse = await resend.emails.send({
-          from: "digsandgigs <onboarding@resend.dev>",
+          from: "Digsandgigs <noreply@digsandgigs.net>",
           to: [gigOwnerEmail],
           subject: `New Bid on Your Gig: ${gig.title}`,
           html: `
@@ -134,7 +134,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (diggerEmail) {
         emailResponse = await resend.emails.send({
-          from: "digsandgigs <onboarding@resend.dev>",
+          from: "Digsandgigs <noreply@digsandgigs.net>",
           to: [diggerEmail],
           subject: `Your Bid Was Accepted: ${gig.title}`,
           html: `
