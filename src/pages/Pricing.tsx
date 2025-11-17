@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Loader2, Star, RefreshCw } from "lucide-react";
+import { Check, Loader2, Star, RefreshCw, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PricingCalculator from "@/components/PricingCalculator";
 import PlanRecommender from "@/components/PlanRecommender";
 import PricingCharts from "@/components/PricingCharts";
@@ -466,7 +467,21 @@ export default function Pricing() {
                           ))}
                         </tr>
                         <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">Escrow Fees (5% of revenue)</td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Escrow Fees (5% of revenue)
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs">
+                                    <p>This 5% fee is charged on milestone payments for fixed-price contracts with escrow. The fee is deducted from each milestone payment before releasing funds to the professional.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </td>
                           {calculateInteractiveCosts().map((result) => {
                             const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
                             const totalRevenue = calculatedJobs * interactiveJobValue;
