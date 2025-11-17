@@ -552,7 +552,7 @@ export default function PricingCalculator() {
                     })}
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Total Leads Costs</td>
+                    <td className="py-3 px-4 text-muted-foreground">Total Leads Cost</td>
                     {Object.entries(TIERS).map(([key, tier]) => {
                       const totalLeadCost = tier.leadCostValue * freeEstimateLeads;
                       return (
