@@ -552,6 +552,18 @@ export default function PricingCalculator() {
                     })}
                   </tr>
                   <tr className="border-b border-border/50">
+                    <td className="py-3 px-4 text-muted-foreground">Lead Costs</td>
+                    {Object.entries(TIERS).map(([key, tier]) => (
+                      <td key={key} className="text-right py-3 px-4">
+                        {tier.leadCostValue === 0 ? (
+                          <span className="text-green-600 font-semibold">FREE</span>
+                        ) : (
+                          `$${tier.leadCostValue.toFixed(2)}`
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/50">
                     <td className="py-3 px-4 text-muted-foreground">Free Estimate Upcharge</td>
                     {Object.entries(TIERS).map(([key, tier]) => (
                       <td key={key} className="text-right py-3 px-4">
@@ -576,13 +588,15 @@ export default function PricingCalculator() {
                   <tr className="border-b border-border/50">
                     <td className="py-3 px-4 text-muted-foreground">Total Upfront Costs</td>
                     {Object.entries(TIERS).map(([key, tier]) => {
-                      const totalLeadCost = tier.estimateCost * freeEstimateLeads;
+                      const totalLeadCost = tier.leadCostValue * freeEstimateLeads;
+                      const totalEstimateCost = tier.estimateCost * freeEstimateLeads;
+                      const totalUpfrontCost = totalLeadCost + totalEstimateCost;
                       return (
                         <td key={key} className="text-right py-3 px-4">
-                          {totalLeadCost === 0 ? (
+                          {totalUpfrontCost === 0 ? (
                             <span className="text-green-600 font-semibold">FREE</span>
                           ) : (
-                            `$${totalLeadCost.toFixed(2)}`
+                            `$${totalUpfrontCost.toFixed(2)}`
                           )}
                         </td>
                       );
@@ -601,8 +615,9 @@ export default function PricingCalculator() {
                   <tr className="border-b-2 border-border bg-primary/5">
                     <td className="py-4 px-4 font-bold text-lg">Total Monthly Costs</td>
                     {Object.entries(TIERS).map(([key, tier]) => {
-                      const totalLeadCost = tier.estimateCost * freeEstimateLeads;
-                      const totalCost = totalLeadCost;
+                      const totalLeadCost = tier.leadCostValue * freeEstimateLeads;
+                      const totalEstimateCost = tier.estimateCost * freeEstimateLeads;
+                      const totalCost = totalLeadCost + totalEstimateCost;
                       return (
                         <td key={key} className="text-right py-4 px-4 font-bold text-lg text-primary">
                           ${totalCost.toFixed(2)}
@@ -617,8 +632,9 @@ export default function PricingCalculator() {
                     </td>
                     {Object.entries(TIERS).map(([key, tier]) => {
                       const totalRevenue = freeEstimateAvgRevenue * freeEstimateJobs;
-                      const totalLeadCost = tier.estimateCost * freeEstimateLeads;
-                      const totalCost = totalLeadCost;
+                      const totalLeadCost = tier.leadCostValue * freeEstimateLeads;
+                      const totalEstimateCost = tier.estimateCost * freeEstimateLeads;
+                      const totalCost = totalLeadCost + totalEstimateCost;
                       const netEarnings = totalRevenue - totalCost;
                       return (
                         <td key={key} className="text-right py-4 px-4 font-bold text-lg text-green-600">
@@ -634,13 +650,13 @@ export default function PricingCalculator() {
             {/* Savings Comparison */}
             <div className="grid md:grid-cols-2 gap-4 mt-6">
               {Object.entries(TIERS).slice(1).map(([key, tier]) => {
-                const freeLeadCost = TIERS.free.estimateCost * freeEstimateLeads;
-                const freeJobCost = TIERS.free.jobAwardedCost * freeEstimateJobs;
-                const freeTotalCost = freeLeadCost + freeJobCost;
+                const freeLeadCost = TIERS.free.leadCostValue * freeEstimateLeads;
+                const freeEstimateCost = TIERS.free.estimateCost * freeEstimateLeads;
+                const freeTotalCost = freeLeadCost + freeEstimateCost;
                 
-                const tierLeadCost = tier.estimateCost * freeEstimateLeads;
-                const tierJobCost = tier.jobAwardedCost * freeEstimateJobs;
-                const tierTotalCost = tierLeadCost + tierJobCost;
+                const tierLeadCost = tier.leadCostValue * freeEstimateLeads;
+                const tierEstimateCost = tier.estimateCost * freeEstimateLeads;
+                const tierTotalCost = tierLeadCost + tierEstimateCost;
                 
                 const monthlySavings = freeTotalCost - tierTotalCost;
                 const annualSavings = monthlySavings * 12;
