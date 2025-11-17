@@ -5,27 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, DollarSign, Calendar, Mail, Phone, MapPin, AlertCircle } from "lucide-react";
+import { ArrowLeft, DollarSign, Calendar, Mail, Phone, MapPin } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Navigation } from "@/components/Navigation";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { LeadReturnDialog } from "@/components/LeadReturnDialog";
 import { formatDistanceToNow } from "date-fns";
 
 interface PurchasedLead {
@@ -60,11 +43,6 @@ const MyLeads = () => {
   const { clearCart } = useCart();
   const [leads, setLeads] = useState<PurchasedLead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [reportDialogOpen, setReportDialogOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<PurchasedLead | null>(null);
-  const [issueType, setIssueType] = useState("");
-  const [issueDescription, setIssueDescription] = useState("");
-  const [submittingIssue, setSubmittingIssue] = useState(false);
 
   useEffect(() => {
     const handleBulkPurchaseSuccess = async () => {
@@ -158,42 +136,6 @@ const MyLeads = () => {
     }
 
     setLoading(false);
-  };
-
-  const handleReportIssue = async () => {
-    if (!selectedLead || !issueType || !issueDescription.trim()) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    // Set refund percentage based on issue type
-    let refundPercentage = 0;
-    if (issueType === "mistake" || issueType === "changed_mind") {
-      refundPercentage = 100;
-    } else if (issueType === "already_filled") {
-      refundPercentage = 50;
-    }
-
-    const { error } = await supabase
-      .from("lead_issues")
-      .insert({
-        lead_purchase_id: selectedLead.id,
-        digger_id: selectedLead.digger_id,
-        issue_type: issueType,
-        description: issueDescription.trim(),
-        refund_percentage: refundPercentage,
-      });
-
-    if (error) {
-      console.error("Error reporting issue:", error);
-      toast.error("Failed to report issue");
-    } else {
-      toast.success("Issue reported successfully. The client will review your request.");
-      setReportDialogOpen(false);
-      setIssueType("");
-      setIssueDescription("");
-      loadLeads();
-    }
   };
 
   const formatBudget = (min: number | null, max: number | null) => {
@@ -364,67 +306,16 @@ const MyLeads = () => {
 
                         {hasReportedIssue(lead) ? (
                           <Button variant="outline" className="w-full" disabled>
-                            Issue {getIssueStatus(lead) === "pending" ? "Pending Review" : 
+                            Return Request {getIssueStatus(lead) === "pending" ? "Pending Review" : 
                                   getIssueStatus(lead) === "approved" ? "Approved" : "Rejected"}
                           </Button>
                         ) : (
-                          <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                className="w-full"
-                                onClick={() => setSelectedLead(lead)}
-                              >
-                                <AlertCircle className="mr-2 h-4 w-4" />
-                                Report Issue
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Report Lead Issue</DialogTitle>
-                                <DialogDescription>
-                                  If this lead has incorrect information or other issues, report it for review. 
-                                  Approved reports may receive a refund.
-                                </DialogDescription>
-                              </DialogHeader>
-
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="issue-type">Issue Type</Label>
-                                  <Select value={issueType} onValueChange={setIssueType}>
-                                    <SelectTrigger id="issue-type">
-                                      <SelectValue placeholder="Select issue type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="mistake">Posted by Mistake (100% refund)</SelectItem>
-                                      <SelectItem value="changed_mind">Changed Mind (100% refund)</SelectItem>
-                                      <SelectItem value="already_filled">Already Found a Digger (50% refund)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="description">Description</Label>
-                                  <Textarea
-                                    id="description"
-                                    placeholder="Please describe the issue in detail..."
-                                    value={issueDescription}
-                                    onChange={(e) => setIssueDescription(e.target.value)}
-                                    rows={4}
-                                  />
-                                </div>
-                              </div>
-
-                              <DialogFooter>
-                                <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
-                                  Cancel
-                                </Button>
-                                <Button onClick={handleReportIssue}>
-                                  Submit Report
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                          <LeadReturnDialog
+                            leadPurchaseId={lead.id}
+                            gigTitle={lead.gigs.title}
+                            onSuccess={() => loadLeads()}
+                            buttonClassName="w-full gap-2"
+                          />
                         )}
                       </div>
                     </div>
