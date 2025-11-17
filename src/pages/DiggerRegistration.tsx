@@ -462,14 +462,14 @@ const DiggerRegistration = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
+                        <div className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-border hover:border-primary transition-colors">
                         <RadioGroupItem value="hourly" id="hourly-only" className="mt-1" />
                         <div className="flex-1">
                           <Label htmlFor="hourly-only" className="cursor-pointer font-medium">
                             Hourly Rate Work Only
                           </Label>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Lead cost = 1 hour of your rate (minimum $100). No commission on completed work.
+                            Lead cost = 1 hour of your rate. No commission on completed work.
                           </p>
                         </div>
                       </div>
