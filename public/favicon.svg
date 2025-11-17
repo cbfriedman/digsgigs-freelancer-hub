@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#f5f5f5"/>
+  <g transform="translate(256, 256)">
+    <!-- Shovel blade -->
+    <path d="M -30,-100 L -60,-10 L -40,120 L 0,140 L 40,120 L 60,-10 L 30,-100 Z" 
+          fill="#1e3a8a" stroke="#1e3a8a" stroke-width="4"/>
+    
+    <!-- Shovel handle -->
+    <rect x="-8" y="-180" width="16" height="90" rx="8" 
+          fill="#1e3a8a" stroke="#1e3a8a" stroke-width="2"/>
+    
+    <!-- Handle grip -->
+    <ellipse cx="0" cy="-170" rx="20" ry="15" 
+             fill="#1e3a8a" stroke="#1e3a8a" stroke-width="2"/>
+    
+    <!-- Gear -->
+    <g transform="translate(-90, 0)">
+      <!-- Gear teeth -->
+      <circle cx="0" cy="0" r="45" fill="#1e3a8a"/>
+      <path d="M 0,-45 L 8,-60 L -8,-60 Z M 45,0 L 60,8 L 60,-8 Z M 0,45 L -8,60 L 8,60 Z M -45,0 L -60,-8 L -60,8 Z" 
+            fill="#1e3a8a"/>
+      <path d="M 32,-32 L 45,-45 L 32,-45 Z M 32,32 L 45,45 L 45,32 Z M -32,32 L -45,45 L -32,45 Z M -32,-32 L -45,-32 L -45,-45 Z" 
+            fill="#1e3a8a"/>
+      
+      <!-- Gear center hole -->
+      <circle cx="0" cy="0" r="20" fill="#f5f5f5"/>
+    </g>
+  </g>
+</svg>
