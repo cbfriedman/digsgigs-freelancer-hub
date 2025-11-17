@@ -552,16 +552,19 @@ export default function PricingCalculator() {
                     })}
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Lead Costs</td>
-                    {Object.entries(TIERS).map(([key, tier]) => (
-                      <td key={key} className="text-right py-3 px-4">
-                        {tier.leadCostValue === 0 ? (
-                          <span className="text-green-600 font-semibold">FREE</span>
-                        ) : (
-                          `$${tier.leadCostValue.toFixed(2)}`
-                        )}
-                      </td>
-                    ))}
+                    <td className="py-3 px-4 text-muted-foreground">Total Leads Costs</td>
+                    {Object.entries(TIERS).map(([key, tier]) => {
+                      const totalLeadCost = tier.leadCostValue * freeEstimateLeads;
+                      return (
+                        <td key={key} className="text-right py-3 px-4">
+                          {totalLeadCost === 0 ? (
+                            <span className="text-green-600 font-semibold">FREE</span>
+                          ) : (
+                            `$${totalLeadCost.toFixed(2)}`
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                   <tr className="border-b border-border/50">
                     <td className="py-3 px-4 text-muted-foreground">Free Estimate Upcharge</td>
