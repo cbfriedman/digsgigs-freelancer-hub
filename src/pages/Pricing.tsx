@@ -33,8 +33,8 @@ const TIERS = {
       'Unlimited bidding on gigs',
       '$5 per lead purchase',
       '9% commission on completed work',
-      '2-hour rate charge when awarded (hourly)',
       '$150 per Free Estimate listing',
+      '2-hour rate charge when awarded (hourly)',
     ],
   },
   pro: {
@@ -53,8 +53,8 @@ const TIERS = {
       'Unlimited bidding on gigs',
       '$3 per lead purchase',
       '6% commission on completed work',
-      '2-hour rate charge when awarded (hourly)',
       '$100 per Free Estimate listing',
+      '2-hour rate charge when awarded (hourly)',
     ],
   },
   premium: {
@@ -73,8 +73,8 @@ const TIERS = {
       'Unlimited bidding on gigs',
       'Free lead purchases',
       'No commission on completed work',
-      '2-hour rate charge when awarded (hourly)',
       '$50 per Free Estimate listing',
+      '2-hour rate charge when awarded (hourly)',
     ],
   },
 };
