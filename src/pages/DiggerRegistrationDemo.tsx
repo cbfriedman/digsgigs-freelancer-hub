@@ -147,7 +147,7 @@ export default function DiggerRegistrationDemo() {
                       value={keywordInput}
                       onChange={(e) => setKeywordInput(e.target.value)}
                       onKeyPress={handleKeywordInputKeyPress}
-                      placeholder="Type a keyword and press Enter (e.g., residential, commercial, licensed)"
+                      placeholder="Type a keyword and press Enter"
                     />
                     {keywords.length > 0 && (
                       <div className="flex flex-wrap gap-2">
