@@ -98,6 +98,9 @@ export default function PricingCalculator() {
         <CardDescription className="text-center text-blue-50">
           Enter your expected monthly activity to compare costs across plans
         </CardDescription>
+        <p className="text-center text-sm text-blue-100 italic mt-2">
+          Note: No commissions apply to Hourly Bids
+        </p>
       </CardHeader>
       <CardContent className="space-y-6 bg-white">
         {/* Input Fields */}
@@ -408,6 +411,9 @@ export default function PricingCalculator() {
             <h3 className="text-center text-2xl font-semibold mb-2 text-white">Cost Calculator for Free Estimates</h3>
             <p className="text-center text-purple-50">
               Calculate costs for free estimate leads across different plans
+            </p>
+            <p className="text-center text-sm text-purple-100 italic mt-2">
+              Note: No commissions apply to Free Estimates
             </p>
           </div>
           
