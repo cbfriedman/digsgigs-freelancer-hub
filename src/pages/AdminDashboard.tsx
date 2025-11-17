@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -278,17 +278,26 @@ const AdminDashboard = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Button>
-          <div className="text-center">
+          <div className="text-center space-x-4">
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">Manage reminders and analytics</p>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/admin/notification-preferences")}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Notification Settings
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/admin/users")}
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              User Management
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/admin/notification-preferences")}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Notification Settings
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="reminders" className="w-full">
