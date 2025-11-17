@@ -29,7 +29,7 @@ const TIERS = {
     estimateCost: 100,
     hourlyRateClickCost: 0,
     jobAwardedCost: 100,
-    hoursPerAward: 2,
+    hoursPerAward: 1.5,
   },
   premium: {
     name: 'Premium',
@@ -40,7 +40,7 @@ const TIERS = {
     estimateCost: 0,
     hourlyRateClickCost: 0,
     jobAwardedCost: 0,
-    hoursPerAward: 1,
+    hoursPerAward: 0.5,
   }
 };
 
