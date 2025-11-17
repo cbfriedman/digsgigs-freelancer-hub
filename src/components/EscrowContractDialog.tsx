@@ -7,12 +7,14 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const stripePromise = loadStripe(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "");
 
 interface Milestone {
   description: string;
   amount: number;
+  hoursWorked?: number;
 }
 
 interface EscrowContractDialogProps {
@@ -34,12 +36,15 @@ export const EscrowContractDialog = ({
 }: EscrowContractDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [contractType, setContractType] = useState<"fixed" | "hourly">("fixed");
+  const [hourlyRate, setHourlyRate] = useState<number>(0);
+  const [estimatedHours, setEstimatedHours] = useState<number>(0);
   const [milestones, setMilestones] = useState<Milestone[]>([
-    { description: "", amount: bidAmount }
+    { description: "", amount: bidAmount, hoursWorked: 0 }
   ]);
 
   const addMilestone = () => {
-    setMilestones([...milestones, { description: "", amount: 0 }]);
+    setMilestones([...milestones, { description: "", amount: 0, hoursWorked: 0 }]);
   };
 
   const removeMilestone = (index: number) => {
@@ -53,7 +58,8 @@ export const EscrowContractDialog = ({
   };
 
   const totalMilestoneAmount = milestones.reduce((sum, m) => sum + (m.amount || 0), 0);
-  const platformFee = bidAmount * 0.05;
+  const calculateMilestoneFee = (amount: number) => Math.max(10, amount * 0.05);
+  const totalPlatformFee = milestones.reduce((sum, m) => sum + calculateMilestoneFee(m.amount || 0), 0);
 
   const handleCreateEscrow = async () => {
     // Validate milestones
@@ -79,7 +85,13 @@ export const EscrowContractDialog = ({
 
     try {
       const { data, error } = await supabase.functions.invoke("create-escrow-contract", {
-        body: { bidId, milestones },
+        body: { 
+          bidId, 
+          milestones,
+          contractType,
+          hourlyRate: contractType === "hourly" ? hourlyRate : undefined,
+          estimatedHours: contractType === "hourly" ? estimatedHours : undefined,
+        },
       });
 
       if (error) throw error;
@@ -131,11 +143,54 @@ export const EscrowContractDialog = ({
           <DialogTitle>Set Up Escrow Contract</DialogTitle>
           <DialogDescription>
             Create milestones for the work. You'll pay the full amount upfront, and funds will be
-            released to the professional as milestones are completed.
+            released to the professional as milestones are completed. 5% fee with $10 minimum per payment.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="grid gap-2">
+            <Label>Contract Type</Label>
+            <RadioGroup value={contractType} onValueChange={(v) => setContractType(v as "fixed" | "hourly")}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="fixed" id="fixed" />
+                <Label htmlFor="fixed" className="font-normal">Fixed Price</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="hourly" id="hourly" />
+                <Label htmlFor="hourly" className="font-normal">Hourly Rate</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {contractType === "hourly" && (
+            <>
+              <div className="grid gap-2">
+                <Label>Hourly Rate</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={hourlyRate || ""}
+                  onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Estimated Hours</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="0"
+                  value={estimatedHours || ""}
+                  onChange={(e) => setEstimatedHours(parseFloat(e.target.value) || 0)}
+                  disabled={loading}
+                />
+              </div>
+            </>
+          )}
+
           <div className="grid gap-2">
             <Label>Project</Label>
             <Input value={gigTitle} disabled />
@@ -173,6 +228,20 @@ export const EscrowContractDialog = ({
                       disabled={loading}
                     />
                   </div>
+                  {contractType === "hourly" && (
+                    <div>
+                      <Label className="text-xs">Hours Worked</Label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        placeholder="0"
+                        value={milestone.hoursWorked || ""}
+                        onChange={(e) => updateMilestone(index, "hoursWorked", parseFloat(e.target.value) || 0)}
+                        disabled={loading}
+                      />
+                    </div>
+                  )}
                   <div>
                     <Label className="text-xs">Amount</Label>
                     <Input
@@ -186,8 +255,8 @@ export const EscrowContractDialog = ({
                     />
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Platform fee (5%): ${(milestone.amount * 0.05).toFixed(2)} | 
-                    Digger receives: ${(milestone.amount * 0.95).toFixed(2)}
+                    Platform fee (5%, min $10): ${calculateMilestoneFee(milestone.amount).toFixed(2)} | 
+                    Digger receives: ${(milestone.amount - calculateMilestoneFee(milestone.amount)).toFixed(2)}
                   </div>
                 </div>
                 {milestones.length > 1 && (
@@ -213,8 +282,8 @@ export const EscrowContractDialog = ({
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span>Total Platform Fee (5%):</span>
-              <span>${platformFee.toFixed(2)}</span>
+              <span>Total Platform Fee (5%, $10 min per payment):</span>
+              <span>${totalPlatformFee.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-semibold">
               <span>You Pay Now:</span>

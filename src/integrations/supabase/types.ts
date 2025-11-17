@@ -628,12 +628,16 @@ export type Database = {
       }
       escrow_contracts: {
         Row: {
+          actual_hours: number | null
           completed_at: string | null
           consumer_id: string
+          contract_type: string
           created_at: string
           digger_id: string
+          estimated_hours: number | null
           funded_at: string | null
           gig_id: string
+          hourly_rate: number | null
           id: string
           platform_fee_amount: number
           platform_fee_percentage: number | null
@@ -642,12 +646,16 @@ export type Database = {
           total_amount: number
         }
         Insert: {
+          actual_hours?: number | null
           completed_at?: string | null
           consumer_id: string
+          contract_type?: string
           created_at?: string
           digger_id: string
+          estimated_hours?: number | null
           funded_at?: string | null
           gig_id: string
+          hourly_rate?: number | null
           id?: string
           platform_fee_amount: number
           platform_fee_percentage?: number | null
@@ -656,12 +664,16 @@ export type Database = {
           total_amount: number
         }
         Update: {
+          actual_hours?: number | null
           completed_at?: string | null
           consumer_id?: string
+          contract_type?: string
           created_at?: string
           digger_id?: string
+          estimated_hours?: number | null
           funded_at?: string | null
           gig_id?: string
+          hourly_rate?: number | null
           id?: string
           platform_fee_amount?: number
           platform_fee_percentage?: number | null
@@ -981,6 +993,8 @@ export type Database = {
           description: string
           digger_payout: number
           escrow_contract_id: string
+          hourly_rate: number | null
+          hours_worked: number | null
           id: string
           milestone_number: number
           platform_fee: number
@@ -994,6 +1008,8 @@ export type Database = {
           description: string
           digger_payout: number
           escrow_contract_id: string
+          hourly_rate?: number | null
+          hours_worked?: number | null
           id?: string
           milestone_number: number
           platform_fee: number
@@ -1007,6 +1023,8 @@ export type Database = {
           description?: string
           digger_payout?: number
           escrow_contract_id?: string
+          hourly_rate?: number | null
+          hours_worked?: number | null
           id?: string
           milestone_number?: number
           platform_fee?: number

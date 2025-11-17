@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { bidId, milestones } = await req.json();
+    const { bidId, milestones, contractType, hourlyRate, estimatedHours } = await req.json();
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -86,6 +86,9 @@ serve(async (req) => {
         platform_fee_amount: platformFeeAmount,
         stripe_payment_intent_id: paymentIntent.id,
         status: "pending",
+        contract_type: contractType || "fixed",
+        hourly_rate: contractType === "hourly" ? hourlyRate : null,
+        estimated_hours: contractType === "hourly" ? estimatedHours : null,
       })
       .select()
       .single();
@@ -96,7 +99,8 @@ serve(async (req) => {
     if (milestones && milestones.length > 0) {
       const milestoneInserts = milestones.map((m: any, index: number) => {
         const milestoneAmount = m.amount;
-        const milestoneFee = milestoneAmount * (platformFeePercentage / 100);
+        // Apply $10 minimum fee per progress payment
+        const milestoneFee = Math.max(10, milestoneAmount * (platformFeePercentage / 100));
         const milestonePayout = milestoneAmount - milestoneFee;
 
         return {
@@ -106,6 +110,8 @@ serve(async (req) => {
           amount: milestoneAmount,
           platform_fee: milestoneFee,
           digger_payout: milestonePayout,
+          hours_worked: contractType === "hourly" ? m.hoursWorked : null,
+          hourly_rate: contractType === "hourly" ? hourlyRate : null,
         };
       });
 

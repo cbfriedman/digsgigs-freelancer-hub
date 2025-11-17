@@ -56,3 +56,9 @@ verify_jwt = false
 
 [functions.test-ai-matching]
 verify_jwt = false
+
+[functions.generate-blog-post]
+verify_jwt = false
+
+[functions.trigger-daily-blog]
+verify_jwt = false
