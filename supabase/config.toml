@@ -65,3 +65,10 @@ verify_jwt = false
 
 [functions.trigger-daily-blog]
 verify_jwt = false
+
+[functions.verify-lead-match]
+verify_jwt = true
+
+[functions.process-lead-return]
+verify_jwt = true
+
