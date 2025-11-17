@@ -72,3 +72,6 @@ verify_jwt = true
 [functions.process-lead-return]
 verify_jwt = true
 
+[functions.match-diggers-semantic]
+verify_jwt = false
+
