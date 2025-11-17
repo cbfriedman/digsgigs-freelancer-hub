@@ -37,6 +37,23 @@ const DiggerRegistration = () => {
   const [selectedIndustryCode, setSelectedIndustryCode] = useState<IndustryCode | null>(null);
   const [customOccupationTitle, setCustomOccupationTitle] = useState("");
   const [references, setReferences] = useState<Reference[]>([{ name: "", email: "", phone: "", description: "" }]);
+
+  // Construction/Trades category IDs where free estimates apply
+  const CONSTRUCTION_CATEGORY_IDS = [
+    'e6466529-cc0f-4d8f-bc84-30d0cd7f824b', // Construction (parent)
+    'dab95fcc-a8ca-4cd4-b26f-96b6ff8a9bc0', // Electrical
+    'e1e2aeb3-06f1-48c7-95ca-07929af7ef60', // General Building
+    'c491164e-1054-4533-af24-490e2f6f7b10', // HVAC
+    'ef88b721-6399-4844-a043-8cc7fa7a1234', // Landscaping
+    '9491c946-5e2a-4189-a4f7-a23d5feb0a69', // Plumbing
+    'f21b476d-54dc-4990-a16f-7024bf72de5b', // Civil Engineering
+    '5ff074c0-f689-403c-9e7c-76b175dc2352', // Landscape Architecture
+  ];
+
+  // Check if any selected categories are construction-related
+  const hasConstructionCategory = selectedCategories.some(catId => 
+    CONSTRUCTION_CATEGORY_IDS.includes(catId)
+  );
   
   const [formData, setFormData] = useState({
     handle: "",
@@ -388,33 +405,43 @@ const DiggerRegistration = () => {
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <span className="font-semibold text-primary">3. Free Estimates</span>
+                  {hasConstructionCategory && (
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-primary">3. Free Estimates (Construction/Trades)</span>
+                      </div>
+                      <p className="text-muted-foreground ml-4">
+                        Market yourself as offering free estimates for construction projects. This is a profile feature to attract clients - no charges apply.
+                      </p>
                     </div>
-                    <p className="text-muted-foreground ml-4">
-                      Market yourself as offering free estimates. This is just a profile feature to attract clients - no charges apply.
-                    </p>
-                  </div>
+                  )}
                 </div>
 
-                <div className="space-y-4 mt-4">
-                  <div className="flex items-center space-x-2 p-3 bg-background rounded-lg border border-border">
-                    <Checkbox
-                      id="offers_free_estimates"
-                      checked={formData.offers_free_estimates}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, offers_free_estimates: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="offers_free_estimates" className="cursor-pointer font-medium">
-                      I offer free estimates to potential clients
-                    </Label>
+                {hasConstructionCategory && (
+                  <div className="space-y-4 mt-4">
+                    <div className="flex items-center space-x-2 p-3 bg-background rounded-lg border border-border">
+                      <Checkbox
+                        id="offers_free_estimates"
+                        checked={formData.offers_free_estimates}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, offers_free_estimates: checked as boolean })
+                        }
+                      />
+                      <Label htmlFor="offers_free_estimates" className="cursor-pointer font-medium">
+                        I offer free estimates to potential clients
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Note: Free estimates are a great way to attract construction/trades clients!
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Note: Setting hourly rates and offering free estimates are optional. All diggers can participate in commission-based bidding.
+                )}
+                
+                {!hasConstructionCategory && (
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Note: Setting hourly rates is optional. All diggers can participate in commission-based bidding.
                   </p>
-                </div>
+                )}
               </div>
 
               <Separator />
