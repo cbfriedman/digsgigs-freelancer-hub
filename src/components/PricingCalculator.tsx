@@ -12,7 +12,7 @@ const TIERS = {
   free: {
     name: 'Free',
     priceValue: 0,
-    leadCostValue: 50,
+    leadCostValue: 60,
     commissionValue: 9,
     minimumFee: 0,
     estimateCost: 100,
@@ -23,7 +23,7 @@ const TIERS = {
   pro: {
     name: 'Pro',
     priceValue: 99,
-    leadCostValue: 35,
+    leadCostValue: 40,
     commissionValue: 6,
     minimumFee: 0,
     estimateCost: 75,
@@ -34,7 +34,7 @@ const TIERS = {
   premium: {
     name: 'Premium',
     priceValue: 599,
-    leadCostValue: 15,
+    leadCostValue: 20,
     commissionValue: 0,
     minimumFee: 0,
     estimateCost: 50,
