@@ -262,11 +262,11 @@ export default function Pricing() {
                       <span className="font-bold text-primary">{tier.leadCost}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <span className="text-sm font-medium">Free Estimate:</span>
+                      <span className="text-sm font-medium">Free Estimate Upcharge:</span>
                       <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <span className="text-sm font-medium">Hourly Award Charge:</span>
+                      <span className="text-sm font-medium">Hourly Award Upcharge:</span>
                       <span className="font-bold text-primary">{tier.hourlyRateCharge}</span>
                     </div>
                   </div>
