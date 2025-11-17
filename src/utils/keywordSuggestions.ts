@@ -95,6 +95,101 @@ export const professionKeywords: Record<string, string[]> = {
     "project management",
     "building permits",
     "code compliance"
+  ],
+  lawyer: [
+    "litigation",
+    "contract law",
+    "family law",
+    "criminal defense",
+    "personal injury",
+    "estate planning",
+    "business law",
+    "real estate law",
+    "civil litigation",
+    "consultation",
+    "legal representation",
+    "court proceedings"
+  ],
+  attorney: [
+    "litigation",
+    "contract law",
+    "family law",
+    "criminal defense",
+    "personal injury",
+    "estate planning",
+    "business law",
+    "real estate law",
+    "civil litigation",
+    "consultation",
+    "legal representation",
+    "court proceedings"
+  ],
+  accountant: [
+    "tax preparation",
+    "bookkeeping",
+    "financial planning",
+    "audit services",
+    "payroll services",
+    "business consulting",
+    "tax consulting",
+    "financial statements",
+    "small business",
+    "corporate tax"
+  ],
+  consultant: [
+    "business consulting",
+    "management consulting",
+    "strategic planning",
+    "process improvement",
+    "project management",
+    "analysis",
+    "recommendations",
+    "implementation",
+    "training"
+  ],
+  photographer: [
+    "wedding photography",
+    "portrait photography",
+    "commercial photography",
+    "event photography",
+    "product photography",
+    "real estate photography",
+    "photo editing",
+    "digital photography",
+    "studio sessions"
+  ],
+  designer: [
+    "graphic design",
+    "web design",
+    "logo design",
+    "brand identity",
+    "UI/UX design",
+    "print design",
+    "digital design",
+    "creative services",
+    "design consultation"
+  ],
+  cleaner: [
+    "residential cleaning",
+    "commercial cleaning",
+    "deep cleaning",
+    "move-out cleaning",
+    "carpet cleaning",
+    "window cleaning",
+    "post-construction cleaning",
+    "recurring service",
+    "eco-friendly products"
+  ],
+  mechanic: [
+    "auto repair",
+    "engine diagnostics",
+    "brake service",
+    "oil change",
+    "transmission repair",
+    "electrical systems",
+    "preventive maintenance",
+    "tire service",
+    "inspection"
   ]
 };
 
