@@ -44,6 +44,7 @@ const TIERS = {
 export default function PricingCalculator() {
   const [leads, setLeads] = useState(15);
   const [hourlyRate, setHourlyRate] = useState(100);
+  const [hoursPerJob, setHoursPerJob] = useState(3);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
   
@@ -58,7 +59,7 @@ export default function PricingCalculator() {
   const calculateCosts = (tier: typeof TIERS.free) => {
     const monthlyFee = tier.priceValue;
     const leadCost = tier.leadCostValue * leads;
-    const totalJobValue = hourlyRate * jobs;
+    const totalJobValue = hourlyRate * hoursPerJob * jobs;
     const commission = Math.max((totalJobValue * tier.commissionValue) / 100, tier.minimumFee * jobs);
     const totalCost = monthlyFee + leadCost + commission;
     const revenue = totalJobValue;
@@ -88,7 +89,7 @@ export default function PricingCalculator() {
       </CardHeader>
       <CardContent className="space-y-6 bg-white">
         {/* Input Fields */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-white rounded-lg border">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 p-6 bg-white rounded-lg border">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label htmlFor="leads">Leads Purchased/Month</Label>
@@ -164,7 +165,7 @@ export default function PricingCalculator() {
                     <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-sm">Your average hourly rate per job. Commission is calculated on total job revenue (hourly rate × hours). Free: 9% (min $5), Pro: 6% (min $5), Premium: 0%</p>
+                    <p className="text-sm">Your hourly rate that you charge clients</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -179,6 +180,35 @@ export default function PricingCalculator() {
               <SelectContent className="bg-background z-50 max-h-[300px]">
                 {Array.from({ length: 100 }, (_, i) => (i + 1) * 10).map(num => (
                   <SelectItem key={num} value={num.toString()}>${num}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="hoursPerJob">Average Hours per Job</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-sm">Average number of hours you work on each job. Commission is calculated on total revenue: hourly rate × hours × jobs</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Select 
+              value={hoursPerJob.toString()}
+              onValueChange={(value) => setHoursPerJob(Number(value))}
+            >
+              <SelectTrigger id="hoursPerJob" className="text-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                {[1, 2, 3, 4, 5, 8, 10, 15, 20, 30, 40, 50].map(num => (
+                  <SelectItem key={num} value={num.toString()}>{num} {num === 1 ? 'hour' : 'hours'}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
