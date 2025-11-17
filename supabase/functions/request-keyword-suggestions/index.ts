@@ -76,6 +76,20 @@ Deno.serve(async (req) => {
 
     console.log('Keyword suggestion request created:', data);
 
+    // Send notification to admins asynchronously (fire and forget)
+    supabase.functions.invoke('notify-keyword-request', {
+      body: { 
+        profession,
+        requestId: data.id 
+      }
+    }).then(({ error: notifyError }) => {
+      if (notifyError) {
+        console.error('Error notifying admins:', notifyError);
+      } else {
+        console.log('Admin notification sent successfully');
+      }
+    });
+
     return new Response(
       JSON.stringify({ 
         message: 'Request submitted successfully',
