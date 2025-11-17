@@ -37,6 +37,9 @@ export default function SEOHead({
       {/* Canonical URL */}
       <link rel="canonical" href={fullCanonical} />
       
+      {/* Sitemap */}
+      <link rel="sitemap" type="application/xml" title="Sitemap" href={`${siteUrl}/sitemap.xml`} />
+      
       {/* Robots */}
       <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
       

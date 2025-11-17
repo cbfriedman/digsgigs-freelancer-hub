@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://digsandgigs.com/sitemap.xml
+Sitemap: https://digsandgigs.net/sitemap.xml
