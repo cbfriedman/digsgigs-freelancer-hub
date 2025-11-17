@@ -29,7 +29,6 @@ export default function AIChatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isIconHidden, setIsIconHidden] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [iconPosition, setIconPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -330,43 +329,9 @@ export default function AIChatbot() {
         </Button>
       )}
 
-      {/* Minimized Chat Bar */}
-      {isOpen && isMinimized && (
-        <Card className="fixed bottom-6 right-6 w-96 shadow-2xl z-50">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Bot className="h-4 w-4 text-primary" />
-              AI Assistant
-            </CardTitle>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMinimized(false)}
-                title="Expand"
-                className="h-8 w-8"
-              >
-                <MessageSquare className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setIsOpen(false);
-                  setIsMinimized(false);
-                }}
-                title="Close"
-                className="h-8 w-8"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          </CardHeader>
-        </Card>
-      )}
 
       {/* Chat Window */}
-      {isOpen && !isMinimized && (
+      {isOpen && (
         <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
             <CardTitle className="flex items-center gap-2">
@@ -387,7 +352,7 @@ export default function AIChatbot() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsMinimized(true)}
+                onClick={() => setIsOpen(false)}
                 title="Minimize"
               >
                 <span className="text-lg font-bold leading-none">−</span>
