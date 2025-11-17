@@ -385,11 +385,10 @@ const DiggerRegistration = () => {
                       <span className="font-semibold text-primary">1. Commission-Based Gigs (Bidding)</span>
                     </div>
                     <p className="text-muted-foreground ml-4">
-                      Bid on projects and pay a commission only when you complete the work.
+                      Bid on projects and access leads based on your subscription tier.
                     </p>
                     <div className="ml-4 space-y-1 text-muted-foreground">
-                      <p>• <strong>Lead Cost:</strong> Free tier ($5/lead), Pro ($3/lead), Premium ($0/lead)</p>
-                      <p>• <strong>Commission:</strong> Free tier (9%), Pro (6%), Premium (0%)</p>
+                      <p>• <strong>Lead Cost:</strong> Free ($60/lead), Pro ($40/lead), Premium ($20/lead)</p>
                     </div>
                   </div>
 
@@ -398,8 +397,11 @@ const DiggerRegistration = () => {
                       <span className="font-semibold text-primary">2. Hourly Work</span>
                     </div>
                     <p className="text-muted-foreground ml-4">
-                      Display your hourly rate range. Clients can hire you directly for hourly work. No commission charged on hourly contracts.
+                      Display your hourly rate range. When awarded hourly work, you pay an upcharge based on your tier.
                     </p>
+                    <div className="ml-4 space-y-1 text-muted-foreground">
+                      <p>• <strong>Hourly Award Upcharge:</strong> Free (3 hours of your rate), Pro (2 hours), Premium (1 hour)</p>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -407,8 +409,11 @@ const DiggerRegistration = () => {
                       <span className="font-semibold text-primary">3. Free Estimates</span>
                     </div>
                     <p className="text-muted-foreground ml-4">
-                      Market yourself as offering free estimates. This is a profile feature to attract clients - no charges apply.
+                      Market yourself as offering free estimates. When a client requests an estimate, you pay an upcharge.
                     </p>
+                    <div className="ml-4 space-y-1 text-muted-foreground">
+                      <p>• <strong>Free Estimate Upcharge:</strong> Free ($100), Pro ($75), Premium ($50)</p>
+                    </div>
                   </div>
                 </div>
 
@@ -433,7 +438,7 @@ const DiggerRegistration = () => {
                           Commission-Based Gigs (Bidding)
                         </Label>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Pay tier-based lead costs (Free: $5, Pro: $3, Premium: $0) plus commission when jobs complete (Free: 9%, Pro: 6%, Premium: 0%)
+                          Lead Cost: Free ($60), Pro ($40), Premium ($20)
                         </p>
                       </div>
                     </div>
@@ -452,7 +457,7 @@ const DiggerRegistration = () => {
                           Hourly Rate Work
                         </Label>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Display your hourly rate range. No commission charged on hourly contracts.
+                          Hourly Award Upcharge: Free (3 hours), Pro (2 hours), Premium (1 hour)
                         </p>
                       </div>
                     </div>
@@ -471,7 +476,7 @@ const DiggerRegistration = () => {
                           Free Estimates
                         </Label>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Market yourself as offering free estimates - no charges apply
+                          Free Estimate Upcharge: Free ($100), Pro ($75), Premium ($50)
                         </p>
                       </div>
                     </div>
