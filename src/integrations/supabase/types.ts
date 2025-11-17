@@ -95,6 +95,89 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_generation_history: {
+        Row: {
+          error_message: string | null
+          generated_at: string | null
+          id: string
+          post_id: string | null
+          settings_snapshot: Json | null
+          status: string
+          topic: string
+        }
+        Insert: {
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          post_id?: string | null
+          settings_snapshot?: Json | null
+          status?: string
+          topic: string
+        }
+        Update: {
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          post_id?: string | null
+          settings_snapshot?: Json | null
+          status?: string
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_generation_history_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_generation_settings: {
+        Row: {
+          created_at: string | null
+          enabled: boolean
+          frequency: string
+          id: string
+          include_images: boolean | null
+          target_categories: string[] | null
+          target_tags: string[] | null
+          tone: string | null
+          topics: string[]
+          updated_at: string | null
+          user_id: string
+          word_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          include_images?: boolean | null
+          target_categories?: string[] | null
+          target_tags?: string[] | null
+          tone?: string | null
+          topics?: string[]
+          updated_at?: string | null
+          user_id: string
+          word_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          include_images?: boolean | null
+          target_categories?: string[] | null
+          target_tags?: string[] | null
+          tone?: string | null
+          topics?: string[]
+          updated_at?: string | null
+          user_id?: string
+          word_count?: number | null
+        }
+        Relationships: []
+      }
       blog_post_tags: {
         Row: {
           created_at: string | null
