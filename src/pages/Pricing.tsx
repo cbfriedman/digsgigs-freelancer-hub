@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, ArrowLeft, Loader2, Star } from "lucide-react";
+import { Check, ArrowLeft, Loader2, Star, MessageSquare, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
 import PricingCalculator from "@/components/PricingCalculator";
 import PlanRecommender from "@/components/PlanRecommender";
 import PricingCharts from "@/components/PricingCharts";
 import BreakevenCalculator from "@/components/BreakevenCalculator";
+import AIChatbot from "@/components/AIChatbot";
 
 const TIERS = {
   free: {
@@ -106,6 +107,7 @@ export default function Pricing() {
   const [interactiveJobValue, setInteractiveJobValue] = useState(1000);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -239,10 +241,23 @@ export default function Pricing() {
           >
             digsandgigs
           </h1>
-          <Button variant="ghost" onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Button 
+                variant="default" 
+                onClick={() => setChatOpen(true)}
+                className="gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Chat with us
+              </Button>
+              <ArrowDown className="absolute -bottom-8 left-1/2 -translate-x-1/2 h-5 w-5 text-primary animate-bounce" />
+            </div>
+            <Button variant="ghost" onClick={() => navigate("/")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -469,6 +484,8 @@ export default function Pricing() {
       </div>
 
       <Footer />
+      
+      <AIChatbot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 }

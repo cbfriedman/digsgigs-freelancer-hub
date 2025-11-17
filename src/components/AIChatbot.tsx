@@ -22,15 +22,16 @@ const getSessionId = () => {
   return sessionId;
 };
 
-export default function AIChatbot() {
-  const [isOpen, setIsOpen] = useState(false);
+interface AIChatbotProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [iconPosition, setIconPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -244,65 +245,8 @@ export default function AIChatbot() {
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - iconPosition.x,
-      y: e.clientY - iconPosition.y,
-    });
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
-    setIconPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, dragStart]);
-
   return (
     <>
-      {/* Floating Button */}
-      {!isOpen && (
-        <div
-          onMouseDown={handleMouseDown}
-          style={{
-            position: 'fixed',
-            bottom: iconPosition.y !== 0 ? 'auto' : '24px',
-            right: iconPosition.x !== 0 ? 'auto' : '24px',
-            left: iconPosition.x !== 0 ? `${iconPosition.x}px` : 'auto',
-            top: iconPosition.y !== 0 ? `${iconPosition.y}px` : 'auto',
-            cursor: isDragging ? 'grabbing' : 'grab',
-            zIndex: 50,
-          }}
-          className="animate-in fade-in duration-300"
-        >
-          <Button
-            onClick={() => !isDragging && setIsOpen(true)}
-            className="relative h-20 px-6 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            <MessageSquare className="h-6 w-6 mr-2" />
-            <span className="font-medium">Chat with us</span>
-          </Button>
-        </div>
-      )}
-
-
       {/* Chat Window */}
       {isOpen && (
         <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col animate-in slide-in-from-bottom-4 duration-300">
@@ -325,15 +269,7 @@ export default function AIChatbot() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsOpen(false)}
-                title="Minimize"
-              >
-                <span className="text-lg font-bold leading-none">−</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
                 title="Close"
               >
                 <X className="h-4 w-4" />
