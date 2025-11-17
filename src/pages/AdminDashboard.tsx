@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -33,6 +33,15 @@ interface ReminderRecord {
   };
 }
 
+interface KeywordRequest {
+  id: string;
+  profession: string;
+  status: string;
+  created_at: string;
+  processed_at: string | null;
+  user_id: string | null;
+}
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -40,6 +49,8 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<ReminderStats>({ total: 0, day3: 0, day7: 0, day14: 0 });
   const [recentReminders, setRecentReminders] = useState<ReminderRecord[]>([]);
   const [triggeringJob, setTriggeringJob] = useState(false);
+  const [keywordRequests, setKeywordRequests] = useState<KeywordRequest[]>([]);
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminAccess();
@@ -75,6 +86,7 @@ const AdminDashboard = () => {
 
       setIsAdmin(true);
       await loadDashboardData();
+      await loadKeywordRequests();
     } catch (error) {
       console.error("Error checking admin access:", error);
       toast.error("Failed to verify admin access");
@@ -164,6 +176,45 @@ const AdminDashboard = () => {
     }
   };
 
+  const loadKeywordRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("keyword_suggestion_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setKeywordRequests(data || []);
+    } catch (error) {
+      console.error("Error loading keyword requests:", error);
+      toast.error("Failed to load keyword requests");
+    }
+  };
+
+  const markAsProcessed = async (requestId: string) => {
+    setProcessingRequest(requestId);
+    try {
+      const { error } = await supabase
+        .from("keyword_suggestion_requests")
+        .update({ 
+          status: "completed",
+          processed_at: new Date().toISOString()
+        })
+        .eq("id", requestId);
+
+      if (error) throw error;
+
+      toast.success("Request marked as completed");
+      await loadKeywordRequests();
+    } catch (error) {
+      console.error("Error updating request:", error);
+      toast.error("Failed to update request");
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
   const getReminderTypeBadge = (type: string) => {
     const variants: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
       "3_day": { label: "3 Days", variant: "default" },
@@ -213,6 +264,7 @@ const AdminDashboard = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="reminders">Profile Reminders</TabsTrigger>
             <TabsTrigger value="keywords">Keyword Analytics</TabsTrigger>
+            <TabsTrigger value="requests">Keyword Requests</TabsTrigger>
           </TabsList>
 
           <TabsContent value="reminders" className="space-y-6">
@@ -365,6 +417,119 @@ const AdminDashboard = () => {
 
           <TabsContent value="keywords">
             <KeywordAnalyticsDashboard />
+          </TabsContent>
+
+          <TabsContent value="requests" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5" />
+                      Keyword Suggestion Requests
+                    </CardTitle>
+                    <CardDescription>
+                      User requests for new keyword suggestions by profession
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={loadKeywordRequests}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {keywordRequests.length === 0 ? (
+                  <div className="text-center py-12">
+                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No keyword requests yet</p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Profession</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Requested</TableHead>
+                          <TableHead>Processed</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {keywordRequests.map((request) => (
+                          <TableRow key={request.id}>
+                            <TableCell className="font-medium capitalize">
+                              {request.profession}
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={request.status === "completed" ? "default" : "secondary"}
+                              >
+                                {request.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {format(new Date(request.created_at), "MMM d, yyyy h:mm a")}
+                            </TableCell>
+                            <TableCell>
+                              {request.processed_at 
+                                ? format(new Date(request.processed_at), "MMM d, yyyy h:mm a")
+                                : "-"
+                              }
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {request.status === "pending" && (
+                                <Button
+                                  onClick={() => markAsProcessed(request.id)}
+                                  disabled={processingRequest === request.id}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  {processingRequest === request.id ? (
+                                    <>
+                                      <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                      Processing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Mark Complete
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Info Card */}
+            <Card className="bg-accent/5 border-accent/20">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <Lightbulb className="h-6 w-6 text-accent flex-shrink-0 mt-1" />
+                  <div className="space-y-2">
+                    <h3 className="font-semibold">About Keyword Requests</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Users can request keyword suggestions for professions that don't have pre-defined suggestions yet. These requests help improve the platform by identifying which professions need better keyword support.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Once you've added keywords to the suggestion system, mark requests as "Complete" to track which professions have been addressed.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
