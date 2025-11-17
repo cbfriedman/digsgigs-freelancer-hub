@@ -175,11 +175,12 @@ export default function DiggerRegistrationDemo() {
                 </div>
 
                 {keywordSuggestions.length > 0 && (
-                  <KeywordSuggestions
-                    suggestions={keywordSuggestions}
-                    currentKeywords={keywords}
-                    onAddKeyword={handleAddKeyword}
-                  />
+            <KeywordSuggestions
+              suggestions={keywordSuggestions}
+              currentKeywords={keywords}
+              onAddKeyword={handleAddKeyword}
+              profession={profession}
+            />
                 )}
               </>
             )}

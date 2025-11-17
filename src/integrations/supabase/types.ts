@@ -855,6 +855,33 @@ export type Database = {
         }
         Relationships: []
       }
+      keyword_suggestion_requests: {
+        Row: {
+          created_at: string
+          id: string
+          processed_at: string | null
+          profession: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          profession: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          profession?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       lead_issues: {
         Row: {
           created_at: string
