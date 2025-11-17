@@ -153,15 +153,12 @@ export default function Pricing() {
     return tiers.map(tierKey => {
       const tier = TIERS[tierKey];
       const leadCosts = interactiveLeads * tier.leadCostValue;
-      const commissions = calculatedJobs * (tier.commissionValue / 100) * interactiveJobValue;
-      const commissionWithMin = Math.max(commissions, calculatedJobs * tier.minimumFee);
-      const totalCost = tier.priceValue + leadCosts + commissionWithMin;
+      const totalCost = tier.priceValue + leadCosts;
       
       return {
         name: tier.name,
         monthly: tier.priceValue,
         leadCosts,
-        commissions: commissionWithMin,
         total: totalCost
       };
     });
@@ -191,7 +188,7 @@ export default function Pricing() {
               Choose your Plan
             </h1>
             <p className="text-xl text-muted-foreground">
-              Select the plan that best fits your business needs. Upgrade to lower costs, reduce commissions, and maximize your earnings on every project.
+              Select the plan that best fits your business needs. Upgrade to lower costs and maximize your earnings on every project.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               💰 <strong>Pro members save thousands per year</strong> on estimate requests - see the savings table below
@@ -265,13 +262,6 @@ export default function Pricing() {
                       <span className="font-bold text-primary">{tier.leadCost}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <span className="text-sm font-medium">Commission:</span>
-                      <span className="font-bold text-primary">{tier.commission}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground italic mt-1 px-3">
-                      * Commissions apply only to standard lead purchases, not to Hourly Rates or Free Estimates
-                    </p>
-                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <span className="text-sm font-medium">Free Estimate:</span>
                       <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
                     </div>
@@ -312,13 +302,10 @@ export default function Pricing() {
           <div className="max-w-6xl mx-auto">
             <Card className="bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20">
               <CardHeader>
-                <CardTitle className="text-center text-2xl">Leads Purchase + Commissions Calculator</CardTitle>
+                <CardTitle className="text-center text-2xl">Leads Purchase Calculator</CardTitle>
                 <CardDescription className="text-center">
                   Calculate your costs based on your activity
                 </CardDescription>
-                <p className="text-center text-sm text-muted-foreground italic mt-2">
-                  Note: Commissions apply only to standard lead purchases, not to Hourly Rates or Free Estimates
-                </p>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Interactive Controls */}
@@ -465,26 +452,6 @@ export default function Pricing() {
                           {Object.entries(TIERS).map(([key]) => (
                             <td key={key} className="text-right py-3 px-4">
                               {Math.round(interactiveLeads * (conversionRate / 100))}
-                            </td>
-                          ))}
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">Commission Rate</td>
-                          {Object.entries(TIERS).map(([key, tier]) => (
-                            <td key={key} className="text-right py-3 px-4">
-                              {tier.commissionValue}%
-                            </td>
-                          ))}
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">Total Commissions</td>
-                          {calculateInteractiveCosts().map((result) => (
-                            <td key={result.name} className="text-right py-3 px-4">
-                              {result.commissions === 0 ? (
-                                <span className="text-green-600 font-semibold">$0.00</span>
-                              ) : (
-                                `$${result.commissions.toFixed(2)}`
-                              )}
                             </td>
                           ))}
                         </tr>
