@@ -12,32 +12,32 @@ const TIERS = {
   free: {
     name: 'Free',
     priceValue: 0,
-    leadCostValue: 3,
+    leadCostValue: 5,
     commissionValue: 9,
-    minimumFee: 5,
-    estimateCost: 100,
-    hourlyRateClickCost: 100,
-    jobAwardedCost: 0, // No minimum, just hourly rate
+    minimumFee: 0,
+    estimateCost: 0,
+    hourlyRateClickCost: 0,
+    jobAwardedCost: 0,
   },
   pro: {
     name: 'Pro',
     priceValue: 50,
-    leadCostValue: 1.5,
+    leadCostValue: 3,
     commissionValue: 6,
-    minimumFee: 5,
-    estimateCost: 50,
-    hourlyRateClickCost: 100,
-    jobAwardedCost: 0, // No minimum, just hourly rate
+    minimumFee: 0,
+    estimateCost: 0,
+    hourlyRateClickCost: 0,
+    jobAwardedCost: 0,
   },
   premium: {
     name: 'Premium',
-    priceValue: 600,
+    priceValue: 200,
     leadCostValue: 0,
     commissionValue: 0,
     minimumFee: 0,
     estimateCost: 0,
     hourlyRateClickCost: 0,
-    jobAwardedCost: 100,
+    jobAwardedCost: 0,
   }
 };
 
