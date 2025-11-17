@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, DollarSign, Calendar, Mail, Phone, MapPin, AlertCircle } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { Navigation } from "@/components/Navigation";
 import {
   Dialog,
   DialogContent,

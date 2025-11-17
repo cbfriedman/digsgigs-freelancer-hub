@@ -6,14 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, ArrowLeft, Loader2, Star, MessageSquare, ArrowDown } from "lucide-react";
+import { Check, Loader2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
 import PricingCalculator from "@/components/PricingCalculator";
 import PlanRecommender from "@/components/PlanRecommender";
 import PricingCharts from "@/components/PricingCharts";
 import BreakevenCalculator from "@/components/BreakevenCalculator";
-import AIChatbot from "@/components/AIChatbot";
+import { Navigation } from "@/components/Navigation";
 
 const TIERS = {
   free: {
@@ -107,7 +107,6 @@ export default function Pricing() {
   const [interactiveJobValue, setInteractiveJobValue] = useState(1000);
   const [conversionRate, setConversionRate] = useState(10);
   const [showResults, setShowResults] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -233,33 +232,7 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => navigate("/")}
-          >
-            digsandgigs
-          </h1>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Button 
-                variant="default" 
-                onClick={() => setChatOpen(true)}
-                className="gap-2"
-              >
-                <MessageSquare className="h-4 w-4" />
-                Chat with us
-              </Button>
-              <ArrowDown className="absolute -bottom-8 left-1/2 -translate-x-1/2 h-5 w-5 text-primary animate-bounce" />
-            </div>
-            <Button variant="ghost" onClick={() => navigate("/")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navigation showBackButton backLabel="Back to Home" />
 
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-b from-primary/5 to-background">
@@ -484,8 +457,6 @@ export default function Pricing() {
       </div>
 
       <Footer />
-      
-      <AIChatbot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 }
