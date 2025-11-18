@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare } from "lucide-react";
+import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2 } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -85,6 +85,8 @@ const DiggerDetail = () => {
   const [referenceRequests, setReferenceRequests] = useState<Record<string, ReferenceRequest>>({});
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [hasViewAccess, setHasViewAccess] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -95,6 +97,18 @@ const DiggerDetail = () => {
 
     const { data: { session } } = await supabase.auth.getSession();
     setCurrentUser(session?.user || null);
+
+    // Check if user has already paid to view this profile
+    if (session?.user) {
+      const { data: profileView } = await supabase
+        .from("profile_views")
+        .select("*")
+        .eq("consumer_id", session.user.id)
+        .eq("digger_id", id)
+        .single();
+      
+      setHasViewAccess(!!profileView);
+    }
 
     const { data: diggerData, error: diggerError } = await supabase
       .from("digger_profiles")
@@ -214,6 +228,39 @@ const DiggerDetail = () => {
       } else {
         toast.error("Failed to send request");
       }
+    }
+  };
+
+  const handleUnlockContact = async () => {
+    if (!currentUser) {
+      toast.error("Please sign in to view contact information");
+      navigate("/auth");
+      return;
+    }
+
+    if (!digger) return;
+
+    setIsUnlocking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("charge-profile-view", {
+        body: { diggerId: digger.id },
+      });
+
+      if (error) throw error;
+
+      if (data.alreadyPaid) {
+        setHasViewAccess(true);
+        toast.success(data.message);
+      } else if (data.url) {
+        // Redirect to Stripe checkout
+        window.open(data.url, '_blank');
+        toast.info(`Total charge: $${data.totalCharge} ($${data.viewFee} view fee + $${data.leadCost} lead cost)`);
+      }
+    } catch (error: any) {
+      console.error("Error unlocking contact:", error);
+      toast.error(error.message || "Failed to unlock contact information");
+    } finally {
+      setIsUnlocking(false);
     }
   };
 
@@ -576,19 +623,76 @@ const DiggerDetail = () => {
               />
             )}
 
-            <DiggerPricingSelector
-              diggerId={digger.id}
-              gigId={id || ''}
-              pricingModel={digger.pricing_model || 'both'}
-              subscriptionTier={digger.subscription_tier || 'free'}
-              hourlyRateMin={digger.hourly_rate_min}
-              hourlyRateMax={digger.hourly_rate_max}
-              offersFreEstimates={digger.offers_free_estimates}
-              businessName={digger.business_name}
-              onSelectPricing={(model) => {
-                toast.success(`Lead purchased successfully! You can now contact ${digger.business_name}`);
-              }}
-            />
+            {/* Contact Info Unlock Section */}
+            {!hasViewAccess && currentUser && (
+              <Card className="border-primary/50 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    🔒 Contact Information Locked
+                  </CardTitle>
+                  <CardDescription>
+                    Unlock this digger's full contact information to connect directly
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Profile View Fee:</span>
+                      <span className="font-semibold">$50.00</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Lead Access Fee ({digger.subscription_tier || 'free'} tier):</span>
+                      <span className="font-semibold">
+                        ${digger.subscription_tier === 'premium' ? '0' : digger.subscription_tier === 'pro' ? '40' : '60'}.00
+                      </span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between font-semibold">
+                      <span>Total:</span>
+                      <span className="text-primary">
+                        ${50 + (digger.subscription_tier === 'premium' ? 0 : digger.subscription_tier === 'pro' ? 40 : 60)}.00
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleUnlockContact}
+                    disabled={isUnlocking}
+                  >
+                    {isUnlocking ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        🔓 Unlock Contact Information
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    One-time payment to view phone, email, and send proposals
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {hasViewAccess && (
+              <DiggerPricingSelector
+                diggerId={digger.id}
+                gigId={id || ''}
+                pricingModel={digger.pricing_model || 'both'}
+                subscriptionTier={digger.subscription_tier || 'free'}
+                hourlyRateMin={digger.hourly_rate_min}
+                hourlyRateMax={digger.hourly_rate_max}
+                offersFreEstimates={digger.offers_free_estimates}
+                businessName={digger.business_name}
+                onSelectPricing={(model) => {
+                  toast.success(`Lead purchased successfully! You can now contact ${digger.business_name}`);
+                }}
+              />
+            )}
 
             {references.length > 0 && (
               <Card>

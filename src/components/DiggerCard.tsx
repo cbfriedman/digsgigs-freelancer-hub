@@ -32,6 +32,9 @@ export const DiggerCard = ({ name, profession, expertise, rating, reviews, image
         <div className="mt-2">
           <RatingSummary averageRating={rating} totalRatings={reviews} />
         </div>
+        <Badge variant="outline" className="mt-2 w-fit">
+          Click to view contact info - $50 + lead fee
+        </Badge>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap gap-2">
