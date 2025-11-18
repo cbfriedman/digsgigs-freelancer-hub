@@ -80,8 +80,18 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY missing in env");
       throw new Error("RESEND_API_KEY is not configured");
     }
+
+    // Minimal masked diagnostics (no secret leak)
+    const maskedInfo = {
+      present: true,
+      length: RESEND_API_KEY.length,
+      formatValid: /^re_[A-Za-z0-9_\-]{10,}$/.test(RESEND_API_KEY),
+      prefix: RESEND_API_KEY.slice(0, 3),
+    };
+    console.log("Resend key check:", maskedInfo);
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
