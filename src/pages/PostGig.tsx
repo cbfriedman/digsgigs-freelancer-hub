@@ -8,7 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Briefcase, MapPin } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, DollarSign, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
 import { GigCategorySelector } from "@/components/GigCategorySelector";
 import { geocodeAddress } from "@/utils/geocoding";
@@ -28,6 +31,7 @@ const PostGig = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -93,6 +97,31 @@ const PostGig = () => {
         setLoading(false);
         return;
       }
+
+      // Show preview instead of submitting directly
+      setLoading(false);
+      setShowPreview(true);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Failed to validate form");
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleApproveAndPost = async () => {
+    setShowPreview(false);
+    setLoading(true);
+
+    try {
+      const validatedData = gigSchema.parse({
+        ...formData,
+        budget_min: formData.budget_min ? parseFloat(formData.budget_min) : undefined,
+        budget_max: formData.budget_max ? parseFloat(formData.budget_max) : undefined,
+        deadline: formData.deadline || undefined,
+      });
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -206,6 +235,26 @@ const PostGig = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = () => {
+    setShowPreview(false);
+    toast.info("Edit your gig details below");
+  };
+
+  const handleCancelPreview = () => {
+    setShowPreview(false);
+  };
+
+  const formatBudget = () => {
+    if (formData.budget_min && formData.budget_max) {
+      return `$${formData.budget_min} - $${formData.budget_max}`;
+    } else if (formData.budget_min) {
+      return `Starting at $${formData.budget_min}`;
+    } else if (formData.budget_max) {
+      return `Up to $${formData.budget_max}`;
+    }
+    return "Budget not specified";
   };
 
   return (
@@ -387,6 +436,79 @@ const PostGig = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Preview Your Gig Post</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <Alert>
+              <AlertDescription>
+                This is how your gig will appear to Diggers. Review it carefully before posting.
+              </AlertDescription>
+            </Alert>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <Badge variant="outline">{formData.category_id || "Uncategorized"}</Badge>
+                </div>
+                <CardTitle className="text-2xl">{formData.title}</CardTitle>
+                <CardDescription className="text-base mt-2">
+                  {formData.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{formData.location}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-accent" />
+                    <span className="font-semibold">{formatBudget()}</span>
+                  </div>
+                  {formData.timeline && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm">{formData.timeline}</span>
+                    </div>
+                  )}
+                </div>
+
+                {formData.deadline && (
+                  <div className="text-sm">
+                    <span className="font-semibold">Deadline:</span> {new Date(formData.deadline).toLocaleDateString()}
+                  </div>
+                )}
+
+                {formData.contact_preferences && (
+                  <div className="text-sm">
+                    <span className="font-semibold">Contact Preferences:</span>
+                    <p className="mt-1 text-muted-foreground">{formData.contact_preferences}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={handleCancelPreview}>
+                Cancel
+              </Button>
+              <Button variant="outline" onClick={handleEdit}>
+                Edit Post
+              </Button>
+              <Button onClick={handleApproveAndPost} disabled={loading}>
+                {loading ? "Posting..." : "Approve & Post"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
