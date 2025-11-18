@@ -29,6 +29,7 @@ const DiggerRegistration = () => {
   const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [keywordsInput, setKeywordsInput] = useState("");
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
+  const [customProfession, setCustomProfession] = useState("");
   
   // Parse keywords from input
   const keywords = keywordsInput
@@ -86,6 +87,13 @@ const DiggerRegistration = () => {
       return;
     }
 
+    // Check if "Other Professional Services" is selected and validate custom profession
+    const otherCategorySelected = await checkOtherCategorySelected();
+    if (otherCategorySelected && !customProfession.trim()) {
+      toast.error("Please enter your profession for the 'Other' category");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -97,6 +105,7 @@ const DiggerRegistration = () => {
         phone,
         bio: bio || null,
         keywords: keywords.length > 0 ? keywords : null,
+        custom_occupation_title: customProfession.trim() || null,
       });
 
       if (error) throw error;
@@ -127,6 +136,17 @@ const DiggerRegistration = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkOtherCategorySelected = async () => {
+    if (selectedCategories.length === 0) return false;
+    
+    const { data } = await supabase
+      .from("categories")
+      .select("name")
+      .in("id", selectedCategories);
+    
+    return data?.some(cat => cat.name === "Other Professional Services") || false;
   };
 
   // Highlight keywords in real-time
@@ -223,6 +243,8 @@ const DiggerRegistration = () => {
             <RegistrationCategorySelector
               selectedCategories={selectedCategories}
               onCategoriesChange={setSelectedCategories}
+              customProfession={customProfession}
+              onCustomProfessionChange={setCustomProfession}
             />
 
             <div className="space-y-2">
