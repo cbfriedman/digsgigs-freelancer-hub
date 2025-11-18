@@ -7,14 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Briefcase, MapPin } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, DollarSign, Clock } from "lucide-react";
 import { GigCategorySelector } from "@/components/GigCategorySelector";
 import { Navigation } from "@/components/Navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const GigRegistrationDemo = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -56,33 +59,149 @@ const GigRegistrationDemo = () => {
     
     setLoading(true);
 
-    // Simulate submission delay
+    // Show preview after brief delay
     setTimeout(() => {
       setLoading(false);
-      toast.success("Demo submission successful! In the real app, this would create a gig post.");
-      
-      // Clear form
-      setFormData({
-        title: "",
-        description: "",
-        location: "",
-        timeline: "",
-        budget_min: "",
-        budget_max: "",
-        category_id: "",
-        deadline: "",
-        contact_preferences: "",
-        fixedPriceOnly: false,
-        openToHourly: false,
-        acceptFreeEstimate: false,
-        acceptTerms: false,
-      });
-    }, 1500);
+      setShowPreview(true);
+    }, 500);
+  };
+
+  const handleApprove = () => {
+    setShowPreview(false);
+    toast.success("Great! Now let's create your account to post this gig.");
+    navigate("/auth");
+  };
+
+  const handleEdit = () => {
+    setShowPreview(false);
+    toast.info("Edit your gig details below");
+  };
+
+  const handleCancel = () => {
+    setShowPreview(false);
+    // Clear form
+    setFormData({
+      title: "",
+      description: "",
+      location: "",
+      timeline: "",
+      budget_min: "",
+      budget_max: "",
+      category_id: "",
+      deadline: "",
+      contact_preferences: "",
+      fixedPriceOnly: false,
+      openToHourly: false,
+      acceptFreeEstimate: false,
+      acceptTerms: false,
+    });
+    toast.info("Gig cancelled");
+  };
+
+  const formatBudget = () => {
+    if (formData.budget_min && formData.budget_max) {
+      return `$${formData.budget_min} - $${formData.budget_max}`;
+    } else if (formData.budget_min) {
+      return `Starting at $${formData.budget_min}`;
+    } else if (formData.budget_max) {
+      return `Up to $${formData.budget_max}`;
+    }
+    return "Budget not specified";
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Preview Your Gig Post</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <Alert>
+              <AlertDescription>
+                This is how your gig will appear to Diggers. Review it carefully before posting.
+              </AlertDescription>
+            </Alert>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <Badge variant="outline">{formData.category_id || "Uncategorized"}</Badge>
+                </div>
+                <CardTitle className="text-2xl">{formData.title}</CardTitle>
+                <CardDescription className="text-base mt-2">
+                  {formData.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{formData.location}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-accent" />
+                    <span className="font-semibold">{formatBudget()}</span>
+                  </div>
+                  {formData.timeline && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm">{formData.timeline}</span>
+                    </div>
+                  )}
+                </div>
+
+                {formData.deadline && (
+                  <div className="text-sm">
+                    <span className="font-semibold">Deadline:</span> {new Date(formData.deadline).toLocaleDateString()}
+                  </div>
+                )}
+
+                {formData.contact_preferences && (
+                  <div className="text-sm">
+                    <span className="font-semibold">Contact Preferences:</span>
+                    <p className="mt-1 text-muted-foreground">{formData.contact_preferences}</p>
+                  </div>
+                )}
+
+                {(formData.fixedPriceOnly || formData.openToHourly || formData.acceptFreeEstimate) && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-semibold mb-2">Proposal Preferences:</p>
+                    <div className="space-y-1">
+                      {formData.fixedPriceOnly && (
+                        <Badge variant="secondary" className="mr-2">Fixed Price Only</Badge>
+                      )}
+                      {formData.openToHourly && (
+                        <Badge variant="secondary" className="mr-2">Open to Hourly</Badge>
+                      )}
+                      {formData.acceptFreeEstimate && (
+                        <Badge variant="secondary">Free Estimates Welcome</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button variant="outline" onClick={handleEdit}>
+                Edit Post
+              </Button>
+              <Button onClick={handleApprove}>
+                Approve & Continue
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <Alert className="mb-6 bg-primary/10 border-primary/30">
