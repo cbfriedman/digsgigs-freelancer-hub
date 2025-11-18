@@ -19,6 +19,7 @@ import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSugge
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { BioGenerator } from "@/components/BioGenerator";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -361,8 +362,8 @@ const EditDiggerProfile = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+            <div className="space-y-3">
+              <Label htmlFor="bio">About Your Services</Label>
               <Textarea
                 id="bio"
                 value={bio}
@@ -385,6 +386,11 @@ const EditDiggerProfile = () => {
                   </p>
                 </Card>
               )}
+              <BioGenerator 
+                profession={profession}
+                currentBio={bio}
+                onBioGenerated={setBio}
+              />
             </div>
 
             <div>
