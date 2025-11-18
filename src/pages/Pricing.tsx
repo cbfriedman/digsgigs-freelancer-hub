@@ -663,7 +663,7 @@ export default function Pricing() {
                           ))}
                         </tr>
                         <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">Clicks Generated</td>
+                          <td className="py-3 px-4 text-muted-foreground">Assumed number of Clicks</td>
                           {Object.entries(TIERS).map(([key]) => (
                             <td key={key} className="text-right py-3 px-4">
                               {calculatedClicks}
@@ -673,7 +673,7 @@ export default function Pricing() {
                         <tr className="border-b border-border/50">
                           <td className="py-3 px-4 text-muted-foreground">
                             <div className="flex items-center gap-2">
-                              Total Cost Per Click
+                              Total Cost Per Clicks
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
