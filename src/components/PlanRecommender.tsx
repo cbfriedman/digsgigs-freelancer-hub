@@ -40,7 +40,7 @@ const TIERS = {
 export default function PlanRecommender() {
   const [leads, setLeads] = useState(15);
   const [jobs, setJobs] = useState(2);
-  const [jobValue, setJobValue] = useState(1000);
+  const [jobValue, setJobValue] = useState(5000);
   const [estimates, setEstimates] = useState(10);
   const [hourlyClicks, setHourlyClicks] = useState(5);
   const [showRecommendation, setShowRecommendation] = useState(false);

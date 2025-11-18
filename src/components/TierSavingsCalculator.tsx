@@ -7,7 +7,7 @@ import { TrendingDown } from "lucide-react";
 
 export const TierSavingsCalculator = () => {
   const [monthlyLeads, setMonthlyLeads] = useState<string>("10");
-  const [avgJobValue, setAvgJobValue] = useState<string>("2000");
+  const [avgJobValue, setAvgJobValue] = useState<string>("5000");
   const [conversionRate, setConversionRate] = useState<string>("20");
 
   const leads = parseFloat(monthlyLeads) || 0;
