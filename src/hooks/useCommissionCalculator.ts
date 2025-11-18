@@ -2,21 +2,20 @@
  * Hook for calculating costs based on subscription tier and pricing model
  * 
  * Pricing Models:
- * - 'commission': Tier-based lead costs upfront + award fee on completed work
- *   - Free: $60/lead + $60 award fee + 10% escrow
- *   - Pro: $40/lead + $40 award fee + 6% escrow
- *   - Premium: $0/lead + $0 award fee + 3% escrow
+ * - 'commission': Tier-based lead costs upfront + percentage-based contract award fee
+ *   - Free: $60/lead + 10% contract award fee + 5% escrow (min $10)
+ *   - Pro: $40/lead + 6% contract award fee + 5% escrow (min $10)
+ *   - Premium: $0/lead + 3% contract award fee + 5% escrow (min $10)
  * 
  * - 'hourly': Tier-based lead cost upfront + hourly rate multiplier when awarded
  *   - Upfront: Free ($60), Pro ($40), Premium ($0)
- *   - When awarded: 3x / 2x / 1x average hourly rate + 10%/6%/3% escrow
+ *   - When awarded: 3x / 2x / 1x average hourly rate + 5% escrow (min $10)
  * 
- * - 'escrow': Tier-based escrow processing fees on milestone payments
- *   - Free: 10% of milestone amount
- *   - Pro: 6% of milestone amount
- *   - Premium: 3% of milestone amount
+ * - 'escrow': Processing fee on each milestone payment released
+ *   - All tiers: 5% of milestone amount (minimum $10)
  * 
- * - 'both': Combination - higher of fixed award fee OR hourly multiplier + escrow
+ * - 'free_estimate': Upfront cost with rebate on award
+ *   - Free: $150, Pro: $100, Premium: $50 (rebated against award fee)
  */
 export const useCommissionCalculator = () => {
   const calculateLeadCost = (
@@ -48,13 +47,13 @@ export const useCommissionCalculator = () => {
     diggerPayout: number;
     minimumFee: number;
   } => {
-    // Fixed award fees (not percentage-based)
-    const awardFees = { free: 60, pro: 40, premium: 0 };
-    const commissionAmount = awardFees[tier];
+    // Contract award fees (percentage-based)
+    const awardFeePercentages = { free: 0.10, pro: 0.06, premium: 0.03 };
+    const commissionAmount = totalAmount * awardFeePercentages[tier];
     const diggerPayout = totalAmount - commissionAmount;
 
     return {
-      rate: 0, // Not percentage-based anymore
+      rate: awardFeePercentages[tier] * 100, // Return as percentage
       commissionAmount,
       diggerPayout,
       minimumFee: 0,
@@ -80,16 +79,26 @@ export const useCommissionCalculator = () => {
     amount: number,
     tier: 'free' | 'pro' | 'premium' = 'free'
   ): number => {
-    let feeRate = 0.10; // Default: free tier (10%)
-
-    if (tier === 'premium') {
-      feeRate = 0.03; // 3%
-    } else if (tier === 'pro') {
-      feeRate = 0.06; // 6%
-    }
-
-    return amount * feeRate;
+    // Escrow processing fee: 5% with $10 minimum (same for all tiers)
+    const feeRate = 0.05;
+    const calculatedFee = amount * feeRate;
+    const minimumFee = 10;
+    
+    return Math.max(calculatedFee, minimumFee);
   };
 
-  return { calculateLeadCost, calculateCommission, calculateHourlyAwardCost, calculateEscrowFee };
+  const calculateFreeEstimateCost = (
+    tier: 'free' | 'pro' | 'premium' = 'free'
+  ): number => {
+    const estimateCosts = { free: 150, pro: 100, premium: 50 };
+    return estimateCosts[tier];
+  };
+
+  return { 
+    calculateLeadCost, 
+    calculateCommission, 
+    calculateHourlyAwardCost, 
+    calculateEscrowFee,
+    calculateFreeEstimateCost
+  };
 };

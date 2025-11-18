@@ -67,14 +67,27 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Create transfer to digger
+    // Calculate escrow processing fee: 5% with $10 minimum
+    const escrowFeeRate = 0.05;
+    const calculatedFee = milestone.digger_payout * escrowFeeRate;
+    const escrowProcessingFee = Math.max(calculatedFee, 10);
+    const netPayoutToDigger = milestone.digger_payout - escrowProcessingFee;
+
+    console.log("[RELEASE-MILESTONE] Calculating payout:", {
+      originalPayout: milestone.digger_payout,
+      escrowProcessingFee,
+      netPayoutToDigger
+    });
+
+    // Create transfer to digger (after deducting escrow processing fee)
     const transfer = await stripe.transfers.create({
-      amount: Math.round(milestone.digger_payout * 100), // Convert to cents
+      amount: Math.round(netPayoutToDigger * 100), // Convert to cents
       currency: "usd",
       destination: diggerProfile.stripe_connect_account_id,
       metadata: {
         milestoneId: milestone.id,
         escrowContractId: escrowContract.id,
+        escrowProcessingFee: escrowProcessingFee.toFixed(2),
       },
     });
 

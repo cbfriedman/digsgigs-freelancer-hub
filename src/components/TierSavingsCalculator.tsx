@@ -18,18 +18,17 @@ export const TierSavingsCalculator = () => {
   const monthlyRevenue = convertedJobs * jobValue;
 
   const calculateTierCosts = (tier: 'free' | 'pro' | 'premium') => {
-    const leadCosts = { free: 5, pro: 3, premium: 0 };
-    const commissions = { free: 0.09, pro: 0.06, premium: 0 };
-    const escrowFees = { free: 0.10, pro: 0.06, premium: 0.03 };
+    const leadCosts = { free: 60, pro: 40, premium: 0 };
+    const contractAwardFees = { free: 0.10, pro: 0.06, premium: 0.03 }; // Percentage of contract value
     const subscriptions = { free: 0, pro: 99, premium: 599 };
 
     const leadCost = leads * leadCosts[tier];
-    const commission = monthlyRevenue * commissions[tier];
-    const escrowFee = monthlyRevenue * escrowFees[tier];
+    const contractAwardFee = monthlyRevenue * contractAwardFees[tier];
+    const escrowFee = convertedJobs * Math.max(10, (jobValue * 0.05)); // 5% with $10 min per job
     const subscription = subscriptions[tier];
-    const total = leadCost + commission + escrowFee + subscription;
+    const total = leadCost + contractAwardFee + escrowFee + subscription;
 
-    return { leadCost, commission, escrowFee, subscription, total };
+    return { leadCost, contractAwardFee, escrowFee, subscription, total };
   };
 
   const freeCosts = calculateTierCosts('free');
@@ -112,11 +111,11 @@ export const TierSavingsCalculator = () => {
                       <span>${tier.costs.leadCost.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Commission:</span>
-                      <span>${tier.costs.commission.toFixed(2)}</span>
+                      <span className="text-muted-foreground">Contract Award Fee:</span>
+                      <span>${tier.costs.contractAwardFee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Escrow Fees:</span>
+                      <span className="text-muted-foreground">Escrow Processing Fee:</span>
                       <span>${tier.costs.escrowFee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-semibold pt-2 border-t">
