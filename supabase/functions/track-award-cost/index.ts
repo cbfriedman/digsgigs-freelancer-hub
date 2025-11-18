@@ -83,9 +83,26 @@ serve(async (req) => {
     }
 
     // Apply rebate if free estimate was already paid
+    // New rules: Only apply rebates for fixed-price contracts of $5,000 or more
+    // No rebates for hourly rate contracts
+    let rebateApplied = false;
     if (freeEstimateCredit > 0) {
-      awardCost = Math.max(0, awardCost - freeEstimateCredit);
-      logStep("Rebate applied", { originalCost: awardCost + freeEstimateCredit, rebate: freeEstimateCredit, finalCost: awardCost });
+      if (pricingModel === 'fixed' && projectAmount && projectAmount >= 5000) {
+        awardCost = Math.max(0, awardCost - freeEstimateCredit);
+        rebateApplied = true;
+        logStep("Rebate applied - meets criteria (fixed-price >= $5,000)", { 
+          originalCost: awardCost + freeEstimateCredit, 
+          rebate: freeEstimateCredit, 
+          finalCost: awardCost,
+          projectAmount 
+        });
+      } else if (pricingModel === 'hourly') {
+        logStep("Rebate NOT applied - hourly contracts excluded", { freeEstimateCredit });
+      } else if (pricingModel === 'fixed' && (!projectAmount || projectAmount < 5000)) {
+        logStep("Rebate NOT applied - award under $5,000", { projectAmount, freeEstimateCredit });
+      } else {
+        logStep("Rebate NOT applied - criteria not met", { pricingModel, projectAmount, freeEstimateCredit });
+      }
     }
 
     // Store award cost in metadata (we'll add a metadata field if needed)
@@ -94,7 +111,7 @@ serve(async (req) => {
       success: true,
       awardCost,
       freeEstimateCredit,
-      rebateApplied: freeEstimateCredit > 0,
+      rebateApplied,
       tier,
       pricingModel,
       leadPurchaseId
