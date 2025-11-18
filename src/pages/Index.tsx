@@ -386,9 +386,9 @@ const Index = () => {
                     variant="hero" 
                     size="lg" 
                     className="text-base w-full sm:w-[180px]"
-                    onClick={() => user ? navigate("/browse-diggers") : navigate("/auth?redirect=/browse-diggers")}
+                    onClick={() => user ? navigate("/post-gig") : navigate("/auth?redirect=/post-gig")}
                   >
-                    Find Talent <ArrowRight className="ml-2 w-5 h-5" />
+                    Post a Gig <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                   <Button 
                     variant="default" 
