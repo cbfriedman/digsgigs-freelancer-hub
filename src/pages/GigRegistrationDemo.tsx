@@ -25,6 +25,9 @@ const GigRegistrationDemo = () => {
     category_id: "",
     deadline: "",
     contact_preferences: "",
+    fixedPriceOnly: false,
+    openToHourly: false,
+    acceptFreeEstimate: false,
     acceptTerms: false,
   });
 
@@ -69,6 +72,9 @@ const GigRegistrationDemo = () => {
         category_id: "",
         deadline: "",
         contact_preferences: "",
+        fixedPriceOnly: false,
+        openToHourly: false,
+        acceptFreeEstimate: false,
         acceptTerms: false,
       });
     }, 1500);
@@ -221,6 +227,49 @@ const GigRegistrationDemo = () => {
                   onChange={(e) => setFormData({ ...formData, contact_preferences: e.target.value })}
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
+                <Label className="text-base font-semibold">Proposal Preferences</Label>
+                
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="fixedPriceOnly"
+                    checked={formData.fixedPriceOnly}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, fixedPriceOnly: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="fixedPriceOnly" className="text-sm leading-relaxed cursor-pointer">
+                    Fixed prices only proposal acceptable
+                  </Label>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="openToHourly"
+                    checked={formData.openToHourly}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, openToHourly: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="openToHourly" className="text-sm leading-relaxed cursor-pointer">
+                    Open to hourly rates proposals
+                  </Label>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="acceptFreeEstimate"
+                    checked={formData.acceptFreeEstimate}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, acceptFreeEstimate: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="acceptFreeEstimate" className="text-sm leading-relaxed cursor-pointer">
+                    Would you like to receive free estimate if offered?
+                  </Label>
+                </div>
               </div>
 
               <div className="flex items-start gap-2">
