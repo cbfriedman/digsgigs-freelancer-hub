@@ -54,12 +54,19 @@ const AuthRecoveryGuard = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const hash = window.location.hash || '';
-    
-    // Check if URL contains recovery or error parameters
-    if ((hash.includes('type=recovery') || hash.includes('error=')) && location.pathname !== '/auth') {
-      // Redirect to /auth while preserving the hash
-      navigate('/auth' + hash, { replace: true });
+    const hash = typeof window !== 'undefined' ? (window.location.hash || '') : '';
+    const search = typeof window !== 'undefined' ? (window.location.search || '') : '';
+
+    const hasRecoveryOrError =
+      hash.includes('type=recovery') ||
+      hash.includes('error=') ||
+      search.includes('type=recovery') ||
+      search.includes('error=');
+
+    if (hasRecoveryOrError && location.pathname !== '/auth') {
+      // Redirect to /auth while preserving query and hash
+      const target = '/auth' + (search || '') + (hash || '');
+      navigate(target, { replace: true });
     }
   }, [navigate, location]);
 
