@@ -385,7 +385,7 @@ const Index = () => {
                   <Button 
                     variant="hero" 
                     size="lg" 
-                    className="text-base"
+                    className="text-base w-full sm:w-[180px]"
                     onClick={() => user ? navigate("/browse-diggers") : navigate("/auth?redirect=/browse-diggers")}
                   >
                     Find Talent <ArrowRight className="ml-2 w-5 h-5" />
@@ -393,7 +393,7 @@ const Index = () => {
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="text-base"
+                    className="text-base w-full sm:w-[180px]"
                     onClick={() => user ? navigate("/digger-registration") : navigate("/auth?type=digger&redirect=/digger-registration")}
                   >
                     Build My Digs
@@ -408,10 +408,10 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="lg" 
-                    className="text-base border-2 border-dashed border-accent/30 hover:border-accent/50 hover:bg-accent/5"
+                    className="text-base border-2 border-dashed border-accent/30 hover:border-accent/50 hover:bg-accent/5 w-full sm:w-[180px] h-auto py-3"
                     onClick={() => navigate("/gig-registration-demo")}
                   >
-                    <span className="flex flex-col items-center">
+                    <span className="flex flex-col items-center gap-0.5">
                       <span>🧪 Finding Talent</span>
                       <span className="text-xs">Demo</span>
                     </span>
@@ -419,10 +419,10 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="lg" 
-                    className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                    className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 w-full sm:w-[180px] h-auto py-3"
                     onClick={() => navigate("/digger-registration-demo")}
                   >
-                    <span className="flex flex-col items-center">
+                    <span className="flex flex-col items-center gap-0.5">
                       <span>🧪 Building Digs</span>
                       <span className="text-xs">Demo</span>
                     </span>
