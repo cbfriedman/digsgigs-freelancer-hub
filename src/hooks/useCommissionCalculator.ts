@@ -25,14 +25,14 @@ export const useCommissionCalculator = () => {
   ): {
     leadCost: number;
   } => {
-    let leadCost = 60; // Default: free tier ($60 per lead)
+    let leadCost = 20; // Default: free tier ($20 per lead)
 
     if (tier === 'premium') {
-      leadCost = 0; // $0 per lead
+      leadCost = 5; // $5 per lead
     } else if (tier === 'pro') {
-      leadCost = 40; // $40 per lead
+      leadCost = 10; // $10 per lead
     } else {
-      leadCost = 60; // $60 per lead (free)
+      leadCost = 20; // $20 per lead (free)
     }
 
     return {

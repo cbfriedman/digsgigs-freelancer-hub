@@ -76,13 +76,19 @@ serve(async (req) => {
 
     logStep("Digger profile found", { tier: diggerProfile.subscription_tier });
 
-    // Calculate total charge: $50 view fee + lead cost based on tier
+    // Calculate total charge: view fee + lead cost based on tier
     const tier = (diggerProfile.subscription_tier || 'free') as 'free' | 'pro' | 'premium';
-    let leadCost = 60; // Default free tier
-    if (tier === 'premium') leadCost = 0;
-    else if (tier === 'pro') leadCost = 40;
+    let viewFee = 75; // Default free tier
+    let leadCost = 20; // Default free tier
+    
+    if (tier === 'premium') {
+      viewFee = 25;
+      leadCost = 5;
+    } else if (tier === 'pro') {
+      viewFee = 50;
+      leadCost = 10;
+    }
 
-    const viewFee = 50;
     const totalCharge = viewFee + leadCost;
 
     logStep("Charge calculated", { viewFee, leadCost, totalCharge, tier });
