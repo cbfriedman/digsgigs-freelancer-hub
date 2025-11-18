@@ -134,34 +134,33 @@ serve(async (req) => {
 
     // Free tier - proceed with Stripe payment
     logStep("Free tier - proceeding with Stripe checkout");
+    
+    // Get tier-based pricing
+    const tier = diggerProfile.subscription_tier || 'free';
+    let leadCost = 60; // Default: free tier
+    if (tier === 'premium') {
+      leadCost = 0;
+    } else if (tier === 'pro') {
+      leadCost = 40;
+    }
+    
+    logStep("Tier-based pricing calculated", { tier, leadCost });
 
-    // Calculate prices for each lead (hourly rate if available, else budget-based)
+    // Calculate prices for each lead using tier-based pricing
     const lineItems = gigs.map(gig => {
-      let leadPrice: number;
-      
-      // If digger has hourly rate, use average hourly rate as lead cost (minimum $100)
-      if (averageRate > 0) {
-        leadPrice = Math.max(100, averageRate);
-      } else {
-        // Otherwise use budget-based calculation
-        leadPrice = gig.budget_min ? Math.max(50, (gig.budget_min * 0.005)) : 50;
-      }
-      
-      const priceInCents = Math.round(leadPrice * 100);
+      const priceInCents = Math.round(leadCost * 100);
 
       return {
         price_data: {
           currency: "usd",
           product_data: {
             name: `Lead: ${gig.title}`,
-            description: averageRate > 0
-              ? `Based on average hourly rate: $${averageRate.toFixed(2)}/hr (non-refundable)`
-              : `Contact information for gig opportunity`,
+            description: `Contact information for gig opportunity (${tier} tier)`,
             metadata: {
               gig_id: gig.id,
               digger_id: diggerProfile.id,
               consumer_id: gig.consumer_id,
-              lead_price: leadPrice.toString(),
+              lead_price: leadCost.toString(),
             }
           },
           unit_amount: priceInCents,

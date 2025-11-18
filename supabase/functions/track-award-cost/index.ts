@@ -53,10 +53,10 @@ serve(async (req) => {
 
     // Calculate award cost based on pricing model and tier
     if (pricingModel === 'fixed' && projectAmount) {
-      // Fixed price: 9%/6%/0% of project total
-      const commissionRates = { free: 0.09, pro: 0.06, premium: 0.00 };
-      awardCost = projectAmount * commissionRates[tier];
-      logStep("Fixed price award cost calculated", { awardCost, rate: commissionRates[tier] });
+      // Fixed price: Flat award fee of $60/$40/$0
+      const awardFees = { free: 60, pro: 40, premium: 0 };
+      awardCost = awardFees[tier];
+      logStep("Fixed price award cost calculated", { awardCost, fee: awardFees[tier] });
     } else if (pricingModel === 'hourly') {
       // Hourly: 3x/2x/1x average hourly rate
       const hourlyMin = leadPurchase.digger_profiles.hourly_rate_min || 0;
@@ -67,9 +67,9 @@ serve(async (req) => {
       awardCost = averageRate * multipliers[tier];
       logStep("Hourly award cost calculated", { awardCost, averageRate, multiplier: multipliers[tier] });
     } else if (pricingModel === 'free_estimate') {
-      // Free estimate cost will be deducted from award fee
-      // For free tier, this is $1; for pro/premium it's $0
-      awardCost = tier === 'free' ? 1 : 0;
+      // Free estimate cost: $60/$40/$0 based on tier
+      const freeEstimateFees = { free: 60, pro: 40, premium: 0 };
+      awardCost = freeEstimateFees[tier];
       logStep("Free estimate cost calculated", { awardCost });
     }
 

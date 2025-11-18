@@ -2,22 +2,21 @@
  * Hook for calculating costs based on subscription tier and pricing model
  * 
  * Pricing Models:
- * - 'commission': Tier-based lead costs upfront + commission on completed work
- *   - Free: $5/lead + 9% commission
- *   - Pro: $3/lead + 6% commission
- *   - Premium: $0/lead + 0% commission
+ * - 'commission': Tier-based lead costs upfront + award fee on completed work
+ *   - Free: $60/lead + $60 award fee + 10% escrow
+ *   - Pro: $40/lead + $40 award fee + 6% escrow
+ *   - Premium: $0/lead + $0 award fee + 3% escrow
  * 
  * - 'hourly': Tier-based lead cost upfront + hourly rate multiplier when awarded
- *   - Upfront: Free ($5), Pro ($3), Premium ($0)
- *   - When awarded: 3x / 2x / 1x average hourly rate
- *   - No commission on completed work
+ *   - Upfront: Free ($60), Pro ($40), Premium ($0)
+ *   - When awarded: 3x / 2x / 1x average hourly rate + 10%/6%/3% escrow
  * 
  * - 'escrow': Tier-based escrow processing fees on milestone payments
  *   - Free: 10% of milestone amount
  *   - Pro: 6% of milestone amount
  *   - Premium: 3% of milestone amount
  * 
- * - 'both': (Construction/Trades) Combination of both models available
+ * - 'both': Combination - higher of fixed award fee OR hourly multiplier + escrow
  */
 export const useCommissionCalculator = () => {
   const calculateLeadCost = (
@@ -25,14 +24,14 @@ export const useCommissionCalculator = () => {
   ): {
     leadCost: number;
   } => {
-    let leadCost = 5; // Default: free tier ($5 per lead)
+    let leadCost = 60; // Default: free tier ($60 per lead)
 
     if (tier === 'premium') {
       leadCost = 0; // $0 per lead
     } else if (tier === 'pro') {
-      leadCost = 3; // $3 per lead
+      leadCost = 40; // $40 per lead
     } else {
-      leadCost = 5; // $5 per lead (free)
+      leadCost = 60; // $60 per lead (free)
     }
 
     return {
@@ -49,29 +48,16 @@ export const useCommissionCalculator = () => {
     diggerPayout: number;
     minimumFee: number;
   } => {
-    let commissionRate = 0.09; // Default: free tier (9% for fixed price)
-    let minimumFee = 0; // No minimum fees
-
-    if (tier === 'premium') {
-      commissionRate = 0.00; // 0% commission
-      minimumFee = 0; // No minimum
-    } else if (tier === 'pro') {
-      commissionRate = 0.06; // 6% commission
-      minimumFee = 0; // No minimum
-    } else {
-      commissionRate = 0.09; // 9% commission (free)
-      minimumFee = 0; // No minimum
-    }
-
-    const calculatedCommission = totalAmount * commissionRate;
-    const commissionAmount = Math.max(calculatedCommission, minimumFee);
+    // Fixed award fees (not percentage-based)
+    const awardFees = { free: 60, pro: 40, premium: 0 };
+    const commissionAmount = awardFees[tier];
     const diggerPayout = totalAmount - commissionAmount;
 
     return {
-      rate: commissionRate,
+      rate: 0, // Not percentage-based anymore
       commissionAmount,
       diggerPayout,
-      minimumFee,
+      minimumFee: 0,
     };
   };
 
