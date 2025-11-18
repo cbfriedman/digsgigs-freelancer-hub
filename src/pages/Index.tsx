@@ -408,18 +408,18 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="lg" 
-                    className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 flex-1 sm:flex-initial"
-                    onClick={() => navigate("/digger-registration-demo")}
-                  >
-                    🧪 Try Digger Demo
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="lg" 
                     className="text-base border-2 border-dashed border-accent/30 hover:border-accent/50 hover:bg-accent/5 flex-1 sm:flex-initial"
                     onClick={() => navigate("/gig-registration-demo")}
                   >
                     🧪 Try Gig Demo
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="lg" 
+                    className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 flex-1 sm:flex-initial"
+                    onClick={() => navigate("/digger-registration-demo")}
+                  >
+                    🧪 Try Digger Demo
                   </Button>
                 </div>
               </div>
