@@ -303,13 +303,14 @@ export default function Pricing() {
             {Object.entries(TIERS).map(([key, tier]) => (
               <Card 
                 key={key}
-                className={`relative ${
+                onClick={() => !isButtonDisabled(key, tier.priceId) && handleSubscribe(key, tier.priceId)}
+                className={`relative cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
                   currentTier === key 
                     ? 'border-primary shadow-lg ring-2 ring-primary/20' 
                     : tier.popular 
                     ? 'border-primary/50 shadow-md' 
                     : ''
-                }`}
+                } ${isButtonDisabled(key, tier.priceId) ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
                 {tier.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
@@ -447,7 +448,10 @@ export default function Pricing() {
                   )}
 
                   <Button
-                    onClick={() => handleSubscribe(key, tier.priceId)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubscribe(key, tier.priceId);
+                    }}
                     disabled={isButtonDisabled(key, tier.priceId)}
                     className="w-full bg-primary hover:bg-primary/90"
                   >
