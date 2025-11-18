@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,11 +21,15 @@ interface CategoryGroup {
 interface RegistrationCategorySelectorProps {
   selectedCategories: string[];
   onCategoriesChange: (categories: string[]) => void;
+  customProfession?: string;
+  onCustomProfessionChange?: (value: string) => void;
 }
 
 export const RegistrationCategorySelector: React.FC<RegistrationCategorySelectorProps> = ({
   selectedCategories,
   onCategoriesChange,
+  customProfession = "",
+  onCustomProfessionChange,
 }) => {
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,29 +139,45 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
                   {group.subcategories.length > 0 && (
                     <div className="ml-6 space-y-2 border-l-2 border-border pl-4">
                       {group.subcategories.map((subcategory) => (
-                        <div
-                          key={subcategory.id}
-                          className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors"
-                        >
-                          <Checkbox
-                            id={subcategory.id}
-                            checked={selectedCategories.includes(subcategory.id)}
-                            onCheckedChange={() => handleCategoryToggle(subcategory.id)}
-                          />
-                          <div className="grid gap-1 flex-1">
-                            <Label
-                              htmlFor={subcategory.id}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {subcategory.name}
-                            </Label>
-                            {subcategory.description && (
-                              <p className="text-xs text-muted-foreground">
-                                {subcategory.description}
-                              </p>
-                            )}
+                          <div
+                            key={subcategory.id}
+                            className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors"
+                          >
+                            <Checkbox
+                              id={subcategory.id}
+                              checked={selectedCategories.includes(subcategory.id)}
+                              onCheckedChange={() => handleCategoryToggle(subcategory.id)}
+                            />
+                            <div className="grid gap-1 flex-1">
+                              <Label
+                                htmlFor={subcategory.id}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                {subcategory.name}
+                              </Label>
+                              {subcategory.description && (
+                                <p className="text-xs text-muted-foreground">
+                                  {subcategory.description}
+                                </p>
+                              )}
+                              {/* Show custom input for "Other Professional Services" */}
+                              {subcategory.name === "Other Professional Services" && 
+                               selectedCategories.includes(subcategory.id) && (
+                                <div className="mt-2 space-y-2">
+                                  <Label htmlFor="custom-profession" className="text-sm">
+                                    Enter Your Profession *
+                                  </Label>
+                                  <Input
+                                    id="custom-profession"
+                                    placeholder="e.g., Life Coach, Pet Groomer, etc."
+                                    value={customProfession}
+                                    onChange={(e) => onCustomProfessionChange?.(e.target.value)}
+                                    className="max-w-md"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
                       ))}
                     </div>
                   )}
