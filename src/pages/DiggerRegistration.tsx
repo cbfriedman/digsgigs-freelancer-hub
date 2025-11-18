@@ -35,6 +35,10 @@ const DiggerRegistration = () => {
   const [customProfession, setCustomProfession] = useState("");
   const [pricingModel, setPricingModel] = useState<string>("commission");
   const [showPreview, setShowPreview] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string>("");
+  const [workPhotos, setWorkPhotos] = useState<File[]>([]);
+  const [workPhotoPreviews, setWorkPhotoPreviews] = useState<string[]>([]);
   const { calculateLeadCost } = useCommissionCalculator();
   
   // Parse keywords from input
@@ -84,6 +88,75 @@ const DiggerRegistration = () => {
     }
   }, [user, navigate]);
 
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Profile image must be less than 5MB");
+        return;
+      }
+      setProfileImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleWorkPhotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (workPhotos.length + files.length > 6) {
+      toast.error("Maximum 6 work photos allowed");
+      return;
+    }
+    
+    const validFiles = files.filter(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} is too large. Max 5MB per image.`);
+        return false;
+      }
+      return true;
+    });
+
+    setWorkPhotos(prev => [...prev, ...validFiles]);
+    
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setWorkPhotoPreviews(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeWorkPhoto = (index: number) => {
+    setWorkPhotos(prev => prev.filter((_, i) => i !== index));
+    setWorkPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImageToStorage = async (file: File, bucket: string, path: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, {
+          upsert: true,
+          contentType: file.type,
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(data.path);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
+
   const handlePreview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -109,6 +182,25 @@ const DiggerRegistration = () => {
     setLoading(true);
 
     try {
+      // Upload profile image if provided
+      let profileImageUrl: string | null = null;
+      if (profileImage) {
+        const timestamp = Date.now();
+        const fileName = `${user.id}/profile-${timestamp}.${profileImage.name.split('.').pop()}`;
+        profileImageUrl = await uploadImageToStorage(profileImage, 'profile-images', fileName);
+      }
+
+      // Upload work photos if provided
+      const workPhotoUrls: string[] = [];
+      if (workPhotos.length > 0) {
+        for (let i = 0; i < workPhotos.length; i++) {
+          const timestamp = Date.now();
+          const fileName = `${user.id}/work-${timestamp}-${i}.${workPhotos[i].name.split('.').pop()}`;
+          const url = await uploadImageToStorage(workPhotos[i], 'work-photos', fileName);
+          if (url) workPhotoUrls.push(url);
+        }
+      }
+
       const { error } = await supabase.from("digger_profiles").insert({
         user_id: user.id,
         business_name: businessName,
@@ -120,6 +212,8 @@ const DiggerRegistration = () => {
         custom_occupation_title: customProfession.trim() || null,
         pricing_model: pricingModel,
         offers_free_estimates: pricingModel === 'free_estimates',
+        profile_image_url: profileImageUrl,
+        work_photos: workPhotoUrls.length > 0 ? workPhotoUrls : null,
       });
 
       if (error) throw error;
@@ -238,6 +332,8 @@ const DiggerRegistration = () => {
         keywords={keywords}
         categoryNames={categoryNames}
         pricingModel={pricingModel}
+        profileImagePreview={profileImagePreview}
+        workPhotoPreviews={workPhotoPreviews}
         onApprove={handleApprove}
         onEdit={() => setShowPreview(false)}
         onCancel={() => navigate("/")}
@@ -333,6 +429,79 @@ const DiggerRegistration = () => {
                   </p>
                 </Card>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="profileImage">Profile Photo</Label>
+              <Input
+                id="profileImage"
+                type="file"
+                accept="image/*"
+                onChange={handleProfileImageChange}
+                className="cursor-pointer"
+              />
+              {profileImagePreview && (
+                <div className="mt-2 relative w-32 h-32 rounded-lg overflow-hidden border">
+                  <img 
+                    src={profileImagePreview} 
+                    alt="Profile preview" 
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-1 right-1"
+                    onClick={() => {
+                      setProfileImage(null);
+                      setProfileImagePreview("");
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Upload a professional photo (Max 5MB)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workPhotos">Work Samples</Label>
+              <Input
+                id="workPhotos"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleWorkPhotosChange}
+                className="cursor-pointer"
+                disabled={workPhotos.length >= 6}
+              />
+              {workPhotoPreviews.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                  {workPhotoPreviews.map((preview, index) => (
+                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
+                      <img 
+                        src={preview} 
+                        alt={`Work sample ${index + 1}`} 
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1 right-1"
+                        onClick={() => removeWorkPhoto(index)}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Upload up to 6 photos of your work (Max 5MB each)
+              </p>
             </div>
 
             <div>
