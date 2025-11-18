@@ -514,7 +514,7 @@ const DiggerRegistration = () => {
                       Fixed Price Contracts
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Free tier: ${leadCostFree}/lead + 9% commission + 10% escrow fee | Pro: ${leadCostPro}/lead + 6% commission + 6% escrow fee | Premium: ${leadCostPremium}/lead + 0% commission + 3% escrow fee
+                      Free tier: $60/lead + $60 Award Fee + 10% escrow fee | Pro: $40/lead + $40 Award Fee + 6% escrow fee | Premium: $0/lead + $0 award fee + 3% escrow fee
                     </p>
                   </div>
                 </div>
