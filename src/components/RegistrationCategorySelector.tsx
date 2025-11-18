@@ -61,8 +61,6 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
         subcategories: sortedData.filter(cat => cat.parent_category_id === parent.id)
       }));
 
-      console.log("Loaded parent categories:", groups.map(g => g.parent.name));
-
       setCategoryGroups(groups);
     } catch (error) {
       console.error("Error fetching categories:", error);
