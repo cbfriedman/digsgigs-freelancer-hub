@@ -15,6 +15,7 @@ import SEOHead from "@/components/SEOHead";
 import { generateLocalBusinessSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { DiggerPricingSelector } from "@/components/DiggerPricingSelector";
 
 interface Reference {
   id: string;
@@ -60,6 +61,9 @@ interface Digger {
   primary_profession_index: number | null;
   location_lat: number | null;
   location_lng: number | null;
+  pricing_model: string | null;
+  subscription_tier: string | null;
+  offers_free_estimates: boolean | null;
   profiles: {
     full_name: string | null;
     email: string;
@@ -498,6 +502,19 @@ const DiggerDetail = () => {
                 )}
               </CardContent>
             </Card>
+
+            <DiggerPricingSelector
+              pricingModel={digger.pricing_model || 'both'}
+              subscriptionTier={digger.subscription_tier || 'free'}
+              hourlyRateMin={digger.hourly_rate_min}
+              hourlyRateMax={digger.hourly_rate_max}
+              offersFreEstimates={digger.offers_free_estimates}
+              businessName={digger.business_name}
+              onSelectPricing={(model) => {
+                console.log('Selected pricing model:', model);
+                // TODO: Implement the actual request flow
+              }}
+            />
 
             {references.length > 0 && (
               <Card>

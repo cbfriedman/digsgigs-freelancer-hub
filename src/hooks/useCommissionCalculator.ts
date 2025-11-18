@@ -44,17 +44,17 @@ export const useCommissionCalculator = () => {
     diggerPayout: number;
     minimumFee: number;
   } => {
-    let commissionRate = 0.09; // Default: free tier (9%)
+    let commissionRate = 0.06; // Default: free tier (6% for fixed price)
     let minimumFee = 0; // No minimum fees
 
     if (tier === 'premium') {
       commissionRate = 0.00; // 0% commission
       minimumFee = 0; // No minimum
     } else if (tier === 'pro') {
-      commissionRate = 0.06; // 6% commission
+      commissionRate = 0.03; // 3% commission
       minimumFee = 0; // No minimum
     } else {
-      commissionRate = 0.09; // 9% commission (free)
+      commissionRate = 0.06; // 6% commission (free)
       minimumFee = 0; // No minimum
     }
 
@@ -70,5 +70,20 @@ export const useCommissionCalculator = () => {
     };
   };
 
-  return { calculateLeadCost, calculateCommission };
+  const calculateHourlyAwardCost = (
+    averageHourlyRate: number,
+    tier: 'free' | 'pro' | 'premium' = 'free'
+  ): number => {
+    let multiplier = 3; // Default: free tier (3x average rate)
+
+    if (tier === 'premium') {
+      multiplier = 1; // 1x average rate
+    } else if (tier === 'pro') {
+      multiplier = 2; // 2x average rate
+    }
+
+    return averageHourlyRate * multiplier;
+  };
+
+  return { calculateLeadCost, calculateCommission, calculateHourlyAwardCost };
 };
