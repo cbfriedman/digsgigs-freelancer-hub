@@ -538,7 +538,7 @@ const DiggerRegistration = () => {
                       Both Models
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Fee $60/$40/$20 + Award fee = The higher of Free tier: $60 / Pro $40/ Premium$0 OR 3x/2x/1x your average hourly rate + 10%/6%/3% Escrow fee
+                      Lead Fee $60/$40/$20 + Award fee = The higher of Free tier: $60 / Pro $40/ Premium$0 OR the higher of: 3x/2x/1x your average hourly rate + 10%/6%/3% Escrow fee
                     </p>
                   </div>
                 </div>
