@@ -63,7 +63,7 @@ export default function PricingCalculator() {
   // Free Estimates state
   const [freeEstimateLeads, setFreeEstimateLeads] = useState(30);
   const [freeEstimateConversion, setFreeEstimateConversion] = useState(15);
-  const [freeEstimateAvgRevenue, setFreeEstimateAvgRevenue] = useState(1000);
+  const [freeEstimateAvgRevenue, setFreeEstimateAvgRevenue] = useState(5000);
   const [showFreeEstimateResults, setShowFreeEstimateResults] = useState(false);
   
   const jobs = Math.round(leads * (conversionRate / 100));
@@ -550,9 +550,24 @@ export default function PricingCalculator() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50 max-h-[300px]">
-                  {Array.from({ length: 20 }, (_, i) => (i + 1) * 250).map(num => (
-                    <SelectItem key={num} value={num.toString()}>${num.toLocaleString()}</SelectItem>
-                  ))}
+                  {(() => {
+                    const revenueOptions = [];
+                    // $1,000 increments from $5,000 to $10,000
+                    for (let i = 5000; i <= 10000; i += 1000) {
+                      revenueOptions.push(i);
+                    }
+                    // $5,000 increments from $15,000 to $100,000
+                    for (let i = 15000; i <= 100000; i += 5000) {
+                      revenueOptions.push(i);
+                    }
+                    // $50,000 increments from $150,000 to $1,000,000
+                    for (let i = 150000; i <= 1000000; i += 50000) {
+                      revenueOptions.push(i);
+                    }
+                    return revenueOptions.map(num => (
+                      <SelectItem key={num} value={num.toString()}>${num.toLocaleString()}</SelectItem>
+                    ));
+                  })()}
                 </SelectContent>
               </Select>
             </div>
