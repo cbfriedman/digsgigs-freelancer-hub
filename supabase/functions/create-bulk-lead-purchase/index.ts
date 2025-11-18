@@ -37,16 +37,24 @@ serve(async (req) => {
     // Get digger profile with hourly rate and subscription tier
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from("digger_profiles")
-      .select("id, hourly_rate, hourly_rate_min, subscription_tier, subscription_status")
+      .select("id, hourly_rate_min, hourly_rate_max, subscription_tier, subscription_status")
       .eq("user_id", user.id)
       .single();
 
     if (profileError || !diggerProfile) {
       throw new Error("Digger profile not found");
     }
+    
+    // Calculate average hourly rate
+    const hourlyMin = diggerProfile.hourly_rate_min || 0;
+    const hourlyMax = diggerProfile.hourly_rate_max || 0;
+    const averageRate = (hourlyMin + hourlyMax) / 2;
+    
     logStep("Digger profile found", { 
       diggerId: diggerProfile.id,
-      hourlyRate: diggerProfile.hourly_rate || diggerProfile.hourly_rate_min
+      hourlyMin,
+      hourlyMax,
+      averageRate
     });
 
     // Parse request body to get gig IDs
@@ -131,10 +139,9 @@ serve(async (req) => {
     const lineItems = gigs.map(gig => {
       let leadPrice: number;
       
-      // If digger has hourly rate, use 1 hour's worth as lead cost (minimum $100)
-      if (diggerProfile.hourly_rate || diggerProfile.hourly_rate_min) {
-        const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-        leadPrice = Math.max(100, hourlyRate);
+      // If digger has hourly rate, use average hourly rate as lead cost (minimum $100)
+      if (averageRate > 0) {
+        leadPrice = Math.max(100, averageRate);
       } else {
         // Otherwise use budget-based calculation
         leadPrice = gig.budget_min ? Math.max(50, (gig.budget_min * 0.005)) : 50;
@@ -147,8 +154,8 @@ serve(async (req) => {
           currency: "usd",
           product_data: {
             name: `Lead: ${gig.title}`,
-            description: (diggerProfile.hourly_rate || diggerProfile.hourly_rate_min)
-              ? `1 hour at $${leadPrice}/hr (non-refundable)`
+            description: averageRate > 0
+              ? `Based on average hourly rate: $${averageRate.toFixed(2)}/hr (non-refundable)`
               : `Contact information for gig opportunity`,
             metadata: {
               gig_id: gig.id,

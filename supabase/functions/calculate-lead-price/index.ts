@@ -40,13 +40,19 @@ serve(async (req) => {
     // Get digger's subscription tier, hourly rate, and pricing model
     const { data: diggerProfile } = await supabaseClient
       .from('digger_profiles')
-      .select('subscription_tier, hourly_rate, hourly_rate_min, pricing_model')
+      .select('subscription_tier, hourly_rate_min, hourly_rate_max, pricing_model')
       .eq('user_id', user.id)
       .single();
 
     const tier = diggerProfile?.subscription_tier || 'free';
     const pricingModel = diggerProfile?.pricing_model || 'both';
-    logStep("Digger profile retrieved", { tier, hourlyRate: diggerProfile?.hourly_rate, pricingModel });
+    
+    // Calculate average hourly rate
+    const hourlyMin = diggerProfile?.hourly_rate_min || 0;
+    const hourlyMax = diggerProfile?.hourly_rate_max || 0;
+    const averageRate = (hourlyMin + hourlyMax) / 2;
+    
+    logStep("Digger profile retrieved", { tier, hourlyMin, hourlyMax, averageRate, pricingModel });
 
     // Calculate lead cost based on pricing model
     // For all pricing models, upfront cost is tier-based only
@@ -64,20 +70,31 @@ serve(async (req) => {
     }
     
     // Log pricing model for tracking, but upfront cost is always tier-based
-    if (pricingModel === 'hourly' && (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min)) {
+    if (pricingModel === 'hourly' && averageRate > 0) {
       isHourlyRate = true;
-      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      // Apply tier multipliers: Free: 3x, Pro: 2x, Premium: 1x
+      const multipliers: Record<string, number> = { free: 3, pro: 2, premium: 1 };
+      const multiplier = multipliers[tier] || 3;
+      const hourlyCharge = averageRate * multiplier;
+      
       logStep("Hourly pricing - upfront tier cost only", { 
         tierBasedCost: leadCost, 
-        hourlyRate, 
+        averageRate,
+        multiplier,
+        hourlyCharge: `${multiplier} hours at $${averageRate.toFixed(2)} = $${hourlyCharge.toFixed(2)}`,
         note: "Hourly rate charged when awarded" 
       });
-    } else if (pricingModel === 'both' && (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min)) {
+    } else if (pricingModel === 'both' && averageRate > 0) {
       isHourlyRate = true;
-      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
+      const multipliers: Record<string, number> = { free: 3, pro: 2, premium: 1 };
+      const multiplier = multipliers[tier] || 3;
+      const hourlyCharge = averageRate * multiplier;
+      
       logStep("Both pricing - upfront tier cost only", { 
         tierBasedCost: leadCost, 
-        hourlyRate, 
+        averageRate,
+        multiplier,
+        hourlyCharge: `${multiplier} hours at $${averageRate.toFixed(2)} = $${hourlyCharge.toFixed(2)}`,
         note: "Hourly rate charged when awarded" 
       });
     } else {
