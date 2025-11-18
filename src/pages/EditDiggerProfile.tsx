@@ -16,6 +16,7 @@ import { Loader2, Tag } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
+import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -33,6 +34,8 @@ const EditDiggerProfile = () => {
   const [profileId, setProfileId] = useState<string>("");
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
+  const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
+  const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -115,6 +118,8 @@ const EditDiggerProfile = () => {
         setPhone(profile.phone || "");
         setBio(profile.bio || "");
         setKeywordsInput(profile.keywords?.join(", ") || "");
+        setHourlyRateMin(profile.hourly_rate_min);
+        setHourlyRateMax(profile.hourly_rate_max);
         
         const categoryIds = profile.digger_categories?.map((dc: any) => dc.category_id) || [];
         setSelectedCategories(categoryIds);
@@ -374,6 +379,18 @@ const EditDiggerProfile = () => {
                 </div>
               )}
             </div>
+
+            {/* Hourly Upcharge Display */}
+            {(hourlyRateMin || hourlyRateMax) && (
+              <div className="mt-6">
+                <HourlyUpchargeDisplay
+                  hourlyRateMin={hourlyRateMin}
+                  hourlyRateMax={hourlyRateMax}
+                  subscriptionTier={subscriptionTier}
+                  variant="default"
+                />
+              </div>
+            )}
 
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? (

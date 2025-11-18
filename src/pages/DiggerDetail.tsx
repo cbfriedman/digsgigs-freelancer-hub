@@ -16,6 +16,7 @@ import { generateLocalBusinessSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { DiggerPricingSelector } from "@/components/DiggerPricingSelector";
+import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 
 interface Reference {
   id: string;
@@ -502,6 +503,16 @@ const DiggerDetail = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Hourly Upcharge Display */}
+            {(digger.hourly_rate_min || digger.hourly_rate_max) && (
+              <HourlyUpchargeDisplay
+                hourlyRateMin={digger.hourly_rate_min}
+                hourlyRateMax={digger.hourly_rate_max}
+                subscriptionTier={digger.subscription_tier}
+                variant="default"
+              />
+            )}
 
             <DiggerPricingSelector
               diggerId={digger.id}
