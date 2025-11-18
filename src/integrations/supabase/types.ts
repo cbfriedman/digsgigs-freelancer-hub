@@ -444,6 +444,50 @@ export type Database = {
           },
         ]
       }
+      digger_lead_balance: {
+        Row: {
+          balance: number
+          created_at: string
+          digger_id: string
+          id: string
+          last_deposit_at: string | null
+          last_warning_sent_at: string | null
+          total_deposited: number
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          digger_id: string
+          id?: string
+          last_deposit_at?: string | null
+          last_warning_sent_at?: string | null
+          total_deposited?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          digger_id?: string
+          id?: string
+          last_deposit_at?: string | null
+          last_warning_sent_at?: string | null
+          total_deposited?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digger_lead_balance_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: true
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digger_profiles: {
         Row: {
           availability: string | null
@@ -908,6 +952,57 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      lead_balance_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          digger_id: string
+          id: string
+          lead_purchase_id: string | null
+          stripe_payment_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          description?: string | null
+          digger_id: string
+          id?: string
+          lead_purchase_id?: string | null
+          stripe_payment_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          digger_id?: string
+          id?: string
+          lead_purchase_id?: string | null
+          stripe_payment_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_balance_transactions_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_balance_transactions_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_issues: {
         Row: {

@@ -17,6 +17,7 @@ import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DiggerProfilePreview } from "@/components/DiggerProfilePreview";
+import { DiggerOnboardingTour } from "@/components/DiggerOnboardingTour";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
 
@@ -38,6 +39,8 @@ const DiggerRegistration = () => {
   const [offersFreEstimates, setOffersFreEstimates] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [isPrimary, setIsPrimary] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [newDiggerId, setNewDiggerId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string>("");
@@ -210,7 +213,26 @@ const DiggerRegistration = () => {
         }
       }
 
-      const { error } = await supabase.from("digger_profiles").insert({
+      // Generate unique handle
+      const baseHandle = businessName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      let handle = baseHandle;
+      let counter = 1;
+      
+      // Check for unique handle
+      while (true) {
+        const { data: existing } = await supabase
+          .from('digger_profiles')
+          .select('handle')
+          .eq('handle', handle)
+          .single();
+        
+        if (!existing) break;
+        handle = `${baseHandle}${counter}`;
+        counter++;
+      }
+
+      const { data, error } = await supabase.from("digger_profiles").insert({
+        handle: handle,
         user_id: user.id,
         business_name: businessName,
         profile_name: profileName || null,
@@ -225,9 +247,15 @@ const DiggerRegistration = () => {
         offers_free_estimates: offersFreEstimates,
         profile_image_url: profileImageUrl,
         work_photos: workPhotoUrls.length > 0 ? workPhotoUrls : null,
-      });
+      }).select();
 
       if (error) throw error;
+
+      if (data && data[0]) {
+        setNewDiggerId(data[0].id);
+        setShowOnboarding(true);
+        return;
+      }
 
       // Insert selected categories
       if (selectedCategories.length > 0) {
