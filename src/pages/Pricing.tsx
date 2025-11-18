@@ -36,6 +36,8 @@ const TIERS = {
     escrowFee: '10%',
     escrowFeeValue: 10,
     freeEstimateCost: '$60',
+    contractAwardFee: '$150',
+    contractAwardFeeValue: 150,
     hourlyRateCharge: '3 hours',
     minimumFee: 0,
     priceId: null,
@@ -54,6 +56,8 @@ const TIERS = {
     escrowFee: '6%',
     escrowFeeValue: 6,
     freeEstimateCost: '$40',
+    contractAwardFee: '$100',
+    contractAwardFeeValue: 100,
     hourlyRateCharge: '2 hours',
     minimumFee: 0,
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
@@ -72,6 +76,8 @@ const TIERS = {
     escrowFee: '3%',
     escrowFeeValue: 3,
     freeEstimateCost: '$0',
+    contractAwardFee: '$50',
+    contractAwardFeeValue: 50,
     hourlyRateCharge: '1 hour',
     minimumFee: 0,
     priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
@@ -337,6 +343,22 @@ export default function Pricing() {
                         </TooltipProvider>
                       </div>
                       <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Contract Award Fee:</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">One-time fee charged when you are awarded a fixed-price contract. This fee is collected upon project award and provides access to the client's full contact information.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <span className="font-bold text-primary">{tier.contractAwardFee}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
