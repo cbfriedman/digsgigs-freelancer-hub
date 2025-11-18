@@ -8,7 +8,7 @@ import { TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
 const BreakevenCalculator = () => {
   const [leads, setLeads] = useState(20);
   const [jobs, setJobs] = useState(3);
-  const [avgJobValue, setAvgJobValue] = useState(2000);
+  const [avgJobValue, setAvgJobValue] = useState(5000);
   const [estimates, setEstimates] = useState(10);
   const [hourlyRateClicks, setHourlyRateClicks] = useState(5);
   const [hourlyRate, setHourlyRate] = useState(100);
@@ -166,15 +166,15 @@ const BreakevenCalculator = () => {
             <Slider
               value={[avgJobValue]}
               onValueChange={(value) => setAvgJobValue(value[0])}
-              min={500}
-              max={10000}
-              step={100}
+              min={5000}
+              max={1000000}
+              step={1000}
               className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>$500</span>
               <span>$5,000</span>
-              <span>$10,000</span>
+              <span>$500,000</span>
+              <span>$1,000,000</span>
             </div>
           </div>
 
