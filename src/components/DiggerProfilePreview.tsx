@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MapPin, Briefcase, DollarSign } from "lucide-react";
+import { OptimizedImage } from "./OptimizedImage";
 
 interface DiggerProfilePreviewProps {
   businessName: string;
@@ -12,6 +13,8 @@ interface DiggerProfilePreviewProps {
   keywords: string[];
   categoryNames: string[];
   pricingModel: string | null;
+  profileImagePreview: string;
+  workPhotoPreviews: string[];
   onApprove: () => void;
   onEdit: () => void;
   onCancel: () => void;
@@ -25,6 +28,8 @@ export const DiggerProfilePreview = ({
   keywords,
   categoryNames,
   pricingModel,
+  profileImagePreview,
+  workPhotoPreviews,
   onApprove,
   onEdit,
   onCancel,
@@ -52,6 +57,9 @@ export const DiggerProfilePreview = ({
           <CardHeader className="space-y-4">
             <div className="flex items-start gap-4">
               <Avatar className="h-20 w-20">
+                {profileImagePreview && (
+                  <AvatarImage src={profileImagePreview} alt={businessName} />
+                )}
                 <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
                   {businessName.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -106,6 +114,25 @@ export const DiggerProfilePreview = ({
                     <Badge key={keyword} variant="secondary" className="text-xs">
                       {keyword}
                     </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {workPhotoPreviews.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">Work Samples</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {workPhotoPreviews.map((preview, index) => (
+                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
+                      <OptimizedImage
+                        src={preview}
+                        alt={`Work sample ${index + 1}`}
+                        width={200}
+                        height={200}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
