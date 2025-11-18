@@ -14,8 +14,10 @@
  * - 'escrow': Processing fee on each milestone payment released
  *   - All tiers: 5% of milestone amount (minimum $10)
  * 
- * - 'free_estimate': Upfront cost with rebate on award
- *   - Free: $150, Pro: $100, Premium: $50 (rebated against award fee)
+ * - 'free_estimate': Upfront cost with conditional rebate on award
+ *   - Costs: Free ($150), Pro ($100), Premium ($50)
+ *   - Rebate rules: Only for fixed-price contracts of $5,000 or more
+ *   - No rebates for hourly rate contracts
  */
 export const useCommissionCalculator = () => {
   const calculateLeadCost = (
@@ -94,11 +96,49 @@ export const useCommissionCalculator = () => {
     return estimateCosts[tier];
   };
 
+  const calculateFreeEstimateRebate = (
+    projectAmount: number,
+    pricingModel: 'fixed' | 'hourly',
+    tier: 'free' | 'pro' | 'premium' = 'free',
+    freeEstimatePaid: boolean = false
+  ): { rebateAmount: number; rebateApplied: boolean; rebateReason?: string } => {
+    if (!freeEstimatePaid) {
+      return { rebateAmount: 0, rebateApplied: false };
+    }
+
+    const freeEstimateCost = calculateFreeEstimateCost(tier);
+
+    // New rules: Only apply rebates for fixed-price contracts of $5,000 or more
+    // No rebates for hourly rate contracts
+    if (pricingModel === 'fixed' && projectAmount >= 5000) {
+      return {
+        rebateAmount: freeEstimateCost,
+        rebateApplied: true,
+        rebateReason: 'Fixed-price contract of $5,000 or more'
+      };
+    } else if (pricingModel === 'hourly') {
+      return {
+        rebateAmount: 0,
+        rebateApplied: false,
+        rebateReason: 'No rebates available for hourly rate contracts'
+      };
+    } else if (pricingModel === 'fixed' && projectAmount < 5000) {
+      return {
+        rebateAmount: 0,
+        rebateApplied: false,
+        rebateReason: 'Rebates only available for contracts of $5,000 or more'
+      };
+    }
+
+    return { rebateAmount: 0, rebateApplied: false };
+  };
+
   return { 
     calculateLeadCost, 
     calculateCommission, 
     calculateHourlyAwardCost, 
     calculateEscrowFee,
-    calculateFreeEstimateCost
+    calculateFreeEstimateCost,
+    calculateFreeEstimateRebate
   };
 };
