@@ -48,6 +48,7 @@ import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
 import PreDemoRegistration from "./pages/PreDemoRegistration";
+import MyProfiles from "./pages/MyProfiles";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,8 @@ const App = () => (
           <Route path="/digger-registration-demo" element={<DiggerRegistrationDemo />} />
           <Route path="/gig-registration-demo" element={<GigRegistrationDemo />} />
           <Route path="/edit-profile" element={<EditDiggerProfile />} />
+          <Route path="/edit-digger-profile" element={<EditDiggerProfile />} />
+          <Route path="/my-profiles" element={<MyProfiles />} />
           <Route path="/post-gig" element={<PostGig />} />
           <Route path="/browse-diggers" element={<BrowseDiggers />} />
           <Route path="/browse-gigs" element={<BrowseGigs />} />
