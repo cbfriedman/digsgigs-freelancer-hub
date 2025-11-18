@@ -46,6 +46,7 @@ import SitemapXML from "./pages/SitemapXML";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
+import PreDemoRegistration from "./pages/PreDemoRegistration";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/pre-demo-registration" element={<PreDemoRegistration />} />
           <Route path="/digger-registration" element={<DiggerRegistration />} />
           <Route path="/digger-registration-demo" element={<DiggerRegistrationDemo />} />
           <Route path="/gig-registration-demo" element={<GigRegistrationDemo />} />
