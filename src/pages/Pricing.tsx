@@ -313,7 +313,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Additional charge when you win an hourly project. Free: 3 hours, Pro: 2 hours, Premium: 1 hour of your rate</p>
+                              <p className="text-sm">Additional charge when you win an hourly project. Free Plan: 3 hours, Pro: 2 hours, Premium: 1 hour of your average hourly rate</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
