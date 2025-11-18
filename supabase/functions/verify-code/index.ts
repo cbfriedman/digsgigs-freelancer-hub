@@ -10,8 +10,7 @@ const corsHeaders = {
 };
 
 interface VerifyRequest {
-  email?: string;
-  phone?: string;
+  email: string;
   code: string;
 }
 
@@ -22,36 +21,30 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, phone, code }: VerifyRequest = await req.json();
+    const { email, code }: VerifyRequest = await req.json();
 
-    console.log("Verification attempt:", { email, phone, codeProvided: !!code });
+    console.log("Verification attempt:", { email, codeProvided: !!code });
 
     if (!code) {
       throw new Error("Verification code is required");
     }
 
-    if (!email && !phone) {
-      throw new Error("Email or phone is required");
+    if (!email) {
+      throw new Error("Email is required");
     }
 
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Find the verification code
-    let query = supabase
+    const { data: verificationData, error: fetchError } = await supabase
       .from("verification_codes")
       .select("*")
       .eq("code", code)
+      .eq("email", email)
       .eq("verified", false)
-      .gt("expires_at", new Date().toISOString());
-
-    if (email) {
-      query = query.eq("email", email);
-    } else if (phone) {
-      query = query.eq("phone", phone);
-    }
-
-    const { data: verificationData, error: fetchError } = await query.maybeSingle();
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
 
     if (fetchError) {
       console.error("Fetch error:", fetchError);
