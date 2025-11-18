@@ -20,6 +20,7 @@ import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import SEOHead from "@/components/SEOHead";
 import { generateFAQSchema } from "@/components/StructuredData";
+import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 
 const TIERS = {
   free: {
@@ -82,8 +83,33 @@ export default function Pricing() {
   const [conversionRate, setConversionRate] = useState(20);
   const [showResults, setShowResults] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
+  const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
 
   const currentTier = subscriptionStatus?.subscription_tier || 'free';
+
+  useEffect(() => {
+    if (user && isDigger) {
+      loadDiggerProfile();
+    }
+  }, [user, isDigger]);
+
+  const loadDiggerProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('digger_profiles')
+        .select('hourly_rate_min, hourly_rate_max')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (!error && data) {
+        setHourlyRateMin(data.hourly_rate_min);
+        setHourlyRateMax(data.hourly_rate_max);
+      }
+    } catch (error) {
+      console.error('Error loading digger profile:', error);
+    }
+  };
 
   const handleRefreshSubscription = async () => {
     setRefreshing(true);
@@ -346,6 +372,22 @@ export default function Pricing() {
           </div>
         </div>
       </section>
+
+      {/* Hourly Upcharge Display for Logged-in Diggers */}
+      {isDigger && user && (hourlyRateMin || hourlyRateMax) && (
+        <section className="py-8 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="max-w-2xl mx-auto">
+              <h3 className="text-xl font-semibold mb-4 text-center">Your Hourly Award Upcharge</h3>
+              <HourlyUpchargeDisplay
+                hourlyRateMin={hourlyRateMin}
+                hourlyRateMax={hourlyRateMax}
+                subscriptionTier={currentTier}
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Interactive Commission Calculator */}
       <section className="py-16 bg-muted/30">
