@@ -15,19 +15,30 @@ export default function ProjectCostCalculator() {
 
   const subscriptionCosts = {
     free: 0,
-    pro: 79,
-    premium: 299,
+    pro: 99,
+    premium: 599,
+  };
+
+  // Contract award fee percentages
+  const contractAwardFees = {
+    free: 0.10, // 10%
+    pro: 0.06,  // 6%
+    premium: 0.03, // 3%
   };
 
   // Fixed-Price Calculations
   const fixedPriceSubtotal = projectBudget;
-  const escrowFee = projectBudget * 0.05;
-  const fixedPriceTotal = fixedPriceSubtotal + escrowFee;
+  const contractAwardFee = projectBudget * contractAwardFees[subscriptionTier as keyof typeof contractAwardFees];
+  const escrowProcessingFee = Math.max(10, projectBudget * 0.05); // 5% with $10 min
+  const fixedPriceTotal = fixedPriceSubtotal + contractAwardFee + escrowProcessingFee;
 
   // Hourly Rate Calculations
   const hourlyWorkCost = hourlyRate * estimatedHours;
   const subscriptionFee = subscriptionCosts[subscriptionTier as keyof typeof subscriptionCosts];
-  const hourlyTotal = hourlyWorkCost + subscriptionFee;
+  const hourlyMultipliers = { free: 3, pro: 2, premium: 1 };
+  const hourlyAwardUpcharge = hourlyRate * hourlyMultipliers[subscriptionTier as keyof typeof hourlyMultipliers];
+  const hourlyEscrowFee = Math.max(10, hourlyWorkCost * 0.05); // 5% with $10 min
+  const hourlyTotal = hourlyWorkCost + subscriptionFee + hourlyAwardUpcharge + hourlyEscrowFee;
 
   // Comparison
   const difference = Math.abs(fixedPriceTotal - hourlyTotal);
@@ -161,13 +172,17 @@ export default function ProjectCostCalculator() {
                     <span className="font-medium">${fixedPriceSubtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Escrow fee (5%)</span>
-                    <span className="font-medium">${escrowFee.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Contract Award Fee ({(contractAwardFees[subscriptionTier as keyof typeof contractAwardFees] * 100)}%)</span>
+                    <span className="font-medium">${contractAwardFee.toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10)</span>
+                    <span className="font-medium">${escrowProcessingFee.toFixed(0)}</span>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total Cost</span>
-                    <span className="text-primary">${fixedPriceTotal.toLocaleString()}</span>
+                    <span className="text-primary">${fixedPriceTotal.toFixed(0)}</span>
                   </div>
                 </div>
 
@@ -201,16 +216,24 @@ export default function ProjectCostCalculator() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Work completed ({estimatedHours} hrs @ ${hourlyRate}/hr)</span>
-                    <span className="font-medium">${hourlyWorkCost.toLocaleString()}</span>
+                    <span className="font-medium">${hourlyWorkCost.toFixed(0)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Platform subscription ({subscriptionTier})</span>
-                    <span className="font-medium">${subscriptionFee.toLocaleString()}</span>
+                    <span className="font-medium">${subscriptionFee.toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Hourly Award Upcharge ({hourlyMultipliers[subscriptionTier as keyof typeof hourlyMultipliers]}x avg rate)</span>
+                    <span className="font-medium">${hourlyAwardUpcharge.toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10)</span>
+                    <span className="font-medium">${hourlyEscrowFee.toFixed(0)}</span>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total Cost</span>
-                    <span className="text-primary">${hourlyTotal.toLocaleString()}</span>
+                    <span className="text-primary">${hourlyTotal.toFixed(0)}</span>
                   </div>
                 </div>
 

@@ -14,25 +14,25 @@ const BreakevenCalculator = () => {
   const [hourlyRate, setHourlyRate] = useState(100);
 
   // Pro Plan Calculations
-  const proSubscription = 50;
-  const proLeadCost = leads * 1.5;
-  const proEstimateCost = estimates * 100;
-  const proHourlyClickCost = hourlyRateClicks * 100;
+  const proSubscription = 99;
+  const proLeadCost = leads * 40; // $40 per lead
+  const proEstimateCost = estimates * 100; // $100 per estimate
   const proRevenue = jobs * avgJobValue;
-  const proCommission = proRevenue * 0.06;
-  const proAwardFee = hourlyRateClicks * hourlyRate; // No minimum
-  const proTotalCosts = proSubscription + proLeadCost + proEstimateCost + proHourlyClickCost + proCommission + proAwardFee;
+  const proContractAwardFee = proRevenue * 0.06; // 6% of contract value
+  const proEscrowFee = jobs * Math.max(10, avgJobValue * 0.05); // 5% with $10 min per job
+  const proHourlyAwardUpcharge = hourlyRateClicks * (hourlyRate * 2); // 2x avg rate
+  const proTotalCosts = proSubscription + proLeadCost + proEstimateCost + proContractAwardFee + proEscrowFee + proHourlyAwardUpcharge;
   const proNetEarnings = proRevenue - proTotalCosts;
 
   // Premium Plan Calculations
-  const premiumSubscription = 600;
-  const premiumLeadCost = 0;
-  const premiumEstimateCost = 0;
-  const premiumHourlyClickCost = 0;
+  const premiumSubscription = 599;
+  const premiumLeadCost = 0; // $0 per lead
+  const premiumEstimateCost = estimates * 50; // $50 per estimate
   const premiumRevenue = jobs * avgJobValue;
-  const premiumCommission = 0;
-  const premiumAwardFee = hourlyRateClicks * hourlyRate; // No minimum
-  const premiumTotalCosts = premiumSubscription + premiumAwardFee;
+  const premiumContractAwardFee = premiumRevenue * 0.03; // 3% of contract value
+  const premiumEscrowFee = jobs * Math.max(10, avgJobValue * 0.05); // 5% with $10 min per job
+  const premiumHourlyAwardUpcharge = hourlyRateClicks * (hourlyRate * 1); // 1x avg rate
+  const premiumTotalCosts = premiumSubscription + premiumEstimateCost + premiumContractAwardFee + premiumEscrowFee + premiumHourlyAwardUpcharge;
   const premiumNetEarnings = premiumRevenue - premiumTotalCosts;
 
   // Breakeven Analysis
@@ -261,16 +261,16 @@ const BreakevenCalculator = () => {
                 <span>${proEstimateCost.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Hourly Click Costs ({hourlyRateClicks} × $100)</span>
-                <span>${proHourlyClickCost.toFixed(2)}</span>
+                <span className="text-muted-foreground">Contract Award Fee (6%)</span>
+                <span>${proContractAwardFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Commission (6% of ${proRevenue.toLocaleString()})</span>
-                <span>${proCommission.toFixed(2)}</span>
+                <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10/job)</span>
+                <span>${proEscrowFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Award Fees ({hourlyRateClicks} × ${hourlyRate})</span>
-                <span>${proAwardFee.toFixed(2)}</span>
+                <span className="text-muted-foreground">Hourly Award Upcharge ({hourlyRateClicks} × 2x rate)</span>
+                <span>${proHourlyAwardUpcharge.toFixed(2)}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-border font-semibold">
                 <span>Total Costs</span>
@@ -304,12 +304,16 @@ const BreakevenCalculator = () => {
                 <span className="text-green-600 font-semibold">FREE</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Commission (0% of ${premiumRevenue.toLocaleString()})</span>
-                <span className="text-green-600 font-semibold">$0.00</span>
+                <span className="text-muted-foreground">Contract Award Fee (3%)</span>
+                <span>${premiumContractAwardFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Award Fees ({hourlyRateClicks} × ${hourlyRate})</span>
-                <span>${premiumAwardFee.toFixed(2)}</span>
+                <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10/job)</span>
+                <span>${premiumEscrowFee.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Hourly Award Upcharge ({hourlyRateClicks} × 1x rate)</span>
+                <span>${premiumHourlyAwardUpcharge.toFixed(2)}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-border font-semibold">
                 <span>Total Costs</span>

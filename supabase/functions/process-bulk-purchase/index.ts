@@ -68,7 +68,8 @@ serve(async (req) => {
 
     // Create lead purchase records
     const purchases = gigs.map(gig => {
-      const leadPrice = gig.budget_min ? Math.max(50, (gig.budget_min * 0.005)) : 50;
+      // Lead price: $60 per lead for all bulk purchases (typically free tier)
+      const leadPrice = 60;
       
       return {
         digger_id: diggerId,

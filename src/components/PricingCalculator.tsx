@@ -15,10 +15,13 @@ const TIERS = {
     leadCostValue: 60,
     commissionValue: 9,
     minimumFee: 0,
-    estimateCost: 100,
+    estimateCost: 150,
     hourlyRateClickCost: 0,
-    jobAwardedCost: 100,
+    jobAwardedCost: 0, // Will be calculated as percentage
     hoursPerAward: 3,
+    contractAwardFeePercentage: 0.10, // 10%
+    escrowFeePercentage: 0.05, // 5%
+    escrowFeeMinimum: 10,
   },
   pro: {
     name: 'Pro',
@@ -26,21 +29,27 @@ const TIERS = {
     leadCostValue: 40,
     commissionValue: 6,
     minimumFee: 0,
-    estimateCost: 75,
+    estimateCost: 100,
     hourlyRateClickCost: 0,
-    jobAwardedCost: 100,
+    jobAwardedCost: 0, // Will be calculated as percentage
     hoursPerAward: 2,
+    contractAwardFeePercentage: 0.06, // 6%
+    escrowFeePercentage: 0.05, // 5%
+    escrowFeeMinimum: 10,
   },
   premium: {
     name: 'Premium',
     priceValue: 599,
-    leadCostValue: 20,
+    leadCostValue: 0,
     commissionValue: 0,
     minimumFee: 0,
     estimateCost: 50,
     hourlyRateClickCost: 0,
-    jobAwardedCost: 0,
-    hoursPerAward: 0.5,
+    jobAwardedCost: 0, // Will be calculated as percentage
+    hoursPerAward: 1,
+    contractAwardFeePercentage: 0.03, // 3%
+    escrowFeePercentage: 0.05, // 5%
+    escrowFeeMinimum: 10,
   }
 };
 

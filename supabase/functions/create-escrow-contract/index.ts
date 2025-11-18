@@ -39,7 +39,7 @@ serve(async (req) => {
 
     const totalAmount = bid.amount;
     
-    // Get digger's subscription tier for escrow fee calculation
+    // Get digger's subscription tier for contract award fee calculation
     const { data: diggerProfile } = await supabaseClient
       .from("digger_profiles")
       .select("subscription_tier")
@@ -47,9 +47,11 @@ serve(async (req) => {
       .single();
     
     const tier = diggerProfile?.subscription_tier || 'free';
-    const escrowFeeRates = { free: 10.0, pro: 6.0, premium: 3.0 };
-    const platformFeePercentage = escrowFeeRates[tier as keyof typeof escrowFeeRates] || 10.0;
-    const platformFeeAmount = totalAmount * (platformFeePercentage / 100);
+    
+    // Contract award fees are now percentage-based: 10%/6%/3%
+    const contractAwardFeePercentages = { free: 0.10, pro: 0.06, premium: 0.03 };
+    const platformFeePercentage = contractAwardFeePercentages[tier as keyof typeof contractAwardFeePercentages] || 0.10;
+    const platformFeeAmount = totalAmount * platformFeePercentage;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -109,8 +111,10 @@ serve(async (req) => {
     if (milestones && milestones.length > 0) {
       const milestoneInserts = milestones.map((m: any, index: number) => {
         const milestoneAmount = m.amount;
-        // Apply $10 minimum fee per progress payment
-        const milestoneFee = Math.max(10, milestoneAmount * (platformFeePercentage / 100));
+        // Escrow processing fee: 5% with $10 minimum (same for all tiers)
+        const escrowProcessingFeeRate = 0.05;
+        const calculatedFee = milestoneAmount * escrowProcessingFeeRate;
+        const milestoneFee = Math.max(10, calculatedFee);
         const milestonePayout = milestoneAmount - milestoneFee;
 
         return {
