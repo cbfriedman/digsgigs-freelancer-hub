@@ -53,8 +53,8 @@ serve(async (req) => {
 
     // Calculate award cost based on pricing model and tier
     if (pricingModel === 'fixed' && projectAmount) {
-      // Fixed price: 6%/3%/0% of project total
-      const commissionRates = { free: 0.06, pro: 0.03, premium: 0.00 };
+      // Fixed price: 9%/6%/0% of project total
+      const commissionRates = { free: 0.09, pro: 0.06, premium: 0.00 };
       awardCost = projectAmount * commissionRates[tier];
       logStep("Fixed price award cost calculated", { awardCost, rate: commissionRates[tier] });
     } else if (pricingModel === 'hourly') {

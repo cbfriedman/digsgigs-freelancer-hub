@@ -7,9 +7,9 @@
  *   - Pro: $3/lead + 6% commission
  *   - Premium: $0/lead + 0% commission
  * 
- * - 'hourly': Tier-based lead cost upfront + 2-hour rate when awarded
+ * - 'hourly': Tier-based lead cost upfront + hourly rate multiplier when awarded
  *   - Upfront: Free ($5), Pro ($3), Premium ($0)
- *   - When awarded: 2 hours of digger's rate
+ *   - When awarded: 3x / 2x / 1x average hourly rate
  *   - No commission on completed work
  * 
  * - 'both': (Construction/Trades) Combination of both models available
@@ -44,17 +44,17 @@ export const useCommissionCalculator = () => {
     diggerPayout: number;
     minimumFee: number;
   } => {
-    let commissionRate = 0.06; // Default: free tier (6% for fixed price)
+    let commissionRate = 0.09; // Default: free tier (9% for fixed price)
     let minimumFee = 0; // No minimum fees
 
     if (tier === 'premium') {
       commissionRate = 0.00; // 0% commission
       minimumFee = 0; // No minimum
     } else if (tier === 'pro') {
-      commissionRate = 0.03; // 3% commission
+      commissionRate = 0.06; // 6% commission
       minimumFee = 0; // No minimum
     } else {
-      commissionRate = 0.06; // 6% commission (free)
+      commissionRate = 0.09; // 9% commission (free)
       minimumFee = 0; // No minimum
     }
 

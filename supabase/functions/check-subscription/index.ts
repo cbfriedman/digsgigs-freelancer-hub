@@ -139,7 +139,7 @@ serve(async (req) => {
     
     if (productId === 'prod_TQ0mK76zTAwoQc') { // Pro tier
       tier = 'pro';
-      commissionRate = 0.04;
+      commissionRate = 0.06;
     } else if (productId === 'prod_TQ0oKMEtoOhHO7') { // Premium tier
       tier = 'premium';
       commissionRate = 0.00;
