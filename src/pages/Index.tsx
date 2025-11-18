@@ -391,7 +391,7 @@ const Index = () => {
                     Find Talent <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                   <Button 
-                    variant="outline" 
+                    variant="default" 
                     size="lg" 
                     className="text-base w-full sm:w-[180px]"
                     onClick={() => user ? navigate("/digger-registration") : navigate("/auth?type=digger&redirect=/digger-registration")}
@@ -406,9 +406,9 @@ const Index = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                   <Button 
-                    variant="ghost" 
+                    variant="hero" 
                     size="lg" 
-                    className="text-base border-2 border-dashed border-accent/30 hover:border-accent/50 hover:bg-accent/5 w-full sm:w-[180px] h-auto py-3"
+                    className="text-base border-2 border-dashed w-full sm:w-[180px] h-auto py-3"
                     onClick={() => navigate("/gig-registration-demo")}
                   >
                     <span className="flex flex-col items-center gap-0.5">
@@ -417,9 +417,9 @@ const Index = () => {
                     </span>
                   </Button>
                   <Button 
-                    variant="ghost" 
+                    variant="default" 
                     size="lg" 
-                    className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 w-full sm:w-[180px] h-auto py-3"
+                    className="text-base border-2 border-dashed w-full sm:w-[180px] h-auto py-3"
                     onClick={() => navigate("/digger-registration-demo")}
                   >
                     <span className="flex flex-col items-center gap-0.5">
