@@ -36,6 +36,26 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
 
   useEffect(() => {
     fetchCategories();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('categories-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'categories'
+        },
+        () => {
+          fetchCategories();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchCategories = async () => {
