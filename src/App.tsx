@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
+import GigRegistrationDemo from "./pages/GigRegistrationDemo";
 import EditDiggerProfile from "./pages/EditDiggerProfile";
 import PostGig from "./pages/PostGig";
 import BrowseDiggers from "./pages/BrowseDiggers";
@@ -85,6 +86,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/digger-registration" element={<DiggerRegistration />} />
           <Route path="/digger-registration-demo" element={<DiggerRegistrationDemo />} />
+          <Route path="/gig-registration-demo" element={<GigRegistrationDemo />} />
           <Route path="/edit-profile" element={<EditDiggerProfile />} />
           <Route path="/post-gig" element={<PostGig />} />
           <Route path="/browse-diggers" element={<BrowseDiggers />} />

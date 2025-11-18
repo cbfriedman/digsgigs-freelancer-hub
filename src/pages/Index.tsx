@@ -404,14 +404,24 @@ const Index = () => {
                   <span className="text-sm text-muted-foreground">or</span>
                   <div className="h-px flex-1 bg-border"></div>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="lg" 
-                  className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 w-full sm:w-auto"
-                  onClick={() => navigate("/digger-registration-demo")}
-                >
-                  🧪 Try Demo Registration (No Login Required)
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <Button 
+                    variant="ghost" 
+                    size="lg" 
+                    className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 flex-1 sm:flex-initial"
+                    onClick={() => navigate("/digger-registration-demo")}
+                  >
+                    🧪 Try Digger Demo
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="lg" 
+                    className="text-base border-2 border-dashed border-accent/30 hover:border-accent/50 hover:bg-accent/5 flex-1 sm:flex-initial"
+                    onClick={() => navigate("/gig-registration-demo")}
+                  >
+                    🧪 Try Gig Demo
+                  </Button>
+                </div>
               </div>
               <div className="flex items-center gap-8 pt-4">
                 <div>
