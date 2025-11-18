@@ -87,7 +87,24 @@ const DiggerRegistration = () => {
   useEffect(() => {
     if (!user) {
       navigate("/auth");
+      return;
     }
+    
+    // Check if user already has a digger profile
+    const checkExistingProfile = async () => {
+      const { data: existingProfile } = await supabase
+        .from("digger_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (existingProfile) {
+        toast.info("You already have a digger profile. Redirecting to edit page...");
+        navigate(`/edit-digger-profile`);
+      }
+    };
+    
+    checkExistingProfile();
   }, [user, navigate]);
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
