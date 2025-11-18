@@ -70,18 +70,22 @@ const Auth = () => {
     // If already authenticated (and not in recovery), redirect
     supabase.auth.getSession().then(({ data: { session } }) => {
       const hash = typeof window !== 'undefined' ? window.location.hash : '';
-      const isRecovery = hash.includes('type=recovery');
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
       if (session && !isRecovery) {
         navigate(redirectTo);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
+      const hash = typeof window !== 'undefined' ? window.location.hash : '';
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
+      if (event === 'PASSWORD_RECOVERY' || isRecovery) {
         setShowNewPasswordForm(true);
         return;
       }
-      if (session) {
+      if (session && !isRecovery) {
         navigate(redirectTo);
       }
     });
