@@ -1330,6 +1330,38 @@ export type Database = {
           },
         ]
       }
+      profile_views: {
+        Row: {
+          amount_charged: number
+          consumer_id: string
+          digger_id: string
+          id: string
+          viewed_at: string
+        }
+        Insert: {
+          amount_charged?: number
+          consumer_id: string
+          digger_id: string
+          id?: string
+          viewed_at?: string
+        }
+        Update: {
+          amount_charged?: number
+          consumer_id?: string
+          digger_id?: string
+          id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

@@ -84,6 +84,12 @@ verify_jwt = false
 [functions.verify-code]
 verify_jwt = false
 
+[functions.charge-profile-view]
+verify_jwt = true
+
+[functions.stripe-webhook-profile-view]
+verify_jwt = false
+
 [functions.check-upgrade-savings]
 verify_jwt = false
 

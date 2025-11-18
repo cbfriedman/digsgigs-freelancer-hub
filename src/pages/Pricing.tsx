@@ -29,6 +29,8 @@ const TIERS = {
     name: 'Free',
     price: '$0',
     priceValue: 0,
+    costPerClick: '$50',
+    costPerClickValue: 50,
     leadCost: '$60',
     leadCostValue: 60,
     commission: '9%',
@@ -52,6 +54,8 @@ const TIERS = {
     name: 'Pro',
     price: '$99',
     priceValue: 99,
+    costPerClick: '$50',
+    costPerClickValue: 50,
     leadCost: '$40',
     leadCostValue: 40,
     commission: '6%',
@@ -75,6 +79,8 @@ const TIERS = {
     name: 'Premium',
     price: '$599',
     priceValue: 599,
+    costPerClick: '$50',
+    costPerClickValue: 50,
     leadCost: '$0',
     leadCostValue: 0,
     commission: '0%',
@@ -594,7 +600,27 @@ export default function Pricing() {
                         <tr className="border-b border-border/50">
                           <td className="py-3 px-4 text-muted-foreground">
                             <div className="flex items-center gap-2">
-                              Upfront Lead Cost
+                              Cost Per Click
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Flat fee charged when a client clicks to view your full contact information. Same across all tiers.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
+                          {Object.entries(TIERS).map(([key, tier]) => (
+                            <td key={key} className="text-right py-3 px-4">
+                              <span className="font-semibold">${tier.costPerClickValue.toFixed(2)}</span>
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Lead Cost
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
