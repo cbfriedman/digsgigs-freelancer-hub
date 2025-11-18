@@ -9,6 +9,7 @@ import { ArrowLeft, DollarSign, Calendar, Mail, Phone, MapPin } from "lucide-rea
 import { useCart } from "@/contexts/CartContext";
 import { Navigation } from "@/components/Navigation";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
+import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { formatDistanceToNow } from "date-fns";
 
 interface PurchasedLead {
@@ -43,6 +44,7 @@ const MyLeads = () => {
   const { clearCart } = useCart();
   const [leads, setLeads] = useState<PurchasedLead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
 
   useEffect(() => {
     const handleBulkPurchaseSuccess = async () => {
@@ -72,7 +74,19 @@ const MyLeads = () => {
 
     handleBulkPurchaseSuccess();
     loadLeads();
+    checkSubscription();
   }, [searchParams]);
+
+  const checkSubscription = async () => {
+    try {
+      const { data } = await supabase.functions.invoke('check-subscription');
+      if (data?.tier) {
+        setSubscriptionTier(data.tier);
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+  };
 
   const loadLeads = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -193,6 +207,8 @@ const MyLeads = () => {
       </nav>
 
       <div className="container mx-auto px-4 py-12 max-w-5xl">
+        <SubscriptionBanner currentTier={subscriptionTier} />
+        
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
+import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { Loader2, Tag } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
@@ -31,6 +32,7 @@ const EditDiggerProfile = () => {
   const [keywordsInput, setKeywordsInput] = useState("");
   const [profileId, setProfileId] = useState<string>("");
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -79,7 +81,19 @@ const EditDiggerProfile = () => {
       return;
     }
     loadProfile();
+    checkSubscription();
   }, [user, navigate]);
+
+  const checkSubscription = async () => {
+    try {
+      const { data } = await supabase.functions.invoke('check-subscription');
+      if (data?.tier) {
+        setSubscriptionTier(data.tier);
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+  };
 
   const loadProfile = async () => {
     if (!user) return;
@@ -239,6 +253,8 @@ const EditDiggerProfile = () => {
       <Navigation />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
+          <SubscriptionBanner currentTier={subscriptionTier} />
+          
           <h1 className="text-3xl font-bold mb-6">Edit Your Profile</h1>
           
           <form onSubmit={handleSubmit} className="space-y-6">
