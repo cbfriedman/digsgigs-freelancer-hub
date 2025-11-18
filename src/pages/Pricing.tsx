@@ -36,8 +36,8 @@ const TIERS = {
     escrowFee: '10%',
     escrowFeeValue: 10,
     freeEstimateCost: '$60',
-    contractAwardFee: '$150',
-    contractAwardFeeValue: 150,
+    contractAwardFee: '10%',
+    contractAwardFeeValue: 0.10,
     hourlyRateCharge: '3 hours',
     minimumFee: 0,
     priceId: null,
@@ -56,8 +56,8 @@ const TIERS = {
     escrowFee: '6%',
     escrowFeeValue: 6,
     freeEstimateCost: '$40',
-    contractAwardFee: '$100',
-    contractAwardFeeValue: 100,
+    contractAwardFee: '6%',
+    contractAwardFeeValue: 0.06,
     hourlyRateCharge: '2 hours',
     minimumFee: 0,
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
@@ -76,8 +76,8 @@ const TIERS = {
     escrowFee: '3%',
     escrowFeeValue: 3,
     freeEstimateCost: '$0',
-    contractAwardFee: '$50',
-    contractAwardFeeValue: 50,
+    contractAwardFee: '3%',
+    contractAwardFeeValue: 0.03,
     hourlyRateCharge: '1 hour',
     minimumFee: 0,
     priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
@@ -337,7 +337,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">One-time fee charged when you are awarded a fixed-price contract. This fee is collected upon project award and provides access to the client's full contact information.</p>
+                              <p className="text-sm">Percentage of the total contract value charged when you are awarded a fixed-price contract. This fee is collected upon project award and provides access to the client's full contact information.</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
