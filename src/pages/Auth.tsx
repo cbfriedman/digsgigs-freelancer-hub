@@ -86,14 +86,15 @@ const Auth = () => {
       }
     });
 
-    // Detect recovery or expired links via URL hash
+    // Detect recovery or expired links via URL hash or query
     if (typeof window !== 'undefined') {
       const hash = window.location.hash || '';
-      if (hash.includes('type=recovery')) {
+      const search = window.location.search || '';
+      if (hash.includes('type=recovery') || search.includes('type=recovery')) {
         setShowNewPasswordForm(true);
       }
       // If expired/error link detected, auto-open reset form
-      if (hash.includes('error=access_denied') || hash.includes('error=')) {
+      if (hash.includes('error=access_denied') || hash.includes('error=') || search.includes('error=')) {
         setShowResetForm(true);
         toast.error('Reset link expired. Please request a new one.');
       }
@@ -503,8 +504,11 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="signin">
-              {/* Expired Link Banner */}
-              {typeof window !== 'undefined' && (window.location.hash.includes('error=access_denied') || window.location.hash.includes('error=')) && (
+              {typeof window !== 'undefined' && (
+                (window.location.hash.includes('error=access_denied') ||
+                 window.location.hash.includes('error=') ||
+                 window.location.search.includes('error='))
+              ) && (
                 <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
                   <p className="text-sm font-semibold text-destructive mb-1">Reset Link Expired</p>
                   <p className="text-xs text-muted-foreground">
