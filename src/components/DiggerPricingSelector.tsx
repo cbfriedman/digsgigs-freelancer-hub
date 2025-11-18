@@ -2,10 +2,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Clock, FileText } from "lucide-react";
+import { DollarSign, Clock, FileText, Loader2 } from "lucide-react";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface DiggerPricingSelectorProps {
+  diggerId: string;
+  gigId: string;
   pricingModel: string;
   subscriptionTier: string;
   hourlyRateMin?: number | null;
@@ -16,6 +20,8 @@ interface DiggerPricingSelectorProps {
 }
 
 export const DiggerPricingSelector = ({
+  diggerId,
+  gigId,
   pricingModel,
   subscriptionTier,
   hourlyRateMin,
@@ -25,6 +31,7 @@ export const DiggerPricingSelector = ({
   onSelectPricing,
 }: DiggerPricingSelectorProps) => {
   const [selectedModel, setSelectedModel] = useState<'fixed' | 'hourly' | 'free_estimate' | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { calculateLeadCost, calculateCommission, calculateHourlyAwardCost } = useCommissionCalculator();
 
   const tier = (subscriptionTier || 'free') as 'free' | 'pro' | 'premium';
@@ -42,7 +49,38 @@ export const DiggerPricingSelector = ({
 
   const handleSelect = (model: 'fixed' | 'hourly' | 'free_estimate') => {
     setSelectedModel(model);
-    onSelectPricing(model);
+  };
+
+  const handlePurchaseLead = async () => {
+    if (!selectedModel) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-lead-purchase-checkout', {
+        body: {
+          diggerId,
+          gigId,
+          pricingModel: selectedModel,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.url) {
+        // Open Stripe checkout in new tab
+        window.open(data.url, '_blank');
+        toast.success('Redirecting to payment...');
+      } else if (data.success) {
+        // Free lead access granted
+        toast.success(data.message || 'Lead access granted!');
+        onSelectPricing(selectedModel);
+      }
+    } catch (error) {
+      console.error('Error purchasing lead:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to process lead purchase');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -171,9 +209,17 @@ export const DiggerPricingSelector = ({
             </ul>
             <Button 
               className="mt-4 w-full" 
-              onClick={() => onSelectPricing(selectedModel)}
+              onClick={handlePurchaseLead}
+              disabled={isLoading}
             >
-              Request {selectedModel === 'fixed' ? 'Fixed Price Proposal' : selectedModel === 'hourly' ? 'Hourly Quote' : 'Free Estimate'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                `Request ${selectedModel === 'fixed' ? 'Fixed Price Proposal' : selectedModel === 'hourly' ? 'Hourly Quote' : 'Free Estimate'}`
+              )}
             </Button>
           </div>
         )}
