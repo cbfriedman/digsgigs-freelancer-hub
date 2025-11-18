@@ -217,12 +217,14 @@ export default function Pricing() {
     return tiers.map(tierKey => {
       const tier = TIERS[tierKey];
       const leadCosts = interactiveLeads * tier.leadCostValue;
-      const totalCost = tier.priceValue + leadCosts;
+      const freeEstimateCosts = calculatedClicks * (tier.freeEstimateCost ? parseFloat(tier.freeEstimateCost.replace('$', '')) : 0);
+      const totalCost = tier.priceValue + leadCosts + freeEstimateCosts;
       
       return {
         name: tier.name,
         monthly: tier.priceValue,
         leadCosts,
+        freeEstimateCosts,
         total: totalCost
       };
     });
@@ -747,6 +749,26 @@ export default function Pricing() {
                             </td>
                           ))}
                         </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Add for Free Estimates
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Cost of providing free estimates based on the number of clicks (Free Estimate Cost × Number of Clicks).</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
+                          {calculateInteractiveCosts().map((result) => (
+                            <td key={result.name} className="text-right py-3 px-4">
+                              ${result.freeEstimateCosts.toFixed(2)}
+                            </td>
+                          ))}
+                        </tr>
                         <tr className="border-b-2 border-border bg-primary/5">
                           <td className="py-3 px-4 font-semibold">
                             <div className="flex items-center gap-2">
@@ -756,7 +778,7 @@ export default function Pricing() {
                                   <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
-                                  <p>Average cost to win each contract based on your conversion rates (Total Click Cost + Total Lead Cost) / # of Awards.</p>
+                                  <p>Average cost to win each contract based on your conversion rates (Total Click Cost + Total Lead Cost + Free Estimate Costs) / # of Awards.</p>
                                 </TooltipContent>
                               </Tooltip>
                             </div>
@@ -764,7 +786,8 @@ export default function Pricing() {
                           {Object.entries(TIERS).map(([key, tier]) => {
                             const totalClickCost = calculatedClicks * tier.costPerClickValue;
                             const totalLeadCost = interactiveLeads * tier.leadCostValue;
-                            const costPerAward = calculatedAwards > 0 ? (totalClickCost + totalLeadCost) / calculatedAwards : 0;
+                            const freeEstimateCost = calculatedClicks * (tier.freeEstimateCost ? parseFloat(tier.freeEstimateCost.replace('$', '')) : 0);
+                            const costPerAward = calculatedAwards > 0 ? (totalClickCost + totalLeadCost + freeEstimateCost) / calculatedAwards : 0;
                             return (
                               <td key={key} className="text-right py-3 px-4 font-semibold text-lg text-primary">
                                 ${costPerAward.toFixed(2)}
