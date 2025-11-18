@@ -281,7 +281,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Cost to unlock contact details for each new lead/project</p>
+                              <p className="text-sm">The cost for receiving the lead in your inbox. Gigger contact information is only revealed after awarding the project or accepting a Free Estimate request.</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
