@@ -399,35 +399,6 @@ const Index = () => {
                     Build My Digs
                   </Button>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-border"></div>
-                  <span className="text-sm text-muted-foreground">or</span>
-                  <div className="h-px flex-1 bg-border"></div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                  <Button 
-                    variant="hero" 
-                    size="lg" 
-                    className="text-base border-2 border-dashed w-full sm:w-[180px] h-auto py-3"
-                    onClick={() => navigate("/gig-registration-demo")}
-                  >
-                    <span className="flex flex-col items-center gap-0.5">
-                      <span>🧪 Finding Talent</span>
-                      <span className="text-xs">Demo</span>
-                    </span>
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    size="lg" 
-                    className="text-base border-2 border-dashed w-full sm:w-[180px] h-auto py-3"
-                    onClick={() => navigate("/digger-registration-demo")}
-                  >
-                    <span className="flex flex-col items-center gap-0.5">
-                      <span>🧪 Building Digs</span>
-                      <span className="text-xs">Demo</span>
-                    </span>
-                  </Button>
-                </div>
               </div>
               <div className="flex items-center gap-8 pt-4">
                 <div>
