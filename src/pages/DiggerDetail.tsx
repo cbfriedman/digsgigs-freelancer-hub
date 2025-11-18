@@ -440,11 +440,73 @@ const DiggerDetail = () => {
                   <>
                     <Separator className="my-6" />
                     <div>
-                      <h2 className="text-lg font-semibold mb-3">About</h2>
-                      <p className="text-muted-foreground whitespace-pre-wrap">{digger.bio}</p>
+                      <h2 className="text-lg font-semibold mb-3">About My Services</h2>
+                      <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{digger.bio}</p>
                     </div>
                   </>
                 )}
+
+                <Separator className="my-6" />
+                <div>
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    Pricing & Work Options
+                  </h2>
+                  <div className="space-y-3">
+                    {digger.pricing_model === 'fixed' && (
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                        <div className="mt-0.5">
+                          <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
+                            <div className="h-2 w-2 rounded-full bg-primary" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">Fixed Price Contracts</p>
+                          <p className="text-sm text-muted-foreground mt-1">I work on a project basis with fixed pricing agreed upfront</p>
+                        </div>
+                      </div>
+                    )}
+                    {(digger.pricing_model === 'hourly' || digger.pricing_model === 'both') && formatHourlyRate() && (
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                        <div className="mt-0.5">
+                          <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
+                            <div className="h-2 w-2 rounded-full bg-primary" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">Hourly Rate: {formatHourlyRate()}</p>
+                          <p className="text-sm text-muted-foreground mt-1">Available for time and materials projects billed by the hour</p>
+                        </div>
+                      </div>
+                    )}
+                    {digger.pricing_model === 'both' && (
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
+                        <div className="mt-0.5">
+                          <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
+                            <div className="h-2 w-2 rounded-full bg-primary" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">Fixed Price Contracts Also Available</p>
+                          <p className="text-sm text-muted-foreground mt-1">Flexible pricing options - choose what works best for your project</p>
+                        </div>
+                      </div>
+                    )}
+                    {digger.offers_free_estimates && (
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/10">
+                        <div className="mt-0.5">
+                          <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                            <div className="h-2 w-2 rounded-full bg-green-600" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium text-green-700 dark:text-green-400">Free Estimates Available</p>
+                          <p className="text-sm text-muted-foreground mt-1">Get a no-obligation project estimate and consultation at no cost</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {digger.digger_categories.length > 0 && (
                   <>
