@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -61,48 +61,57 @@ const Auth = () => {
   const redirectTo = searchParams.get("redirect") || "/";
   const defaultUserType = searchParams.get("type") as "digger" | "consumer" || "consumer";
   const [userType, setUserType] = useState<"digger" | "consumer">(defaultUserType);
+  const recoveryModeRef = useRef(false);
   
   const pageTitle = defaultUserType === "digger" ? "Digger Portal" : 
                     redirectTo === "/post-gig" ? "Post a Gig" : 
                     "DiggsAndGiggs";
 
   useEffect(() => {
-    // If already authenticated (and not in recovery), redirect
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const hash = typeof window !== 'undefined' ? window.location.hash : '';
-      const search = typeof window !== 'undefined' ? window.location.search : '';
-      const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
-      if (session && !isRecovery) {
-        navigate(redirectTo);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      const hash = typeof window !== 'undefined' ? window.location.hash : '';
-      const search = typeof window !== 'undefined' ? window.location.search : '';
-      const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
-      if (event === 'PASSWORD_RECOVERY' || isRecovery) {
-        setShowNewPasswordForm(true);
-        return;
-      }
-      if (session && !isRecovery) {
-        navigate(redirectTo);
-      }
-    });
-
-    // Detect recovery or expired links via URL hash or query
+    // Initialize recovery mode from URL and handle expired links
     if (typeof window !== 'undefined') {
       const hash = window.location.hash || '';
       const search = window.location.search || '';
-      if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+      const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
+      if (isRecovery) {
+        recoveryModeRef.current = true;
         setShowNewPasswordForm(true);
       }
-      // If expired/error link detected, auto-open reset form
       if (hash.includes('error=access_denied') || hash.includes('error=') || search.includes('error=')) {
         setShowResetForm(true);
         toast.error('Reset link expired. Please request a new one.');
       }
     }
+
+    // If already authenticated (and not in recovery), redirect
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && !recoveryModeRef.current) {
+        navigate(redirectTo);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        recoveryModeRef.current = true;
+        setShowNewPasswordForm(true);
+        return;
+      }
+
+      // Fallback: also check URL for recovery param
+      if (typeof window !== 'undefined') {
+        const hash = window.location.hash || '';
+        const search = window.location.search || '';
+        if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+          recoveryModeRef.current = true;
+          setShowNewPasswordForm(true);
+          return;
+        }
+      }
+
+      if (session && !recoveryModeRef.current) {
+        navigate(redirectTo);
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, [navigate, redirectTo]);
@@ -419,13 +428,17 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast.success("Password updated! Please sign in with your new password.");
+      toast.success("Password updated! You're all set.");
+      // Exit recovery mode and clean URL, then redirect
+      recoveryModeRef.current = false;
       setShowNewPasswordForm(false);
       setNewPassword("");
       setConfirmNewPassword("");
       if (typeof window !== 'undefined') {
-        window.location.hash = '';
+        const { pathname } = window.location;
+        window.history.replaceState({}, document.title, pathname);
       }
+      navigate(redirectTo);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
