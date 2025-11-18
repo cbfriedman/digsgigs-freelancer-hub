@@ -362,7 +362,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Upfront cost when a consumer requests a free estimate from your profile, will be rebated against Award Fee upon award</p>
+                              <p className="text-sm">Upfront cost when a consumer requests a free estimate from your profile, will be rebated against Awards of $5,000 or more. No rebates available for hourly rate awards</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
