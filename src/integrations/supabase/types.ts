@@ -1591,6 +1591,39 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          email: string | null
+          expires_at: string
+          id: string
+          phone: string | null
+          verification_type: string
+          verified: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          email?: string | null
+          expires_at: string
+          id?: string
+          phone?: string | null
+          verification_type: string
+          verified?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string
+          id?: string
+          phone?: string | null
+          verification_type?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       withdrawal_penalties: {
         Row: {
           bid_id: string
@@ -1657,6 +1690,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       cleanup_old_login_attempts: { Args: never; Returns: undefined }
       create_notification: {
         Args: {
