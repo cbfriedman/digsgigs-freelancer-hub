@@ -408,18 +408,24 @@ const Index = () => {
                   <Button 
                     variant="ghost" 
                     size="lg" 
-                    className="text-base border-2 border-dashed border-accent/30 hover:border-accent/50 hover:bg-accent/5 flex-1 sm:flex-initial"
+                    className="text-base border-2 border-dashed border-accent/30 hover:border-accent/50 hover:bg-accent/5"
                     onClick={() => navigate("/gig-registration-demo")}
                   >
-                    🧪 Finding Talent Demo
+                    <span className="flex flex-col items-center">
+                      <span>🧪 Finding Talent</span>
+                      <span className="text-xs">Demo</span>
+                    </span>
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="lg" 
-                    className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 flex-1 sm:flex-initial"
+                    className="text-base border-2 border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5"
                     onClick={() => navigate("/digger-registration-demo")}
                   >
-                    🧪 Building Digs Demo
+                    <span className="flex flex-col items-center">
+                      <span>🧪 Building Digs</span>
+                      <span className="text-xs">Demo</span>
+                    </span>
                   </Button>
                 </div>
               </div>
