@@ -514,7 +514,7 @@ const DiggerRegistration = () => {
                       Fixed Price Contracts
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Free tier: ${leadCostFree}/lead + 9% commission | Pro: ${leadCostPro}/lead + 6% | Premium: ${leadCostPremium}/lead + 0%
+                      Free tier: ${leadCostFree}/lead + 9% commission + 10% escrow fee | Pro: ${leadCostPro}/lead + 6% commission + 6% escrow fee | Premium: ${leadCostPremium}/lead + 0% commission + 3% escrow fee
                     </p>
                   </div>
                 </div>
@@ -526,7 +526,7 @@ const DiggerRegistration = () => {
                       Time and Materials (Hourly)
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Upfront: Free ${leadCostFree}, Pro ${leadCostPro}, Premium ${leadCostPremium} + 2 hours of your rate when awarded. No commission on completed work.
+                      Upfront: Free ${leadCostFree}, Pro ${leadCostPro}, Premium ${leadCostPremium} + 3x/2x/1x your average hourly rate when awarded. No commission on completed work.
                     </p>
                   </div>
                 </div>
