@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import SEOHead from "@/components/SEOHead";
 import { generateFAQSchema } from "@/components/StructuredData";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
+import { HourlyUpchargeCalculator } from "@/components/HourlyUpchargeCalculator";
 
 const TIERS = {
   free: {
@@ -660,6 +661,10 @@ export default function Pricing() {
       {/* Additional Components */}
       <PricingModelComparison />
       <ProjectCostCalculator />
+      
+      <div className="container mx-auto px-4 py-16">
+        <HourlyUpchargeCalculator />
+      </div>
       
       <div className="container mx-auto px-4 space-y-16 py-16">
         <PricingCalculator />
