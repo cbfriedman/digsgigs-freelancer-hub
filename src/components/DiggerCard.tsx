@@ -10,14 +10,15 @@ interface DiggerCardProps {
   rating: number;
   reviews: number;
   image: string;
+  profileImageUrl?: string | null;
 }
 
-export const DiggerCard = ({ name, profession, expertise, rating, reviews, image }: DiggerCardProps) => {
+export const DiggerCard = ({ name, profession, expertise, rating, reviews, image, profileImageUrl }: DiggerCardProps) => {
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-hover)] border-border/50">
       <div className="relative h-48 overflow-hidden">
         <OptimizedImage
-          src={image} 
+          src={profileImageUrl || image} 
           alt={name}
           width={400}
           height={300}
