@@ -864,8 +864,8 @@ export default function Pricing() {
                             );
                           })}
                         </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">
+                        <tr className="border-b border-border/50 bg-red-50 dark:bg-red-950/20">
+                          <td className="py-3 px-4 font-semibold text-red-700 dark:text-red-400">
                             <div className="flex items-center gap-2">
                               Total Cost Per Job
                               <Tooltip>
@@ -881,7 +881,7 @@ export default function Pricing() {
                           {calculateInteractiveCosts().map((result) => {
                             const costPerJob = calculatedAwards > 0 ? result.total / calculatedAwards : 0;
                             return (
-                              <td key={result.name} className="text-right py-3 px-4">
+                              <td key={result.name} className="text-right py-3 px-4 font-semibold text-red-600">
                                 ${costPerJob.toFixed(2)}
                               </td>
                             );
@@ -932,8 +932,8 @@ export default function Pricing() {
                             );
                           })}
                         </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">
+                        <tr className="border-b border-border/50 bg-blue-50 dark:bg-blue-950/20">
+                          <td className="py-3 px-4 font-semibold text-blue-700 dark:text-blue-400">
                             <div className="flex items-center gap-2">
                               Profit or (Loss) per Job
                               <Tooltip>
@@ -954,7 +954,7 @@ export default function Pricing() {
                             const profitPerJob = calculatedAwards > 0 ? totalProfit / calculatedAwards : 0;
                             const isLoss = profitPerJob < 0;
                             return (
-                              <td key={result.name} className={`text-right py-3 px-4 ${isLoss ? 'text-red-600 font-semibold' : ''}`}>
+                              <td key={result.name} className={`text-right py-3 px-4 font-semibold ${isLoss ? 'text-red-600' : 'text-blue-600'}`}>
                                 {isLoss ? `($${Math.abs(profitPerJob).toFixed(2)})` : `$${profitPerJob.toFixed(2)}`}
                               </td>
                             );
