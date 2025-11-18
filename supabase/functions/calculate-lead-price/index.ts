@@ -57,16 +57,16 @@ serve(async (req) => {
     // Calculate lead cost based on pricing model
     // For all pricing models, upfront cost is tier-based only
     // Hourly rate is charged separately when lead is awarded
-    let leadCost = 5; // Default: free tier ($5 per lead)
+    let leadCost = 60; // Default: free tier ($60 per lead)
     let isHourlyRate = false;
     
     // Get tier-based cost (this is what's charged upfront)
     if (tier === 'premium') {
       leadCost = 0;
     } else if (tier === 'pro') {
-      leadCost = 3;
+      leadCost = 40;
     } else {
-      leadCost = 5; // Free tier
+      leadCost = 60; // Free tier
     }
     
     // Log pricing model for tracking, but upfront cost is always tier-based
