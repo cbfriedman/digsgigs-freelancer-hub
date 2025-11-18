@@ -50,13 +50,23 @@ serve(async (req) => {
 
     const tier = (leadPurchase.digger_profiles.subscription_tier || 'free') as 'free' | 'pro' | 'premium';
     let awardCost = 0;
+    let freeEstimateCredit = 0;
 
-    // Calculate award cost based on pricing model and tier
+    // Check if this lead was purchased as a free estimate (to apply rebate)
+    const freeEstimatePricing = { free: 150, pro: 100, premium: 50 };
+    const wasFreeEstimate = leadPurchase.purchase_price === freeEstimatePricing[tier];
+    
+    if (wasFreeEstimate) {
+      freeEstimateCredit = leadPurchase.purchase_price;
+      logStep("Free estimate detected - will apply rebate", { freeEstimateCredit });
+    }
+
+    // Calculate base award cost based on pricing model and tier
     if (pricingModel === 'fixed' && projectAmount) {
-      // Fixed price: Flat award fee of $60/$40/$0
-      const awardFees = { free: 60, pro: 40, premium: 0 };
-      awardCost = awardFees[tier];
-      logStep("Fixed price award cost calculated", { awardCost, fee: awardFees[tier] });
+      // Fixed price: Percentage-based award fee (10%/6%/3%)
+      const awardFeePercentages = { free: 0.10, pro: 0.06, premium: 0.03 };
+      awardCost = projectAmount * awardFeePercentages[tier];
+      logStep("Fixed price award cost calculated", { awardCost, percentage: awardFeePercentages[tier] * 100 });
     } else if (pricingModel === 'hourly') {
       // Hourly: 3x/2x/1x average hourly rate
       const hourlyMin = leadPurchase.digger_profiles.hourly_rate_min || 0;
@@ -67,10 +77,15 @@ serve(async (req) => {
       awardCost = averageRate * multipliers[tier];
       logStep("Hourly award cost calculated", { awardCost, averageRate, multiplier: multipliers[tier] });
     } else if (pricingModel === 'free_estimate') {
-      // Free estimate cost: $60/$40/$0 based on tier
-      const freeEstimateFees = { free: 60, pro: 40, premium: 0 };
-      awardCost = freeEstimateFees[tier];
+      // Free estimate: Use the new pricing structure
+      awardCost = freeEstimatePricing[tier];
       logStep("Free estimate cost calculated", { awardCost });
+    }
+
+    // Apply rebate if free estimate was already paid
+    if (freeEstimateCredit > 0) {
+      awardCost = Math.max(0, awardCost - freeEstimateCredit);
+      logStep("Rebate applied", { originalCost: awardCost + freeEstimateCredit, rebate: freeEstimateCredit, finalCost: awardCost });
     }
 
     // Store award cost in metadata (we'll add a metadata field if needed)
@@ -78,6 +93,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true,
       awardCost,
+      freeEstimateCredit,
+      rebateApplied: freeEstimateCredit > 0,
       tier,
       pricingModel,
       leadPurchaseId
