@@ -50,7 +50,7 @@ export const useCommissionCalculator = () => {
     minimumFee: number;
   } => {
     // Contract award fees (percentage-based)
-    const awardFeePercentages = { free: 0.10, pro: 0.06, premium: 0.03 };
+    const awardFeePercentages = { free: 0.12, pro: 0.08, premium: 0.03 };
     const commissionAmount = totalAmount * awardFeePercentages[tier];
     const diggerPayout = totalAmount - commissionAmount;
 

@@ -84,7 +84,7 @@ serve(async (req) => {
       // Calculate current costs
       const leadCosts = { free: 5, pro: 3, premium: 0 };
       const commissions = { free: 0.09, pro: 0.06, premium: 0 };
-      const escrowFees = { free: 0.10, pro: 0.06, premium: 0.03 };
+      const escrowFees = { free: 0.12, pro: 0.08, premium: 0.03 };
       const subscriptions = { free: 0, pro: 99, premium: 599 };
 
       const currentLeadCost = monthlyLeads * leadCosts[tier as keyof typeof leadCosts];

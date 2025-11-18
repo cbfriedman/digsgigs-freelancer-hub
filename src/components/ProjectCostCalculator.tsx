@@ -26,8 +26,8 @@ export default function ProjectCostCalculator() {
 
   // Contract award fee percentages
   const contractAwardFees = {
-    free: 0.10, // 10%
-    pro: 0.06,  // 6%
+    free: 0.12, // 12%
+    pro: 0.08,  // 8%
     premium: 0.03, // 3%
   };
 

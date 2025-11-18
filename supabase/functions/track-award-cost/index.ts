@@ -63,8 +63,8 @@ serve(async (req) => {
 
     // Calculate base award cost based on pricing model and tier
     if (pricingModel === 'fixed' && projectAmount) {
-      // Fixed price: Percentage-based award fee (10%/6%/3%)
-      const awardFeePercentages = { free: 0.10, pro: 0.06, premium: 0.03 };
+      // Fixed price: Percentage-based award fee (12%/8%/3%)
+      const awardFeePercentages = { free: 0.12, pro: 0.08, premium: 0.03 };
       awardCost = projectAmount * awardFeePercentages[tier];
       logStep("Fixed price award cost calculated", { awardCost, percentage: awardFeePercentages[tier] * 100 });
     } else if (pricingModel === 'hourly') {

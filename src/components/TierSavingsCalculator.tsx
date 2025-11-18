@@ -31,7 +31,7 @@ export const TierSavingsCalculator = () => {
   const calculateTierCosts = (tier: 'free' | 'pro' | 'premium') => {
     const leadCosts = { free: 20, pro: 10, premium: 5 };
     const clickCosts = { free: 75, pro: 50, premium: 25 };
-    const contractAwardFees = { free: 0.10, pro: 0.06, premium: 0.03 };
+    const contractAwardFees = { free: 0.12, pro: 0.08, premium: 0.03 };
     const subscriptions = { free: 0, pro: 99, premium: 599 };
 
     const clickCost = clicksNeeded * clickCosts[tier];
