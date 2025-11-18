@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DiggerRegistration from "./pages/DiggerRegistration";
@@ -47,12 +48,31 @@ import EscrowDashboard from "./pages/EscrowDashboard";
 
 const queryClient = new QueryClient();
 
+// Global router guard to detect recovery/error parameters and redirect to /auth
+const AuthRecoveryGuard = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    
+    // Check if URL contains recovery or error parameters
+    if ((hash.includes('type=recovery') || hash.includes('error=')) && location.pathname !== '/auth') {
+      // Redirect to /auth while preserving the hash
+      navigate('/auth' + hash, { replace: true });
+    }
+  }, [navigate, location]);
+
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthRecoveryGuard />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
