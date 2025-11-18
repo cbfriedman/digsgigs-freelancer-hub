@@ -15,6 +15,7 @@ import { Loader2, Tag, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DiggerProfilePreview } from "@/components/DiggerProfilePreview";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
@@ -34,6 +35,7 @@ const DiggerRegistration = () => {
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const [customProfession, setCustomProfession] = useState("");
   const [pricingModel, setPricingModel] = useState<string>("commission");
+  const [offersFreEstimates, setOffersFreEstimates] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string>("");
@@ -211,7 +213,7 @@ const DiggerRegistration = () => {
         keywords: keywords.length > 0 ? keywords : null,
         custom_occupation_title: customProfession.trim() || null,
         pricing_model: pricingModel,
-        offers_free_estimates: pricingModel === 'free_estimates',
+        offers_free_estimates: offersFreEstimates,
         profile_image_url: profileImageUrl,
         work_photos: workPhotoUrls.length > 0 ? workPhotoUrls : null,
       });
@@ -542,19 +544,24 @@ const DiggerRegistration = () => {
                     </p>
                   </div>
                 </div>
-
-                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                  <RadioGroupItem value="free_estimates" id="free_estimates" className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor="free_estimates" className="font-semibold cursor-pointer">
-                      Free Estimates Only
-                    </Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      No upfront cost for leads. Earn by providing free estimates to potential clients.
-                    </p>
-                  </div>
-                </div>
               </RadioGroup>
+
+              <div className="flex items-start space-x-3 p-4 mt-4 rounded-lg border bg-accent/30 hover:bg-accent/50 transition-colors">
+                <Checkbox 
+                  id="free_estimates" 
+                  checked={offersFreEstimates}
+                  onCheckedChange={(checked) => setOffersFreEstimates(checked === true)}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="free_estimates" className="font-semibold cursor-pointer">
+                    Available for Free Estimates
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Free Estimate Charges: $150/$100/$50 (will be rebated against Awards of $5,000 or more, excluding hourly contracts)
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
