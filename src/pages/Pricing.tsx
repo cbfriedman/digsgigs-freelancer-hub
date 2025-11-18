@@ -655,6 +655,79 @@ export default function Pricing() {
                             </td>
                           ))}
                         </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Award Fee
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Commission percentage charged on each awarded contract. Free: 10%, Pro: 6%, Premium: 3%.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
+                          {Object.entries(TIERS).map(([key, tier]) => (
+                            <td key={key} className="text-right py-3 px-4">
+                              {tier.contractAwardFee}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Total Award Fee
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Total commission amount based on your awarded contracts (Award Fee % × Job Value × Jobs Awarded).</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
+                          {Object.entries(TIERS).map(([key, tier]) => {
+                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
+                            const totalAwardFee = calculatedJobs * interactiveJobValue * tier.contractAwardFeeValue;
+                            return (
+                              <td key={key} className="text-right py-3 px-4">
+                                ${totalAwardFee.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Deduct for Free Estimate Rebate
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Rebate of the free estimate charge for contracts of $5,000 or more. Not applicable for hourly contracts.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
+                          {Object.entries(TIERS).map(([key, tier]) => {
+                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
+                            const freeEstimateCost = tier.name === 'Free' ? 150 : tier.name === 'Pro' ? 100 : 50;
+                            const rebate = interactiveJobValue >= 5000 ? -(calculatedJobs * freeEstimateCost) : 0;
+                            return (
+                              <td key={key} className="text-right py-3 px-4">
+                                {rebate === 0 ? '$0.00' : (
+                                  <span className="text-green-600 font-semibold">
+                                    ${rebate.toFixed(2)}
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
                         <tr className="border-b-2 border-border bg-red-50 dark:bg-red-950/20">
                           <td className="py-4 px-4 font-bold text-lg text-red-700 dark:text-red-400">
                             <div className="flex items-center gap-2">
