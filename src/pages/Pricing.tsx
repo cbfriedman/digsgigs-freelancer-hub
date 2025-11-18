@@ -102,7 +102,7 @@ export default function Pricing() {
   const { user, isDigger, subscriptionStatus, loading: authLoading, checkSubscription } = useAuth();
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [interactiveLeads, setInteractiveLeads] = useState(50);
-  const [interactiveJobValue, setInteractiveJobValue] = useState(2000);
+  const [interactiveJobValue, setInteractiveJobValue] = useState(5000);
   const [conversionRate, setConversionRate] = useState(20);
   const [showResults, setShowResults] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -509,9 +509,24 @@ export default function Pricing() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-background z-50">
-                        {[500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 10000].map(num => (
-                          <SelectItem key={num} value={num.toString()}>${num.toLocaleString()}</SelectItem>
-                        ))}
+                        {(() => {
+                          const revenueOptions = [];
+                          // $1,000 increments from $5,000 to $10,000
+                          for (let i = 5000; i <= 10000; i += 1000) {
+                            revenueOptions.push(i);
+                          }
+                          // $5,000 increments from $15,000 to $100,000
+                          for (let i = 15000; i <= 100000; i += 5000) {
+                            revenueOptions.push(i);
+                          }
+                          // $50,000 increments from $150,000 to $1,000,000
+                          for (let i = 150000; i <= 1000000; i += 50000) {
+                            revenueOptions.push(i);
+                          }
+                          return revenueOptions.map(num => (
+                            <SelectItem key={num} value={num.toString()}>${num.toLocaleString()}</SelectItem>
+                          ));
+                        })()}
                       </SelectContent>
                     </Select>
                   </div>
