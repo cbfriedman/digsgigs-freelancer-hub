@@ -14,6 +14,7 @@ import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { generateLocalBusinessSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface Reference {
   id: string;
@@ -460,15 +461,18 @@ const DiggerDetail = () => {
                   <>
                     <Separator className="my-6" />
                     <div>
-                      <h2 className="text-lg font-semibold mb-3">Past Work</h2>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <h2 className="text-lg font-semibold mb-3">Work Samples</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {digger.work_photos.map((photo, idx) => (
-                          <img
-                            key={idx}
-                            src={photo}
-                            alt={`Work sample ${idx + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border border-border"
-                          />
+                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
+                            <OptimizedImage
+                              src={photo}
+                              alt={`Work sample ${idx + 1} by ${digger.business_name}`}
+                              width={300}
+                              height={300}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                            />
+                          </div>
                         ))}
                       </div>
                     </div>
