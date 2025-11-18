@@ -4,14 +4,19 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator, TrendingUp, TrendingDown } from "lucide-react";
+import { Calculator, TrendingUp, TrendingDown, AlertCircle } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 
 export default function ProjectCostCalculator() {
   const [projectBudget, setProjectBudget] = useState(5000);
   const [hourlyRate, setHourlyRate] = useState(75);
   const [estimatedHours, setEstimatedHours] = useState(67); // Default to match $5000 at $75/hr
   const [subscriptionTier, setSubscriptionTier] = useState("pro");
+  const [freeEstimatePaid, setFreeEstimatePaid] = useState(false);
+
+  const { calculateFreeEstimateRebate, calculateFreeEstimateCost } = useCommissionCalculator();
 
   const subscriptionCosts = {
     free: 0,
@@ -26,11 +31,29 @@ export default function ProjectCostCalculator() {
     premium: 0.03, // 3%
   };
 
+  // Free estimate rebate calculations
+  const freeEstimateCost = calculateFreeEstimateCost(subscriptionTier as 'free' | 'pro' | 'premium');
+  
+  const fixedPriceRebate = calculateFreeEstimateRebate(
+    projectBudget,
+    'fixed',
+    subscriptionTier as 'free' | 'pro' | 'premium',
+    freeEstimatePaid
+  );
+
+  const hourlyRebate = calculateFreeEstimateRebate(
+    hourlyRate * estimatedHours,
+    'hourly',
+    subscriptionTier as 'free' | 'pro' | 'premium',
+    freeEstimatePaid
+  );
+
   // Fixed-Price Calculations
   const fixedPriceSubtotal = projectBudget;
   const contractAwardFee = projectBudget * contractAwardFees[subscriptionTier as keyof typeof contractAwardFees];
   const escrowProcessingFee = Math.max(10, projectBudget * 0.05); // 5% with $10 min
-  const fixedPriceTotal = fixedPriceSubtotal + contractAwardFee + escrowProcessingFee;
+  const fixedPriceAwardFeeAfterRebate = Math.max(0, contractAwardFee - fixedPriceRebate.rebateAmount);
+  const fixedPriceTotal = fixedPriceSubtotal + fixedPriceAwardFeeAfterRebate + escrowProcessingFee;
 
   // Hourly Rate Calculations
   const hourlyWorkCost = hourlyRate * estimatedHours;
@@ -38,6 +61,7 @@ export default function ProjectCostCalculator() {
   const hourlyMultipliers = { free: 3, pro: 2, premium: 1 };
   const hourlyAwardUpcharge = hourlyRate * hourlyMultipliers[subscriptionTier as keyof typeof hourlyMultipliers];
   const hourlyEscrowFee = Math.max(10, hourlyWorkCost * 0.05); // 5% with $10 min
+  // Note: No rebate applied for hourly as per new rules
   const hourlyTotal = hourlyWorkCost + subscriptionFee + hourlyAwardUpcharge + hourlyEscrowFee;
 
   // Comparison
@@ -130,7 +154,7 @@ export default function ProjectCostCalculator() {
                       />
                     </div>
 
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                       <Label htmlFor="subscription">Your Subscription Tier</Label>
                       <Select value={subscriptionTier} onValueChange={setSubscriptionTier}>
                         <SelectTrigger id="subscription">
@@ -143,11 +167,43 @@ export default function ProjectCostCalculator() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="freeEstimate"
+                          checked={freeEstimatePaid}
+                          onChange={(e) => setFreeEstimatePaid(e.target.checked)}
+                          className="rounded"
+                        />
+                        <Label htmlFor="freeEstimate" className="cursor-pointer">
+                          Previously paid for Free Estimate (${freeEstimateCost})
+                        </Label>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Rebate Information */}
+          {freeEstimatePaid && (
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Free Estimate Rebate Rules:</strong> Rebates are only available for fixed-price contracts of $5,000 or more. 
+                No rebates are available for hourly rate contracts.
+                {fixedPriceRebate.rebateApplied && (
+                  <span className="text-green-600 font-medium"> ✓ Your fixed-price contract qualifies for a ${fixedPriceRebate.rebateAmount} rebate!</span>
+                )}
+                {!fixedPriceRebate.rebateApplied && fixedPriceRebate.rebateReason && (
+                  <span className="text-muted-foreground"> • {fixedPriceRebate.rebateReason}</span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Results Section */}
           <div className="grid md:grid-cols-2 gap-6">
@@ -175,6 +231,12 @@ export default function ProjectCostCalculator() {
                     <span className="text-muted-foreground">Contract Award Fee ({(contractAwardFees[subscriptionTier as keyof typeof contractAwardFees] * 100)}%)</span>
                     <span className="font-medium">${contractAwardFee.toFixed(0)}</span>
                   </div>
+                  {fixedPriceRebate.rebateApplied && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Free Estimate Rebate</span>
+                      <span className="font-medium">-${fixedPriceRebate.rebateAmount}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10)</span>
                     <span className="font-medium">${escrowProcessingFee.toFixed(0)}</span>
@@ -193,6 +255,7 @@ export default function ProjectCostCalculator() {
                     <li>✓ Escrow protection for both parties</li>
                     <li>✓ Milestone-based payments</li>
                     <li>✓ Clear scope and deliverables</li>
+                    {projectBudget >= 5000 && <li className="text-green-600 font-medium">✓ Eligible for free estimate rebate ($5,000+)</li>}
                   </ul>
                 </div>
               </CardContent>
@@ -226,6 +289,12 @@ export default function ProjectCostCalculator() {
                     <span className="text-muted-foreground">Hourly Award Upcharge ({hourlyMultipliers[subscriptionTier as keyof typeof hourlyMultipliers]}x avg rate)</span>
                     <span className="font-medium">${hourlyAwardUpcharge.toFixed(0)}</span>
                   </div>
+                  {freeEstimatePaid && (
+                    <div className="flex justify-between text-sm text-muted-foreground italic">
+                      <span>Free Estimate Rebate</span>
+                      <span>Not available (hourly)</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10)</span>
                     <span className="font-medium">${hourlyEscrowFee.toFixed(0)}</span>
@@ -243,7 +312,7 @@ export default function ProjectCostCalculator() {
                     <li>✓ Pay only for time worked</li>
                     <li>✓ Flexible scope adjustments</li>
                     <li>✓ Easier for ongoing projects</li>
-                    <li>✓ No escrow fees</li>
+                    <li>✓ No free estimate rebates available</li>
                   </ul>
                 </div>
               </CardContent>
