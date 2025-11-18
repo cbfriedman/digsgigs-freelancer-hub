@@ -109,7 +109,6 @@ export default function Pricing() {
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [interactiveLeads, setInteractiveLeads] = useState(50);
   const [interactiveJobValue, setInteractiveJobValue] = useState(5000);
-  const [customRevenue, setCustomRevenue] = useState("");
   const [leadsToClicksRate, setLeadsToClicksRate] = useState(25);
   const [clicksToAwardRate, setClicksToAwardRate] = useState(25);
   const [showResults, setShowResults] = useState(false);
@@ -553,51 +552,17 @@ export default function Pricing() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Average Revenues per job</Label>
-                    <Select 
-                      value={interactiveJobValue.toString()} 
-                      onValueChange={(v) => setInteractiveJobValue(Number(v))}
-                    >
-                      <SelectTrigger className="bg-background">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50">
-                        {(() => {
-                          const revenueOptions = [];
-                          // $100 increments from $100 to $1,000
-                          for (let i = 100; i <= 1000; i += 100) {
-                            revenueOptions.push(i);
-                          }
-                          // $1,000 increments from $2,000 to $10,000
-                          for (let i = 2000; i <= 10000; i += 1000) {
-                            revenueOptions.push(i);
-                          }
-                          // $5,000 increments from $15,000 to $100,000
-                          for (let i = 15000; i <= 100000; i += 5000) {
-                            revenueOptions.push(i);
-                          }
-                          return revenueOptions.map(num => (
-                            <SelectItem key={num} value={num.toString()}>${num.toLocaleString()}</SelectItem>
-                          ));
-                        })()}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="customRevenue">Enter Average Contract Amount</Label>
+                    <Label htmlFor="averageRevenue">Average Revenue per Job</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                       <input
-                        id="customRevenue"
+                        id="averageRevenue"
                         type="number"
-                        placeholder="Enter custom amount"
-                        value={customRevenue}
+                        placeholder="Enter amount"
+                        value={interactiveJobValue}
                         onChange={(e) => {
-                          setCustomRevenue(e.target.value);
-                          if (e.target.value && Number(e.target.value) > 0) {
-                            setInteractiveJobValue(Number(e.target.value));
-                          }
+                          const value = Number(e.target.value);
+                          setInteractiveJobValue(value > 0 ? value : 0);
                         }}
                         className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-7 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
