@@ -526,7 +526,7 @@ const DiggerRegistration = () => {
                       Time and Materials (Hourly)
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Upfront: Free ${leadCostFree}, Pro ${leadCostPro}, Premium ${leadCostPremium} + 3x/2x/1x your average hourly rate when awarded. No commission on completed work.
+                      Lead Fee $60/$40/$20 + Award fee = 3x/2x/1x your average hourly rate + 10%/6%/3% Escrow fee
                     </p>
                   </div>
                 </div>
