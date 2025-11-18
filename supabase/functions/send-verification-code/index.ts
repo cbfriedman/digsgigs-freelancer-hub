@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")?.trim();
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -95,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!emailResponse.ok) {
       const err = await emailResponse.text();
       console.error("Resend API error:", err);
-      throw new Error(`Failed to send email: ${emailResponse.status}`);
+      throw new Error(`Failed to send email: ${emailResponse.status} - ${err}`);
     }
 
     const emailJson = await emailResponse.json();
