@@ -108,7 +108,7 @@ export default function Pricing() {
   const { user, isDigger, subscriptionStatus, loading: authLoading, checkSubscription } = useAuth();
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [interactiveLeads, setInteractiveLeads] = useState(50);
-  const [interactiveJobValue, setInteractiveJobValue] = useState(5000);
+  const [interactiveJobValue, setInteractiveJobValue] = useState<number | string>(5000);
   const [leadsToClicksRate, setLeadsToClicksRate] = useState(25);
   const [clicksToAwardRate, setClicksToAwardRate] = useState(25);
   const [showResults, setShowResults] = useState(false);
@@ -116,6 +116,10 @@ export default function Pricing() {
   // Calculate clicks and awards
   const calculatedClicks = Math.round(interactiveLeads * (leadsToClicksRate / 100));
   const calculatedAwards = Math.round(calculatedClicks * (clicksToAwardRate / 100));
+  
+  // Convert interactiveJobValue to number for calculations
+  const jobValueNumber = typeof interactiveJobValue === 'string' ? (interactiveJobValue === '' ? 0 : Number(interactiveJobValue)) : interactiveJobValue;
+  
   const [refreshing, setRefreshing] = useState(false);
   const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
   const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
@@ -561,8 +565,8 @@ export default function Pricing() {
                         placeholder="Enter amount"
                         value={interactiveJobValue}
                         onChange={(e) => {
-                          const value = Number(e.target.value);
-                          setInteractiveJobValue(value > 0 ? value : 0);
+                          const value = e.target.value;
+                          setInteractiveJobValue(value === "" ? "" : Number(value));
                         }}
                         className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-7 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
@@ -600,7 +604,7 @@ export default function Pricing() {
                             Total Estimated Revenues
                           </td>
                           {calculateInteractiveCosts().map((result) => {
-                            const totalRevenue = calculatedAwards * interactiveJobValue;
+                            const totalRevenue = calculatedAwards * jobValueNumber;
                             return (
                               <td key={result.name} className="text-right py-4 px-4 font-bold text-lg text-green-600">
                                 ${totalRevenue.toFixed(2)}
@@ -824,7 +828,7 @@ export default function Pricing() {
                             </div>
                           </td>
                           {Object.entries(TIERS).map(([key, tier]) => {
-                            const totalAwardFee = calculatedAwards * interactiveJobValue * tier.contractAwardFeeValue;
+                            const totalAwardFee = calculatedAwards * jobValueNumber * tier.contractAwardFeeValue;
                             return (
                               <td key={key} className="text-right py-3 px-4">
                                 ${totalAwardFee.toFixed(2)}
@@ -848,7 +852,7 @@ export default function Pricing() {
                           </td>
                           {Object.entries(TIERS).map(([key, tier]) => {
                             const freeEstimateCost = tier.name === 'Free' ? 150 : tier.name === 'Pro' ? 100 : 50;
-                            const rebate = interactiveJobValue >= 5000 ? -(calculatedAwards * freeEstimateCost) : 0;
+                            const rebate = jobValueNumber >= 5000 ? -(calculatedAwards * freeEstimateCost) : 0;
                             return (
                               <td key={key} className="text-right py-3 px-4">
                                 {rebate === 0 ? '$0.00' : (
@@ -895,7 +899,7 @@ export default function Pricing() {
                             </div>
                           </td>
                           {calculateInteractiveCosts().map((result) => {
-                            const totalRevenue = calculatedAwards * interactiveJobValue;
+                            const totalRevenue = calculatedAwards * jobValueNumber;
                             const tierData = TIERS[result.name.toLowerCase() as keyof typeof TIERS];
                             const escrowFee = totalRevenue * (tierData.escrowFeeValue / 100);
                             return (
@@ -910,7 +914,7 @@ export default function Pricing() {
                             Net Earnings
                           </td>
                           {calculateInteractiveCosts().map((result) => {
-                            const totalRevenue = calculatedAwards * interactiveJobValue;
+                            const totalRevenue = calculatedAwards * jobValueNumber;
                             const tierData = TIERS[result.name.toLowerCase() as keyof typeof TIERS];
                             const escrowFee = totalRevenue * (tierData.escrowFeeValue / 100);
                             const netEarnings = totalRevenue - result.total - escrowFee;
