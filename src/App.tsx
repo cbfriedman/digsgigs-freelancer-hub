@@ -43,6 +43,7 @@ import BlogPost from "./pages/BlogPost";
 import AdminBlog from "./pages/AdminBlog";
 import Sitemap from "./pages/Sitemap";
 import SitemapXML from "./pages/SitemapXML";
+import DiggerSubscription from "./pages/DiggerSubscription";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
@@ -125,6 +126,7 @@ const App = () => (
           <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/sitemap.xml" element={<SitemapXML />} />
           <Route path="/escrow-dashboard" element={<EscrowDashboard />} />
+          <Route path="/digger-subscription" element={<DiggerSubscription />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
