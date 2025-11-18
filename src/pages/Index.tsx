@@ -399,17 +399,17 @@ const Index = () => {
                     Build My Digs
                   </Button>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mt-4">
                   <div className="h-px flex-1 bg-border"></div>
                   <span className="text-sm text-muted-foreground">Try without signing up</span>
                   <div className="h-px flex-1 bg-border"></div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-3">
                   <Button 
                     variant="outline" 
                     size="sm" 
                     className="text-sm w-full sm:w-auto"
-                    onClick={() => navigate("/gig-registration-demo")}
+                    onClick={() => navigate("/pre-demo-registration")}
                   >
                     Post Gig Demo
                   </Button>
@@ -417,7 +417,7 @@ const Index = () => {
                     variant="outline" 
                     size="sm" 
                     className="text-sm w-full sm:w-auto"
-                    onClick={() => navigate("/digger-registration-demo")}
+                    onClick={() => navigate("/pre-demo-registration?type=digger")}
                   >
                     Digger Registration Demo
                   </Button>
