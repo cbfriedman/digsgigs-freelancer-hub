@@ -18,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DiggerProfilePreview } from "@/components/DiggerProfilePreview";
 import { DiggerOnboardingTour } from "@/components/DiggerOnboardingTour";
+import { BioGenerator } from "@/components/BioGenerator";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
 
@@ -468,8 +469,8 @@ const DiggerRegistration = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
+            <div className="space-y-3">
+              <Label htmlFor="bio">About Your Services</Label>
               <Textarea
                 id="bio"
                 value={bio}
@@ -492,6 +493,11 @@ const DiggerRegistration = () => {
                   </p>
                 </Card>
               )}
+              <BioGenerator 
+                profession={profession || customProfession}
+                currentBio={bio}
+                onBioGenerated={setBio}
+              />
             </div>
 
             <div className="space-y-2">
