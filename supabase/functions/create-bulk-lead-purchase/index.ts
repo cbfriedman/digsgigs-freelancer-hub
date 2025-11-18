@@ -34,10 +34,10 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
-    // Get digger profile with hourly rate
+    // Get digger profile with hourly rate and subscription tier
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from("digger_profiles")
-      .select("id, hourly_rate, hourly_rate_min")
+      .select("id, hourly_rate, hourly_rate_min, subscription_tier, subscription_status")
       .eq("user_id", user.id)
       .single();
 
@@ -78,6 +78,54 @@ serve(async (req) => {
     if (alreadyPurchasedIds.length > 0) {
       throw new Error(`You have already purchased leads for some of these gigs: ${alreadyPurchasedIds.join(", ")}`);
     }
+
+    // Check subscription tier - Pro and Premium get unlimited access without payment
+    const isPremiumTier = diggerProfile.subscription_tier === 'pro' || 
+                          diggerProfile.subscription_tier === 'premium';
+    const hasActiveSubscription = diggerProfile.subscription_status === 'active';
+    
+    if (isPremiumTier && hasActiveSubscription) {
+      logStep("Premium tier detected - granting free access", { 
+        tier: diggerProfile.subscription_tier 
+      });
+
+      // Create lead purchases directly without payment
+      const leadPurchases = gigs.map(gig => ({
+        digger_id: diggerProfile.id,
+        gig_id: gig.id,
+        consumer_id: gig.consumer_id,
+        purchase_price: 0,
+        amount_paid: 0,
+        status: 'completed',
+        stripe_payment_id: null,
+      }));
+
+      const { error: insertError } = await supabaseClient
+        .from("lead_purchases")
+        .insert(leadPurchases);
+
+      if (insertError) {
+        logStep("Error creating lead purchases", { error: insertError });
+        throw new Error("Failed to grant lead access");
+      }
+
+      logStep("Lead purchases created successfully", { count: leadPurchases.length });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Leads granted successfully",
+          count: leadPurchases.length
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
+    // Free tier - proceed with Stripe payment
+    logStep("Free tier - proceeding with Stripe checkout");
 
     // Calculate prices for each lead (hourly rate if available, else budget-based)
     const lineItems = gigs.map(gig => {

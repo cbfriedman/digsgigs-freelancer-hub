@@ -27,6 +27,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [diggerProfile, setDiggerProfile] = useState<any>(null);
   const navigate = useNavigate();
+  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'premium'>('free');
 
   useEffect(() => {
     const loadDiggerProfile = async () => {
@@ -35,11 +36,15 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
 
       const { data } = await supabase
         .from('digger_profiles')
-        .select('hourly_rate, hourly_rate_min')
+        .select('hourly_rate, hourly_rate_min, subscription_tier, subscription_status')
         .eq('user_id', user.id)
         .single();
 
-      setDiggerProfile(data);
+      if (data) {
+        setDiggerProfile(data);
+        const tier = data.subscription_tier as 'free' | 'pro' | 'premium';
+        setSubscriptionTier(tier || 'free');
+      }
     };
 
     if (open) {
@@ -88,6 +93,19 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
 
       if (error) throw error;
 
+      // Check if premium tier (no payment needed)
+      if (data?.success && !data?.url) {
+        clearCart();
+        toast({
+          title: "Leads Accessed Successfully!",
+          description: `${data.count} lead${data.count > 1 ? 's' : ''} unlocked with your ${subscriptionTier.toUpperCase()} subscription`,
+        });
+        onClose();
+        navigate("/my-leads");
+        return;
+      }
+
+      // Free tier - redirect to Stripe checkout
       if (data?.url) {
         window.open(data.url, "_blank");
         toast({
@@ -119,9 +137,17 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                 {cartCount} {cartCount === 1 ? "item" : "items"}
               </Badge>
             )}
+            {(subscriptionTier === 'pro' || subscriptionTier === 'premium') && (
+              <Badge variant="default" className="ml-auto bg-gradient-to-r from-primary to-primary/80">
+                {subscriptionTier.toUpperCase()}
+              </Badge>
+            )}
           </SheetTitle>
           <SheetDescription>
-            Review your selected gig leads before checkout
+            {subscriptionTier === 'pro' || subscriptionTier === 'premium'
+              ? `Access unlimited leads with your ${subscriptionTier.toUpperCase()} subscription`
+              : 'Review your selected gig leads before checkout'
+            }
           </SheetDescription>
         </SheetHeader>
 
@@ -203,9 +229,18 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">Total:</span>
                 <span className="text-2xl font-bold text-primary">
-                  ${getLeadPrice().toFixed(2)}
+                  {subscriptionTier === 'pro' || subscriptionTier === 'premium' 
+                    ? 'FREE' 
+                    : `$${getLeadPrice().toFixed(2)}`
+                  }
                 </span>
               </div>
+              
+              {(subscriptionTier === 'pro' || subscriptionTier === 'premium') && (
+                <p className="text-sm text-muted-foreground text-center">
+                  🎉 Your {subscriptionTier.toUpperCase()} subscription includes unlimited lead access
+                </p>
+              )}
               
               <SheetFooter className="flex-col gap-2 sm:flex-col">
                 <Button
@@ -214,7 +249,12 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                   className="w-full"
                   size="lg"
                 >
-                  {isProcessing ? "Processing..." : `Checkout (${cartCount} ${cartCount === 1 ? "lead" : "leads"})`}
+                  {isProcessing 
+                    ? "Processing..." 
+                    : subscriptionTier === 'pro' || subscriptionTier === 'premium'
+                      ? `Access ${cartCount} ${cartCount === 1 ? "Lead" : "Leads"} (Free)`
+                      : `Checkout (${cartCount} ${cartCount === 1 ? "lead" : "leads"})`
+                  }
                 </Button>
                 <Button
                   variant="outline"

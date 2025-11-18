@@ -52,7 +52,10 @@ serve(async (req) => {
       logStep("No digger profile found");
       return new Response(JSON.stringify({ 
         subscribed: false,
-        tier: 'free',
+        subscription_tier: 'free',
+        subscription_status: 'inactive',
+        subscription_end: null,
+        product_id: null,
         commission_rate: 0.09
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -78,7 +81,10 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         subscribed: false,
-        tier: 'free',
+        subscription_tier: 'free',
+        subscription_status: 'inactive',
+        subscription_end: null,
+        product_id: null,
         commission_rate: 0.09
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -110,7 +116,10 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         subscribed: false,
-        tier: 'free',
+        subscription_tier: 'free',
+        subscription_status: 'inactive',
+        subscription_end: null,
+        product_id: null,
         commission_rate: 0.09
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -151,9 +160,11 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       subscribed: true,
-      tier,
-      commission_rate: commissionRate,
-      subscription_end: subscriptionEnd
+      subscription_tier: tier,
+      subscription_status: 'active',
+      subscription_end: subscriptionEnd,
+      product_id: productId,
+      commission_rate: commissionRate
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
