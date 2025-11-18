@@ -20,14 +20,16 @@ export const TierSavingsCalculator = () => {
   const calculateTierCosts = (tier: 'free' | 'pro' | 'premium') => {
     const leadCosts = { free: 5, pro: 3, premium: 0 };
     const commissions = { free: 0.09, pro: 0.06, premium: 0 };
+    const escrowFees = { free: 0.10, pro: 0.06, premium: 0.03 };
     const subscriptions = { free: 0, pro: 99, premium: 599 };
 
     const leadCost = leads * leadCosts[tier];
     const commission = monthlyRevenue * commissions[tier];
+    const escrowFee = monthlyRevenue * escrowFees[tier];
     const subscription = subscriptions[tier];
-    const total = leadCost + commission + subscription;
+    const total = leadCost + commission + escrowFee + subscription;
 
-    return { leadCost, commission, subscription, total };
+    return { leadCost, commission, escrowFee, subscription, total };
   };
 
   const freeCosts = calculateTierCosts('free');
@@ -112,6 +114,10 @@ export const TierSavingsCalculator = () => {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Commission:</span>
                       <span>${tier.costs.commission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Escrow Fees:</span>
+                      <span>${tier.costs.escrowFee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-semibold pt-2 border-t">
                       <span>Total Cost:</span>

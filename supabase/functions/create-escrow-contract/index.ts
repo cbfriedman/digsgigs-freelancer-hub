@@ -38,7 +38,17 @@ serve(async (req) => {
     if (bid.status !== "accepted") throw new Error("Bid must be accepted first");
 
     const totalAmount = bid.amount;
-    const platformFeePercentage = 5.0;
+    
+    // Get digger's subscription tier for escrow fee calculation
+    const { data: diggerProfile } = await supabaseClient
+      .from("digger_profiles")
+      .select("subscription_tier")
+      .eq("id", bid.digger_id)
+      .single();
+    
+    const tier = diggerProfile?.subscription_tier || 'free';
+    const escrowFeeRates = { free: 10.0, pro: 6.0, premium: 3.0 };
+    const platformFeePercentage = escrowFeeRates[tier as keyof typeof escrowFeeRates] || 10.0;
     const platformFeeAmount = totalAmount * (platformFeePercentage / 100);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
