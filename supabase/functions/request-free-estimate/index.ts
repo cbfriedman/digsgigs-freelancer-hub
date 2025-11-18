@@ -72,49 +72,25 @@ serve(async (req) => {
       throw new Error("This digger does not offer free estimates");
     }
 
-    // Check if digger is Pro or Premium - they get unlimited free estimate requests
-    if (diggerProfile.subscription_tier === 'pro' || diggerProfile.subscription_tier === 'premium') {
-      // Free for Pro/Premium members - just create the lead purchase as completed
-      const { data: purchase, error: purchaseError } = await supabaseClient
-        .from("lead_purchases")
-        .insert({
-          gig_id: gigId,
-          digger_id: diggerId,
-          consumer_id: user.id,
-          purchase_price: 0,
-          amount_paid: 0,
-          status: "completed", // Free for Pro/Premium
-        })
-        .select()
-        .single();
+    // Determine free estimate cost based on tier
+    const freeEstimatePricing = {
+      free: 150,
+      pro: 100,
+      premium: 50
+    };
+    
+    const tier = diggerProfile.subscription_tier || 'free';
+    const estimateCost = freeEstimatePricing[tier as keyof typeof freeEstimatePricing];
 
-      if (purchaseError) {
-        throw new Error(`Failed to create estimate request: ${purchaseError.message}`);
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          message: "Estimate requested! The digger can now contact you at no charge.",
-          purchaseId: purchase.id,
-          free: true
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
-    }
-
-    // Create pending lead purchase for Free tier diggers
+    // Create pending lead purchase (digger pays the free estimate cost)
     const { data: purchase, error: purchaseError } = await supabaseClient
       .from("lead_purchases")
       .insert({
         gig_id: gigId,
         digger_id: diggerId,
         consumer_id: user.id,
-        purchase_price: 100,
-        amount_paid: 100,
+        purchase_price: estimateCost,
+        amount_paid: estimateCost,
         status: "pending", // Digger must pay to complete
       })
       .select()
