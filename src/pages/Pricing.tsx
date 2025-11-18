@@ -345,6 +345,22 @@ export default function Pricing() {
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Cost Per Click:</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">Flat fee charged when a Gigger clicks to view your contact information. This is in addition to the Lead Cost for your tier.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <span className="font-bold text-primary">{tier.costPerClick}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
+                      <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Contract Award Fee:</span>
                         <TooltipProvider>
                           <Tooltip>
