@@ -273,15 +273,51 @@ export default function Pricing() {
                 <CardContent className="space-y-6">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <span className="text-sm font-medium">Lead Cost:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Lead Cost:</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">Cost to unlock contact details for each new lead/project</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <span className="font-bold text-primary">{tier.leadCost}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <span className="text-sm font-medium">Free Estimate Upcharge:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Free Estimate Upcharge:</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">Upfront cost when a consumer requests a free estimate from your profile</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <span className="text-sm font-medium">Hourly Award Upcharge:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Hourly Award Upcharge:</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">Additional charge when you win an hourly project. Free: 3 hours, Pro: 2 hours, Premium: 1 hour of your rate</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <span className="font-bold text-primary">{tier.hourlyRateCharge}</span>
                     </div>
                   </div>

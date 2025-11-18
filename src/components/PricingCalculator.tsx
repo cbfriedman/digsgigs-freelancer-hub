@@ -269,7 +269,21 @@ export default function PricingCalculator() {
                 })}
               </tr>
               <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Monthly Subscription</td>
+                <td className="py-3 px-4 text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    Monthly Subscription
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Fixed monthly subscription fee for your chosen tier</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </td>
                 {Object.entries(TIERS).map(([key, tier]) => {
                   const costs = calculateCosts(tier);
                   return (
@@ -281,7 +295,21 @@ export default function PricingCalculator() {
               </tr>
               
               <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Total cost of leads purchased</td>
+                <td className="py-3 px-4 text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    Total cost of leads purchased
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Upfront cost to unlock contact details for all leads (number of leads × lead cost)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </td>
                 {Object.entries(TIERS).map(([key, tier]) => {
                   const costs = calculateCosts(tier);
                   return (
@@ -323,7 +351,21 @@ export default function PricingCalculator() {
               </tr>
               
               <tr className="border-b border-border/50">
-                <td className="py-3 px-4 text-muted-foreground">Total Hourly Award Upcharge</td>
+                <td className="py-3 px-4 text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    Total Hourly Award Upcharge
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Total additional charges for all awarded hourly projects this month</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </td>
                 {Object.entries(TIERS).map(([key, tier]) => {
                   const costs = calculateCosts(tier);
                   return (
@@ -552,7 +594,21 @@ export default function PricingCalculator() {
                     })}
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Total Leads Cost</td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        Total Leads Cost
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Cost to unlock contact details for leads (number of leads × lead cost per tier)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </td>
                     {Object.entries(TIERS).map(([key, tier]) => {
                       const totalLeadCost = tier.leadCostValue * freeEstimateLeads;
                       return (
@@ -567,7 +623,21 @@ export default function PricingCalculator() {
                     })}
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Free Estimate Upcharge</td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        Free Estimate Upcharge
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Charge per free estimate request. Free/Pro: $100/request, Premium: FREE</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </td>
                     {Object.entries(TIERS).map(([key, tier]) => (
                       <td key={key} className="text-right py-3 px-4">
                         {tier.estimateCost === 0 ? (
@@ -589,7 +659,21 @@ export default function PricingCalculator() {
                   </tr>
                   
                   <tr className="border-b border-border/50">
-                    <td className="py-3 px-4 text-muted-foreground">Total Upfront Costs</td>
+                    <td className="py-3 px-4 text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        Total Upfront Costs
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Combined total of lead costs + free estimate upcharges for the month</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </td>
                     {Object.entries(TIERS).map(([key, tier]) => {
                       const totalLeadCost = tier.leadCostValue * freeEstimateLeads;
                       const totalEstimateCost = tier.estimateCost * freeEstimateLeads;
