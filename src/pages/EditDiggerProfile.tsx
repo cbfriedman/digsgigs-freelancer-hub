@@ -20,6 +20,7 @@ import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BioGenerator } from "@/components/BioGenerator";
+import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ const EditDiggerProfile = () => {
   const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
   const [pricingModel, setPricingModel] = useState<string>("commission");
   const [offersFreEstimates, setOffersFreEstimates] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -136,6 +138,7 @@ const EditDiggerProfile = () => {
         setHourlyRateMax(profile.hourly_rate_max);
         setPricingModel(profile.pricing_model || "commission");
         setOffersFreEstimates(profile.offers_free_estimates || false);
+        setProfileData(profile);
         
         const categoryIds = profile.digger_categories?.map((dc: any) => dc.category_id) || [];
         setSelectedCategories(categoryIds);
@@ -282,12 +285,15 @@ const EditDiggerProfile = () => {
     <div className="min-h-screen flex flex-col">
       <Navigation />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <SubscriptionBanner currentTier={subscriptionTier} />
           
           <h1 className="text-3xl font-bold mb-6">Edit Your Profile</h1>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Main Form */}
+            <div className="lg:col-span-2">
+              <form onSubmit={handleSubmit} className="space-y-6" id="profile-form">
             <div className="space-y-2">
               <Label htmlFor="businessName">Business Name *</Label>
               <Input
@@ -362,7 +368,7 @@ const EditDiggerProfile = () => {
               />
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3" id="bio">
               <Label htmlFor="bio">About Your Services</Label>
               <Textarea
                 id="bio"
@@ -393,7 +399,7 @@ const EditDiggerProfile = () => {
               />
             </div>
 
-            <div>
+            <div id="pricing">
               <Label className="text-base font-semibold">Available for *</Label>
               <p className="text-sm text-muted-foreground mb-3">Select at least one pricing option</p>
               <RadioGroup value={pricingModel} onValueChange={setPricingModel} className="space-y-4">
@@ -452,7 +458,7 @@ const EditDiggerProfile = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" id="keywords">
               <div className="flex items-center justify-between">
                 <Label htmlFor="keywords">Keywords</Label>
                 <div className="flex items-center gap-2">
@@ -517,10 +523,31 @@ const EditDiggerProfile = () => {
             </Button>
           </form>
         </div>
-      </main>
-      <Footer />
+
+        {/* Sidebar with Completion Widget */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-24">
+            {profileData && (
+              <ProfileCompletionWidget
+                profile={profileData}
+                profileId={profileId}
+                onNavigateToSection={(section) => {
+                  const element = document.getElementById(section);
+                  if (element) {
+                    element.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
+  </main>
+  <Footer />
+</div>
   );
 };
+
 
 export default EditDiggerProfile;
