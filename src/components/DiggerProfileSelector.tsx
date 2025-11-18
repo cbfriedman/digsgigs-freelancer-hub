@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, ChevronDown, User, Edit, Star } from "lucide-react";
+import { Plus, ChevronDown, User, Edit, Star, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface DiggerProfile {
@@ -130,6 +130,14 @@ export const DiggerProfileSelector = () => {
         ))}
         
         <DropdownMenuSeparator />
+        
+        <DropdownMenuItem
+          onClick={() => navigate("/my-profiles")}
+          className="cursor-pointer"
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          Manage All Profiles
+        </DropdownMenuItem>
         
         <DropdownMenuItem
           onClick={handleCreateProfile}
