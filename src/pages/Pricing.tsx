@@ -330,22 +330,6 @@ export default function Pricing() {
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Free Estimate Upcharge:</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Upfront cost when a consumer requests a free estimate from your profile</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Contract Award Fee:</span>
                         <TooltipProvider>
                           <Tooltip>
@@ -359,6 +343,22 @@ export default function Pricing() {
                         </TooltipProvider>
                       </div>
                       <span className="font-bold text-primary">{tier.contractAwardFee}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Free Estimate Upcharge:</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">Upfront cost when a consumer requests a free estimate from your profile</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
