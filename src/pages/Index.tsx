@@ -381,7 +381,7 @@ const Index = () => {
                 A two-sided marketplace built for the modern gig economy.
               </p>
               <div className="space-y-4">
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-3">
                   <Button 
                     variant="hero" 
                     size="lg" 
