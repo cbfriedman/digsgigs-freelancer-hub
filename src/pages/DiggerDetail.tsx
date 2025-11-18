@@ -504,6 +504,8 @@ const DiggerDetail = () => {
             </Card>
 
             <DiggerPricingSelector
+              diggerId={digger.id}
+              gigId={id || ''}
               pricingModel={digger.pricing_model || 'both'}
               subscriptionTier={digger.subscription_tier || 'free'}
               hourlyRateMin={digger.hourly_rate_min}
@@ -511,8 +513,7 @@ const DiggerDetail = () => {
               offersFreEstimates={digger.offers_free_estimates}
               businessName={digger.business_name}
               onSelectPricing={(model) => {
-                console.log('Selected pricing model:', model);
-                // TODO: Implement the actual request flow
+                toast.success(`Lead purchased successfully! You can now contact ${digger.business_name}`);
               }}
             />
 
