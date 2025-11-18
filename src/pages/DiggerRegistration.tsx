@@ -11,9 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
-import { Loader2, Tag } from "lucide-react";
+import { Loader2, Tag, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { DiggerProfilePreview } from "@/components/DiggerProfilePreview";
+import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
 
 const DiggerRegistration = () => {
@@ -30,6 +33,9 @@ const DiggerRegistration = () => {
   const [keywordsInput, setKeywordsInput] = useState("");
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const [customProfession, setCustomProfession] = useState("");
+  const [pricingModel, setPricingModel] = useState<string>("commission");
+  const [showPreview, setShowPreview] = useState(false);
+  const { calculateLeadCost } = useCommissionCalculator();
   
   // Parse keywords from input
   const keywords = keywordsInput
@@ -78,7 +84,7 @@ const DiggerRegistration = () => {
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePreview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -86,6 +92,12 @@ const DiggerRegistration = () => {
       toast.error("Please fill in all required fields");
       return;
     }
+
+    setShowPreview(true);
+  };
+
+  const handleApprove = async () => {
+    if (!user) return;
 
     // Check if "Other Professional Services" is selected and validate custom profession
     const otherCategorySelected = await checkOtherCategorySelected();
@@ -106,6 +118,8 @@ const DiggerRegistration = () => {
         bio: bio || null,
         keywords: keywords.length > 0 ? keywords : null,
         custom_occupation_title: customProfession.trim() || null,
+        pricing_model: pricingModel,
+        offers_free_estimates: pricingModel === 'free_estimates',
       });
 
       if (error) throw error;
@@ -210,6 +224,31 @@ const DiggerRegistration = () => {
     }
   };
 
+  if (!user) {
+    return null;
+  }
+
+  if (showPreview) {
+    return (
+      <DiggerProfilePreview
+        businessName={businessName}
+        profession={profession}
+        location={location}
+        bio={bio}
+        keywords={keywords}
+        categoryNames={categoryNames}
+        pricingModel={pricingModel}
+        onApprove={handleApprove}
+        onEdit={() => setShowPreview(false)}
+        onCancel={() => navigate("/")}
+      />
+    );
+  }
+
+  const leadCostFree = calculateLeadCost('free').leadCost;
+  const leadCostPro = calculateLeadCost('pro').leadCost;
+  const leadCostPremium = calculateLeadCost('premium').leadCost;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
@@ -217,7 +256,7 @@ const DiggerRegistration = () => {
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold mb-6">Create Your Digger Profile</h1>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handlePreview} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="businessName">Business Name *</Label>
               <Input
@@ -296,6 +335,59 @@ const DiggerRegistration = () => {
               )}
             </div>
 
+            <div>
+              <Label className="text-base font-semibold">Available for *</Label>
+              <RadioGroup value={pricingModel} onValueChange={setPricingModel} className="mt-3 space-y-4">
+                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="commission" id="commission" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="commission" className="font-semibold cursor-pointer">
+                      Fixed Price Contracts
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Free tier: ${leadCostFree}/lead + 9% commission | Pro: ${leadCostPro}/lead + 6% | Premium: ${leadCostPremium}/lead + 0%
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="hourly" id="hourly" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="hourly" className="font-semibold cursor-pointer">
+                      Time and Materials (Hourly)
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Upfront: Free ${leadCostFree}, Pro ${leadCostPro}, Premium ${leadCostPremium} + 2 hours of your rate when awarded. No commission on completed work.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="both" id="both" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="both" className="font-semibold cursor-pointer">
+                      Both Models
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Accept both fixed price and hourly contracts (recommended for construction/trades)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="free_estimates" id="free_estimates" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="free_estimates" className="font-semibold cursor-pointer">
+                      Free Estimates Only
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      No upfront cost for leads. Earn by providing free estimates to potential clients.
+                    </p>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="keywords">Keywords</Label>
@@ -344,7 +436,7 @@ const DiggerRegistration = () => {
                   Creating Profile...
                 </>
               ) : (
-                "Create Profile"
+                "Preview Profile"
               )}
             </Button>
           </form>
