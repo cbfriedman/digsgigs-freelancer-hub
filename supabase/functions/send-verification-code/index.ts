@@ -12,9 +12,8 @@ const corsHeaders = {
 };
 
 interface VerificationRequest {
-  email?: string;
-  phone?: string;
-  type: "email" | "phone";
+  email: string;
+  type: "email";
 }
 
 const generateCode = (): string => {
@@ -28,20 +27,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, phone, type }: VerificationRequest = await req.json();
+    const { email }: VerificationRequest = await req.json();
 
-    console.log("Verification request received:", { email, phone, type });
+    console.log("Email verification request received:", { email });
 
-    if (!type || (type !== "email" && type !== "phone")) {
-      throw new Error("Invalid verification type");
-    }
-
-    if (type === "email" && !email) {
-      throw new Error("Email is required for email verification");
-    }
-
-    if (type === "phone" && !phone) {
-      throw new Error("Phone is required for phone verification");
+    if (!email) {
+      throw new Error("Email is required");
     }
 
     // Generate 6-digit code
@@ -55,11 +46,11 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: verificationData, error: dbError } = await supabase
       .from("verification_codes")
       .insert({
-        email: type === "email" ? email : null,
-        phone: type === "phone" ? phone : null,
+        email,
+        phone: null,
         code,
         expires_at: expiresAt.toISOString(),
-        verification_type: type,
+        verification_type: "email",
       })
       .select()
       .single();
@@ -71,53 +62,36 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Verification code stored:", verificationData.id);
 
-    // Send verification based on type
-    if (type === "email") {
-      const emailResponse = await resend.emails.send({
-        from: "digsandgigs <noreply@digsandgigs.net>",
-        to: [email!],
-        subject: "Your Verification Code",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Verify Your Account</h2>
-            <p style="color: #666; font-size: 16px;">
-              Your verification code is:
-            </p>
-            <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0;">
-              ${code}
-            </div>
-            <p style="color: #666; font-size: 14px;">
-              This code will expire in 15 minutes.
-            </p>
-            <p style="color: #999; font-size: 12px; margin-top: 30px;">
-              If you didn't request this code, please ignore this email.
-            </p>
+    // Send email verification
+    const emailResponse = await resend.emails.send({
+      from: "digsandgigs <noreply@digsandgigs.net>",
+      to: [email],
+      subject: "Your Verification Code",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Verify Your Email Address</h2>
+          <p style="color: #666; font-size: 16px;">
+            Your verification code is:
+          </p>
+          <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0;">
+            ${code}
           </div>
-        `,
-      });
+          <p style="color: #666; font-size: 14px;">
+            This code will expire in 15 minutes.
+          </p>
+          <p style="color: #999; font-size: 12px; margin-top: 30px;">
+            If you didn't request this code, please ignore this email.
+          </p>
+        </div>
+      `,
+    });
 
-      console.log("Email sent successfully:", emailResponse);
-    } else if (type === "phone") {
-      // Phone verification would require Twilio or similar service
-      // For now, log the code (in production, this would send SMS)
-      console.log(`SMS would be sent to ${phone} with code: ${code}`);
-      
-      // Return error for now since phone verification isn't fully implemented
-      return new Response(
-        JSON.stringify({ 
-          error: "Phone verification not yet implemented. Please contact support to enable SMS verification." 
-        }),
-        {
-          status: 501,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
+    console.log("Email sent successfully:", emailResponse);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Verification code sent to ${type === "email" ? email : phone}`,
+        message: `Verification code sent to ${email}`,
         verificationId: verificationData.id
       }),
       {

@@ -20,7 +20,7 @@ const GigRegistrationDemo = () => {
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-  const [verifiedContact, setVerifiedContact] = useState<{ email?: string; phone?: string }>({});
+  const [verifiedContact, setVerifiedContact] = useState<{ email: string }>({ email: "" });
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -69,10 +69,10 @@ const GigRegistrationDemo = () => {
     }, 500);
   };
 
-  const handleVerification = (data: { email?: string; phone?: string }) => {
+  const handleVerification = (data: { email: string }) => {
     setIsVerified(true);
     setVerifiedContact(data);
-    toast.success("Verification successful! You can now post your gig.");
+    toast.success("Email verified! You can now post your gig.");
   };
 
   const handleApprove = () => {
