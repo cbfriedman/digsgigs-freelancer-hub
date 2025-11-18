@@ -13,11 +13,14 @@ import { Navigation } from "@/components/Navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { VerificationForm } from "@/components/VerificationForm";
 
 const GigRegistrationDemo = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [verifiedContact, setVerifiedContact] = useState<{ email?: string; phone?: string }>({});
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -64,6 +67,12 @@ const GigRegistrationDemo = () => {
       setLoading(false);
       setShowPreview(true);
     }, 500);
+  };
+
+  const handleVerification = (data: { email?: string; phone?: string }) => {
+    setIsVerified(true);
+    setVerifiedContact(data);
+    toast.success("Verification successful! You can now post your gig.");
   };
 
   const handleApprove = () => {
@@ -113,102 +122,33 @@ const GigRegistrationDemo = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      {/* Preview Dialog */}
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Preview Your Gig Post</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            <Alert>
-              <AlertDescription>
-                This is how your gig will appear to Diggers. Review it carefully before posting.
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
+        {!isVerified ? (
+          <>
+            <Alert className="mb-6 bg-primary/10 border-primary/30">
+              <AlertDescription className="text-center font-medium">
+                🔒 Verification Required - Please verify your contact information to continue
               </AlertDescription>
             </Alert>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <Badge variant="outline">{formData.category_id || "Uncategorized"}</Badge>
-                </div>
-                <CardTitle className="text-2xl">{formData.title}</CardTitle>
-                <CardDescription className="text-base mt-2">
-                  {formData.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">{formData.location}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-accent" />
-                    <span className="font-semibold">{formatBudget()}</span>
-                  </div>
-                  {formData.timeline && (
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{formData.timeline}</span>
-                    </div>
-                  )}
-                </div>
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="mb-6"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
 
-                {formData.deadline && (
-                  <div className="text-sm">
-                    <span className="font-semibold">Deadline:</span> {new Date(formData.deadline).toLocaleDateString()}
-                  </div>
-                )}
-
-                {formData.contact_preferences && (
-                  <div className="text-sm">
-                    <span className="font-semibold">Contact Preferences:</span>
-                    <p className="mt-1 text-muted-foreground">{formData.contact_preferences}</p>
-                  </div>
-                )}
-
-                {(formData.fixedPriceOnly || formData.openToHourly || formData.acceptFreeEstimate) && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-semibold mb-2">Proposal Preferences:</p>
-                    <div className="space-y-1">
-                      {formData.fixedPriceOnly && (
-                        <Badge variant="secondary" className="mr-2">Fixed Price Only</Badge>
-                      )}
-                      {formData.openToHourly && (
-                        <Badge variant="secondary" className="mr-2">Open to Hourly</Badge>
-                      )}
-                      {formData.acceptFreeEstimate && (
-                        <Badge variant="secondary">Free Estimates Welcome</Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button variant="outline" onClick={handleEdit}>
-                Edit Post
-              </Button>
-              <Button onClick={handleApprove}>
-                Approve & Continue
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Alert className="mb-6 bg-primary/10 border-primary/30">
-          <AlertDescription className="text-center font-medium">
-            🧪 Demo Mode - This is a preview of the gig posting form. No data will be saved.
-          </AlertDescription>
-        </Alert>
+            <VerificationForm onVerified={handleVerification} />
+          </>
+        ) : (
+          <>
+            <Alert className="mb-6 bg-primary/10 border-primary/30">
+              <AlertDescription className="text-center font-medium">
+                🧪 Demo Mode - This is a preview of the gig posting form. Fill it out to see how your gig will appear to diggers.
+              </AlertDescription>
+            </Alert>
 
         <Button
           variant="ghost"
@@ -414,7 +354,99 @@ const GigRegistrationDemo = () => {
             </form>
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Preview Your Gig Post</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <Alert>
+              <AlertDescription>
+                This is how your gig will appear to Diggers. Review it carefully before posting.
+              </AlertDescription>
+            </Alert>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <Badge variant="outline">{formData.category_id || "Uncategorized"}</Badge>
+                </div>
+                <CardTitle className="text-2xl">{formData.title}</CardTitle>
+                <CardDescription className="text-base mt-2">
+                  {formData.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{formData.location}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-accent" />
+                    <span className="font-semibold">{formatBudget()}</span>
+                  </div>
+                  {formData.timeline && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm">{formData.timeline}</span>
+                    </div>
+                  )}
+                </div>
+
+                {formData.deadline && (
+                  <div className="text-sm">
+                    <span className="font-semibold">Deadline:</span> {new Date(formData.deadline).toLocaleDateString()}
+                  </div>
+                )}
+
+                {formData.contact_preferences && (
+                  <div className="text-sm">
+                    <span className="font-semibold">Contact Preferences:</span>
+                    <p className="mt-1 text-muted-foreground">{formData.contact_preferences}</p>
+                  </div>
+                )}
+
+                {(formData.fixedPriceOnly || formData.openToHourly || formData.acceptFreeEstimate) && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-semibold mb-2">Proposal Preferences:</p>
+                    <div className="space-y-1">
+                      {formData.fixedPriceOnly && (
+                        <Badge variant="secondary" className="mr-2">Fixed Price Only</Badge>
+                      )}
+                      {formData.openToHourly && (
+                        <Badge variant="secondary" className="mr-2">Open to Hourly</Badge>
+                      )}
+                      {formData.acceptFreeEstimate && (
+                        <Badge variant="secondary">Free Estimates Welcome</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button variant="outline" onClick={handleEdit}>
+                Edit Post
+              </Button>
+              <Button onClick={handleApprove}>
+                Approve & Continue
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
