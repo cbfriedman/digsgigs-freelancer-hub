@@ -35,7 +35,7 @@ const TIERS = {
     commissionValue: 9,
     escrowFee: '10%',
     escrowFeeValue: 10,
-    freeEstimateCost: '$60',
+    freeEstimateCost: '$150',
     contractAwardFee: '10%',
     contractAwardFeeValue: 0.10,
     hourlyRateCharge: '3 hours',
@@ -58,7 +58,7 @@ const TIERS = {
     commissionValue: 6,
     escrowFee: '6%',
     escrowFeeValue: 6,
-    freeEstimateCost: '$40',
+    freeEstimateCost: '$100',
     contractAwardFee: '6%',
     contractAwardFeeValue: 0.06,
     hourlyRateCharge: '2 hours',
@@ -81,7 +81,7 @@ const TIERS = {
     commissionValue: 0,
     escrowFee: '3%',
     escrowFeeValue: 3,
-    freeEstimateCost: '$0',
+    freeEstimateCost: '$50',
     contractAwardFee: '3%',
     contractAwardFeeValue: 0.03,
     hourlyRateCharge: '1 hour',
@@ -362,7 +362,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Upfront cost when a consumer requests a free estimate from your profile</p>
+                              <p className="text-sm">Upfront cost when a consumer requests a free estimate from your profile, will be rebated against Award Fee upon award</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
