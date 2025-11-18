@@ -17,6 +17,8 @@ import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -36,6 +38,8 @@ const EditDiggerProfile = () => {
   const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
   const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
   const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
+  const [pricingModel, setPricingModel] = useState<string>("commission");
+  const [offersFreEstimates, setOffersFreEstimates] = useState(false);
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -120,6 +124,8 @@ const EditDiggerProfile = () => {
         setKeywordsInput(profile.keywords?.join(", ") || "");
         setHourlyRateMin(profile.hourly_rate_min);
         setHourlyRateMax(profile.hourly_rate_max);
+        setPricingModel(profile.pricing_model || "commission");
+        setOffersFreEstimates(profile.offers_free_estimates || false);
         
         const categoryIds = profile.digger_categories?.map((dc: any) => dc.category_id) || [];
         setSelectedCategories(categoryIds);
@@ -153,6 +159,8 @@ const EditDiggerProfile = () => {
           phone,
           bio: bio || null,
           keywords: keywords.length > 0 ? keywords : null,
+          pricing_model: pricingModel,
+          offers_free_estimates: offersFreEstimates,
         })
         .eq("id", profileId);
 
@@ -337,6 +345,64 @@ const EditDiggerProfile = () => {
                   </p>
                 </Card>
               )}
+            </div>
+
+            <div>
+              <Label className="text-base font-semibold">Available for *</Label>
+              <RadioGroup value={pricingModel} onValueChange={setPricingModel} className="mt-3 space-y-4">
+                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="commission" id="commission" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="commission" className="font-semibold cursor-pointer">
+                      Fixed Price Contracts
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Lead Cost $60/$40/$0 + Award Fee $60/$40/$0 + 10%/6%/3% escrow fee
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="hourly" id="hourly" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="hourly" className="font-semibold cursor-pointer">
+                      Time and Materials (Hourly)
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Lead Cost $60/$40/$0 + Award fee = 3x/2x/1x your average hourly rate + 10%/6%/3% escrow fee
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <RadioGroupItem value="both" id="both" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="both" className="font-semibold cursor-pointer">
+                      Both Models
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Lead Cost $60/$40/$0 + Award fee = The higher of ($60/$40/$0 OR 3x/2x/1x average hourly rate) + 10%/6%/3% escrow fee
+                    </p>
+                  </div>
+                </div>
+              </RadioGroup>
+
+              <div className="flex items-start space-x-3 p-4 mt-4 rounded-lg border bg-accent/30 hover:bg-accent/50 transition-colors">
+                <Checkbox 
+                  id="free_estimates_edit" 
+                  checked={offersFreEstimates}
+                  onCheckedChange={(checked) => setOffersFreEstimates(checked === true)}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="free_estimates_edit" className="font-semibold cursor-pointer">
+                    Available for Free Estimates
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Free Estimate Charges: $150/$100/$50 (will be rebated against Awards of $5,000 or more, excluding hourly contracts)
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
