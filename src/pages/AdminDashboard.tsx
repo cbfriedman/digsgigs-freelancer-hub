@@ -52,6 +52,7 @@ const AdminDashboard = () => {
   const [keywordRequests, setKeywordRequests] = useState<KeywordRequest[]>([]);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [checkingUpgrades, setCheckingUpgrades] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -238,6 +239,28 @@ const AdminDashboard = () => {
       });
     } finally {
       setSendingTestEmail(false);
+    }
+  };
+
+  const checkUpgradeSavings = async () => {
+    setCheckingUpgrades(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-upgrade-savings');
+
+      if (error) throw error;
+
+      toast.success("Upgrade savings check completed!", {
+        description: data?.notificationsSent 
+          ? `Sent ${data.notificationsSent} notification(s) to eligible diggers` 
+          : "No eligible diggers found"
+      });
+    } catch (error: any) {
+      console.error("Error checking upgrade savings:", error);
+      toast.error("Failed to check upgrade savings", {
+        description: error?.message || "Check console for details"
+      });
+    } finally {
+      setCheckingUpgrades(false);
     }
   };
 
@@ -488,6 +511,24 @@ const AdminDashboard = () => {
                         <>
                           <Mail className="h-4 w-4 mr-2" />
                           Test Email
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={checkUpgradeSavings}
+                      disabled={checkingUpgrades}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      {checkingUpgrades ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Checking...
+                        </>
+                      ) : (
+                        <>
+                          <TrendingUp className="h-4 w-4 mr-2" />
+                          Check Upgrade Savings
                         </>
                       )}
                     </Button>

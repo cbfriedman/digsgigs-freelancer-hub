@@ -12,6 +12,11 @@
  *   - When awarded: 3x / 2x / 1x average hourly rate
  *   - No commission on completed work
  * 
+ * - 'escrow': Tier-based escrow processing fees on milestone payments
+ *   - Free: 10% of milestone amount
+ *   - Pro: 6% of milestone amount
+ *   - Premium: 3% of milestone amount
+ * 
  * - 'both': (Construction/Trades) Combination of both models available
  */
 export const useCommissionCalculator = () => {
@@ -85,5 +90,20 @@ export const useCommissionCalculator = () => {
     return averageHourlyRate * multiplier;
   };
 
-  return { calculateLeadCost, calculateCommission, calculateHourlyAwardCost };
+  const calculateEscrowFee = (
+    amount: number,
+    tier: 'free' | 'pro' | 'premium' = 'free'
+  ): number => {
+    let feeRate = 0.10; // Default: free tier (10%)
+
+    if (tier === 'premium') {
+      feeRate = 0.03; // 3%
+    } else if (tier === 'pro') {
+      feeRate = 0.06; // 6%
+    }
+
+    return amount * feeRate;
+  };
+
+  return { calculateLeadCost, calculateCommission, calculateHourlyAwardCost, calculateEscrowFee };
 };

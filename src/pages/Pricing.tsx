@@ -33,6 +33,8 @@ const TIERS = {
     leadCostValue: 5,
     commission: '9%',
     commissionValue: 9,
+    escrowFee: '10%',
+    escrowFeeValue: 10,
     freeEstimateCost: '$5',
     hourlyRateCharge: '3 hours',
     minimumFee: 0,
@@ -49,6 +51,8 @@ const TIERS = {
     leadCostValue: 3,
     commission: '6%',
     commissionValue: 6,
+    escrowFee: '6%',
+    escrowFeeValue: 6,
     freeEstimateCost: '$3',
     hourlyRateCharge: '2 hours',
     minimumFee: 0,
@@ -65,6 +69,8 @@ const TIERS = {
     leadCostValue: 0,
     commission: '0%',
     commissionValue: 0,
+    escrowFee: '3%',
+    escrowFeeValue: 3,
     freeEstimateCost: '$0',
     hourlyRateCharge: '1 hour',
     minimumFee: 0,
@@ -610,13 +616,13 @@ export default function Pricing() {
                         <tr className="border-b border-border/50">
                           <td className="py-3 px-4 text-muted-foreground">
                             <div className="flex items-center gap-2">
-                              Escrow Fees (5% of revenue)
+                              Escrow Processing Fee
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
-                                  <p>This 5% fee is charged on milestone payments for fixed-price contracts with escrow. The fee is deducted from each milestone payment before releasing funds to the professional.</p>
+                                  <p>Tier-based fee charged on milestone payments for fixed-price contracts with escrow. Free: 10%, Pro: 6%, Premium: 3%. The fee is deducted from each milestone payment before releasing funds.</p>
                                 </TooltipContent>
                               </Tooltip>
                             </div>
@@ -624,7 +630,8 @@ export default function Pricing() {
                           {calculateInteractiveCosts().map((result) => {
                             const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
                             const totalRevenue = calculatedJobs * interactiveJobValue;
-                            const escrowFee = totalRevenue * 0.05;
+                            const tierData = TIERS[result.name.toLowerCase() as keyof typeof TIERS];
+                            const escrowFee = totalRevenue * (tierData.escrowFeeValue / 100);
                             return (
                               <td key={result.name} className="text-right py-3 px-4">
                                 ${escrowFee.toFixed(2)}
@@ -639,7 +646,8 @@ export default function Pricing() {
                           {calculateInteractiveCosts().map((result) => {
                             const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
                             const totalRevenue = calculatedJobs * interactiveJobValue;
-                            const escrowFee = totalRevenue * 0.05;
+                            const tierData = TIERS[result.name.toLowerCase() as keyof typeof TIERS];
+                            const escrowFee = totalRevenue * (tierData.escrowFeeValue / 100);
                             const netEarnings = totalRevenue - result.total - escrowFee;
                             return (
                               <td key={result.name} className="text-right py-4 px-4 font-bold text-xl text-blue-600">

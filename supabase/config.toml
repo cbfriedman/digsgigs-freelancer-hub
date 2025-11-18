@@ -84,3 +84,6 @@ verify_jwt = false
 [functions.verify-code]
 verify_jwt = false
 
+[functions.check-upgrade-savings]
+verify_jwt = false
+
