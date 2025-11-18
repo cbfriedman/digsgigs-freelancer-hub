@@ -27,7 +27,11 @@ const DiggerRegistration = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [businessName, setBusinessName] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [profession, setProfession] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zipCode, setZipCode] = useState("");
   const [location, setLocation] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
@@ -38,7 +42,7 @@ const DiggerRegistration = () => {
   const [customProfession, setCustomProfession] = useState("");
   const [pricingModel, setPricingModel] = useState<string>("commission");
   const [offersFreEstimates, setOffersFreEstimates] = useState(false);
-  const [profileName, setProfileName] = useState("");
+  const [assignedUserName, setAssignedUserName] = useState("");
   const [isPrimary, setIsPrimary] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [newDiggerId, setNewDiggerId] = useState<string | null>(null);
@@ -49,6 +53,16 @@ const DiggerRegistration = () => {
   const [workPhotoPreviews, setWorkPhotoPreviews] = useState<string[]>([]);
   const { calculateLeadCost } = useCommissionCalculator();
   
+  // Auto-generate username based on city, state, zip, and first name
+  useEffect(() => {
+    if (city && state && zipCode && firstName) {
+      const generatedUsername = `${city.replace(/\s+/g, '')}${state.replace(/\s+/g, '')}${zipCode}${firstName.replace(/\s+/g, '')}`;
+      setAssignedUserName(generatedUsername);
+      // Also update location for backend compatibility
+      setLocation(`${city}, ${state} ${zipCode}`);
+    }
+  }, [city, state, zipCode, firstName]);
+
   // Parse keywords from input
   const keywords = keywordsInput
     .split(/[,;]/)
@@ -236,7 +250,7 @@ const DiggerRegistration = () => {
         handle: handle,
         user_id: user.id,
         business_name: businessName,
-        profile_name: profileName || null,
+        profile_name: assignedUserName,
         is_primary: isPrimary,
         profession,
         location,
@@ -405,15 +419,72 @@ const DiggerRegistration = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="profileName">Profile Name (Optional)</Label>
+              <Label htmlFor="firstName">First Name *</Label>
               <Input
-                id="profileName"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder="E.g., 'Residential Services' or 'Commercial Division'"
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="John"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(555) 123-4567"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">City *</Label>
+              <Input
+                id="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Los Angeles"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="state">State *</Label>
+              <Input
+                id="state"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="CA"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="zipCode">Zip Code *</Label>
+              <Input
+                id="zipCode"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                placeholder="90001"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="assignedUserName">Assigned User Name</Label>
+              <Input
+                id="assignedUserName"
+                value={assignedUserName}
+                readOnly
+                placeholder="Auto-generated from location and name"
+                className="bg-muted"
               />
               <p className="text-xs text-muted-foreground">
-                Give this profile a name to distinguish it from your other profiles
+                This username is automatically generated from your location and first name
               </p>
             </div>
 
