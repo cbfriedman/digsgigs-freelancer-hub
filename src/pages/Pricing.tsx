@@ -109,8 +109,13 @@ export default function Pricing() {
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [interactiveLeads, setInteractiveLeads] = useState(50);
   const [interactiveJobValue, setInteractiveJobValue] = useState(5000);
-  const [conversionRate, setConversionRate] = useState(20);
+  const [leadsToClicksRate, setLeadsToClicksRate] = useState(25);
+  const [clicksToAwardRate, setClicksToAwardRate] = useState(25);
   const [showResults, setShowResults] = useState(false);
+  
+  // Calculate clicks and awards
+  const calculatedClicks = Math.round(interactiveLeads * (leadsToClicksRate / 100));
+  const calculatedAwards = Math.round(calculatedClicks * (clicksToAwardRate / 100));
   const [refreshing, setRefreshing] = useState(false);
   const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
   const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
@@ -208,7 +213,6 @@ export default function Pricing() {
   };
 
   const calculateInteractiveCosts = () => {
-    const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
     const tiers = ['free', 'pro', 'premium'] as const;
     return tiers.map(tierKey => {
       const tier = TIERS[tierKey];
@@ -479,7 +483,7 @@ export default function Pricing() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Interactive Controls */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-background/50 rounded-lg">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-background/50 rounded-lg">
                   <div className="space-y-2">
                     <Label>Leads Purchased</Label>
                     <Select 
@@ -498,16 +502,16 @@ export default function Pricing() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Conversion Rate</Label>
+                    <Label>Leads to Clicks Conversion Rate</Label>
                     <Select 
-                      value={conversionRate.toString()} 
-                      onValueChange={(v) => setConversionRate(Number(v))}
+                      value={leadsToClicksRate.toString()} 
+                      onValueChange={(v) => setLeadsToClicksRate(Number(v))}
                     >
                       <SelectTrigger className="bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-background z-50">
-                        {[5, 10, 15, 20, 25].map(num => (
+                        {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map(num => (
                           <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
                         ))}
                       </SelectContent>
@@ -515,9 +519,33 @@ export default function Pricing() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label># of Jobs (Auto-calculated)</Label>
+                    <Label># of Clicks (Auto-calculated)</Label>
                     <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
-                      {Math.round(interactiveLeads * (conversionRate / 100))}
+                      {calculatedClicks}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Clicks to Award Conversion Rate</Label>
+                    <Select 
+                      value={clicksToAwardRate.toString()} 
+                      onValueChange={(v) => setClicksToAwardRate(Number(v))}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}%</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label># of Awards (Auto-calculated)</Label>
+                    <div className="h-10 px-3 py-2 bg-muted rounded-md border border-input flex items-center text-lg font-semibold">
+                      {calculatedAwards}
                     </div>
                   </div>
 
@@ -584,8 +612,7 @@ export default function Pricing() {
                             Total Estimated Revenues
                           </td>
                           {calculateInteractiveCosts().map((result) => {
-                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
-                            const totalRevenue = calculatedJobs * interactiveJobValue;
+                            const totalRevenue = calculatedAwards * interactiveJobValue;
                             return (
                               <td key={result.name} className="text-right py-4 px-4 font-bold text-lg text-green-600">
                                 ${totalRevenue.toFixed(2)}
@@ -622,7 +649,7 @@ export default function Pricing() {
                                   <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
-                                  <p>Flat fee charged when a client clicks to view your full contact information. Same across all tiers.</p>
+                                  <p>Flat fee charged when a Gigger clicks to view contact information, in addition to Lead Cost.</p>
                                 </TooltipContent>
                               </Tooltip>
                             </div>
@@ -632,6 +659,37 @@ export default function Pricing() {
                               <span className="font-semibold">${tier.costPerClickValue.toFixed(2)}</span>
                             </td>
                           ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">Clicks Generated</td>
+                          {Object.entries(TIERS).map(([key]) => (
+                            <td key={key} className="text-right py-3 px-4">
+                              {calculatedClicks}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-3 px-4 text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              Total Cost Per Click
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Total cost for all clicks (# of Clicks × Cost Per Click).</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
+                          {Object.entries(TIERS).map(([key, tier]) => {
+                            const totalClickCost = calculatedClicks * tier.costPerClickValue;
+                            return (
+                              <td key={key} className="text-right py-3 px-4">
+                                ${totalClickCost.toFixed(2)}
+                              </td>
+                            );
+                          })}
                         </tr>
                         <tr className="border-b border-border/50">
                           <td className="py-3 px-4 text-muted-foreground">
@@ -689,11 +747,36 @@ export default function Pricing() {
                             </td>
                           ))}
                         </tr>
+                        <tr className="border-b-2 border-border bg-primary/5">
+                          <td className="py-3 px-4 font-semibold">
+                            <div className="flex items-center gap-2">
+                              Est. Cost of Award (per contract)
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Average cost to win each contract based on your conversion rates (Total Click Cost + Total Lead Cost) / # of Awards.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </td>
+                          {Object.entries(TIERS).map(([key, tier]) => {
+                            const totalClickCost = calculatedClicks * tier.costPerClickValue;
+                            const totalLeadCost = interactiveLeads * tier.leadCostValue;
+                            const costPerAward = calculatedAwards > 0 ? (totalClickCost + totalLeadCost) / calculatedAwards : 0;
+                            return (
+                              <td key={key} className="text-right py-3 px-4 font-semibold text-lg text-primary">
+                                ${costPerAward.toFixed(2)}
+                              </td>
+                            );
+                          })}
+                        </tr>
                         <tr className="border-b border-border/50">
                           <td className="py-3 px-4 text-muted-foreground">Jobs Awarded</td>
                           {Object.entries(TIERS).map(([key]) => (
                             <td key={key} className="text-right py-3 px-4">
-                              {Math.round(interactiveLeads * (conversionRate / 100))}
+                              {calculatedAwards}
                             </td>
                           ))}
                         </tr>
@@ -726,14 +809,13 @@ export default function Pricing() {
                                   <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
-                                  <p>Total commission amount based on your awarded contracts (Award Fee % × Job Value × Jobs Awarded).</p>
+                                  <p>Total commission amount based on your awarded contracts (Award Fee % × Job Value × Awards).</p>
                                 </TooltipContent>
                               </Tooltip>
                             </div>
                           </td>
                           {Object.entries(TIERS).map(([key, tier]) => {
-                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
-                            const totalAwardFee = calculatedJobs * interactiveJobValue * tier.contractAwardFeeValue;
+                            const totalAwardFee = calculatedAwards * interactiveJobValue * tier.contractAwardFeeValue;
                             return (
                               <td key={key} className="text-right py-3 px-4">
                                 ${totalAwardFee.toFixed(2)}
@@ -756,9 +838,8 @@ export default function Pricing() {
                             </div>
                           </td>
                           {Object.entries(TIERS).map(([key, tier]) => {
-                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
                             const freeEstimateCost = tier.name === 'Free' ? 150 : tier.name === 'Pro' ? 100 : 50;
-                            const rebate = interactiveJobValue >= 5000 ? -(calculatedJobs * freeEstimateCost) : 0;
+                            const rebate = interactiveJobValue >= 5000 ? -(calculatedAwards * freeEstimateCost) : 0;
                             return (
                               <td key={key} className="text-right py-3 px-4">
                                 {rebate === 0 ? '$0.00' : (
@@ -805,8 +886,7 @@ export default function Pricing() {
                             </div>
                           </td>
                           {calculateInteractiveCosts().map((result) => {
-                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
-                            const totalRevenue = calculatedJobs * interactiveJobValue;
+                            const totalRevenue = calculatedAwards * interactiveJobValue;
                             const tierData = TIERS[result.name.toLowerCase() as keyof typeof TIERS];
                             const escrowFee = totalRevenue * (tierData.escrowFeeValue / 100);
                             return (
@@ -821,8 +901,7 @@ export default function Pricing() {
                             Net Earnings
                           </td>
                           {calculateInteractiveCosts().map((result) => {
-                            const calculatedJobs = Math.round(interactiveLeads * (conversionRate / 100));
-                            const totalRevenue = calculatedJobs * interactiveJobValue;
+                            const totalRevenue = calculatedAwards * interactiveJobValue;
                             const tierData = TIERS[result.name.toLowerCase() as keyof typeof TIERS];
                             const escrowFee = totalRevenue * (tierData.escrowFeeValue / 100);
                             const netEarnings = totalRevenue - result.total - escrowFee;
