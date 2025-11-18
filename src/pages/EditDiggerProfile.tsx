@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
@@ -23,9 +23,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [businessName, setBusinessName] = useState("");
+  const [profileName, setProfileName] = useState("");
+  const [isPrimary, setIsPrimary] = useState(false);
   const [profession, setProfession] = useState("");
   const [location, setLocation] = useState("");
   const [phone, setPhone] = useState("");
@@ -87,9 +90,15 @@ const EditDiggerProfile = () => {
       navigate("/auth");
       return;
     }
+    
+    const profileIdFromUrl = searchParams.get('profileId');
+    if (profileIdFromUrl) {
+      setProfileId(profileIdFromUrl);
+    }
+    
     loadProfile();
     checkSubscription();
-  }, [user, navigate]);
+  }, [user, navigate, searchParams]);
 
   const checkSubscription = async () => {
     try {
@@ -159,6 +168,8 @@ const EditDiggerProfile = () => {
         .from("digger_profiles")
         .update({
           business_name: businessName,
+          profile_name: profileName || null,
+          is_primary: isPrimary,
           profession,
           location,
           phone,
@@ -285,6 +296,30 @@ const EditDiggerProfile = () => {
                 placeholder="Your business name"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="profileName">Profile Name (Optional)</Label>
+              <Input
+                id="profileName"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="E.g., 'Residential Services' or 'Commercial Division'"
+              />
+              <p className="text-xs text-muted-foreground">
+                Give this profile a name to distinguish it from your other profiles
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isPrimary"
+                checked={isPrimary}
+                onCheckedChange={(checked) => setIsPrimary(checked === true)}
+              />
+              <Label htmlFor="isPrimary" className="cursor-pointer">
+                Set as primary profile
+              </Label>
             </div>
 
             <div className="space-y-2">

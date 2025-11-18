@@ -462,6 +462,7 @@ export type Database = {
           is_bonded: boolean | null
           is_insured: boolean | null
           is_licensed: string | null
+          is_primary: boolean | null
           keywords: string[] | null
           lead_limit: number | null
           lead_limit_enabled: boolean | null
@@ -478,6 +479,7 @@ export type Database = {
           primary_profession_index: number | null
           profession: string
           profile_image_url: string | null
+          profile_name: string | null
           response_time_hours: number | null
           sic_code: string[] | null
           skills: string[] | null
@@ -512,6 +514,7 @@ export type Database = {
           is_bonded?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
+          is_primary?: boolean | null
           keywords?: string[] | null
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
@@ -528,6 +531,7 @@ export type Database = {
           primary_profession_index?: number | null
           profession: string
           profile_image_url?: string | null
+          profile_name?: string | null
           response_time_hours?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
@@ -562,6 +566,7 @@ export type Database = {
           is_bonded?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
+          is_primary?: boolean | null
           keywords?: string[] | null
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
@@ -578,6 +583,7 @@ export type Database = {
           primary_profession_index?: number | null
           profession?: string
           profile_image_url?: string | null
+          profile_name?: string | null
           response_time_hours?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
@@ -599,7 +605,7 @@ export type Database = {
           {
             foreignKeyName: "digger_profiles_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

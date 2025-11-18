@@ -36,6 +36,8 @@ const DiggerRegistration = () => {
   const [customProfession, setCustomProfession] = useState("");
   const [pricingModel, setPricingModel] = useState<string>("commission");
   const [offersFreEstimates, setOffersFreEstimates] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [isPrimary, setIsPrimary] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string>("");
@@ -87,24 +89,7 @@ const DiggerRegistration = () => {
   useEffect(() => {
     if (!user) {
       navigate("/auth");
-      return;
     }
-    
-    // Check if user already has a digger profile
-    const checkExistingProfile = async () => {
-      const { data: existingProfile } = await supabase
-        .from("digger_profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      
-      if (existingProfile) {
-        toast.info("You already have a digger profile. Redirecting to edit page...");
-        navigate(`/edit-digger-profile`);
-      }
-    };
-    
-    checkExistingProfile();
   }, [user, navigate]);
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,6 +213,8 @@ const DiggerRegistration = () => {
       const { error } = await supabase.from("digger_profiles").insert({
         user_id: user.id,
         business_name: businessName,
+        profile_name: profileName || null,
+        is_primary: isPrimary,
         profession,
         location,
         phone,
@@ -386,6 +373,30 @@ const DiggerRegistration = () => {
                 placeholder="Your business name"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="profileName">Profile Name (Optional)</Label>
+              <Input
+                id="profileName"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="E.g., 'Residential Services' or 'Commercial Division'"
+              />
+              <p className="text-xs text-muted-foreground">
+                Give this profile a name to distinguish it from your other profiles
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isPrimary"
+                checked={isPrimary}
+                onCheckedChange={(checked) => setIsPrimary(checked === true)}
+              />
+              <Label htmlFor="isPrimary" className="cursor-pointer">
+                Set as primary profile
+              </Label>
             </div>
 
             <div className="space-y-2">

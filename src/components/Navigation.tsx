@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, ArrowUp } from "lucide-react";
 import AIChatbot from "@/components/AIChatbot";
+import { DiggerProfileSelector } from "@/components/DiggerProfileSelector";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavigationProps {
   showBackButton?: boolean;
@@ -13,6 +15,7 @@ interface NavigationProps {
 export function Navigation({ showBackButton = false, backTo = "/", backLabel = "Back to Home" }: NavigationProps) {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <>
@@ -25,6 +28,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             digsandgigs
           </h1>
           <div className="flex items-center gap-4">
+            {user && <DiggerProfileSelector />}
             <div className="relative">
               <Button 
                 variant="default" 
