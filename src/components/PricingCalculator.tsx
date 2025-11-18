@@ -12,35 +12,35 @@ const TIERS = {
   free: {
     name: 'Free',
     priceValue: 0,
-    leadCostValue: 60,
+    leadCostValue: 20,
     commissionValue: 9,
     minimumFee: 0,
     estimateCost: 150,
     hourlyRateClickCost: 0,
     jobAwardedCost: 0, // Will be calculated as percentage
     hoursPerAward: 3,
-    contractAwardFeePercentage: 0.10, // 10%
+    contractAwardFeePercentage: 0.12, // 12%
     escrowFeePercentage: 0.05, // 5%
     escrowFeeMinimum: 10,
   },
   pro: {
     name: 'Pro',
     priceValue: 99,
-    leadCostValue: 40,
+    leadCostValue: 10,
     commissionValue: 6,
     minimumFee: 0,
     estimateCost: 100,
     hourlyRateClickCost: 0,
     jobAwardedCost: 0, // Will be calculated as percentage
     hoursPerAward: 2,
-    contractAwardFeePercentage: 0.06, // 6%
+    contractAwardFeePercentage: 0.08, // 8%
     escrowFeePercentage: 0.05, // 5%
     escrowFeeMinimum: 10,
   },
   premium: {
     name: 'Premium',
     priceValue: 599,
-    leadCostValue: 0,
+    leadCostValue: 5,
     commissionValue: 0,
     minimumFee: 0,
     estimateCost: 50,

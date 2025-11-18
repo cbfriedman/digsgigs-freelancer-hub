@@ -48,9 +48,9 @@ serve(async (req) => {
     
     const tier = diggerProfile?.subscription_tier || 'free';
     
-    // Contract award fees are now percentage-based: 10%/6%/3%
-    const contractAwardFeePercentages = { free: 0.10, pro: 0.06, premium: 0.03 };
-    const platformFeePercentage = contractAwardFeePercentages[tier as keyof typeof contractAwardFeePercentages] || 0.10;
+    // Contract award fees are now percentage-based: 12%/8%/3%
+    const contractAwardFeePercentages = { free: 0.12, pro: 0.08, premium: 0.03 };
+    const platformFeePercentage = contractAwardFeePercentages[tier as keyof typeof contractAwardFeePercentages] || 0.12;
     const platformFeeAmount = totalAmount * platformFeePercentage;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {

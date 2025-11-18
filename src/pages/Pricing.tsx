@@ -38,8 +38,8 @@ const TIERS = {
     escrowFee: '10%',
     escrowFeeValue: 10,
     freeEstimateCost: '$150',
-    contractAwardFee: '10%',
-    contractAwardFeeValue: 0.10,
+    contractAwardFee: '12%',
+    contractAwardFeeValue: 0.12,
     hourlyRateCharge: '3 hours',
     escrowProcessingFee: '5% per payment (min $10)',
     escrowProcessingFeeValue: 0.05,
@@ -63,8 +63,8 @@ const TIERS = {
     escrowFee: '6%',
     escrowFeeValue: 6,
     freeEstimateCost: '$100',
-    contractAwardFee: '6%',
-    contractAwardFeeValue: 0.06,
+    contractAwardFee: '8%',
+    contractAwardFeeValue: 0.08,
     hourlyRateCharge: '2 hours',
     escrowProcessingFee: '5% per payment (min $10)',
     escrowProcessingFeeValue: 0.05,
@@ -789,7 +789,7 @@ export default function Pricing() {
                                   <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
-                                  <p>Commission percentage charged on each awarded contract. Free: 10%, Pro: 6%, Premium: 3%.</p>
+                                  <p>Commission percentage charged on each awarded contract. Free: 12%, Pro: 8%, Premium: 3%.</p>
                                 </TooltipContent>
                               </Tooltip>
                             </div>
