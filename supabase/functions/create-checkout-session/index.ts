@@ -63,7 +63,7 @@ serve(async (req) => {
     console.log('Authorization verified:', { userId: user.id, diggerId, gigId });
 
     // Calculate lead cost based on hourly rate or tier
-    let leadCost = 60; // Default: free tier
+    let leadCost = 20; // Default: free tier
     let leadDescription = '';
     
     // Calculate average hourly rate and apply tier multiplier
@@ -84,10 +84,10 @@ serve(async (req) => {
       leadCost = 1;
       leadDescription = 'Old lead special';
     } else if (tier === 'premium') {
-      leadCost = 0;
+      leadCost = 5;
       leadDescription = 'Premium tier';
     } else if (tier === 'pro') {
-      leadCost = 40;
+      leadCost = 10;
       leadDescription = 'Pro tier';
     } else {
       leadDescription = 'Free tier';

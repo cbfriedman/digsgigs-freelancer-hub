@@ -76,18 +76,18 @@ serve(async (req) => {
 
     // Calculate lead cost based on tier
     const tier = (diggerProfile.subscription_tier || 'free') as 'free' | 'pro' | 'premium';
-    let leadCost = 60; // Default free tier
-    if (tier === 'premium') leadCost = 0;
-    else if (tier === 'pro') leadCost = 40;
+    let leadCost = 20; // Default free tier
+    if (tier === 'premium') leadCost = 5;
+    else if (tier === 'pro') leadCost = 10;
 
     // For free estimates with premium/pro tier, lead cost is 0
     if (pricingModel === 'free_estimate' && (tier === 'pro' || tier === 'premium')) {
       leadCost = 0;
     }
 
-    // For free estimates with free tier, charge $60 as per pricing table
+    // For free estimates with free tier, charge $20 as per pricing table
     if (pricingModel === 'free_estimate' && tier === 'free') {
-      leadCost = 60;
+      leadCost = 20;
     }
 
     logStep("Lead cost calculated", { leadCost, tier, pricingModel });

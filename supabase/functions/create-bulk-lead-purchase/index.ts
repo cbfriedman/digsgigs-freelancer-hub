@@ -137,11 +137,11 @@ serve(async (req) => {
     
     // Get tier-based pricing
     const tier = diggerProfile.subscription_tier || 'free';
-    let leadCost = 60; // Default: free tier
+    let leadCost = 20; // Default: free tier
     if (tier === 'premium') {
-      leadCost = 0;
+      leadCost = 5;
     } else if (tier === 'pro') {
-      leadCost = 40;
+      leadCost = 10;
     }
     
     logStep("Tier-based pricing calculated", { tier, leadCost });

@@ -9,26 +9,39 @@ export const TierSavingsCalculator = () => {
   const [monthlyLeads, setMonthlyLeads] = useState<string>("10");
   const [avgJobValue, setAvgJobValue] = useState<string>("5000");
   const [conversionRate, setConversionRate] = useState<string>("20");
+  const [clicksToLeads, setClicksToLeads] = useState<string>("25");
+  const [awardsToClicks, setAwardsToClicks] = useState<string>("25");
 
   const leads = parseFloat(monthlyLeads) || 0;
   const jobValue = parseFloat(avgJobValue) || 0;
   const conversion = parseFloat(conversionRate) || 0;
+  const clickToLeadRate = parseFloat(clicksToLeads) || 0;
+  const awardToClickRate = parseFloat(awardsToClicks) || 0;
   
   const convertedJobs = leads * (conversion / 100);
   const monthlyRevenue = convertedJobs * jobValue;
+  
+  // Calculate clicks needed based on click-to-lead conversion
+  const clicksNeeded = clickToLeadRate > 0 ? leads / (clickToLeadRate / 100) : 0;
+  
+  // Calculate estimated awards based on award-to-click conversion
+  const estimatedAwards = clicksNeeded * (awardToClickRate / 100);
+  const estimatedAwardRevenue = estimatedAwards * jobValue;
 
   const calculateTierCosts = (tier: 'free' | 'pro' | 'premium') => {
-    const leadCosts = { free: 60, pro: 40, premium: 0 };
-    const contractAwardFees = { free: 0.10, pro: 0.06, premium: 0.03 }; // Percentage of contract value
+    const leadCosts = { free: 20, pro: 10, premium: 5 };
+    const clickCosts = { free: 75, pro: 50, premium: 25 };
+    const contractAwardFees = { free: 0.10, pro: 0.06, premium: 0.03 };
     const subscriptions = { free: 0, pro: 99, premium: 599 };
 
+    const clickCost = clicksNeeded * clickCosts[tier];
     const leadCost = leads * leadCosts[tier];
-    const contractAwardFee = monthlyRevenue * contractAwardFees[tier];
-    const escrowFee = convertedJobs * Math.max(10, (jobValue * 0.05)); // 5% with $10 min per job
+    const contractAwardFee = estimatedAwardRevenue * contractAwardFees[tier];
+    const escrowFee = estimatedAwards * Math.max(10, (jobValue * 0.05));
     const subscription = subscriptions[tier];
-    const total = leadCost + contractAwardFee + escrowFee + subscription;
+    const total = clickCost + leadCost + contractAwardFee + escrowFee + subscription;
 
-    return { leadCost, contractAwardFee, escrowFee, subscription, total };
+    return { clickCost, leadCost, contractAwardFee, escrowFee, subscription, total };
   };
 
   const freeCosts = calculateTierCosts('free');
@@ -51,7 +64,7 @@ export const TierSavingsCalculator = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="space-y-2">
             <Label htmlFor="monthlyLeads">Monthly Leads</Label>
             <Input
@@ -72,12 +85,12 @@ export const TierSavingsCalculator = () => {
               min="0"
               value={avgJobValue}
               onChange={(e) => setAvgJobValue(e.target.value)}
-              placeholder="2000"
+              placeholder="5000"
               className="text-lg"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="conversionRate">Conversion Rate (%)</Label>
+            <Label htmlFor="conversionRate">Lead to Award (%)</Label>
             <Input
               id="conversionRate"
               type="number"
@@ -86,6 +99,32 @@ export const TierSavingsCalculator = () => {
               value={conversionRate}
               onChange={(e) => setConversionRate(e.target.value)}
               placeholder="20"
+              className="text-lg"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="clicksToLeads">Assumed Clicks to Leads (%)</Label>
+            <Input
+              id="clicksToLeads"
+              type="number"
+              min="0"
+              max="100"
+              value={clicksToLeads}
+              onChange={(e) => setClicksToLeads(e.target.value)}
+              placeholder="25"
+              className="text-lg"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="awardsToClicks">Assumed Awards to Clicks (%)</Label>
+            <Input
+              id="awardsToClicks"
+              type="number"
+              min="0"
+              max="100"
+              value={awardsToClicks}
+              onChange={(e) => setAwardsToClicks(e.target.value)}
+              placeholder="25"
               className="text-lg"
             />
           </div>
@@ -107,6 +146,10 @@ export const TierSavingsCalculator = () => {
                       <span>${tier.costs.subscription}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-muted-foreground">Click Costs:</span>
+                      <span>${tier.costs.clickCost.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-muted-foreground">Lead Costs:</span>
                       <span>${tier.costs.leadCost.toFixed(2)}</span>
                     </div>
@@ -118,8 +161,12 @@ export const TierSavingsCalculator = () => {
                       <span className="text-muted-foreground">Escrow Processing Fee:</span>
                       <span>${tier.costs.escrowFee.toFixed(2)}</span>
                     </div>
+                    <div className="flex justify-between font-semibold pt-2 border-t border-primary/20">
+                      <span>Est. Cost of Award:</span>
+                      <span className="text-primary">${((tier.costs.clickCost + tier.costs.leadCost + tier.costs.contractAwardFee) / Math.max(estimatedAwards, 1)).toFixed(2)}</span>
+                    </div>
                     <div className="flex justify-between font-semibold pt-2 border-t">
-                      <span>Total Cost:</span>
+                      <span>Total Monthly Cost:</span>
                       <span className={tier.color}>${tier.costs.total.toFixed(2)}</span>
                     </div>
                   </div>
