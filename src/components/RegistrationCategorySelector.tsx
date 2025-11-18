@@ -46,12 +46,19 @@ export const RegistrationCategorySelector: React.FC<RegistrationCategorySelector
         .order("name");
 
       if (error) throw error;
+      
+      // Sort categories with "Other" at the bottom
+      const sortedData = data?.sort((a, b) => {
+        if (a.name === 'Other') return 1;
+        if (b.name === 'Other') return -1;
+        return a.name.localeCompare(b.name);
+      });
 
       // Group categories by parent
-      const parents = data.filter(cat => !cat.parent_category_id);
+      const parents = sortedData.filter(cat => !cat.parent_category_id);
       const groups: CategoryGroup[] = parents.map(parent => ({
         parent,
-        subcategories: data.filter(cat => cat.parent_category_id === parent.id)
+        subcategories: sortedData.filter(cat => cat.parent_category_id === parent.id)
       }));
 
       setCategoryGroups(groups);
