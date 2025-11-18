@@ -168,6 +168,11 @@ const DiggerRegistration = () => {
       return;
     }
 
+    if (!pricingModel && !offersFreEstimates) {
+      toast.error("Please select at least one pricing option (Fixed Price, Hourly, Both Models, or Free Estimates)");
+      return;
+    }
+
     setShowPreview(true);
   };
 
@@ -508,7 +513,8 @@ const DiggerRegistration = () => {
 
             <div>
               <Label className="text-base font-semibold">Available for *</Label>
-              <RadioGroup value={pricingModel} onValueChange={setPricingModel} className="mt-3 space-y-4">
+              <p className="text-sm text-muted-foreground mb-3">Select at least one pricing option</p>
+              <RadioGroup value={pricingModel} onValueChange={setPricingModel} className="space-y-4">
                 <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                   <RadioGroupItem value="commission" id="commission" className="mt-1" />
                   <div className="flex-1">
