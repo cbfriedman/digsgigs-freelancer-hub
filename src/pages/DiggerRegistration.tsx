@@ -514,7 +514,7 @@ const DiggerRegistration = () => {
                       Fixed Price Contracts
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Free tier: $60/lead + $60 Award Fee + 10% escrow fee | Pro: $40/lead + $40 Award Fee + 6% escrow fee | Premium: $0/lead + $0 award fee + 3% escrow fee
+                      Lead Cost $5/$3/$0 + 9%/6%/0% commission + 10%/6%/3% escrow fee
                     </p>
                   </div>
                 </div>
@@ -526,7 +526,7 @@ const DiggerRegistration = () => {
                       Time and Materials (Hourly)
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Fee $60/$40/$20 + Award fee = 3x/2x/1x your average hourly rate + 10%/6%/3% Escrow fee
+                      Lead Cost $5/$3/$0 + Award fee = 3x/2x/1x your average hourly rate + 10%/6%/3% escrow fee
                     </p>
                   </div>
                 </div>
@@ -538,7 +538,7 @@ const DiggerRegistration = () => {
                       Both Models
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Fee $60/$40/$20 + Award fee = The higher of Free tier: $60 / Pro $40/ Premium$0 OR the higher of: 3x/2x/1x your average hourly rate + 10%/6%/3% Escrow fee
+                      Lead Cost $5/$3/$0 + Award fee = The higher of (9%/6%/0% commission OR 3x/2x/1x average hourly rate) + 10%/6%/3% escrow fee
                     </p>
                   </div>
                 </div>
