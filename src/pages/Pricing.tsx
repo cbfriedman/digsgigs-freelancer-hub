@@ -39,6 +39,9 @@ const TIERS = {
     contractAwardFee: '10%',
     contractAwardFeeValue: 0.10,
     hourlyRateCharge: '3 hours',
+    escrowProcessingFee: '5% per payment (min $10)',
+    escrowProcessingFeeValue: 0.05,
+    escrowProcessingMinimum: 10,
     minimumFee: 0,
     priceId: null,
     productId: null,
@@ -59,6 +62,9 @@ const TIERS = {
     contractAwardFee: '6%',
     contractAwardFeeValue: 0.06,
     hourlyRateCharge: '2 hours',
+    escrowProcessingFee: '5% per payment (min $10)',
+    escrowProcessingFeeValue: 0.05,
+    escrowProcessingMinimum: 10,
     minimumFee: 0,
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
     productId: 'prod_TQ0mK76zTAwoQc',
@@ -79,6 +85,9 @@ const TIERS = {
     contractAwardFee: '3%',
     contractAwardFeeValue: 0.03,
     hourlyRateCharge: '1 hour',
+    escrowProcessingFee: '5% per payment (min $10)',
+    escrowProcessingFeeValue: 0.05,
+    escrowProcessingMinimum: 10,
     minimumFee: 0,
     priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
     productId: 'prod_TQ0mVQT1H5f1zg',
@@ -375,6 +384,22 @@ export default function Pricing() {
                         </TooltipProvider>
                       </div>
                       <span className="font-bold text-primary">{tier.hourlyRateCharge}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Escrow Fees:</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-sm">Fee charged on each milestone or progress payment released through escrow. Calculated as 5% of the payment amount with a minimum fee of $10 per release.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <span className="font-bold text-primary">{tier.escrowProcessingFee}</span>
                     </div>
                   </div>
 
