@@ -55,8 +55,9 @@ serve(async (req) => {
         digger:digger_profiles!inner(
           id,
           user_id,
-          hourly_rate,
           hourly_rate_min,
+          hourly_rate_max,
+          subscription_tier,
           pricing_model,
           stripe_customer_id
         ),
@@ -92,14 +93,31 @@ serve(async (req) => {
       });
     }
 
-    // Get hourly rate
-    const hourlyRate = leadPurchase.digger.hourly_rate || leadPurchase.digger.hourly_rate_min;
-    if (!hourlyRate || hourlyRate <= 0) {
+    // Calculate average hourly rate
+    const hourlyMin = leadPurchase.digger.hourly_rate_min || 0;
+    const hourlyMax = leadPurchase.digger.hourly_rate_max || 0;
+    const averageRate = (hourlyMin + hourlyMax) / 2;
+    
+    if (!averageRate || averageRate <= 0) {
       throw new Error('No valid hourly rate found for digger');
     }
 
-    const chargeAmount = Math.round(hourlyRate * 100); // Convert to cents
-    logStep("Calculated hourly charge", { hourlyRate, chargeAmountCents: chargeAmount });
+    // Apply tier multipliers: Free: 3x, Pro: 2x, Premium: 1x
+    const tier = leadPurchase.digger.subscription_tier || 'free';
+    const multipliers: Record<string, number> = { free: 3, pro: 2, premium: 1 };
+    const multiplier = multipliers[tier] || 3;
+    const hourlyCharge = averageRate * multiplier;
+
+    const chargeAmount = Math.round(hourlyCharge * 100); // Convert to cents
+    logStep("Calculated hourly award charge", { 
+      hourlyMin, 
+      hourlyMax, 
+      averageRate, 
+      tier, 
+      multiplier, 
+      hourlyCharge,
+      chargeAmountCents: chargeAmount 
+    });
 
     // Get or create Stripe customer
     let customerId = leadPurchase.digger.stripe_customer_id;
@@ -167,7 +185,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true,
       clientSecret: paymentIntent.client_secret,
-      chargeAmount: hourlyRate,
+      chargeAmount: hourlyCharge,
       paymentIntentId: paymentIntent.id
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
