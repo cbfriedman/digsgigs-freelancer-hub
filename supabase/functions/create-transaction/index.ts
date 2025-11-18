@@ -89,18 +89,18 @@ serve(async (req) => {
     // Get digger's subscription tier for commission calculation
     const tier = diggerProfile?.subscription_tier || 'free';
     let commissionRate = 0.09; // Default: free tier (9%)
-    let minimumFee = 5; // $5 minimum for free and pro
+    let minimumFee = 0; // No minimum fees
 
     // Determine commission rate and minimum based on tier
     if (tier === 'premium') {
       commissionRate = 0.00; // 0% commission
       minimumFee = 0; // No minimum
     } else if (tier === 'pro') {
-      commissionRate = 0.04; // 4% commission
-      minimumFee = 5; // $5 minimum
+      commissionRate = 0.06; // 6% commission
+      minimumFee = 0; // No minimum
     } else {
       commissionRate = 0.09; // 9% commission (free)
-      minimumFee = 5; // $5 minimum
+      minimumFee = 0; // No minimum
     }
 
     // Calculate commission with minimum

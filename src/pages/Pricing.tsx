@@ -22,17 +22,18 @@ import SEOHead from "@/components/SEOHead";
 import { generateFAQSchema } from "@/components/StructuredData";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { HourlyUpchargeCalculator } from "@/components/HourlyUpchargeCalculator";
+import { TierSavingsCalculator } from "@/components/TierSavingsCalculator";
 
 const TIERS = {
   free: {
     name: 'Free',
     price: '$0',
     priceValue: 0,
-    leadCost: '$60',
-    leadCostValue: 60,
+    leadCost: '$5',
+    leadCostValue: 5,
     commission: '9%',
     commissionValue: 9,
-    freeEstimateCost: '$100',
+    freeEstimateCost: '$5',
     hourlyRateCharge: '3 hours',
     minimumFee: 0,
     priceId: null,
@@ -44,11 +45,11 @@ const TIERS = {
     name: 'Pro',
     price: '$99',
     priceValue: 99,
-    leadCost: '$40',
-    leadCostValue: 40,
+    leadCost: '$3',
+    leadCostValue: 3,
     commission: '6%',
     commissionValue: 6,
-    freeEstimateCost: '$75',
+    freeEstimateCost: '$3',
     hourlyRateCharge: '2 hours',
     minimumFee: 0,
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
@@ -60,11 +61,11 @@ const TIERS = {
     name: 'Premium',
     price: '$599',
     priceValue: 599,
-    leadCost: '$20',
-    leadCostValue: 20,
+    leadCost: '$0',
+    leadCostValue: 0,
     commission: '0%',
     commissionValue: 0,
-    freeEstimateCost: '$50',
+    freeEstimateCost: '$0',
     hourlyRateCharge: '1 hour',
     minimumFee: 0,
     priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
@@ -662,8 +663,9 @@ export default function Pricing() {
       <PricingModelComparison />
       <ProjectCostCalculator />
       
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-16 space-y-16">
         <HourlyUpchargeCalculator />
+        <TierSavingsCalculator />
       </div>
       
       <div className="container mx-auto px-4 space-y-16 py-16">
