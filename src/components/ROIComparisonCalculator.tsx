@@ -123,7 +123,28 @@ export const ROIComparisonCalculator = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="conversion">Your Lead-to-Award Rate (%)</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="conversion">Your Lead-to-Award Rate (%)</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="font-semibold mb-2">What is Lead-to-Award Rate?</p>
+                    <p className="text-sm mb-2">
+                      This is the percentage of leads you contact that result in closed deals and paid work.
+                    </p>
+                    <p className="text-sm mb-2">
+                      <strong>Example:</strong> If you contact 100 leads and win 25 jobs, your rate is 25%.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Industry average ranges from 15-30% depending on your service, pricing, and follow-up process.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="conversion"
               type="number"
