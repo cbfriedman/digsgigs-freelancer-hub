@@ -60,7 +60,7 @@ export default function Pricing() {
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
       volumeTier: 'Free Tier (1-10 leads/mo)',
-      description: undefined,
+      description: 'Full Retail price',
       savingsPercent: undefined,
       features: [],
     },
