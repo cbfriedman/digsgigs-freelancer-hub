@@ -105,6 +105,7 @@ const App = () => (
           <Route path="/gig-registration-demo" element={<GigRegistrationDemo />} />
           <Route path="/edit-profile" element={<EditDiggerProfile />} />
           <Route path="/edit-digger-profile" element={<EditDiggerProfile />} />
+          <Route path="/edit-digger-profile/:profileId" element={<EditDiggerProfile />} />
           <Route path="/my-profiles" element={<MyProfiles />} />
           <Route path="/post-gig" element={<PostGig />} />
           <Route path="/browse-diggers" element={<BrowseDiggers />} />

@@ -61,6 +61,21 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange }
     return Math.max(...selectedIndustries.map(ind => getLeadCostForIndustry(ind, tier)));
   };
 
+  // Check if selected industries span multiple value categories
+  const getSelectedCategories = (): Set<IndustryCategory> => {
+    const categories = new Set<IndustryCategory>();
+    selectedIndustries.forEach(industry => {
+      const pricingCategory = INDUSTRY_PRICING.find(p => p.industries.includes(industry));
+      if (pricingCategory) {
+        categories.add(pricingCategory.category);
+      }
+    });
+    return categories;
+  };
+
+  const selectedCategories = getSelectedCategories();
+  const hasMultipleCategories = selectedCategories.size > 1;
+
   return (
     <div className="space-y-3">
       <Popover open={open} onOpenChange={setOpen}>
@@ -177,24 +192,56 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange }
 
       {/* Pricing Display */}
       {selectedIndustries.length > 0 && (
-        <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
-          <p className="text-sm font-semibold text-center">
-            Your lead costs (based on highest value selection):
-          </p>
-          <div className="flex justify-center gap-4 text-xs">
-            <div>
-              <span className="text-muted-foreground">Free Tier:</span>{' '}
-              <strong className="text-primary">${getHighestLeadCost('free')}</strong>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Pro Tier:</span>{' '}
-              <strong className="text-primary">${getHighestLeadCost('pro')}</strong>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Premium Tier:</span>{' '}
-              <strong className="text-primary">${getHighestLeadCost('premium')}</strong>
+        <div className="space-y-3">
+          <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
+            <p className="text-sm font-semibold text-center">
+              Your lead costs (based on highest value selection):
+            </p>
+            <div className="flex justify-center gap-4 text-xs">
+              <div>
+                <span className="text-muted-foreground">Free Tier:</span>{' '}
+                <strong className="text-primary">${getHighestLeadCost('free')}</strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Pro Tier:</span>{' '}
+                <strong className="text-primary">${getHighestLeadCost('pro')}</strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Premium Tier:</span>{' '}
+                <strong className="text-primary">${getHighestLeadCost('premium')}</strong>
+              </div>
             </div>
           </div>
+
+          {/* Multiple Categories Warning */}
+          {hasMultipleCategories && (
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-300 dark:border-amber-700 rounded-lg space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="text-xl">💡</span>
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                    Pro Tip: Optimize Your Lead Costs
+                  </p>
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    You've selected industries from different pricing categories. To get the best rates for each service:
+                  </p>
+                  <ul className="text-xs text-amber-800 dark:text-amber-200 list-disc list-inside space-y-0.5 ml-2">
+                    <li>Create a separate profile for each service category</li>
+                    <li>Pay only the appropriate rate for each industry</li>
+                    <li>Avoid paying high-value rates for low-value leads</li>
+                  </ul>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 h-8 text-xs border-amber-400 dark:border-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900"
+                    onClick={() => window.location.href = '/my-profiles'}
+                  >
+                    Manage Your Profiles
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

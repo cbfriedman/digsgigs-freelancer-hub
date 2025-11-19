@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
@@ -26,6 +26,7 @@ const EditDiggerProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const { profileId: profileIdParam } = useParams<{ profileId: string }>();
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [businessName, setBusinessName] = useState("");
@@ -96,7 +97,8 @@ const EditDiggerProfile = () => {
       return;
     }
     
-    const profileIdFromUrl = searchParams.get('profileId');
+    // Support both URL params (/edit-digger-profile/:profileId) and query params (?profileId=xxx)
+    const profileIdFromUrl = profileIdParam || searchParams.get('profileId');
     if (profileIdFromUrl) {
       setProfileId(profileIdFromUrl);
     }

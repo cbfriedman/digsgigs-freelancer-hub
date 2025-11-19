@@ -159,6 +159,36 @@ export default function MyProfiles() {
           </Button>
         </div>
 
+        {/* Info Banner */}
+        <Card className="mb-6 bg-primary/5 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">💡</span>
+              <div className="space-y-2">
+                <h3 className="font-semibold">Why Multiple Profiles?</h3>
+                <p className="text-sm text-muted-foreground">
+                  If you offer services in different pricing categories (e.g., Legal Services + Cleaning), create separate profiles for each. 
+                  This ensures you only pay the appropriate lead cost for each industry rather than the highest rate across all your services.
+                </p>
+                <div className="flex gap-4 text-xs mt-2">
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-600">💼 Low-Value:</span>
+                    <span className="font-medium">$8-24/lead</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-600">🏗️ Mid-Value:</span>
+                    <span className="font-medium">$40-120/lead</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-purple-600">⭐ High-Value:</span>
+                    <span className="font-medium">$250-750/lead</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {profiles.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
