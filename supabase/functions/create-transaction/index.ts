@@ -86,35 +86,21 @@ serve(async (req) => {
 
     logStep("Authorization verified", { gigConsumerId, diggerUserId });
 
-    // Get digger's subscription tier for commission calculation
+    // Get digger's subscription tier for escrow fee (not commission anymore)
     const tier = diggerProfile?.subscription_tier || 'free';
-    let commissionRate = 0.09; // Default: free tier (9%)
-    let minimumFee = 0; // No minimum fees
+    
+    // Escrow fees are tier-based: 9%/8%/4%
+    // No commission or award fees - only escrow fees apply
+    const escrowFeeRates = { free: 0.09, pro: 0.08, premium: 0.04 };
+    const escrowFeeRate = escrowFeeRates[tier as keyof typeof escrowFeeRates] || 0.09;
+    const escrowFeeAmount = Math.max(10, totalAmount * escrowFeeRate);
+    const diggerPayout = totalAmount - escrowFeeAmount;
 
-    // Determine commission rate and minimum based on tier
-    if (tier === 'premium') {
-      commissionRate = 0.00; // 0% commission
-      minimumFee = 0; // No minimum
-    } else if (tier === 'pro') {
-      commissionRate = 0.06; // 6% commission
-      minimumFee = 0; // No minimum
-    } else {
-      commissionRate = 0.09; // 9% commission (free)
-      minimumFee = 0; // No minimum
-    }
-
-    // Calculate commission with minimum
-    const calculatedCommission = totalAmount * commissionRate;
-    const commissionAmount = Math.max(calculatedCommission, minimumFee);
-    const diggerPayout = totalAmount - commissionAmount;
-
-    logStep("Commission calculated", {
+    logStep("Escrow fee calculated", {
       tier,
-      commissionRate,
+      escrowFeeRate,
       totalAmount,
-      calculatedCommission,
-      minimumFee,
-      commissionAmount,
+      escrowFeeAmount,
       diggerPayout
     });
 

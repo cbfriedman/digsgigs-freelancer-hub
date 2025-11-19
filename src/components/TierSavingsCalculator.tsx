@@ -32,18 +32,17 @@ export const TierSavingsCalculator = () => {
     const leadCosts = { free: 20, pro: 10, premium: 5 };
     const clickCosts = { free: 75, pro: 50, premium: 25 };
     const freeEstimateCosts = { free: 150, pro: 100, premium: 50 };
-    const contractAwardFees = { free: 0.12, pro: 0.08, premium: 0.03 };
+    const escrowFeeRates = { free: 0.09, pro: 0.08, premium: 0.04 };
     const subscriptions = { free: 0, pro: 99, premium: 599 };
 
     const clickCost = clicksNeeded * clickCosts[tier];
     const leadCost = leads * leadCosts[tier];
     const freeEstimateCost = clicksNeeded * freeEstimateCosts[tier];
-    const contractAwardFee = estimatedAwardRevenue * contractAwardFees[tier];
-    const escrowFee = estimatedAwards * Math.max(10, (jobValue * 0.05));
+    const escrowFee = estimatedAwards * Math.max(10, (jobValue * escrowFeeRates[tier]));
     const subscription = subscriptions[tier];
-    const total = clickCost + leadCost + freeEstimateCost + contractAwardFee + escrowFee + subscription;
+    const total = clickCost + leadCost + freeEstimateCost + escrowFee + subscription;
 
-    return { clickCost, leadCost, freeEstimateCost, contractAwardFee, escrowFee, subscription, total };
+    return { clickCost, leadCost, freeEstimateCost, escrowFee, subscription, total };
   };
 
   const freeCosts = calculateTierCosts('free');
@@ -160,16 +159,12 @@ export const TierSavingsCalculator = () => {
                       <span>${tier.costs.freeEstimateCost.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Contract Award Fee:</span>
-                      <span>${tier.costs.contractAwardFee.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-muted-foreground">Escrow Processing Fee:</span>
                       <span>${tier.costs.escrowFee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-semibold pt-2 border-t border-primary/20">
                       <span>Est. Cost of Award:</span>
-                      <span className="text-primary">${((tier.costs.clickCost + tier.costs.leadCost + tier.costs.freeEstimateCost + tier.costs.contractAwardFee) / Math.max(estimatedAwards, 1)).toFixed(2)}</span>
+                      <span className="text-primary">${((tier.costs.clickCost + tier.costs.leadCost + tier.costs.freeEstimateCost) / Math.max(estimatedAwards, 1)).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-semibold pt-2 border-t">
                       <span>Total Monthly Cost:</span>

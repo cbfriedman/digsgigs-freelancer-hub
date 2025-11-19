@@ -55,8 +55,7 @@ serve(async (req) => {
         subscription_tier: 'free',
         subscription_status: 'inactive',
         subscription_end: null,
-        product_id: null,
-        commission_rate: 0.09
+        product_id: null
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -84,8 +83,7 @@ serve(async (req) => {
         subscription_tier: 'free',
         subscription_status: 'inactive',
         subscription_end: null,
-        product_id: null,
-        commission_rate: 0.09
+        product_id: null
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -119,8 +117,7 @@ serve(async (req) => {
         subscription_tier: 'free',
         subscription_status: 'inactive',
         subscription_end: null,
-        product_id: null,
-        commission_rate: 0.09
+        product_id: null
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -133,16 +130,13 @@ serve(async (req) => {
     
     logStep("Active subscription found", { subscriptionId: subscription.id, productId });
 
-    // Determine tier and commission rate based on product ID
+    // Determine tier (no commission rate needed anymore)
     let tier = 'free';
-    let commissionRate = 0.09;
     
     if (productId === 'prod_TQ0mK76zTAwoQc') { // Pro tier
       tier = 'pro';
-      commissionRate = 0.06;
     } else if (productId === 'prod_TQ0oKMEtoOhHO7') { // Premium tier
       tier = 'premium';
-      commissionRate = 0.00;
     }
 
     // Update digger profile
@@ -156,15 +150,14 @@ serve(async (req) => {
       })
       .eq('id', diggerProfile.id);
 
-    logStep("Subscription details", { tier, commissionRate });
+    logStep("Subscription details", { tier });
 
     return new Response(JSON.stringify({
       subscribed: true,
       subscription_tier: tier,
       subscription_status: 'active',
       subscription_end: subscriptionEnd,
-      product_id: productId,
-      commission_rate: commissionRate
+      product_id: productId
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

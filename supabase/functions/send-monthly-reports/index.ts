@@ -26,7 +26,7 @@ interface Transaction {
 const generateEmailHTML = (
   userType: 'digger' | 'consumer',
   transactions: Transaction[],
-  stats?: { totalEarnings: number; totalCommission: number },
+  stats?: { totalEarnings: number; totalEscrowFees: number },
   dateRange?: string
 ) => {
   const summarySection = userType === 'digger' && stats ? `
@@ -39,8 +39,8 @@ const generateEmailHTML = (
             <div style="color: #0f172a; font-size: 24px; font-weight: bold;">$${stats.totalEarnings.toFixed(2)}</div>
           </td>
           <td style="text-align: center; padding: 10px;">
-            <div style="color: #64748b; font-size: 12px; font-weight: 500; margin-bottom: 8px; text-transform: uppercase;">Commission Paid</div>
-            <div style="color: #ef4444; font-size: 24px; font-weight: bold;">$${stats.totalCommission.toFixed(2)}</div>
+            <div style="color: #64748b; font-size: 12px; font-weight: 500; margin-bottom: 8px; text-transform: uppercase;">Escrow Fees Paid</div>
+            <div style="color: #ef4444; font-size: 24px; font-weight: bold;">$${stats.totalEscrowFees.toFixed(2)}</div>
           </td>
           <td style="text-align: center; padding: 10px;">
             <div style="color: #64748b; font-size: 12px; font-weight: 500; margin-bottom: 8px; text-transform: uppercase;">Transactions</div>
@@ -63,10 +63,10 @@ const generateEmailHTML = (
       <p style="color: #64748b; font-size: 14px; margin: 0 0 12px;">Client: ${tx.profiles?.full_name || 'Anonymous'}</p>
     ` : '';
 
-    const payoutSection = userType === 'digger' ? `
+  const payoutSection = userType === 'digger' ? `
       <tr>
         <td style="padding: 8px 0;">
-          <span style="color: #64748b; font-size: 12px; font-weight: 500;">Commission</span><br/>
+          <span style="color: #64748b; font-size: 12px; font-weight: 500;">Escrow Fee</span><br/>
           <span style="color: #ef4444; font-size: 14px; font-weight: 600;">-$${tx.commission_amount.toFixed(2)}</span>
         </td>
       </tr>

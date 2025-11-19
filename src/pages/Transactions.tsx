@@ -734,9 +734,9 @@ const Transactions = () => {
                         <p className="text-sm text-muted-foreground">
                           💡 Tip: With a{' '}
                           {transaction.commission_rate >= 0.09 
-                            ? 'Pro plan, you would have saved ' + 
-                              ((transaction.total_amount * 0.05) - transaction.commission_amount).toFixed(2)
-                            : transaction.commission_rate >= 0.04
+                            ? 'Pro plan (8% escrow), you would have saved ' + 
+                              ((transaction.total_amount * 0.01)).toFixed(2)
+                            : transaction.commission_rate >= 0.08
                             ? 'Premium plan, you would have saved ' + 
                               transaction.commission_amount.toFixed(2)
                             : 'current plan, you\'re already saving the most!'}
