@@ -82,16 +82,14 @@ serve(async (req) => {
       const monthlyRevenue = transactions?.reduce((sum, t) => sum + Number(t.total_amount), 0) || 0;
 
       // Calculate current costs
-      const leadCosts = { free: 5, pro: 3, premium: 0 };
-      const commissions = { free: 0.09, pro: 0.06, premium: 0 };
-      const escrowFees = { free: 0.12, pro: 0.08, premium: 0.03 };
+      const leadCosts = { free: 20, pro: 10, premium: 5 };
+      const escrowFees = { free: 0.09, pro: 0.08, premium: 0.04 };
       const subscriptions = { free: 0, pro: 99, premium: 599 };
 
       const currentLeadCost = monthlyLeads * leadCosts[tier as keyof typeof leadCosts];
-      const currentCommission = monthlyRevenue * commissions[tier as keyof typeof commissions];
       const currentEscrowFee = monthlyRevenue * escrowFees[tier as keyof typeof escrowFees];
       const currentSubscription = subscriptions[tier as keyof typeof subscriptions];
-      const currentTotal = currentLeadCost + currentCommission + currentEscrowFee + currentSubscription;
+      const currentTotal = currentLeadCost + currentEscrowFee + currentSubscription;
 
       // Calculate costs for next tier up
       let nextTier: 'pro' | 'premium' | null = null;
@@ -101,10 +99,9 @@ serve(async (req) => {
       if (!nextTier) continue;
 
       const nextLeadCost = monthlyLeads * leadCosts[nextTier];
-      const nextCommission = monthlyRevenue * commissions[nextTier];
       const nextEscrowFee = monthlyRevenue * escrowFees[nextTier];
       const nextSubscription = subscriptions[nextTier];
-      const nextTotal = nextLeadCost + nextCommission + nextEscrowFee + nextSubscription;
+      const nextTotal = nextLeadCost + nextEscrowFee + nextSubscription;
 
       const savings = currentTotal - nextTotal;
 
@@ -150,9 +147,9 @@ serve(async (req) => {
               <td style="padding: 12px; text-align: right; border: 1px solid #e5e7eb;">$${nextLeadCost.toFixed(2)}</td>
             </tr>
             <tr>
-              <td style="padding: 12px; border: 1px solid #e5e7eb;">Commission Fees</td>
-              <td style="padding: 12px; text-align: right; border: 1px solid #e5e7eb;">$${currentCommission.toFixed(2)}</td>
-              <td style="padding: 12px; text-align: right; border: 1px solid #e5e7eb;">$${nextCommission.toFixed(2)}</td>
+              <td style="padding: 12px; border: 1px solid #e5e7eb;">Escrow Fees</td>
+              <td style="padding: 12px; text-align: right; border: 1px solid #e5e7eb;">$${currentEscrowFee.toFixed(2)}</td>
+              <td style="padding: 12px; text-align: right; border: 1px solid #e5e7eb;">$${nextEscrowFee.toFixed(2)}</td>
             </tr>
             <tr>
               <td style="padding: 12px; border: 1px solid #e5e7eb;">Escrow Fees</td>

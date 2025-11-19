@@ -21,8 +21,8 @@ export default function PricingModelComparison() {
     },
     {
       feature: "Platform Fee",
-      fixedPrice: "5% of milestone payment",
-      hourly: "Based on subscription tier",
+      fixedPrice: "9%/8%/4% escrow fee per milestone",
+      hourly: "9%/8%/4% escrow fee + tier-based upcharge",
     },
     {
       feature: "Best For",
@@ -99,7 +99,7 @@ export default function PricingModelComparison() {
               </div>
               <div className="pt-4 border-t">
                 <p className="text-sm text-muted-foreground">
-                  <strong>5% escrow fee</strong> applies to each milestone payment for secure fund management
+                  <strong>Escrow fee (9%/8%/4% based on tier)</strong> applies to each milestone payment for secure fund management, with a $10 minimum per payment
                 </p>
               </div>
             </CardContent>
@@ -223,8 +223,8 @@ export default function PricingModelComparison() {
                       <span className="font-medium">$8,000</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Escrow fee (5%)</span>
-                      <span>$400</span>
+                      <span className="text-muted-foreground">Escrow fee (9% Free tier)</span>
+                      <span>$720</span>
                     </div>
                     <div className="flex justify-between pt-2 border-t font-bold">
                       <span>Total Project Cost</span>
@@ -303,7 +303,7 @@ export default function PricingModelComparison() {
           <h3 className="font-semibold text-lg mb-3">Key Takeaway</h3>
           <p className="text-muted-foreground">
             <strong>Fixed-price contracts</strong> provide budget certainty and escrow protection, making them ideal for larger, well-defined projects. 
-            The 5% escrow fee ensures secure milestone-based payments. <strong>Hourly rate projects</strong> offer flexibility and are better suited 
+            The tier-based escrow fee (9%/8%/4%) ensures secure milestone-based payments. <strong>Hourly rate projects</strong> offer flexibility and are better suited 
             for ongoing work or when the scope isn't fully defined upfront. Choose based on your project's needs and your risk tolerance.
           </p>
         </div>

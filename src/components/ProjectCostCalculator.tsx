@@ -58,7 +58,8 @@ export default function ProjectCostCalculator() {
   const subscriptionFee = subscriptionCosts[subscriptionTier as keyof typeof subscriptionCosts];
   const hourlyMultipliers = { free: 3, pro: 2, premium: 1 };
   const hourlyAwardUpcharge = hourlyRate * hourlyMultipliers[subscriptionTier as keyof typeof hourlyMultipliers];
-  const hourlyEscrowFee = Math.max(10, hourlyWorkCost * 0.05); // 5% with $10 min
+  const escrowFeeRates = { free: 0.09, pro: 0.08, premium: 0.04 };
+  const hourlyEscrowFee = Math.max(10, hourlyWorkCost * escrowFeeRates[subscriptionTier as keyof typeof escrowFeeRates]);
   // Note: No rebate applied for hourly as per new rules
   const hourlyTotal = hourlyWorkCost + subscriptionFee + hourlyAwardUpcharge + hourlyEscrowFee;
 
@@ -284,7 +285,7 @@ export default function ProjectCostCalculator() {
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10)</span>
+                    <span className="text-muted-foreground">Escrow Processing Fee ({subscriptionTier === 'free' ? '9%' : subscriptionTier === 'pro' ? '8%' : '4%'}, min $10)</span>
                     <span className="font-medium">${hourlyEscrowFee.toFixed(0)}</span>
                   </div>
                   <div className="h-px bg-border" />

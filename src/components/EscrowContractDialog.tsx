@@ -58,7 +58,8 @@ export const EscrowContractDialog = ({
   };
 
   const totalMilestoneAmount = milestones.reduce((sum, m) => sum + (m.amount || 0), 0);
-  const calculateMilestoneFee = (amount: number) => Math.max(10, amount * 0.05);
+  // Note: This is a placeholder calculation - actual fee is tier-based (9%/8%/4%) and calculated on backend
+  const calculateMilestoneFee = (amount: number) => Math.max(10, amount * 0.09);
   const totalPlatformFee = milestones.reduce((sum, m) => sum + calculateMilestoneFee(m.amount || 0), 0);
 
   const handleCreateEscrow = async () => {

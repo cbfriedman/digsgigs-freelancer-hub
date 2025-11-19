@@ -2,17 +2,16 @@
  * Hook for calculating costs based on subscription tier and pricing model
  * 
  * Pricing Models:
- * - 'commission': Tier-based lead costs upfront + percentage-based contract award fee
- *   - Free: $60/lead + 10% contract award fee + 5% escrow (min $10)
- *   - Pro: $40/lead + 6% contract award fee + 5% escrow (min $10)
- *   - Premium: $0/lead + 3% contract award fee + 5% escrow (min $10)
+ * - Lead costs: $20 (Free), $10 (Pro), $5 (Premium)
  * 
  * - 'hourly': Tier-based lead cost upfront + hourly rate multiplier when awarded
- *   - Upfront: Free ($60), Pro ($40), Premium ($0)
- *   - When awarded: 3x / 2x / 1x average hourly rate + 5% escrow (min $10)
+ *   - Upfront: Free ($20), Pro ($10), Premium ($5)
+ *   - When awarded: 3x / 2x / 1x average hourly rate + escrow fee
  * 
  * - 'escrow': Processing fee on each milestone payment released
- *   - All tiers: 5% of milestone amount (minimum $10)
+ *   - Free: 9% of milestone amount (minimum $10)
+ *   - Pro: 8% of milestone amount (minimum $10)
+ *   - Premium: 4% of milestone amount (minimum $10)
  * 
  * - 'free_estimate': Upfront cost with conditional rebate on award
  *   - Costs: Free ($150), Pro ($100), Premium ($50)
@@ -49,15 +48,11 @@ export const useCommissionCalculator = () => {
     diggerPayout: number;
     minimumFee: number;
   } => {
-    // Contract award fees (percentage-based)
-    const awardFeePercentages = { free: 0.12, pro: 0.08, premium: 0.03 };
-    const commissionAmount = totalAmount * awardFeePercentages[tier];
-    const diggerPayout = totalAmount - commissionAmount;
-
+    // No contract award fees anymore - returning zeros for backward compatibility
     return {
-      rate: awardFeePercentages[tier] * 100, // Return as percentage
-      commissionAmount,
-      diggerPayout,
+      rate: 0,
+      commissionAmount: 0,
+      diggerPayout: totalAmount,
       minimumFee: 0,
     };
   };
@@ -81,8 +76,9 @@ export const useCommissionCalculator = () => {
     amount: number,
     tier: 'free' | 'pro' | 'premium' = 'free'
   ): number => {
-    // Escrow processing fee: 5% with $10 minimum (same for all tiers)
-    const feeRate = 0.05;
+    // Escrow processing fee: 9%/8%/4% with $10 minimum based on tier
+    const feeRates = { free: 0.09, pro: 0.08, premium: 0.04 };
+    const feeRate = feeRates[tier];
     const calculatedFee = amount * feeRate;
     const minimumFee = 10;
     

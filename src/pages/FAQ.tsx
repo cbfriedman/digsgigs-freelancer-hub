@@ -63,7 +63,7 @@ const FAQ = () => {
       },
       {
         question: "What are the platform fees?",
-        answer: "We charge a 5% platform fee on completed transactions processed through our escrow system. This covers payment processing, dispute resolution, and platform maintenance. Direct payments between you and clients have no platform fees."
+        answer: "We charge a tier-based escrow fee on milestone payments: 9% for Free tier, 8% for Pro tier, and 4% for Premium tier, with a minimum of $10 per payment. This covers secure payment processing, dispute resolution, and platform maintenance. The escrow system protects both parties throughout the project."
       }
     ],
     safety: [
