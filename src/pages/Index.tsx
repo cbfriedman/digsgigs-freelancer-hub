@@ -44,6 +44,7 @@ import {
 import heroImage from "@/assets/hero-image.jpg";
 import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
 import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
+import { ROIComparisonCalculator } from "@/components/ROIComparisonCalculator";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -708,6 +709,15 @@ const Index = () => {
           <p className="text-center text-sm text-muted-foreground mt-8 max-w-2xl mx-auto">
             * Clients post gigs for free. Diggers pay per lead to access contact info, then pay commission only on completed work.
           </p>
+        </div>
+      </section>
+
+      {/* ROI Comparison Calculator */}
+      <section className="py-20 bg-secondary/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <ROIComparisonCalculator />
+          </div>
         </div>
       </section>
 
