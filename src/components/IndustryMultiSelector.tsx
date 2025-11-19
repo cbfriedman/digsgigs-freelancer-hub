@@ -370,7 +370,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total Monthly Cost:</span>
                       <span className="text-lg font-bold text-primary">
-                        ${calculatedCost.totalCost.toFixed(2)}
+                        ${calculatedCost.totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
