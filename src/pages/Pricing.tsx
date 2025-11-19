@@ -25,6 +25,7 @@ import { HourlyUpchargeCalculator } from "@/components/HourlyUpchargeCalculator"
 import { TierSavingsCalculator } from "@/components/TierSavingsCalculator";
 import EscrowFeeBreakdown from "@/components/EscrowFeeBreakdown";
 import LeadNumberingExplainer from "@/components/LeadNumberingExplainer";
+import LeadCostTimeline from "@/components/LeadCostTimeline";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
 
@@ -970,6 +971,7 @@ export default function Pricing() {
       </div>
       
       <div className="container mx-auto px-4 space-y-16 py-16">
+        <LeadCostTimeline />
         <LeadNumberingExplainer />
         <EscrowFeeBreakdown />
         <PricingCalculator />
