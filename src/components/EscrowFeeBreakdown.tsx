@@ -15,9 +15,14 @@ export default function EscrowFeeBreakdown() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-2xl">Understanding Escrow Fees</CardTitle>
+            <div className="flex items-center gap-3 mb-2">
+              <CardTitle className="text-2xl">Understanding Escrow Fees</CardTitle>
+              <Badge variant="secondary" className="text-sm px-3 py-1">
+                Optional Feature
+              </Badge>
+            </div>
             <CardDescription className="mt-2">
-              Transparent breakdown of how our 9% escrow fee protects both parties
+              Escrow is only used when gig posters request payment protection. Our transparent 9% fee protects both parties when escrow is chosen.
             </CardDescription>
           </div>
           <Badge variant="outline" className="text-lg px-4 py-2">
@@ -26,11 +31,22 @@ export default function EscrowFeeBreakdown() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* When Escrow is Used */}
+        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            When is Escrow Used?
+          </h3>
+          <p className="text-sm text-muted-foreground mb-3">
+            Escrow is <strong>optional</strong> and only applied when the gig poster requests payment protection for their project. The 9% escrow fee is charged to the digger only when this protection is requested.
+          </p>
+        </div>
+
         {/* What Escrow Protects */}
         <div className="p-4 bg-accent/30 rounded-lg border border-accent">
           <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
             <Info className="h-5 w-5 text-primary" />
-            What Escrow Protects
+            What Escrow Protects (When Used)
           </h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>✓ <strong>Payment Security:</strong> Funds are held safely until work is completed</li>
@@ -42,7 +58,9 @@ export default function EscrowFeeBreakdown() {
 
         {/* Example Calculations */}
         <div>
-          <h3 className="font-semibold text-lg mb-4">Example Calculations</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-lg">Example Calculations (When Escrow is Requested)</h3>
+          </div>
           <div className="grid gap-4 md:grid-cols-3">
             {examples.map((example) => (
               <Card key={example.projectValue} className="bg-gradient-to-br from-background to-accent/5">
