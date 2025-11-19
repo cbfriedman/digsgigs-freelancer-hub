@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { INDUSTRY_PRICING, getLeadCostForIndustry, IndustryCategory } from "@/config/pricing";
+import { INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, IndustryCategory, ValueIndicator } from "@/config/pricing";
 
 interface IndustryMultiSelectorProps {
   selectedIndustries: string[];
@@ -14,16 +14,27 @@ interface IndustryMultiSelectorProps {
 
 export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, onManageProfilesClick }: IndustryMultiSelectorProps) => {
   const [open, setOpen] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Set<IndustryCategory>>(new Set(['mid-value']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  const toggleCategory = (category: IndustryCategory) => {
+  const toggleCategory = (categoryName: string) => {
     const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(category)) {
-      newExpanded.delete(category);
+    if (newExpanded.has(categoryName)) {
+      newExpanded.delete(categoryName);
     } else {
-      newExpanded.add(category);
+      newExpanded.add(categoryName);
     }
     setExpandedCategories(newExpanded);
+  };
+  
+  const getValueBadgeColor = (indicator: ValueIndicator): string => {
+    switch (indicator) {
+      case 'LV':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+      case 'MV':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
+      case 'HV':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100';
+    }
   };
 
   const toggleIndustry = (industry: string) => {
@@ -35,23 +46,6 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
 
   const removeIndustry = (industry: string) => {
     onIndustriesChange(selectedIndustries.filter(i => i !== industry));
-  };
-
-  const getCategoryLabel = (category: IndustryCategory): string => {
-    switch (category) {
-      case 'low-value':
-        return '💼 Low-Value Services';
-      case 'mid-value':
-        return '🏗️ Mid-Value Services';
-      case 'high-value':
-        return '⭐ High-Value Services';
-    }
-  };
-
-  const getCategoryPriceRange = (category: IndustryCategory): string => {
-    const pricing = INDUSTRY_PRICING.find(p => p.category === category);
-    if (!pricing) return '';
-    return `$${pricing.premium}-${pricing.free}/lead`;
   };
 
   // Get highest lead cost from selected industries
@@ -116,40 +110,40 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0 z-50" align="start">
+        <PopoverContent className="w-[700px] p-0 z-50" align="start">
           <div className="max-h-[500px] overflow-y-auto">
-            {INDUSTRY_PRICING.map((pricingCategory) => (
-              <div key={pricingCategory.category} className="border-b last:border-b-0">
+            {INDUSTRY_GROUPS.map((group) => (
+              <div key={group.categoryName} className="border-b last:border-b-0">
                 {/* Category Header */}
                 <button
                   className="w-full px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors"
-                  onClick={() => toggleCategory(pricingCategory.category)}
+                  onClick={() => toggleCategory(group.categoryName)}
                 >
                   <div className="flex items-center gap-2">
-                    {expandedCategories.has(pricingCategory.category) ? (
+                    {expandedCategories.has(group.categoryName) ? (
                       <ChevronDown className="h-4 w-4" />
                     ) : (
                       <ChevronRight className="h-4 w-4" />
                     )}
                     <span className="font-semibold text-sm">
-                      {getCategoryLabel(pricingCategory.category)}
+                      {group.categoryName}
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {getCategoryPriceRange(pricingCategory.category)}
+                    {group.industries.length} services
                   </span>
                 </button>
 
                 {/* Category Industries */}
-                {expandedCategories.has(pricingCategory.category) && (
-                  <div className="bg-accent/5">
-                    {pricingCategory.industries.map((industry) => {
-                      const isSelected = selectedIndustries.includes(industry);
+                {expandedCategories.has(group.categoryName) && (
+                  <div className="bg-accent/5 grid grid-cols-2 gap-px">
+                    {group.industries.map((industry) => {
+                      const isSelected = selectedIndustries.includes(industry.name);
                       return (
                         <button
-                          key={industry}
-                          className="w-full px-4 py-2 pl-10 text-left hover:bg-accent/50 transition-colors flex items-center justify-between group"
-                          onClick={() => toggleIndustry(industry)}
+                          key={industry.name}
+                          className="px-4 py-2 pl-10 text-left hover:bg-accent/50 transition-colors flex items-center justify-between group"
+                          onClick={() => toggleIndustry(industry.name)}
                         >
                           <div className="flex items-center gap-2 flex-1">
                             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
@@ -157,11 +151,14 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                             }`}>
                               {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                             </div>
-                            <span className="text-sm">{industry}</span>
+                            <span className="text-sm">{industry.name}</span>
                           </div>
-                          <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                            ${pricingCategory.premium}-${pricingCategory.free}
-                          </div>
+                          <Badge 
+                            variant="secondary" 
+                            className={`text-xs px-1.5 py-0 ${getValueBadgeColor(industry.indicator)}`}
+                          >
+                            {industry.indicator}
+                          </Badge>
                         </button>
                       );
                     })}
