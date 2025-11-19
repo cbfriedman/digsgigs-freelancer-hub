@@ -380,6 +380,7 @@ const DiggerRegistration = () => {
     return (
       <DiggerProfilePreview
         businessName={businessName}
+        assignedUserName={assignedUserName}
         profession={profession}
         location={location}
         bio={bio}
