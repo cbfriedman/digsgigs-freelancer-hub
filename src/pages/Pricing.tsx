@@ -385,7 +385,7 @@ export default function Pricing() {
                   {tier.savingsPercent !== undefined && (
                     <div className="mt-3">
                       <Badge className={tier.savingsPercent === 0 ? "bg-muted text-muted-foreground text-sm px-3 py-1" : "bg-green-500 text-white text-sm px-3 py-1"}>
-                        {tier.savingsPercent === 0 ? "0% Savings" : `Save ${tier.savingsPercent}%`}
+                        {tier.savingsPercent === 0 ? "Standard Rate" : `Save ${tier.savingsPercent}%`}
                       </Badge>
                     </div>
                   )}
