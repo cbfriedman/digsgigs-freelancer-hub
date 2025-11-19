@@ -10,11 +10,15 @@ export default function CompetitiveAdvantageShowcase() {
   const proTier = getLeadCostForIndustry(industry, 'pro');
   const premiumTier = getLeadCostForIndustry(industry, 'premium');
 
+  // Assuming 25% lead-to-award conversion rate (industry standard)
+  const leadToAwardRate = 0.25;
+  
   const competitorData = [
     {
       name: "HomeAdvisor",
       monthlyFee: "$0",
       leadCost: "$60",
+      costPerAward: "$240",
       volumeDiscount: "None",
       escrow: "Not available",
       leadQuality: "Shared (3-5 pros)",
@@ -25,6 +29,7 @@ export default function CompetitiveAdvantageShowcase() {
       name: "Thumbtack",
       monthlyFee: "$0",
       leadCost: "$50",
+      costPerAward: "$200",
       volumeDiscount: "None",
       escrow: "Limited",
       leadQuality: "Shared",
@@ -35,6 +40,7 @@ export default function CompetitiveAdvantageShowcase() {
       name: "Google AdWords",
       monthlyFee: "$0",
       leadCost: "$160 effective*",
+      costPerAward: "$640",
       volumeDiscount: "None",
       escrow: "None",
       leadQuality: "Unvetted clicks",
@@ -44,17 +50,19 @@ export default function CompetitiveAdvantageShowcase() {
     {
       name: "Bark",
       monthlyFee: "$0",
-      leadCost: "$45",
+      leadCost: "$22-$276+",
+      costPerAward: "$88-$1,104+",
       volumeDiscount: "None",
       escrow: "Limited",
       leadQuality: "Shared",
       advantages: ["Simple credit system"],
-      disadvantages: ["No volume discounts", "Credits expire", "Lead sharing", "Flat pricing"]
+      disadvantages: ["No volume discounts", "High-value leads extremely expensive", "Credits expire", "Lead sharing", "Flat pricing"]
     },
     {
       name: "Yelp",
       monthlyFee: "$300",
       leadCost: "Varies",
+      costPerAward: "Unknown",
       volumeDiscount: "None",
       escrow: "None",
       leadQuality: "Passive (not guaranteed)",
@@ -147,6 +155,7 @@ export default function CompetitiveAdvantageShowcase() {
                   <th className="text-left p-4 font-bold">Platform</th>
                   <th className="text-left p-4 font-bold">Monthly Fee</th>
                   <th className="text-left p-4 font-bold">Cost Per Lead</th>
+                  <th className="text-left p-4 font-bold">Cost Per Award</th>
                   <th className="text-left p-4 font-bold">Volume Discount</th>
                   <th className="text-left p-4 font-bold">Lead Quality</th>
                   <th className="text-left p-4 font-bold">Escrow</th>
@@ -172,6 +181,12 @@ export default function CompetitiveAdvantageShowcase() {
                       ${freeTier} → ${proTier} → ${premiumTier}
                     </div>
                     <p className="text-xs text-muted-foreground">Auto-decreases with volume</p>
+                  </td>
+                  <td className="p-4">
+                    <div className="font-semibold text-primary">
+                      ${(freeTier / leadToAwardRate).toFixed(0)} → ${(proTier / leadToAwardRate).toFixed(0)} → ${(premiumTier / leadToAwardRate).toFixed(0)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Based on 25% conversion</p>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-1">
@@ -218,6 +233,12 @@ export default function CompetitiveAdvantageShowcase() {
                       <span>{competitor.leadCost}</span>
                       {competitor.name === "Google AdWords" && (
                         <p className="text-xs text-muted-foreground">*Assumes 25% conversion</p>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <span className="font-semibold">{competitor.costPerAward}</span>
+                      {competitor.name === "Bark" && (
+                        <p className="text-xs text-muted-foreground">Varies by project value</p>
                       )}
                     </td>
                     <td className="p-4">
