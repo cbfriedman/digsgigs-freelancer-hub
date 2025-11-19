@@ -61,7 +61,7 @@ export default function Pricing() {
       popular: PRICING_TIERS.free.popular,
       volumeTier: 'Free Tier (1-10 leads/mo)',
       description: 'Full Retail price',
-      savingsPercent: undefined,
+      savingsPercent: 0,
       features: [],
     },
     pro: {
@@ -382,10 +382,10 @@ export default function Pricing() {
                   <p className="text-xs text-muted-foreground mt-2">
                     Expected: {key === 'free' ? '1-10 leads per month' : key === 'pro' ? '11-50 leads per month' : '51+ leads per month'}
                   </p>
-                  {tier.savingsPercent && (
+                  {tier.savingsPercent !== undefined && (
                     <div className="mt-3">
-                      <Badge className="bg-green-500 text-white text-sm px-3 py-1">
-                        Save {tier.savingsPercent}%
+                      <Badge className={tier.savingsPercent === 0 ? "bg-muted text-muted-foreground text-sm px-3 py-1" : "bg-green-500 text-white text-sm px-3 py-1"}>
+                        {tier.savingsPercent === 0 ? "0% Savings" : `Save ${tier.savingsPercent}%`}
                       </Badge>
                     </div>
                   )}
