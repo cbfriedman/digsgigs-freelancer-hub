@@ -30,6 +30,7 @@ import InteractiveLeadSlider from "@/components/InteractiveLeadSlider";
 import MonthlyLeadSimulator from "@/components/MonthlyLeadSimulator";
 import CompetitorCostComparison from "@/components/CompetitorCostComparison";
 import CompetitiveAdvantageShowcase from "@/components/CompetitiveAdvantageShowcase";
+import { BarkComparisonTable } from "@/components/BarkComparisonTable";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
 
@@ -1016,6 +1017,7 @@ export default function Pricing() {
       
       <div className="container mx-auto px-4 space-y-16 py-16">
         <CompetitiveAdvantageShowcase />
+        <BarkComparisonTable />
         <InteractiveLeadSlider />
         <MonthlyLeadSimulator />
         <CompetitorCostComparison />
