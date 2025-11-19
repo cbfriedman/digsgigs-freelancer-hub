@@ -53,11 +53,17 @@ const DiggerRegistration = () => {
   const [workPhotoPreviews, setWorkPhotoPreviews] = useState<string[]>([]);
   const { calculateLeadCost } = useCommissionCalculator();
   
-  // Auto-generate username based on city, state, zip, and first name
+  // Auto-generate username based on city, state, zip, and first name (only if not manually set)
   useEffect(() => {
     if (city && state && zipCode && firstName) {
-      const generatedUsername = `${city.replace(/\s+/g, '')}${state.replace(/\s+/g, '')}${zipCode}${firstName.replace(/\s+/g, '')}`;
-      setAssignedUserName(generatedUsername);
+      // Only auto-generate if the field is empty or still matches the old auto-generated format
+      const newGeneratedUsername = `${city.replace(/\s+/g, '')}${state.replace(/\s+/g, '')}${zipCode}${firstName.replace(/\s+/g, '')}`;
+      
+      // Update if field is empty or user hasn't customized it
+      if (!assignedUserName) {
+        setAssignedUserName(newGeneratedUsername);
+      }
+      
       // Also update location for backend compatibility
       setLocation(`${city}, ${state} ${zipCode}`);
     }
@@ -198,6 +204,19 @@ const DiggerRegistration = () => {
 
   const handleApprove = async () => {
     if (!user) return;
+
+    // Validate User ID
+    if (!assignedUserName || assignedUserName.trim().length < 3) {
+      toast.error("User ID must be at least 3 characters long");
+      setShowPreview(false);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(assignedUserName)) {
+      toast.error("User ID can only contain letters, numbers, hyphens, and underscores");
+      setShowPreview(false);
+      return;
+    }
 
     // Check if "Other Professional Services" is selected and validate custom profession
     const otherCategorySelected = await checkOtherCategorySelected();
@@ -476,17 +495,62 @@ const DiggerRegistration = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="assignedUserName">Assigned User Name</Label>
-              <Input
-                id="assignedUserName"
-                value={assignedUserName}
-                readOnly
-                placeholder="Auto-generated from location and name"
-                className="bg-muted"
-              />
+              <Label htmlFor="assignedUserName">User ID *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="assignedUserName"
+                  value={assignedUserName}
+                  onChange={(e) => {
+                    // Allow only alphanumeric characters, hyphens, and underscores
+                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+                    setAssignedUserName(sanitized);
+                  }}
+                  placeholder="Auto-generated from location and name"
+                  maxLength={50}
+                  required
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (city && state && zipCode && firstName) {
+                      const newGenerated = `${city.replace(/\s+/g, '')}${state.replace(/\s+/g, '')}${zipCode}${firstName.replace(/\s+/g, '')}`;
+                      setAssignedUserName(newGenerated);
+                      toast.success("User ID regenerated");
+                    } else {
+                      toast.error("Please fill in City, State, Zip Code, and First Name first");
+                    }
+                  }}
+                  className="whitespace-nowrap"
+                >
+                  Generate New
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
-                This username is automatically generated from your location and first name
+                Your unique User ID. Auto-generated but you can customize it. Only letters, numbers, hyphens, and underscores allowed (max 50 characters).
               </p>
+              
+              {/* User ID Preview Card */}
+              {assignedUserName && (
+                <Card className="p-4 bg-accent/5 border-primary/20">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Preview</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                        {assignedUserName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-lg">{assignedUserName}</p>
+                        <p className="text-sm text-muted-foreground">{profession || 'Your Profession'}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      This is how your User ID will appear on your profile
+                    </p>
+                  </div>
+                </Card>
+              )}
             </div>
 
             <div className="flex items-center space-x-2">
