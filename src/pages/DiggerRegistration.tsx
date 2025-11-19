@@ -31,6 +31,7 @@ const DiggerRegistration = () => {
   const [profession, setProfession] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  const [stateError, setStateError] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [location, setLocation] = useState("");
   const [phone, setPhone] = useState("");
@@ -194,6 +195,12 @@ const DiggerRegistration = () => {
       return;
     }
 
+    // Validate State format
+    if (!state || state.length !== 2 || !/^[A-Z]{2}$/.test(state)) {
+      toast.error("State must be a valid 2-letter abbreviation (e.g., CA, NY, TX)");
+      return;
+    }
+
     if (!pricingModel && !offersFreEstimates) {
       toast.error("Please select at least one pricing option (Fixed Price, Hourly, Both Models, or Free Estimates)");
       return;
@@ -204,6 +211,13 @@ const DiggerRegistration = () => {
 
   const handleApprove = async () => {
     if (!user) return;
+
+    // Validate State format
+    if (!state || state.length !== 2 || !/^[A-Z]{2}$/.test(state)) {
+      toast.error("State must be a valid 2-letter abbreviation (e.g., CA, NY, TX)");
+      setShowPreview(false);
+      return;
+    }
 
     // Validate User ID
     if (!assignedUserName || assignedUserName.trim().length < 3) {
@@ -482,14 +496,32 @@ const DiggerRegistration = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="state">State *</Label>
+              <Label htmlFor="state">State * <span className="text-xs text-muted-foreground font-normal">(2-letter abbreviation)</span></Label>
               <Input
                 id="state"
                 value={state}
-                onChange={(e) => setState(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                  setState(value);
+                  
+                  // Validate state format
+                  if (value.length > 0 && value.length !== 2) {
+                    setStateError("State must be exactly 2 letters (e.g., CA, NY, TX)");
+                  } else {
+                    setStateError("");
+                  }
+                }}
                 placeholder="CA"
+                maxLength={2}
                 required
+                className={stateError ? 'border-destructive focus-visible:ring-destructive' : ''}
               />
+              {stateError && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <Info className="w-3 h-3" />
+                  {stateError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
