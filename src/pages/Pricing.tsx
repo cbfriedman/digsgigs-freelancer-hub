@@ -468,10 +468,13 @@ export default function Pricing() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="industries" className="font-medium">
+                      <Label htmlFor="industries" className="font-medium flex items-center gap-2">
                         Select Your Industries *
+                        {selectedIndustries.length === 0 && (
+                          <Badge variant="destructive" className="text-xs">Required</Badge>
+                        )}
                       </Label>
-                      <IndustryMultiSelector 
+                      <IndustryMultiSelector
                         selectedIndustries={selectedIndustries}
                         onIndustriesChange={setSelectedIndustries}
                         onManageProfilesClick={() => {
@@ -491,7 +494,10 @@ export default function Pricing() {
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Your pricing will update based on selected industries
+                        {selectedIndustries.length === 0 
+                          ? "👆 Please open the dropdown above and select at least one industry to continue"
+                          : "Your pricing will update based on selected industries"
+                        }
                       </p>
                     </div>
 
@@ -515,8 +521,8 @@ export default function Pricing() {
                       </Label>
                     </div>
 
-                    <Button type="submit" className="w-full" size="lg">
-                      Continue to Industry Selection
+                    <Button type="submit" className="w-full" size="lg" disabled={selectedIndustries.length === 0}>
+                      {selectedIndustries.length === 0 ? "Select Industries to Continue" : "Continue to Pricing"}
                     </Button>
                     <p className="text-xs text-center text-muted-foreground mt-2">
                       No payment required • No commitment to buy
