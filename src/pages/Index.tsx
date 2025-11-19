@@ -198,23 +198,35 @@ const Index = () => {
 
   const pricingTiers = [
     { 
-      name: "Free", 
-      price: "$0",
-      leadCost: "$20/lead",
-      features: ["Pay per lead", "Escrow fees on work"]
+      name: "Free Tier (1-10 leads/mo)", 
+      subtitle: "Expected: 1-10 leads per month",
+      tagline: "Standard Rate",
+      description: "Full Retail price",
+      leadCost: "$120",
+      leadLabel: "Lead Cost (HVAC):",
+      savingsPercent: 0,
+      features: ["Pay per lead", "Escrow Fees: Optional", "8% per payment (min $10)", "Only if gig poster requests escrow"]
     },
     { 
-      name: "Pro", 
-      price: "$99",
-      leadCost: "$10/lead",
+      name: "Pro Tier (11-50 leads/mo)", 
+      subtitle: "Expected: 11-50 leads per month",
+      tagline: "Save 17%",
+      description: "Best Bulk Pricing - Lock in 17% savings",
+      leadCost: "$100",
+      leadLabel: "Lead Cost (HVAC):",
+      savingsPercent: 17,
       popular: true,
-      features: ["Lower lead cost", "Lower escrow fees"]
+      features: ["Lower lead cost", "Escrow Fees: Optional", "8% per payment (min $10)", "Only if gig poster requests escrow"]
     },
     { 
-      name: "Premium", 
-      price: "$599",
-      leadCost: "$5/lead",
-      features: ["Lowest lead cost", "Lowest escrow fees"]
+      name: "Premium Tier (51+ leads/mo)", 
+      subtitle: "Expected: 51+ leads per month",
+      tagline: "Save 33%",
+      description: "Best Bulk Pricing - Lock in 33% savings",
+      leadCost: "$80",
+      leadLabel: "Lead Cost (HVAC):",
+      savingsPercent: 33,
+      features: ["Lowest lead cost", "Escrow Fees: Optional", "8% per payment (min $10)", "Only if gig poster requests escrow"]
     }
   ];
 
@@ -668,19 +680,35 @@ const Index = () => {
                 {tier.popular && (
                   <Badge className="mb-4 bg-primary text-primary-foreground">Most Popular</Badge>
                 )}
+                {!tier.popular && tier.savingsPercent === 0 && (
+                  <Badge variant="outline" className="mb-4">Active</Badge>
+                )}
+                {!tier.popular && tier.savingsPercent > 0 && (
+                  <Badge className="mb-4 bg-green-500 text-white">{tier.tagline}</Badge>
+                )}
                 <div className="text-center mb-6">
                   <h4 className="font-bold text-2xl mb-2">{tier.name}</h4>
-                  <div className="text-4xl font-bold text-primary mb-2">{tier.price}</div>
-                  <div className="text-sm text-muted-foreground mb-4">/month</div>
-                  <div className="space-y-2 text-sm">
-                    <div className="font-semibold text-foreground">{tier.leadCost}</div>
+                  <div className="text-sm text-muted-foreground mb-2">{tier.subtitle}</div>
+                  {tier.savingsPercent === 0 ? (
+                    <>
+                      <div className="text-lg font-semibold text-foreground mb-2">{tier.tagline}</div>
+                      <div className="text-sm text-primary mb-4">{tier.description}</div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-primary mb-4">{tier.description}</div>
+                  )}
+                  <div className="space-y-2 text-sm mt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">{tier.leadLabel}</span>
+                      <span className="font-bold text-2xl text-primary">{tier.leadCost}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2 pt-4 border-t border-border/50">
                   {tier.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span>{feature}</span>
+                    <div key={idx} className="flex items-start gap-2 text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">{feature}</span>
                     </div>
                   ))}
                 </div>
