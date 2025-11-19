@@ -6,67 +6,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Check, ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
+import { PRICING_TIERS } from "@/config/pricing";
 
-const TIERS = {
-  free: {
-    name: 'Free',
-    price: '$0',
-    leadCost: '$5',
-    commission: '9%',
-    priceId: null,
-    features: [
-      'Unlimited bidding on gigs',
-      '$5 per lead purchase',
-      '9% commission on completed work',
-      'No other transaction fees',
-      '2-hour rate charge when awarded (hourly)',
-      'Access to all gig categories',
-      'Full profile features',
-      'Profile visibility',
-      'AI support',
-      'Advanced analytics',
-    ]
-  },
-  pro: {
-    name: 'Pro',
-    price: '$50',
-    leadCost: '$3',
-    commission: '6%',
-    priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
-    productId: 'prod_TQ0mK76zTAwoQc',
-    features: [
-      'Unlimited bidding on gigs',
-      '$3 per lead purchase',
-      '6% commission on completed work',
-      'No other transaction fees',
-      '2-hour rate charge when awarded (hourly)',
-      'Access to all gig categories',
-      'Full profile features',
-      'Profile visibility',
-      'AI support',
-      'Advanced analytics',
-    ]
-  },
-  premium: {
-    name: 'Premium',
-    price: '$200',
-    leadCost: '$0',
-    commission: '0%',
-    priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
-    productId: 'prod_TQ0mVQT1H5f1zg',
-    features: [
-      'Unlimited bidding on gigs',
-      'Free lead purchases',
-      'No commission on completed work',
-      'No other transaction fees',
-      '2-hour rate charge when awarded (hourly)',
-      'Access to all gig categories',
-      'Full profile features',
-      'Profile visibility',
-      'AI support',
-      'Advanced analytics',
-    ]
-  }
+const TIER_FEATURES = {
+  free: [
+    'Unlimited bidding on gigs',
+    `${PRICING_TIERS.free.leadCost} per lead purchase`,
+    `${PRICING_TIERS.free.escrowProcessingFee}`,
+    `${PRICING_TIERS.free.hourlyRateCharge} rate charge when awarded (hourly)`,
+    'Access to all gig categories',
+    'Full profile features',
+    'Profile visibility',
+    'AI support',
+    'Advanced analytics',
+  ],
+  pro: [
+    'Unlimited bidding on gigs',
+    `${PRICING_TIERS.pro.leadCost} per lead purchase`,
+    `${PRICING_TIERS.pro.escrowProcessingFee}`,
+    `${PRICING_TIERS.pro.hourlyRateCharge} rate charge when awarded (hourly)`,
+    'Access to all gig categories',
+    'Full profile features',
+    'Profile visibility',
+    'AI support',
+    'Advanced analytics',
+  ],
+  premium: [
+    'Unlimited bidding on gigs',
+    `${PRICING_TIERS.premium.leadCost} per lead purchase`,
+    `${PRICING_TIERS.premium.escrowProcessingFee}`,
+    `${PRICING_TIERS.premium.hourlyRateCharge} rate charge when awarded (hourly)`,
+    'Access to all gig categories',
+    'Full profile features',
+    'Profile visibility',
+    'AI support',
+    'Advanced analytics',
+  ]
 };
 
 export default function Subscription() {
@@ -74,7 +51,7 @@ export default function Subscription() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<string | null>(null);
   const [currentTier, setCurrentTier] = useState<string>('free');
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -128,7 +105,8 @@ export default function Subscription() {
     }
   };
 
-  const handleSubscribe = async (priceId: string, tierName: string) => {
+  const handleSubscribe = async (tierId: 'free' | 'pro' | 'premium') => {
+    const tier = PRICING_TIERS[tierId];
     if (!user) {
       toast({
         title: "Authentication required",
@@ -139,11 +117,19 @@ export default function Subscription() {
       return;
     }
 
-    setSubscribing(tierName);
+    if (tierId === 'free') {
+      toast({
+        title: "Free tier",
+        description: "You're already on the free tier.",
+      });
+      return;
+    }
+
+    setProcessing(tierId);
     
     try {
-      const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
-        body: { priceId }
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { priceId: tier.priceId }
       });
 
       if (error) throw error;
@@ -159,11 +145,12 @@ export default function Subscription() {
         variant: "destructive",
       });
     } finally {
-      setSubscribing(null);
+      setProcessing(null);
     }
   };
 
   const handleManageSubscription = async () => {
+    setProcessing('manage');
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       
@@ -179,6 +166,8 @@ export default function Subscription() {
         description: error.message || "Failed to open customer portal",
         variant: "destructive",
       });
+    } finally {
+      setProcessing(null);
     }
   };
 
@@ -221,13 +210,13 @@ export default function Subscription() {
               <CardHeader>
                 <CardTitle>Current Subscription</CardTitle>
                 <CardDescription>
-                  You're on the {TIERS[currentTier as keyof typeof TIERS].name} plan
+                  You're on the {PRICING_TIERS[currentTier as 'free' | 'pro' | 'premium'].name} plan
                   {subscriptionEnd && ` until ${new Date(subscriptionEnd).toLocaleDateString()}`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={handleManageSubscription} variant="outline">
-                  Manage Subscription
+                <Button onClick={handleManageSubscription} variant="outline" disabled={processing === 'manage'}>
+                  {processing === 'manage' ? 'Loading...' : 'Manage Subscription'}
                 </Button>
               </CardContent>
             </Card>
@@ -235,60 +224,38 @@ export default function Subscription() {
         )}
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {Object.entries(TIERS).map(([key, tier]) => {
-            const isCurrentTier = currentTier === key;
-            const isSubscribing = subscribing === key;
+          {(['free', 'pro', 'premium'] as const).map((tierId) => {
+            const tier = PRICING_TIERS[tierId];
+            const isCurrentTier = currentTier === tierId;
             
             return (
-              <Card
-                key={key}
-                className={`relative ${isCurrentTier ? 'border-primary shadow-lg' : ''}`}
-              >
+              <Card key={tierId} className={`relative ${isCurrentTier ? 'border-primary shadow-lg' : ''}`}>
                 {isCurrentTier && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    Your Plan
-                  </Badge>
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Your Plan</Badge>
                 )}
                 <CardHeader>
                   <CardTitle className="text-2xl">{tier.name}</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">{tier.price}</span>
-                    {tier.price !== '$0' && <span className="text-muted-foreground">/month</span>}
+                    {tier.priceValue > 0 && <span className="text-muted-foreground">/month</span>}
                   </div>
-                  <CardDescription className="space-y-1">
-                    <div className="text-lg font-semibold text-foreground">{tier.leadCost} per lead</div>
-                    <div className="text-sm text-muted-foreground">{tier.commission} on completed work</div>
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <ul className="space-y-3">
-                    {tier.features.map((feature, index) => (
+                    {TIER_FEATURES[tierId].map((feature, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  
-                  {tier.priceId ? (
-                    <Button
-                      className="w-full"
-                      onClick={() => handleSubscribe(tier.priceId!, key)}
-                      disabled={isCurrentTier || isSubscribing}
-                    >
-                      {isSubscribing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Processing...
-                        </>
-                      ) : isCurrentTier ? (
-                        'Current Plan'
-                      ) : (
-                        `Upgrade to ${tier.name}`
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
+                  <Button className="w-full" onClick={() => handleSubscribe(tierId)} disabled={isCurrentTier || processing === tierId}>
+                    {processing === tierId ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</> : isCurrentTier ? 'Current Plan' : 'Subscribe'}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
                       className="w-full"
                       variant="outline"
                       disabled={isCurrentTier}

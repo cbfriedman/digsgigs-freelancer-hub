@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Crown, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PRICING_TIERS } from "@/config/pricing";
 
 interface SubscriptionBannerProps {
   currentTier: string;
@@ -18,10 +19,10 @@ export const SubscriptionBanner = ({ currentTier }: SubscriptionBannerProps) => 
         <TrendingUp className="h-4 w-4" />
       </AlertTitle>
       <AlertDescription className="mt-2 space-y-2">
-        <p>Get unlimited lead access and lower commission rates:</p>
+        <p>Get unlimited lead access and lower costs:</p>
         <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-          <li><strong>Pro ($10/month)</strong>: 4% commission instead of 15%</li>
-          <li><strong>Premium ($150/month)</strong>: 0% commission - keep 100%!</li>
+          <li><strong>Pro ({PRICING_TIERS.pro.price}/month)</strong>: {PRICING_TIERS.pro.leadCost}/lead + {PRICING_TIERS.pro.escrowProcessingFee}</li>
+          <li><strong>Premium ({PRICING_TIERS.premium.price}/month)</strong>: {PRICING_TIERS.premium.leadCost}/lead + {PRICING_TIERS.premium.escrowProcessingFee}</li>
         </ul>
         <div className="pt-2">
           <Button asChild size="sm">

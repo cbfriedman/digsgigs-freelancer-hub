@@ -1,5 +1,8 @@
+import { PRICING_TIERS } from '@/config/pricing';
+
 /**
  * Hook for calculating costs based on subscription tier and pricing model
+ * Uses centralized pricing configuration from @/config/pricing
  * 
  * Pricing Models:
  * - Lead costs: $20 (Free), $10 (Pro), $5 (Premium)
@@ -24,18 +27,9 @@ export const useCommissionCalculator = () => {
   ): {
     leadCost: number;
   } => {
-    let leadCost = 20; // Default: free tier ($20 per lead)
-
-    if (tier === 'premium') {
-      leadCost = 5; // $5 per lead
-    } else if (tier === 'pro') {
-      leadCost = 10; // $10 per lead
-    } else {
-      leadCost = 20; // $20 per lead (free)
-    }
-
+    const pricingTier = PRICING_TIERS[tier];
     return {
-      leadCost,
+      leadCost: pricingTier.leadCostValue,
     };
   };
 
@@ -61,35 +55,24 @@ export const useCommissionCalculator = () => {
     averageHourlyRate: number,
     tier: 'free' | 'pro' | 'premium' = 'free'
   ): number => {
-    let multiplier = 3; // Default: free tier (3x average rate)
-
-    if (tier === 'premium') {
-      multiplier = 1; // 1x average rate
-    } else if (tier === 'pro') {
-      multiplier = 2; // 2x average rate
-    }
-
-    return averageHourlyRate * multiplier;
+    const pricingTier = PRICING_TIERS[tier];
+    return averageHourlyRate * pricingTier.hourlyRateChargeMultiplier;
   };
 
   const calculateEscrowFee = (
     amount: number,
     tier: 'free' | 'pro' | 'premium' = 'free'
   ): number => {
-    // Escrow processing fee: 9%/8%/4% with $10 minimum based on tier
-    const feeRates = { free: 0.09, pro: 0.08, premium: 0.04 };
-    const feeRate = feeRates[tier];
-    const calculatedFee = amount * feeRate;
-    const minimumFee = 10;
-    
-    return Math.max(calculatedFee, minimumFee);
+    const pricingTier = PRICING_TIERS[tier];
+    const calculatedFee = amount * pricingTier.escrowProcessingFeeValue;
+    return Math.max(calculatedFee, pricingTier.escrowProcessingMinimum);
   };
 
   const calculateFreeEstimateCost = (
     tier: 'free' | 'pro' | 'premium' = 'free'
   ): number => {
-    const estimateCosts = { free: 150, pro: 100, premium: 50 };
-    return estimateCosts[tier];
+    const pricingTier = PRICING_TIERS[tier];
+    return pricingTier.freeEstimateCostValue;
   };
 
   const calculateFreeEstimateRebate = (
