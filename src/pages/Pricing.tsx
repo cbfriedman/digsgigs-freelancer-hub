@@ -433,16 +433,22 @@ export default function Pricing() {
                       </div>
                       <span className="font-bold text-primary">${tier.leadCostValue}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
+                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg border border-dashed border-muted-foreground/30">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Escrow Fees:</span>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Escrow Fees:</span>
+                            <Badge variant="outline" className="text-xs px-2 py-0">Optional</Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground">Only if gig poster requests escrow</span>
+                        </div>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Fee charged on each milestone or progress payment released through escrow, with a minimum fee of $10 per release.</p>
+                              <p className="text-sm">Fee charged only when gig posters request escrow protection for their project. Charged on each milestone or progress payment released through escrow, with a minimum fee of $10 per release.</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
