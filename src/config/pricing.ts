@@ -34,15 +34,32 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'low-value',
     industries: [
+      // Home & Local Services
       'Cleaning & Janitorial',
       'Handyman Services',
       'Pet Care & Grooming',
       'Tutoring & Education',
       'Moving & Delivery',
       'Event Planning',
-      'Photography',
       'Catering',
-      'Beauty & Wellness'
+      'Beauty & Wellness',
+      
+      // Digital & Creative - Entry Level
+      'Data Entry',
+      'Virtual Assistant',
+      'Transcription',
+      'Basic Graphic Design',
+      'Photo Editing',
+      'Simple Logo Design',
+      'Social Media Management',
+      'Content Writing',
+      'Proofreading',
+      'Basic Video Editing',
+      'Voice Over',
+      'Audio Editing',
+      'Product Photography',
+      'Resume Writing',
+      'Translation'
     ],
     free: 24,   // 3× avg CPC ($8)
     pro: 16,    // 2× avg CPC ($8)
@@ -51,6 +68,7 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'mid-value',
     industries: [
+      // Home & Construction Services
       'HVAC',
       'Plumbing',
       'Electrical',
@@ -68,7 +86,45 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Windows & Doors',
       'Concrete Work',
       'Fencing',
-      'Pool Service'
+      'Pool Service',
+      
+      // Digital & Creative - Professional Level
+      'Web Development',
+      'WordPress Development',
+      'E-commerce Development',
+      'Mobile App Development',
+      'Software Development',
+      'UI/UX Design',
+      'Professional Graphic Design',
+      'Brand Identity Design',
+      'Illustration',
+      'Animation',
+      '2D Animation',
+      '3D Modeling',
+      'Video Production',
+      'Professional Video Editing',
+      'Motion Graphics',
+      'Photography',
+      'Architectural Rendering',
+      
+      // Digital Marketing & Business
+      'SEO Services',
+      'PPC Management',
+      'Email Marketing',
+      'Copywriting',
+      'Content Marketing',
+      'Marketing Strategy',
+      'Business Consulting',
+      'Project Management',
+      'Product Management',
+      'Data Analysis',
+      'Database Design',
+      'System Administration',
+      'Network Administration',
+      'Technical Writing',
+      'Game Development',
+      'Unity Development',
+      'Unreal Engine Development'
     ],
     free: 120,  // 3× avg CPC ($40)
     pro: 80,    // 2× avg CPC ($40)
@@ -77,17 +133,59 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'high-value',
     industries: [
+      // Professional Services
       'Legal Services',
+      'Patent Law',
+      'Corporate Law',
+      'Immigration Law',
+      'Tax Law',
       'Insurance',
+      'Life Insurance',
+      'Health Insurance',
       'Financial Planning',
+      'Investment Advisory',
+      'Wealth Management',
       'Real Estate',
+      'Commercial Real Estate',
       'Medical & Dental',
+      'Healthcare Consulting',
       'Accounting',
+      'Tax Preparation',
+      'CPA Services',
+      'Business Consulting',
+      'Management Consulting',
+      'Strategy Consulting',
+      
+      // High-Value Tech & Engineering
+      'Enterprise Software Development',
+      'Cloud Architecture',
+      'DevOps Consulting',
+      'Cybersecurity Consulting',
+      'Blockchain Development',
+      'AI & Machine Learning',
+      'Data Science',
+      'Big Data Engineering',
       'IT Consulting',
-      'Marketing & Advertising',
+      'ERP Implementation',
+      'Salesforce Development',
+      'SAP Consulting',
+      
+      // Architecture & Engineering
       'Architecture',
-      'Engineering',
-      'Business Consulting'
+      'Structural Engineering',
+      'Civil Engineering',
+      'Mechanical Engineering',
+      'Electrical Engineering',
+      'Industrial Design',
+      'Patent Illustration',
+      
+      // Marketing & Advertising - Agency Level
+      'Marketing & Advertising',
+      'Brand Strategy',
+      'Full-Service Marketing',
+      'Media Buying',
+      'Creative Direction',
+      'Public Relations'
     ],
     free: 750,   // 3× avg CPC ($250)
     pro: 500,    // 2× avg CPC ($250)
