@@ -10,19 +10,14 @@ import { Check, Loader2, Star, RefreshCw, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import PricingCalculator from "@/components/PricingCalculator";
 import PlanRecommender from "@/components/PlanRecommender";
 import PricingCharts from "@/components/PricingCharts";
 import BreakevenCalculator from "@/components/BreakevenCalculator";
-import PricingModelComparison from "@/components/PricingModelComparison";
-import ProjectCostCalculator from "@/components/ProjectCostCalculator";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import SEOHead from "@/components/SEOHead";
 import { generateFAQSchema } from "@/components/StructuredData";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
-import { HourlyUpchargeCalculator } from "@/components/HourlyUpchargeCalculator";
-import { TierSavingsCalculator } from "@/components/TierSavingsCalculator";
 import EscrowFeeBreakdown from "@/components/EscrowFeeBreakdown";
 import LeadNumberingExplainer from "@/components/LeadNumberingExplainer";
 import LeadCostTimeline from "@/components/LeadCostTimeline";
@@ -951,72 +946,7 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* Additional Components */}
-      <PricingModelComparison />
-      
-      {/* CTA Section after Pricing Model Comparison */}
-      <section className="py-8 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <Card className="bg-gradient-to-r from-primary/5 to-accent/10 border-primary/20">
-            <CardContent className="py-8">
-              <div className="text-center space-y-4">
-                <h3 className="text-2xl font-bold">Compare Plans and Make Your Choice</h3>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  See how different pricing models work and choose the plan that fits your business
-                </p>
-                <div className="flex flex-wrap justify-center gap-4 pt-4">
-                  {Object.entries(TIERS).map(([key, tier]) => (
-                    <Button
-                      key={key}
-                      onClick={() => handleSubscribe(key, tier.priceId)}
-                      disabled={isButtonDisabled(key, tier.priceId)}
-                      variant={tier.popular ? "default" : "outline"}
-                      size="lg"
-                      className="min-w-[180px]"
-                    >
-                      {tier.volumeTier}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-      
-      <ProjectCostCalculator />
-      
-      <div className="container mx-auto px-4 py-16 space-y-16">
-        <HourlyUpchargeCalculator />
-        <TierSavingsCalculator />
-        
-        {/* CTA Section after Calculators */}
-        <Card className="bg-gradient-to-r from-accent/10 to-primary/5 border-primary/20">
-          <CardContent className="py-8">
-            <div className="text-center space-y-4">
-              <h3 className="text-2xl font-bold">Start Saving on Your Leads Today</h3>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Commit to higher volume and reduce your per-lead costs immediately
-              </p>
-              <div className="flex flex-wrap justify-center gap-4 pt-4">
-                {Object.entries(TIERS).map(([key, tier]) => (
-                  <Button
-                    key={key}
-                    onClick={() => handleSubscribe(key, tier.priceId)}
-                    disabled={isButtonDisabled(key, tier.priceId)}
-                    variant={currentTier === key ? "secondary" : tier.popular ? "default" : "outline"}
-                    size="lg"
-                    className="min-w-[140px]"
-                  >
-                    {currentTier === key ? '✓ Current Plan' : `Choose ${tier.name}`}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
+
       <div className="container mx-auto px-4 space-y-16 py-16">
         <CompetitiveAdvantageShowcase />
         <BarkComparisonTable />
@@ -1026,51 +956,9 @@ export default function Pricing() {
         <LeadCostTimeline />
         <LeadNumberingExplainer />
         <EscrowFeeBreakdown />
-        <PricingCalculator />
         <PlanRecommender />
         <PricingCharts />
         <BreakevenCalculator />
-        
-        {/* Final CTA Section */}
-        <Card className="bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 border-primary/30">
-          <CardContent className="py-12">
-            <div className="text-center space-y-6">
-              <Badge className="bg-primary/10 text-primary border-primary/20 text-lg px-4 py-2">
-                Ready to Get Started?
-              </Badge>
-              <h2 className="text-3xl font-bold">Choose Your Plan Now</h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Join thousands of professionals growing their business with digsandgigs
-              </p>
-              <div className="flex flex-wrap justify-center gap-4 pt-6">
-                {Object.entries(TIERS).map(([key, tier]) => (
-                  <Button
-                    key={key}
-                    onClick={() => handleSubscribe(key, tier.priceId)}
-                    disabled={isButtonDisabled(key, tier.priceId)}
-                    variant={tier.popular ? "default" : "outline"}
-                    size="lg"
-                    className="min-w-[160px] text-lg py-6"
-                  >
-                    {currentTier === key ? (
-                      <span className="flex items-center gap-2">
-                        <Check className="w-5 h-5" />
-                        Current Plan
-                      </span>
-                    ) : (
-                      tier.priceValue > 0 ? `${tier.name} - ${tier.price}/mo` : tier.name
-                    )}
-                  </Button>
-                ))}
-              </div>
-              {!user && (
-                <p className="text-sm text-muted-foreground mt-4">
-                  New to digsandgigs? Sign up as a Digger to get started
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Footer />
