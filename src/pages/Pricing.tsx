@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
 import { Check, Loader2, Star, RefreshCw, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/Footer";
@@ -37,7 +38,16 @@ export default function Pricing() {
   const [leadsToClicksRate, setLeadsToClicksRate] = useState(25);
   const [clicksToAwardRate, setClicksToAwardRate] = useState(25);
   const [showResults, setShowResults] = useState(false);
-  const [selectedIndustry, setSelectedIndustry] = useState<string>('HVAC'); // Default to mid-value industry
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['HVAC']); // Default to mid-value industry
+
+  // Define getLeadCostForTier early so it can be used in TIERS
+  const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
+    if (selectedIndustries.length === 0) {
+      return getLeadCostForIndustry('HVAC', tier);
+    }
+    // Return highest cost from selected industries
+    return Math.max(...selectedIndustries.map(ind => getLeadCostForIndustry(ind, tier)));
+  };
 
   const TIERS = {
     free: {
@@ -45,7 +55,7 @@ export default function Pricing() {
       price: PRICING_TIERS.free.price,
       priceValue: PRICING_TIERS.free.priceValue,
       leadCostRange: `$${INDUSTRY_PRICING[0].free}-$${INDUSTRY_PRICING[2].free}`,
-      leadCostValue: getLeadCostForIndustry(selectedIndustry, 'free'),
+      leadCostValue: getLeadCostForTier('free'),
       escrowFee: PRICING_TIERS.free.escrowFee,
       escrowFeeValue: PRICING_TIERS.free.escrowFeeValue,
       escrowProcessingFee: PRICING_TIERS.free.escrowProcessingFee,
@@ -64,7 +74,7 @@ export default function Pricing() {
       price: PRICING_TIERS.pro.price,
       priceValue: PRICING_TIERS.pro.priceValue,
       leadCostRange: `$${INDUSTRY_PRICING[0].pro}-$${INDUSTRY_PRICING[2].pro}`,
-      leadCostValue: getLeadCostForIndustry(selectedIndustry, 'pro'),
+      leadCostValue: getLeadCostForTier('pro'),
       escrowFee: PRICING_TIERS.pro.escrowFee,
       escrowFeeValue: PRICING_TIERS.pro.escrowFeeValue,
       escrowProcessingFee: PRICING_TIERS.pro.escrowProcessingFee,
@@ -83,7 +93,7 @@ export default function Pricing() {
       price: PRICING_TIERS.premium.price,
       priceValue: PRICING_TIERS.premium.priceValue,
       leadCostRange: `$${INDUSTRY_PRICING[0].premium}-$${INDUSTRY_PRICING[2].premium}`,
-      leadCostValue: getLeadCostForIndustry(selectedIndustry, 'premium'),
+      leadCostValue: getLeadCostForTier('premium'),
       escrowFee: PRICING_TIERS.premium.escrowFee,
       escrowFeeValue: PRICING_TIERS.premium.escrowFeeValue,
       escrowProcessingFee: PRICING_TIERS.premium.escrowProcessingFee,
@@ -202,10 +212,6 @@ export default function Pricing() {
     return false;
   };
 
-  const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
-    return getLeadCostForIndustry(selectedIndustry, tier);
-  };
-
   const calculateInteractiveCosts = () => {
     const tiers = ['free', 'pro', 'premium'] as const;
     return tiers.map(tierKey => {
@@ -286,40 +292,12 @@ export default function Pricing() {
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto">
             <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
-              Select your Industry to determine your lead cost
+              Select your Industries to determine your lead cost
             </Label>
-            <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-              <SelectTrigger id="industry-select" className="w-full h-12 text-base">
-                <SelectValue placeholder="Select industry" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[400px] z-50" position="popper" sideOffset={8}>
-                {INDUSTRY_PRICING.map((pricing) => (
-                  <div key={pricing.category}>
-                    <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 sticky top-0 z-10">
-                      {pricing.category === 'low-value' && '💼 Low-Value Services ($8-24/lead)'}
-                      {pricing.category === 'mid-value' && '🏗️ Mid-Value Services ($40-120/lead)'}
-                      {pricing.category === 'high-value' && '⭐ High-Value Services ($250-750/lead)'}
-                    </div>
-                    {pricing.industries.map((industry) => (
-                      <SelectItem 
-                        key={industry} 
-                        value={industry}
-                        className="cursor-pointer hover:bg-accent"
-                      >
-                        {industry}
-                      </SelectItem>
-                    ))}
-                  </div>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground text-center mt-3">
-              <strong>Your lead costs for {selectedIndustry}:</strong>
-              <br />
-              Free Tier: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'free')}</strong> per lead | 
-              Pro Tier: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'pro')}</strong> per lead | 
-              Premium Tier: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'premium')}</strong> per lead
-            </p>
+            <IndustryMultiSelector 
+              selectedIndustries={selectedIndustries}
+              onIndustriesChange={setSelectedIndustries}
+            />
           </div>
         </div>
       </section>
@@ -394,7 +372,7 @@ export default function Pricing() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Lead Cost ({selectedIndustry}):</span>
+                        <span className="text-sm font-medium">Lead Cost (highest selected):</span>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
