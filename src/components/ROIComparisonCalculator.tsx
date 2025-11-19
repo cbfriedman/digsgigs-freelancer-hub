@@ -97,26 +97,15 @@ export const ROIComparisonCalculator = () => {
 
   // Calculate platform costs per closed deal
   const platformCosts = {
-    free: { click: 125, lead: 20 },
-    pro: { click: 100, lead: 10 },
-    premium: { click: 75, lead: 5 },
+    free: { click: 125, lead: 20, total: 145 },
+    pro: { click: 100, lead: 10, total: 110 },
+    premium: { click: 75, lead: 5, total: 80 },
   };
 
-  // Assume 25% click-to-lead conversion rate
-  const clickToLeadRate = 0.25;
-  
-  // True cost per lead = (click cost / click-to-lead rate) + lead cost
-  const trueCostPerLead = {
-    free: (platformCosts.free.click / clickToLeadRate) + platformCosts.free.lead,
-    pro: (platformCosts.pro.click / clickToLeadRate) + platformCosts.pro.lead,
-    premium: (platformCosts.premium.click / clickToLeadRate) + platformCosts.premium.lead,
-  };
-
-  // Cost per closed deal = true cost per lead / lead-to-award rate
   const platformCostPerDeal = {
-    free: trueCostPerLead.free / platformConversionRate,
-    pro: trueCostPerLead.pro / platformConversionRate,
-    premium: trueCostPerLead.premium / platformConversionRate,
+    free: platformCosts.free.total / platformConversionRate,
+    pro: platformCosts.pro.total / platformConversionRate,
+    premium: platformCosts.premium.total / platformConversionRate,
   };
 
   const savings = {
@@ -260,8 +249,6 @@ export const ROIComparisonCalculator = () => {
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>Click Cost: ${platformCosts.premium.click} (Premium)</p>
               <p>Lead Cost: ${platformCosts.premium.lead} (Premium)</p>
-              <p>Click-to-Lead Rate: {(clickToLeadRate * 100).toFixed(0)}%</p>
-              <p className="font-semibold text-foreground">True Cost Per Lead: ${trueCostPerLead.premium.toFixed(0)}</p>
               <p>Lead-to-Award: {(platformConversionRate * 100).toFixed(0)}%</p>
             </div>
             <div className="mt-3 pt-3 border-t border-primary/20">
