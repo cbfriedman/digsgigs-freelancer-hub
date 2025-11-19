@@ -200,24 +200,24 @@ const Index = () => {
     { 
       name: "Free", 
       price: "$0",
-      leadCost: "$3/lead", 
-      commission: "9% + $5 min",
+      leadCost: "$20/lead", 
+      commission: "9% + $5 min commission",
       features: ["Pay per lead", "Commission on work"]
     },
     { 
       name: "Pro", 
-      price: "$10",
-      leadCost: "$2/lead", 
-      commission: "4% + $5 min",
+      price: "$99",
+      leadCost: "$10/lead", 
+      commission: "4% + $5 min commission",
       popular: true,
       features: ["Lower lead cost", "Lower commission"]
     },
     { 
       name: "Premium", 
-      price: "$150",
-      leadCost: "FREE", 
-      commission: "0%",
-      features: ["Free leads", "No commission"]
+      price: "$599",
+      leadCost: "$5/lead", 
+      commission: "0% commission",
+      features: ["Lowest lead cost", "No commission"]
     }
   ];
 
