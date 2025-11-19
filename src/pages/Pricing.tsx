@@ -597,9 +597,15 @@ export default function Pricing() {
                           className="flex-1" 
                           size="lg" 
                           disabled={currentProfileIndustrySets.length === 0 && selectedIndustries.length === 0}
-                          onClick={() => {
+                          onClick={async () => {
                             if (!formData.acceptTerms) {
                               toast.error("Please accept the Terms of Service");
+                              return;
+                            }
+                            
+                            if (!user) {
+                              toast.error("Please sign in to create a profile");
+                              navigate("/auth");
                               return;
                             }
                             
@@ -614,34 +620,42 @@ export default function Pricing() {
                               return;
                             }
                             
-                            // Save all industry sets to cart
-                            const cartItems = JSON.parse(localStorage.getItem("profileCart") || "[]");
-                            
-                            // Combine all industry sets for this profile
-                            const allIndustries = allSets.flat();
-                            
-                            const newItem = {
-                              id: Date.now().toString(),
-                              ...formData,
-                              industries: allIndustries,
-                              industrySets: allSets,
-                              leadTierDescription: getLeadTierDescription(allIndustries),
-                              timestamp: new Date().toISOString(),
-                            };
-                            cartItems.push(newItem);
-                            localStorage.setItem("profileCart", JSON.stringify(cartItems));
-                            
-                            // Trigger storage event for same-tab updates
-                            window.dispatchEvent(new Event('storage'));
-                            
-                            // Reset for next profile
-                            setCurrentProfileIndustrySets([]);
-                            setSelectedIndustries([]);
-                            
-                            toast.success("Profile with all industry sets added to cart!");
+                            try {
+                              // Combine all industry sets for this profile
+                              const allIndustries = allSets.flat();
+                              
+                              // Save profile to database
+                              const { data, error } = await supabase
+                                .from("digger_profiles")
+                                .insert({
+                                  user_id: user.id,
+                                  business_name: formData.companyName,
+                                  company_name: formData.companyName,
+                                  phone: formData.phone,
+                                  location: "TBD", // Will be completed in profile editing
+                                  profession: allIndustries[0], // Primary profession
+                                  naics_code: allIndustries,
+                                  lead_tier_description: getLeadTierDescription(allIndustries),
+                                })
+                                .select()
+                                .single();
+                              
+                              if (error) throw error;
+                              
+                              // Reset form for next profile
+                              setCurrentProfileIndustrySets([]);
+                              setSelectedIndustries([]);
+                              
+                              toast.success(`Profile created! (ID: ${data.profile_number}). Now you can purchase leads for this profile.`);
+                              
+                              // TODO: Navigate to lead purchase selection
+                            } catch (error) {
+                              console.error("Error creating profile:", error);
+                              toast.error("Failed to create profile. Please try again.");
+                            }
                           }}
                         >
-                          Save Profile to Cart ({currentProfileIndustrySets.length + (selectedIndustries.length > 0 ? 1 : 0)} Set{(currentProfileIndustrySets.length + (selectedIndustries.length > 0 ? 1 : 0)) !== 1 ? 's' : ''})
+                          Create Profile ({currentProfileIndustrySets.length + (selectedIndustries.length > 0 ? 1 : 0)} Industry Set{(currentProfileIndustrySets.length + (selectedIndustries.length > 0 ? 1 : 0)) !== 1 ? 's' : ''})
                         </Button>
                       </div>
                       
