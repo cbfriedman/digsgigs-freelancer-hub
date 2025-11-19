@@ -92,6 +92,26 @@ serve(async (req) => {
 
       logStep("Lead purchase marked as completed");
 
+      // Increment monthly lead count for the digger
+      const { data: currentDigger } = await supabaseClient
+        .from('digger_profiles')
+        .select('monthly_lead_count')
+        .eq('id', diggerId)
+        .single();
+
+      const newLeadCount = (currentDigger?.monthly_lead_count || 0) + 1;
+
+      const { error: incrementError } = await supabaseClient
+        .from('digger_profiles')
+        .update({ monthly_lead_count: newLeadCount })
+        .eq('id', diggerId);
+
+      if (incrementError) {
+        logStep("Error incrementing lead count", { error: incrementError });
+      } else {
+        logStep("Monthly lead count incremented", { newCount: newLeadCount });
+      }
+
       // Get digger and gig details for notifications
       const { data: diggerProfile, error: diggerError } = await supabaseClient
         .from('digger_profiles')

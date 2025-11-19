@@ -43,10 +43,10 @@ serve(async (req) => {
 
     logStep("Request data", { diggerId, gigId, pricingModel });
 
-    // Get digger profile to determine subscription tier
+    // Get digger profile to determine current tier based on monthly lead count
     const { data: diggerProfile, error: diggerError } = await supabaseClient
       .from('digger_profiles')
-      .select('subscription_tier, hourly_rate_min, hourly_rate_max, user_id')
+      .select('monthly_lead_count, user_id, profession')
       .eq('id', diggerId)
       .single();
 
@@ -59,7 +59,18 @@ serve(async (req) => {
       throw new Error("Unauthorized: You can only purchase leads for your own profile");
     }
 
-    logStep("Digger profile found", { tier: diggerProfile.subscription_tier });
+    // Determine current tier based on lead count (prospective pricing)
+    const leadCount = diggerProfile.monthly_lead_count || 0;
+    let tier: 'free' | 'pro' | 'premium';
+    if (leadCount < 10) {
+      tier = 'free';
+    } else if (leadCount < 50) {
+      tier = 'pro';
+    } else {
+      tier = 'premium';
+    }
+
+    logStep("Digger profile found", { leadCount, tier });
 
     // Get gig details to get consumer_id
     const { data: gig, error: gigError } = await supabaseClient
@@ -74,23 +85,34 @@ serve(async (req) => {
 
     logStep("Gig found", { consumerId: gig.consumer_id });
 
-    // Calculate lead cost based on tier
-    const tier = (diggerProfile.subscription_tier || 'free') as 'free' | 'pro' | 'premium';
-    let leadCost = 20; // Default free tier
-    if (tier === 'premium') leadCost = 5;
-    else if (tier === 'pro') leadCost = 10;
+    // Calculate lead cost based on tier and industry
+    // Pricing structure:
+    // Free tier (leads 1-10): 3x Google CPC
+    // Pro tier (leads 11-50): 2x Google CPC
+    // Premium tier (leads 51+): 1x Google CPC
+    const profession = diggerProfile.profession || 'General Contracting';
+    
+    // Industry-specific pricing (from pricing config)
+    const INDUSTRY_PRICING: Record<string, { free: number; pro: number; premium: number }> = {
+      'low-value': { free: 24, pro: 16, premium: 8 },
+      'mid-value': { free: 120, pro: 80, premium: 40 },
+      'high-value': { free: 750, pro: 500, premium: 250 }
+    };
+    
+    // Determine industry category (simplified - you may want to import from pricing config)
+    const getIndustryCategory = (prof: string): 'low-value' | 'mid-value' | 'high-value' => {
+      const lowValue = ['Cleaning', 'Handyman', 'Pet Care', 'Tutoring', 'Moving', 'Event Planning', 'Catering', 'Beauty'];
+      const highValue = ['Legal', 'Insurance', 'Financial', 'Real Estate', 'Medical', 'Dental', 'Accounting', 'Consulting', 'Architecture'];
+      
+      if (lowValue.some(cat => prof.includes(cat))) return 'low-value';
+      if (highValue.some(cat => prof.includes(cat))) return 'high-value';
+      return 'mid-value';
+    };
+    
+    const industryCategory = getIndustryCategory(profession);
+    const leadCost = INDUSTRY_PRICING[industryCategory][tier];
 
-    // For free estimates with premium/pro tier, lead cost is 0
-    if (pricingModel === 'free_estimate' && (tier === 'pro' || tier === 'premium')) {
-      leadCost = 0;
-    }
-
-    // For free estimates with free tier, charge $20 as per pricing table
-    if (pricingModel === 'free_estimate' && tier === 'free') {
-      leadCost = 20;
-    }
-
-    logStep("Lead cost calculated", { leadCost, tier, pricingModel });
+    logStep("Lead cost calculated", { leadCost, tier, pricingModel, profession, industryCategory });
 
     // Create lead purchase record
     const { data: leadPurchase, error: purchaseError } = await supabaseClient
