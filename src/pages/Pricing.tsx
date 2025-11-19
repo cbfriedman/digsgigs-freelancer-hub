@@ -24,6 +24,7 @@ import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { HourlyUpchargeCalculator } from "@/components/HourlyUpchargeCalculator";
 import { TierSavingsCalculator } from "@/components/TierSavingsCalculator";
 import EscrowFeeBreakdown from "@/components/EscrowFeeBreakdown";
+import LeadNumberingExplainer from "@/components/LeadNumberingExplainer";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
 
@@ -54,7 +55,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.free.priceId,
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
-      volumeTier: '1-10 Leads per MO.',
+      volumeTier: 'Lead Nos 1-10',
       features: [],
     },
     pro: {
@@ -71,7 +72,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.pro.priceId,
       productId: PRICING_TIERS.pro.productId,
       popular: PRICING_TIERS.pro.popular,
-      volumeTier: '11-50 Leads per MO.',
+      volumeTier: 'Lead Nos 11-50',
       features: [],
     },
     premium: {
@@ -88,7 +89,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.premium.priceId,
       productId: PRICING_TIERS.premium.productId,
       popular: PRICING_TIERS.premium.popular,
-      volumeTier: '51+ Leads per MO.',
+      volumeTier: 'Lead Nos 51+',
       features: [],
     },
   };
@@ -255,12 +256,12 @@ export default function Pricing() {
             <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-2xl mx-auto">
               <p className="text-sm font-medium mb-2">📊 How Volume-Based Pricing Works:</p>
               <ul className="text-sm text-muted-foreground space-y-1 text-left">
-                <li>• <strong>1-10 Leads per MO.:</strong> Standard pricing - Perfect for getting started</li>
-                <li>• <strong>11-50 Leads per MO.:</strong> Volume discount - Save money as you grow</li>
-                <li>• <strong>51+ Leads per MO.:</strong> Best bulk pricing - Maximum savings for high volume</li>
+                <li>• <strong>Lead Nos 1-10:</strong> Standard pricing - Perfect for getting started</li>
+                <li>• <strong>Lead Nos 11-50:</strong> Volume discount - Save money as you grow</li>
+                <li>• <strong>Lead Nos 51+:</strong> Best bulk pricing - Maximum savings for high volume</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-3 italic">
-                Pricing automatically adjusts based on the number of leads you receive each month. No subscriptions, no commitments - just fair, transparent pricing.
+                Each lead you receive is numbered by month (e.g., JAN#1, JAN#2, FEB#1, FEB#2). Pricing automatically adjusts based on your monthly lead count.
               </p>
             </div>
             
@@ -363,8 +364,11 @@ export default function Pricing() {
                 
                 <CardHeader className="text-center">
                   <CardTitle className="text-3xl font-bold mt-4">
-                    {tier.volumeTier.replace('Leads ', '').replace(' per month', ' Leads per MO.')}
+                    {tier.volumeTier}
                   </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    (e.g., {key === 'free' ? 'JAN#1-JAN#10' : key === 'pro' ? 'JAN#11-JAN#50' : 'JAN#51+'})
+                  </p>
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
@@ -966,6 +970,7 @@ export default function Pricing() {
       </div>
       
       <div className="container mx-auto px-4 space-y-16 py-16">
+        <LeadNumberingExplainer />
         <EscrowFeeBreakdown />
         <PricingCalculator />
         <PlanRecommender />
