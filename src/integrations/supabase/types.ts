@@ -509,12 +509,14 @@ export type Database = {
           is_licensed: string | null
           is_primary: boolean | null
           keywords: string[] | null
+          last_lead_count_reset: string | null
           lead_limit: number | null
           lead_limit_enabled: boolean | null
           lead_limit_period: string | null
           location: string
           location_lat: number | null
           location_lng: number | null
+          monthly_lead_count: number | null
           naics_code: string[] | null
           offers_free_estimates: boolean | null
           phone: string
@@ -562,12 +564,14 @@ export type Database = {
           is_licensed?: string | null
           is_primary?: boolean | null
           keywords?: string[] | null
+          last_lead_count_reset?: string | null
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
           location: string
           location_lat?: number | null
           location_lng?: number | null
+          monthly_lead_count?: number | null
           naics_code?: string[] | null
           offers_free_estimates?: boolean | null
           phone: string
@@ -615,12 +619,14 @@ export type Database = {
           is_licensed?: string | null
           is_primary?: boolean | null
           keywords?: string[] | null
+          last_lead_count_reset?: string | null
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
           location?: string
           location_lat?: number | null
           location_lng?: number | null
+          monthly_lead_count?: number | null
           naics_code?: string[] | null
           offers_free_estimates?: boolean | null
           phone?: string
@@ -1839,6 +1845,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_tier_for_lead_count: { Args: { lead_count: number }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1850,6 +1857,7 @@ export type Database = {
         Args: { post_slug: string }
         Returns: undefined
       }
+      reset_monthly_lead_counts: { Args: never; Returns: undefined }
       track_keyword_usage: {
         Args: {
           p_category_name?: string
