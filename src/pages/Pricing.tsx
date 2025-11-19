@@ -38,12 +38,13 @@ export default function Pricing() {
   const [leadsToClicksRate, setLeadsToClicksRate] = useState(25);
   const [clicksToAwardRate, setClicksToAwardRate] = useState(25);
   const [showResults, setShowResults] = useState(false);
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['HVAC']); // Default to mid-value industry
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
 
   // Define getLeadCostForTier early so it can be used in TIERS
   const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
     if (selectedIndustries.length === 0) {
-      return getLeadCostForIndustry('HVAC', tier);
+      // Default to least expensive (low-value category minimum)
+      return INDUSTRY_PRICING[0][tier]; // Low-value services
     }
     // Return highest cost from selected industries
     return Math.max(...selectedIndustries.map(ind => getLeadCostForIndustry(ind, tier)));

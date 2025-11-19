@@ -56,7 +56,8 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange }
   // Get highest lead cost from selected industries
   const getHighestLeadCost = (tier: 'free' | 'pro' | 'premium'): number => {
     if (selectedIndustries.length === 0) {
-      return getLeadCostForIndustry('HVAC', tier); // Default
+      // Default to least expensive (low-value category minimum)
+      return INDUSTRY_PRICING[0][tier]; // Low-value services
     }
     return Math.max(...selectedIndustries.map(ind => getLeadCostForIndustry(ind, tier)));
   };
