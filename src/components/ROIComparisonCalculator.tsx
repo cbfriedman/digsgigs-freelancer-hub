@@ -221,8 +221,8 @@ export const ROIComparisonCalculator = () => {
 
         <div className="text-center pt-2">
           <p className="text-xs text-muted-foreground">
-            * Industry averages based on 2024 home services advertising benchmarks. 
-            Individual results may vary based on market conditions and campaign optimization.
+            * CPC values and conversion rates are industry averages and may vary significantly based on location, competition, seasonality, and individual business factors. 
+            Google AdWords costs based on 2024 home services advertising benchmarks. Individual results may vary based on market conditions and campaign optimization.
           </p>
         </div>
       </CardContent>
