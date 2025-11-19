@@ -596,19 +596,35 @@ export default function Pricing() {
                           variant="outline"
                           className="flex-1" 
                           size="lg" 
-                          disabled={currentProfileIndustrySets.length === 0}
+                          disabled={currentProfileIndustrySets.length === 0 && selectedIndustries.length === 0}
                           onClick={() => {
+                            if (!formData.acceptTerms) {
+                              toast.error("Please accept the Terms of Service");
+                              return;
+                            }
+                            
+                            // If there are currently selected industries, add them first
+                            let allSets = [...currentProfileIndustrySets];
+                            if (selectedIndustries.length > 0) {
+                              allSets.push(selectedIndustries);
+                            }
+                            
+                            if (allSets.length === 0) {
+                              toast.error("Please select at least one industry");
+                              return;
+                            }
+                            
                             // Save all industry sets to cart
                             const cartItems = JSON.parse(localStorage.getItem("profileCart") || "[]");
                             
                             // Combine all industry sets for this profile
-                            const allIndustries = currentProfileIndustrySets.flat();
+                            const allIndustries = allSets.flat();
                             
                             const newItem = {
                               id: Date.now().toString(),
                               ...formData,
                               industries: allIndustries,
-                              industrySets: currentProfileIndustrySets,
+                              industrySets: allSets,
                               leadTierDescription: getLeadTierDescription(allIndustries),
                               timestamp: new Date().toISOString(),
                             };
@@ -625,7 +641,7 @@ export default function Pricing() {
                             toast.success("Profile with all industry sets added to cart!");
                           }}
                         >
-                          Save Profile to Cart ({currentProfileIndustrySets.length} Set{currentProfileIndustrySets.length !== 1 ? 's' : ''})
+                          Save Profile to Cart ({currentProfileIndustrySets.length + (selectedIndustries.length > 0 ? 1 : 0)} Set{(currentProfileIndustrySets.length + (selectedIndustries.length > 0 ? 1 : 0)) !== 1 ? 's' : ''})
                         </Button>
                       </div>
                       
