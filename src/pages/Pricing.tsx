@@ -53,7 +53,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.free.priceId,
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
-      volumeTier: 'Leads 1-10 per month',
+      volumeTier: '1-10 Leads per MO.',
       features: [],
     },
     pro: {
@@ -70,7 +70,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.pro.priceId,
       productId: PRICING_TIERS.pro.productId,
       popular: PRICING_TIERS.pro.popular,
-      volumeTier: 'Leads 11-50 per month',
+      volumeTier: '11-50 Leads per MO.',
       features: [],
     },
     premium: {
@@ -87,7 +87,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.premium.priceId,
       productId: PRICING_TIERS.premium.productId,
       popular: PRICING_TIERS.premium.popular,
-      volumeTier: 'Leads 51+ per month',
+      volumeTier: '51+ Leads per MO.',
       features: [],
     },
   };
@@ -254,9 +254,9 @@ export default function Pricing() {
             <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-2xl mx-auto">
               <p className="text-sm font-medium mb-2">📊 How Volume-Based Pricing Works:</p>
               <ul className="text-sm text-muted-foreground space-y-1 text-left">
-                <li>• <strong>Leads 1-10/month:</strong> Standard pricing - Perfect for getting started</li>
-                <li>• <strong>Leads 11-50/month:</strong> Volume discount - Save money as you grow</li>
-                <li>• <strong>Leads 51+/month:</strong> Best bulk pricing - Maximum savings for high volume</li>
+                <li>• <strong>1-10 Leads per MO.:</strong> Standard pricing - Perfect for getting started</li>
+                <li>• <strong>11-50 Leads per MO.:</strong> Volume discount - Save money as you grow</li>
+                <li>• <strong>51+ Leads per MO.:</strong> Best bulk pricing - Maximum savings for high volume</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-3 italic">
                 Pricing automatically adjusts based on the number of leads you receive each month. No subscriptions, no commitments - just fair, transparent pricing.
