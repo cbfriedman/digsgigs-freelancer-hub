@@ -67,7 +67,7 @@ export const ROIComparisonCalculator = () => {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
-          <CardTitle>Cost Per Closed Deal: Us vs Google AdWords</CardTitle>
+          <CardTitle>Cost Per Closed Deal: DigsandGigs vs. Google AdWords</CardTitle>
         </div>
         <CardDescription>
           See how much you save using Digsandgigs compared to advertising on Google AdWords
