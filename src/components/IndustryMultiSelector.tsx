@@ -9,9 +9,10 @@ import { INDUSTRY_PRICING, getLeadCostForIndustry, IndustryCategory } from "@/co
 interface IndustryMultiSelectorProps {
   selectedIndustries: string[];
   onIndustriesChange: (industries: string[]) => void;
+  onManageProfilesClick?: () => void;
 }
 
-export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange }: IndustryMultiSelectorProps) => {
+export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, onManageProfilesClick }: IndustryMultiSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<IndustryCategory>>(new Set(['mid-value']));
 
@@ -224,10 +225,11 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange }
                     Pro Tip: Optimize Your Lead Costs
                   </p>
                   <p className="text-xs text-amber-800 dark:text-amber-200">
-                    You've selected industries from different pricing categories. To get the best rates for each service:
+                    You've selected industries from different pricing categories. To get the best rates:
                   </p>
                   <ul className="text-xs text-amber-800 dark:text-amber-200 list-disc list-inside space-y-0.5 ml-2">
-                    <li>Create a separate profile for each service category</li>
+                    <li><strong>Complete this registration first</strong></li>
+                    <li>Then create separate profiles for each pricing tier</li>
                     <li>Pay only the appropriate rate for each industry</li>
                     <li>Avoid paying high-value rates for low-value leads</li>
                   </ul>
@@ -235,7 +237,13 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange }
                     variant="outline"
                     size="sm"
                     className="mt-2 h-8 text-xs border-amber-400 dark:border-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900"
-                    onClick={() => window.location.href = '/my-profiles'}
+                    onClick={() => {
+                      if (onManageProfilesClick) {
+                        onManageProfilesClick();
+                      } else {
+                        window.location.href = '/my-profiles';
+                      }
+                    }}
                   >
                     Manage Your Profiles
                   </Button>
