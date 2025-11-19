@@ -221,7 +221,7 @@ export default function CompetitiveAdvantageShowcase() {
                   <td className="p-4">
                     <div className="flex items-center gap-1">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="font-semibold">Exclusive</span>
+                      <span className="font-semibold">24 hours exclusive</span>
                     </div>
                   </td>
                   <td className="p-4">
