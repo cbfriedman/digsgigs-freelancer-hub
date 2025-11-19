@@ -42,6 +42,7 @@ export default function Pricing() {
   const [showResults, setShowResults] = useState(false);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [step1Completed, setStep1Completed] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -347,8 +348,15 @@ export default function Pricing() {
                           timestamp: new Date().toISOString(),
                           demoType: "digger",
                         }));
-                        toast.success("Great! Let's continue with your registration");
-                        navigate("/digger-registration");
+                        setStep1Completed(true);
+                        toast.success("Great! Now let's select your industries");
+                        // Scroll to Step 2
+                        setTimeout(() => {
+                          const step2Element = document.getElementById('step-2-industry');
+                          if (step2Element) {
+                            step2Element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }, 100);
                       } catch (error) {
                         if (error instanceof z.ZodError) {
                           toast.error(error.errors[0].message);
@@ -424,8 +432,11 @@ export default function Pricing() {
                     </div>
 
                     <Button type="submit" className="w-full" size="lg">
-                      Continue to Registration
+                      Continue to Industry Selection
                     </Button>
+                    <p className="text-xs text-center text-muted-foreground mt-2">
+                      No payment required • No commitment to buy
+                    </p>
                   </form>
                 </CardContent>
               </Card>
@@ -434,31 +445,37 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* Industry Selector */}
-      <section className="py-8 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
-              Select your Industries to determine your lead cost
-            </Label>
-            <div className="flex items-center gap-4 justify-center">
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
-                <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+      {/* Industry Selector - Step 2 (only shown after Step 1 is completed) */}
+      {step1Completed && (
+        <section id="step-2-industry" className="py-8 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
+                Select your Industries to determine your lead cost
+              </Label>
+              <div className="flex items-center gap-4 justify-center">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
+                  <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+                </div>
+                <div className="flex-1 max-w-md">
+                  <IndustryMultiSelector 
+                    selectedIndustries={selectedIndustries}
+                    onIndustriesChange={setSelectedIndustries}
+                  />
+                </div>
               </div>
-              <div className="flex-1 max-w-md">
-                <IndustryMultiSelector 
-                  selectedIndustries={selectedIndustries}
-                  onIndustriesChange={setSelectedIndustries}
-                />
-              </div>
+              <p className="text-sm text-center text-muted-foreground mt-4">
+                💡 No payment required • Browse and explore with zero commitment
+              </p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Pricing Cards */}
-      <section className="py-16">
+      {/* Pricing Cards - only shown after Step 1 is completed */}
+      {step1Completed && (
+        <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {Object.entries(TIERS).map(([key, tier]) => (
@@ -611,9 +628,11 @@ export default function Pricing() {
           </div>
         </div>
       </section>
+      )}
 
-      {/* How Commitment-Based Pricing Works */}
-      <section className="py-12 bg-background">
+      {/* How Commitment-Based Pricing Works - only shown after Step 1 is completed */}
+      {step1Completed && (
+        <section className="py-12 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             <div className="p-6 bg-primary/5 rounded-lg border border-primary/20">
@@ -636,9 +655,10 @@ export default function Pricing() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Hourly Upcharge Display for Logged-in Diggers */}
-      {isDigger && user && (hourlyRateMin || hourlyRateMax) && (
+      {step1Completed && isDigger && user && (hourlyRateMin || hourlyRateMax) && (
         <section className="py-8 bg-background">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
@@ -654,17 +674,19 @@ export default function Pricing() {
       )}
 
 
-      <div className="container mx-auto px-4 space-y-16 py-16">
-        <InteractiveLeadSlider />
-        <MonthlyLeadSimulator />
-        <CompetitorCostComparison />
-        <LeadCostTimeline />
-        <LeadNumberingExplainer />
-        <EscrowFeeBreakdown />
-        <PlanRecommender />
-        <PricingCharts />
-        <BreakevenCalculator />
-      </div>
+      {step1Completed && (
+        <div className="container mx-auto px-4 space-y-16 py-16">
+          <InteractiveLeadSlider />
+          <MonthlyLeadSimulator />
+          <CompetitorCostComparison />
+          <LeadCostTimeline />
+          <LeadNumberingExplainer />
+          <EscrowFeeBreakdown />
+          <PlanRecommender />
+          <PricingCharts />
+          <BreakevenCalculator />
+        </div>
+      )}
 
       <Footer />
     </div>
