@@ -527,6 +527,35 @@ export default function Pricing() {
                         className="flex-1" 
                         size="lg" 
                         disabled={selectedIndustries.length === 0}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          // Add to cart logic
+                          if (!formData.acceptTerms || selectedIndustries.length === 0) {
+                            if (!formData.acceptTerms) {
+                              toast.error("Please accept the Terms of Service");
+                            } else {
+                              toast.error("Please select at least one industry");
+                            }
+                            return;
+                          }
+                          
+                          // Save configuration to cart
+                          const cartItems = JSON.parse(localStorage.getItem("profileCart") || "[]");
+                          const newItem = {
+                            id: Date.now().toString(),
+                            ...formData,
+                            industries: selectedIndustries,
+                            leadTierDescription: getLeadTierDescription(selectedIndustries),
+                            timestamp: new Date().toISOString(),
+                          };
+                          cartItems.push(newItem);
+                          localStorage.setItem("profileCart", JSON.stringify(cartItems));
+                          
+                          // Trigger storage event for same-tab updates
+                          window.dispatchEvent(new Event('storage'));
+                          
+                          toast.success("Profile configuration added to cart!");
+                        }}
                       >
                         Add to Cart
                       </Button>
@@ -547,6 +576,7 @@ export default function Pricing() {
                           });
                           setSelectedIndustries([]);
                           setStep1Completed(false);
+                          toast.info("Form reset - add another profile");
                         }}
                       >
                         Continue to Select Another Profession

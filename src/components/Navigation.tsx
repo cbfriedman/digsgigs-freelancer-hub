@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ArrowUp } from "lucide-react";
+import { MessageSquare, ArrowUp, ShoppingCart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";
 import { DiggerProfileSelector } from "@/components/DiggerProfileSelector";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProfileCartDrawer } from "@/components/ProfileCartDrawer";
 
 interface NavigationProps {
   showBackButton?: boolean;
@@ -15,7 +17,30 @@ interface NavigationProps {
 export function Navigation({ showBackButton = false, backTo = "/", backLabel = "Back to Home" }: NavigationProps) {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const { user } = useAuth();
+  const [profileCartCount, setProfileCartCount] = useState(0);
+
+  // Update cart count when cart opens or on mount
+  useEffect(() => {
+    const updateCartCount = () => {
+      const items = JSON.parse(localStorage.getItem("profileCart") || "[]");
+      setProfileCartCount(items.length);
+    };
+    
+    updateCartCount();
+    
+    // Listen for storage changes
+    window.addEventListener('storage', updateCartCount);
+    
+    // Also check periodically in case of same-tab updates
+    const interval = setInterval(updateCartCount, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', updateCartCount);
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <>
@@ -29,6 +54,25 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
           </h1>
           <div className="flex items-center gap-4">
             {user && <DiggerProfileSelector />}
+            
+            {/* Cart Icon */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="relative"
+              onClick={() => setCartOpen(true)}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {profileCartCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {profileCartCount}
+                </Badge>
+              )}
+            </Button>
+
             <div className="relative">
               <Button 
                 variant="default" 
@@ -50,6 +94,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
       </nav>
       
       <AIChatbot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      <ProfileCartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );
 }
