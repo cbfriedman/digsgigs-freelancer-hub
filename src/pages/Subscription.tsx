@@ -8,14 +8,13 @@ import { Check, ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { PRICING_TIERS } from "@/config/pricing";
+import { PRICING_TIERS, INDUSTRY_PRICING } from "@/config/pricing";
 
 const TIER_FEATURES = {
   free: [
     'Unlimited bidding on gigs',
-    `${PRICING_TIERS.free.leadCost} per lead purchase`,
-    `${PRICING_TIERS.free.escrowProcessingFee}`,
-    `${PRICING_TIERS.free.hourlyRateCharge} rate charge when awarded (hourly)`,
+    'Industry-specific lead pricing',
+    `${PRICING_TIERS.free.escrowFee} escrow fee`,
     'Access to all gig categories',
     'Full profile features',
     'Profile visibility',
@@ -24,25 +23,26 @@ const TIER_FEATURES = {
   ],
   pro: [
     'Unlimited bidding on gigs',
-    `${PRICING_TIERS.pro.leadCost} per lead purchase`,
-    `${PRICING_TIERS.pro.escrowProcessingFee}`,
-    `${PRICING_TIERS.pro.hourlyRateCharge} rate charge when awarded (hourly)`,
+    'Lower industry-specific lead pricing',
+    `${PRICING_TIERS.pro.escrowFee} escrow fee`,
+    'Priority support',
     'Access to all gig categories',
     'Full profile features',
-    'Profile visibility',
+    'Enhanced profile visibility',
     'AI support',
     'Advanced analytics',
   ],
   premium: [
     'Unlimited bidding on gigs',
-    `${PRICING_TIERS.premium.leadCost} per lead purchase`,
-    `${PRICING_TIERS.premium.escrowProcessingFee}`,
-    `${PRICING_TIERS.premium.hourlyRateCharge} rate charge when awarded (hourly)`,
+    'Lowest industry-specific lead pricing',
+    `${PRICING_TIERS.premium.escrowFee} escrow fee`,
+    'VIP support',
     'Access to all gig categories',
     'Full profile features',
-    'Profile visibility',
+    'Top placement in search',
     'AI support',
     'Advanced analytics',
+    'Dedicated account manager',
   ]
 };
 

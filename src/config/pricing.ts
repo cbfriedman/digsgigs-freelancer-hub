@@ -1,33 +1,99 @@
 /**
  * Centralized Pricing Configuration
  * Single source of truth for all pricing across the platform
+ * INDUSTRY-SPECIFIC CPL PRICING MODEL (No commissions, no CPC, no hourly charges)
  */
+
+export type IndustryCategory = 'low-value' | 'mid-value' | 'high-value';
+
+export interface IndustryPricing {
+  category: IndustryCategory;
+  industries: string[];
+  free: number;
+  pro: number;
+  premium: number;
+}
 
 export interface PricingTier {
   id: 'free' | 'pro' | 'premium';
   name: string;
   price: string;
   priceValue: number;
-  costPerClick: string;
-  costPerClickValue: number;
-  leadCost: string;
-  leadCostValue: number;
-  commission: string;
-  commissionValue: number;
   escrowFee: string;
   escrowFeeValue: number;
-  freeEstimateCost: string;
-  freeEstimateCostValue: number;
-  hourlyRateCharge: string;
-  hourlyRateChargeMultiplier: number;
   escrowProcessingFee: string;
   escrowProcessingFeeValue: number;
   escrowProcessingMinimum: number;
-  minimumFee: number;
   priceId: string | null;
   productId: string | null;
   popular: boolean;
 }
+
+// Industry-specific lead pricing (CPL only)
+export const INDUSTRY_PRICING: IndustryPricing[] = [
+  {
+    category: 'low-value',
+    industries: [
+      'Cleaning & Janitorial',
+      'Handyman Services',
+      'Pet Care & Grooming',
+      'Tutoring & Education',
+      'Moving & Delivery',
+      'Event Planning',
+      'Photography',
+      'Catering',
+      'Beauty & Wellness'
+    ],
+    free: 15,
+    pro: 10,
+    premium: 5
+  },
+  {
+    category: 'mid-value',
+    industries: [
+      'HVAC',
+      'Plumbing',
+      'Electrical',
+      'Landscaping',
+      'Roofing',
+      'Carpentry',
+      'Painting',
+      'Flooring',
+      'General Contracting',
+      'Auto Repair',
+      'Appliance Repair',
+      'Pest Control',
+      'Tree Service',
+      'Masonry',
+      'Windows & Doors',
+      'Concrete Work',
+      'Fencing',
+      'Pool Service'
+    ],
+    free: 40,
+    pro: 25,
+    premium: 15
+  },
+  {
+    category: 'high-value',
+    industries: [
+      'Legal Services',
+      'Insurance',
+      'Financial Planning',
+      'Real Estate',
+      'Medical & Dental',
+      'Accounting',
+      'IT Consulting',
+      'Marketing & Advertising',
+      'Architecture',
+      'Engineering',
+      'Business Consulting'
+    ],
+    free: 200,
+    pro: 125,
+    premium: 75
+  }
+];
 
 export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   free: {
@@ -35,22 +101,11 @@ export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
     name: 'Free',
     price: '$0',
     priceValue: 0,
-    costPerClick: '$125',
-    costPerClickValue: 125,
-    leadCost: '$20',
-    leadCostValue: 20,
-    commission: '9%',
-    commissionValue: 9,
-    escrowFee: '10%',
-    escrowFeeValue: 10,
-    freeEstimateCost: '$150',
-    freeEstimateCostValue: 150,
-    hourlyRateCharge: '3 hours',
-    hourlyRateChargeMultiplier: 3,
+    escrowFee: '9%',
+    escrowFeeValue: 9,
     escrowProcessingFee: '9% per payment (min $10)',
     escrowProcessingFeeValue: 0.09,
     escrowProcessingMinimum: 10,
-    minimumFee: 0,
     priceId: null,
     productId: null,
     popular: false,
@@ -60,22 +115,11 @@ export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
     name: 'Pro',
     price: '$99',
     priceValue: 99,
-    costPerClick: '$100',
-    costPerClickValue: 100,
-    leadCost: '$10',
-    leadCostValue: 10,
-    commission: '6%',
-    commissionValue: 6,
-    escrowFee: '6%',
-    escrowFeeValue: 6,
-    freeEstimateCost: '$100',
-    freeEstimateCostValue: 100,
-    hourlyRateCharge: '2 hours',
-    hourlyRateChargeMultiplier: 2,
-    escrowProcessingFee: '8% per payment (min $10)',
-    escrowProcessingFeeValue: 0.08,
+    escrowFee: '5%',
+    escrowFeeValue: 5,
+    escrowProcessingFee: '5% per payment (min $10)',
+    escrowProcessingFeeValue: 0.05,
     escrowProcessingMinimum: 10,
-    minimumFee: 0,
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
     productId: 'prod_TQ0mK76zTAwoQc',
     popular: true,
@@ -83,30 +127,50 @@ export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   premium: {
     id: 'premium',
     name: 'Premium',
-    price: '$599',
-    priceValue: 599,
-    costPerClick: '$75',
-    costPerClickValue: 75,
-    leadCost: '$5',
-    leadCostValue: 5,
-    commission: '0%',
-    commissionValue: 0,
-    escrowFee: '3%',
-    escrowFeeValue: 3,
-    freeEstimateCost: '$50',
-    freeEstimateCostValue: 50,
-    hourlyRateCharge: '1 hour',
-    hourlyRateChargeMultiplier: 1,
-    escrowProcessingFee: '4% per payment (min $10)',
-    escrowProcessingFeeValue: 0.04,
+    price: '$299',
+    priceValue: 299,
+    escrowFee: '2%',
+    escrowFeeValue: 2,
+    escrowProcessingFee: '2% per payment (min $10)',
+    escrowProcessingFeeValue: 0.02,
     escrowProcessingMinimum: 10,
-    minimumFee: 0,
     priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
     productId: 'prod_TQ0mVQT1H5f1zg',
     popular: false,
   },
 };
 
+// Helper function to get lead cost for a specific industry and tier
+export const getLeadCostForIndustry = (
+  industry: string,
+  tier: 'free' | 'pro' | 'premium'
+): number => {
+  const industryData = INDUSTRY_PRICING.find(pricing =>
+    pricing.industries.includes(industry)
+  );
+  
+  if (!industryData) {
+    // Default to mid-value if industry not found
+    return INDUSTRY_PRICING[1][tier];
+  }
+  
+  return industryData[tier];
+};
+
+// Helper function to get industry category
+export const getIndustryCategory = (industry: string): IndustryCategory => {
+  const industryData = INDUSTRY_PRICING.find(pricing =>
+    pricing.industries.includes(industry)
+  );
+  
+  return industryData?.category || 'mid-value';
+};
+
 export const getPricingTier = (tier: 'free' | 'pro' | 'premium' = 'free'): PricingTier => {
   return PRICING_TIERS[tier];
+};
+
+// Get all industries as a flat list
+export const getAllIndustries = (): string[] => {
+  return INDUSTRY_PRICING.flatMap(pricing => pricing.industries).sort();
 };
