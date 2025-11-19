@@ -521,9 +521,37 @@ export default function Pricing() {
                       </Label>
                     </div>
 
-                    <Button type="submit" className="w-full" size="lg" disabled={selectedIndustries.length === 0}>
-                      {selectedIndustries.length === 0 ? "Select Industries to Continue" : "Continue to Pricing"}
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button 
+                        type="submit" 
+                        className="flex-1" 
+                        size="lg" 
+                        disabled={selectedIndustries.length === 0}
+                      >
+                        Add to Cart
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        className="flex-1" 
+                        size="lg" 
+                        disabled={selectedIndustries.length === 0}
+                        onClick={() => {
+                          // Reset form for another profession
+                          setFormData({
+                            fullName: "",
+                            companyName: "",
+                            email: "",
+                            phone: "",
+                            acceptTerms: false,
+                          });
+                          setSelectedIndustries([]);
+                          setStep1Completed(false);
+                        }}
+                      >
+                        Continue to Select Another Profession
+                      </Button>
+                    </div>
                     <p className="text-xs text-center text-muted-foreground mt-2">
                       No payment required • No commitment to buy
                     </p>
