@@ -1,38 +1,44 @@
-import { PRICING_TIERS } from '@/config/pricing';
+import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry } from '@/config/pricing';
 
 /**
- * Hook for calculating costs based on subscription tier and pricing model
- * Uses centralized pricing configuration from @/config/pricing
+ * Hook for calculating costs based on subscription tier, pricing model, and industry
+ * Uses centralized industry-specific pricing configuration from @/config/pricing
  * 
- * Pricing Models:
- * - Lead costs: $20 (Free), $10 (Pro), $5 (Premium)
+ * NEW PRICING MODEL (CPL Only - No Commissions):
+ * - Industry-specific lead costs based on three value tiers:
+ *   - Low-value (cleaning, handyman): $15/$10/$5 (Free/Pro/Premium)
+ *   - Mid-value (HVAC, plumbing, etc.): $40/$25/$15
+ *   - High-value (legal, insurance): $200/$125/$75
  * 
- * - 'hourly': Tier-based lead cost upfront + hourly rate multiplier when awarded
- *   - Upfront: Free ($20), Pro ($10), Premium ($5)
- *   - When awarded: 3x / 2x / 1x average hourly rate + escrow fee
- * 
- * - 'escrow': Processing fee on each milestone payment released
- *   - Free: 9% of milestone amount (minimum $10)
- *   - Pro: 8% of milestone amount (minimum $10)
- *   - Premium: 4% of milestone amount (minimum $10)
- * 
- * - 'free_estimate': Upfront cost with conditional rebate on award
- *   - Costs: Free ($150), Pro ($100), Premium ($50)
- *   - Rebate rules: Only for fixed-price contracts of $5,000 or more
- *   - No rebates for hourly rate contracts
+ * - Escrow processing fees only:
+ *   - Free: 9% (min $10)
+ *   - Pro: 5% (min $10)
+ *   - Premium: 2% (min $10)
  */
 export const useCommissionCalculator = () => {
+  /**
+   * Calculate lead cost for a specific industry and tier
+   * Returns default mid-value if industry not specified
+   */
   const calculateLeadCost = (
-    tier: 'free' | 'pro' | 'premium' = 'free'
+    tier: 'free' | 'pro' | 'premium' = 'free',
+    industry?: string
   ): {
     leadCost: number;
   } => {
-    const pricingTier = PRICING_TIERS[tier];
-    return {
-      leadCost: pricingTier.leadCostValue,
-    };
+    if (industry) {
+      return { leadCost: getLeadCostForIndustry(industry, tier) };
+    }
+    
+    // Default to mid-value pricing if no industry specified
+    return { leadCost: INDUSTRY_PRICING[1][tier] };
   };
 
+  /**
+   * Commission calculation - DEPRECATED
+   * Returns zeros for backward compatibility
+   * New pricing model is CPL only with no commissions
+   */
   const calculateCommission = (
     totalAmount: number,
     tier: 'free' | 'pro' | 'premium' = 'free'
@@ -42,7 +48,6 @@ export const useCommissionCalculator = () => {
     diggerPayout: number;
     minimumFee: number;
   } => {
-    // No contract award fees anymore - returning zeros for backward compatibility
     return {
       rate: 0,
       commissionAmount: 0,
@@ -51,14 +56,21 @@ export const useCommissionCalculator = () => {
     };
   };
 
+  /**
+   * Hourly award cost calculation - DEPRECATED
+   * Returns 0 for backward compatibility
+   * New pricing model eliminates hourly multiplier charges
+   */
   const calculateHourlyAwardCost = (
     averageHourlyRate: number,
     tier: 'free' | 'pro' | 'premium' = 'free'
   ): number => {
-    const pricingTier = PRICING_TIERS[tier];
-    return averageHourlyRate * pricingTier.hourlyRateChargeMultiplier;
+    return 0;
   };
 
+  /**
+   * Calculate escrow processing fee
+   */
   const calculateEscrowFee = (
     amount: number,
     tier: 'free' | 'pro' | 'premium' = 'free'
@@ -68,47 +80,28 @@ export const useCommissionCalculator = () => {
     return Math.max(calculatedFee, pricingTier.escrowProcessingMinimum);
   };
 
+  /**
+   * Free estimate cost calculation - DEPRECATED
+   * Returns 0 for backward compatibility
+   * New pricing model eliminates free estimate upcharges
+   */
   const calculateFreeEstimateCost = (
     tier: 'free' | 'pro' | 'premium' = 'free'
   ): number => {
-    const pricingTier = PRICING_TIERS[tier];
-    return pricingTier.freeEstimateCostValue;
+    return 0;
   };
 
+  /**
+   * Free estimate rebate calculation - DEPRECATED
+   * Returns no rebate for backward compatibility
+   * New pricing model eliminates free estimate system
+   */
   const calculateFreeEstimateRebate = (
     projectAmount: number,
     pricingModel: 'fixed' | 'hourly',
     tier: 'free' | 'pro' | 'premium' = 'free',
     freeEstimatePaid: boolean = false
   ): { rebateAmount: number; rebateApplied: boolean; rebateReason?: string } => {
-    if (!freeEstimatePaid) {
-      return { rebateAmount: 0, rebateApplied: false };
-    }
-
-    const freeEstimateCost = calculateFreeEstimateCost(tier);
-
-    // New rules: Only apply rebates for fixed-price contracts of $5,000 or more
-    // No rebates for hourly rate contracts
-    if (pricingModel === 'fixed' && projectAmount >= 5000) {
-      return {
-        rebateAmount: freeEstimateCost,
-        rebateApplied: true,
-        rebateReason: 'Fixed-price contract of $5,000 or more'
-      };
-    } else if (pricingModel === 'hourly') {
-      return {
-        rebateAmount: 0,
-        rebateApplied: false,
-        rebateReason: 'No rebates available for hourly rate contracts'
-      };
-    } else if (pricingModel === 'fixed' && projectAmount < 5000) {
-      return {
-        rebateAmount: 0,
-        rebateApplied: false,
-        rebateReason: 'Rebates only available for contracts of $5,000 or more'
-      };
-    }
-
     return { rebateAmount: 0, rebateApplied: false };
   };
 

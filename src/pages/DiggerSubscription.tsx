@@ -8,32 +8,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { PRICING_TIERS } from "@/config/pricing";
+import { PRICING_TIERS, INDUSTRY_PRICING } from "@/config/pricing";
 
 const TIER_FEATURES = {
   free: [
-    `${PRICING_TIERS.free.leadCost} per lead`,
-    `${PRICING_TIERS.free.escrowProcessingFee}`,
-    `${PRICING_TIERS.free.freeEstimateCost} free estimate upcharge`,
+    'Industry-specific lead pricing',
+    `${PRICING_TIERS.free.escrowFee} escrow fee`,
     'Basic profile listing',
-    'Standard support'
+    'Standard support',
+    'Access to all gig categories'
   ],
   pro: [
-    `${PRICING_TIERS.pro.leadCost} per lead`,
-    `${PRICING_TIERS.pro.escrowProcessingFee}`,
-    `${PRICING_TIERS.pro.freeEstimateCost} free estimate upcharge`,
+    'Lower industry-specific lead pricing',
+    `${PRICING_TIERS.pro.escrowFee} escrow fee`,
     'Priority support',
     'Featured in search results',
-    'Advanced analytics'
+    'Advanced analytics',
+    'Access to all gig categories'
   ],
   premium: [
-    `${PRICING_TIERS.premium.leadCost} per lead`,
-    `${PRICING_TIERS.premium.escrowProcessingFee}`,
-    `${PRICING_TIERS.premium.freeEstimateCost} free estimate upcharge`,
+    'Lowest industry-specific lead pricing',
+    `${PRICING_TIERS.premium.escrowFee} escrow fee`,
     'VIP support',
     'Top placement in search',
     'Advanced analytics',
-    'Dedicated account manager'
+    'Dedicated account manager',
+    'Access to all gig categories'
   ]
 };
 
