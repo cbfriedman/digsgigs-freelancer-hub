@@ -60,6 +60,7 @@ export default function Pricing() {
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
       volumeTier: 'Lead #s 1-10',
+      description: undefined,
       features: [],
     },
     pro: {
@@ -77,6 +78,7 @@ export default function Pricing() {
       productId: PRICING_TIERS.pro.productId,
       popular: PRICING_TIERS.pro.popular,
       volumeTier: 'Lead #s 11-50',
+      description: 'Best Bulk Pricing when you buy 11 leads or more',
       features: [],
     },
     premium: {
@@ -94,6 +96,7 @@ export default function Pricing() {
       productId: PRICING_TIERS.premium.productId,
       popular: PRICING_TIERS.premium.popular,
       volumeTier: 'Lead #s 51+',
+      description: undefined,
       features: [],
     },
   };
@@ -261,8 +264,8 @@ export default function Pricing() {
               <p className="text-sm font-medium mb-2">📊 How Volume-Based Pricing Works:</p>
               <ul className="text-sm text-muted-foreground space-y-1 text-left">
                 <li>• <strong>Lead #s 1-10:</strong> Standard pricing - Perfect for getting started</li>
-                <li>• <strong>Lead #s 11-50:</strong> Volume discount - Save money as you grow</li>
-                <li>• <strong>Lead #s 51+:</strong> Best bulk pricing - Maximum savings for high volume</li>
+                <li>• <strong>Lead #s 11-50:</strong> Best Bulk Pricing when you buy 11 leads or more</li>
+                <li>• <strong>Lead #s 51+:</strong> Maximum bulk discount - Highest volume savings</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-3 italic">
                 Each lead you receive is numbered by month (e.g., JAN#1, JAN#2, FEB#1, FEB#2). Pricing automatically adjusts based on your monthly lead count.
@@ -373,6 +376,11 @@ export default function Pricing() {
                   <p className="text-xs text-muted-foreground mt-2">
                     (e.g., {key === 'free' ? 'JAN#1-JAN#10' : key === 'pro' ? 'JAN#11-JAN#50' : 'JAN#51+'})
                   </p>
+                  {tier.description && (
+                    <CardDescription className="mt-3 text-sm font-medium text-primary">
+                      {tier.description}
+                    </CardDescription>
+                  )}
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
