@@ -53,11 +53,11 @@ const DiggerRegistration = () => {
   const [workPhotoPreviews, setWorkPhotoPreviews] = useState<string[]>([]);
   const { calculateLeadCost } = useCommissionCalculator();
   
-  // Auto-generate username based on city, state, zip, and first name (only if not manually set)
+  // Auto-generate username based on city, state initials, zip, and first name (only if not manually set)
   useEffect(() => {
     if (city && state && zipCode && firstName) {
       // Only auto-generate if the field is empty or still matches the old auto-generated format
-      const newGeneratedUsername = `${city.replace(/\s+/g, '')}${state.replace(/\s+/g, '')}${zipCode}${firstName.replace(/\s+/g, '')}`;
+      const newGeneratedUsername = `${city.replace(/\s+/g, '')}${state.replace(/\s+/g, '').toUpperCase()}${zipCode}${firstName.replace(/\s+/g, '')}`;
       
       // Update if field is empty or user hasn't customized it
       if (!assignedUserName) {
@@ -533,7 +533,7 @@ const DiggerRegistration = () => {
                   variant="outline"
                   onClick={() => {
                     if (city && state && zipCode && firstName) {
-                      const newGenerated = `${city.replace(/\s+/g, '')}${state.replace(/\s+/g, '')}${zipCode}${firstName.replace(/\s+/g, '')}`;
+                      const newGenerated = `${city.replace(/\s+/g, '')}${state.replace(/\s+/g, '').toUpperCase()}${zipCode}${firstName.replace(/\s+/g, '')}`;
                       setAssignedUserName(newGenerated);
                       toast.success("User ID regenerated");
                     } else {
@@ -556,7 +556,7 @@ const DiggerRegistration = () => {
               )}
               
               <p className="text-xs text-muted-foreground">
-                Your unique User ID automatically combines your <strong>City + State + Zip Code + First Name</strong>. You can customize it, but it must not include your company name. Only letters, numbers, hyphens, and underscores (max 50 characters).
+                Your unique User ID automatically combines your <strong>City + State Initials + Zip Code + First Name</strong>. You can customize it, but it must not include your company name. Only letters, numbers, hyphens, and underscores (max 50 characters).
               </p>
               
               {/* User ID Preview Card */}
@@ -592,7 +592,7 @@ const DiggerRegistration = () => {
                           )}
                           {state && (
                             <Badge variant="outline" className="text-xs">
-                              State: {state.replace(/\s+/g, '')}
+                              State: {state.replace(/\s+/g, '').toUpperCase()}
                             </Badge>
                           )}
                           {zipCode && (
@@ -607,7 +607,7 @@ const DiggerRegistration = () => {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">
-                          Auto-generated format: <span className="font-mono">City + State + Zip + FirstName</span>
+                          Auto-generated format: <span className="font-mono">City + State Initials + Zip + FirstName</span>
                         </p>
                       </div>
                     )}
