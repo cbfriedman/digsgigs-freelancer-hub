@@ -61,6 +61,7 @@ export default function Pricing() {
       popular: PRICING_TIERS.free.popular,
       volumeTier: 'Lead #s 1-10',
       description: undefined,
+      savingsPercent: undefined,
       features: [],
     },
     pro: {
@@ -79,6 +80,7 @@ export default function Pricing() {
       popular: PRICING_TIERS.pro.popular,
       volumeTier: 'Lead #s 11-50',
       description: 'Best Bulk Pricing when you buy 11 leads or more',
+      savingsPercent: 17,
       features: [],
     },
     premium: {
@@ -97,6 +99,7 @@ export default function Pricing() {
       popular: PRICING_TIERS.premium.popular,
       volumeTier: 'Lead #s 51+',
       description: 'Best Bulk Pricing - Maximum volume savings',
+      savingsPercent: 33,
       features: [],
     },
   };
@@ -376,6 +379,13 @@ export default function Pricing() {
                   <p className="text-xs text-muted-foreground mt-2">
                     (e.g., {key === 'free' ? 'JAN#1-JAN#10' : key === 'pro' ? 'JAN#11-JAN#50' : 'JAN#51+'})
                   </p>
+                  {tier.savingsPercent && (
+                    <div className="mt-3">
+                      <Badge className="bg-green-500 text-white text-sm px-3 py-1">
+                        Save {tier.savingsPercent}%
+                      </Badge>
+                    </div>
+                  )}
                   {tier.description && (
                     <CardDescription className="mt-3 text-sm font-medium text-primary">
                       {tier.description}
