@@ -50,8 +50,8 @@ export default function Pricing() {
     acceptTerms: false,
   });
 
-  // Check if user can interact with pricing tiles
-  const canInteractWithPricing = step1Completed && selectedIndustries.length > 0;
+  // Check if user can interact with pricing tiles - only after Step 1 is completed
+  const canInteractWithPricing = step1Completed;
 
   // Define getLeadCostForTier early so it can be used in TIERS
   const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
@@ -339,6 +339,10 @@ export default function Pricing() {
                         toast.error("Please accept the Terms of Service to continue");
                         return;
                       }
+                      if (selectedIndustries.length === 0) {
+                        toast.error("Please select at least one industry");
+                        return;
+                      }
                       const registrationSchema = z.object({
                         fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
                         email: z.string().trim().email("Invalid email address"),
@@ -348,6 +352,7 @@ export default function Pricing() {
                         registrationSchema.parse(formData);
                         localStorage.setItem("demo_user_info", JSON.stringify({
                           ...formData,
+                          industries: selectedIndustries,
                           timestamp: new Date().toISOString(),
                           demoType: "digger",
                         }));
@@ -414,6 +419,19 @@ export default function Pricing() {
                       />
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="industries" className="font-medium">
+                        Select Your Industries *
+                      </Label>
+                      <IndustryMultiSelector 
+                        selectedIndustries={selectedIndustries}
+                        onIndustriesChange={setSelectedIndustries}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Your pricing will update based on selected industries
+                      </p>
+                    </div>
+
                     <div className="flex items-start gap-2">
                       <Checkbox
                         id="terms"
@@ -448,57 +466,60 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* Industry Selector - Step 2 (always visible) */}
-      <section id="step-2-industry" className={`py-8 bg-background ${!step1Completed ? 'pointer-events-none opacity-50' : ''}`}>
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            {!step1Completed && (
-              <div className="text-center mb-4">
-                <p className="text-muted-foreground">
-                  Complete Step 1 first to proceed
-                </p>
+      {/* Industry Selector - Step 2 (shown after Step 1 is completed, synced with Step 1 selection) */}
+      {step1Completed && (
+        <section id="step-2-industry" className="py-8 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
+                Refine your Industries (optional)
+              </Label>
+              <div className="flex items-center gap-4 justify-center">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
+                  <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+                </div>
+                <div className="flex-1 max-w-md">
+                  <IndustryMultiSelector 
+                    selectedIndustries={selectedIndustries}
+                    onIndustriesChange={setSelectedIndustries}
+                  />
+                </div>
               </div>
-            )}
-            <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
-              Select your Industries to determine your lead cost
-            </Label>
-            <div className="flex items-center gap-4 justify-center">
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
-                <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
-              </div>
-              <div className="flex-1 max-w-md">
-                <IndustryMultiSelector 
-                  selectedIndustries={selectedIndustries}
-                  onIndustriesChange={setSelectedIndustries}
-                />
-              </div>
+              <p className="text-sm text-center text-muted-foreground mt-4">
+                💡 Your selections from Step 1 are already applied
+              </p>
             </div>
-            <p className="text-sm text-center text-muted-foreground mt-4">
-              💡 No payment required • Browse and explore with zero commitment
-            </p>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Pricing Cards - disabled until both conditions met */}
-      <section className={`py-16 ${!canInteractWithPricing ? 'pointer-events-none opacity-50' : ''}`}>
+      {/* Pricing Cards - pricing updates in real-time, clickable after Step 1 */}
+      <section className="py-16">
         <div className="container mx-auto px-4">
-          {!canInteractWithPricing && (
+          {!canInteractWithPricing && selectedIndustries.length > 0 && (
             <div className="text-center mb-8">
               <p className="text-muted-foreground text-lg">
-                Complete Step 1 and select an industry to view pricing options
+                Complete and submit Step 1 to proceed with your selection
               </p>
             </div>
           )}
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {Object.entries(TIERS).map(([key, tier]) => (
-              <Card 
-                key={key}
-                onClick={() => !isButtonDisabled(key, tier.priceId) && handleSubscribe(key, tier.priceId)}
-                className={`relative transition-all ${
-                  selectedIndustries.length === 0
-                    ? 'opacity-60 cursor-not-allowed'
+          {!canInteractWithPricing && selectedIndustries.length === 0 && (
+            <div className="text-center mb-8">
+              <p className="text-muted-foreground text-lg">
+                Select an industry in Step 1 to see pricing
+              </p>
+            </div>
+          )}
+          <div className={`${!canInteractWithPricing ? 'pointer-events-none opacity-50' : ''}`}>
+            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {Object.entries(TIERS).map(([key, tier]) => (
+                <Card 
+                  key={key}
+                  onClick={() => canInteractWithPricing && !isButtonDisabled(key, tier.priceId) && handleSubscribe(key, tier.priceId)}
+                  className={`relative transition-all ${
+                    !canInteractWithPricing
+                      ? 'opacity-60 cursor-not-allowed'
                     : 'cursor-pointer hover:shadow-xl hover:scale-105'
                 } ${
                   currentTier === key 
@@ -629,16 +650,19 @@ export default function Pricing() {
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSubscribe(key, tier.priceId);
+                      if (canInteractWithPricing && !isButtonDisabled(key, tier.priceId)) {
+                        handleSubscribe(key, tier.priceId);
+                      }
                     }}
-                    disabled={isButtonDisabled(key, tier.priceId)}
+                    disabled={isButtonDisabled(key, tier.priceId) || !canInteractWithPricing}
                     className="w-full bg-primary hover:bg-primary/90"
                   >
                     {getButtonText(key, tier.priceId)}
                   </Button>
                 </CardContent>
               </Card>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
