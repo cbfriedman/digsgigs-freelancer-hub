@@ -71,9 +71,18 @@ const ALL_INDUSTRIES = INDUSTRY_CATEGORIES.flatMap(cat => cat.industries);
 export const ROIComparisonCalculator = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string>("Construction");
   const [conversionRate, setConversionRate] = useState<string>("25");
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const industry = ALL_INDUSTRIES.find(i => i.name === selectedIndustry) || ALL_INDUSTRIES[0];
   const platformConversionRate = parseFloat(conversionRate) / 100 || 0.25;
+
+  // Filter categories based on search term
+  const filteredCategories = INDUSTRY_CATEGORIES.map(category => ({
+    ...category,
+    industries: category.industries.filter(ind =>
+      ind.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  })).filter(category => category.industries.length > 0);
 
   // Calculate Google AdWords cost per closed deal
   const clicksPerLead = 1 / industry.clickToLeadRate;
@@ -141,21 +150,34 @@ export const ROIComparisonCalculator = () => {
                 </Tooltip>
               </TooltipProvider>
             </div>
+            <Input
+              type="text"
+              placeholder="Search industries..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-2"
+            />
             <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
               <SelectTrigger id="industry">
                 <SelectValue placeholder="Select industry" />
               </SelectTrigger>
               <SelectContent>
-                {INDUSTRY_CATEGORIES.map((category) => (
-                  <SelectGroup key={category.category}>
-                    <SelectLabel>{category.category}</SelectLabel>
-                    {category.industries.map((ind) => (
-                      <SelectItem key={ind.name} value={ind.name}>
-                        {ind.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
+                {filteredCategories.length > 0 ? (
+                  filteredCategories.map((category) => (
+                    <SelectGroup key={category.category}>
+                      <SelectLabel>{category.category}</SelectLabel>
+                      {category.industries.map((ind) => (
+                        <SelectItem key={ind.name} value={ind.name}>
+                          {ind.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))
+                ) : (
+                  <SelectItem value="no-results" disabled>
+                    No industries found
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
