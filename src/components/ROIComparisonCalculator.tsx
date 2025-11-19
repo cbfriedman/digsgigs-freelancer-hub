@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +75,11 @@ export const ROIComparisonCalculator = () => {
 
   const industry = ALL_INDUSTRIES.find(i => i.name === selectedIndustry) || ALL_INDUSTRIES[0];
   const platformConversionRate = parseFloat(conversionRate) / 100 || 0.25;
+
+  // Update conversion rate to match industry's lead-to-customer rate
+  useEffect(() => {
+    setConversionRate((industry.leadToCustomerRate * 100).toFixed(0));
+  }, [industry]);
 
   // Filter categories based on search term
   const filteredCategories = INDUSTRY_CATEGORIES.map(category => ({
