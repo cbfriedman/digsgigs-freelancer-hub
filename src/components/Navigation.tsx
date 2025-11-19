@@ -21,25 +21,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const { user } = useAuth();
   const [profileCartCount, setProfileCartCount] = useState(0);
 
-  // Update cart count when cart opens or on mount
+  // Clear old profile cart data since profiles now save directly to database
   useEffect(() => {
-    const updateCartCount = () => {
-      const items = JSON.parse(localStorage.getItem("profileCart") || "[]");
-      setProfileCartCount(items.length);
-    };
-    
-    updateCartCount();
-    
-    // Listen for storage changes
-    window.addEventListener('storage', updateCartCount);
-    
-    // Also check periodically in case of same-tab updates
-    const interval = setInterval(updateCartCount, 1000);
-    
-    return () => {
-      window.removeEventListener('storage', updateCartCount);
-      clearInterval(interval);
-    };
+    localStorage.removeItem("profileCart");
+    setProfileCartCount(0);
   }, []);
 
   return (
