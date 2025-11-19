@@ -50,6 +50,9 @@ export default function Pricing() {
     acceptTerms: false,
   });
 
+  // Check if user can interact with pricing tiles
+  const canInteractWithPricing = step1Completed && selectedIndustries.length > 0;
+
   // Define getLeadCostForTier early so it can be used in TIERS
   const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
     if (selectedIndustries.length === 0) {
@@ -445,38 +448,49 @@ export default function Pricing() {
         </div>
       </section>
 
-      {/* Industry Selector - Step 2 (only shown after Step 1 is completed) */}
-      {step1Completed && (
-        <section id="step-2-industry" className="py-8 bg-background">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
-                Select your Industries to determine your lead cost
-              </Label>
-              <div className="flex items-center gap-4 justify-center">
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
-                  <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
-                </div>
-                <div className="flex-1 max-w-md">
-                  <IndustryMultiSelector 
-                    selectedIndustries={selectedIndustries}
-                    onIndustriesChange={setSelectedIndustries}
-                  />
-                </div>
+      {/* Industry Selector - Step 2 (always visible) */}
+      <section id="step-2-industry" className={`py-8 bg-background ${!step1Completed ? 'pointer-events-none opacity-50' : ''}`}>
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            {!step1Completed && (
+              <div className="text-center mb-4">
+                <p className="text-muted-foreground">
+                  Complete Step 1 first to proceed
+                </p>
               </div>
-              <p className="text-sm text-center text-muted-foreground mt-4">
-                💡 No payment required • Browse and explore with zero commitment
+            )}
+            <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
+              Select your Industries to determine your lead cost
+            </Label>
+            <div className="flex items-center gap-4 justify-center">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
+                <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+              </div>
+              <div className="flex-1 max-w-md">
+                <IndustryMultiSelector 
+                  selectedIndustries={selectedIndustries}
+                  onIndustriesChange={setSelectedIndustries}
+                />
+              </div>
+            </div>
+            <p className="text-sm text-center text-muted-foreground mt-4">
+              💡 No payment required • Browse and explore with zero commitment
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Cards - disabled until both conditions met */}
+      <section className={`py-16 ${!canInteractWithPricing ? 'pointer-events-none opacity-50' : ''}`}>
+        <div className="container mx-auto px-4">
+          {!canInteractWithPricing && (
+            <div className="text-center mb-8">
+              <p className="text-muted-foreground text-lg">
+                Complete Step 1 and select an industry to view pricing options
               </p>
             </div>
-          </div>
-        </section>
-      )}
-
-      {/* Pricing Cards - only shown after Step 1 is completed */}
-      {step1Completed && (
-        <section className="py-16">
-        <div className="container mx-auto px-4">
+          )}
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {Object.entries(TIERS).map(([key, tier]) => (
               <Card 
@@ -628,7 +642,6 @@ export default function Pricing() {
           </div>
         </div>
       </section>
-      )}
 
       {/* How Commitment-Based Pricing Works - only shown after Step 1 is completed */}
       {step1Completed && (
