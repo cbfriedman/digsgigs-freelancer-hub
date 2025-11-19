@@ -24,61 +24,7 @@ import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { HourlyUpchargeCalculator } from "@/components/HourlyUpchargeCalculator";
 import { TierSavingsCalculator } from "@/components/TierSavingsCalculator";
 
-import { PRICING_TIERS, INDUSTRY_PRICING } from "@/config/pricing";
-
-const TIERS = {
-  free: {
-    name: PRICING_TIERS.free.name,
-    price: PRICING_TIERS.free.price,
-    priceValue: PRICING_TIERS.free.priceValue,
-    leadCostRange: `$${INDUSTRY_PRICING[0].free}-$${INDUSTRY_PRICING[2].free}`,
-    leadCostValue: INDUSTRY_PRICING[1].free, // Use mid-value for calculations
-    escrowFee: PRICING_TIERS.free.escrowFee,
-    escrowFeeValue: PRICING_TIERS.free.escrowFeeValue,
-    escrowProcessingFee: PRICING_TIERS.free.escrowProcessingFee,
-    escrowProcessingFeeValue: PRICING_TIERS.free.escrowProcessingFeeValue,
-    escrowProcessingMinimum: PRICING_TIERS.free.escrowProcessingMinimum,
-    priceId: PRICING_TIERS.free.priceId,
-    productId: PRICING_TIERS.free.productId,
-    popular: PRICING_TIERS.free.popular,
-    cpcMultiplier: '3×',
-    features: [],
-  },
-  pro: {
-    name: PRICING_TIERS.pro.name,
-    price: PRICING_TIERS.pro.price,
-    priceValue: PRICING_TIERS.pro.priceValue,
-    leadCostRange: `$${INDUSTRY_PRICING[0].pro}-$${INDUSTRY_PRICING[2].pro}`,
-    leadCostValue: INDUSTRY_PRICING[1].pro, // Use mid-value for calculations
-    escrowFee: PRICING_TIERS.pro.escrowFee,
-    escrowFeeValue: PRICING_TIERS.pro.escrowFeeValue,
-    escrowProcessingFee: PRICING_TIERS.pro.escrowProcessingFee,
-    escrowProcessingFeeValue: PRICING_TIERS.pro.escrowProcessingFeeValue,
-    escrowProcessingMinimum: PRICING_TIERS.pro.escrowProcessingMinimum,
-    priceId: PRICING_TIERS.pro.priceId,
-    productId: PRICING_TIERS.pro.productId,
-    popular: PRICING_TIERS.pro.popular,
-    cpcMultiplier: '2×',
-    features: [],
-  },
-  premium: {
-    name: PRICING_TIERS.premium.name,
-    price: PRICING_TIERS.premium.price,
-    priceValue: PRICING_TIERS.premium.priceValue,
-    leadCostRange: `$${INDUSTRY_PRICING[0].premium}-$${INDUSTRY_PRICING[2].premium}`,
-    leadCostValue: INDUSTRY_PRICING[1].premium, // Use mid-value for calculations
-    escrowFee: PRICING_TIERS.premium.escrowFee,
-    escrowFeeValue: PRICING_TIERS.premium.escrowFeeValue,
-    escrowProcessingFee: PRICING_TIERS.premium.escrowProcessingFee,
-    escrowProcessingFeeValue: PRICING_TIERS.premium.escrowProcessingFeeValue,
-    escrowProcessingMinimum: PRICING_TIERS.premium.escrowProcessingMinimum,
-    priceId: PRICING_TIERS.premium.priceId,
-    productId: PRICING_TIERS.premium.productId,
-    popular: PRICING_TIERS.premium.popular,
-    cpcMultiplier: '1×',
-    features: [],
-  },
-};
+import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -90,6 +36,61 @@ export default function Pricing() {
   const [leadsToClicksRate, setLeadsToClicksRate] = useState(25);
   const [clicksToAwardRate, setClicksToAwardRate] = useState(25);
   const [showResults, setShowResults] = useState(false);
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('HVAC'); // Default to mid-value industry
+
+  const TIERS = {
+    free: {
+      name: PRICING_TIERS.free.name,
+      price: PRICING_TIERS.free.price,
+      priceValue: PRICING_TIERS.free.priceValue,
+      leadCostRange: `$${INDUSTRY_PRICING[0].free}-$${INDUSTRY_PRICING[2].free}`,
+      leadCostValue: getLeadCostForIndustry(selectedIndustry, 'free'),
+      escrowFee: PRICING_TIERS.free.escrowFee,
+      escrowFeeValue: PRICING_TIERS.free.escrowFeeValue,
+      escrowProcessingFee: PRICING_TIERS.free.escrowProcessingFee,
+      escrowProcessingFeeValue: PRICING_TIERS.free.escrowProcessingFeeValue,
+      escrowProcessingMinimum: PRICING_TIERS.free.escrowProcessingMinimum,
+      priceId: PRICING_TIERS.free.priceId,
+      productId: PRICING_TIERS.free.productId,
+      popular: PRICING_TIERS.free.popular,
+      cpcMultiplier: '3×',
+      features: [],
+    },
+    pro: {
+      name: PRICING_TIERS.pro.name,
+      price: PRICING_TIERS.pro.price,
+      priceValue: PRICING_TIERS.pro.priceValue,
+      leadCostRange: `$${INDUSTRY_PRICING[0].pro}-$${INDUSTRY_PRICING[2].pro}`,
+      leadCostValue: getLeadCostForIndustry(selectedIndustry, 'pro'),
+      escrowFee: PRICING_TIERS.pro.escrowFee,
+      escrowFeeValue: PRICING_TIERS.pro.escrowFeeValue,
+      escrowProcessingFee: PRICING_TIERS.pro.escrowProcessingFee,
+      escrowProcessingFeeValue: PRICING_TIERS.pro.escrowProcessingFeeValue,
+      escrowProcessingMinimum: PRICING_TIERS.pro.escrowProcessingMinimum,
+      priceId: PRICING_TIERS.pro.priceId,
+      productId: PRICING_TIERS.pro.productId,
+      popular: PRICING_TIERS.pro.popular,
+      cpcMultiplier: '2×',
+      features: [],
+    },
+    premium: {
+      name: PRICING_TIERS.premium.name,
+      price: PRICING_TIERS.premium.price,
+      priceValue: PRICING_TIERS.premium.priceValue,
+      leadCostRange: `$${INDUSTRY_PRICING[0].premium}-$${INDUSTRY_PRICING[2].premium}`,
+      leadCostValue: getLeadCostForIndustry(selectedIndustry, 'premium'),
+      escrowFee: PRICING_TIERS.premium.escrowFee,
+      escrowFeeValue: PRICING_TIERS.premium.escrowFeeValue,
+      escrowProcessingFee: PRICING_TIERS.premium.escrowProcessingFee,
+      escrowProcessingFeeValue: PRICING_TIERS.premium.escrowProcessingFeeValue,
+      escrowProcessingMinimum: PRICING_TIERS.premium.escrowProcessingMinimum,
+      priceId: PRICING_TIERS.premium.priceId,
+      productId: PRICING_TIERS.premium.productId,
+      popular: PRICING_TIERS.premium.popular,
+      cpcMultiplier: '1×',
+      features: [],
+    },
+  };
   
   // Calculate clicks and awards
   const calculatedClicks = Math.round(interactiveLeads * (leadsToClicksRate / 100));
@@ -194,16 +195,20 @@ export default function Pricing() {
     return false;
   };
 
+  const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
+    return getLeadCostForIndustry(selectedIndustry, tier);
+  };
+
   const calculateInteractiveCosts = () => {
     const tiers = ['free', 'pro', 'premium'] as const;
     return tiers.map(tierKey => {
-      const tier = TIERS[tierKey];
-      const leadCosts = interactiveLeads * tier.leadCostValue;
-      const totalCost = tier.priceValue + leadCosts;
+      const leadCost = getLeadCostForTier(tierKey);
+      const leadCosts = interactiveLeads * leadCost;
+      const totalCost = PRICING_TIERS[tierKey].priceValue + leadCosts;
       
       return {
-        name: tier.name,
-        monthly: tier.priceValue,
+        name: PRICING_TIERS[tierKey].name,
+        monthly: PRICING_TIERS[tierKey].priceValue,
         leadCosts,
         total: totalCost
       };
@@ -272,6 +277,32 @@ export default function Pricing() {
         </div>
       </section>
 
+      {/* Industry Selector */}
+      <section className="py-8 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="max-w-md mx-auto">
+            <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
+              Select your Industry to determine your lead cost
+            </Label>
+            <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+              <SelectTrigger id="industry-select" className="w-full">
+                <SelectValue placeholder="Select industry" />
+              </SelectTrigger>
+              <SelectContent>
+                {getAllIndustries().map((industry) => (
+                  <SelectItem key={industry} value={industry}>
+                    {industry}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground text-center mt-3">
+              Lead costs: ${getLeadCostForIndustry(selectedIndustry, 'free')} (Free) | ${getLeadCostForIndustry(selectedIndustry, 'pro')} (Pro) | ${getLeadCostForIndustry(selectedIndustry, 'premium')} (Premium)
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Cards */}
       <section className="py-16">
         <div className="container mx-auto px-4">
@@ -316,19 +347,19 @@ export default function Pricing() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Lead Cost:</span>
+                        <span className="text-sm font-medium">Lead Cost ({selectedIndustry}):</span>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">{tier.cpcMultiplier} Google AdWords CPC (varies by industry: low-value, mid-value, high-value)</p>
+                              <p className="text-sm">{tier.cpcMultiplier} Google AdWords CPC for {selectedIndustry}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </div>
-                      <span className="font-bold text-primary">{tier.leadCostRange}</span>
+                      <span className="font-bold text-primary">${tier.leadCostValue}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
