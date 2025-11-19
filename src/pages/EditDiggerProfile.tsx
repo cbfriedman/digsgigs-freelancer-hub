@@ -21,6 +21,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
+import { getLeadTierDescription } from "@/config/pricing";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -174,10 +175,14 @@ const EditDiggerProfile = () => {
     setLoading(true);
 
     try {
+      // Calculate lead tier description based on selected categories
+      const leadTierDescription = getLeadTierDescription(categoryNames);
+
       const { error } = await supabase
         .from("digger_profiles")
         .update({
           business_name: businessName,
+          company_name: businessName,
           profile_name: profileName || null,
           is_primary: isPrimary,
           profession,
@@ -189,6 +194,7 @@ const EditDiggerProfile = () => {
           offers_free_estimates: offersFreEstimates,
           expected_lead_volume: expectedLeadVolume,
           expected_lead_period: expectedLeadPeriod,
+          lead_tier_description: leadTierDescription || null,
         })
         .eq("id", profileId);
 

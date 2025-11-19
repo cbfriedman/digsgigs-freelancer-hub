@@ -284,3 +284,28 @@ export const getPricingTier = (tier: 'free' | 'pro' | 'premium' = 'free'): Prici
 export const getAllIndustries = (): string[] => {
   return INDUSTRY_PRICING.flatMap(pricing => pricing.industries).sort();
 };
+
+/**
+ * Determines the lead tier description based on selected industries
+ * Returns "Low", "Medium", "High", or combinations like "Low/Medium"
+ */
+export const getLeadTierDescription = (industries: string[]): string => {
+  if (industries.length === 0) return '';
+  
+  const tiers = new Set<string>();
+  
+  industries.forEach(industry => {
+    const pricing = INDUSTRY_PRICING.find(p => p.industries.includes(industry));
+    if (pricing) {
+      if (pricing.category === 'low-value') tiers.add('Low');
+      if (pricing.category === 'mid-value') tiers.add('Medium');
+      if (pricing.category === 'high-value') tiers.add('High');
+    }
+  });
+  
+  const tierArray = Array.from(tiers);
+  const order = ['Low', 'Medium', 'High'];
+  tierArray.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  
+  return tierArray.join('/');
+};

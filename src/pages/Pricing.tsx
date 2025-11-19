@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { z } from "zod";
 
-import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
+import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries, getLeadTierDescription } from "@/config/pricing";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -47,6 +47,7 @@ export default function Pricing() {
     fullName: "",
     email: "",
     phone: "",
+    companyName: "",
     acceptTerms: false,
   });
 
@@ -154,6 +155,7 @@ export default function Pricing() {
             fullName: progress.fullName || "",
             email: progress.email || "",
             phone: progress.phone || "",
+            companyName: progress.companyName || "",
             acceptTerms: progress.acceptTerms || false,
           });
           setSelectedIndustries(progress.industries || []);
@@ -376,12 +378,15 @@ export default function Pricing() {
                         fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
                         email: z.string().trim().email("Invalid email address"),
                         phone: z.string().trim().optional(),
+                        companyName: z.string().trim().min(2, "Company name must be at least 2 characters"),
                       });
                       try {
                         registrationSchema.parse(formData);
+                        const leadTierDescription = getLeadTierDescription(selectedIndustries);
                         localStorage.setItem("demo_user_info", JSON.stringify({
                           ...formData,
                           industries: selectedIndustries,
+                          leadTierDescription,
                           timestamp: new Date().toISOString(),
                           demoType: "digger",
                         }));
@@ -412,6 +417,20 @@ export default function Pricing() {
                         placeholder="Enter your full name"
                         value={formData.fullName}
                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="companyName">
+                        <User className="inline-block h-4 w-4 mr-1" />
+                        Company Name *
+                      </Label>
+                      <Input
+                        id="companyName"
+                        placeholder="Enter your company name"
+                        value={formData.companyName}
+                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                         required
                       />
                     </div>
@@ -457,9 +476,11 @@ export default function Pricing() {
                         onIndustriesChange={setSelectedIndustries}
                         onManageProfilesClick={() => {
                           // Save current registration progress before navigating
+                          const leadTierDescription = getLeadTierDescription(selectedIndustries);
                           const progressData = {
                             ...formData,
                             industries: selectedIndustries,
+                            leadTierDescription,
                             timestamp: new Date().toISOString(),
                             demoType: "digger",
                             isInProgress: true
@@ -527,9 +548,11 @@ export default function Pricing() {
                     onIndustriesChange={setSelectedIndustries}
                     onManageProfilesClick={() => {
                       // Update saved progress with current state
+                      const leadTierDescription = getLeadTierDescription(selectedIndustries);
                       const progressData = {
                         ...formData,
                         industries: selectedIndustries,
+                        leadTierDescription,
                         timestamp: new Date().toISOString(),
                         demoType: "digger",
                         isInProgress: true,

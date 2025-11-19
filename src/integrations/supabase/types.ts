@@ -495,6 +495,7 @@ export type Database = {
           bio: string | null
           business_name: string
           certifications: string[] | null
+          company_name: string | null
           completion_rate: number | null
           country: string | null
           created_at: string
@@ -515,6 +516,7 @@ export type Database = {
           lead_limit: number | null
           lead_limit_enabled: boolean | null
           lead_limit_period: string | null
+          lead_tier_description: string | null
           location: string
           location_lat: number | null
           location_lng: number | null
@@ -529,6 +531,7 @@ export type Database = {
           profession: string
           profile_image_url: string | null
           profile_name: string | null
+          profile_number: number | null
           response_time_hours: number | null
           sic_code: string[] | null
           skills: string[] | null
@@ -552,6 +555,7 @@ export type Database = {
           bio?: string | null
           business_name: string
           certifications?: string[] | null
+          company_name?: string | null
           completion_rate?: number | null
           country?: string | null
           created_at?: string
@@ -572,6 +576,7 @@ export type Database = {
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
+          lead_tier_description?: string | null
           location: string
           location_lat?: number | null
           location_lng?: number | null
@@ -586,6 +591,7 @@ export type Database = {
           profession: string
           profile_image_url?: string | null
           profile_name?: string | null
+          profile_number?: number | null
           response_time_hours?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
@@ -609,6 +615,7 @@ export type Database = {
           bio?: string | null
           business_name?: string
           certifications?: string[] | null
+          company_name?: string | null
           completion_rate?: number | null
           country?: string | null
           created_at?: string
@@ -629,6 +636,7 @@ export type Database = {
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
+          lead_tier_description?: string | null
           location?: string
           location_lat?: number | null
           location_lng?: number | null
@@ -643,6 +651,7 @@ export type Database = {
           profession?: string
           profile_image_url?: string | null
           profile_name?: string | null
+          profile_number?: number | null
           response_time_hours?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
