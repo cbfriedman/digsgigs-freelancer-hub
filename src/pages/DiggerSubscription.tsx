@@ -8,66 +8,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { PRICING_TIERS } from "@/config/pricing";
 
-interface SubscriptionTier {
-  id: string;
-  name: string;
-  price: number;
-  priceId: string;
-  productId: string;
-  features: string[];
-  commission: string;
-  popular?: boolean;
-}
-
-const TIERS: SubscriptionTier[] = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: 0,
-    priceId: '',
-    productId: '',
-    features: [
-      'Pay per lead ($50 minimum)',
-      '15% commission on completed work',
-      'Basic profile listing',
-      'Standard support'
-    ],
-    commission: '15%'
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 10,
-    priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
-    productId: 'prod_TQ0mK76zTAwoQc',
-    features: [
-      'Unlimited lead access',
-      '4% commission on completed work',
-      'Priority support',
-      'Featured in search results',
-      'Advanced analytics'
-    ],
-    commission: '4%',
-    popular: true
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: 150,
-    priceId: 'price_1STAn5RuFpm7XGfuMrGHEspf',
-    productId: 'prod_TQ0oKMEtoOhHO7',
-    features: [
-      'Unlimited lead access',
-      '0% commission - keep 100%',
-      'VIP support',
-      'Top placement in search',
-      'Advanced analytics',
-      'Dedicated account manager'
-    ],
-    commission: '0%'
-  }
-];
+const TIER_FEATURES = {
+  free: [
+    `${PRICING_TIERS.free.leadCost} per lead`,
+    `${PRICING_TIERS.free.escrowProcessingFee}`,
+    `${PRICING_TIERS.free.freeEstimateCost} free estimate upcharge`,
+    'Basic profile listing',
+    'Standard support'
+  ],
+  pro: [
+    `${PRICING_TIERS.pro.leadCost} per lead`,
+    `${PRICING_TIERS.pro.escrowProcessingFee}`,
+    `${PRICING_TIERS.pro.freeEstimateCost} free estimate upcharge`,
+    'Priority support',
+    'Featured in search results',
+    'Advanced analytics'
+  ],
+  premium: [
+    `${PRICING_TIERS.premium.leadCost} per lead`,
+    `${PRICING_TIERS.premium.escrowProcessingFee}`,
+    `${PRICING_TIERS.premium.freeEstimateCost} free estimate upcharge`,
+    'VIP support',
+    'Top placement in search',
+    'Advanced analytics',
+    'Dedicated account manager'
+  ]
+};
 
 export default function DiggerSubscription() {
   const [loading, setLoading] = useState(true);
@@ -122,10 +90,11 @@ export default function DiggerSubscription() {
     }
   };
 
-  const handleSubscribe = async (tier: SubscriptionTier) => {
+  const handleSubscribe = async (tierId: 'free' | 'pro' | 'premium') => {
+    const tier = PRICING_TIERS[tierId];
     if (!tier.priceId) return;
     
-    setProcessing(tier.id);
+    setProcessing(tierId);
     try {
       const { data, error } = await supabase.functions.invoke('create-subscription-checkout', {
         body: { priceId: tier.priceId }
@@ -168,18 +137,46 @@ export default function DiggerSubscription() {
     }
   };
 
-  const getButtonText = (tier: SubscriptionTier) => {
-    if (currentTier === tier.id && isSubscribed) {
-      return 'Current Plan';
-    }
-    if (tier.id === 'free') {
-      return currentTier === 'free' ? 'Current Plan' : 'Downgrade';
-    }
-    return 'Subscribe';
-  };
+  const handleDowngrade = async (tierId: 'free' | 'pro' | 'premium') => {
+    setProcessing(tierId);
+    try {
+      if (tierId !== 'free') {
+        toast({
+          title: "Error",
+          description: "Can only downgrade to free tier",
+          variant: "destructive"
+        });
+        setProcessing(null);
+        return;
+      }
 
-  const isButtonDisabled = (tier: SubscriptionTier) => {
-    return (currentTier === tier.id && isSubscribed) || tier.id === 'free';
+      const { error } = await supabase
+        .from('digger_profiles')
+        .update({
+          subscription_tier: 'free',
+          subscription_status: null,
+          subscription_end_date: null
+        })
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Downgraded",
+        description: "You've been downgraded to the Free tier.",
+      });
+
+      await checkSubscription();
+    } catch (error: any) {
+      console.error('Error downgrading:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to downgrade plan",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessing(null);
+    }
   };
 
   if (loading) {
@@ -209,70 +206,69 @@ export default function DiggerSubscription() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {TIERS.map((tier) => (
-              <Card 
-                key={tier.id} 
-                className={`relative ${
-                  currentTier === tier.id && isSubscribed 
-                    ? 'border-primary shadow-lg' 
-                    : tier.popular 
-                    ? 'border-accent' 
-                    : ''
-                }`}
-              >
-                {tier.popular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    Most Popular
-                  </Badge>
-                )}
-                {currentTier === tier.id && isSubscribed && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
-                    <Crown className="h-3 w-3 mr-1" />
-                    Your Plan
-                  </Badge>
-                )}
-                
-                <CardHeader>
-                  <CardTitle className="text-2xl">{tier.name}</CardTitle>
-                  <CardDescription>
-                    <span className="text-3xl font-bold text-foreground">
-                      ${tier.price}
-                    </span>
-                    {tier.price > 0 && <span className="text-muted-foreground">/month</span>}
-                  </CardDescription>
-                  <p className="text-sm font-semibold text-primary">
-                    Commission: {tier.commission}
-                  </p>
-                </CardHeader>
-                
-                <CardContent>
-                  <ul className="space-y-2 mb-6">
-                    {tier.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+            {(['free', 'pro', 'premium'] as const).map((tierId) => {
+              const tier = PRICING_TIERS[tierId];
+              return (
+                <Card 
+                  key={tier.id} 
+                  className={`relative ${
+                    currentTier === tierId && isSubscribed 
+                      ? 'border-primary shadow-lg' 
+                      : tier.popular 
+                      ? 'border-accent' 
+                      : ''
+                  }`}
+                >
+                  {tier.popular && (
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      Most Popular
+                    </Badge>
+                  )}
+                  {currentTier === tierId && isSubscribed && (
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Your Plan
+                    </Badge>
+                  )}
                   
-                  <Button
-                    onClick={() => handleSubscribe(tier)}
-                    disabled={isButtonDisabled(tier) || processing !== null}
-                    className="w-full"
-                    variant={currentTier === tier.id && isSubscribed ? "outline" : "default"}
-                  >
-                    {processing === tier.id ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      getButtonText(tier)
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                  <CardHeader>
+                    <CardTitle className="text-2xl">{tier.name}</CardTitle>
+                    <CardDescription>
+                      <span className="text-3xl font-bold text-foreground">
+                        {tier.price}
+                      </span>
+                      {tier.priceValue > 0 && <span className="text-muted-foreground">/month</span>}
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <ul className="space-y-2 mb-6">
+                      {TIER_FEATURES[tierId].map((feature, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                          <span className="text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <Button
+                      onClick={() => tier.priceValue === 0 ? handleDowngrade(tierId) : handleSubscribe(tierId)}
+                      disabled={(currentTier === tierId && isSubscribed) || processing !== null}
+                      className="w-full"
+                      variant={currentTier === tierId && isSubscribed ? "outline" : "default"}
+                    >
+                      {processing === tierId ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (currentTier === tierId && isSubscribed) ? 'Current Plan' :
+                        tier.priceValue === 0 ? 'Downgrade' : 'Subscribe'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {isSubscribed && (
