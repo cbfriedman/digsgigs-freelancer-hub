@@ -20,6 +20,9 @@ interface IndustryData {
   avgCPC: number;
   clickToLeadRate: number;
   leadToCustomerRate: number;
+  cplPricing?: {
+    [platform: string]: number; // Industry-specific cost per lead for CPL platforms
+  };
 }
 
 interface IndustryCategory {
@@ -145,44 +148,213 @@ const INDUSTRY_CATEGORIES: IndustryCategory[] = [
   {
     category: "Construction & Trades",
     industries: [
-      { name: "Construction", avgCPC: 16, clickToLeadRate: 0.07, leadToCustomerRate: 0.14 },
-      { name: "Automotive Services", avgCPC: 9, clickToLeadRate: 0.11, leadToCustomerRate: 0.23 },
+      { 
+        name: "Construction", 
+        avgCPC: 16, 
+        clickToLeadRate: 0.07, 
+        leadToCustomerRate: 0.14,
+        cplPricing: {
+          "Bark": 35,
+          "Porch": 65,
+          "Houzz": 60,
+          "Thumbtack": 40,
+          "Home Advisor": 75,
+          "Angi (Angie's List)": 70
+        }
+      },
+      { 
+        name: "Automotive Services", 
+        avgCPC: 9, 
+        clickToLeadRate: 0.11, 
+        leadToCustomerRate: 0.23,
+        cplPricing: {
+          "Bark": 25,
+          "Porch": 45,
+          "Houzz": 40,
+          "Thumbtack": 30,
+          "Home Advisor": 50,
+          "Angi (Angie's List)": 48
+        }
+      },
     ]
   },
   {
     category: "Professional Services",
     industries: [
-      { name: "Architects", avgCPC: 20, clickToLeadRate: 0.05, leadToCustomerRate: 0.10 },
-      { name: "Engineers", avgCPC: 17, clickToLeadRate: 0.06, leadToCustomerRate: 0.12 },
-      { name: "Legal Services", avgCPC: 35, clickToLeadRate: 0.04, leadToCustomerRate: 0.08 },
-      { name: "Financial Services", avgCPC: 23, clickToLeadRate: 0.05, leadToCustomerRate: 0.10 },
-      { name: "Design Services", avgCPC: 14, clickToLeadRate: 0.08, leadToCustomerRate: 0.16 },
+      { 
+        name: "Architects", 
+        avgCPC: 20, 
+        clickToLeadRate: 0.05, 
+        leadToCustomerRate: 0.10,
+        cplPricing: {
+          "Bark": 80,
+          "Porch": 120,
+          "Houzz": 110,
+          "Thumbtack": 90,
+          "Home Advisor": 130,
+          "Angi (Angie's List)": 125
+        }
+      },
+      { 
+        name: "Engineers", 
+        avgCPC: 17, 
+        clickToLeadRate: 0.06, 
+        leadToCustomerRate: 0.12,
+        cplPricing: {
+          "Bark": 65,
+          "Porch": 95,
+          "Houzz": 90,
+          "Thumbtack": 70,
+          "Home Advisor": 105,
+          "Angi (Angie's List)": 100
+        }
+      },
+      { 
+        name: "Legal Services", 
+        avgCPC: 35, 
+        clickToLeadRate: 0.04, 
+        leadToCustomerRate: 0.08,
+        cplPricing: {
+          "Bark": 120,
+          "Porch": 180,
+          "Houzz": 160,
+          "Thumbtack": 140,
+          "Home Advisor": 200,
+          "Angi (Angie's List)": 190
+        }
+      },
+      { 
+        name: "Financial Services", 
+        avgCPC: 23, 
+        clickToLeadRate: 0.05, 
+        leadToCustomerRate: 0.10,
+        cplPricing: {
+          "Bark": 90,
+          "Porch": 130,
+          "Houzz": 115,
+          "Thumbtack": 100,
+          "Home Advisor": 145,
+          "Angi (Angie's List)": 140
+        }
+      },
+      { 
+        name: "Design Services", 
+        avgCPC: 14, 
+        clickToLeadRate: 0.08, 
+        leadToCustomerRate: 0.16,
+        cplPricing: {
+          "Bark": 30,
+          "Porch": 55,
+          "Houzz": 65,
+          "Thumbtack": 35,
+          "Home Advisor": 60,
+          "Angi (Angie's List)": 58
+        }
+      },
     ]
   },
   {
     category: "Health & Wellness",
     industries: [
-      { name: "Therapists and Counseling", avgCPC: 12, clickToLeadRate: 0.08, leadToCustomerRate: 0.17 },
-      { name: "Fitness and Nutrition", avgCPC: 8, clickToLeadRate: 0.13, leadToCustomerRate: 0.30 },
+      { 
+        name: "Therapists and Counseling", 
+        avgCPC: 12, 
+        clickToLeadRate: 0.08, 
+        leadToCustomerRate: 0.17,
+        cplPricing: {
+          "Bark": 40,
+          "Porch": 65,
+          "Houzz": 55,
+          "Thumbtack": 45,
+          "Home Advisor": 70,
+          "Angi (Angie's List)": 68
+        }
+      },
+      { 
+        name: "Fitness and Nutrition", 
+        avgCPC: 8, 
+        clickToLeadRate: 0.13, 
+        leadToCustomerRate: 0.30,
+        cplPricing: {
+          "Bark": 22,
+          "Porch": 38,
+          "Houzz": 35,
+          "Thumbtack": 25,
+          "Home Advisor": 42,
+          "Angi (Angie's List)": 40
+        }
+      },
     ]
   },
   {
     category: "Education & Events",
     industries: [
-      { name: "Education and Tutoring", avgCPC: 11, clickToLeadRate: 0.11, leadToCustomerRate: 0.22 },
-      { name: "Event Planning", avgCPC: 13, clickToLeadRate: 0.09, leadToCustomerRate: 0.20 },
+      { 
+        name: "Education and Tutoring", 
+        avgCPC: 11, 
+        clickToLeadRate: 0.11, 
+        leadToCustomerRate: 0.22,
+        cplPricing: {
+          "Bark": 28,
+          "Porch": 45,
+          "Houzz": 40,
+          "Thumbtack": 30,
+          "Home Advisor": 50,
+          "Angi (Angie's List)": 48
+        }
+      },
+      { 
+        name: "Event Planning", 
+        avgCPC: 13, 
+        clickToLeadRate: 0.09, 
+        leadToCustomerRate: 0.20,
+        cplPricing: {
+          "Bark": 35,
+          "Porch": 55,
+          "Houzz": 50,
+          "Thumbtack": 38,
+          "Home Advisor": 60,
+          "Angi (Angie's List)": 58
+        }
+      },
     ]
   },
   {
     category: "Technology & Creative",
     industries: [
-      { name: "Hi Tech and Digital Media", avgCPC: 17, clickToLeadRate: 0.07, leadToCustomerRate: 0.14 },
+      { 
+        name: "Hi Tech and Digital Media", 
+        avgCPC: 17, 
+        clickToLeadRate: 0.07, 
+        leadToCustomerRate: 0.14,
+        cplPricing: {
+          "Bark": 45,
+          "Porch": 70,
+          "Houzz": 65,
+          "Thumbtack": 50,
+          "Home Advisor": 75,
+          "Angi (Angie's List)": 72
+        }
+      },
     ]
   },
   {
     category: "Other Services",
     industries: [
-      { name: "Pet Services", avgCPC: 9, clickToLeadRate: 0.12, leadToCustomerRate: 0.25 },
+      { 
+        name: "Pet Services", 
+        avgCPC: 9, 
+        clickToLeadRate: 0.12, 
+        leadToCustomerRate: 0.25,
+        cplPricing: {
+          "Bark": 18,
+          "Porch": 32,
+          "Houzz": 28,
+          "Thumbtack": 20,
+          "Home Advisor": 35,
+          "Angi (Angie's List)": 33
+        }
+      },
     ]
   }
 ];
@@ -226,7 +398,8 @@ export const ROIComparisonCalculator = () => {
     competitorCostPerLead = industry.avgCPC / industry.clickToLeadRate;
   } else if (competitor.costModel === "cpl") {
     // For CPL models (most competitors)
-    competitorCostPerLead = competitor.avgCost;
+    // Use industry-specific pricing if available, otherwise fall back to platform average
+    competitorCostPerLead = industry.cplPricing?.[competitor.name] || competitor.avgCost;
     competitorCostPerDeal = competitorCostPerLead / industry.leadToCustomerRate;
   } else if (competitor.costModel === "percentage") {
     // For percentage-based models like TaskRabbit
