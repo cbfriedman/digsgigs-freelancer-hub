@@ -415,11 +415,11 @@ const EditDiggerProfile = () => {
                   <p className="text-sm">
                     <span className="font-semibold">Your Expected Tier:</span>{' '}
                     {expectedLeadVolume < 10 ? (
-                      <span className="text-blue-600">Free Tier (3× Google CPC)</span>
+                      <span className="text-blue-600">Free Tier (Standard pricing)</span>
                     ) : expectedLeadVolume < 50 ? (
-                      <span className="text-purple-600">Pro Tier (2× Google CPC)</span>
+                      <span className="text-purple-600">Pro Tier (Volume discount)</span>
                     ) : (
-                      <span className="text-amber-600">Premium Tier (1× Google CPC)</span>
+                      <span className="text-amber-600">Premium Tier (Best bulk pricing)</span>
                     )}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -475,7 +475,7 @@ const EditDiggerProfile = () => {
                       Fixed Price Contracts
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Cost $20/$10/$5 + 9%/8%/4% escrow processing fee
+                      Volume-based lead pricing + 9%/5%/3% escrow processing fee (based on monthly lead volume)
                     </p>
                   </div>
                 </div>
@@ -487,7 +487,7 @@ const EditDiggerProfile = () => {
                       Time and Materials (Hourly)
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Cost $20/$10/$5 + Award fee = 3x/2x/1x your average hourly rate + 9%/8%/4% escrow processing fee
+                      Volume-based lead pricing + Award fee based on tier + 9%/5%/3% escrow processing fee
                     </p>
                   </div>
                 </div>
@@ -499,7 +499,7 @@ const EditDiggerProfile = () => {
                       Both Models
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Cost $20/$10/$5 + Award fee varies by model + 9%/8%/4% escrow processing fee
+                      Volume-based lead pricing + Award fee varies by model + 9%/5%/3% escrow processing fee
                     </p>
                   </div>
                 </div>
