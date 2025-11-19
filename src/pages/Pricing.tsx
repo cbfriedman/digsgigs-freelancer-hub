@@ -199,6 +199,7 @@ export default function Pricing() {
   };
 
   const getButtonText = (tier: string, priceId: string | null) => {
+    if (selectedIndustries.length === 0) return 'Select Industry First';
     const tierName = TIERS[tier as keyof typeof TIERS].name;
     if (!user || !isDigger) return `Sign Up as Digger - ${tierName}`;
     if (currentTier === tier) return 'Current Plan';
@@ -208,6 +209,7 @@ export default function Pricing() {
   };
 
   const isButtonDisabled = (tier: string, priceId: string | null) => {
+    if (selectedIndustries.length === 0) return true;
     if (subscribing) return true;
     if (user && isDigger && currentTier === tier) return true;
     return false;
@@ -311,13 +313,17 @@ export default function Pricing() {
               <Card 
                 key={key}
                 onClick={() => !isButtonDisabled(key, tier.priceId) && handleSubscribe(key, tier.priceId)}
-                className={`relative cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
+                className={`relative transition-all ${
+                  selectedIndustries.length === 0
+                    ? 'opacity-60 cursor-not-allowed'
+                    : 'cursor-pointer hover:shadow-xl hover:scale-105'
+                } ${
                   currentTier === key 
                     ? 'border-primary shadow-lg ring-2 ring-primary/20' 
                     : tier.popular 
                     ? 'border-primary/50 shadow-md' 
                     : ''
-                } ${isButtonDisabled(key, tier.priceId) ? 'opacity-75 cursor-not-allowed' : ''}`}
+                }`}
               >
                 {tier.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
@@ -370,6 +376,15 @@ export default function Pricing() {
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
+                  {/* Industry Selection Required Notice */}
+                  {selectedIndustries.length === 0 && (
+                    <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 rounded-lg text-center">
+                      <p className="text-xs font-medium text-amber-900 dark:text-amber-100">
+                        ⬆️ Select an industry above to unlock pricing
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
