@@ -361,7 +361,9 @@ export default function Pricing() {
                 )}
                 
                 <CardHeader className="text-center">
-                  <CardTitle className="text-3xl font-bold mt-4">{tier.volumeTier.replace(' per month', '')}</CardTitle>
+                  <CardTitle className="text-3xl font-bold mt-4">
+                    {tier.volumeTier.replace('Leads ', '').replace(' per month', ' Leads per MO.')}
+                  </CardTitle>
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
