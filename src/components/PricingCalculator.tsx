@@ -19,8 +19,7 @@ const TIERS = {
     hourlyRateClickCost: 0,
     jobAwardedCost: 0, // Will be calculated as percentage
     hoursPerAward: 3,
-    contractAwardFeePercentage: 0.12, // 12%
-    escrowFeePercentage: 0.05, // 5%
+    escrowFeePercentage: 0.09, // 9%
     escrowFeeMinimum: 10,
   },
   pro: {
@@ -33,8 +32,7 @@ const TIERS = {
     hourlyRateClickCost: 0,
     jobAwardedCost: 0, // Will be calculated as percentage
     hoursPerAward: 2,
-    contractAwardFeePercentage: 0.08, // 8%
-    escrowFeePercentage: 0.05, // 5%
+    escrowFeePercentage: 0.08, // 8%
     escrowFeeMinimum: 10,
   },
   premium: {
@@ -47,8 +45,7 @@ const TIERS = {
     hourlyRateClickCost: 0,
     jobAwardedCost: 0, // Will be calculated as percentage
     hoursPerAward: 1,
-    contractAwardFeePercentage: 0.03, // 3%
-    escrowFeePercentage: 0.05, // 5%
+    escrowFeePercentage: 0.04, // 4%
     escrowFeeMinimum: 10,
   }
 };

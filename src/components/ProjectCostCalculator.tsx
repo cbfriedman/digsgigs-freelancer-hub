@@ -24,11 +24,11 @@ export default function ProjectCostCalculator() {
     premium: 599,
   };
 
-  // Contract award fee percentages
-  const contractAwardFees = {
-    free: 0.12, // 12%
+  // Escrow fee percentages by tier
+  const escrowFees = {
+    free: 0.09, // 9%
     pro: 0.08,  // 8%
-    premium: 0.03, // 3%
+    premium: 0.04, // 4%
   };
 
   // Free estimate rebate calculations
@@ -50,10 +50,8 @@ export default function ProjectCostCalculator() {
 
   // Fixed-Price Calculations
   const fixedPriceSubtotal = projectBudget;
-  const contractAwardFee = projectBudget * contractAwardFees[subscriptionTier as keyof typeof contractAwardFees];
-  const escrowProcessingFee = Math.max(10, projectBudget * 0.05); // 5% with $10 min
-  const fixedPriceAwardFeeAfterRebate = Math.max(0, contractAwardFee - fixedPriceRebate.rebateAmount);
-  const fixedPriceTotal = fixedPriceSubtotal + fixedPriceAwardFeeAfterRebate + escrowProcessingFee;
+  const escrowProcessingFee = Math.max(10, projectBudget * escrowFees[subscriptionTier as keyof typeof escrowFees]);
+  const fixedPriceTotal = fixedPriceSubtotal + escrowProcessingFee;
 
   // Hourly Rate Calculations
   const hourlyWorkCost = hourlyRate * estimatedHours;
@@ -228,17 +226,7 @@ export default function ProjectCostCalculator() {
                     <span className="font-medium">${fixedPriceSubtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Contract Award Fee ({(contractAwardFees[subscriptionTier as keyof typeof contractAwardFees] * 100)}%)</span>
-                    <span className="font-medium">${contractAwardFee.toFixed(0)}</span>
-                  </div>
-                  {fixedPriceRebate.rebateApplied && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Free Estimate Rebate</span>
-                      <span className="font-medium">-${fixedPriceRebate.rebateAmount}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10)</span>
+                    <span className="text-muted-foreground">Escrow Processing Fee ({(escrowFees[subscriptionTier as keyof typeof escrowFees] * 100)}%, min $10)</span>
                     <span className="font-medium">${escrowProcessingFee.toFixed(0)}</span>
                   </div>
                   <div className="h-px bg-border" />

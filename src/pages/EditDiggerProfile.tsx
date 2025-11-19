@@ -410,7 +410,7 @@ const EditDiggerProfile = () => {
                       Fixed Price Contracts
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Cost $20/$10/$5 + 12%/8%/3% award fee + 5% escrow processing fee
+                      Lead Cost $20/$10/$5 + 9%/8%/4% escrow processing fee
                     </p>
                   </div>
                 </div>
@@ -422,7 +422,7 @@ const EditDiggerProfile = () => {
                       Time and Materials (Hourly)
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Cost $20/$10/$5 + Award fee = 3x/2x/1x your average hourly rate + 5% escrow processing fee
+                      Lead Cost $20/$10/$5 + Award fee = 3x/2x/1x your average hourly rate + 9%/8%/4% escrow processing fee
                     </p>
                   </div>
                 </div>
@@ -434,7 +434,7 @@ const EditDiggerProfile = () => {
                       Both Models
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead Cost $20/$10/$5 + Award fee varies by model + 5% escrow processing fee
+                      Lead Cost $20/$10/$5 + Award fee varies by model + 9%/8%/4% escrow processing fee
                     </p>
                   </div>
                 </div>

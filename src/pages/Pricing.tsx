@@ -38,11 +38,9 @@ const TIERS = {
     escrowFee: '10%',
     escrowFeeValue: 10,
     freeEstimateCost: '$150',
-    contractAwardFee: '12%',
-    contractAwardFeeValue: 0.12,
     hourlyRateCharge: '3 hours',
-    escrowProcessingFee: '5% per payment (min $10)',
-    escrowProcessingFeeValue: 0.05,
+    escrowProcessingFee: '9% per payment (min $10)',
+    escrowProcessingFeeValue: 0.09,
     escrowProcessingMinimum: 10,
     minimumFee: 0,
     priceId: null,
@@ -63,11 +61,9 @@ const TIERS = {
     escrowFee: '6%',
     escrowFeeValue: 6,
     freeEstimateCost: '$100',
-    contractAwardFee: '8%',
-    contractAwardFeeValue: 0.08,
     hourlyRateCharge: '2 hours',
-    escrowProcessingFee: '5% per payment (min $10)',
-    escrowProcessingFeeValue: 0.05,
+    escrowProcessingFee: '8% per payment (min $10)',
+    escrowProcessingFeeValue: 0.08,
     escrowProcessingMinimum: 10,
     minimumFee: 0,
     priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
@@ -88,11 +84,9 @@ const TIERS = {
     escrowFee: '3%',
     escrowFeeValue: 3,
     freeEstimateCost: '$50',
-    contractAwardFee: '3%',
-    contractAwardFeeValue: 0.03,
     hourlyRateCharge: '1 hour',
-    escrowProcessingFee: '5% per payment (min $10)',
-    escrowProcessingFeeValue: 0.05,
+    escrowProcessingFee: '4% per payment (min $10)',
+    escrowProcessingFeeValue: 0.04,
     escrowProcessingMinimum: 10,
     minimumFee: 0,
     priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
@@ -372,22 +366,6 @@ export default function Pricing() {
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Contract Award Fee:</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Percentage of the total contract value charged when you are awarded a fixed-price contract. This fee is collected upon project award and provides access to the client's full contact information.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <span className="font-bold text-primary">{tier.contractAwardFee}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Free Estimate Upcharge:</span>
                         <TooltipProvider>
                           <Tooltip>
@@ -427,7 +405,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Fee charged on each milestone or progress payment released through escrow. Calculated as 5% of the payment amount with a minimum fee of $10 per release.</p>
+                              <p className="text-sm">Fee charged on each milestone or progress payment released through escrow. Free: 9%, Pro: 8%, Premium: 4% of the payment amount with a minimum fee of $10 per release.</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -796,49 +774,6 @@ export default function Pricing() {
                               {calculatedAwards}
                             </td>
                           ))}
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              Award Fee
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <p>Commission percentage charged on each awarded contract. Free: 12%, Pro: 8%, Premium: 3%.</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </td>
-                          {Object.entries(TIERS).map(([key, tier]) => (
-                            <td key={key} className="text-right py-3 px-4">
-                              {tier.contractAwardFee}
-                            </td>
-                          ))}
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              Total Award Fee
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <p>Total commission amount based on your awarded contracts (Award Fee % × Job Value × Awards).</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </td>
-                          {Object.entries(TIERS).map(([key, tier]) => {
-                            const totalAwardFee = calculatedAwards * jobValueNumber * tier.contractAwardFeeValue;
-                            return (
-                              <td key={key} className="text-right py-3 px-4">
-                                ${totalAwardFee.toFixed(2)}
-                              </td>
-                            );
-                          })}
                         </tr>
                         <tr className="border-b border-border/50">
                           <td className="py-3 px-4 text-muted-foreground">
