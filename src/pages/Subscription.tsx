@@ -256,17 +256,6 @@ export default function Subscription() {
               </Card>
             );
           })}
-                      className="w-full"
-                      variant="outline"
-                      disabled={isCurrentTier}
-                    >
-                      {isCurrentTier ? 'Current Plan' : 'Free Plan'}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
         </div>
       </main>
     </div>
