@@ -68,9 +68,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Resume Writing',
       'Translation'
     ],
-    free: 24,   // Standard rate (leads 1-10)
-    pro: 16,    // Volume discount (leads 11-50)
-    premium: 8  // Best rate (leads 51+)
+    free: 24,   // 3x CPC (leads 1-10)
+    pro: 20,    // 2.5x CPC (leads 11-50)
+    premium: 16 // 2x CPC (leads 51+)
   },
   {
     category: 'mid-value',
@@ -133,9 +133,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Unity Development',
       'Unreal Engine Development'
     ],
-    free: 120,  // Standard rate (leads 1-10)
-    pro: 80,    // Volume discount (leads 11-50)
-    premium: 40 // Best rate (leads 51+)
+    free: 120,  // 3x CPC (leads 1-10)
+    pro: 100,   // 2.5x CPC (leads 11-50)
+    premium: 80 // 2x CPC (leads 51+)
   },
   {
     category: 'high-value',
@@ -194,9 +194,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Creative Direction',
       'Public Relations'
     ],
-    free: 750,   // Standard rate (leads 1-10)
-    pro: 500,    // Volume discount (leads 11-50)
-    premium: 250 // Best rate (leads 51+)
+    free: 750,   // 3x CPC (leads 1-10)
+    pro: 625,    // 2.5x CPC (leads 11-50)
+    premium: 500 // 2x CPC (leads 51+)
   }
 ];
 
