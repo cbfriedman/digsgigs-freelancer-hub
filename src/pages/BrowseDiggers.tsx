@@ -38,6 +38,7 @@ interface DiggerFilters {
   isBonded?: boolean;
   isLicensed?: boolean;
   offersFreeEstimates?: boolean;
+  country?: string;
 }
 
 interface Digger {
@@ -96,6 +97,7 @@ const BrowseDiggers = () => {
     isBonded: false,
     isLicensed: false,
     offersFreeEstimates: false,
+    country: undefined,
   });
 
   useEffect(() => {
@@ -183,6 +185,9 @@ const BrowseDiggers = () => {
     }
     if (filters.offersFreeEstimates) {
       query = query.eq("offers_free_estimates", true);
+    }
+    if (filters.country) {
+      query = query.eq("country", filters.country);
     }
 
     if (sortBy === "rating") {
