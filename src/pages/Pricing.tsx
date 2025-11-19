@@ -566,20 +566,20 @@ export default function Pricing() {
                         size="lg" 
                         disabled={selectedIndustries.length === 0}
                         onClick={() => {
-                          // Reset form for another profession
-                          setFormData({
-                            fullName: "",
-                            companyName: "",
-                            email: "",
-                            phone: "",
-                            acceptTerms: false,
-                          });
+                          // Only reset industries, keep the profile info
                           setSelectedIndustries([]);
-                          setStep1Completed(false);
-                          toast.info("Form reset - add another profile");
+                          toast.info("Select additional industries for this same profile");
+                          
+                          // Scroll back to industry selector
+                          setTimeout(() => {
+                            const step2Element = document.getElementById('step-2-industry');
+                            if (step2Element) {
+                              step2Element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                          }, 100);
                         }}
                       >
-                        Continue to Select Another Profession
+                        Add Another Industry Set to This Profile
                       </Button>
                     </div>
                     <p className="text-xs text-center text-muted-foreground mt-2">
