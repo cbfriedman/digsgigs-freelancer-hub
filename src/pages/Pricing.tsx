@@ -285,19 +285,32 @@ export default function Pricing() {
               Select your Industry to determine your lead cost
             </Label>
             <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-              <SelectTrigger id="industry-select" className="w-full">
+              <SelectTrigger id="industry-select" className="w-full h-12 text-base">
                 <SelectValue placeholder="Select industry" />
               </SelectTrigger>
-              <SelectContent>
-                {getAllIndustries().map((industry) => (
-                  <SelectItem key={industry} value={industry}>
-                    {industry}
-                  </SelectItem>
+              <SelectContent className="max-h-[400px] z-50" position="popper" sideOffset={8}>
+                {INDUSTRY_PRICING.map((pricing) => (
+                  <div key={pricing.category}>
+                    <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 sticky top-0 z-10">
+                      {pricing.category === 'low-value' && '💼 Low-Value Services ($8-24/lead)'}
+                      {pricing.category === 'mid-value' && '🏗️ Mid-Value Services ($40-120/lead)'}
+                      {pricing.category === 'high-value' && '⭐ High-Value Services ($250-750/lead)'}
+                    </div>
+                    {pricing.industries.map((industry) => (
+                      <SelectItem 
+                        key={industry} 
+                        value={industry}
+                        className="cursor-pointer hover:bg-accent"
+                      >
+                        {industry}
+                      </SelectItem>
+                    ))}
+                  </div>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground text-center mt-3">
-              Lead costs: ${getLeadCostForIndustry(selectedIndustry, 'free')} (Free) | ${getLeadCostForIndustry(selectedIndustry, 'pro')} (Pro) | ${getLeadCostForIndustry(selectedIndustry, 'premium')} (Premium)
+              Lead costs: <strong>${getLeadCostForIndustry(selectedIndustry, 'free')}</strong> (Free) | <strong>${getLeadCostForIndustry(selectedIndustry, 'pro')}</strong> (Pro) | <strong>${getLeadCostForIndustry(selectedIndustry, 'premium')}</strong> (Premium)
             </p>
           </div>
         </div>
