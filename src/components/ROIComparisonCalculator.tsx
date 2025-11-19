@@ -244,20 +244,32 @@ export const ROIComparisonCalculator = () => {
           </div>
 
           <div className="p-4 rounded-lg border bg-primary/5">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <TrendingDown className="h-4 w-4 text-primary" />
               <h4 className="font-semibold text-sm text-primary">Digsandgigs Platform</h4>
             </div>
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p>Click Cost: ${platformCosts.premium.click} (Premium)</p>
-              <p>Lead Cost: ${platformCosts.premium.lead} (Premium)</p>
-              <p>Lead-to-Award: {(platformConversionRate * 100).toFixed(0)}%</p>
-            </div>
-            <div className="mt-3 pt-3 border-t border-primary/20">
-              <p className="text-2xl font-bold text-primary">
-                ${platformCostPerDeal.premium.toFixed(0)}
-              </p>
-              <p className="text-xs text-muted-foreground">per closed deal</p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Premium Tier</p>
+                <p className="text-2xl font-bold text-primary">
+                  ${platformCostPerDeal.premium.toFixed(0)}
+                </p>
+                <p className="text-xs text-muted-foreground">per closed deal</p>
+              </div>
+              <div className="pt-2 border-t border-primary/20">
+                <p className="text-xs text-muted-foreground mb-1">Pro Tier</p>
+                <p className="text-xl font-bold text-foreground">
+                  ${platformCostPerDeal.pro.toFixed(0)}
+                </p>
+                <p className="text-xs text-muted-foreground">per closed deal</p>
+              </div>
+              <div className="pt-2 border-t border-primary/20">
+                <p className="text-xs text-muted-foreground mb-1">Free Tier</p>
+                <p className="text-lg font-semibold text-foreground">
+                  ${platformCostPerDeal.free.toFixed(0)}
+                </p>
+                <p className="text-xs text-muted-foreground">per closed deal</p>
+              </div>
             </div>
           </div>
         </div>
