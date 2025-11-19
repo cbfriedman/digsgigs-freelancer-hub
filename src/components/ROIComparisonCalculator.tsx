@@ -18,9 +18,7 @@ const INDUSTRIES: IndustryData[] = [
   { name: "Plumbing", avgCPC: 10, clickToLeadRate: 0.10, leadToCustomerRate: 0.20 },
   { name: "Electrical Services", avgCPC: 11, clickToLeadRate: 0.09, leadToCustomerRate: 0.18 },
   { name: "Roofing", avgCPC: 15, clickToLeadRate: 0.06, leadToCustomerRate: 0.12 },
-  { name: "Landscaping", avgCPC: 8, clickToLeadRate: 0.12, leadToCustomerRate: 0.25 },
   { name: "Home Remodeling", avgCPC: 13, clickToLeadRate: 0.07, leadToCustomerRate: 0.15 },
-  { name: "Cleaning Services", avgCPC: 7, clickToLeadRate: 0.15, leadToCustomerRate: 0.30 },
   { name: "Pest Control", avgCPC: 9, clickToLeadRate: 0.11, leadToCustomerRate: 0.22 },
 ];
 
