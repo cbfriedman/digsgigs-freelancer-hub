@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
-import { Check, Loader2, Star, RefreshCw, Info } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown } from "lucide-react";
+import { toast } from "sonner";
 import { Footer } from "@/components/Footer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PlanRecommender from "@/components/PlanRecommender";
@@ -25,12 +25,14 @@ import LeadCostTimeline from "@/components/LeadCostTimeline";
 import InteractiveLeadSlider from "@/components/InteractiveLeadSlider";
 import MonthlyLeadSimulator from "@/components/MonthlyLeadSimulator";
 import CompetitorCostComparison from "@/components/CompetitorCostComparison";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { z } from "zod";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
 
 export default function Pricing() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user, isDigger, subscriptionStatus, loading: authLoading, checkSubscription } = useAuth();
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [interactiveLeads, setInteractiveLeads] = useState(50);
@@ -39,6 +41,13 @@ export default function Pricing() {
   const [clicksToAwardRate, setClicksToAwardRate] = useState(25);
   const [showResults, setShowResults] = useState(false);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    acceptTerms: false,
+  });
 
   // Define getLeadCostForTier early so it can be used in TIERS
   const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
@@ -150,10 +159,7 @@ export default function Pricing() {
     setRefreshing(true);
     await checkSubscription();
     setRefreshing(false);
-    toast({
-      title: "Subscription Updated",
-      description: "Your subscription status has been refreshed.",
-    });
+    toast.success("Your subscription status has been refreshed");
   };
 
   const handleSubscribe = async (tier: string, priceId: string | null) => {
@@ -168,10 +174,7 @@ export default function Pricing() {
     }
 
     if (!priceId) {
-      toast({
-        title: "Already on Free Plan",
-        description: "You're currently on the free plan.",
-      });
+      toast.info("You're currently on the free plan");
       return;
     }
 
@@ -189,11 +192,7 @@ export default function Pricing() {
       }
     } catch (error: any) {
       console.error('Error creating checkout session:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to start subscription process",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to start subscription process");
       setSubscribing(null);
     }
   };
@@ -486,6 +485,154 @@ export default function Pricing() {
                 Choose wisely! Your commitment level determines your per-lead cost for the entire month, regardless of how many leads you actually receive.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Step 2: Build My Digs */}
+      <section className="py-16 bg-gradient-to-b from-background to-primary/5">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="text-3xl font-bold text-primary">2nd Step</span>
+                <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+              </div>
+              <h2 className="text-3xl font-bold mb-4">Build My Digs</h2>
+              <p className="text-muted-foreground">
+                Ready to get started? Fill out the form below to create your digger profile
+              </p>
+            </div>
+
+            {!showRegistrationForm ? (
+              <div className="text-center">
+                <Button
+                  size="lg"
+                  className="text-lg px-8 py-6 hover:scale-105 transition-all"
+                  onClick={() => setShowRegistrationForm(true)}
+                >
+                  Start Building Your Profile
+                  <ArrowDown className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            ) : (
+              <Card className="border-primary/20 shadow-lg">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-lg bg-blue-500/10">
+                      <User className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl">Digger Registration</CardTitle>
+                      <CardDescription>
+                        Let us know who you are to get started
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!formData.acceptTerms) {
+                        toast.error("Please accept the Terms of Service to continue");
+                        return;
+                      }
+                      const registrationSchema = z.object({
+                        fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
+                        email: z.string().trim().email("Invalid email address"),
+                        phone: z.string().trim().optional(),
+                      });
+                      try {
+                        registrationSchema.parse(formData);
+                        localStorage.setItem("demo_user_info", JSON.stringify({
+                          ...formData,
+                          timestamp: new Date().toISOString(),
+                          demoType: "digger",
+                        }));
+                        toast.success("Great! Let's continue with your registration");
+                        navigate("/digger-registration");
+                      } catch (error) {
+                        if (error instanceof z.ZodError) {
+                          toast.error(error.errors[0].message);
+                        }
+                      }
+                    }}
+                    className="space-y-6"
+                  >
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">
+                        <User className="inline-block h-4 w-4 mr-1" />
+                        Full Name *
+                      </Label>
+                      <Input
+                        id="fullName"
+                        placeholder="Enter your full name"
+                        value={formData.fullName}
+                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">
+                        <Mail className="inline-block h-4 w-4 mr-1" />
+                        Email Address *
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        We'll use this to save your progress and help you create an account
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">
+                        <Phone className="inline-block h-4 w-4 mr-1" />
+                        Phone Number (Optional)
+                      </Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+1 (555) 123-4567"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="terms"
+                        checked={formData.acceptTerms}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, acceptTerms: checked === true })
+                        }
+                      />
+                      <Label htmlFor="terms" className="text-sm leading-tight cursor-pointer">
+                        I agree to the{" "}
+                        <a href="/terms-of-service" className="text-primary hover:underline" target="_blank">
+                          Terms of Service
+                        </a>{" "}
+                        and{" "}
+                        <a href="/privacy-policy" className="text-primary hover:underline" target="_blank">
+                          Privacy Policy
+                        </a>
+                      </Label>
+                    </div>
+
+                    <Button type="submit" className="w-full" size="lg">
+                      Continue to Registration
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </section>
