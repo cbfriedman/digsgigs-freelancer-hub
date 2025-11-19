@@ -21,6 +21,7 @@ import { DiggerOnboardingTour } from "@/components/DiggerOnboardingTour";
 import { BioGenerator } from "@/components/BioGenerator";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
+import { getLeadTierDescription } from "@/config/pricing";
 
 // Helper function to get country flag emoji
 const getCountryFlag = (country: string): string => {
@@ -342,10 +343,14 @@ const DiggerRegistration = () => {
         counter++;
       }
 
+      // Calculate lead tier description based on selected categories
+      const leadTierDescription = getLeadTierDescription(categoryNames);
+
       const { data, error } = await supabase.from("digger_profiles").insert({
         handle: handle,
         user_id: user.id,
         business_name: businessName,
+        company_name: businessName,
         profile_name: assignedUserName,
         is_primary: isPrimary,
         profession,
@@ -359,6 +364,7 @@ const DiggerRegistration = () => {
         offers_free_estimates: offersFreEstimates,
         profile_image_url: profileImageUrl,
         work_photos: workPhotoUrls.length > 0 ? workPhotoUrls : null,
+        lead_tier_description: leadTierDescription || null,
       }).select();
 
       if (error) throw error;
