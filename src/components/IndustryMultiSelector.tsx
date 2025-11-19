@@ -212,30 +212,44 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
 
                 {/* Category Industries */}
                 {expandedCategories.has(group.categoryName) && (
-                  <div className="bg-accent/5 grid grid-cols-2 gap-px">
+                  <div className="bg-accent/5 divide-y">
                     {group.industries.map((industry) => {
                       const isSelected = selectedIndustries.includes(industry.name);
+                      const freeCost = getLeadCostForIndustry(industry.name, 'free');
+                      const premiumCost = getLeadCostForIndustry(industry.name, 'premium');
                       return (
-                        <button
+                        <div
                           key={industry.name}
-                          className="px-4 py-2 pl-10 text-left hover:bg-accent/50 transition-colors flex items-center justify-between group"
-                          onClick={() => toggleIndustry(industry.name)}
+                          className="px-4 py-2 pl-10 flex items-center justify-between gap-3 hover:bg-accent/50 transition-colors"
                         >
-                          <div className="flex items-center gap-2 flex-1">
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
                               isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
                             }`}>
                               {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                             </div>
-                            <span className="text-sm">{industry.name}</span>
+                            <span className="text-sm truncate">{industry.name}</span>
                           </div>
-                          <Badge 
-                            variant="secondary" 
-                            className={`text-xs px-1.5 py-0 ${getValueBadgeColor(industry.indicator)}`}
-                          >
-                            {industry.indicator}
-                          </Badge>
-                        </button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge 
+                              variant="secondary" 
+                              className={`text-xs px-1.5 py-0 ${getValueBadgeColor(industry.indicator)}`}
+                            >
+                              {industry.indicator}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              ${premiumCost}-${freeCost}/lead
+                            </span>
+                            <Button
+                              size="sm"
+                              variant={isSelected ? "secondary" : "default"}
+                              className="h-7 px-3 text-xs"
+                              onClick={() => toggleIndustry(industry.name)}
+                            >
+                              {isSelected ? "Selected" : "Select"}
+                            </Button>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
