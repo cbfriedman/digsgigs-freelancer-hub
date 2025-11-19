@@ -422,8 +422,8 @@ const Index = () => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    size="sm" 
-                    className="text-sm w-full sm:w-auto"
+                    size="lg" 
+                    className="text-base font-bold w-full sm:w-auto border-primary/50 hover:shadow-md hover:scale-105 transition-all"
                     onClick={() => navigate("/pre-demo-registration?type=digger")}
                   >
                     Digger Registration Demo
