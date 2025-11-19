@@ -499,6 +499,8 @@ export type Database = {
           country: string | null
           created_at: string
           custom_occupation_title: string | null
+          expected_lead_period: string | null
+          expected_lead_volume: number | null
           handle: string | null
           hourly_rate: number | null
           hourly_rate_max: number | null
@@ -554,6 +556,8 @@ export type Database = {
           country?: string | null
           created_at?: string
           custom_occupation_title?: string | null
+          expected_lead_period?: string | null
+          expected_lead_volume?: number | null
           handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
@@ -609,6 +613,8 @@ export type Database = {
           country?: string | null
           created_at?: string
           custom_occupation_title?: string | null
+          expected_lead_period?: string | null
+          expected_lead_volume?: number | null
           handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null

@@ -46,6 +46,8 @@ const EditDiggerProfile = () => {
   const [pricingModel, setPricingModel] = useState<string>("commission");
   const [offersFreEstimates, setOffersFreEstimates] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+  const [expectedLeadVolume, setExpectedLeadVolume] = useState<number | null>(null);
+  const [expectedLeadPeriod, setExpectedLeadPeriod] = useState<string>('monthly');
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -138,6 +140,8 @@ const EditDiggerProfile = () => {
         setHourlyRateMax(profile.hourly_rate_max);
         setPricingModel(profile.pricing_model || "commission");
         setOffersFreEstimates(profile.offers_free_estimates || false);
+        setExpectedLeadVolume(profile.expected_lead_volume);
+        setExpectedLeadPeriod(profile.expected_lead_period || 'monthly');
         setProfileData(profile);
         
         const categoryIds = profile.digger_categories?.map((dc: any) => dc.category_id) || [];
@@ -181,6 +185,8 @@ const EditDiggerProfile = () => {
           keywords: keywords.length > 0 ? keywords : null,
           pricing_model: pricingModel,
           offers_free_estimates: offersFreEstimates,
+          expected_lead_volume: expectedLeadVolume,
+          expected_lead_period: expectedLeadPeriod,
         })
         .eq("id", profileId);
 
@@ -366,6 +372,65 @@ const EditDiggerProfile = () => {
                 placeholder="(555) 123-4567"
                 required
               />
+            </div>
+
+            <div className="space-y-4 p-4 rounded-lg border bg-card">
+              <div>
+                <Label className="text-base font-semibold">Lead Volume Planning</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Help us understand your capacity so we can show you the right pricing tier
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="expectedLeadVolume">Expected Leads</Label>
+                  <Input
+                    id="expectedLeadVolume"
+                    type="number"
+                    min="0"
+                    value={expectedLeadVolume || ''}
+                    onChange={(e) => setExpectedLeadVolume(e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="e.g., 25"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="expectedLeadPeriod">Time Period</Label>
+                  <select
+                    id="expectedLeadPeriod"
+                    value={expectedLeadPeriod}
+                    onChange={(e) => setExpectedLeadPeriod(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="daily">Per Day</option>
+                    <option value="weekly">Per Week</option>
+                    <option value="monthly">Per Month</option>
+                  </select>
+                </div>
+              </div>
+
+              {expectedLeadVolume && expectedLeadPeriod && (
+                <div className="p-3 bg-accent/30 rounded-md">
+                  <p className="text-sm">
+                    <span className="font-semibold">Your Expected Tier:</span>{' '}
+                    {expectedLeadVolume < 10 ? (
+                      <span className="text-blue-600">Free Tier (3× Google CPC)</span>
+                    ) : expectedLeadVolume < 50 ? (
+                      <span className="text-purple-600">Pro Tier (2× Google CPC)</span>
+                    ) : (
+                      <span className="text-amber-600">Premium Tier (1× Google CPC)</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {expectedLeadPeriod === 'monthly' 
+                      ? 'Based on your monthly volume'
+                      : expectedLeadPeriod === 'weekly'
+                      ? `~${Math.ceil(expectedLeadVolume * 4.33)} leads per month`
+                      : `~${Math.ceil(expectedLeadVolume * 30)} leads per month`}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-3" id="bio">
