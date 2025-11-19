@@ -401,7 +401,7 @@ const Index = () => {
                     variant="default" 
                     size="lg" 
                     className="text-base w-full sm:w-[180px]"
-                    onClick={() => user ? navigate("/digger-registration") : navigate("/auth?type=digger&redirect=/digger-registration")}
+                    onClick={() => navigate("/pricing")}
                   >
                     Build My Digs
                   </Button>

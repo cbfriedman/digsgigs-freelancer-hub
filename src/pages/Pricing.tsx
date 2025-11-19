@@ -262,11 +262,8 @@ export default function Pricing() {
               Digger Pricing
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold">
-              Choose your Monthly Commitment
+              Let's get Started
             </h1>
-            <p className="text-xl text-muted-foreground">
-              Select your expected lead volume at the start of each month and lock in your rate. Pay only for leads you actually receive at your committed tier pricing.
-            </p>
             
             {/* Subscription Status and Refresh */}
             {isDigger && subscriptionStatus && (
