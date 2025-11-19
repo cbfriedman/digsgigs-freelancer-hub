@@ -473,6 +473,7 @@ export default function Pricing() {
             <div className="p-6 bg-primary/5 rounded-lg border border-primary/20">
               <p className="text-base font-semibold mb-4 text-center">🔒 How Commitment-Based Pricing Works:</p>
               <ul className="text-sm text-muted-foreground space-y-2">
+                <li>• <strong>Choose your profession</strong></li>
                 <li>• <strong>Choose Your Tier:</strong> At the start of each month, select the tier that matches your expected lead volume</li>
                 <li>• <strong>Lock In Your Rate:</strong> All leads you receive that month will be charged at your chosen tier's rate</li>
                 <li>• <strong>Pay As You Go:</strong> You only pay for leads you actually receive - no upfront costs or monthly fees</li>
