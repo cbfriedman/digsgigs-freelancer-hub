@@ -17,6 +17,7 @@ import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { generateBreadcrumbSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 
 interface Category {
   id: string;
@@ -85,6 +86,7 @@ const BrowseDiggers = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("rating");
   const [activeView, setActiveView] = useState<"list" | "map">("list");
+  const { onlineDiggers } = useDiggerPresence();
   const [filters, setFilters] = useState<DiggerFilters>({
     hourlyRateRange: [0, 500],
     selectedCategories: [],
@@ -404,9 +406,11 @@ const BrowseDiggers = () => {
                       <p className="text-muted-foreground">No diggers found. Try adjusting your filters.</p>
                     </CardContent>
                   </Card>
-                ) : (
+                 ) : (
                   <div className="grid md:grid-cols-2 gap-6">
-            {filteredDiggers.map((digger) => (
+            {filteredDiggers.map((digger) => {
+              const isOnline = onlineDiggers.has(digger.id);
+              return (
               <Card 
                 key={digger.id} 
                 className="hover:shadow-[var(--shadow-hover)] transition-all duration-300 cursor-pointer"
@@ -414,17 +418,26 @@ const BrowseDiggers = () => {
               >
                  <CardContent className="p-6">
                   <div className="flex items-start gap-4 mb-4">
-                    <Avatar className="h-16 w-16">
+                    <Avatar className="h-16 w-16 relative">
                       <AvatarImage src={digger.profile_image_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary">
                         {getInitials(digger.handle)}
                       </AvatarFallback>
+                      {/* Online Status Badge */}
+                      <div className="absolute -bottom-1 -right-1">
+                        <div className={`w-4 h-4 rounded-full border-2 border-background ${isOnline ? 'bg-green-500' : 'bg-muted'}`} />
+                      </div>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="font-semibold text-lg truncate">
-                          @{digger.handle || "anonymous"}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg truncate">
+                            @{digger.handle || "anonymous"}
+                          </h3>
+                          <span className={`text-xs font-medium ${isOnline ? 'text-green-600' : 'text-muted-foreground'}`}>
+                            {isOnline ? '● Online' : '○ Offline'}
+                          </span>
+                        </div>
                         <div className="flex gap-1 shrink-0">
                           {digger.verified && (
                             <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">
@@ -526,7 +539,8 @@ const BrowseDiggers = () => {
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
                 )}
               </TabsContent>

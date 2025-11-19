@@ -4,6 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { AuthProvider } from "./contexts/AuthContext";
+import { CartProvider } from "./contexts/CartContext";
+import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DiggerRegistration from "./pages/DiggerRegistration";
@@ -52,6 +55,12 @@ import MyProfiles from "./pages/MyProfiles";
 
 const queryClient = new QueryClient();
 
+// Component to track digger presence
+const PresenceTracker = () => {
+  useTrackDiggerPresence();
+  return null;
+};
+
 // Global router guard to detect recovery/error parameters and redirect to /auth
 const AuthRecoveryGuard = () => {
   const navigate = useNavigate();
@@ -79,10 +88,13 @@ const AuthRecoveryGuard = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+    <AuthProvider>
+      <CartProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <PresenceTracker />
+          <BrowserRouter>
         <AuthRecoveryGuard />
         <Routes>
           <Route path="/" element={<Index />} />
@@ -135,6 +147,8 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+    </CartProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

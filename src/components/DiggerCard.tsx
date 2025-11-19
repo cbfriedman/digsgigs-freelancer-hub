@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { RatingSummary } from "./RatingSummary";
 import { OptimizedImage } from "./OptimizedImage";
+import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 
 interface DiggerCardProps {
   name: string;
@@ -12,9 +13,12 @@ interface DiggerCardProps {
   image: string;
   profileImageUrl?: string | null;
   country?: string | null;
+  diggerId?: string;
 }
 
-export const DiggerCard = ({ name, profession, expertise, rating, reviews, image, profileImageUrl, country }: DiggerCardProps) => {
+export const DiggerCard = ({ name, profession, expertise, rating, reviews, image, profileImageUrl, country, diggerId }: DiggerCardProps) => {
+  const { isOnline } = useDiggerPresence(diggerId);
+  
   const getCountryFlag = (countryName: string): string => {
     const flags: { [key: string]: string } = {
       "United States": "🇺🇸",
@@ -78,6 +82,15 @@ export const DiggerCard = ({ name, profession, expertise, rating, reviews, image
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
         />
+        {/* Online/Offline Status Indicator */}
+        <div className="absolute top-2 right-2">
+          <div className="flex items-center gap-1.5 bg-background/90 backdrop-blur-sm px-2.5 py-1 rounded-full border border-border/50">
+            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-muted'}`} />
+            <span className="text-xs font-medium text-foreground">
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
+          </div>
+        </div>
       </div>
       <CardHeader>
         <CardTitle className="text-xl">{name}</CardTitle>
