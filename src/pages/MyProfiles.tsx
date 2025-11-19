@@ -58,16 +58,25 @@ export default function MyProfiles() {
         // Fetch stats for each profile
         const profilesWithStats = await Promise.all(
           profilesData.map(async (profile) => {
-            const [{ count: bidsCount }, { count: leadsCount }] = await Promise.all([
-              supabase.from("bids").select("*", { count: "exact", head: true }).eq("digger_id", profile.id),
-              supabase.from("lead_purchases").select("*", { count: "exact", head: true }).eq("digger_id", profile.id).eq("status", "completed"),
-            ]);
+            try {
+              const [{ count: bidsCount }, { count: leadsCount }] = await Promise.all([
+                supabase.from("bids").select("*", { count: "exact", head: true }).eq("digger_id", profile.id),
+                supabase.from("lead_purchases").select("*", { count: "exact", head: true }).eq("digger_id", profile.id).eq("status", "completed"),
+              ]);
 
-            return {
-              ...profile,
-              total_bids: bidsCount || 0,
-              active_leads: leadsCount || 0,
-            };
+              return {
+                ...profile,
+                total_bids: bidsCount || 0,
+                active_leads: leadsCount || 0,
+              };
+            } catch (statsError) {
+              console.error("Error fetching stats for profile:", profile.id, statsError);
+              return {
+                ...profile,
+                total_bids: 0,
+                active_leads: 0,
+              };
+            }
           })
         );
 
