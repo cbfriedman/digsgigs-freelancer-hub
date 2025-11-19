@@ -149,6 +149,37 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                 Found {filteredGroups.reduce((acc, g) => acc + g.industries.length, 0)} results
               </p>
             )}
+            
+            {/* Value Legend */}
+            <div className="mt-3 pt-3 border-t space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Value Tiers:</p>
+              <div className="flex flex-wrap gap-3 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 px-1.5 py-0">
+                    LV
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    Low Value: ${INDUSTRY_PRICING[0].premium}-${INDUSTRY_PRICING[0].free}/lead
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 px-1.5 py-0">
+                    MV
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    Mid Value: ${INDUSTRY_PRICING[1].premium}-${INDUSTRY_PRICING[1].free}/lead
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 px-1.5 py-0">
+                    HV
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    High Value: ${INDUSTRY_PRICING[2].premium}-${INDUSTRY_PRICING[2].free}/lead
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="max-h-[450px] overflow-y-auto">
