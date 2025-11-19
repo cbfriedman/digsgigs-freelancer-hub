@@ -30,6 +30,7 @@ interface DiggerFilters {
   isBonded?: boolean;
   isLicensed?: boolean;
   offersFreeEstimates?: boolean;
+  country?: string;
 }
 
 interface DiggerAdvancedFiltersProps {
@@ -49,7 +50,56 @@ const COMMON_CERTIFICATIONS = [
   "Journeyman",
 ];
 
-export const DiggerAdvancedFilters = ({ 
+const COUNTRIES = [
+  "United States",
+  "Canada",
+  "United Kingdom",
+  "Australia",
+  "Germany",
+  "France",
+  "Spain",
+  "Italy",
+  "Mexico",
+  "Brazil",
+  "India",
+  "China",
+  "Japan",
+  "South Korea",
+  "Netherlands",
+  "Sweden",
+  "Norway",
+  "Denmark",
+  "Finland",
+  "Poland",
+  "Ireland",
+  "Switzerland",
+  "Austria",
+  "Belgium",
+  "Portugal",
+  "Greece",
+  "New Zealand",
+  "Singapore",
+  "South Africa",
+  "Argentina",
+  "Chile",
+  "Colombia",
+  "Peru",
+  "Israel",
+  "UAE",
+  "Saudi Arabia",
+  "Turkey",
+  "Thailand",
+  "Vietnam",
+  "Philippines",
+  "Indonesia",
+  "Malaysia",
+  "Egypt",
+  "Nigeria",
+  "Kenya",
+  "Other"
+];
+
+export const DiggerAdvancedFilters = ({
   categories, 
   filters, 
   onFiltersChange,
@@ -121,6 +171,7 @@ export const DiggerAdvancedFilters = ({
       selectedCategories: [],
       locationRadius: 50,
       certifications: [],
+      country: undefined,
     });
   };
 
@@ -213,6 +264,25 @@ export const DiggerAdvancedFilters = ({
               <SelectItem value="immediate">Immediate</SelectItem>
               <SelectItem value="this_week">This week</SelectItem>
               <SelectItem value="this_month">This month</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Country Filter */}
+        <div className="space-y-3">
+          <Label>Country</Label>
+          <Select
+            value={filters.country || "all"}
+            onValueChange={(value) => onFiltersChange({ ...filters, country: value === "all" ? undefined : value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All countries" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All countries</SelectItem>
+              {COUNTRIES.map((country) => (
+                <SelectItem key={country} value={country}>{country}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
