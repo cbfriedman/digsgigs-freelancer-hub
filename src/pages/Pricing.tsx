@@ -142,6 +142,35 @@ export default function Pricing() {
     }
   }, [user, isDigger]);
 
+  // Restore saved registration progress
+  useEffect(() => {
+    const savedProgress = localStorage.getItem("pricing_registration_progress");
+    if (savedProgress) {
+      try {
+        const progress = JSON.parse(savedProgress);
+        // Only restore if it was marked as in-progress
+        if (progress.isInProgress) {
+          setFormData({
+            fullName: progress.fullName || "",
+            email: progress.email || "",
+            phone: progress.phone || "",
+            acceptTerms: progress.acceptTerms || false,
+          });
+          setSelectedIndustries(progress.industries || []);
+          if (progress.step1Completed) {
+            setStep1Completed(true);
+          }
+          setShowRegistrationForm(true);
+          toast.info("Your registration progress has been restored");
+          // Clear the in-progress flag
+          localStorage.removeItem("pricing_registration_progress");
+        }
+      } catch (error) {
+        console.error("Error restoring progress:", error);
+      }
+    }
+  }, []);
+
   const loadDiggerProfile = async () => {
     try {
       const { data, error } = await supabase
@@ -426,6 +455,19 @@ export default function Pricing() {
                       <IndustryMultiSelector 
                         selectedIndustries={selectedIndustries}
                         onIndustriesChange={setSelectedIndustries}
+                        onManageProfilesClick={() => {
+                          // Save current registration progress before navigating
+                          const progressData = {
+                            ...formData,
+                            industries: selectedIndustries,
+                            timestamp: new Date().toISOString(),
+                            demoType: "digger",
+                            isInProgress: true
+                          };
+                          localStorage.setItem("pricing_registration_progress", JSON.stringify(progressData));
+                          toast.info("Your progress has been saved");
+                          navigate('/my-profiles');
+                        }}
                       />
                       <p className="text-xs text-muted-foreground">
                         Your pricing will update based on selected industries
@@ -483,6 +525,20 @@ export default function Pricing() {
                   <IndustryMultiSelector 
                     selectedIndustries={selectedIndustries}
                     onIndustriesChange={setSelectedIndustries}
+                    onManageProfilesClick={() => {
+                      // Update saved progress with current state
+                      const progressData = {
+                        ...formData,
+                        industries: selectedIndustries,
+                        timestamp: new Date().toISOString(),
+                        demoType: "digger",
+                        isInProgress: true,
+                        step1Completed: true
+                      };
+                      localStorage.setItem("pricing_registration_progress", JSON.stringify(progressData));
+                      toast.info("Your progress has been saved");
+                      navigate('/my-profiles');
+                    }}
                   />
                 </div>
               </div>
