@@ -521,65 +521,92 @@ export default function Pricing() {
                       </Label>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button 
-                        type="submit" 
-                        className="flex-1" 
-                        size="lg" 
-                        disabled={selectedIndustries.length === 0}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          // Add to cart logic
-                          if (!formData.acceptTerms || selectedIndustries.length === 0) {
-                            if (!formData.acceptTerms) {
-                              toast.error("Please accept the Terms of Service");
-                            } else {
-                              toast.error("Please select at least one industry");
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button 
+                          type="submit" 
+                          className="flex-1" 
+                          size="lg" 
+                          disabled={selectedIndustries.length === 0}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            // Add to cart logic
+                            if (!formData.acceptTerms || selectedIndustries.length === 0) {
+                              if (!formData.acceptTerms) {
+                                toast.error("Please accept the Terms of Service");
+                              } else {
+                                toast.error("Please select at least one industry");
+                              }
+                              return;
                             }
-                            return;
-                          }
-                          
-                          // Save configuration to cart
-                          const cartItems = JSON.parse(localStorage.getItem("profileCart") || "[]");
-                          const newItem = {
-                            id: Date.now().toString(),
-                            ...formData,
-                            industries: selectedIndustries,
-                            leadTierDescription: getLeadTierDescription(selectedIndustries),
-                            timestamp: new Date().toISOString(),
-                          };
-                          cartItems.push(newItem);
-                          localStorage.setItem("profileCart", JSON.stringify(cartItems));
-                          
-                          // Trigger storage event for same-tab updates
-                          window.dispatchEvent(new Event('storage'));
-                          
-                          toast.success("Profile configuration added to cart!");
-                        }}
-                      >
-                        Add to Cart
-                      </Button>
+                            
+                            // Save configuration to cart
+                            const cartItems = JSON.parse(localStorage.getItem("profileCart") || "[]");
+                            const newItem = {
+                              id: Date.now().toString(),
+                              ...formData,
+                              industries: selectedIndustries,
+                              leadTierDescription: getLeadTierDescription(selectedIndustries),
+                              timestamp: new Date().toISOString(),
+                            };
+                            cartItems.push(newItem);
+                            localStorage.setItem("profileCart", JSON.stringify(cartItems));
+                            
+                            // Trigger storage event for same-tab updates
+                            window.dispatchEvent(new Event('storage'));
+                            
+                            toast.success("Profile configuration added to cart!");
+                          }}
+                        >
+                          Add to Cart
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="outline"
+                          className="flex-1" 
+                          size="lg" 
+                          disabled={selectedIndustries.length === 0}
+                          onClick={() => {
+                            // Only reset industries, keep the profile info
+                            setSelectedIndustries([]);
+                            toast.info("Select additional industries for this same profile");
+                            
+                            // Scroll back to industry selector
+                            setTimeout(() => {
+                              const step2Element = document.getElementById('step-2-industry');
+                              if (step2Element) {
+                                step2Element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }, 100);
+                          }}
+                        >
+                          Add Another Industry Set
+                        </Button>
+                      </div>
+                      
                       <Button 
                         type="button"
-                        variant="outline"
-                        className="flex-1" 
-                        size="lg" 
-                        disabled={selectedIndustries.length === 0}
+                        variant="secondary"
+                        className="w-full" 
+                        size="lg"
                         onClick={() => {
-                          // Only reset industries, keep the profile info
+                          // Complete reset for a new profile
+                          setFormData({
+                            fullName: "",
+                            companyName: "",
+                            email: "",
+                            phone: "",
+                            acceptTerms: false,
+                          });
                           setSelectedIndustries([]);
-                          toast.info("Select additional industries for this same profile");
+                          setStep1Completed(false);
+                          toast.info("Starting fresh - create a new profile");
                           
-                          // Scroll back to industry selector
-                          setTimeout(() => {
-                            const step2Element = document.getElementById('step-2-industry');
-                            if (step2Element) {
-                              step2Element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
-                          }, 100);
+                          // Scroll to top
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                       >
-                        Add Another Industry Set to This Profile
+                        Start New Profile (Different Person/Company)
                       </Button>
                     </div>
                     <p className="text-xs text-center text-muted-foreground mt-2">
