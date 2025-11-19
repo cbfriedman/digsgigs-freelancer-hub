@@ -295,8 +295,8 @@ export default function Pricing() {
               <div className="flex items-center justify-center gap-3 mb-4">
                 <span className="text-3xl font-bold text-primary">1st Step</span>
                 <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+                <h2 className="text-3xl font-bold">Build My Digs</h2>
               </div>
-              <h2 className="text-3xl font-bold mb-4">Build My Digs</h2>
               <p className="text-muted-foreground">
                 Ready to get started? Fill out the form below to create your digger profile
               </p>
