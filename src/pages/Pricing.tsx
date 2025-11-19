@@ -59,7 +59,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.free.priceId,
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
-      volumeTier: 'Lead #s 1-10',
+      volumeTier: 'Free Tier (1-10 leads/mo)',
       description: undefined,
       savingsPercent: undefined,
       features: [],
@@ -78,8 +78,8 @@ export default function Pricing() {
       priceId: PRICING_TIERS.pro.priceId,
       productId: PRICING_TIERS.pro.productId,
       popular: PRICING_TIERS.pro.popular,
-      volumeTier: 'Lead #s 11-50',
-      description: 'Best Bulk Pricing when you buy 11 leads or more',
+      volumeTier: 'Pro Tier (11-50 leads/mo)',
+      description: 'Best Bulk Pricing - Lock in 17% savings',
       savingsPercent: 17,
       features: [],
     },
@@ -97,8 +97,8 @@ export default function Pricing() {
       priceId: PRICING_TIERS.premium.priceId,
       productId: PRICING_TIERS.premium.productId,
       popular: PRICING_TIERS.premium.popular,
-      volumeTier: 'Lead #s 51+',
-      description: 'Best Bulk Pricing - Maximum volume savings',
+      volumeTier: 'Premium Tier (51+ leads/mo)',
+      description: 'Best Bulk Pricing - Lock in 33% savings',
       savingsPercent: 33,
       features: [],
     },
@@ -258,20 +258,23 @@ export default function Pricing() {
               Digger Pricing
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold">
-              Choose your Plan
+              Choose your Monthly Commitment
             </h1>
             <p className="text-xl text-muted-foreground">
-              Pay only for leads you receive. Volume-based pricing rewards your commitment with lower costs per lead.
+              Select your expected lead volume at the start of each month and lock in your rate. Pay only for leads you actually receive at your committed tier pricing.
             </p>
             <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-2xl mx-auto">
-              <p className="text-sm font-medium mb-2">📊 How Volume-Based Pricing Works:</p>
+              <p className="text-sm font-medium mb-2">🔒 How Commitment-Based Pricing Works:</p>
               <ul className="text-sm text-muted-foreground space-y-1 text-left">
-                <li>• <strong>Lead #s 1-10:</strong> Standard pricing - Perfect for getting started</li>
-                <li>• <strong>Lead #s 11-50:</strong> Best Bulk Pricing when you buy 11 leads or more</li>
-                <li>• <strong>Lead #s 51+:</strong> Maximum bulk discount - Highest volume savings</li>
+                <li>• <strong>Choose Your Tier:</strong> At the start of each month, select the tier that matches your expected lead volume</li>
+                <li>• <strong>Lock In Your Rate:</strong> All leads you receive that month will be charged at your chosen tier's rate</li>
+                <li>• <strong>Pay As You Go:</strong> You only pay for leads you actually receive - no upfront costs or monthly fees</li>
+                <li>• <strong>Free: 1-10 leads/month:</strong> Standard pricing - Perfect for getting started or low volume</li>
+                <li>• <strong>Pro: 11-50 leads/month:</strong> Best Bulk Pricing - Save 17% when you expect 11+ leads</li>
+                <li>• <strong>Premium: 51+ leads/month:</strong> Best Bulk Pricing - Save 33% with maximum volume commitment</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-3 italic">
-                Each lead you receive is numbered by month (e.g., JAN#1, JAN#2, FEB#1, FEB#2). Pricing automatically adjusts based on your monthly lead count.
+                Choose wisely! Your commitment level determines your per-lead cost for the entire month, regardless of how many leads you actually receive.
               </p>
             </div>
             
@@ -332,9 +335,9 @@ export default function Pricing() {
             <p className="text-sm text-muted-foreground text-center mt-3">
               <strong>Your lead costs for {selectedIndustry}:</strong>
               <br />
-              Leads 1-10: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'free')}</strong> each | 
-              Leads 11-50: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'pro')}</strong> each | 
-              Leads 51+: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'premium')}</strong> each
+              Free Tier: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'free')}</strong> per lead | 
+              Pro Tier: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'pro')}</strong> per lead | 
+              Premium Tier: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'premium')}</strong> per lead
             </p>
           </div>
         </div>
@@ -377,7 +380,7 @@ export default function Pricing() {
                     {tier.volumeTier}
                   </CardTitle>
                   <p className="text-xs text-muted-foreground mt-2">
-                    (e.g., {key === 'free' ? 'JAN#1-JAN#10' : key === 'pro' ? 'JAN#11-JAN#50' : 'JAN#51+'})
+                    Expected: {key === 'free' ? '1-10 leads per month' : key === 'pro' ? '11-50 leads per month' : '51+ leads per month'}
                   </p>
                   {tier.savingsPercent && (
                     <div className="mt-3">
@@ -405,11 +408,11 @@ export default function Pricing() {
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
                               <p className="text-sm">
-                                {tier.volumeTier === 'Lead #s 1-10' 
-                                  ? 'Standard pricing for your first 10 leads each month'
-                                  : tier.volumeTier === 'Lead #s 11-50'
-                                  ? 'Best Bulk Pricing when you buy 11 leads or more'
-                                  : 'Best Bulk Pricing - Maximum volume savings'}
+                                {tier.volumeTier === 'Free Tier (1-10 leads/mo)' 
+                                  ? 'Standard pricing - Commit to receiving 1-10 leads per month. All leads charged at this rate.'
+                                  : tier.volumeTier === 'Pro Tier (11-50 leads/mo)'
+                                  ? 'Best Bulk Pricing - Commit to 11-50 leads/month. Lock in 17% savings on every lead.'
+                                  : 'Best Bulk Pricing - Commit to 51+ leads/month. Lock in 33% savings on every lead.'}
                               </p>
                             </TooltipContent>
                           </Tooltip>
