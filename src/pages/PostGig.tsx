@@ -426,11 +426,16 @@ const PostGig = () => {
                           <AlertDescription className="text-sm space-y-2">
                             <div className="font-semibold text-foreground">Escrow Fee Breakdown:</div>
                             <ul className="space-y-1 text-muted-foreground">
-                              <li>• <strong>9% fee</strong> charged to the digger on milestone releases</li>
+                              <li>• <strong>8% fee</strong> charged to the digger on milestone releases</li>
                               <li>• <strong>$10 minimum fee</strong> per payment release</li>
                               <li>• Funds held securely until work is approved</li>
                               <li>• Professional dispute resolution if needed</li>
                             </ul>
+                            <div className="pt-2 mt-2 border-t border-blue-200 dark:border-blue-800">
+                              <div className="text-sm font-medium text-amber-700 dark:text-amber-500">
+                                ⚠️ Note: Diggers may reflect the escrow fee in their bid amounts.
+                              </div>
+                            </div>
                             {(formData.budget_min || formData.budget_max) && (
                               <div className="pt-2 mt-2 border-t border-blue-200 dark:border-blue-800">
                                 <div className="font-semibold text-foreground mb-1">Example for your project:</div>
@@ -440,7 +445,7 @@ const PostGig = () => {
                                     <span className="font-semibold text-foreground">${formData.budget_max}</span>
                                     <span className="text-muted-foreground"> = </span>
                                     <span className="font-semibold text-red-600">
-                                      ${Math.max(10, Math.round(parseFloat(formData.budget_max) * 0.09))} escrow fee
+                                      ${Math.max(10, Math.round(parseFloat(formData.budget_max) * 0.08))} escrow fee
                                     </span>
                                     <span className="text-muted-foreground"> charged to digger</span>
                                   </div>

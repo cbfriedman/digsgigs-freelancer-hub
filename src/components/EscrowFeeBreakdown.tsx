@@ -5,9 +5,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 export default function EscrowFeeBreakdown() {
   const examples = [
-    { projectValue: 1000, escrowFee: 90, diggerReceives: 910 },
-    { projectValue: 5000, escrowFee: 450, diggerReceives: 4550 },
-    { projectValue: 10000, escrowFee: 900, diggerReceives: 9100 },
+    { projectValue: 1000, escrowFee: 80, diggerReceives: 920 },
+    { projectValue: 5000, escrowFee: 400, diggerReceives: 4600 },
+    { projectValue: 10000, escrowFee: 800, diggerReceives: 9200 },
   ];
 
   return (
@@ -22,11 +22,11 @@ export default function EscrowFeeBreakdown() {
               </Badge>
             </div>
             <CardDescription className="mt-2">
-              Escrow is only used when gig posters request payment protection. Our transparent 9% fee protects both parties when escrow is chosen.
+              Escrow is only used when gig posters request payment protection. Our transparent 8% fee (paid by digger) protects both parties when escrow is chosen.
             </CardDescription>
           </div>
           <Badge variant="outline" className="text-lg px-4 py-2">
-            9% Flat Rate
+            8% Flat Rate
           </Badge>
         </div>
       </CardHeader>
@@ -38,7 +38,7 @@ export default function EscrowFeeBreakdown() {
             When is Escrow Used?
           </h3>
           <p className="text-sm text-muted-foreground mb-3">
-            Escrow is <strong>optional</strong> and only applied when the gig poster requests payment protection for their project. The 9% escrow fee is charged to the digger only when this protection is requested.
+            Escrow is <strong>optional</strong> and only applied when the gig poster requests payment protection for their project. The 8% escrow fee is charged to the digger only when this protection is requested.
           </p>
         </div>
 
@@ -77,7 +77,7 @@ export default function EscrowFeeBreakdown() {
                     
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Escrow Fee (9%):</span>
+                        <span className="text-muted-foreground">Escrow Fee (8%):</span>
                         <span className="font-semibold text-red-600">-${example.escrowFee}</span>
                       </div>
                       <div className="flex justify-between">
