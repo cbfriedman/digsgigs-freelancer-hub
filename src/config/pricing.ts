@@ -8,6 +8,18 @@
  */
 
 export type IndustryCategory = 'low-value' | 'mid-value' | 'high-value';
+export type ValueIndicator = 'LV' | 'MV' | 'HV';
+
+export interface IndustryItem {
+  name: string;
+  value: IndustryCategory;
+  indicator: ValueIndicator;
+}
+
+export interface IndustryGroup {
+  categoryName: string;
+  industries: IndustryItem[];
+}
 
 export interface IndustryPricing {
   category: IndustryCategory;
@@ -279,6 +291,210 @@ export const getIndustryCategory = (industry: string): IndustryCategory => {
 export const getPricingTier = (tier: 'free' | 'pro' | 'premium' = 'free'): PricingTier => {
   return PRICING_TIERS[tier];
 };
+
+// Hierarchical industry structure for UI display
+export const INDUSTRY_GROUPS: IndustryGroup[] = [
+  {
+    categoryName: "Architecture & Engineering",
+    industries: [
+      { name: "Architecture", value: "high-value", indicator: "HV" },
+      { name: "Civil Engineering", value: "high-value", indicator: "HV" },
+      { name: "Electrical Engineering", value: "high-value", indicator: "HV" },
+      { name: "Industrial Design", value: "high-value", indicator: "HV" },
+      { name: "Mechanical Engineering", value: "high-value", indicator: "HV" },
+      { name: "Structural Engineering", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "Business & Consulting",
+    industries: [
+      { name: "Business Consulting", value: "high-value", indicator: "HV" },
+      { name: "Management Consulting", value: "high-value", indicator: "HV" },
+      { name: "Strategy Consulting", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "Construction & Home Services",
+    industries: [
+      { name: "Appliance Repair", value: "mid-value", indicator: "MV" },
+      { name: "Carpentry", value: "mid-value", indicator: "MV" },
+      { name: "Concrete Work", value: "mid-value", indicator: "MV" },
+      { name: "Electrical", value: "mid-value", indicator: "MV" },
+      { name: "Fencing", value: "mid-value", indicator: "MV" },
+      { name: "Flooring", value: "mid-value", indicator: "MV" },
+      { name: "General Contracting", value: "mid-value", indicator: "MV" },
+      { name: "HVAC", value: "mid-value", indicator: "MV" },
+      { name: "Masonry", value: "mid-value", indicator: "MV" },
+      { name: "Painting", value: "mid-value", indicator: "MV" },
+      { name: "Plumbing", value: "mid-value", indicator: "MV" },
+      { name: "Roofing", value: "mid-value", indicator: "MV" },
+      { name: "Windows & Doors", value: "mid-value", indicator: "MV" },
+    ]
+  },
+  {
+    categoryName: "Creative & Design",
+    industries: [
+      { name: "2D Animation", value: "mid-value", indicator: "MV" },
+      { name: "3D Modeling", value: "mid-value", indicator: "MV" },
+      { name: "Animation", value: "mid-value", indicator: "MV" },
+      { name: "Architectural Rendering", value: "mid-value", indicator: "MV" },
+      { name: "Audio Editing", value: "low-value", indicator: "LV" },
+      { name: "Basic Graphic Design", value: "low-value", indicator: "LV" },
+      { name: "Brand Identity Design", value: "mid-value", indicator: "MV" },
+      { name: "Illustration", value: "mid-value", indicator: "MV" },
+      { name: "Motion Graphics", value: "mid-value", indicator: "MV" },
+      { name: "Patent Illustration", value: "high-value", indicator: "HV" },
+      { name: "Photo Editing", value: "low-value", indicator: "LV" },
+      { name: "Photography", value: "mid-value", indicator: "MV" },
+      { name: "Product Photography", value: "low-value", indicator: "LV" },
+      { name: "Professional Graphic Design", value: "mid-value", indicator: "MV" },
+      { name: "Professional Video Editing", value: "mid-value", indicator: "MV" },
+      { name: "Simple Logo Design", value: "low-value", indicator: "LV" },
+      { name: "UI/UX Design", value: "mid-value", indicator: "MV" },
+      { name: "Video Production", value: "mid-value", indicator: "MV" },
+      { name: "Voice Over", value: "low-value", indicator: "LV" },
+    ]
+  },
+  {
+    categoryName: "Data & Analytics",
+    industries: [
+      { name: "Big Data Engineering", value: "high-value", indicator: "HV" },
+      { name: "Data Analysis", value: "mid-value", indicator: "MV" },
+      { name: "Data Entry", value: "low-value", indicator: "LV" },
+      { name: "Data Science", value: "high-value", indicator: "HV" },
+      { name: "Database Design", value: "mid-value", indicator: "MV" },
+    ]
+  },
+  {
+    categoryName: "Financial Services",
+    industries: [
+      { name: "Accounting", value: "high-value", indicator: "HV" },
+      { name: "CPA Services", value: "high-value", indicator: "HV" },
+      { name: "Financial Planning", value: "high-value", indicator: "HV" },
+      { name: "Investment Advisory", value: "high-value", indicator: "HV" },
+      { name: "Tax Preparation", value: "high-value", indicator: "HV" },
+      { name: "Wealth Management", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "Home & Local Services",
+    industries: [
+      { name: "Auto Repair", value: "mid-value", indicator: "MV" },
+      { name: "Beauty & Wellness", value: "low-value", indicator: "LV" },
+      { name: "Catering", value: "low-value", indicator: "LV" },
+      { name: "Cleaning & Janitorial", value: "low-value", indicator: "LV" },
+      { name: "Event Planning", value: "low-value", indicator: "LV" },
+      { name: "Handyman Services", value: "low-value", indicator: "LV" },
+      { name: "Landscaping", value: "mid-value", indicator: "MV" },
+      { name: "Moving & Delivery", value: "low-value", indicator: "LV" },
+      { name: "Pest Control", value: "mid-value", indicator: "MV" },
+      { name: "Pet Care & Grooming", value: "low-value", indicator: "LV" },
+      { name: "Pool Service", value: "mid-value", indicator: "MV" },
+      { name: "Tree Service", value: "mid-value", indicator: "MV" },
+      { name: "Tutoring & Education", value: "low-value", indicator: "LV" },
+    ]
+  },
+  {
+    categoryName: "Insurance",
+    industries: [
+      { name: "Health Insurance", value: "high-value", indicator: "HV" },
+      { name: "Insurance", value: "high-value", indicator: "HV" },
+      { name: "Life Insurance", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "IT & Technology",
+    industries: [
+      { name: "AI & Machine Learning", value: "high-value", indicator: "HV" },
+      { name: "Blockchain Development", value: "high-value", indicator: "HV" },
+      { name: "Cloud Architecture", value: "high-value", indicator: "HV" },
+      { name: "Cybersecurity Consulting", value: "high-value", indicator: "HV" },
+      { name: "DevOps Consulting", value: "high-value", indicator: "HV" },
+      { name: "Enterprise Software Development", value: "high-value", indicator: "HV" },
+      { name: "ERP Implementation", value: "high-value", indicator: "HV" },
+      { name: "IT Consulting", value: "high-value", indicator: "HV" },
+      { name: "Network Administration", value: "mid-value", indicator: "MV" },
+      { name: "Salesforce Development", value: "high-value", indicator: "HV" },
+      { name: "SAP Consulting", value: "high-value", indicator: "HV" },
+      { name: "System Administration", value: "mid-value", indicator: "MV" },
+    ]
+  },
+  {
+    categoryName: "Legal Services",
+    industries: [
+      { name: "Corporate Law", value: "high-value", indicator: "HV" },
+      { name: "Immigration Law", value: "high-value", indicator: "HV" },
+      { name: "Legal Services", value: "high-value", indicator: "HV" },
+      { name: "Patent Law", value: "high-value", indicator: "HV" },
+      { name: "Tax Law", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "Marketing & Advertising",
+    industries: [
+      { name: "Brand Strategy", value: "high-value", indicator: "HV" },
+      { name: "Content Marketing", value: "mid-value", indicator: "MV" },
+      { name: "Copywriting", value: "mid-value", indicator: "MV" },
+      { name: "Creative Direction", value: "high-value", indicator: "HV" },
+      { name: "Email Marketing", value: "mid-value", indicator: "MV" },
+      { name: "Full-Service Marketing", value: "high-value", indicator: "HV" },
+      { name: "Marketing & Advertising", value: "high-value", indicator: "HV" },
+      { name: "Marketing Strategy", value: "mid-value", indicator: "MV" },
+      { name: "Media Buying", value: "high-value", indicator: "HV" },
+      { name: "PPC Management", value: "mid-value", indicator: "MV" },
+      { name: "Public Relations", value: "high-value", indicator: "HV" },
+      { name: "SEO Services", value: "mid-value", indicator: "MV" },
+      { name: "Social Media Management", value: "low-value", indicator: "LV" },
+    ]
+  },
+  {
+    categoryName: "Medical & Healthcare",
+    industries: [
+      { name: "Healthcare Consulting", value: "high-value", indicator: "HV" },
+      { name: "Medical & Dental", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "Real Estate",
+    industries: [
+      { name: "Commercial Real Estate", value: "high-value", indicator: "HV" },
+      { name: "Real Estate", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "Software Development",
+    industries: [
+      { name: "E-commerce Development", value: "mid-value", indicator: "MV" },
+      { name: "Game Development", value: "mid-value", indicator: "MV" },
+      { name: "Mobile App Development", value: "mid-value", indicator: "MV" },
+      { name: "Software Development", value: "mid-value", indicator: "MV" },
+      { name: "Unity Development", value: "mid-value", indicator: "MV" },
+      { name: "Unreal Engine Development", value: "mid-value", indicator: "MV" },
+      { name: "Web Development", value: "mid-value", indicator: "MV" },
+      { name: "WordPress Development", value: "mid-value", indicator: "MV" },
+    ]
+  },
+  {
+    categoryName: "Writing & Content",
+    industries: [
+      { name: "Content Writing", value: "low-value", indicator: "LV" },
+      { name: "Proofreading", value: "low-value", indicator: "LV" },
+      { name: "Resume Writing", value: "low-value", indicator: "LV" },
+      { name: "Technical Writing", value: "mid-value", indicator: "MV" },
+      { name: "Transcription", value: "low-value", indicator: "LV" },
+      { name: "Translation", value: "low-value", indicator: "LV" },
+      { name: "Virtual Assistant", value: "low-value", indicator: "LV" },
+    ]
+  },
+  {
+    categoryName: "Other Services",
+    industries: [
+      { name: "Business Consulting", value: "mid-value", indicator: "MV" },
+      { name: "Product Management", value: "mid-value", indicator: "MV" },
+      { name: "Project Management", value: "mid-value", indicator: "MV" },
+    ]
+  }
+];
 
 // Get all industries as a flat list
 export const getAllIndustries = (): string[] => {
