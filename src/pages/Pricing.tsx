@@ -361,24 +361,7 @@ export default function Pricing() {
                 )}
                 
                 <CardHeader className="text-center">
-                  {key !== 'free' && (
-                    <div className="mb-2">
-                      <Badge variant="outline" className="text-xs">
-                        {tier.volumeTier}
-                      </Badge>
-                    </div>
-                  )}
-                  {key === 'free' ? (
-                    <CardTitle className="text-3xl font-bold mt-4">Leads 1-10</CardTitle>
-                  ) : (
-                    <>
-                      <CardTitle className="text-2xl">{tier.name}</CardTitle>
-                      <div className="mt-4">
-                        <span className="text-4xl font-bold">{tier.price}</span>
-                        <span className="text-muted-foreground">/month</span>
-                      </div>
-                    </>
-                  )}
+                  <CardTitle className="text-3xl font-bold mt-4">{tier.volumeTier.replace(' per month', '')}</CardTitle>
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
