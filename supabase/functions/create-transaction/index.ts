@@ -113,8 +113,8 @@ serve(async (req) => {
         digger_id: bid.digger_id,
         consumer_id: gigConsumerId,
         total_amount: totalAmount,
-        commission_rate: commissionRate,
-        commission_amount: commissionAmount,
+        commission_rate: escrowFeeRate,
+        commission_amount: escrowFeeAmount,
         digger_payout: diggerPayout,
         stripe_payment_intent_id: stripePaymentIntentId,
         status: 'completed',
@@ -159,8 +159,8 @@ serve(async (req) => {
       transaction: {
         id: transaction.id,
         total_amount: totalAmount,
-        commission_rate: commissionRate,
-        commission_amount: commissionAmount,
+        commission_rate: escrowFeeRate,
+        commission_amount: escrowFeeAmount,
         digger_payout: diggerPayout,
         tier: tier
       }

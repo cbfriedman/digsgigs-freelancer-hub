@@ -63,7 +63,7 @@ serve(async (req) => {
       });
     }
 
-    // Get digger profile to determine lead cost (on top of $50 view fee)
+    // Get digger profile to determine costs based on tier
     const { data: diggerProfile, error: diggerError } = await supabaseClient
       .from('digger_profiles')
       .select('subscription_tier, business_name')
@@ -78,14 +78,14 @@ serve(async (req) => {
 
     // Calculate total charge: view fee + lead cost based on tier
     const tier = (diggerProfile.subscription_tier || 'free') as 'free' | 'pro' | 'premium';
-    let viewFee = 75; // Default free tier
+    let viewFee = 125; // Default free tier
     let leadCost = 20; // Default free tier
     
     if (tier === 'premium') {
-      viewFee = 25;
+      viewFee = 75;
       leadCost = 5;
     } else if (tier === 'pro') {
-      viewFee = 50;
+      viewFee = 100;
       leadCost = 10;
     }
 
@@ -148,7 +148,7 @@ serve(async (req) => {
             currency: "usd",
             product_data: {
               name: `View Contact Info - ${diggerProfile.business_name}`,
-              description: `Profile View Fee ($50) + Lead Access Fee ($${leadCost})`,
+              description: `Profile View Fee ($${viewFee}) + Lead Access Fee ($${leadCost})`,
             },
             unit_amount: totalCharge * 100, // Convert to cents
           },
