@@ -17,6 +17,7 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { DiggerPricingSelector } from "@/components/DiggerPricingSelector";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
+import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 
 interface Reference {
   id: string;
@@ -88,6 +89,7 @@ const DiggerDetail = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [hasViewAccess, setHasViewAccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const { isOnline } = useDiggerPresence(id);
 
   useEffect(() => {
     loadData();
@@ -465,9 +467,17 @@ const DiggerDetail = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h1 className="text-3xl font-bold mb-2">
-                      @{digger.handle || "anonymous"}
-                    </h1>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-bold">
+                        @{digger.handle || "anonymous"}
+                      </h1>
+                      <div className="flex items-center gap-1.5 bg-background border border-border/50 px-3 py-1 rounded-full">
+                        <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
+                        <span className="text-sm font-medium">
+                          {isOnline ? 'Online' : 'Offline'}
+                        </span>
+                      </div>
+                    </div>
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <p className="text-xl text-muted-foreground">{getDisplayProfession()}</p>
