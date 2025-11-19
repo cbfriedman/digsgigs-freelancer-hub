@@ -65,6 +65,7 @@ interface Digger {
   pricing_model: string | null;
   subscription_tier: string | null;
   offers_free_estimates: boolean | null;
+  country: string | null;
   profiles: {
     full_name: string | null;
     email: string;
@@ -264,6 +265,58 @@ const DiggerDetail = () => {
     }
   };
 
+  const getCountryFlag = (countryName: string): string => {
+    const flags: { [key: string]: string } = {
+      "United States": "🇺🇸",
+      "Canada": "🇨🇦",
+      "United Kingdom": "🇬🇧",
+      "Australia": "🇦🇺",
+      "Germany": "🇩🇪",
+      "France": "🇫🇷",
+      "Spain": "🇪🇸",
+      "Italy": "🇮🇹",
+      "Mexico": "🇲🇽",
+      "Brazil": "🇧🇷",
+      "India": "🇮🇳",
+      "China": "🇨🇳",
+      "Japan": "🇯🇵",
+      "South Korea": "🇰🇷",
+      "Netherlands": "🇳🇱",
+      "Sweden": "🇸🇪",
+      "Norway": "🇳🇴",
+      "Denmark": "🇩🇰",
+      "Finland": "🇫🇮",
+      "Poland": "🇵🇱",
+      "Ireland": "🇮🇪",
+      "Switzerland": "🇨🇭",
+      "Austria": "🇦🇹",
+      "Belgium": "🇧🇪",
+      "Portugal": "🇵🇹",
+      "Greece": "🇬🇷",
+      "New Zealand": "🇳🇿",
+      "Singapore": "🇸🇬",
+      "South Africa": "🇿🇦",
+      "Argentina": "🇦🇷",
+      "Chile": "🇨🇱",
+      "Colombia": "🇨🇴",
+      "Peru": "🇵🇪",
+      "Israel": "🇮🇱",
+      "UAE": "🇦🇪",
+      "Saudi Arabia": "🇸🇦",
+      "Turkey": "🇹🇷",
+      "Thailand": "🇹🇭",
+      "Vietnam": "🇻🇳",
+      "Philippines": "🇵🇭",
+      "Indonesia": "🇮🇩",
+      "Malaysia": "🇲🇾",
+      "Egypt": "🇪🇬",
+      "Nigeria": "🇳🇬",
+      "Kenya": "🇰🇪",
+      "Other": "🌍"
+    };
+    return flags[countryName] || "🌍";
+  };
+
   const getInitials = (handle: string | null) => {
     if (!handle) return "DG";
     return handle.slice(0, 2).toUpperCase();
@@ -445,6 +498,12 @@ const DiggerDetail = () => {
                         <div className="flex items-center gap-1">
                           <Briefcase className="h-5 w-5 text-muted-foreground" />
                           <span>{digger.years_experience} years experience</span>
+                        </div>
+                      )}
+                      {digger.country && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-lg">{getCountryFlag(digger.country)}</span>
+                          <span>{digger.country}</span>
                         </div>
                       )}
                     </div>

@@ -64,6 +64,7 @@ interface Digger {
   custom_occupation_title: string | null;
   location_lat: number | null;
   location_lng: number | null;
+  country: string | null;
   profiles: {
     full_name: string | null;
   };
@@ -242,6 +243,58 @@ const BrowseDiggers = () => {
     return tierPricing[subscriptionTier as keyof typeof tierPricing] || 150;
   };
 
+  const getCountryFlag = (countryName: string): string => {
+    const flags: { [key: string]: string } = {
+      "United States": "🇺🇸",
+      "Canada": "🇨🇦",
+      "United Kingdom": "🇬🇧",
+      "Australia": "🇦🇺",
+      "Germany": "🇩🇪",
+      "France": "🇫🇷",
+      "Spain": "🇪🇸",
+      "Italy": "🇮🇹",
+      "Mexico": "🇲🇽",
+      "Brazil": "🇧🇷",
+      "India": "🇮🇳",
+      "China": "🇨🇳",
+      "Japan": "🇯🇵",
+      "South Korea": "🇰🇷",
+      "Netherlands": "🇳🇱",
+      "Sweden": "🇸🇪",
+      "Norway": "🇳🇴",
+      "Denmark": "🇩🇰",
+      "Finland": "🇫🇮",
+      "Poland": "🇵🇱",
+      "Ireland": "🇮🇪",
+      "Switzerland": "🇨🇭",
+      "Austria": "🇦🇹",
+      "Belgium": "🇧🇪",
+      "Portugal": "🇵🇹",
+      "Greece": "🇬🇷",
+      "New Zealand": "🇳🇿",
+      "Singapore": "🇸🇬",
+      "South Africa": "🇿🇦",
+      "Argentina": "🇦🇷",
+      "Chile": "🇨🇱",
+      "Colombia": "🇨🇴",
+      "Peru": "🇵🇪",
+      "Israel": "🇮🇱",
+      "UAE": "🇦🇪",
+      "Saudi Arabia": "🇸🇦",
+      "Turkey": "🇹🇷",
+      "Thailand": "🇹🇭",
+      "Vietnam": "🇻🇳",
+      "Philippines": "🇵🇭",
+      "Indonesia": "🇮🇩",
+      "Malaysia": "🇲🇾",
+      "Egypt": "🇪🇬",
+      "Nigeria": "🇳🇬",
+      "Kenya": "🇰🇪",
+      "Other": "🌍"
+    };
+    return flags[countryName] || "🌍";
+  };
+
   const getInitials = (handle: string | null) => {
     if (!handle) return "DG";
     return handle.slice(0, 2).toUpperCase();
@@ -394,8 +447,14 @@ const BrowseDiggers = () => {
                             </Badge>
                           )}
                         </div>
-                      </div>
+                       </div>
                       <p className="text-sm text-muted-foreground truncate">{getDisplayProfession(digger)}</p>
+                      {digger.country && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <span>{getCountryFlag(digger.country)}</span>
+                          <span>{digger.country}</span>
+                        </div>
+                      )}
                       {digger.offers_free_estimates && (
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
