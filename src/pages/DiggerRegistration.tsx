@@ -218,6 +218,15 @@ const DiggerRegistration = () => {
       return;
     }
 
+    // Check if User ID contains company name
+    const cleanBusinessName = businessName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanUserName = assignedUserName.toLowerCase();
+    if (cleanBusinessName && cleanUserName.includes(cleanBusinessName)) {
+      toast.error("User ID cannot contain your company name. Please choose a different ID.");
+      setShowPreview(false);
+      return;
+    }
+
     // Check if "Other Professional Services" is selected and validate custom profession
     const otherCategorySelected = await checkOtherCategorySelected();
     if (otherCategorySelected && !customProfession.trim()) {
@@ -495,7 +504,10 @@ const DiggerRegistration = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="assignedUserName">User ID *</Label>
+              <Label htmlFor="assignedUserName">
+                User ID * 
+                <span className="text-destructive font-normal"> (Cannot contain company name)</span>
+              </Label>
               <div className="flex gap-2">
                 <Input
                   id="assignedUserName"
@@ -508,7 +520,13 @@ const DiggerRegistration = () => {
                   placeholder="Auto-generated from location and name"
                   maxLength={50}
                   required
-                  className="flex-1"
+                  className={`flex-1 ${
+                    businessName && 
+                    assignedUserName && 
+                    assignedUserName.toLowerCase().includes(businessName.toLowerCase().replace(/[^a-z0-9]/g, ''))
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : ''
+                  }`}
                 />
                 <Button
                   type="button"
@@ -527,8 +545,18 @@ const DiggerRegistration = () => {
                   Generate New
                 </Button>
               </div>
+              
+              {businessName && 
+               assignedUserName && 
+               assignedUserName.toLowerCase().includes(businessName.toLowerCase().replace(/[^a-z0-9]/g, '')) && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <Info className="w-3 h-3" />
+                  User ID cannot contain your company name. Please choose a different ID.
+                </p>
+              )}
+              
               <p className="text-xs text-muted-foreground">
-                Your unique User ID. Auto-generated but you can customize it. Only letters, numbers, hyphens, and underscores allowed (max 50 characters).
+                Your unique User ID based on location and personal name. Only letters, numbers, hyphens, and underscores (max 50 characters). <strong>Cannot include company/business name.</strong>
               </p>
               
               {/* User ID Preview Card */}
