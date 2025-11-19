@@ -40,14 +40,10 @@ export default function Pricing() {
   const [leadsToClicksRate, setLeadsToClicksRate] = useState(25);
   const [clicksToAwardRate, setClicksToAwardRate] = useState(25);
   const [showResults, setShowResults] = useState(false);
-  const [selectedProfessions, setSelectedProfessions] = useState<Array<{
-    keyword: string;
-    cpl: { free: number; pro: number; premium: number };
-    valueIndicator: string;
-  }>>([]);
-  const [professionInput, setProfessionInput] = useState("");
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [step1Completed, setStep1Completed] = useState(false);
+  const [currentProfileIndustrySets, setCurrentProfileIndustrySets] = useState<string[][]>([]);
   const [professionLeadQuantities, setProfessionLeadQuantities] = useState<Record<string, number>>({});
   const [formData, setFormData] = useState({
     fullName: "",
@@ -62,12 +58,12 @@ export default function Pricing() {
 
   // Define getLeadCostForTier early so it can be used in TIERS
   const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
-    if (selectedProfessions.length === 0) {
+    if (selectedIndustries.length === 0) {
       // Default to least expensive (low-value category minimum)
       return INDUSTRY_PRICING[0][tier]; // Low-value services
     }
-    // Return highest cost from selected professions
-    return Math.max(...selectedProfessions.map(prof => prof.cpl[tier]));
+    // Return highest cost from selected industries
+    return Math.max(...selectedIndustries.map(ind => getLeadCostForIndustry(ind, tier)));
   };
 
   const TIERS = {
@@ -239,7 +235,7 @@ export default function Pricing() {
   };
 
   const getButtonText = (tier: string, priceId: string | null) => {
-    if (selectedProfessions.length === 0) return 'Select Profession First';
+    if (selectedIndustries.length === 0) return 'Select Industry First';
     const tierName = TIERS[tier as keyof typeof TIERS].name;
     if (!user || !isDigger) return `Sign Up as Digger - ${tierName}`;
     if (currentTier === tier) return 'Current Plan';
@@ -249,7 +245,7 @@ export default function Pricing() {
   };
 
   const isButtonDisabled = (tier: string, priceId: string | null) => {
-    if (selectedProfessions.length === 0) return true;
+    if (selectedIndustries.length === 0) return true;
     if (subscribing) return true;
     if (user && isDigger && currentTier === tier) return true;
     return false;
@@ -517,7 +513,7 @@ export default function Pricing() {
                       />
                       <p className="text-xs text-muted-foreground">
                         {selectedIndustries.length === 0 
-                          ? "👆 Please open the dropdown above and select at least one profession to continue"
+                          ? "👆 List multiple professions and/or keywords separated by commas (,)"
                           : "Your pricing will update based on selected professions"
                         }
                       </p>
