@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, IndustryCategory, ValueIndicator } from "@/config/pricing";
+import { LeadPricingChart } from "@/components/LeadPricingChart";
 
 interface IndustryMultiSelectorProps {
   selectedIndustries: string[];
@@ -329,6 +330,9 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
               </div>
             </div>
           </div>
+
+          {/* Visual Pricing Chart */}
+          <LeadPricingChart selectedIndustries={selectedIndustries} />
 
           {/* Lead Quantity Selector and Cost Calculator */}
           <div className="space-y-3">
