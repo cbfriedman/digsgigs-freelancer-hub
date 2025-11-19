@@ -96,7 +96,7 @@ export default function Pricing() {
       productId: PRICING_TIERS.premium.productId,
       popular: PRICING_TIERS.premium.popular,
       volumeTier: 'Lead #s 51+',
-      description: 'Best Bulk Pricing when you buy 51 leads or more - Maximum volume savings',
+      description: 'Best Bulk Pricing - Maximum volume savings',
       features: [],
     },
   };
@@ -399,7 +399,7 @@ export default function Pricing() {
                                   ? 'Standard pricing for your first 10 leads each month'
                                   : tier.volumeTier === 'Lead #s 11-50'
                                   ? 'Best Bulk Pricing when you buy 11 leads or more'
-                                  : 'Best Bulk Pricing when you buy 51 leads or more - Maximum volume savings'}
+                                  : 'Best Bulk Pricing - Maximum volume savings'}
                               </p>
                             </TooltipContent>
                           </Tooltip>
