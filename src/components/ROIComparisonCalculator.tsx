@@ -94,6 +94,7 @@ export const ROIComparisonCalculator = () => {
   const leadsPerCustomer = 1 / industry.leadToCustomerRate;
   const totalClicks = clicksPerLead * leadsPerCustomer;
   const googleCostPerDeal = totalClicks * industry.avgCPC;
+  const googleTrueCostPerLead = industry.avgCPC / industry.clickToLeadRate;
 
   // Calculate platform costs per closed deal
   const platformCosts = {
@@ -231,6 +232,7 @@ export const ROIComparisonCalculator = () => {
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>Avg CPC: ${industry.avgCPC}</p>
               <p>Click-to-Lead: {(industry.clickToLeadRate * 100).toFixed(0)}%</p>
+              <p className="font-semibold text-foreground">True Cost Per Lead: ${googleTrueCostPerLead.toFixed(0)}</p>
               <p>Lead-to-Customer: {(industry.leadToCustomerRate * 100).toFixed(0)}%</p>
             </div>
             <div className="mt-3 pt-3 border-t border-border/50">
