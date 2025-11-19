@@ -164,6 +164,8 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Financial Planning',
       'Investment Advisory',
       'Wealth Management',
+      'Loan Brokers',
+      'Mortgage Brokers',
       'Real Estate',
       'Commercial Real Estate',
       'Medical & Dental',
@@ -372,6 +374,8 @@ export const INDUSTRY_GROUPS: IndustryGroup[] = [
       { name: "CPA Services", value: "high-value", indicator: "HV" },
       { name: "Financial Planning", value: "high-value", indicator: "HV" },
       { name: "Investment Advisory", value: "high-value", indicator: "HV" },
+      { name: "Loan Brokers", value: "high-value", indicator: "HV" },
+      { name: "Mortgage Brokers", value: "high-value", indicator: "HV" },
       { name: "Tax Preparation", value: "high-value", indicator: "HV" },
       { name: "Wealth Management", value: "high-value", indicator: "HV" },
     ]
