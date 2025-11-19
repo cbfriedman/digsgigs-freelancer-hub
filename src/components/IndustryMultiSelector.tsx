@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Check, ChevronDown, ChevronRight, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, IndustryCategory, ValueIndicator } from "@/config/pricing";
 
 interface IndustryMultiSelectorProps {
@@ -17,6 +18,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   const [open, setOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [leadsPerMonth, setLeadsPerMonth] = useState<string>("");
 
   const toggleCategory = (categoryName: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -93,6 +95,29 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
 
   const selectedCategories = getSelectedCategories();
   const hasMultipleCategories = selectedCategories.size > 1;
+
+  // Determine tier based on leads per month
+  const getTierFromLeads = (leads: number): 'free' | 'pro' | 'premium' => {
+    if (leads >= 51) return 'premium';
+    if (leads >= 11) return 'pro';
+    return 'free';
+  };
+
+  // Calculate total cost based on selected industries and lead quantity
+  const calculatedCost = useMemo(() => {
+    if (!leadsPerMonth || selectedIndustries.length === 0) return null;
+    
+    const leads = parseInt(leadsPerMonth);
+    if (isNaN(leads) || leads <= 0) return null;
+    
+    const tier = getTierFromLeads(leads);
+    const totalCost = selectedIndustries.reduce((sum, industry) => {
+      const costPerLead = getLeadCostForIndustry(industry, tier);
+      return sum + (costPerLead * leads);
+    }, 0);
+    
+    return { totalCost, tier, leads };
+  }, [leadsPerMonth, selectedIndustries]);
 
   return (
     <div className="space-y-3">
@@ -230,16 +255,18 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                             </div>
                             <span className="text-sm truncate">{industry.name}</span>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-3 shrink-0">
                             <Badge 
                               variant="secondary" 
                               className={`text-xs px-1.5 py-0 ${getValueBadgeColor(industry.indicator)}`}
                             >
                               {industry.indicator}
                             </Badge>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              ${premiumCost}-${freeCost}/lead
-                            </span>
+                            <div className="text-xs text-muted-foreground whitespace-nowrap">
+                              <div className="font-medium">Free: ${freeCost}</div>
+                              <div>Pro: ${getLeadCostForIndustry(industry.name, 'pro')}</div>
+                              <div>Premium: ${premiumCost}</div>
+                            </div>
                             <Button
                               size="sm"
                               variant={isSelected ? "secondary" : "default"}
@@ -301,6 +328,56 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                 <strong className="text-primary">${getHighestLeadCost('premium')}</strong>
               </div>
             </div>
+          </div>
+
+          {/* Lead Quantity Selector and Cost Calculator */}
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">How many leads would you like to buy per month?</label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="Enter number of leads..."
+                value={leadsPerMonth}
+                onChange={(e) => setLeadsPerMonth(e.target.value)}
+                className="w-full"
+              />
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                <div>• 1-10 leads = Free tier pricing</div>
+                <div>• 11-50 leads = Pro tier pricing (Save 17%)</div>
+                <div>• 51+ leads = Premium tier pricing (Save 33%)</div>
+              </div>
+            </div>
+
+            {/* Cost Calculator Display */}
+            {calculatedCost && (
+              <Card className="p-4 bg-primary/5 border-primary/20">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Selected Industries:</span>
+                    <span className="text-sm">{selectedIndustries.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Leads per Month:</span>
+                    <span className="text-sm">{calculatedCost.leads}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Pricing Tier:</span>
+                    <Badge variant="secondary" className="capitalize">
+                      {calculatedCost.tier}
+                    </Badge>
+                  </div>
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">Total Monthly Cost:</span>
+                      <span className="text-lg font-bold text-primary">
+                        ${calculatedCost.totalCost.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* Multiple Categories Warning */}
