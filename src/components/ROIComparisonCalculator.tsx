@@ -15,12 +15,6 @@ interface IndustryData {
 }
 
 const INDUSTRIES: IndustryData[] = [
-  { name: "HVAC Services", avgCPC: 13, clickToLeadRate: 0.09, leadToCustomerRate: 0.17 },
-  { name: "Plumbing", avgCPC: 11, clickToLeadRate: 0.11, leadToCustomerRate: 0.22 },
-  { name: "Electrical Services", avgCPC: 12, clickToLeadRate: 0.10, leadToCustomerRate: 0.20 },
-  { name: "Roofing", avgCPC: 17, clickToLeadRate: 0.06, leadToCustomerRate: 0.13 },
-  { name: "Home Remodeling", avgCPC: 15, clickToLeadRate: 0.08, leadToCustomerRate: 0.16 },
-  { name: "Pest Control", avgCPC: 10, clickToLeadRate: 0.12, leadToCustomerRate: 0.25 },
   { name: "Construction", avgCPC: 16, clickToLeadRate: 0.07, leadToCustomerRate: 0.14 },
   { name: "Automotive Services", avgCPC: 9, clickToLeadRate: 0.11, leadToCustomerRate: 0.23 },
   { name: "Architects", avgCPC: 20, clickToLeadRate: 0.05, leadToCustomerRate: 0.10 },
@@ -37,7 +31,7 @@ const INDUSTRIES: IndustryData[] = [
 ];
 
 export const ROIComparisonCalculator = () => {
-  const [selectedIndustry, setSelectedIndustry] = useState<string>("HVAC Services");
+  const [selectedIndustry, setSelectedIndustry] = useState<string>("Construction");
   const [conversionRate, setConversionRate] = useState<string>("25");
 
   const industry = INDUSTRIES.find(i => i.name === selectedIndustry) || INDUSTRIES[0];
