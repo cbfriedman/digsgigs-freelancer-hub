@@ -369,7 +369,9 @@ export default function Pricing() {
                   <CardTitle className="text-2xl">{tier.name}</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">{tier.price}</span>
-                    <span className="text-muted-foreground">/month</span>
+                    {tier.priceValue > 0 && (
+                      <span className="text-muted-foreground">/month</span>
+                    )}
                   </div>
                 </CardHeader>
                 
@@ -928,7 +930,7 @@ export default function Pricing() {
                       size="lg"
                       className="min-w-[140px]"
                     >
-                      {tier.name} - {tier.price}/mo
+                      {tier.priceValue > 0 ? `${tier.name} - ${tier.price}/mo` : tier.name}
                     </Button>
                   ))}
                 </div>
@@ -1004,7 +1006,7 @@ export default function Pricing() {
                         Current Plan
                       </span>
                     ) : (
-                      `${tier.name} - ${tier.price}/mo`
+                      tier.priceValue > 0 ? `${tier.name} - ${tier.price}/mo` : tier.name
                     )}
                   </Button>
                 ))}
