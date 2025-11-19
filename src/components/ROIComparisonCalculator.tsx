@@ -327,7 +327,47 @@ export const ROIComparisonCalculator = () => {
           )}
         </div>
 
-        <div className="text-center pt-2">
+        <div className="space-y-4 pt-4 border-t">
+          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+            How We Calculate These Numbers
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <h5 className="font-semibold text-sm mb-2">Google AdWords Calculation</h5>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div>
+                  <p className="font-semibold text-foreground">True Cost Per Lead:</p>
+                  <p>CPC ÷ Click-to-Lead Rate</p>
+                  <p className="text-primary">${industry.avgCPC} ÷ {(industry.clickToLeadRate * 100).toFixed(0)}% = ${googleTrueCostPerLead.toFixed(0)}</p>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
+                  <p>True Cost Per Lead ÷ Lead-to-Customer Rate</p>
+                  <p className="text-destructive">${googleTrueCostPerLead.toFixed(0)} ÷ {(industry.leadToCustomerRate * 100).toFixed(0)}% = ${googleCostPerDeal.toFixed(0)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-lg border bg-primary/5">
+              <h5 className="font-semibold text-sm mb-2">Digsandgigs Platform Calculation</h5>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div>
+                  <p className="font-semibold text-foreground">True Cost Per Lead (Premium):</p>
+                  <p>Click Cost + Lead Cost</p>
+                  <p className="text-primary">${platformCosts.premium.click} + ${platformCosts.premium.lead} = ${platformCosts.premium.total}</p>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="font-semibold text-foreground">Cost Per Closed Deal (Premium):</p>
+                  <p>True Cost Per Lead ÷ Lead-to-Award Rate</p>
+                  <p className="text-primary">${platformCosts.premium.total} ÷ {(platformConversionRate * 100).toFixed(0)}% = ${platformCostPerDeal.premium.toFixed(0)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center pt-4">
           <p className="text-xs text-muted-foreground">
             * CPC values and conversion rates are industry averages and may vary significantly based on location, competition, seasonality, and individual business factors. 
             Google AdWords costs based on 2024 home services advertising benchmarks. Individual results may vary based on market conditions and campaign optimization.
