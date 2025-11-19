@@ -2,14 +2,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { getLeadCostForIndustry } from "@/config/pricing";
+import { getLeadCostForIndustry, INDUSTRY_PRICING, getIndustryCategory } from "@/config/pricing";
 import { TrendingDown, Award, DollarSign } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 export default function CompetitorCostComparison() {
   const [leadVolume, setLeadVolume] = useState(30);
-  const [selectedIndustry] = useState('HVAC');
+  const [selectedIndustry, setSelectedIndustry] = useState('HVAC');
 
-  // DigsandGigs costs
+  // DigsandGigs costs - industry-specific
   const tier1Cost = getLeadCostForIndustry(selectedIndustry, 'free');
   const tier2Cost = getLeadCostForIndustry(selectedIndustry, 'pro');
   const tier3Cost = getLeadCostForIndustry(selectedIndustry, 'premium');
@@ -24,6 +25,19 @@ export default function CompetitorCostComparison() {
       total = (10 * tier1Cost) + (40 * tier2Cost) + ((leads - 50) * tier3Cost);
     }
     return total;
+  };
+
+  // Get industry-specific competitor pricing
+  const industryCategory = getIndustryCategory(selectedIndustry);
+  const getCompetitorLeadCost = (platform: string): number => {
+    // Industry-specific pricing for competitors
+    if (industryCategory === 'low-value') {
+      return platform === 'HomeAdvisor' ? 30 : platform === 'Thumbtack' ? 25 : 22;
+    } else if (industryCategory === 'high-value') {
+      return platform === 'HomeAdvisor' ? 150 : platform === 'Thumbtack' ? 125 : 110;
+    } else { // mid-value
+      return platform === 'HomeAdvisor' ? 60 : platform === 'Thumbtack' ? 50 : 45;
+    }
   };
 
   const platforms = [
@@ -42,7 +56,7 @@ export default function CompetitorCostComparison() {
       color: "text-orange-600",
       bgColor: "bg-orange-50 dark:bg-orange-950/20",
       borderColor: "border-orange-200 dark:border-orange-800",
-      cost: leadVolume * 60, // Flat $60 per lead
+      cost: leadVolume * getCompetitorLeadCost('HomeAdvisor'),
       description: "Flat rate per lead",
       badge: "Competitor",
       badgeColor: "bg-orange-500 text-white"
@@ -52,7 +66,7 @@ export default function CompetitorCostComparison() {
       color: "text-blue-600",
       bgColor: "bg-blue-50 dark:bg-blue-950/20",
       borderColor: "border-blue-200 dark:border-blue-800",
-      cost: leadVolume * 50, // Flat $50 per lead
+      cost: leadVolume * getCompetitorLeadCost('Thumbtack'),
       description: "Pay per introduction",
       badge: "Competitor",
       badgeColor: "bg-blue-500 text-white"
@@ -62,7 +76,7 @@ export default function CompetitorCostComparison() {
       color: "text-purple-600",
       bgColor: "bg-purple-50 dark:bg-purple-950/20",
       borderColor: "border-purple-200 dark:border-purple-800",
-      cost: leadVolume * 45, // Flat $45 per lead
+      cost: leadVolume * getCompetitorLeadCost('Bark'),
       description: "Credit-based system",
       badge: "Competitor",
       badgeColor: "bg-purple-500 text-white"
@@ -87,20 +101,46 @@ export default function CompetitorCostComparison() {
               </CardDescription>
             </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Lead Volume:</label>
-            <Select value={leadVolume.toString()} onValueChange={(v) => setLeadVolume(parseInt(v))}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 20, 30, 40, 50, 75, 100].map((vol) => (
-                  <SelectItem key={vol} value={vol.toString()}>
-                    {vol} leads
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium">Industry:</Label>
+              <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {INDUSTRY_PRICING.map((pricing) => (
+                    <div key={pricing.category}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
+                        {pricing.category === 'low-value' && 'Low-Value'}
+                        {pricing.category === 'mid-value' && 'Mid-Value'}
+                        {pricing.category === 'high-value' && 'High-Value'}
+                      </div>
+                      {pricing.industries.map((industry) => (
+                        <SelectItem key={industry} value={industry}>
+                          {industry}
+                        </SelectItem>
+                      ))}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium">Lead Volume:</Label>
+              <Select value={leadVolume.toString()} onValueChange={(v) => setLeadVolume(parseInt(v))}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 30, 40, 50, 75, 100].map((vol) => (
+                    <SelectItem key={vol} value={vol.toString()}>
+                      {vol} leads
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </CardHeader>

@@ -968,9 +968,9 @@ export default function Pricing() {
                       disabled={isButtonDisabled(key, tier.priceId)}
                       variant={tier.popular ? "default" : "outline"}
                       size="lg"
-                      className="min-w-[140px]"
+                      className="min-w-[180px]"
                     >
-                      {tier.priceValue > 0 ? `${tier.name} - ${tier.price}/mo` : tier.name}
+                      {tier.volumeTier}
                     </Button>
                   ))}
                 </div>
@@ -992,7 +992,7 @@ export default function Pricing() {
             <div className="text-center space-y-4">
               <h3 className="text-2xl font-bold">Start Saving on Your Leads Today</h3>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Upgrade to a higher tier and reduce your per-lead costs immediately
+                Commit to higher volume and reduce your per-lead costs immediately
               </p>
               <div className="flex flex-wrap justify-center gap-4 pt-4">
                 {Object.entries(TIERS).map(([key, tier]) => (
