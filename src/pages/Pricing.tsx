@@ -271,9 +271,11 @@ export default function Pricing() {
                 <li>• <strong>Choose Your Tier:</strong> At the start of each month, select the tier that matches your expected lead volume</li>
                 <li>• <strong>Lock In Your Rate:</strong> All leads you receive that month will be charged at your chosen tier's rate</li>
                 <li>• <strong>Pay As You Go:</strong> You only pay for leads you actually receive - no upfront costs or monthly fees</li>
-                <li>• <strong>Free: 1-10 leads/month:</strong> Standard pricing - Perfect for getting started or low volume</li>
-                <li>• <strong>Pro: 11-50 leads/month:</strong> Best Bulk Pricing - Save 17% when you expect 11+ leads</li>
+                <li>• <strong>Standard: 1-10 leads/month:</strong> Standard pricing - Perfect for getting started or low volume</li>
+                <li>• <strong>Pro: 11-50 leads/month:</strong> Bulk Pricing - Save 17% when you expect 11+ leads</li>
                 <li>• <strong>Premium: 51+ leads/month:</strong> Best Bulk Pricing - Save 33% with maximum volume commitment</li>
+                <li>• <strong>Credit roll over</strong> to the following month(s) if not enough leads.</li>
+                <li>• <strong>Refund credits</strong> after deducting the Standard Price of Sold leads</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-3 italic">
                 Choose wisely! Your commitment level determines your per-lead cost for the entire month, regardless of how many leads you actually receive.
