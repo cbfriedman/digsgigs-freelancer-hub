@@ -29,7 +29,7 @@ export interface PricingTier {
   popular: boolean;
 }
 
-// Industry-specific lead pricing (CPL only)
+// Industry-specific lead pricing (CPC-based: 3×, 2×, 1× Google CPC)
 export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'low-value',
@@ -44,9 +44,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Catering',
       'Beauty & Wellness'
     ],
-    free: 15,
-    pro: 10,
-    premium: 5
+    free: 24,   // 3× avg CPC ($8)
+    pro: 16,    // 2× avg CPC ($8)
+    premium: 8  // 1× avg CPC ($8)
   },
   {
     category: 'mid-value',
@@ -70,9 +70,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Fencing',
       'Pool Service'
     ],
-    free: 40,
-    pro: 25,
-    premium: 15
+    free: 120,  // 3× avg CPC ($40)
+    pro: 80,    // 2× avg CPC ($40)
+    premium: 40 // 1× avg CPC ($40)
   },
   {
     category: 'high-value',
@@ -89,9 +89,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Engineering',
       'Business Consulting'
     ],
-    free: 200,
-    pro: 125,
-    premium: 75
+    free: 750,   // 3× avg CPC ($250)
+    pro: 500,    // 2× avg CPC ($250)
+    premium: 250 // 1× avg CPC ($250)
   }
 ];
 
@@ -113,8 +113,8 @@ export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   pro: {
     id: 'pro',
     name: 'Pro',
-    price: '$99',
-    priceValue: 99,
+    price: '$39',
+    priceValue: 39,
     escrowFee: '5%',
     escrowFeeValue: 5,
     escrowProcessingFee: '5% per payment (min $10)',
@@ -127,12 +127,12 @@ export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   premium: {
     id: 'premium',
     name: 'Premium',
-    price: '$299',
-    priceValue: 299,
-    escrowFee: '2%',
-    escrowFeeValue: 2,
-    escrowProcessingFee: '2% per payment (min $10)',
-    escrowProcessingFeeValue: 0.02,
+    price: '$99',
+    priceValue: 99,
+    escrowFee: '3%',
+    escrowFeeValue: 3,
+    escrowProcessingFee: '3% per payment (min $10)',
+    escrowProcessingFeeValue: 0.03,
     escrowProcessingMinimum: 10,
     priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
     productId: 'prod_TQ0mVQT1H5f1zg',
