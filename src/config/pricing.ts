@@ -193,11 +193,16 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
   }
 ];
 
+// Volume-based tier thresholds (NO monthly fees, automatic tier progression)
+// Leads 1-10: Free tier pricing
+// Leads 11-50: Pro tier pricing  
+// Leads 51+: Premium tier pricing
+// Resets monthly at midnight EST on last day of month
 export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   free: {
     id: 'free',
     name: 'Free',
-    price: '$0',
+    price: '$0/month',
     priceValue: 0,
     escrowFee: '9%',
     escrowFeeValue: 9,
@@ -211,29 +216,29 @@ export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   pro: {
     id: 'pro',
     name: 'Pro',
-    price: '$39',
-    priceValue: 39,
+    price: '$0/month',
+    priceValue: 0,
     escrowFee: '5%',
     escrowFeeValue: 5,
     escrowProcessingFee: '5% per payment (min $10)',
     escrowProcessingFeeValue: 0.05,
     escrowProcessingMinimum: 10,
-    priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
-    productId: 'prod_TQ0mK76zTAwoQc',
+    priceId: null,
+    productId: null,
     popular: true,
   },
   premium: {
     id: 'premium',
     name: 'Premium',
-    price: '$99',
-    priceValue: 99,
+    price: '$0/month',
+    priceValue: 0,
     escrowFee: '3%',
     escrowFeeValue: 3,
     escrowProcessingFee: '3% per payment (min $10)',
     escrowProcessingFeeValue: 0.03,
     escrowProcessingMinimum: 10,
-    priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
-    productId: 'prod_TQ0mVQT1H5f1zg',
+    priceId: null,
+    productId: null,
     popular: false,
   },
 };
