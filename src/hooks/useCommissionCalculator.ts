@@ -10,10 +10,8 @@ import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry } from '@/confi
  *   - Mid-value (HVAC, plumbing, etc.): $40/$25/$15
  *   - High-value (legal, insurance): $200/$125/$75
  * 
- * - Escrow processing fees only:
- *   - Free: 9% (min $10)
- *   - Pro: 5% (min $10)
- *   - Premium: 2% (min $10)
+ * - Escrow processing fees (paid by digger):
+ *   - All tiers: 8% (min $10)
  */
 export const useCommissionCalculator = () => {
   /**

@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info } from "lucide-react";
 import { z } from "zod";
 
 // SECURITY: Input validation schema
@@ -37,6 +38,7 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
   const [amount, setAmount] = useState("");
   const [timeline, setTimeline] = useState("");
   const [proposal, setProposal] = useState("");
+  const [includesEscrowCost, setIncludesEscrowCost] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,6 +170,25 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
             <p className="text-xs text-muted-foreground">
               {proposal.length}/5000 characters
             </p>
+          </div>
+
+          <div className="space-y-3 pt-2 pb-2">
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="includesEscrowCost"
+                checked={includesEscrowCost}
+                onCheckedChange={(checked) => setIncludesEscrowCost(checked as boolean)}
+              />
+              <div className="flex-1">
+                <Label htmlFor="includesEscrowCost" className="cursor-pointer leading-relaxed">
+                  My bid includes escrow costs (if applicable)
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  <Info className="inline-block h-3 w-3 mr-1" />
+                  If the gigger requests escrow protection, an 8% fee will apply. Check this if you've added that cost to your bid amount.
+                </p>
+              </div>
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
