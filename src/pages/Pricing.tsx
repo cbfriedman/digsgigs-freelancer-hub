@@ -53,7 +53,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.free.priceId,
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
-      cpcMultiplier: '3×',
+      volumeTier: 'Leads 1-10 per month',
       features: [],
     },
     pro: {
@@ -70,7 +70,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.pro.priceId,
       productId: PRICING_TIERS.pro.productId,
       popular: PRICING_TIERS.pro.popular,
-      cpcMultiplier: '2×',
+      volumeTier: 'Leads 11-50 per month',
       features: [],
     },
     premium: {
@@ -87,7 +87,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.premium.priceId,
       productId: PRICING_TIERS.premium.productId,
       popular: PRICING_TIERS.premium.popular,
-      cpcMultiplier: '1×',
+      volumeTier: 'Leads 51+ per month',
       features: [],
     },
   };
@@ -249,11 +249,19 @@ export default function Pricing() {
               Choose your Plan
             </h1>
             <p className="text-xl text-muted-foreground">
-              Select the plan that best fits your business needs. Upgrade to lower costs and maximize your earnings on every project.
+              Pay only for leads you receive. Volume-based pricing rewards your commitment with lower costs per lead.
             </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              💰 <strong>Pro members save thousands per year</strong> on estimate requests - see the savings table below
-            </p>
+            <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-2xl mx-auto">
+              <p className="text-sm font-medium mb-2">📊 How Volume-Based Pricing Works:</p>
+              <ul className="text-sm text-muted-foreground space-y-1 text-left">
+                <li>• <strong>Leads 1-10/month:</strong> Standard pricing - Perfect for getting started</li>
+                <li>• <strong>Leads 11-50/month:</strong> Volume discount - Save money as you grow</li>
+                <li>• <strong>Leads 51+/month:</strong> Best bulk pricing - Maximum savings for high volume</li>
+              </ul>
+              <p className="text-xs text-muted-foreground mt-3 italic">
+                Pricing automatically adjusts based on the number of leads you receive each month. No subscriptions, no commitments - just fair, transparent pricing.
+              </p>
+            </div>
             
             {/* Subscription Status and Refresh */}
             {isDigger && subscriptionStatus && (
@@ -310,7 +318,11 @@ export default function Pricing() {
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground text-center mt-3">
-              Lead costs: <strong>${getLeadCostForIndustry(selectedIndustry, 'free')}</strong> (Free) | <strong>${getLeadCostForIndustry(selectedIndustry, 'pro')}</strong> (Pro) | <strong>${getLeadCostForIndustry(selectedIndustry, 'premium')}</strong> (Premium)
+              <strong>Your lead costs for {selectedIndustry}:</strong>
+              <br />
+              Leads 1-10: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'free')}</strong> each | 
+              Leads 11-50: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'pro')}</strong> each | 
+              Leads 51+: <strong className="text-primary">${getLeadCostForIndustry(selectedIndustry, 'premium')}</strong> each
             </p>
           </div>
         </div>
@@ -349,6 +361,11 @@ export default function Pricing() {
                 )}
                 
                 <CardHeader className="text-center">
+                  <div className="mb-2">
+                    <Badge variant="outline" className="text-xs">
+                      {tier.volumeTier}
+                    </Badge>
+                  </div>
                   <CardTitle className="text-2xl">{tier.name}</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">{tier.price}</span>
@@ -367,7 +384,13 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">{tier.cpcMultiplier} Google AdWords CPC for {selectedIndustry}</p>
+                              <p className="text-sm">
+                                {tier.volumeTier === 'Leads 1-10 per month' 
+                                  ? 'Standard pricing for your first 10 leads each month'
+                                  : tier.volumeTier === 'Leads 11-50 per month'
+                                  ? 'Volume discount pricing when you purchase 11-50 leads per month'
+                                  : 'Best bulk pricing when you purchase 51+ leads per month'}
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

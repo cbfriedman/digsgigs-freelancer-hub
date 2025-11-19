@@ -1,7 +1,10 @@
 /**
  * Centralized Pricing Configuration
  * Single source of truth for all pricing across the platform
- * INDUSTRY-SPECIFIC CPL PRICING MODEL (No commissions, no CPC, no hourly charges)
+ * VOLUME-BASED CPL PRICING MODEL
+ * - Leads 1-10: Standard pricing
+ * - Leads 11-50: Reduced pricing (volume discount)
+ * - Leads 51+: Best pricing (bulk discount)
  */
 
 export type IndustryCategory = 'low-value' | 'mid-value' | 'high-value';
@@ -29,7 +32,11 @@ export interface PricingTier {
   popular: boolean;
 }
 
-// Industry-specific lead pricing (CPC-based: 3×, 2×, 1× Google CPC)
+// Volume-based lead pricing by industry category
+// Pricing tiers based on monthly lead volume:
+// Free tier (1-10 leads/month): Standard rate
+// Pro tier (11-50 leads/month): Volume discount
+// Premium tier (51+ leads/month): Best bulk pricing
 export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'low-value',
@@ -61,9 +68,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Resume Writing',
       'Translation'
     ],
-    free: 24,   // 3× avg CPC ($8)
-    pro: 16,    // 2× avg CPC ($8)
-    premium: 8  // 1× avg CPC ($8)
+    free: 24,   // Standard rate (leads 1-10)
+    pro: 16,    // Volume discount (leads 11-50)
+    premium: 8  // Best rate (leads 51+)
   },
   {
     category: 'mid-value',
@@ -126,9 +133,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Unity Development',
       'Unreal Engine Development'
     ],
-    free: 120,  // 3× avg CPC ($40)
-    pro: 80,    // 2× avg CPC ($40)
-    premium: 40 // 1× avg CPC ($40)
+    free: 120,  // Standard rate (leads 1-10)
+    pro: 80,    // Volume discount (leads 11-50)
+    premium: 40 // Best rate (leads 51+)
   },
   {
     category: 'high-value',
@@ -187,9 +194,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Creative Direction',
       'Public Relations'
     ],
-    free: 750,   // 3× avg CPC ($250)
-    pro: 500,    // 2× avg CPC ($250)
-    premium: 250 // 1× avg CPC ($250)
+    free: 750,   // Standard rate (leads 1-10)
+    pro: 500,    // Volume discount (leads 11-50)
+    premium: 250 // Best rate (leads 51+)
   }
 ];
 
