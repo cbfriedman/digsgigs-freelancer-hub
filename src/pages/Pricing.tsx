@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
+import { ProfessionKeywordInput } from "@/components/ProfessionKeywordInput";
 import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/Footer";
@@ -518,47 +518,44 @@ export default function Pricing() {
                           <Badge variant="destructive" className="text-xs">Required</Badge>
                         )}
                       </Label>
-                      <IndustryMultiSelector
-                        selectedIndustries={selectedIndustries}
-                        onIndustriesChange={(industries) => {
-                          setSelectedIndustries(industries);
-                          // Initialize quantities for new professions
-                          const newQuantities = { ...professionLeadQuantities };
-                          industries.forEach(industry => {
-                            if (!(industry in newQuantities)) {
-                              newQuantities[industry] = 0;
-                            }
-                          });
-                          // Remove quantities for deselected professions
-                          Object.keys(newQuantities).forEach(industry => {
-                            if (!industries.includes(industry)) {
-                              delete newQuantities[industry];
-                            }
-                          });
-                          setProfessionLeadQuantities(newQuantities);
-                        }}
-                        onManageProfilesClick={() => {
-                          // Save current registration progress before navigating
-                          const leadTierDescription = getLeadTierDescription(selectedIndustries);
-                          const progressData = {
-                            ...formData,
-                            industries: selectedIndustries,
-                            leadTierDescription,
-                            timestamp: new Date().toISOString(),
-                            demoType: "digger",
-                            isInProgress: true
-                          };
-                          localStorage.setItem("pricing_registration_progress", JSON.stringify(progressData));
-                          toast.info("Your progress has been saved");
-                          navigate('/my-profiles');
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {selectedIndustries.length === 0 
-                          ? "👆 List multiple professions and/or keywords separated by commas (,)"
-                          : "Your pricing will update based on selected professions"
-                        }
-                      </p>
+                      <div className="space-y-2">
+                        <ProfessionKeywordInput
+                          professions={selectedIndustries.map(keyword => {
+                            return {
+                              keyword,
+                              cpl: {
+                                free: getLeadCostForIndustry(keyword, 'free'),
+                                pro: getLeadCostForIndustry(keyword, 'pro'),
+                                premium: getLeadCostForIndustry(keyword, 'premium')
+                              },
+                              valueIndicator: getValueIndicator(keyword)
+                            };
+                          })}
+                          onProfessionsChange={(professions) => {
+                            setSelectedIndustries(professions.map(p => p.keyword));
+                            // Initialize quantities for new professions
+                            const newQuantities = { ...professionLeadQuantities };
+                            professions.forEach(prof => {
+                              if (!(prof.keyword in newQuantities)) {
+                                newQuantities[prof.keyword] = 0;
+                              }
+                            });
+                            // Remove quantities for deselected professions
+                            Object.keys(newQuantities).forEach(keyword => {
+                              if (!professions.find(p => p.keyword === keyword)) {
+                                delete newQuantities[keyword];
+                              }
+                            });
+                            setProfessionLeadQuantities(newQuantities);
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {selectedIndustries.length === 0 
+                            ? "👆 List multiple professions and/or keywords separated by commas (,)"
+                            : "Your pricing will update based on selected professions"
+                          }
+                        </p>
+                      </div>
                     </div>
 
                     {/* Lead Quantity Inputs for Each Selected Profession */}
@@ -906,26 +903,28 @@ export default function Pricing() {
                   <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
                 </div>
                 <div className="flex-1 max-w-md">
-                  <IndustryMultiSelector 
-                    selectedIndustries={selectedIndustries}
-                    onIndustriesChange={setSelectedIndustries}
-                    onManageProfilesClick={() => {
-                      // Update saved progress with current state
-                      const leadTierDescription = getLeadTierDescription(selectedIndustries);
-                      const progressData = {
-                        ...formData,
-                        industries: selectedIndustries,
-                        leadTierDescription,
-                        timestamp: new Date().toISOString(),
-                        demoType: "digger",
-                        isInProgress: true,
-                        step1Completed: true
+                  <ProfessionKeywordInput
+                    professions={selectedIndustries.map(keyword => {
+                      return {
+                        keyword,
+                        cpl: {
+                          free: getLeadCostForIndustry(keyword, 'free'),
+                          pro: getLeadCostForIndustry(keyword, 'pro'),
+                          premium: getLeadCostForIndustry(keyword, 'premium')
+                        },
+                        valueIndicator: getValueIndicator(keyword)
                       };
-                      localStorage.setItem("pricing_registration_progress", JSON.stringify(progressData));
-                      toast.info("Your progress has been saved");
-                      navigate('/my-profiles');
+                    })}
+                    onProfessionsChange={(professions) => {
+                      setSelectedIndustries(professions.map(p => p.keyword));
                     }}
                   />
+                  <div className="mt-2 flex items-start gap-2">
+                    <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-muted-foreground">
+                      List multiple professions and/or keywords separated by commas (,)
+                    </p>
+                  </div>
                 </div>
               </div>
               <p className="text-sm text-center text-muted-foreground mt-4">
