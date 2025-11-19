@@ -24,74 +24,58 @@ import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { HourlyUpchargeCalculator } from "@/components/HourlyUpchargeCalculator";
 import { TierSavingsCalculator } from "@/components/TierSavingsCalculator";
 
+import { PRICING_TIERS, INDUSTRY_PRICING } from "@/config/pricing";
+
 const TIERS = {
   free: {
-    name: 'Free',
-    price: '$0',
-    priceValue: 0,
-    costPerClick: '$125',
-    costPerClickValue: 125,
-    leadCost: '$20',
-    leadCostValue: 20,
-    commission: '9%',
-    commissionValue: 9,
-    escrowFee: '10%',
-    escrowFeeValue: 10,
-    freeEstimateCost: '$150',
-    hourlyRateCharge: '3 hours',
-    escrowProcessingFee: '9% per payment (min $10)',
-    escrowProcessingFeeValue: 0.09,
-    escrowProcessingMinimum: 10,
-    minimumFee: 0,
-    priceId: null,
-    productId: null,
-    popular: false,
+    name: PRICING_TIERS.free.name,
+    price: PRICING_TIERS.free.price,
+    priceValue: PRICING_TIERS.free.priceValue,
+    leadCostRange: `$${INDUSTRY_PRICING[0].free}-$${INDUSTRY_PRICING[2].free}`,
+    leadCostValue: INDUSTRY_PRICING[1].free, // Use mid-value for calculations
+    escrowFee: PRICING_TIERS.free.escrowFee,
+    escrowFeeValue: PRICING_TIERS.free.escrowFeeValue,
+    escrowProcessingFee: PRICING_TIERS.free.escrowProcessingFee,
+    escrowProcessingFeeValue: PRICING_TIERS.free.escrowProcessingFeeValue,
+    escrowProcessingMinimum: PRICING_TIERS.free.escrowProcessingMinimum,
+    priceId: PRICING_TIERS.free.priceId,
+    productId: PRICING_TIERS.free.productId,
+    popular: PRICING_TIERS.free.popular,
+    cpcMultiplier: '3×',
     features: [],
   },
   pro: {
-    name: 'Pro',
-    price: '$99',
-    priceValue: 99,
-    costPerClick: '$100',
-    costPerClickValue: 100,
-    leadCost: '$10',
-    leadCostValue: 10,
-    commission: '6%',
-    commissionValue: 6,
-    escrowFee: '6%',
-    escrowFeeValue: 6,
-    freeEstimateCost: '$100',
-    hourlyRateCharge: '2 hours',
-    escrowProcessingFee: '8% per payment (min $10)',
-    escrowProcessingFeeValue: 0.08,
-    escrowProcessingMinimum: 10,
-    minimumFee: 0,
-    priceId: 'price_1STAlCRuFpm7XGfu6g6mrnRV',
-    productId: 'prod_TQ0mK76zTAwoQc',
-    popular: true,
+    name: PRICING_TIERS.pro.name,
+    price: PRICING_TIERS.pro.price,
+    priceValue: PRICING_TIERS.pro.priceValue,
+    leadCostRange: `$${INDUSTRY_PRICING[0].pro}-$${INDUSTRY_PRICING[2].pro}`,
+    leadCostValue: INDUSTRY_PRICING[1].pro, // Use mid-value for calculations
+    escrowFee: PRICING_TIERS.pro.escrowFee,
+    escrowFeeValue: PRICING_TIERS.pro.escrowFeeValue,
+    escrowProcessingFee: PRICING_TIERS.pro.escrowProcessingFee,
+    escrowProcessingFeeValue: PRICING_TIERS.pro.escrowProcessingFeeValue,
+    escrowProcessingMinimum: PRICING_TIERS.pro.escrowProcessingMinimum,
+    priceId: PRICING_TIERS.pro.priceId,
+    productId: PRICING_TIERS.pro.productId,
+    popular: PRICING_TIERS.pro.popular,
+    cpcMultiplier: '2×',
     features: [],
   },
   premium: {
-    name: 'Premium',
-    price: '$599',
-    priceValue: 599,
-    costPerClick: '$75',
-    costPerClickValue: 75,
-    leadCost: '$5',
-    leadCostValue: 5,
-    commission: '0%',
-    commissionValue: 0,
-    escrowFee: '3%',
-    escrowFeeValue: 3,
-    freeEstimateCost: '$50',
-    hourlyRateCharge: '1 hour',
-    escrowProcessingFee: '4% per payment (min $10)',
-    escrowProcessingFeeValue: 0.04,
-    escrowProcessingMinimum: 10,
-    minimumFee: 0,
-    priceId: 'price_1STAlDRuFpm7XGfuoEnpBk4T',
-    productId: 'prod_TQ0mVQT1H5f1zg',
-    popular: false,
+    name: PRICING_TIERS.premium.name,
+    price: PRICING_TIERS.premium.price,
+    priceValue: PRICING_TIERS.premium.priceValue,
+    leadCostRange: `$${INDUSTRY_PRICING[0].premium}-$${INDUSTRY_PRICING[2].premium}`,
+    leadCostValue: INDUSTRY_PRICING[1].premium, // Use mid-value for calculations
+    escrowFee: PRICING_TIERS.premium.escrowFee,
+    escrowFeeValue: PRICING_TIERS.premium.escrowFeeValue,
+    escrowProcessingFee: PRICING_TIERS.premium.escrowProcessingFee,
+    escrowProcessingFeeValue: PRICING_TIERS.premium.escrowProcessingFeeValue,
+    escrowProcessingMinimum: PRICING_TIERS.premium.escrowProcessingMinimum,
+    priceId: PRICING_TIERS.premium.priceId,
+    productId: PRICING_TIERS.premium.productId,
+    popular: PRICING_TIERS.premium.popular,
+    cpcMultiplier: '1×',
     features: [],
   },
 };
@@ -215,14 +199,12 @@ export default function Pricing() {
     return tiers.map(tierKey => {
       const tier = TIERS[tierKey];
       const leadCosts = interactiveLeads * tier.leadCostValue;
-      const freeEstimateCosts = calculatedClicks * (tier.freeEstimateCost ? parseFloat(tier.freeEstimateCost.replace('$', '')) : 0);
-      const totalCost = tier.priceValue + leadCosts + freeEstimateCosts;
+      const totalCost = tier.priceValue + leadCosts;
       
       return {
         name: tier.name,
         monthly: tier.priceValue,
         leadCosts,
-        freeEstimateCosts,
         total: totalCost
       };
     });
@@ -341,60 +323,12 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">The cost for receiving the lead in your inbox. Gigger contact information is only revealed after awarding the project or accepting a Free Estimate request.</p>
+                              <p className="text-sm">{tier.cpcMultiplier} Google AdWords CPC (varies by industry: low-value, mid-value, high-value)</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </div>
-                      <span className="font-bold text-primary">{tier.leadCost}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Cost Per Click:</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Flat fee charged when a Gigger clicks to view your contact information. This is in addition to the Lead Cost for your tier.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <span className="font-bold text-primary">{tier.costPerClick}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Free Estimate Upcharge:</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Upfront cost when a consumer requests a free estimate from your profile, will be rebated against Awards of $5,000 or more. No rebates available for hourly rate awards</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <span className="font-bold text-primary">{tier.freeEstimateCost}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Hourly Award Upcharge:</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Additional charge when you win an hourly project. Free Plan: 3 hours, Pro: 2 hours, Premium: 1 hour of your average hourly rate</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <span className="font-bold text-primary">{tier.hourlyRateCharge}</span>
+                      <span className="font-bold text-primary">{tier.leadCostRange}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-accent/5 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -405,7 +339,7 @@ export default function Pricing() {
                               <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p className="text-sm">Fee charged on each milestone or progress payment released through escrow. Free: 9%, Pro: 8%, Premium: 4% of the payment amount with a minimum fee of $10 per release.</p>
+                              <p className="text-sm">Fee charged on each milestone or progress payment released through escrow, with a minimum fee of $10 per release.</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -617,53 +551,22 @@ export default function Pricing() {
                         <tr className="border-b border-border/50">
                           <td className="py-3 px-4 text-muted-foreground">
                             <div className="flex items-center gap-2">
-                              Cost Per Click
+                              Cost Per Lead (Mid-Value Industry)
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs">
-                                  <p>Flat fee charged when a Gigger clicks to view contact information, in addition to Lead Cost.</p>
+                                  <p>The base cost per qualified lead (mid-value industry pricing used for calculations).</p>
                                 </TooltipContent>
                               </Tooltip>
                             </div>
                           </td>
                           {Object.entries(TIERS).map(([key, tier]) => (
                             <td key={key} className="text-right py-3 px-4">
-                              <span className="font-semibold">${tier.costPerClickValue.toFixed(2)}</span>
+                              <span className="font-semibold">${tier.leadCostValue.toFixed(2)}</span>
                             </td>
                           ))}
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">Assumed number of Clicks</td>
-                          {Object.entries(TIERS).map(([key]) => (
-                            <td key={key} className="text-right py-3 px-4">
-                              {calculatedClicks}
-                            </td>
-                          ))}
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              Total Cost Per Clicks
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <p>Total cost for all clicks (# of Clicks × Cost Per Click).</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </td>
-                          {Object.entries(TIERS).map(([key, tier]) => {
-                            const totalClickCost = calculatedClicks * tier.costPerClickValue;
-                            return (
-                              <td key={key} className="text-right py-3 px-4">
-                                ${totalClickCost.toFixed(2)}
-                              </td>
-                            );
-                          })}
                         </tr>
                         <tr className="border-b border-border/50">
                           <td className="py-3 px-4 text-muted-foreground">
@@ -721,26 +624,6 @@ export default function Pricing() {
                             </td>
                           ))}
                         </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="py-3 px-4 text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              Add for Free Estimates
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Info className="h-4 w-4 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <p>Cost of providing free estimates based on the number of clicks (Free Estimate Cost × Number of Clicks).</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </td>
-                          {calculateInteractiveCosts().map((result) => (
-                            <td key={result.name} className="text-right py-3 px-4">
-                              ${result.freeEstimateCosts.toFixed(2)}
-                            </td>
-                          ))}
-                        </tr>
                         <tr className="border-b-2 border-border bg-primary/5">
                           <td className="py-3 px-4 font-semibold">
                             <div className="flex items-center gap-2">
@@ -756,10 +639,8 @@ export default function Pricing() {
                             </div>
                           </td>
                           {Object.entries(TIERS).map(([key, tier]) => {
-                            const totalClickCost = calculatedClicks * tier.costPerClickValue;
                             const totalLeadCost = interactiveLeads * tier.leadCostValue;
-                            const freeEstimateCost = calculatedClicks * (tier.freeEstimateCost ? parseFloat(tier.freeEstimateCost.replace('$', '')) : 0);
-                            const costPerAward = calculatedAwards > 0 ? (totalClickCost + totalLeadCost + freeEstimateCost) / calculatedAwards : 0;
+                            const costPerAward = calculatedAwards > 0 ? totalLeadCost / calculatedAwards : 0;
                             return (
                               <td key={key} className="text-right py-3 px-4 font-semibold text-lg text-primary">
                                 ${costPerAward.toFixed(2)}
