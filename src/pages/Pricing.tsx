@@ -23,6 +23,7 @@ import { generateFAQSchema } from "@/components/StructuredData";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { HourlyUpchargeCalculator } from "@/components/HourlyUpchargeCalculator";
 import { TierSavingsCalculator } from "@/components/TierSavingsCalculator";
+import EscrowFeeBreakdown from "@/components/EscrowFeeBreakdown";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
 
@@ -965,6 +966,7 @@ export default function Pricing() {
       </div>
       
       <div className="container mx-auto px-4 space-y-16 py-16">
+        <EscrowFeeBreakdown />
         <PricingCalculator />
         <PlanRecommender />
         <PricingCharts />
