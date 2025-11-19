@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { TrendingDown, DollarSign, Target } from "lucide-react";
+import { TrendingDown, DollarSign, Target, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface IndustryData {
   name: string;
@@ -87,7 +88,27 @@ export const ROIComparisonCalculator = () => {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="industry">Your Industry</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="industry">Your Industry</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="font-semibold mb-2">How to use this calculator:</p>
+                    <ul className="text-sm space-y-1 list-disc pl-4">
+                      <li>Select your industry from the dropdown</li>
+                      <li>Adjust your Lead-to-Award Rate (what % of leads you typically close)</li>
+                      <li>The calculator shows your cost per closed deal on DigsandGigs vs Google AdWords</li>
+                    </ul>
+                    <p className="text-sm mt-2 pt-2 border-t">
+                      <strong>Lead-to-Award Rate:</strong> The percentage of contacted leads that become paying customers. For example, 25% means 1 out of every 4 leads converts to a sale.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
               <SelectTrigger id="industry">
                 <SelectValue placeholder="Select industry" />
