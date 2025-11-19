@@ -7,6 +7,7 @@ import { OptimizedImage } from "./OptimizedImage";
 
 interface DiggerProfilePreviewProps {
   businessName: string;
+  assignedUserName: string;
   profession: string;
   location: string;
   bio: string | null;
@@ -22,6 +23,7 @@ interface DiggerProfilePreviewProps {
 
 export const DiggerProfilePreview = ({
   businessName,
+  assignedUserName,
   profession,
   location,
   bio,
@@ -58,14 +60,14 @@ export const DiggerProfilePreview = ({
             <div className="flex items-start gap-4">
               <Avatar className="h-20 w-20">
                 {profileImagePreview && (
-                  <AvatarImage src={profileImagePreview} alt={businessName} />
+                  <AvatarImage src={profileImagePreview} alt={assignedUserName} />
                 )}
                 <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                  {businessName.charAt(0).toUpperCase()}
+                  {assignedUserName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <CardTitle className="text-2xl mb-1">{businessName}</CardTitle>
+                <CardTitle className="text-2xl mb-1">{assignedUserName}</CardTitle>
                 <CardDescription className="text-base flex items-center gap-2">
                   <Briefcase className="h-4 w-4" />
                   {profession}
