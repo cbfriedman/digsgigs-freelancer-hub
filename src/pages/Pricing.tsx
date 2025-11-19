@@ -55,7 +55,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.free.priceId,
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
-      volumeTier: 'Lead Nos 1-10',
+      volumeTier: 'Lead #s 1-10',
       features: [],
     },
     pro: {
@@ -72,7 +72,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.pro.priceId,
       productId: PRICING_TIERS.pro.productId,
       popular: PRICING_TIERS.pro.popular,
-      volumeTier: 'Lead Nos 11-50',
+      volumeTier: 'Lead #s 11-50',
       features: [],
     },
     premium: {
@@ -89,7 +89,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.premium.priceId,
       productId: PRICING_TIERS.premium.productId,
       popular: PRICING_TIERS.premium.popular,
-      volumeTier: 'Lead Nos 51+',
+      volumeTier: 'Lead #s 51+',
       features: [],
     },
   };
@@ -256,9 +256,9 @@ export default function Pricing() {
             <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20 max-w-2xl mx-auto">
               <p className="text-sm font-medium mb-2">📊 How Volume-Based Pricing Works:</p>
               <ul className="text-sm text-muted-foreground space-y-1 text-left">
-                <li>• <strong>Lead Nos 1-10:</strong> Standard pricing - Perfect for getting started</li>
-                <li>• <strong>Lead Nos 11-50:</strong> Volume discount - Save money as you grow</li>
-                <li>• <strong>Lead Nos 51+:</strong> Best bulk pricing - Maximum savings for high volume</li>
+                <li>• <strong>Lead #s 1-10:</strong> Standard pricing - Perfect for getting started</li>
+                <li>• <strong>Lead #s 11-50:</strong> Volume discount - Save money as you grow</li>
+                <li>• <strong>Lead #s 51+:</strong> Best bulk pricing - Maximum savings for high volume</li>
               </ul>
               <p className="text-xs text-muted-foreground mt-3 italic">
                 Each lead you receive is numbered by month (e.g., JAN#1, JAN#2, FEB#1, FEB#2). Pricing automatically adjusts based on your monthly lead count.
