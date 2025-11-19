@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Check, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, IndustryCategory, ValueIndicator } from "@/config/pricing";
 
 interface IndustryMultiSelectorProps {
@@ -15,6 +16,7 @@ interface IndustryMultiSelectorProps {
 export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, onManageProfilesClick }: IndustryMultiSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
 
   const toggleCategory = (categoryName: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -47,6 +49,26 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   const removeIndustry = (industry: string) => {
     onIndustriesChange(selectedIndustries.filter(i => i !== industry));
   };
+
+  // Filter groups based on search query
+  const filteredGroups = searchQuery.trim() === "" 
+    ? INDUSTRY_GROUPS 
+    : INDUSTRY_GROUPS.map(group => ({
+        ...group,
+        industries: group.industries.filter(industry =>
+          industry.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      })).filter(group => group.industries.length > 0);
+
+  // Auto-expand categories with search results
+  useEffect(() => {
+    if (searchQuery.trim() !== "") {
+      const categoriesWithResults = new Set(
+        filteredGroups.map(group => group.categoryName)
+      );
+      setExpandedCategories(categoriesWithResults);
+    }
+  }, [searchQuery]);
 
   // Get highest lead cost from selected industries
   const getHighestLeadCost = (tier: 'free' | 'pro' | 'premium'): number => {
@@ -111,8 +133,31 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[700px] p-0 z-50" align="start">
-          <div className="max-h-[500px] overflow-y-auto">
-            {INDUSTRY_GROUPS.map((group) => (
+          {/* Search Input */}
+          <div className="sticky top-0 z-10 bg-background border-b p-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search professions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            {searchQuery && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Found {filteredGroups.reduce((acc, g) => acc + g.industries.length, 0)} results
+              </p>
+            )}
+          </div>
+
+          <div className="max-h-[450px] overflow-y-auto">
+            {filteredGroups.length === 0 ? (
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                No professions found matching "{searchQuery}"
+              </div>
+            ) : (
+              filteredGroups.map((group) => (
               <div key={group.categoryName} className="border-b last:border-b-0">
                 {/* Category Header */}
                 <button
@@ -165,7 +210,8 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                   </div>
                 )}
               </div>
-            ))}
+            ))
+            )}
           </div>
           
           {selectedIndustries.length > 0 && (
