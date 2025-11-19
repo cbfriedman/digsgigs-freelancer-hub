@@ -134,7 +134,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
               {selectedIndustries.length === 0 ? (
                 <span className="text-muted-foreground">Select industries...</span>
               ) : (
-                selectedIndustries.slice(0, 3).map(industry => (
+                selectedIndustries.map(industry => (
                   <Badge
                     key={industry}
                     variant="secondary"
@@ -148,11 +148,6 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     <X className="h-3 w-3 ml-1" />
                   </Badge>
                 ))
-              )}
-              {selectedIndustries.length > 3 && (
-                <Badge variant="secondary" className="px-2 py-0.5 text-xs">
-                  +{selectedIndustries.length - 3} more
-                </Badge>
               )}
             </div>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
