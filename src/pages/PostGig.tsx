@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Briefcase, MapPin, DollarSign, Clock } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, DollarSign, Clock, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ const PostGig = () => {
     deadline: "",
     contact_preferences: "",
     acceptTerms: false,
+    requestEscrow: false,
   });
 
   useEffect(() => {
@@ -393,6 +394,73 @@ const PostGig = () => {
                 />
               </div>
 
+              {/* Escrow Protection Option */}
+              <Card className="border-2 border-dashed border-muted-foreground/30 bg-accent/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CardTitle className="text-base">Payment Protection (Optional)</CardTitle>
+                        <Badge variant="outline" className="text-xs">Recommended</Badge>
+                      </div>
+                      <CardDescription className="text-sm">
+                        Secure your project with escrow - funds are held safely and released as work is completed
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="requestEscrow"
+                      checked={formData.requestEscrow}
+                      onCheckedChange={(checked) => setFormData({ ...formData, requestEscrow: checked as boolean })}
+                    />
+                    <div className="flex-1 space-y-3">
+                      <Label htmlFor="requestEscrow" className="cursor-pointer leading-relaxed font-medium">
+                        Yes, I want escrow protection for this project
+                      </Label>
+                      
+                      {formData.requestEscrow && (
+                        <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+                          <AlertDescription className="text-sm space-y-2">
+                            <div className="font-semibold text-foreground">Escrow Fee Breakdown:</div>
+                            <ul className="space-y-1 text-muted-foreground">
+                              <li>• <strong>9% fee</strong> charged to the digger on milestone releases</li>
+                              <li>• <strong>$10 minimum fee</strong> per payment release</li>
+                              <li>• Funds held securely until work is approved</li>
+                              <li>• Professional dispute resolution if needed</li>
+                            </ul>
+                            {(formData.budget_min || formData.budget_max) && (
+                              <div className="pt-2 mt-2 border-t border-blue-200 dark:border-blue-800">
+                                <div className="font-semibold text-foreground mb-1">Example for your project:</div>
+                                {formData.budget_max && (
+                                  <div className="text-sm">
+                                    <span className="text-muted-foreground">Budget of </span>
+                                    <span className="font-semibold text-foreground">${formData.budget_max}</span>
+                                    <span className="text-muted-foreground"> = </span>
+                                    <span className="font-semibold text-red-600">
+                                      ${Math.max(10, Math.round(parseFloat(formData.budget_max) * 0.09))} escrow fee
+                                    </span>
+                                    <span className="text-muted-foreground"> charged to digger</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {!formData.requestEscrow && (
+                        <p className="text-xs text-muted-foreground">
+                          Without escrow, you and the digger manage payments directly. DigsandGigs takes no responsibility for payment disputes.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Terms Acceptance */}
               <div className="space-y-4 pt-4">
                 <div className="flex items-start space-x-2">
@@ -490,6 +558,18 @@ const PostGig = () => {
                   <div className="text-sm">
                     <span className="font-semibold">Contact Preferences:</span>
                     <p className="mt-1 text-muted-foreground">{formData.contact_preferences}</p>
+                  </div>
+                )}
+
+                {formData.requestEscrow && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="font-semibold text-sm">Escrow Protection Requested</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Payment will be held securely and released as milestones are completed (9% escrow fee applies to digger)
+                    </p>
                   </div>
                 )}
               </CardContent>
