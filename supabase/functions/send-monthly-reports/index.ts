@@ -300,8 +300,8 @@ serve(async (req) => {
       let stats;
       if (userType === 'digger') {
         const totalEarnings = userTxs.reduce((sum, tx) => sum + (tx.digger_payout || 0), 0);
-        const totalCommission = userTxs.reduce((sum, tx) => sum + (tx.commission_amount || 0), 0);
-        stats = { totalEarnings, totalCommission };
+        const totalEscrowFees = userTxs.reduce((sum, tx) => sum + (tx.commission_amount || 0), 0);
+        stats = { totalEarnings, totalEscrowFees };
       }
 
       const html = generateEmailHTML(userType as 'digger' | 'consumer', userTxs, stats, dateRange);

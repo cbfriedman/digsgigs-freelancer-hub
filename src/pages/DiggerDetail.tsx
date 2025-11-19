@@ -706,20 +706,22 @@ const DiggerDetail = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Profile View Fee:</span>
-                      <span className="font-semibold">$50.00</span>
+                      <span>Profile View Fee ({digger.subscription_tier || 'free'} tier):</span>
+                      <span className="font-semibold">
+                        ${digger.subscription_tier === 'premium' ? '75' : digger.subscription_tier === 'pro' ? '100' : '125'}.00
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Lead Access Fee ({digger.subscription_tier || 'free'} tier):</span>
                       <span className="font-semibold">
-                        ${digger.subscription_tier === 'premium' ? '0' : digger.subscription_tier === 'pro' ? '40' : '60'}.00
+                        ${digger.subscription_tier === 'premium' ? '5' : digger.subscription_tier === 'pro' ? '10' : '20'}.00
                       </span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-semibold">
                       <span>Total:</span>
                       <span className="text-primary">
-                        ${50 + (digger.subscription_tier === 'premium' ? 0 : digger.subscription_tier === 'pro' ? 40 : 60)}.00
+                        ${digger.subscription_tier === 'premium' ? '80' : digger.subscription_tier === 'pro' ? '110' : '145'}.00
                       </span>
                     </div>
                   </div>
