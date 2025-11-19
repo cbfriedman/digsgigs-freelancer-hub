@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Star, Edit, Trash2, Eye, Award, MessageSquare } from "lucide-react";
+import { Plus, Star, Edit, Trash2, Eye, Award, MessageSquare, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { retryWithBackoff } from "@/utils/retryWithBackoff";
 
 interface ProfileWithStats {
   id: string;
@@ -45,29 +46,49 @@ export default function MyProfiles() {
     if (!user) return;
 
     try {
-      const { data: profilesData, error } = await supabase
-        .from("digger_profiles")
-        .select("id, profile_name, business_name, profession, is_primary, average_rating, total_ratings, profile_image_url, subscription_tier, created_at")
-        .eq("user_id", user.id)
-        .order("is_primary", { ascending: false })
-        .order("created_at", { ascending: true });
+      const { data: profilesData, error } = await retryWithBackoff(
+        async () => {
+          const result = await supabase
+            .from("digger_profiles")
+            .select("id, profile_name, business_name, profession, is_primary, average_rating, total_ratings, profile_image_url, subscription_tier, created_at")
+            .eq("user_id", user.id)
+            .order("is_primary", { ascending: false })
+            .order("created_at", { ascending: true });
+          
+          if (result.error) throw result.error;
+          return result;
+        },
+        { maxAttempts: 3, initialDelay: 1000 }
+      );
 
       if (error) throw error;
 
       if (profilesData) {
-        // Fetch stats for each profile
+        // Fetch stats for each profile with retry logic
         const profilesWithStats = await Promise.all(
           profilesData.map(async (profile) => {
             try {
-              const [{ count: bidsCount }, { count: leadsCount }] = await Promise.all([
-                supabase.from("bids").select("*", { count: "exact", head: true }).eq("digger_id", profile.id),
-                supabase.from("lead_purchases").select("*", { count: "exact", head: true }).eq("digger_id", profile.id).eq("status", "completed"),
+              const [bidsResult, leadsResult] = await Promise.all([
+                retryWithBackoff(
+                  async () => {
+                    const result = await supabase.from("bids").select("*", { count: "exact", head: true }).eq("digger_id", profile.id);
+                    return result;
+                  },
+                  { maxAttempts: 2, initialDelay: 500 }
+                ),
+                retryWithBackoff(
+                  async () => {
+                    const result = await supabase.from("lead_purchases").select("*", { count: "exact", head: true }).eq("digger_id", profile.id).eq("status", "completed");
+                    return result;
+                  },
+                  { maxAttempts: 2, initialDelay: 500 }
+                ),
               ]);
 
               return {
                 ...profile,
-                total_bids: bidsCount || 0,
-                active_leads: leadsCount || 0,
+                total_bids: bidsResult.count || 0,
+                active_leads: leadsResult.count || 0,
               };
             } catch (statsError) {
               console.error("Error fetching stats for profile:", profile.id, statsError);
@@ -84,7 +105,7 @@ export default function MyProfiles() {
       }
     } catch (error) {
       console.error("Error loading profiles:", error);
-      toast.error("Failed to load profiles");
+      toast.error("Connection issue - retrying failed. Please check your internet connection.");
     } finally {
       setLoading(false);
     }
@@ -94,19 +115,21 @@ export default function MyProfiles() {
     if (!user) return;
 
     try {
-      // First, set all profiles to non-primary
-      await supabase.from("digger_profiles").update({ is_primary: false }).eq("user_id", user.id);
+      await retryWithBackoff(async () => {
+        // First, set all profiles to non-primary
+        await supabase.from("digger_profiles").update({ is_primary: false }).eq("user_id", user.id);
 
-      // Then set the selected profile as primary
-      const { error } = await supabase.from("digger_profiles").update({ is_primary: true }).eq("id", profileId);
+        // Then set the selected profile as primary
+        const { error } = await supabase.from("digger_profiles").update({ is_primary: true }).eq("id", profileId);
 
-      if (error) throw error;
+        if (error) throw error;
+      });
 
       toast.success("Primary profile updated");
       loadProfiles();
     } catch (error) {
       console.error("Error setting primary profile:", error);
-      toast.error("Failed to set primary profile");
+      toast.error("Failed to set primary profile - please check your connection");
     }
   };
 
@@ -114,16 +137,17 @@ export default function MyProfiles() {
     if (!deleteDialog.profileId) return;
 
     try {
-      const { error } = await supabase.from("digger_profiles").delete().eq("id", deleteDialog.profileId);
-
-      if (error) throw error;
+      await retryWithBackoff(async () => {
+        const { error } = await supabase.from("digger_profiles").delete().eq("id", deleteDialog.profileId);
+        if (error) throw error;
+      });
 
       toast.success("Profile deleted successfully");
       setDeleteDialog({ open: false, profileId: null });
       loadProfiles();
     } catch (error) {
       console.error("Error deleting profile:", error);
-      toast.error("Failed to delete profile");
+      toast.error("Failed to delete profile - please check your connection");
     }
   };
 
