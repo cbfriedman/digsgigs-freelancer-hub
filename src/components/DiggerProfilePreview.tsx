@@ -10,6 +10,7 @@ interface DiggerProfilePreviewProps {
   assignedUserName: string;
   profession: string;
   location: string;
+  country: string;
   bio: string | null;
   keywords: string[];
   categoryNames: string[];
@@ -26,6 +27,7 @@ export const DiggerProfilePreview = ({
   assignedUserName,
   profession,
   location,
+  country,
   bio,
   keywords,
   categoryNames,
@@ -36,6 +38,58 @@ export const DiggerProfilePreview = ({
   onEdit,
   onCancel,
 }: DiggerProfilePreviewProps) => {
+  // Helper function to get country flag emoji
+  const getCountryFlag = (countryName: string): string => {
+    const flags: { [key: string]: string } = {
+      "United States": "🇺🇸",
+      "Canada": "🇨🇦",
+      "United Kingdom": "🇬🇧",
+      "Australia": "🇦🇺",
+      "Germany": "🇩🇪",
+      "France": "🇫🇷",
+      "Spain": "🇪🇸",
+      "Italy": "🇮🇹",
+      "Mexico": "🇲🇽",
+      "Brazil": "🇧🇷",
+      "India": "🇮🇳",
+      "China": "🇨🇳",
+      "Japan": "🇯🇵",
+      "South Korea": "🇰🇷",
+      "Netherlands": "🇳🇱",
+      "Sweden": "🇸🇪",
+      "Norway": "🇳🇴",
+      "Denmark": "🇩🇰",
+      "Finland": "🇫🇮",
+      "Poland": "🇵🇱",
+      "Ireland": "🇮🇪",
+      "Switzerland": "🇨🇭",
+      "Austria": "🇦🇹",
+      "Belgium": "🇧🇪",
+      "Portugal": "🇵🇹",
+      "Greece": "🇬🇷",
+      "New Zealand": "🇳🇿",
+      "Singapore": "🇸🇬",
+      "South Africa": "🇿🇦",
+      "Argentina": "🇦🇷",
+      "Chile": "🇨🇱",
+      "Colombia": "🇨🇴",
+      "Peru": "🇵🇪",
+      "Israel": "🇮🇱",
+      "UAE": "🇦🇪",
+      "Saudi Arabia": "🇸🇦",
+      "Turkey": "🇹🇷",
+      "Thailand": "🇹🇭",
+      "Vietnam": "🇻🇳",
+      "Philippines": "🇵🇭",
+      "Indonesia": "🇮🇩",
+      "Malaysia": "🇲🇾",
+      "Egypt": "🇪🇬",
+      "Nigeria": "🇳🇬",
+      "Kenya": "🇰🇪",
+      "Other": "🌍"
+    };
+    return flags[countryName] || "🌍";
+  };
   const getPricingBadge = () => {
     if (pricingModel === 'commission') return 'Fixed Price Contracts';
     if (pricingModel === 'hourly') return 'Time & Materials';
@@ -75,6 +129,10 @@ export const DiggerProfilePreview = ({
                 <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4" />
                   {location}
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                  <span className="text-base">{getCountryFlag(country)}</span>
+                  {country}
                 </div>
               </div>
             </div>
