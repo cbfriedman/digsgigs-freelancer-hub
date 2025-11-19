@@ -390,8 +390,8 @@ export default function Pricing() {
                                 {tier.volumeTier === 'Leads 1-10 per month' 
                                   ? 'Standard pricing for your first 10 leads each month'
                                   : tier.volumeTier === 'Leads 11-50 per month'
-                                  ? 'Volume discount pricing when you purchase 11-50 leads per month'
-                                  : 'Best bulk pricing when you purchase 51+ leads per month'}
+                                  ? 'Best Bulk Pricing when you buy 11 leads or more'
+                                  : 'Maximum bulk discount when you purchase 51+ leads per month'}
                               </p>
                             </TooltipContent>
                           </Tooltip>
