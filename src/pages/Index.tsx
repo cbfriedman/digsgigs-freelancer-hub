@@ -415,7 +415,7 @@ const Index = () => {
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="text-base font-bold w-full sm:w-auto border-primary/50 hover:shadow-md hover:scale-105 transition-all"
+                    className="text-base font-bold w-full sm:w-auto border-orange-500 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 hover:shadow-md hover:scale-105 transition-all"
                     onClick={() => navigate("/pre-demo-registration")}
                   >
                     Post Gig Demo
@@ -423,7 +423,7 @@ const Index = () => {
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="text-base font-bold w-full sm:w-auto border-primary/50 hover:shadow-md hover:scale-105 transition-all"
+                    className="text-base font-bold w-full sm:w-auto border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:shadow-md hover:scale-105 transition-all"
                     onClick={() => navigate("/pre-demo-registration?type=digger")}
                   >
                     Digger Registration Demo
