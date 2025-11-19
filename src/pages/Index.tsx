@@ -200,24 +200,21 @@ const Index = () => {
     { 
       name: "Free", 
       price: "$0",
-      leadCost: "$20/lead", 
-      commission: "9%",
-      features: ["Pay per lead", "Commission on work"]
+      leadCost: "$20/lead",
+      features: ["Pay per lead", "Escrow fees on work"]
     },
     { 
       name: "Pro", 
       price: "$99",
-      leadCost: "$10/lead", 
-      commission: "6%",
+      leadCost: "$10/lead",
       popular: true,
-      features: ["Lower lead cost", "Lower commission"]
+      features: ["Lower lead cost", "Lower escrow fees"]
     },
     { 
       name: "Premium", 
       price: "$599",
-      leadCost: "$5/lead", 
-      commission: "0%",
-      features: ["Lowest lead cost", "No commission"]
+      leadCost: "$5/lead",
+      features: ["Lowest lead cost", "Lowest escrow fees"]
     }
   ];
 
@@ -677,7 +674,6 @@ const Index = () => {
                   <div className="text-sm text-muted-foreground mb-4">/month</div>
                   <div className="space-y-2 text-sm">
                     <div className="font-semibold text-foreground">{tier.leadCost}</div>
-                    <div className="text-muted-foreground">{tier.commission} commission</div>
                   </div>
                 </div>
                 <div className="space-y-3">
