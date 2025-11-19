@@ -11,9 +11,62 @@ interface DiggerCardProps {
   reviews: number;
   image: string;
   profileImageUrl?: string | null;
+  country?: string | null;
 }
 
-export const DiggerCard = ({ name, profession, expertise, rating, reviews, image, profileImageUrl }: DiggerCardProps) => {
+export const DiggerCard = ({ name, profession, expertise, rating, reviews, image, profileImageUrl, country }: DiggerCardProps) => {
+  const getCountryFlag = (countryName: string): string => {
+    const flags: { [key: string]: string } = {
+      "United States": "🇺🇸",
+      "Canada": "🇨🇦",
+      "United Kingdom": "🇬🇧",
+      "Australia": "🇦🇺",
+      "Germany": "🇩🇪",
+      "France": "🇫🇷",
+      "Spain": "🇪🇸",
+      "Italy": "🇮🇹",
+      "Mexico": "🇲🇽",
+      "Brazil": "🇧🇷",
+      "India": "🇮🇳",
+      "China": "🇨🇳",
+      "Japan": "🇯🇵",
+      "South Korea": "🇰🇷",
+      "Netherlands": "🇳🇱",
+      "Sweden": "🇸🇪",
+      "Norway": "🇳🇴",
+      "Denmark": "🇩🇰",
+      "Finland": "🇫🇮",
+      "Poland": "🇵🇱",
+      "Ireland": "🇮🇪",
+      "Switzerland": "🇨🇭",
+      "Austria": "🇦🇹",
+      "Belgium": "🇧🇪",
+      "Portugal": "🇵🇹",
+      "Greece": "🇬🇷",
+      "New Zealand": "🇳🇿",
+      "Singapore": "🇸🇬",
+      "South Africa": "🇿🇦",
+      "Argentina": "🇦🇷",
+      "Chile": "🇨🇱",
+      "Colombia": "🇨🇴",
+      "Peru": "🇵🇪",
+      "Israel": "🇮🇱",
+      "UAE": "🇦🇪",
+      "Saudi Arabia": "🇸🇦",
+      "Turkey": "🇹🇷",
+      "Thailand": "🇹🇭",
+      "Vietnam": "🇻🇳",
+      "Philippines": "🇵🇭",
+      "Indonesia": "🇮🇩",
+      "Malaysia": "🇲🇾",
+      "Egypt": "🇪🇬",
+      "Nigeria": "🇳🇬",
+      "Kenya": "🇰🇪",
+      "Other": "🌍"
+    };
+    return flags[countryName] || "🌍";
+  };
+
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-hover)] border-border/50">
       <div className="relative h-48 overflow-hidden">
@@ -29,6 +82,12 @@ export const DiggerCard = ({ name, profession, expertise, rating, reviews, image
       <CardHeader>
         <CardTitle className="text-xl">{name}</CardTitle>
         <CardDescription className="text-base">{profession}</CardDescription>
+        {country && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+            <span>{getCountryFlag(country)}</span>
+            <span>{country}</span>
+          </div>
+        )}
         <div className="mt-2">
           <RatingSummary averageRating={rating} totalRatings={reviews} />
         </div>
