@@ -43,6 +43,7 @@ export default function Pricing() {
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [step1Completed, setStep1Completed] = useState(false);
+  const [currentProfileIndustrySets, setCurrentProfileIndustrySets] = useState<string[][]>([]);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -521,6 +522,37 @@ export default function Pricing() {
                       </Label>
                     </div>
 
+                    {/* Current Profile Industry Sets Indicator */}
+                    {currentProfileIndustrySets.length > 0 && (
+                      <Card className="p-4 bg-primary/5 border-primary/20">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-semibold flex items-center gap-2">
+                              <Badge variant="secondary" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">
+                                {currentProfileIndustrySets.length}
+                              </Badge>
+                              Industry Set{currentProfileIndustrySets.length !== 1 ? 's' : ''} Added to This Profile
+                            </h4>
+                          </div>
+                          <div className="space-y-2">
+                            {currentProfileIndustrySets.map((industries, idx) => (
+                              <div key={idx} className="flex flex-wrap gap-1 p-2 bg-background rounded border border-border">
+                                <span className="text-xs font-medium text-muted-foreground mr-2">Set {idx + 1}:</span>
+                                {industries.map((industry, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {industry}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            These will be saved together under {formData.companyName || 'this profile'}
+                          </p>
+                        </div>
+                      </Card>
+                    )}
+
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button 
@@ -540,38 +572,15 @@ export default function Pricing() {
                               return;
                             }
                             
-                            // Save configuration to cart
-                            const cartItems = JSON.parse(localStorage.getItem("profileCart") || "[]");
-                            const newItem = {
-                              id: Date.now().toString(),
-                              ...formData,
-                              industries: selectedIndustries,
-                              leadTierDescription: getLeadTierDescription(selectedIndustries),
-                              timestamp: new Date().toISOString(),
-                            };
-                            cartItems.push(newItem);
-                            localStorage.setItem("profileCart", JSON.stringify(cartItems));
+                            // Add current industries to the tracking set
+                            setCurrentProfileIndustrySets([...currentProfileIndustrySets, selectedIndustries]);
                             
-                            // Trigger storage event for same-tab updates
-                            window.dispatchEvent(new Event('storage'));
-                            
-                            toast.success("Profile configuration added to cart!");
-                          }}
-                        >
-                          Add to Cart
-                        </Button>
-                        <Button 
-                          type="button"
-                          variant="outline"
-                          className="flex-1" 
-                          size="lg" 
-                          disabled={selectedIndustries.length === 0}
-                          onClick={() => {
-                            // Only reset industries, keep the profile info
+                            // Clear current selection for next industry set
                             setSelectedIndustries([]);
-                            toast.info("Select additional industries for this same profile");
                             
-                            // Scroll back to industry selector
+                            toast.success("Industry set added! Add more or proceed to cart.");
+                            
+                            // Scroll to industry selector for next set
                             setTimeout(() => {
                               const step2Element = document.getElementById('step-2-industry');
                               if (step2Element) {
@@ -580,7 +589,43 @@ export default function Pricing() {
                             }, 100);
                           }}
                         >
-                          Add Another Industry Set
+                          Add Industry Set to Profile
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="outline"
+                          className="flex-1" 
+                          size="lg" 
+                          disabled={currentProfileIndustrySets.length === 0}
+                          onClick={() => {
+                            // Save all industry sets to cart
+                            const cartItems = JSON.parse(localStorage.getItem("profileCart") || "[]");
+                            
+                            // Combine all industry sets for this profile
+                            const allIndustries = currentProfileIndustrySets.flat();
+                            
+                            const newItem = {
+                              id: Date.now().toString(),
+                              ...formData,
+                              industries: allIndustries,
+                              industrySets: currentProfileIndustrySets,
+                              leadTierDescription: getLeadTierDescription(allIndustries),
+                              timestamp: new Date().toISOString(),
+                            };
+                            cartItems.push(newItem);
+                            localStorage.setItem("profileCart", JSON.stringify(cartItems));
+                            
+                            // Trigger storage event for same-tab updates
+                            window.dispatchEvent(new Event('storage'));
+                            
+                            // Reset for next profile
+                            setCurrentProfileIndustrySets([]);
+                            setSelectedIndustries([]);
+                            
+                            toast.success("Profile with all industry sets added to cart!");
+                          }}
+                        >
+                          Save Profile to Cart ({currentProfileIndustrySets.length} Set{currentProfileIndustrySets.length !== 1 ? 's' : ''})
                         </Button>
                       </div>
                       
@@ -599,6 +644,7 @@ export default function Pricing() {
                             acceptTerms: false,
                           });
                           setSelectedIndustries([]);
+                          setCurrentProfileIndustrySets([]);
                           setStep1Completed(false);
                           toast.info("Starting fresh - create a new profile");
                           
