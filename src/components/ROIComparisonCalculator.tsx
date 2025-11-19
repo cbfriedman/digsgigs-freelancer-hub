@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, DollarSign, Target, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,27 +14,65 @@ interface IndustryData {
   leadToCustomerRate: number;
 }
 
-const INDUSTRIES: IndustryData[] = [
-  { name: "Construction", avgCPC: 16, clickToLeadRate: 0.07, leadToCustomerRate: 0.14 },
-  { name: "Automotive Services", avgCPC: 9, clickToLeadRate: 0.11, leadToCustomerRate: 0.23 },
-  { name: "Architects", avgCPC: 20, clickToLeadRate: 0.05, leadToCustomerRate: 0.10 },
-  { name: "Engineers", avgCPC: 17, clickToLeadRate: 0.06, leadToCustomerRate: 0.12 },
-  { name: "Legal Services", avgCPC: 35, clickToLeadRate: 0.04, leadToCustomerRate: 0.08 },
-  { name: "Financial Services", avgCPC: 23, clickToLeadRate: 0.05, leadToCustomerRate: 0.10 },
-  { name: "Therapists and Counseling", avgCPC: 12, clickToLeadRate: 0.08, leadToCustomerRate: 0.17 },
-  { name: "Fitness and Nutrition", avgCPC: 8, clickToLeadRate: 0.13, leadToCustomerRate: 0.30 },
-  { name: "Education and Tutoring", avgCPC: 11, clickToLeadRate: 0.11, leadToCustomerRate: 0.22 },
-  { name: "Event Planning", avgCPC: 13, clickToLeadRate: 0.09, leadToCustomerRate: 0.20 },
-  { name: "Pet Services", avgCPC: 9, clickToLeadRate: 0.12, leadToCustomerRate: 0.25 },
-  { name: "Design Services", avgCPC: 14, clickToLeadRate: 0.08, leadToCustomerRate: 0.16 },
-  { name: "Hi Tech and Digital Media", avgCPC: 17, clickToLeadRate: 0.07, leadToCustomerRate: 0.14 },
+interface IndustryCategory {
+  category: string;
+  industries: IndustryData[];
+}
+
+const INDUSTRY_CATEGORIES: IndustryCategory[] = [
+  {
+    category: "Construction & Trades",
+    industries: [
+      { name: "Construction", avgCPC: 16, clickToLeadRate: 0.07, leadToCustomerRate: 0.14 },
+      { name: "Automotive Services", avgCPC: 9, clickToLeadRate: 0.11, leadToCustomerRate: 0.23 },
+    ]
+  },
+  {
+    category: "Professional Services",
+    industries: [
+      { name: "Architects", avgCPC: 20, clickToLeadRate: 0.05, leadToCustomerRate: 0.10 },
+      { name: "Engineers", avgCPC: 17, clickToLeadRate: 0.06, leadToCustomerRate: 0.12 },
+      { name: "Legal Services", avgCPC: 35, clickToLeadRate: 0.04, leadToCustomerRate: 0.08 },
+      { name: "Financial Services", avgCPC: 23, clickToLeadRate: 0.05, leadToCustomerRate: 0.10 },
+      { name: "Design Services", avgCPC: 14, clickToLeadRate: 0.08, leadToCustomerRate: 0.16 },
+    ]
+  },
+  {
+    category: "Health & Wellness",
+    industries: [
+      { name: "Therapists and Counseling", avgCPC: 12, clickToLeadRate: 0.08, leadToCustomerRate: 0.17 },
+      { name: "Fitness and Nutrition", avgCPC: 8, clickToLeadRate: 0.13, leadToCustomerRate: 0.30 },
+    ]
+  },
+  {
+    category: "Education & Events",
+    industries: [
+      { name: "Education and Tutoring", avgCPC: 11, clickToLeadRate: 0.11, leadToCustomerRate: 0.22 },
+      { name: "Event Planning", avgCPC: 13, clickToLeadRate: 0.09, leadToCustomerRate: 0.20 },
+    ]
+  },
+  {
+    category: "Technology & Creative",
+    industries: [
+      { name: "Hi Tech and Digital Media", avgCPC: 17, clickToLeadRate: 0.07, leadToCustomerRate: 0.14 },
+    ]
+  },
+  {
+    category: "Other Services",
+    industries: [
+      { name: "Pet Services", avgCPC: 9, clickToLeadRate: 0.12, leadToCustomerRate: 0.25 },
+    ]
+  }
 ];
+
+// Flatten for easy lookup
+const ALL_INDUSTRIES = INDUSTRY_CATEGORIES.flatMap(cat => cat.industries);
 
 export const ROIComparisonCalculator = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string>("Construction");
   const [conversionRate, setConversionRate] = useState<string>("25");
 
-  const industry = INDUSTRIES.find(i => i.name === selectedIndustry) || INDUSTRIES[0];
+  const industry = ALL_INDUSTRIES.find(i => i.name === selectedIndustry) || ALL_INDUSTRIES[0];
   const platformConversionRate = parseFloat(conversionRate) / 100 || 0.25;
 
   // Calculate Google AdWords cost per closed deal
@@ -108,10 +146,15 @@ export const ROIComparisonCalculator = () => {
                 <SelectValue placeholder="Select industry" />
               </SelectTrigger>
               <SelectContent>
-                {INDUSTRIES.map((ind) => (
-                  <SelectItem key={ind.name} value={ind.name}>
-                    {ind.name}
-                  </SelectItem>
+                {INDUSTRY_CATEGORIES.map((category) => (
+                  <SelectGroup key={category.category}>
+                    <SelectLabel>{category.category}</SelectLabel>
+                    {category.industries.map((ind) => (
+                      <SelectItem key={ind.name} value={ind.name}>
+                        {ind.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
