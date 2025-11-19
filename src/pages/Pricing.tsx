@@ -300,7 +300,7 @@ export default function Pricing() {
             <div className="flex items-center gap-4 justify-center">
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-2xl font-bold text-primary whitespace-nowrap">1st Step</span>
-                <span className="text-5xl text-primary animate-pulse">→</span>
+                <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
               </div>
               <div className="flex-1 max-w-md">
                 <IndustryMultiSelector 
