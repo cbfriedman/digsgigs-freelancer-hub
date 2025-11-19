@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { z } from "zod";
 
-import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries, getLeadTierDescription } from "@/config/pricing";
+import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries, getLeadTierDescription, INDUSTRY_GROUPS } from "@/config/pricing";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -55,6 +55,48 @@ export default function Pricing() {
 
   // Check if user can interact with pricing tiles - only after Step 1 is completed
   const canInteractWithPricing = step1Completed;
+
+  // Helper function to get value indicator for a profession
+  const getValueIndicator = (profession: string): string => {
+    for (const group of INDUSTRY_GROUPS) {
+      const industry = group.industries.find(ind => ind.name === profession);
+      if (industry) return industry.indicator;
+    }
+    return 'LV'; // Default to low-value if not found
+  };
+
+  // Helper function to get lead cost for a profession based on tier
+  const getProfessionLeadCost = (profession: string, tier: 'free' | 'pro' | 'premium'): number => {
+    return getLeadCostForIndustry(profession, tier);
+  };
+
+  // Calculate total leads across all professions
+  const getTotalLeads = (): number => {
+    return Object.values(professionLeadQuantities).reduce((sum, qty) => sum + qty, 0);
+  };
+
+  // Calculate volume discount based on total leads
+  const getVolumeDiscount = (): number => {
+    const totalLeads = getTotalLeads();
+    if (totalLeads >= 51) return 0.30; // 30% discount
+    if (totalLeads >= 11) return 0.15; // 15% discount
+    return 0; // No discount
+  };
+
+  // Calculate total cost with volume discount
+  const calculateTotalCost = (): { subtotal: number; discount: number; total: number } => {
+    let subtotal = 0;
+    Object.entries(professionLeadQuantities).forEach(([profession, quantity]) => {
+      const leadCost = getProfessionLeadCost(profession, 'free'); // Use 'free' tier pricing as base
+      subtotal += leadCost * quantity;
+    });
+    
+    const discountRate = getVolumeDiscount();
+    const discount = subtotal * discountRate;
+    const total = subtotal - discount;
+    
+    return { subtotal, discount, total };
+  };
 
   // Define getLeadCostForTier early so it can be used in TIERS
   const getLeadCostForTier = (tier: 'free' | 'pro' | 'premium') => {
@@ -521,36 +563,91 @@ export default function Pricing() {
 
                     {/* Lead Quantity Inputs for Each Selected Profession */}
                     {selectedIndustries.length > 0 && (
-                      <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-                        <Label className="font-semibold text-base">
-                          How many leads would you like to purchase per profession per month?
+                      <div className="space-y-4 p-6 border rounded-lg bg-muted/30">
+                        <Label className="font-semibold text-lg">
+                          How many leads would you like to purchase?
                         </Label>
                         <div className="space-y-3">
-                          {selectedIndustries.map((profession) => (
-                            <div key={profession} className="flex flex-col sm:flex-row sm:items-center gap-2">
-                              <Label className="flex-1 text-sm font-medium">
-                                {profession}
-                              </Label>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  placeholder="0"
-                                  value={professionLeadQuantities[profession] || ''}
-                                  onChange={(e) => {
-                                    const value = parseInt(e.target.value) || 0;
-                                    setProfessionLeadQuantities({
-                                      ...professionLeadQuantities,
-                                      [profession]: value
-                                    });
-                                  }}
-                                  className="w-24"
-                                />
-                                <span className="text-sm text-muted-foreground">leads/mo</span>
+                          {selectedIndustries.map((profession) => {
+                            const indicator = getValueIndicator(profession);
+                            const leadCost = getProfessionLeadCost(profession, 'free');
+                            return (
+                              <div key={profession} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-background rounded border">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <Label className="text-sm font-medium">
+                                      {profession}
+                                    </Label>
+                                    <Badge variant={indicator === 'HV' ? 'default' : indicator === 'MV' ? 'secondary' : 'outline'} className="text-xs">
+                                      {indicator}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    ${leadCost}/lead (base rate)
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    placeholder="0"
+                                    value={professionLeadQuantities[profession] || ''}
+                                    onChange={(e) => {
+                                      const value = parseInt(e.target.value) || 0;
+                                      setProfessionLeadQuantities({
+                                        ...professionLeadQuantities,
+                                        [profession]: value
+                                      });
+                                    }}
+                                    className="w-24"
+                                  />
+                                  <span className="text-sm text-muted-foreground">leads/mo</span>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
+
+                        {/* Cost Summary */}
+                        {getTotalLeads() > 0 && (
+                          <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span>Total Leads:</span>
+                                <span className="font-semibold">{getTotalLeads()}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span>Subtotal:</span>
+                                <span>${calculateTotalCost().subtotal.toFixed(2)}</span>
+                              </div>
+                              {getVolumeDiscount() > 0 && (
+                                <>
+                                  <div className="flex justify-between text-sm text-green-600">
+                                    <span>Volume Discount ({(getVolumeDiscount() * 100).toFixed(0)}%):</span>
+                                    <span>-${calculateTotalCost().discount.toFixed(2)}</span>
+                                  </div>
+                                  <div className="pt-2 border-t border-primary/20">
+                                    <div className="flex justify-between font-semibold text-lg">
+                                      <span>Total:</span>
+                                      <span className="text-primary">${calculateTotalCost().total.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                              {getVolumeDiscount() === 0 && (
+                                <div className="pt-2 border-t border-primary/20">
+                                  <div className="flex justify-between font-semibold text-lg">
+                                    <span>Total:</span>
+                                    <span className="text-primary">${calculateTotalCost().total.toFixed(2)}</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    💡 Purchase 11+ leads for 15% discount or 51+ for 30% discount!
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -677,12 +774,45 @@ export default function Pricing() {
                               // Combine all industry sets for this profile
                               const allIndustries = allSets.flat();
                               
+                              // Check how many profiles exist with this base company name
+                              const { data: existingProfiles, error: countError } = await supabase
+                                .from("digger_profiles")
+                                .select("business_name")
+                                .eq("user_id", user.id)
+                                .ilike("business_name", `${formData.companyName}%`);
+                              
+                              if (countError) throw countError;
+                              
+                              // Determine the suffix number for this profile
+                              let profileSuffix = 1;
+                              if (existingProfiles && existingProfiles.length > 0) {
+                                // Extract numbers from existing profiles and find the highest
+                                const existingNumbers = existingProfiles
+                                  .map(p => {
+                                    const match = p.business_name.match(/-(\d+)$/);
+                                    return match ? parseInt(match[1]) : 0;
+                                  })
+                                  .filter(n => n > 0);
+                                
+                                if (existingNumbers.length > 0) {
+                                  profileSuffix = Math.max(...existingNumbers) + 1;
+                                } else {
+                                  // Check if base name exists without suffix
+                                  const exactMatch = existingProfiles.find(
+                                    p => p.business_name === formData.companyName
+                                  );
+                                  profileSuffix = exactMatch ? 2 : 1;
+                                }
+                              }
+                              
+                              const profileName = `${formData.companyName}-${profileSuffix}`;
+                              
                               // Save profile to database
                               const { data, error } = await supabase
                                 .from("digger_profiles")
                                 .insert({
                                   user_id: user.id,
-                                  business_name: formData.companyName,
+                                  business_name: profileName,
                                   company_name: formData.companyName,
                                   phone: formData.phone,
                                   location: "TBD", // Will be completed in profile editing
@@ -695,13 +825,25 @@ export default function Pricing() {
                               
                               if (error) throw error;
                               
+                              // Save lead quantities to localStorage for checkout
+                              const leadPurchaseData = {
+                                profileId: data.id,
+                                profileName: profileName,
+                                professionLeadQuantities: professionLeadQuantities,
+                                totalLeads: getTotalLeads(),
+                                costBreakdown: calculateTotalCost(),
+                                timestamp: new Date().toISOString(),
+                              };
+                              localStorage.setItem("pending_lead_purchase", JSON.stringify(leadPurchaseData));
+                              
                               // Reset form for next profile
                               setCurrentProfileIndustrySets([]);
                               setSelectedIndustries([]);
+                              setProfessionLeadQuantities({});
                               
-                              toast.success(`Profile created! (ID: ${data.profile_number}). Now you can purchase leads for this profile.`);
+                              toast.success(`Profile "${profileName}" created! (ID: ${data.profile_number}). Ready to purchase leads.`);
                               
-                              // TODO: Navigate to lead purchase selection
+                              // TODO: Navigate to lead purchase selection or checkout
                             } catch (error) {
                               console.error("Error creating profile:", error);
                               toast.error("Failed to create profile. Please try again.");
