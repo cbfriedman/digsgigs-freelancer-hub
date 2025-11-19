@@ -26,6 +26,9 @@ import { TierSavingsCalculator } from "@/components/TierSavingsCalculator";
 import EscrowFeeBreakdown from "@/components/EscrowFeeBreakdown";
 import LeadNumberingExplainer from "@/components/LeadNumberingExplainer";
 import LeadCostTimeline from "@/components/LeadCostTimeline";
+import InteractiveLeadSlider from "@/components/InteractiveLeadSlider";
+import MonthlyLeadSimulator from "@/components/MonthlyLeadSimulator";
+import CompetitorCostComparison from "@/components/CompetitorCostComparison";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
 
@@ -971,6 +974,9 @@ export default function Pricing() {
       </div>
       
       <div className="container mx-auto px-4 space-y-16 py-16">
+        <InteractiveLeadSlider />
+        <MonthlyLeadSimulator />
+        <CompetitorCostComparison />
         <LeadCostTimeline />
         <LeadNumberingExplainer />
         <EscrowFeeBreakdown />
