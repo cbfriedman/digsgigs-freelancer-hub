@@ -528,10 +528,11 @@ export type Database = {
           portfolio_urls: string[] | null
           pricing_model: string | null
           primary_profession_index: number | null
-          profession: string
+          profession: string | null
           profile_image_url: string | null
           profile_name: string | null
           profile_number: number | null
+          registration_status: string | null
           response_time_hours: number | null
           sic_code: string[] | null
           skills: string[] | null
@@ -588,10 +589,11 @@ export type Database = {
           portfolio_urls?: string[] | null
           pricing_model?: string | null
           primary_profession_index?: number | null
-          profession: string
+          profession?: string | null
           profile_image_url?: string | null
           profile_name?: string | null
           profile_number?: number | null
+          registration_status?: string | null
           response_time_hours?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
@@ -648,10 +650,11 @@ export type Database = {
           portfolio_urls?: string[] | null
           pricing_model?: string | null
           primary_profession_index?: number | null
-          profession?: string
+          profession?: string | null
           profile_image_url?: string | null
           profile_name?: string | null
           profile_number?: number | null
+          registration_status?: string | null
           response_time_hours?: number | null
           sic_code?: string[] | null
           skills?: string[] | null

@@ -408,34 +408,78 @@ export default function Pricing() {
                 </CardHeader>
                 <CardContent>
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
                       if (!formData.acceptTerms) {
                         toast.error("Please accept the Terms of Service to continue");
                         return;
                       }
-                      if (selectedIndustries.length === 0) {
-                        toast.error("Please select at least one industry");
-                        return;
-                      }
+                      
                       const registrationSchema = z.object({
                         fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
                         email: z.string().trim().email("Invalid email address"),
-                        phone: z.string().trim().optional(),
+                        phone: z.string().trim().min(10, "Phone number required"),
                         companyName: z.string().trim().min(2, "Company name must be at least 2 characters"),
                       });
+                      
                       try {
                         registrationSchema.parse(formData);
-                        const leadTierDescription = getLeadTierDescription(selectedIndustries);
+                        
+                        // Save to database before industry selection
+                        if (!user) {
+                          toast.error("Please log in to continue");
+                          return;
+                        }
+
+                        // Check for existing incomplete profile
+                        const { data: existingProfile, error: fetchError } = await supabase
+                          .from('digger_profiles')
+                          .select('id')
+                          .eq('user_id', user.id)
+                          .eq('registration_status', 'incomplete')
+                          .maybeSingle();
+
+                        if (fetchError && fetchError.code !== 'PGRST116') {
+                          throw fetchError;
+                        }
+
+                        if (existingProfile) {
+                          // Update existing incomplete profile
+                          const { error: updateError } = await supabase
+                            .from('digger_profiles')
+                            .update({
+                              business_name: formData.companyName,
+                              phone: formData.phone,
+                              company_name: formData.companyName,
+                            })
+                            .eq('id', existingProfile.id);
+
+                          if (updateError) throw updateError;
+                        } else {
+                          // Create new incomplete profile
+                          const { error: insertError } = await supabase
+                            .from('digger_profiles')
+                            .insert({
+                              user_id: user.id,
+                              business_name: formData.companyName,
+                              phone: formData.phone,
+                              company_name: formData.companyName,
+                              location: 'To be provided',
+                              registration_status: 'incomplete',
+                            });
+
+                          if (insertError) throw insertError;
+                        }
+                        
                         localStorage.setItem("demo_user_info", JSON.stringify({
                           ...formData,
-                          industries: selectedIndustries,
-                          leadTierDescription,
                           timestamp: new Date().toISOString(),
                           demoType: "digger",
                         }));
+                        
                         setStep1Completed(true);
-                        toast.success("Great! Now let's select your industries");
+                        toast.success("Step 1 saved! Now select your profession(s)");
+                        
                         // Scroll to Step 2
                         setTimeout(() => {
                           const step2Element = document.getElementById('step-2-industry');
@@ -446,6 +490,9 @@ export default function Pricing() {
                       } catch (error) {
                         if (error instanceof z.ZodError) {
                           toast.error(error.errors[0].message);
+                        } else {
+                          console.error('Error saving registration:', error);
+                          toast.error("Failed to save your progress. Please try again.");
                         }
                       }
                     }}
@@ -804,21 +851,61 @@ export default function Pricing() {
                               
                               const profileName = `${formData.companyName}-${profileSuffix}`;
                               
-                              // Save profile to database
-                              const { data, error } = await supabase
+                              // Check for existing incomplete profile to update
+                              const { data: incompleteProfile, error: fetchError } = await supabase
                                 .from("digger_profiles")
-                                .insert({
-                                  user_id: user.id,
-                                  business_name: profileName,
-                                  company_name: formData.companyName,
-                                  phone: formData.phone,
-                                  location: "TBD", // Will be completed in profile editing
-                                  profession: allIndustries[0], // Primary profession
-                                  naics_code: allIndustries,
-                                  lead_tier_description: getLeadTierDescription(allIndustries),
-                                })
-                                .select()
-                                .single();
+                                .select("id")
+                                .eq("user_id", user.id)
+                                .eq("registration_status", "incomplete")
+                                .maybeSingle();
+
+                              if (fetchError && fetchError.code !== 'PGRST116') {
+                                throw fetchError;
+                              }
+
+                              let data, error;
+                              
+                              if (incompleteProfile) {
+                                // Update existing incomplete profile to complete
+                                const result = await supabase
+                                  .from("digger_profiles")
+                                  .update({
+                                    business_name: profileName,
+                                    company_name: formData.companyName,
+                                    phone: formData.phone,
+                                    location: "TBD",
+                                    profession: allIndustries[0],
+                                    naics_code: allIndustries,
+                                    lead_tier_description: getLeadTierDescription(allIndustries),
+                                    registration_status: 'complete',
+                                  })
+                                  .eq("id", incompleteProfile.id)
+                                  .select()
+                                  .single();
+                                
+                                data = result.data;
+                                error = result.error;
+                              } else {
+                                // Create new complete profile
+                                const result = await supabase
+                                  .from("digger_profiles")
+                                  .insert({
+                                    user_id: user.id,
+                                    business_name: profileName,
+                                    company_name: formData.companyName,
+                                    phone: formData.phone,
+                                    location: "TBD",
+                                    profession: allIndustries[0],
+                                    naics_code: allIndustries,
+                                    lead_tier_description: getLeadTierDescription(allIndustries),
+                                    registration_status: 'complete',
+                                  })
+                                  .select()
+                                  .single();
+                                
+                                data = result.data;
+                                error = result.error;
+                              }
                               
                               if (error) throw error;
                               
