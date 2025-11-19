@@ -63,12 +63,16 @@ serve(async (req) => {
       throw new Error("Digger must complete Stripe Connect onboarding");
     }
 
+    // Get subscription tier for escrow fee
+    const tier = escrowContract.subscription_tier || 'free';
+    const escrowFeeRates = { free: 0.09, pro: 0.08, premium: 0.04 };
+    const escrowFeeRate = escrowFeeRates[tier as keyof typeof escrowFeeRates] || 0.09;
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
 
-    // Calculate escrow processing fee: 5% with $10 minimum
-    const escrowFeeRate = 0.05;
+    // Calculate escrow processing fee based on tier with $10 minimum
     const calculatedFee = milestone.digger_payout * escrowFeeRate;
     const escrowProcessingFee = Math.max(calculatedFee, 10);
     const netPayoutToDigger = milestone.digger_payout - escrowProcessingFee;

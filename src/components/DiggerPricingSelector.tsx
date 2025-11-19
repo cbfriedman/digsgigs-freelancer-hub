@@ -47,6 +47,15 @@ export const DiggerPricingSelector = ({
 
   const hourlyAwardCost = calculateHourlyAwardCost(averageHourlyRate, tier);
 
+  const getEscrowFeeDisplay = (tier: 'free' | 'pro' | 'premium') => {
+    const escrowFees = {
+      free: '9%',
+      pro: '8%',
+      premium: '4%',
+    };
+    return escrowFees[tier];
+  };
+
   const handleSelect = (model: 'fixed' | 'hourly' | 'free_estimate') => {
     setSelectedModel(model);
   };
@@ -119,7 +128,7 @@ export const DiggerPricingSelector = ({
                 <div className="pt-2 border-t">
                   <p className="font-medium">Lead Cost: ${leadCost}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Award fee: {calculateCommission(1000, tier).rate * 100}% of project total
+                    Escrow fee: {getEscrowFeeDisplay(tier)}
                   </p>
                 </div>
               </CardContent>
@@ -154,7 +163,7 @@ export const DiggerPricingSelector = ({
                 <div className="pt-2 border-t">
                   <p className="font-medium">Lead Cost: ${leadCost}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Award fee: ${hourlyAwardCost.toFixed(2)} when awarded
+                    Escrow fee: {getEscrowFeeDisplay(tier)} + Hourly award fee
                   </p>
                 </div>
               </CardContent>
@@ -184,7 +193,7 @@ export const DiggerPricingSelector = ({
                 <div className="pt-2 border-t">
                   <p className="font-medium">No upfront cost</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Estimate cost deducted from award fee if hired
+                    Escrow fee applies if hired: {getEscrowFeeDisplay(tier)}
                   </p>
                 </div>
               </CardContent>
@@ -198,13 +207,13 @@ export const DiggerPricingSelector = ({
             <ul className="text-sm space-y-1 text-muted-foreground">
               <li>• Initial lead cost: ${leadCost} (paid by professional)</li>
               {selectedModel === 'fixed' && (
-                <li>• Award fee: {calculateCommission(1000, tier).rate * 100}% of total project cost (when project is awarded)</li>
+                <li>• Escrow fee: {getEscrowFeeDisplay(tier)} per milestone payment</li>
               )}
               {selectedModel === 'hourly' && (
-                <li>• Award fee: ${hourlyAwardCost.toFixed(2)} (when project is awarded)</li>
+                <li>• Hourly award fee: ${hourlyAwardCost.toFixed(2)} + Escrow fee: {getEscrowFeeDisplay(tier)} per payment</li>
               )}
               {selectedModel === 'free_estimate' && (
-                <li>• Free estimate cost will be deducted from final award fee</li>
+                <li>• No upfront cost, escrow fee applies if project is awarded: {getEscrowFeeDisplay(tier)}</li>
               )}
             </ul>
             <Button 

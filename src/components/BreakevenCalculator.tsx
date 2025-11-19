@@ -18,10 +18,9 @@ const BreakevenCalculator = () => {
   const proLeadCost = leads * 40; // $40 per lead
   const proEstimateCost = estimates * 100; // $100 per estimate
   const proRevenue = jobs * avgJobValue;
-  const proContractAwardFee = proRevenue * 0.06; // 6% of contract value
-  const proEscrowFee = jobs * Math.max(10, avgJobValue * 0.05); // 5% with $10 min per job
+  const proEscrowFee = jobs * Math.max(10, avgJobValue * 0.08); // 8% with $10 min per job
   const proHourlyAwardUpcharge = hourlyRateClicks * (hourlyRate * 2); // 2x avg rate
-  const proTotalCosts = proSubscription + proLeadCost + proEstimateCost + proContractAwardFee + proEscrowFee + proHourlyAwardUpcharge;
+  const proTotalCosts = proSubscription + proLeadCost + proEstimateCost + proEscrowFee + proHourlyAwardUpcharge;
   const proNetEarnings = proRevenue - proTotalCosts;
 
   // Premium Plan Calculations
@@ -29,10 +28,9 @@ const BreakevenCalculator = () => {
   const premiumLeadCost = 0; // $0 per lead
   const premiumEstimateCost = estimates * 50; // $50 per estimate
   const premiumRevenue = jobs * avgJobValue;
-  const premiumContractAwardFee = premiumRevenue * 0.03; // 3% of contract value
-  const premiumEscrowFee = jobs * Math.max(10, avgJobValue * 0.05); // 5% with $10 min per job
+  const premiumEscrowFee = jobs * Math.max(10, avgJobValue * 0.04); // 4% with $10 min per job
   const premiumHourlyAwardUpcharge = hourlyRateClicks * (hourlyRate * 1); // 1x avg rate
-  const premiumTotalCosts = premiumSubscription + premiumEstimateCost + premiumContractAwardFee + premiumEscrowFee + premiumHourlyAwardUpcharge;
+  const premiumTotalCosts = premiumSubscription + premiumEstimateCost + premiumEscrowFee + premiumHourlyAwardUpcharge;
   const premiumNetEarnings = premiumRevenue - premiumTotalCosts;
 
   // Breakeven Analysis
@@ -261,11 +259,7 @@ const BreakevenCalculator = () => {
                 <span>${proEstimateCost.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Contract Award Fee (6%)</span>
-                <span>${proContractAwardFee.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10/job)</span>
+                <span className="text-muted-foreground">Escrow Processing Fee (8%, min $10/job)</span>
                 <span>${proEscrowFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
@@ -304,11 +298,7 @@ const BreakevenCalculator = () => {
                 <span className="text-green-600 font-semibold">FREE</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Contract Award Fee (3%)</span>
-                <span>${premiumContractAwardFee.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Escrow Processing Fee (5%, min $10/job)</span>
+                <span className="text-muted-foreground">Escrow Processing Fee (4%, min $10/job)</span>
                 <span>${premiumEscrowFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
