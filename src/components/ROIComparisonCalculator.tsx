@@ -102,6 +102,42 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
     costModel: "percentage",
     avgCost: 20,
     description: "20% commission on completed gigs"
+  },
+  {
+    name: "Upwork",
+    costModel: "percentage",
+    avgCost: 15,
+    description: "10-20% sliding commission (15% average) on completed projects"
+  },
+  {
+    name: "Bark",
+    costModel: "cpl",
+    avgCost: 20,
+    description: "Pay-per-lead for service professionals"
+  },
+  {
+    name: "Porch",
+    costModel: "cpl",
+    avgCost: 50,
+    description: "Cost per lead for home service professionals"
+  },
+  {
+    name: "Houzz",
+    costModel: "cpl",
+    avgCost: 45,
+    description: "Lead generation for home improvement and design professionals"
+  },
+  {
+    name: "Guru",
+    costModel: "percentage",
+    avgCost: 9,
+    description: "8.95% commission for basic membership"
+  },
+  {
+    name: "99designs",
+    costModel: "percentage",
+    avgCost: 15,
+    description: "15% platform fee on design projects"
   }
 ];
 
