@@ -7,6 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingDown, DollarSign, Target, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+interface CompetitorPlatform {
+  name: string;
+  costModel: "cpc" | "cpl" | "percentage" | "subscription";
+  avgCost: number; // CPC, CPL, or percentage
+  clickToLeadRate?: number; // for CPC models
+  description: string;
+}
+
 interface IndustryData {
   name: string;
   avgCPC: number;
@@ -18,6 +26,72 @@ interface IndustryCategory {
   category: string;
   industries: IndustryData[];
 }
+
+interface CompetitorPlatform {
+  name: string;
+  costModel: "cpc" | "cpl" | "percentage" | "subscription";
+  avgCost: number; // CPC, CPL, or percentage
+  clickToLeadRate?: number; // for CPC models
+  description: string;
+}
+
+const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
+  {
+    name: "Google AdWords",
+    costModel: "cpc",
+    avgCost: 16, // will be overridden by industry-specific data
+    clickToLeadRate: 0.07,
+    description: "Pay-per-click advertising with industry-specific costs"
+  },
+  {
+    name: "Facebook Ads",
+    costModel: "cpl",
+    avgCost: 45,
+    description: "Average cost per lead across service industries"
+  },
+  {
+    name: "Yelp Ads",
+    costModel: "cpl",
+    avgCost: 35,
+    description: "Cost per qualified lead from Yelp advertising"
+  },
+  {
+    name: "TaskRabbit",
+    costModel: "percentage",
+    avgCost: 20,
+    description: "20% commission on completed jobs"
+  },
+  {
+    name: "Angi (Angie's List)",
+    costModel: "cpl",
+    avgCost: 50,
+    description: "Average cost per lead for home service professionals"
+  },
+  {
+    name: "Home Advisor",
+    costModel: "cpl",
+    avgCost: 60,
+    description: "Cost per lead with additional membership fees"
+  },
+  {
+    name: "Thumbtack",
+    costModel: "cpl",
+    avgCost: 25,
+    description: "Variable cost per lead based on service type"
+  },
+  {
+    name: "Mortgage Lead Platforms",
+    costModel: "cpl",
+    avgCost: 75,
+    description: "Average cost per qualified mortgage lead"
+  },
+  {
+    name: "Insurance Lead Platforms",
+    costModel: "cpl",
+    avgCost: 85,
+    description: "Average cost per qualified insurance lead"
+  }
+];
 
 const INDUSTRY_CATEGORIES: IndustryCategory[] = [
   {
@@ -70,10 +144,12 @@ const ALL_INDUSTRIES = INDUSTRY_CATEGORIES.flatMap(cat => cat.industries);
 
 export const ROIComparisonCalculator = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string>("Construction");
+  const [selectedCompetitor, setSelectedCompetitor] = useState<string>("Google AdWords");
   const [conversionRate, setConversionRate] = useState<string>("25");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   const industry = ALL_INDUSTRIES.find(i => i.name === selectedIndustry) || ALL_INDUSTRIES[0];
+  const competitor = COMPETITOR_PLATFORMS.find(c => c.name === selectedCompetitor) || COMPETITOR_PLATFORMS[0];
   const platformConversionRate = parseFloat(conversionRate) / 100 || 0.25;
 
   // Update conversion rate to match industry's lead-to-customer rate
@@ -89,12 +165,33 @@ export const ROIComparisonCalculator = () => {
     )
   })).filter(category => category.industries.length > 0);
 
-  // Calculate Google AdWords cost per closed deal
-  const clicksPerLead = 1 / industry.clickToLeadRate;
-  const leadsPerCustomer = 1 / industry.leadToCustomerRate;
-  const totalClicks = clicksPerLead * leadsPerCustomer;
-  const googleCostPerDeal = totalClicks * industry.avgCPC;
-  const googleTrueCostPerLead = industry.avgCPC / industry.clickToLeadRate;
+  // Calculate competitor cost per closed deal based on their model
+  let competitorCostPerLead: number;
+  let competitorCostPerDeal: number;
+  
+  if (competitor.costModel === "cpc") {
+    // For CPC models like Google AdWords
+    const clicksPerLead = 1 / industry.clickToLeadRate;
+    const leadsPerCustomer = 1 / industry.leadToCustomerRate;
+    const totalClicks = clicksPerLead * leadsPerCustomer;
+    competitorCostPerDeal = totalClicks * industry.avgCPC;
+    competitorCostPerLead = industry.avgCPC / industry.clickToLeadRate;
+  } else if (competitor.costModel === "cpl") {
+    // For CPL models (most competitors)
+    competitorCostPerLead = competitor.avgCost;
+    competitorCostPerDeal = competitorCostPerLead / industry.leadToCustomerRate;
+  } else if (competitor.costModel === "percentage") {
+    // For percentage-based models like TaskRabbit
+    // Assuming average job value needs to be calculated differently
+    // Using a typical job value range for service industries
+    const avgJobValue = 1000; // placeholder - would vary by industry
+    competitorCostPerLead = avgJobValue * (competitor.avgCost / 100);
+    competitorCostPerDeal = competitorCostPerLead / industry.leadToCustomerRate;
+  } else {
+    // subscription model - simplified
+    competitorCostPerLead = competitor.avgCost;
+    competitorCostPerDeal = competitorCostPerLead / industry.leadToCustomerRate;
+  }
 
   // Calculate platform costs per closed deal
   const platformCosts = {
@@ -110,15 +207,15 @@ export const ROIComparisonCalculator = () => {
   };
 
   const savings = {
-    free: googleCostPerDeal - platformCostPerDeal.free,
-    pro: googleCostPerDeal - platformCostPerDeal.pro,
-    premium: googleCostPerDeal - platformCostPerDeal.premium,
+    free: competitorCostPerDeal - platformCostPerDeal.free,
+    pro: competitorCostPerDeal - platformCostPerDeal.pro,
+    premium: competitorCostPerDeal - platformCostPerDeal.premium,
   };
 
   const savingsPercent = {
-    free: (savings.free / googleCostPerDeal) * 100,
-    pro: (savings.pro / googleCostPerDeal) * 100,
-    premium: (savings.premium / googleCostPerDeal) * 100,
+    free: (savings.free / competitorCostPerDeal) * 100,
+    pro: (savings.pro / competitorCostPerDeal) * 100,
+    premium: (savings.premium / competitorCostPerDeal) * 100,
   };
 
   return (
@@ -126,13 +223,30 @@ export const ROIComparisonCalculator = () => {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
-          <CardTitle>Cost Per Closed Deal: DigsandGigs vs. Google AdWords</CardTitle>
+          <CardTitle>Cost Per Closed Deal: DigsandGigs vs. {competitor.name}</CardTitle>
         </div>
         <CardDescription>
-          See how much you save using Digsandgigs compared to advertising on Google AdWords
+          See how much you save using Digsandgigs compared to {competitor.name}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="competitor">Compare DigsandGigs to our competitors</Label>
+          <Select value={selectedCompetitor} onValueChange={setSelectedCompetitor}>
+            <SelectTrigger id="competitor">
+              <SelectValue placeholder="Select competitor" />
+            </SelectTrigger>
+            <SelectContent>
+              {COMPETITOR_PLATFORMS.map((comp) => (
+                <SelectItem key={comp.name} value={comp.name}>
+                  {comp.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{competitor.description}</p>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -145,9 +259,10 @@ export const ROIComparisonCalculator = () => {
                   <TooltipContent className="max-w-xs">
                     <p className="font-semibold mb-2">How to use this calculator:</p>
                     <ul className="text-sm space-y-1 list-disc pl-4">
+                      <li>Select a competitor platform to compare</li>
                       <li>Select your industry from the dropdown</li>
                       <li>Adjust your Lead-to-Award Rate (what % of leads you typically close)</li>
-                      <li>The calculator shows your cost per closed deal on DigsandGigs vs Google AdWords</li>
+                      <li>The calculator shows your cost per closed deal on DigsandGigs vs the competitor</li>
                     </ul>
                     <p className="text-sm mt-2 pt-2 border-t">
                       <strong>Lead-to-Award Rate:</strong> The percentage of contacted leads that become paying customers. For example, 25% means 1 out of every 4 leads converts to a sale.
@@ -227,17 +342,32 @@ export const ROIComparisonCalculator = () => {
           <div className="p-4 rounded-lg border bg-muted/30">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <h4 className="font-semibold text-sm text-muted-foreground">Google AdWords</h4>
+              <h4 className="font-semibold text-sm text-muted-foreground">{competitor.name}</h4>
             </div>
             <div className="space-y-1 text-xs text-muted-foreground">
-              <p>Avg CPC: ${industry.avgCPC}</p>
-              <p>Click-to-Lead: {(industry.clickToLeadRate * 100).toFixed(0)}%</p>
-              <p className="font-semibold text-foreground">True Cost Per Lead: ${googleTrueCostPerLead.toFixed(0)}</p>
+              {competitor.costModel === "cpc" ? (
+                <>
+                  <p>Avg CPC: ${industry.avgCPC}</p>
+                  <p>Click-to-Lead: {(industry.clickToLeadRate * 100).toFixed(0)}%</p>
+                  <p className="font-semibold text-foreground">True Cost Per Lead: ${competitorCostPerLead.toFixed(0)}</p>
+                </>
+              ) : competitor.costModel === "cpl" ? (
+                <>
+                  <p>Cost Per Lead: ${competitor.avgCost}</p>
+                </>
+              ) : competitor.costModel === "percentage" ? (
+                <>
+                  <p>Commission: {competitor.avgCost}%</p>
+                  <p className="font-semibold text-foreground">Effective Cost Per Lead: ${competitorCostPerLead.toFixed(0)}</p>
+                </>
+              ) : (
+                <p>Subscription: ${competitor.avgCost}/mo</p>
+              )}
               <p>Lead-to-Customer: {(industry.leadToCustomerRate * 100).toFixed(0)}%</p>
             </div>
             <div className="mt-3 pt-3 border-t border-border/50">
               <p className="text-2xl font-bold text-destructive">
-                ${googleCostPerDeal.toFixed(0)}
+                ${competitorCostPerDeal.toFixed(0)}
               </p>
               <p className="text-xs text-muted-foreground">per closed deal</p>
             </div>
@@ -281,18 +411,46 @@ export const ROIComparisonCalculator = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 rounded-lg border bg-muted/30">
-              <h5 className="font-semibold text-sm mb-2">Google AdWords Calculation</h5>
+              <h5 className="font-semibold text-sm mb-2">{competitor.name} Calculation</h5>
               <div className="space-y-2 text-xs text-muted-foreground">
-                <div>
-                  <p className="font-semibold text-foreground">True Cost Per Lead:</p>
-                  <p>CPC ÷ Click-to-Lead Rate</p>
-                  <p className="text-primary">${industry.avgCPC} ÷ {(industry.clickToLeadRate * 100).toFixed(0)}% = ${googleTrueCostPerLead.toFixed(0)}</p>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
-                  <p>True Cost Per Lead ÷ Lead-to-Customer Rate</p>
-                  <p className="text-destructive">${googleTrueCostPerLead.toFixed(0)} ÷ {(industry.leadToCustomerRate * 100).toFixed(0)}% = ${googleCostPerDeal.toFixed(0)}</p>
-                </div>
+                {competitor.costModel === "cpc" ? (
+                  <>
+                    <div>
+                      <p className="font-semibold text-foreground">True Cost Per Lead:</p>
+                      <p>CPC ÷ Click-to-Lead Rate</p>
+                      <p className="text-primary">${industry.avgCPC} ÷ {(industry.clickToLeadRate * 100).toFixed(0)}% = ${competitorCostPerLead.toFixed(0)}</p>
+                    </div>
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
+                      <p>True Cost Per Lead ÷ Lead-to-Customer Rate</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(industry.leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                    </div>
+                  </>
+                ) : competitor.costModel === "cpl" ? (
+                  <>
+                    <div>
+                      <p className="font-semibold text-foreground">Cost Per Lead:</p>
+                      <p className="text-primary">${competitor.avgCost}</p>
+                    </div>
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
+                      <p>Cost Per Lead ÷ Lead-to-Customer Rate</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(industry.leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <p className="font-semibold text-foreground">Effective Cost Per Lead:</p>
+                      <p className="text-primary">${competitorCostPerLead.toFixed(0)}</p>
+                    </div>
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
+                      <p>Effective Cost ÷ Lead-to-Customer Rate</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(industry.leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -381,8 +539,8 @@ export const ROIComparisonCalculator = () => {
 
         <div className="text-center pt-4">
           <p className="text-xs text-muted-foreground">
-            * CPC values and conversion rates are industry averages and may vary significantly based on location, competition, seasonality, and individual business factors. 
-            Google AdWords costs based on 2024 home services advertising benchmarks. Individual results may vary based on market conditions and campaign optimization.
+            * All cost values and conversion rates are industry averages and may vary significantly based on location, competition, seasonality, and individual business factors. 
+            Competitor costs based on 2024 industry benchmarks. Individual results may vary based on market conditions and campaign optimization.
           </p>
         </div>
       </CardContent>
