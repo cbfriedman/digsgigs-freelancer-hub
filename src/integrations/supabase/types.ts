@@ -496,6 +496,7 @@ export type Database = {
           business_name: string
           certifications: string[] | null
           completion_rate: number | null
+          country: string | null
           created_at: string
           custom_occupation_title: string | null
           handle: string | null
@@ -548,6 +549,7 @@ export type Database = {
           business_name: string
           certifications?: string[] | null
           completion_rate?: number | null
+          country?: string | null
           created_at?: string
           custom_occupation_title?: string | null
           handle?: string | null
@@ -600,6 +602,7 @@ export type Database = {
           business_name?: string
           certifications?: string[] | null
           completion_rate?: number | null
+          country?: string | null
           created_at?: string
           custom_occupation_title?: string | null
           handle?: string | null

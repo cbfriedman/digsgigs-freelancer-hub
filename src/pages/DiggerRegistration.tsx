@@ -350,6 +350,7 @@ const DiggerRegistration = () => {
         is_primary: isPrimary,
         profession,
         location,
+        country,
         phone,
         bio: bio || null,
         keywords: keywords.length > 0 ? keywords : null,
@@ -479,6 +480,7 @@ const DiggerRegistration = () => {
         assignedUserName={assignedUserName}
         profession={profession}
         location={location}
+        country={country}
         bio={bio}
         keywords={keywords}
         categoryNames={categoryNames}
