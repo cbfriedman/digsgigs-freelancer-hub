@@ -293,14 +293,22 @@ export default function Pricing() {
       {/* Industry Selector */}
       <section className="py-8 bg-background">
         <div className="container mx-auto px-4">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-4xl mx-auto">
             <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
               Select your Industries to determine your lead cost
             </Label>
-            <IndustryMultiSelector 
-              selectedIndustries={selectedIndustries}
-              onIndustriesChange={setSelectedIndustries}
-            />
+            <div className="flex items-center gap-4 justify-center">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-sm font-bold text-primary whitespace-nowrap">1st Step</span>
+                <span className="text-2xl text-primary">→</span>
+              </div>
+              <div className="flex-1 max-w-md">
+                <IndustryMultiSelector 
+                  selectedIndustries={selectedIndustries}
+                  onIndustriesChange={setSelectedIndustries}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
