@@ -50,31 +50,28 @@ serve(async (req) => {
     }
 
     const tier = diggerProfile.subscription_tier || 'free';
-    let commissionRate = 0.09; // Default: free tier (9%)
-    let minimumFee = 0; // No minimum fees
+    let escrowFeeRate = 0.09; // Default: free tier (9%)
+    let minimumFee = 10; // $10 minimum per payment
 
-    // Determine commission rate and minimum based on tier
+    // Determine escrow fee rate based on tier (these are escrow fees, not commissions)
     if (tier === 'premium') {
-      commissionRate = 0.00; // 0% commission
-      minimumFee = 0; // No minimum
+      escrowFeeRate = 0.04; // 4% escrow fee
     } else if (tier === 'pro') {
-      commissionRate = 0.06; // 6% commission
-      minimumFee = 0; // No minimum
+      escrowFeeRate = 0.08; // 8% escrow fee
     } else {
-      commissionRate = 0.09; // 9% commission (free)
-      minimumFee = 0; // No minimum
+      escrowFeeRate = 0.09; // 9% escrow fee (free)
     }
 
-    // Calculate commission with minimum
-    const calculatedCommission = totalAmount * commissionRate;
-    const commissionAmount = Math.max(calculatedCommission, minimumFee);
+    // Calculate escrow fee with minimum
+    const calculatedFee = totalAmount * escrowFeeRate;
+    const commissionAmount = Math.max(calculatedFee, minimumFee);
     const diggerPayout = totalAmount - commissionAmount;
 
-    logStep("Commission calculated", {
+    logStep("Escrow fee calculated", {
       tier,
-      rate: commissionRate,
+      rate: escrowFeeRate,
       totalAmount,
-      calculatedCommission,
+      calculatedFee,
       minimumFee,
       commissionAmount,
       diggerPayout
@@ -82,7 +79,7 @@ serve(async (req) => {
 
     const result: CommissionResult = {
       tier,
-      rate: commissionRate,
+      rate: escrowFeeRate,
       total_amount: totalAmount,
       commission_amount: commissionAmount,
       digger_payout: diggerPayout
