@@ -44,6 +44,7 @@ export default function Pricing() {
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [step1Completed, setStep1Completed] = useState(false);
   const [currentProfileIndustrySets, setCurrentProfileIndustrySets] = useState<string[][]>([]);
+  const [professionLeadQuantities, setProfessionLeadQuantities] = useState<Record<string, number>>({});
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -470,14 +471,30 @@ export default function Pricing() {
 
                     <div className="space-y-2">
                       <Label htmlFor="industries" className="font-medium flex items-center gap-2">
-                        Select Your Industries *
+                        Select Your Profession *
                         {selectedIndustries.length === 0 && (
                           <Badge variant="destructive" className="text-xs">Required</Badge>
                         )}
                       </Label>
                       <IndustryMultiSelector
                         selectedIndustries={selectedIndustries}
-                        onIndustriesChange={setSelectedIndustries}
+                        onIndustriesChange={(industries) => {
+                          setSelectedIndustries(industries);
+                          // Initialize quantities for new professions
+                          const newQuantities = { ...professionLeadQuantities };
+                          industries.forEach(industry => {
+                            if (!(industry in newQuantities)) {
+                              newQuantities[industry] = 0;
+                            }
+                          });
+                          // Remove quantities for deselected professions
+                          Object.keys(newQuantities).forEach(industry => {
+                            if (!industries.includes(industry)) {
+                              delete newQuantities[industry];
+                            }
+                          });
+                          setProfessionLeadQuantities(newQuantities);
+                        }}
                         onManageProfilesClick={() => {
                           // Save current registration progress before navigating
                           const leadTierDescription = getLeadTierDescription(selectedIndustries);
@@ -496,11 +513,46 @@ export default function Pricing() {
                       />
                       <p className="text-xs text-muted-foreground">
                         {selectedIndustries.length === 0 
-                          ? "👆 Please open the dropdown above and select at least one industry to continue"
-                          : "Your pricing will update based on selected industries"
+                          ? "👆 Please open the dropdown above and select at least one profession to continue"
+                          : "Your pricing will update based on selected professions"
                         }
                       </p>
                     </div>
+
+                    {/* Lead Quantity Inputs for Each Selected Profession */}
+                    {selectedIndustries.length > 0 && (
+                      <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                        <Label className="font-semibold text-base">
+                          How many leads would you like to purchase per profession per month?
+                        </Label>
+                        <div className="space-y-3">
+                          {selectedIndustries.map((profession) => (
+                            <div key={profession} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                              <Label className="flex-1 text-sm font-medium">
+                                {profession}
+                              </Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  placeholder="0"
+                                  value={professionLeadQuantities[profession] || ''}
+                                  onChange={(e) => {
+                                    const value = parseInt(e.target.value) || 0;
+                                    setProfessionLeadQuantities({
+                                      ...professionLeadQuantities,
+                                      [profession]: value
+                                    });
+                                  }}
+                                  className="w-24"
+                                />
+                                <span className="text-sm text-muted-foreground">leads/mo</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-start gap-2">
                       <Checkbox
@@ -577,6 +629,7 @@ export default function Pricing() {
                             
                             // Clear current selection for next industry set
                             setSelectedIndustries([]);
+                            setProfessionLeadQuantities({});
                             
                             toast.success("Industry set added! Add more or proceed to cart.");
                             
@@ -675,6 +728,7 @@ export default function Pricing() {
                           });
                           setSelectedIndustries([]);
                           setCurrentProfileIndustrySets([]);
+                          setProfessionLeadQuantities({});
                           setStep1Completed(false);
                           toast.info("Starting fresh - create a new profile");
                           
