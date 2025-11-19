@@ -22,6 +22,59 @@ import { BioGenerator } from "@/components/BioGenerator";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
 
+// Helper function to get country flag emoji
+const getCountryFlag = (country: string): string => {
+  const flags: { [key: string]: string } = {
+    "United States": "🇺🇸",
+    "Canada": "🇨🇦",
+    "United Kingdom": "🇬🇧",
+    "Australia": "🇦🇺",
+    "Germany": "🇩🇪",
+    "France": "🇫🇷",
+    "Spain": "🇪🇸",
+    "Italy": "🇮🇹",
+    "Mexico": "🇲🇽",
+    "Brazil": "🇧🇷",
+    "India": "🇮🇳",
+    "China": "🇨🇳",
+    "Japan": "🇯🇵",
+    "South Korea": "🇰🇷",
+    "Netherlands": "🇳🇱",
+    "Sweden": "🇸🇪",
+    "Norway": "🇳🇴",
+    "Denmark": "🇩🇰",
+    "Finland": "🇫🇮",
+    "Poland": "🇵🇱",
+    "Ireland": "🇮🇪",
+    "Switzerland": "🇨🇭",
+    "Austria": "🇦🇹",
+    "Belgium": "🇧🇪",
+    "Portugal": "🇵🇹",
+    "Greece": "🇬🇷",
+    "New Zealand": "🇳🇿",
+    "Singapore": "🇸🇬",
+    "South Africa": "🇿🇦",
+    "Argentina": "🇦🇷",
+    "Chile": "🇨🇱",
+    "Colombia": "🇨🇴",
+    "Peru": "🇵🇪",
+    "Israel": "🇮🇱",
+    "UAE": "🇦🇪",
+    "Saudi Arabia": "🇸🇦",
+    "Turkey": "🇹🇷",
+    "Thailand": "🇹🇭",
+    "Vietnam": "🇻🇳",
+    "Philippines": "🇵🇭",
+    "Indonesia": "🇮🇩",
+    "Malaysia": "🇲🇾",
+    "Egypt": "🇪🇬",
+    "Nigeria": "🇳🇬",
+    "Kenya": "🇰🇪",
+    "Other": "🌍"
+  };
+  return flags[country] || "🌍";
+};
+
 const DiggerRegistration = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -33,6 +86,7 @@ const DiggerRegistration = () => {
   const [state, setState] = useState("");
   const [stateError, setStateError] = useState("");
   const [zipCode, setZipCode] = useState("");
+  const [country, setCountry] = useState("United States");
   const [location, setLocation] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
@@ -536,6 +590,64 @@ const DiggerRegistration = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="country">Country *</Label>
+              <select
+                id="country"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                required
+              >
+                <option value="United States">🇺🇸 United States</option>
+                <option value="Canada">🇨🇦 Canada</option>
+                <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                <option value="Australia">🇦🇺 Australia</option>
+                <option value="Germany">🇩🇪 Germany</option>
+                <option value="France">🇫🇷 France</option>
+                <option value="Spain">🇪🇸 Spain</option>
+                <option value="Italy">🇮🇹 Italy</option>
+                <option value="Mexico">🇲🇽 Mexico</option>
+                <option value="Brazil">🇧🇷 Brazil</option>
+                <option value="India">🇮🇳 India</option>
+                <option value="China">🇨🇳 China</option>
+                <option value="Japan">🇯🇵 Japan</option>
+                <option value="South Korea">🇰🇷 South Korea</option>
+                <option value="Netherlands">🇳🇱 Netherlands</option>
+                <option value="Sweden">🇸🇪 Sweden</option>
+                <option value="Norway">🇳🇴 Norway</option>
+                <option value="Denmark">🇩🇰 Denmark</option>
+                <option value="Finland">🇫🇮 Finland</option>
+                <option value="Poland">🇵🇱 Poland</option>
+                <option value="Ireland">🇮🇪 Ireland</option>
+                <option value="Switzerland">🇨🇭 Switzerland</option>
+                <option value="Austria">🇦🇹 Austria</option>
+                <option value="Belgium">🇧🇪 Belgium</option>
+                <option value="Portugal">🇵🇹 Portugal</option>
+                <option value="Greece">🇬🇷 Greece</option>
+                <option value="New Zealand">🇳🇿 New Zealand</option>
+                <option value="Singapore">🇸🇬 Singapore</option>
+                <option value="South Africa">🇿🇦 South Africa</option>
+                <option value="Argentina">🇦🇷 Argentina</option>
+                <option value="Chile">🇨🇱 Chile</option>
+                <option value="Colombia">🇨🇴 Colombia</option>
+                <option value="Peru">🇵🇪 Peru</option>
+                <option value="Israel">🇮🇱 Israel</option>
+                <option value="UAE">🇦🇪 United Arab Emirates</option>
+                <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
+                <option value="Turkey">🇹🇷 Turkey</option>
+                <option value="Thailand">🇹🇭 Thailand</option>
+                <option value="Vietnam">🇻🇳 Vietnam</option>
+                <option value="Philippines">🇵🇭 Philippines</option>
+                <option value="Indonesia">🇮🇩 Indonesia</option>
+                <option value="Malaysia">🇲🇾 Malaysia</option>
+                <option value="Egypt">🇪🇬 Egypt</option>
+                <option value="Nigeria">🇳🇬 Nigeria</option>
+                <option value="Kenya">🇰🇪 Kenya</option>
+                <option value="Other">🌍 Other</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="assignedUserName">
                 User ID * 
                 <span className="text-destructive font-normal"> (Cannot contain company name)</span>
@@ -607,6 +719,12 @@ const DiggerRegistration = () => {
                           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
                             {city && state ? `${city}, ${state}` : city || state}
+                          </p>
+                        )}
+                        {country && (
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <span className="text-base">{getCountryFlag(country)}</span>
+                            {country}
                           </p>
                         )}
                       </div>
