@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
-import { Loader2, Tag, Info } from "lucide-react";
+import { Loader2, Tag, Info, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -556,24 +556,63 @@ const DiggerRegistration = () => {
               )}
               
               <p className="text-xs text-muted-foreground">
-                Your unique User ID based on location and personal name. Only letters, numbers, hyphens, and underscores (max 50 characters). <strong>Cannot include company/business name.</strong>
+                Your unique User ID automatically combines your <strong>City + State + Zip Code + First Name</strong>. You can customize it, but it must not include your company name. Only letters, numbers, hyphens, and underscores (max 50 characters).
               </p>
               
               {/* User ID Preview Card */}
               {assignedUserName && (
                 <Card className="p-4 bg-accent/5 border-primary/20">
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Preview</p>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
                         {assignedUserName.charAt(0).toUpperCase()}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="font-semibold text-lg">{assignedUserName}</p>
                         <p className="text-sm text-muted-foreground">{profession || 'Your Profession'}</p>
+                        {(city || state) && (
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {city && state ? `${city}, ${state}` : city || state}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    
+                    {/* User ID Composition Breakdown */}
+                    {(city || state || zipCode || firstName) && (
+                      <div className="pt-3 border-t border-border/50">
+                        <p className="text-xs font-medium mb-2">User ID Components:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {city && (
+                            <Badge variant="outline" className="text-xs">
+                              City: {city.replace(/\s+/g, '')}
+                            </Badge>
+                          )}
+                          {state && (
+                            <Badge variant="outline" className="text-xs">
+                              State: {state.replace(/\s+/g, '')}
+                            </Badge>
+                          )}
+                          {zipCode && (
+                            <Badge variant="outline" className="text-xs">
+                              Zip: {zipCode}
+                            </Badge>
+                          )}
+                          {firstName && (
+                            <Badge variant="outline" className="text-xs">
+                              Name: {firstName.replace(/\s+/g, '')}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Auto-generated format: <span className="font-mono">City + State + Zip + FirstName</span>
+                        </p>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground">
                       This is how your User ID will appear on your profile
                     </p>
                   </div>
