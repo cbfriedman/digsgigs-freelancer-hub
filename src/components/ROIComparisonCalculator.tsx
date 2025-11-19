@@ -90,6 +90,18 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
     costModel: "cpl",
     avgCost: 85,
     description: "Average cost per qualified insurance lead"
+  },
+  {
+    name: "Freelancer",
+    costModel: "percentage",
+    avgCost: 10,
+    description: "10% commission on completed projects"
+  },
+  {
+    name: "Fiverr",
+    costModel: "percentage",
+    avgCost: 20,
+    description: "20% commission on completed gigs"
   }
 ];
 
