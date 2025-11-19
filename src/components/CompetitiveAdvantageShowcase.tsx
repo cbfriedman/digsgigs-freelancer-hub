@@ -292,7 +292,7 @@ export default function CompetitiveAdvantageShowcase() {
         <CardHeader>
           <CardTitle className="text-2xl text-green-700 dark:text-green-400">Real Monthly Cost Examples</CardTitle>
           <CardDescription>
-            See your actual savings with DigsandGigs vs. competitors (HVAC industry)
+            See your actual savings with DigsandGigs vs. competitors ({selectedIndustry} industry)
           </CardDescription>
         </CardHeader>
         <CardContent>
