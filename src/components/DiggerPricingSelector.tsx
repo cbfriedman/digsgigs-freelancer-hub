@@ -32,10 +32,9 @@ export const DiggerPricingSelector = ({
 }: DiggerPricingSelectorProps) => {
   const [selectedModel, setSelectedModel] = useState<'fixed' | 'hourly' | 'free_estimate' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { calculateLeadCost, calculateCommission, calculateHourlyAwardCost } = useCommissionCalculator();
+  const { calculateLeadCost, calculateEscrowFee } = useCommissionCalculator();
 
-  const tier = (subscriptionTier || 'free') as 'free' | 'pro' | 'premium';
-  const { leadCost } = calculateLeadCost(tier);
+  const { leadCost } = calculateLeadCost('non-exclusive'); // Default to non-exclusive
   
   const showsFixedPrice = pricingModel === 'fixed' || pricingModel === 'both';
   const showsHourly = pricingModel === 'hourly' || pricingModel === 'both';
@@ -45,15 +44,8 @@ export const DiggerPricingSelector = ({
     ? (hourlyRateMin + hourlyRateMax) / 2 
     : hourlyRateMin || hourlyRateMax || 0;
 
-  const hourlyAwardCost = calculateHourlyAwardCost(averageHourlyRate, tier);
-
-  const getEscrowFeeDisplay = (tier: 'free' | 'pro' | 'premium') => {
-    const escrowFees = {
-      free: '9%',
-      pro: '8%',
-      premium: '4%',
-    };
-    return escrowFees[tier];
+  const getEscrowFeeDisplay = () => {
+    return '8%';
   };
 
   const handleSelect = (model: 'fixed' | 'hourly' | 'free_estimate') => {
@@ -128,7 +120,7 @@ export const DiggerPricingSelector = ({
                 <div className="pt-2 border-t">
                   <p className="font-medium">Lead Cost: ${leadCost}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Escrow fee: {getEscrowFeeDisplay(tier)}
+                    Escrow fee: {getEscrowFeeDisplay()}
                   </p>
                 </div>
               </CardContent>
@@ -163,7 +155,7 @@ export const DiggerPricingSelector = ({
                 <div className="pt-2 border-t">
                   <p className="font-medium">Lead Cost: ${leadCost}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Escrow fee: {getEscrowFeeDisplay(tier)} + Hourly award fee
+                    Escrow fee: {getEscrowFeeDisplay()}
                   </p>
                 </div>
               </CardContent>
@@ -193,7 +185,7 @@ export const DiggerPricingSelector = ({
                 <div className="pt-2 border-t">
                   <p className="font-medium">No upfront cost</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Escrow fee applies if hired: {getEscrowFeeDisplay(tier)}
+                    Escrow fee applies if hired: {getEscrowFeeDisplay()}
                   </p>
                 </div>
               </CardContent>
@@ -207,13 +199,13 @@ export const DiggerPricingSelector = ({
             <ul className="text-sm space-y-1 text-muted-foreground">
               <li>• Initial lead cost: ${leadCost} (paid by professional)</li>
               {selectedModel === 'fixed' && (
-                <li>• Escrow fee: {getEscrowFeeDisplay(tier)} per milestone payment</li>
+                <li>• Escrow fee: {getEscrowFeeDisplay()} per milestone payment</li>
               )}
               {selectedModel === 'hourly' && (
-                <li>• Hourly award fee: ${hourlyAwardCost.toFixed(2)} + Escrow fee: {getEscrowFeeDisplay(tier)} per payment</li>
+                <li>• Escrow fee: {getEscrowFeeDisplay()} per payment</li>
               )}
               {selectedModel === 'free_estimate' && (
-                <li>• No upfront cost, escrow fee applies if project is awarded: {getEscrowFeeDisplay(tier)}</li>
+                <li>• No upfront cost, escrow fee applies if project is awarded: {getEscrowFeeDisplay()}</li>
               )}
             </ul>
             <Button 
