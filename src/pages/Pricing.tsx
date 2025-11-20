@@ -27,6 +27,7 @@ import MonthlyLeadSimulator from "@/components/MonthlyLeadSimulator";
 import CompetitorCostComparison from "@/components/CompetitorCostComparison";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { z } from "zod";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries, getLeadTierDescription, INDUSTRY_GROUPS } from "@/config/pricing";
@@ -425,7 +426,12 @@ export default function Pricing() {
                       const registrationSchema = z.object({
                         fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
                         email: z.string().trim().email("Invalid email address"),
-                        password: z.string().min(8, "Password must be at least 8 characters"),
+                        password: z.string()
+                          .min(8, "Password must be at least 8 characters")
+                          .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+                          .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+                          .regex(/\d/, "Password must contain at least one number")
+                          .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
                         confirmPassword: z.string(),
                         phone: z.string().trim().min(10, "Phone number required"),
                         companyName: z.string().trim().min(2, "Company name must be at least 2 characters"),
@@ -598,11 +604,12 @@ export default function Pricing() {
                               <Input
                                 id="password"
                                 type="password"
-                                placeholder="Min. 8 characters"
+                                placeholder="Create a strong password"
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 required
                               />
+                              <PasswordStrengthIndicator password={formData.password} />
                             </div>
 
                             <div className="space-y-2">
