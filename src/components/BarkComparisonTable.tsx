@@ -146,21 +146,19 @@ export const BarkComparisonTable = () => {
 
   const barkData = BARK_PRICING[selectedIndustry] || { credits: 10, costPerLead: 22.00 };
   
-  const digsAndGigsFree = getLeadCostForIndustry(selectedIndustry, 'free');
-  const digsAndGigsPro = getLeadCostForIndustry(selectedIndustry, 'pro');
-  const digsAndGigsPremium = getLeadCostForIndustry(selectedIndustry, 'premium');
+  const digsAndGigsNonExclusive = getLeadCostForIndustry(selectedIndustry, 'non-exclusive');
+  const digsAndGigsExclusive = getLeadCostForIndustry(selectedIndustry, 'exclusive-24h');
 
   // Calculate savings percentages
-  const savingsFree = ((barkData.costPerLead - digsAndGigsFree) / barkData.costPerLead * 100).toFixed(0);
-  const savingsPro = ((barkData.costPerLead - digsAndGigsPro) / barkData.costPerLead * 100).toFixed(0);
-  const savingsPremium = ((barkData.costPerLead - digsAndGigsPremium) / barkData.costPerLead * 100).toFixed(0);
+  const savingsNonExclusive = ((barkData.costPerLead - digsAndGigsNonExclusive) / barkData.costPerLead * 100).toFixed(0);
+  const savingsExclusive = ((barkData.costPerLead - digsAndGigsExclusive) / barkData.costPerLead * 100).toFixed(0);
 
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-2xl">DigsandGigs vs Bark.com: Cost Per Lead Comparison</CardTitle>
         <CardDescription>
-          See how our transparent, volume-based pricing compares to Bark's credit system
+          See how our transparent, exclusivity-based pricing compares to Bark's credit system
         </CardDescription>
         <div className="mt-4">
           <label className="text-sm font-medium mb-2 block">Select Industry:</label>
@@ -229,17 +227,17 @@ export const BarkComparisonTable = () => {
                 <td className="p-4 font-medium">
                   <div className="flex items-center gap-2">
                     DigsandGigs
-                    <Badge variant="secondary">1-10 leads/mo</Badge>
+                    <Badge variant="secondary">Non-Exclusive</Badge>
                   </div>
                 </td>
                 <td className="p-4 text-center">
-                  <div className="text-sm">Volume-Based</div>
+                  <div className="text-sm">Exclusivity-Based</div>
                   <div className="text-xs text-muted-foreground">
-                    Standard Rate
+                    Bark - $0.50
                   </div>
                 </td>
                 <td className="p-4 text-center font-semibold text-lg text-primary">
-                  ${digsAndGigsFree.toFixed(2)}
+                  ${digsAndGigsNonExclusive.toFixed(2)}
                 </td>
                 <td className="p-4 text-center">
                   <div className="flex items-center justify-center gap-1">
@@ -250,17 +248,17 @@ export const BarkComparisonTable = () => {
                 <td className="p-4 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <Check className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Exclusive</span>
+                    <span className="text-sm">24-Hour Window</span>
                   </div>
                 </td>
                 <td className="p-4 text-right">
-                  {Number(savingsFree) > 0 ? (
+                  {Number(savingsNonExclusive) > 0 ? (
                     <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                      Save {savingsFree}%
+                      Save {savingsNonExclusive}%
                     </Badge>
                   ) : (
                     <Badge variant="destructive">
-                      +{Math.abs(Number(savingsFree))}%
+                      +{Math.abs(Number(savingsNonExclusive))}%
                     </Badge>
                   )}
                 </td>
@@ -270,18 +268,18 @@ export const BarkComparisonTable = () => {
                 <td className="p-4 font-medium">
                   <div className="flex items-center gap-2">
                     DigsandGigs
-                    <Badge variant="secondary">11-50 leads/mo</Badge>
-                    <Badge variant="default">Most Popular</Badge>
+                    <Badge variant="secondary">24-Hour Exclusive</Badge>
+                    <Badge variant="default">Premium</Badge>
                   </div>
                 </td>
                 <td className="p-4 text-center">
-                  <div className="text-sm">Volume-Based</div>
+                  <div className="text-sm">Exclusivity-Based</div>
                   <div className="text-xs text-muted-foreground">
-                    Volume Discount
+                    Google CPC × 2.5
                   </div>
                 </td>
                 <td className="p-4 text-center font-semibold text-lg text-primary">
-                  ${digsAndGigsPro.toFixed(2)}
+                  ${digsAndGigsExclusive.toFixed(2)}
                 </td>
                 <td className="p-4 text-center">
                   <div className="flex items-center justify-center gap-1">
@@ -292,59 +290,17 @@ export const BarkComparisonTable = () => {
                 <td className="p-4 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <Check className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Exclusive</span>
+                    <span className="text-sm">24-Hour Exclusive</span>
                   </div>
                 </td>
                 <td className="p-4 text-right">
-                  {Number(savingsPro) > 0 ? (
+                  {Number(savingsExclusive) > 0 ? (
                     <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                      Save {savingsPro}%
+                      Save {savingsExclusive}%
                     </Badge>
                   ) : (
                     <Badge variant="destructive">
-                      +{Math.abs(Number(savingsPro))}%
-                    </Badge>
-                  )}
-                </td>
-              </tr>
-
-              <tr className="border-b border-border bg-muted/30">
-                <td className="p-4 font-medium">
-                  <div className="flex items-center gap-2">
-                    DigsandGigs
-                    <Badge variant="secondary">51+ leads/mo</Badge>
-                    <Badge variant="outline">Best Bulk</Badge>
-                  </div>
-                </td>
-                <td className="p-4 text-center">
-                  <div className="text-sm">Volume-Based</div>
-                  <div className="text-xs text-muted-foreground">
-                    Best Bulk Pricing
-                  </div>
-                </td>
-                <td className="p-4 text-center font-semibold text-lg text-primary">
-                  ${digsAndGigsPremium.toFixed(2)}
-                </td>
-                <td className="p-4 text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <Check className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">$0</span>
-                  </div>
-                </td>
-                <td className="p-4 text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <Check className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Exclusive</span>
-                  </div>
-                </td>
-                <td className="p-4 text-right">
-                  {Number(savingsPremium) > 0 ? (
-                    <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                      Save {savingsPremium}%
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive">
-                      +{Math.abs(Number(savingsPremium))}%
+                      +{Math.abs(Number(savingsExclusive))}%
                     </Badge>
                   )}
                 </td>
@@ -362,15 +318,15 @@ export const BarkComparisonTable = () => {
               <ul className="space-y-2 text-sm">
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span><strong>Exclusive Leads:</strong> Every lead is yours alone, not shared with competitors</span>
+                  <span><strong>Exclusivity Choice:</strong> Choose between cost-effective non-exclusive or premium 24-hour exclusive leads</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span><strong>Volume Rewards:</strong> Automatic discounts as you grow—no credit purchases needed</span>
+                  <span><strong>Transparent Pricing:</strong> Bark - $0.50 for non-exclusive, Google CPC × 2.5 for exclusive</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span><strong>Simple Pricing:</strong> One transparent price per lead, no complex credit calculations</span>
+                  <span><strong>Simple Model:</strong> One transparent price per lead, no complex credit calculations</span>
                 </li>
               </ul>
             </CardContent>
@@ -414,12 +370,12 @@ export const BarkComparisonTable = () => {
                     <span className="font-semibold">${(barkData.costPerLead * 25).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-primary">
-                    <span>DigsandGigs Total:</span>
-                    <span className="font-semibold">${((digsAndGigsFree * 10) + (digsAndGigsPro * 15)).toFixed(2)}</span>
+                    <span>DigsandGigs (Non-Exclusive):</span>
+                    <span className="font-semibold">${(digsAndGigsNonExclusive * 25).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-green-600 border-t pt-2">
                     <span className="font-semibold">Your Savings:</span>
-                    <span className="font-semibold">${(barkData.costPerLead * 25 - ((digsAndGigsFree * 10) + (digsAndGigsPro * 15))).toFixed(2)}</span>
+                    <span className="font-semibold">${(barkData.costPerLead * 25 - digsAndGigsNonExclusive * 25).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

@@ -9,9 +9,8 @@ export default function CompetitiveAdvantageShowcase() {
   const allIndustries = getAllIndustries();
   const [selectedIndustry, setSelectedIndustry] = useState<string>("HVAC");
   
-  const freeTier = getLeadCostForIndustry(selectedIndustry, 'free');
-  const proTier = getLeadCostForIndustry(selectedIndustry, 'pro');
-  const premiumTier = getLeadCostForIndustry(selectedIndustry, 'premium');
+  const nonExclusiveCost = getLeadCostForIndustry(selectedIndustry, 'non-exclusive');
+  const exclusiveCost = getLeadCostForIndustry(selectedIndustry, 'exclusive-24h');
   
   // Get industry-specific competitor pricing
   const industryCategory = getIndustryCategory(selectedIndustry);
@@ -53,7 +52,7 @@ export default function CompetitiveAdvantageShowcase() {
       escrow: "Limited",
       leadQuality: "Shared",
       advantages: ["Direct messaging"],
-      disadvantages: ["Flat pricing regardless of volume", "Pay to quote (no guarantee of work)", "High competition", "No meaningful volume benefits"]
+      disadvantages: ["Flat pricing regardless of exclusivity", "Pay to quote (no guarantee of work)", "High competition", "No meaningful exclusivity benefits"]
     },
     {
       name: "Google AdWords",
@@ -90,9 +89,9 @@ export default function CompetitiveAdvantageShowcase() {
   const digsandgigsAdvantages = [
     {
       icon: <TrendingDown className="h-5 w-5 text-green-600" />,
-      title: "Automatic Volume Discounts",
-      description: "Save up to 33% as you buy more leads each month. No commitment required - just pay as you go.",
-      value: `${freeTier} → ${proTier} → ${premiumTier} per lead (HVAC)`
+      title: "Choose Your Exclusivity",
+      description: "Pay based on your exclusivity preference. Non-exclusive at Bark - $0.50, or 24-hour exclusive at Google CPC × 2.5. You choose what works for your business.",
+      value: `$${nonExclusiveCost} or $${exclusiveCost} per lead (${selectedIndustry})`
     },
     {
       icon: <Shield className="h-5 w-5 text-blue-600" />,
@@ -102,9 +101,9 @@ export default function CompetitiveAdvantageShowcase() {
     },
     {
       icon: <Zap className="h-5 w-5 text-purple-600" />,
-      title: "Exclusive Leads",
-      description: "Every lead is yours alone. No sharing with 3-5 other pros like on competitor platforms.",
-      value: "100% exclusive"
+      title: "True Exclusive Leads",
+      description: "When you choose 24-hour exclusive, the lead is yours alone. No sharing with 3-5 other pros like on competitor platforms.",
+      value: "100% exclusive option"
     },
     {
       icon: <Target className="h-5 w-5 text-orange-600" />,
@@ -126,7 +125,7 @@ export default function CompetitiveAdvantageShowcase() {
             <div>
               <CardTitle className="text-3xl">Why DigsandGigs Wins</CardTitle>
               <CardDescription className="mt-2 text-base">
-                The only platform designed to reward your growth with automatic savings
+                The only platform where you choose between non-exclusive or exclusive leads
               </CardDescription>
             </div>
           </div>
@@ -186,7 +185,7 @@ export default function CompetitiveAdvantageShowcase() {
                   <th className="text-left p-4 font-bold">Platform</th>
                   <th className="text-left p-4 font-bold">Monthly Fee</th>
                   <th className="text-left p-4 font-bold">Cost Per Lead</th>
-                  <th className="text-left p-4 font-bold">Volume Discount</th>
+                  <th className="text-left p-4 font-bold">Exclusivity Options</th>
                   <th className="text-left p-4 font-bold">Lead Quality</th>
                   <th className="text-left p-4 font-bold">Escrow</th>
                 </tr>
@@ -208,20 +207,20 @@ export default function CompetitiveAdvantageShowcase() {
                   </td>
                   <td className="p-4">
                     <div className="font-semibold text-primary">
-                      ${freeTier} → ${proTier} → ${premiumTier}
+                      ${nonExclusiveCost} or ${exclusiveCost}
                     </div>
-                    <p className="text-xs text-muted-foreground">Auto-decreases with volume</p>
+                    <p className="text-xs text-muted-foreground">Your choice of exclusivity</p>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-1">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="font-semibold text-green-600">Up to 33%</span>
+                      <span className="font-semibold text-green-600">Both options</span>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-1">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="font-semibold">24 hours exclusive</span>
+                      <span className="font-semibold">Exclusive available</span>
                     </div>
                   </td>
                   <td className="p-4">
@@ -280,165 +279,9 @@ export default function CompetitiveAdvantageShowcase() {
           <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
             <p className="text-sm font-semibold text-primary mb-2">💡 Key Insight:</p>
             <p className="text-sm text-muted-foreground">
-              DigsandGigs is the <strong>only platform</strong> that automatically reduces your cost per lead as your volume grows - 
-              saving you up to 33% compared to our standard rate. Competitors charge the same flat rate whether you buy 10 leads or 100.
+              DigsandGigs is the <strong>only platform</strong> that lets you choose between non-exclusive (Bark - $0.50) 
+              and 24-hour exclusive leads (Google CPC × 2.5). Competitors offer no such flexibility—you're stuck with their one-size-fits-all approach.
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Real Cost Comparison Examples */}
-      <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20">
-        <CardHeader>
-          <CardTitle className="text-2xl text-green-700 dark:text-green-400">Real Monthly Cost Examples</CardTitle>
-          <CardDescription>
-            See your actual savings with DigsandGigs vs. competitors ({selectedIndustry} industry)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* 20 Leads Example */}
-            <Card className="bg-background">
-              <CardHeader>
-                <CardTitle className="text-lg">20 Leads/Month</CardTitle>
-                <CardDescription>Small volume buyer</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">DigsandGigs:</span>
-                    <span className="font-bold text-primary">
-                      ${(10 * freeTier + 10 * proTier).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">HomeAdvisor:</span>
-                    <span className="font-bold text-red-600">$1,200.00</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Thumbtack:</span>
-                    <span className="font-bold text-red-600">$1,000.00</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Yelp:</span>
-                    <span className="font-bold text-red-600">$300.00+ (no guarantee)</span>
-                  </div>
-                </div>
-                <div className="pt-3 border-t">
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-bold text-green-600">
-                      Save ${(1200 - (10 * freeTier + 10 * proTier)).toFixed(2)} vs HomeAdvisor
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 50 Leads Example */}
-            <Card className="bg-background border-primary">
-              <CardHeader>
-                <CardTitle className="text-lg">50 Leads/Month</CardTitle>
-                <CardDescription>Medium volume buyer</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">DigsandGigs:</span>
-                    <span className="font-bold text-primary">
-                      ${(10 * freeTier + 40 * proTier).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">HomeAdvisor:</span>
-                    <span className="font-bold text-red-600">$3,000.00</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Thumbtack:</span>
-                    <span className="font-bold text-red-600">$2,500.00</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Yelp:</span>
-                    <span className="font-bold text-red-600">$300.00+ (no guarantee)</span>
-                  </div>
-                </div>
-                <div className="pt-3 border-t">
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-bold text-green-600">
-                      Save ${(3000 - (10 * freeTier + 40 * proTier)).toFixed(2)} vs HomeAdvisor
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 100 Leads Example */}
-            <Card className="bg-background">
-              <CardHeader>
-                <CardTitle className="text-lg">100 Leads/Month</CardTitle>
-                <CardDescription>High volume buyer</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">DigsandGigs:</span>
-                    <span className="font-bold text-primary">
-                      ${(10 * freeTier + 40 * proTier + 50 * premiumTier).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">HomeAdvisor:</span>
-                    <span className="font-bold text-red-600">$6,000.00</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Thumbtack:</span>
-                    <span className="font-bold text-red-600">$5,000.00</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Yelp:</span>
-                    <span className="font-bold text-red-600">$300.00+ (no guarantee)</span>
-                  </div>
-                </div>
-                <div className="pt-3 border-t">
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-bold text-green-600">
-                      Save ${(6000 - (10 * freeTier + 40 * proTier + 50 * premiumTier)).toFixed(2)} vs HomeAdvisor
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="mt-6 p-4 bg-green-100 dark:bg-green-900/30 rounded-lg">
-            <p className="text-sm font-bold text-green-700 dark:text-green-400 mb-2">
-              📊 The Math is Clear: DigsandGigs offers 30-50% savings compared to competitors
-            </p>
-            <ul className="text-sm text-green-700 dark:text-green-400 space-y-1 ml-4">
-              <li>✓ At 20 leads: Save $100-$400/month</li>
-              <li>✓ At 50 leads: Save $500-$1,200/month</li>
-              <li>✓ At 100 leads: Save $1,200-$2,600/month</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bottom Line */}
-      <Card className="bg-primary text-primary-foreground">
-        <CardContent className="py-8">
-          <div className="text-center space-y-4">
-            <h3 className="text-3xl font-bold">The Bottom Line</h3>
-            <p className="text-lg opacity-90 max-w-3xl mx-auto">
-              DigsandGigs is the <strong>only platform</strong> that rewards your growth with automatic volume discounts, 
-              offers exclusive leads (not shared with competitors), and provides optional escrow protection - all with zero monthly fees.
-            </p>
-            <div className="pt-4">
-              <p className="text-xl font-bold">
-                Why pay more for shared leads when you can pay less for exclusive ones?
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>
