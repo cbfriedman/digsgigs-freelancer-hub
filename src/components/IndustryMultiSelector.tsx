@@ -75,12 +75,12 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   }, [searchQuery]);
 
   // Get highest lead cost from selected industries
-  const getHighestLeadCost = (tier: 'free' | 'pro' | 'premium'): number => {
+  const getHighestLeadCost = (exclusivity: 'non-exclusive' | 'exclusive-24h'): number => {
     if (selectedIndustries.length === 0) {
       // Default to least expensive (low-value category minimum)
-      return INDUSTRY_PRICING[0][tier]; // Low-value services
+      return INDUSTRY_PRICING[0][exclusivity]; // Low-value services
     }
-    return Math.max(...selectedIndustries.map(ind => getLeadCostForIndustry(ind, tier)));
+    return Math.max(...selectedIndustries.map(ind => getLeadCostForIndustry(ind, exclusivity)));
   };
 
   // Check if selected industries span multiple value categories
@@ -98,27 +98,19 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   const selectedCategories = getSelectedCategories();
   const hasMultipleCategories = selectedCategories.size > 1;
 
-  // Determine tier based on leads per month
-  const getTierFromLeads = (leads: number): 'free' | 'pro' | 'premium' => {
-    if (leads >= 51) return 'premium';
-    if (leads >= 11) return 'pro';
-    return 'free';
-  };
-
-  // Calculate total cost based on selected industries and lead quantity
+  // Calculate total cost based on selected industries and lead quantity (non-exclusive)
   const calculatedCost = useMemo(() => {
     if (!leadsPerMonth || selectedIndustries.length === 0) return null;
     
     const leads = parseInt(leadsPerMonth);
     if (isNaN(leads) || leads <= 0) return null;
     
-    const tier = getTierFromLeads(leads);
     const totalCost = selectedIndustries.reduce((sum, industry) => {
-      const costPerLead = getLeadCostForIndustry(industry, tier);
+      const costPerLead = getLeadCostForIndustry(industry, 'non-exclusive');
       return sum + (costPerLead * leads);
     }, 0);
     
-    return { totalCost, tier, leads };
+    return { totalCost, leads };
   }, [leadsPerMonth, selectedIndustries]);
 
   return (
@@ -181,7 +173,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     LV
                   </Badge>
                   <span className="text-muted-foreground">
-                    Low Value: ${INDUSTRY_PRICING[0].premium}-${INDUSTRY_PRICING[0].free}/lead
+                    Low Value: ${INDUSTRY_PRICING[0].nonExclusive}-${INDUSTRY_PRICING[0].exclusive24h}/lead
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -189,7 +181,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     MV
                   </Badge>
                   <span className="text-muted-foreground">
-                    Mid Value: ${INDUSTRY_PRICING[1].premium}-${INDUSTRY_PRICING[1].free}/lead
+                    Mid Value: ${INDUSTRY_PRICING[1].nonExclusive}-${INDUSTRY_PRICING[1].exclusive24h}/lead
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -197,7 +189,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     HV
                   </Badge>
                   <span className="text-muted-foreground">
-                    High Value: ${INDUSTRY_PRICING[2].premium}-${INDUSTRY_PRICING[2].free}/lead
+                    High Value: ${INDUSTRY_PRICING[2].nonExclusive}-${INDUSTRY_PRICING[2].exclusive24h}/lead
                   </span>
                 </div>
               </div>
@@ -279,8 +271,8 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                   <div className="bg-accent/5 divide-y">
                     {group.industries.map((industry) => {
                       const isSelected = selectedIndustries.includes(industry.name);
-                      const freeCost = getLeadCostForIndustry(industry.name, 'free');
-                      const premiumCost = getLeadCostForIndustry(industry.name, 'premium');
+                      const nonExclusiveCost = getLeadCostForIndustry(industry.name, 'non-exclusive');
+                      const exclusiveCost = getLeadCostForIndustry(industry.name, 'exclusive-24h');
                       return (
                         <div
                           key={industry.name}
@@ -302,9 +294,8 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                               {industry.indicator}
                             </Badge>
                             <div className="text-xs text-muted-foreground whitespace-nowrap">
-                              <div className="font-medium">Free: ${freeCost}</div>
-                              <div>Pro: ${getLeadCostForIndustry(industry.name, 'pro')}</div>
-                              <div>Premium: ${premiumCost}</div>
+                              <div className="font-medium">Non-Exclusive: ${nonExclusiveCost}</div>
+                              <div>24hr Exclusive: ${exclusiveCost}</div>
                             </div>
                             <Button
                               size="sm"
@@ -355,27 +346,20 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
             </p>
             <div className="flex justify-center gap-4 text-xs">
               <div>
-                <span className="text-muted-foreground">Standard Tier:</span>{' '}
-                <strong className="text-primary">${getHighestLeadCost('free')}</strong>
+                <span className="text-muted-foreground">Non-Exclusive:</span>{' '}
+                <strong className="text-primary">${getHighestLeadCost('non-exclusive')}</strong>
               </div>
               <div>
-                <span className="text-muted-foreground">Pro Tier:</span>{' '}
-                <strong className="text-primary">${getHighestLeadCost('pro')}</strong>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Premium Tier:</span>{' '}
-                <strong className="text-primary">${getHighestLeadCost('premium')}</strong>
+                <span className="text-muted-foreground">24hr Exclusive:</span>{' '}
+                <strong className="text-primary">${getHighestLeadCost('exclusive-24h')}</strong>
               </div>
             </div>
           </div>
 
-          {/* Visual Pricing Chart */}
-          <LeadPricingChart selectedIndustries={selectedIndustries} />
-
           {/* Lead Quantity Selector and Cost Calculator */}
           <div className="space-y-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium">How many leads would you like to buy per month?</label>
+              <label className="text-sm font-medium">How many non-exclusive leads would you like per month?</label>
               <Input
                 type="number"
                 min="1"
@@ -384,10 +368,8 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                 onChange={(e) => setLeadsPerMonth(e.target.value)}
                 className="w-full"
               />
-              <div className="text-xs text-muted-foreground space-y-0.5">
-                <div>• 1-10 leads = Standard tier pricing</div>
-                <div>• 11-50 leads = Pro tier pricing (Save 17%)</div>
-                <div>• 51+ leads = Premium tier pricing (Save 33%)</div>
+              <div className="text-xs text-muted-foreground">
+                Pricing: Bark - $0.50 per lead
               </div>
             </div>
 
@@ -403,12 +385,6 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     <span className="text-sm font-medium">Leads per Month:</span>
                     <span className="text-sm">{calculatedCost.leads}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Pricing Tier:</span>
-                    <Badge variant="secondary" className="capitalize">
-                      {calculatedCost.tier}
-                    </Badge>
-                  </div>
                   <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total Monthly Cost:</span>
@@ -416,6 +392,9 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                         ${calculatedCost.totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      * Based on non-exclusive lead pricing (Bark - $0.50)
+                    </p>
                   </div>
                 </div>
               </Card>
