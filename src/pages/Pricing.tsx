@@ -825,13 +825,14 @@ export default function Pricing() {
                           }
 
                           try {
-                            toast.loading('Saving profile...');
+                            toast.loading(`Saving profile "${formData.companyName}"...`);
                             const { data, error } = await supabase
                               .from('digger_profiles')
                               .insert({
                                 user_id: user.id,
                                 business_name: formData.companyName,
                                 company_name: formData.companyName,
+                                profile_name: formData.companyName,
                                 phone: formData.phone,
                                 location: 'To be updated',
                                 registration_status: 'incomplete'
@@ -842,17 +843,20 @@ export default function Pricing() {
                             if (error) throw error;
                             
                             toast.dismiss();
-                            toast.success('Profile saved! Redirecting to your profiles...');
-                            setTimeout(() => navigate('/my-profiles'), 1500);
-                          } catch (error) {
+                            toast.success(`Profile "${formData.companyName}" saved! You can continue or come back later.`);
+                          } catch (error: any) {
                             toast.dismiss();
-                            toast.error('Failed to save profile. Please try again.');
+                            if (error.message?.includes('duplicate')) {
+                              toast.error(`A profile for "${formData.companyName}" already exists.`);
+                            } else {
+                              toast.error('Failed to save profile. Please try again.');
+                            }
                             console.error(error);
                           }
                         }}
                       >
                         <Save className="mr-2 h-4 w-4" />
-                        Save Profile & Exit
+                        Save Profile
                       </Button>
 
                       <Button 
@@ -870,6 +874,10 @@ export default function Pricing() {
                           "Continue to Step 2 →"
                         )}
                       </Button>
+
+                      <p className="text-xs text-center text-muted-foreground">
+                        💾 This will be saved as "{formData.companyName || 'your company name'}"
+                      </p>
                     </div>
 
                     {!showVerification && (
