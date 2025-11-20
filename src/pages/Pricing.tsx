@@ -798,6 +798,8 @@ export default function Pricing() {
                             </div>
                           </div>
                         )}
+                          </div>
+                        )}
                       </>
                     )}
 
@@ -866,8 +868,8 @@ export default function Pricing() {
                           </Label>
                         </div>
 
-                    {/* Current Profile Industry Sets Indicator */}
-                    {currentProfileIndustrySets.length > 0 && (
+                        {/* Current Profile Industry Sets Indicator */}
+                        {currentProfileIndustrySets.length > 0 && (
                       <Card className="p-4 bg-primary/5 border-primary/20">
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
@@ -894,10 +896,10 @@ export default function Pricing() {
                             These will be saved together under {formData.companyName || 'this profile'}
                           </p>
                         </div>
-                      </Card>
-                    )}
+                        </Card>
+                        )}
 
-                    <div className="space-y-3">
+                        <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button 
                           type="submit" 
@@ -1116,14 +1118,14 @@ export default function Pricing() {
                         }}
                       >
                         Start New Profile (Different Person/Company)
-                      </Button>
-                    </div>
-                    
-                    <p className="text-xs text-center text-muted-foreground mt-2">
-                      No payment required • No commitment to buy
-                    </p>
-                  </>
-                )}
+                        </Button>
+                      </div>
+                      
+                      <p className="text-xs text-center text-muted-foreground mt-2">
+                        No payment required • No commitment to buy
+                      </p>
+                    </>
+                  )}
               </form>
             </CardContent>
           </Card>
