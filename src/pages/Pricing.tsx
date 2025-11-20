@@ -1230,16 +1230,18 @@ export default function Pricing() {
 
       {/* Industry Selector - Step 2 (shown after Step 1 is completed, synced with Step 1 selection) */}
       {step1Completed && (
-        <section id="step-2-industry" className="py-8 bg-background">
+        <section id="step-2-industry" className="py-12 bg-gradient-to-b from-background to-primary/5">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-4">
-                <Label htmlFor="industry-select" className="text-lg font-semibold block mb-2">
-                  Review & Add More Professions
-                </Label>
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
+                  <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+                  <h2 className="text-2xl font-bold">Review Your Professions & Pricing</h2>
+                </div>
                 {selectedIndustries.length > 0 ? (
                   <p className="text-sm text-green-600 font-medium">
-                    ✅ {selectedIndustries.length} profession{selectedIndustries.length !== 1 ? 's' : ''} from Step 1 shown below
+                    ✅ {selectedIndustries.length} profession{selectedIndustries.length !== 1 ? 's' : ''} selected
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -1247,12 +1249,15 @@ export default function Pricing() {
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-4 justify-center">
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
-                  <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
-                </div>
-                <div className="flex-1 max-w-md">
+
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-lg">Add or Edit Professions</CardTitle>
+                  <CardDescription>
+                    Type profession or keyword (e.g., 'plumber', 'web designer')
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <ProfessionKeywordInput
                     professions={selectedIndustries.map(keyword => {
                       return {
@@ -1269,37 +1274,87 @@ export default function Pricing() {
                       setSelectedIndustries(professions.map(p => p.keyword));
                     }}
                   />
-                  <div className="mt-2 flex items-start gap-2">
-                    <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Optional:</strong> Add more professions or keywords to expand your reach
-                    </p>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+
+              {selectedIndustries.length > 0 && (
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-xl">Your Lead Pricing Summary</CardTitle>
+                    <CardDescription>
+                      Cost per lead for each profession across all tiers
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {selectedIndustries.map((keyword, index) => {
+                        const freeCost = getLeadCostForIndustry(keyword, 'free');
+                        const proCost = getLeadCostForIndustry(keyword, 'pro');
+                        const premiumCost = getLeadCostForIndustry(keyword, 'premium');
+                        const valueIndicator = getValueIndicator(keyword);
+                        
+                        return (
+                          <div key={index} className="p-4 bg-background rounded-lg border border-border">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-lg">{keyword}</span>
+                                <Badge variant={
+                                  valueIndicator === 'High Value' ? 'default' : 
+                                  valueIndicator === 'Mid Value' ? 'secondary' : 'outline'
+                                }>
+                                  {valueIndicator}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="text-center p-3 bg-muted/30 rounded">
+                                <p className="text-xs text-muted-foreground mb-1">Leads 1-10/mo</p>
+                                <p className="text-lg font-bold text-foreground">${freeCost}/lead</p>
+                                <Badge variant="outline" className="mt-1 text-xs">Standard Rate</Badge>
+                              </div>
+                              <div className="text-center p-3 bg-primary/10 rounded border border-primary/20">
+                                <p className="text-xs text-muted-foreground mb-1">Leads 11-50/mo</p>
+                                <p className="text-lg font-bold text-primary">${proCost}/lead</p>
+                                <Badge className="mt-1 text-xs bg-green-500">Save 17%</Badge>
+                              </div>
+                              <div className="text-center p-3 bg-primary/10 rounded border border-primary/20">
+                                <p className="text-xs text-muted-foreground mb-1">Leads 51+/mo</p>
+                                <p className="text-lg font-bold text-primary">${premiumCost}/lead</p>
+                                <Badge className="mt-1 text-xs bg-green-600">Save 33%</Badge>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="text-sm text-blue-900 dark:text-blue-100 flex items-start gap-2">
+                        <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>
+                          <strong>Volume-based pricing:</strong> The more leads you commit to per month, the lower your per-lead cost. 
+                          Scroll down to see tier options and sign up!
+                        </span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </section>
       )}
 
-      {/* Pricing Cards - pricing updates in real-time, clickable after Step 1 */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          {!canInteractWithPricing && selectedIndustries.length > 0 && (
+      {/* Pricing Cards - shown after Step 1 is completed and professions selected */}
+      {step1Completed && selectedIndustries.length > 0 && (
+        <section className="py-16">
+          <div className="container mx-auto px-4">
             <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-2">Choose Your Volume Tier</h2>
               <p className="text-muted-foreground text-lg">
-                Complete and submit Step 1 to proceed with your selection
+                Select the tier that matches your expected monthly lead volume
               </p>
             </div>
-          )}
-          {!canInteractWithPricing && selectedIndustries.length === 0 && (
-            <div className="text-center mb-8">
-              <p className="text-muted-foreground text-lg">
-                Select an industry in Step 1 to see pricing
-              </p>
-            </div>
-          )}
-          <div className={`${!canInteractWithPricing ? 'pointer-events-none opacity-50' : ''}`}>
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {Object.entries(TIERS).map(([key, tier]) => (
                 <Card 
@@ -1448,15 +1503,15 @@ export default function Pricing() {
                     {getButtonText(key, tier.priceId)}
                   </Button>
                 </CardContent>
-              </Card>
-              ))}
+                </Card>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        )}
 
-      {/* How Commitment-Based Pricing Works - only shown after Step 1 is completed */}
-      {step1Completed && (
+        {/* How Commitment-Based Pricing Works - only shown after Step 1 is completed */}
+        {step1Completed && (
         <section className="py-12 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
