@@ -32,6 +32,7 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries, getLeadTierDescription, INDUSTRY_GROUPS } from "@/config/pricing";
+import { lookupCPC, findSimilarKeywords } from "@/utils/cpcLookup";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -71,16 +72,20 @@ export default function Pricing() {
 
   // Helper function to get value indicator for a profession
   const getValueIndicator = (profession: string): string => {
-    for (const group of INDUSTRY_GROUPS) {
-      const industry = group.industries.find(ind => ind.name === profession);
-      if (industry) return industry.indicator;
-    }
-    return 'LV'; // Default to low-value if not found
+    const cpcData = lookupCPC(profession) || findSimilarKeywords(profession, 1)[0];
+    if (!cpcData) return 'Mid Value';
+    
+    return cpcData.valueIndicator === 'low-value' ? 'Low Value' : 
+           cpcData.valueIndicator === 'mid-value' ? 'Mid Value' : 'High Value';
   };
 
   // Helper function to get lead cost for a profession based on tier
   const getProfessionLeadCost = (profession: string, tier: 'free' | 'pro' | 'premium'): number => {
-    return getLeadCostForIndustry(profession, tier);
+    const cpcData = lookupCPC(profession) || findSimilarKeywords(profession, 1)[0];
+    const baseCPC = cpcData?.estimatedCPC || 15;
+    
+    const multipliers = { free: 3, pro: 2.5, premium: 2 };
+    return Math.round(baseCPC * multipliers[tier]);
   };
 
   // Calculate total leads across all professions
@@ -1138,9 +1143,9 @@ export default function Pricing() {
                       return {
                         keyword,
                         cpl: {
-                          free: getLeadCostForIndustry(keyword, 'free'),
-                          pro: getLeadCostForIndustry(keyword, 'pro'),
-                          premium: getLeadCostForIndustry(keyword, 'premium')
+                          free: getProfessionLeadCost(keyword, 'free'),
+                          pro: getProfessionLeadCost(keyword, 'pro'),
+                          premium: getProfessionLeadCost(keyword, 'premium')
                         },
                         valueIndicator: getValueIndicator(keyword)
                       };
@@ -1167,9 +1172,9 @@ export default function Pricing() {
                     <CardContent>
                       <div className="space-y-4">
                         {selectedIndustries.map((keyword, index) => {
-                          const freeCost = getLeadCostForIndustry(keyword, 'free');
-                          const proCost = getLeadCostForIndustry(keyword, 'pro');
-                          const premiumCost = getLeadCostForIndustry(keyword, 'premium');
+                          const freeCost = getProfessionLeadCost(keyword, 'free');
+                          const proCost = getProfessionLeadCost(keyword, 'pro');
+                          const premiumCost = getProfessionLeadCost(keyword, 'premium');
                           const valueIndicator = getValueIndicator(keyword);
                           const leadVolume = professionLeadQuantities[keyword] || 0;
                           
@@ -1273,11 +1278,11 @@ export default function Pricing() {
                                   const volume = professionLeadQuantities[keyword] || 0;
                                   if (volume === 0) return total;
                                   
-                                  let costPerLead = getLeadCostForIndustry(keyword, 'free');
+                                  let costPerLead = getProfessionLeadCost(keyword, 'free');
                                   if (volume >= 51) {
-                                    costPerLead = getLeadCostForIndustry(keyword, 'premium');
+                                    costPerLead = getProfessionLeadCost(keyword, 'premium');
                                   } else if (volume >= 11) {
-                                    costPerLead = getLeadCostForIndustry(keyword, 'pro');
+                                    costPerLead = getProfessionLeadCost(keyword, 'pro');
                                   }
                                   return total + (volume * costPerLead);
                                 }, 0).toFixed(2)}
@@ -1315,9 +1320,9 @@ export default function Pricing() {
                     <CardContent>
                       <div className="space-y-4">
                         {selectedIndustries.map((keyword, index) => {
-                          const freeCost = getLeadCostForIndustry(keyword, 'free');
-                          const proCost = getLeadCostForIndustry(keyword, 'pro');
-                          const premiumCost = getLeadCostForIndustry(keyword, 'premium');
+                          const freeCost = getProfessionLeadCost(keyword, 'free');
+                          const proCost = getProfessionLeadCost(keyword, 'pro');
+                          const premiumCost = getProfessionLeadCost(keyword, 'premium');
                           const valueIndicator = getValueIndicator(keyword);
                           const savingsPro = Math.round(((freeCost - proCost) / freeCost) * 100);
                           const savingsPremium = Math.round(((freeCost - premiumCost) / freeCost) * 100);
