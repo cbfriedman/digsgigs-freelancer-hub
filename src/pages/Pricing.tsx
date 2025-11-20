@@ -430,22 +430,29 @@ export default function Pricing() {
                         return;
                       }
                       
-                      const registrationSchema = z.object({
-                        fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
-                        email: z.string().trim().email("Invalid email address"),
-                        password: z.string()
-                          .min(8, "Password must be at least 8 characters")
-                          .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-                          .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-                          .regex(/\d/, "Password must contain at least one number")
-                          .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
-                        confirmPassword: z.string(),
-                        phone: z.string().trim().min(10, "Phone number required"),
-                        companyName: z.string().trim().min(2, "Company name must be at least 2 characters"),
-                      }).refine((data) => data.password === data.confirmPassword, {
-                        message: "Passwords don't match",
-                        path: ["confirmPassword"],
-                      });
+                      const registrationSchema = user 
+                        ? z.object({
+                            fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
+                            email: z.string().trim().email("Invalid email address"),
+                            phone: z.string().trim().min(10, "Phone number required"),
+                            companyName: z.string().trim().min(2, "Company name must be at least 2 characters"),
+                          })
+                        : z.object({
+                            fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
+                            email: z.string().trim().email("Invalid email address"),
+                            password: z.string()
+                              .min(8, "Password must be at least 8 characters")
+                              .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+                              .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+                              .regex(/\d/, "Password must contain at least one number")
+                              .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
+                            confirmPassword: z.string(),
+                            phone: z.string().trim().min(10, "Phone number required"),
+                            companyName: z.string().trim().min(2, "Company name must be at least 2 characters"),
+                          }).refine((data) => data.password === data.confirmPassword, {
+                            message: "Passwords don't match",
+                            path: ["confirmPassword"],
+                          });
                       
                       try {
                         registrationSchema.parse(formData);
@@ -599,91 +606,97 @@ export default function Pricing() {
                           )}
                         </div>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="password">
-                              Choose a Password *
-                            </Label>
-                            {user && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowForgotPassword(true);
-                                  setResetEmail(formData.email);
-                                }}
-                                className="text-xs text-primary hover:underline"
-                              >
-                                Forgot password?
-                              </button>
-                            )}
-                          </div>
-                          <div className="relative">
-                            <Input
-                              id="password"
-                              type={showPassword ? "text" : "password"}
-                              placeholder="Create a strong password"
-                              value={formData.password}
-                              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                              required
-                              className="pr-10"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                              aria-label={showPassword ? "Hide password" : "Show password"}
-                            >
-                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                          </div>
-                          <PasswordStrengthIndicator password={formData.password} />
-                        </div>
+                        {!user ? (
+                          <>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label htmlFor="password">
+                                  Choose a Password *
+                                </Label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowForgotPassword(true);
+                                    setResetEmail(formData.email);
+                                  }}
+                                  className="text-xs text-primary hover:underline"
+                                >
+                                  Forgot password?
+                                </button>
+                              </div>
+                              <div className="relative">
+                                <Input
+                                  id="password"
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder="Create a strong password"
+                                  value={formData.password}
+                                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                  required
+                                  className="pr-10"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                  aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                              <PasswordStrengthIndicator password={formData.password} />
+                            </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="confirmPassword">
-                            Confirm Password *
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              id="confirmPassword"
-                              type={showConfirmPassword ? "text" : "password"}
-                              placeholder="Re-enter password"
-                              value={formData.confirmPassword}
-                              onChange={(e) => {
-                                const newValue = e.target.value;
-                                setFormData({ ...formData, confirmPassword: newValue });
-                                // Check if passwords match in real-time
-                                if (formData.password && newValue) {
-                                  setPasswordsMatch(formData.password === newValue);
-                                } else {
-                                  setPasswordsMatch(true); // Don't show error if fields are empty
-                                }
-                              }}
-                              required
-                              className={`pr-10 ${!passwordsMatch && formData.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                            >
-                              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
+                            <div className="space-y-2">
+                              <Label htmlFor="confirmPassword">
+                                Confirm Password *
+                              </Label>
+                              <div className="relative">
+                                <Input
+                                  id="confirmPassword"
+                                  type={showConfirmPassword ? "text" : "password"}
+                                  placeholder="Re-enter password"
+                                  value={formData.confirmPassword}
+                                  onChange={(e) => {
+                                    const newValue = e.target.value;
+                                    setFormData({ ...formData, confirmPassword: newValue });
+                                    // Check if passwords match in real-time
+                                    if (formData.password && newValue) {
+                                      setPasswordsMatch(formData.password === newValue);
+                                    } else {
+                                      setPasswordsMatch(true); // Don't show error if fields are empty
+                                    }
+                                  }}
+                                  required
+                                  className={`pr-10 ${!passwordsMatch && formData.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                                >
+                                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
+                              {formData.confirmPassword && !passwordsMatch && (
+                                <p className="text-sm text-destructive flex items-center gap-1">
+                                  <span>⚠️</span> Passwords do not match
+                                </p>
+                              )}
+                              {formData.confirmPassword && passwordsMatch && formData.password && (
+                                <p className="text-sm text-green-600 flex items-center gap-1">
+                                  <span>✓</span> Passwords match
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                              ✓ You're logged in as <strong>{user.email}</strong>. Your digger profile will be linked to this account.
+                            </p>
                           </div>
-                          {!passwordsMatch && formData.confirmPassword && (
-                            <p className="text-sm text-destructive flex items-center gap-1">
-                              <span className="text-lg">⚠️</span>
-                              Passwords do not match
-                            </p>
-                          )}
-                          {passwordsMatch && formData.confirmPassword && formData.password && (
-                            <p className="text-sm text-green-600 dark:text-green-500 flex items-center gap-1">
-                              <span className="text-lg">✓</span>
-                              Passwords match
-                            </p>
-                          )}
-                        </div>
+                        )}
 
                         <div className="space-y-2">
                           <Label htmlFor="phone">
@@ -1180,11 +1193,17 @@ export default function Pricing() {
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-4">
                 <Label htmlFor="industry-select" className="text-lg font-semibold block mb-2">
-                  Refine Your Professions
+                  Review & Add More Professions
                 </Label>
-                <p className="text-sm text-muted-foreground">
-                  ✅ Your selections from Step 1 are displayed below. You can add more professions if needed.
-                </p>
+                {selectedIndustries.length > 0 ? (
+                  <p className="text-sm text-green-600 font-medium">
+                    ✅ {selectedIndustries.length} profession{selectedIndustries.length !== 1 ? 's' : ''} from Step 1 shown below
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Add your professions to see pricing
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-4 justify-center">
                 <div className="flex items-center gap-2 flex-shrink-0">
