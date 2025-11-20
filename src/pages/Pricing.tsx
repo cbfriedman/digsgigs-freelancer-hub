@@ -60,6 +60,7 @@ export default function Pricing() {
   const [pendingEmail, setPendingEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
 
   // Check if user can interact with pricing tiles - only after Step 1 is completed
   const canInteractWithPricing = step1Completed;
@@ -630,9 +631,18 @@ export default function Pricing() {
                               type={showConfirmPassword ? "text" : "password"}
                               placeholder="Re-enter password"
                               value={formData.confirmPassword}
-                              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                setFormData({ ...formData, confirmPassword: newValue });
+                                // Check if passwords match in real-time
+                                if (formData.password && newValue) {
+                                  setPasswordsMatch(formData.password === newValue);
+                                } else {
+                                  setPasswordsMatch(true); // Don't show error if fields are empty
+                                }
+                              }}
                               required
-                              className="pr-10"
+                              className={`pr-10 ${!passwordsMatch && formData.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                             />
                             <button
                               type="button"
@@ -643,6 +653,18 @@ export default function Pricing() {
                               {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                           </div>
+                          {!passwordsMatch && formData.confirmPassword && (
+                            <p className="text-sm text-destructive flex items-center gap-1">
+                              <span className="text-lg">⚠️</span>
+                              Passwords do not match
+                            </p>
+                          )}
+                          {passwordsMatch && formData.confirmPassword && formData.password && (
+                            <p className="text-sm text-green-600 dark:text-green-500 flex items-center gap-1">
+                              <span className="text-lg">✓</span>
+                              Passwords match
+                            </p>
+                          )}
                         </div>
 
                         <div className="space-y-2">
