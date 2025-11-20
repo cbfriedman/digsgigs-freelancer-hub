@@ -120,7 +120,7 @@ export default function PricingCalculator() {
                     <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p className="text-sm">A lead is when a consumer clicks to view your contact information. Free: $8/lead, Pro: $5/lead, Premium: FREE</p>
+                    <p className="text-sm">A lead is when a consumer clicks to view your contact information. Standard: $8/lead, Pro: $5/lead, Premium: FREE</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

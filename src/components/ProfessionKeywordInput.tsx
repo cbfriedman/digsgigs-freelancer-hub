@@ -112,8 +112,8 @@ export function ProfessionKeywordInput({ professions, onProfessionsChange }: Pro
                     {prof.valueIndicator}
                   </Badge>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Free: ${prof.cpl.free}/lead • Pro: ${prof.cpl.pro}/lead • Premium: ${prof.cpl.premium}/lead
+                <div className="text-sm font-semibold text-foreground mt-1">
+                  Standard: ${prof.cpl.free}/lead • Pro: ${prof.cpl.pro}/lead • Premium: ${prof.cpl.premium}/lead
                 </div>
               </div>
               <Button
