@@ -46,19 +46,27 @@ export function ProfessionKeywordInput({ professions, onProfessionsChange }: Pro
   const addProfession = () => {
     if (!input.trim()) return;
     
-    // Check if already added
-    if (professions.some(p => p.keyword.toLowerCase() === input.trim().toLowerCase())) {
-      setInput("");
-      return;
+    // Split by commas to handle multiple keywords at once
+    const keywords = input.split(',').map(k => k.trim()).filter(k => k.length > 0);
+    
+    // Create profession objects for each keyword
+    const newProfessions: Profession[] = [];
+    for (const keyword of keywords) {
+      // Skip if already added
+      if (professions.some(p => p.keyword.toLowerCase() === keyword.toLowerCase())) {
+        continue;
+      }
+
+      newProfessions.push({
+        keyword: keyword,
+        cpl: calculateCPL(keyword),
+        valueIndicator: getValueIndicator(keyword),
+      });
     }
 
-    const newProfession: Profession = {
-      keyword: input.trim(),
-      cpl: calculateCPL(input.trim()),
-      valueIndicator: getValueIndicator(input.trim()),
-    };
-
-    onProfessionsChange([...professions, newProfession]);
+    if (newProfessions.length > 0) {
+      onProfessionsChange([...professions, ...newProfessions]);
+    }
     setInput("");
   };
 
@@ -70,7 +78,7 @@ export function ProfessionKeywordInput({ professions, onProfessionsChange }: Pro
     <div className="space-y-3">
       <div className="flex gap-2">
         <Input
-          placeholder="Type profession or keyword (e.g., 'plumber', 'web designer')"
+          placeholder="Type professions (separate multiple with commas: plumber, electrician, handyman)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
