@@ -1111,21 +1111,21 @@ export default function Pricing() {
                         }}
                       >
                         Start New Profile (Different Person/Company)
-                       </Button>
+                      </Button>
                     </div>
                     
                     <p className="text-xs text-center text-muted-foreground mt-2">
                       No payment required • No commitment to buy
                     </p>
-                      </>
-                    )}
-                  </form>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      </section>
+                  </>
+                )}
+              </form>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  </section>
 
       {/* Industry Selector - Step 2 (shown after Step 1 is completed, synced with Step 1 selection) */}
       {step1Completed && (
