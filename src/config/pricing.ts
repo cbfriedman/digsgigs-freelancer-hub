@@ -2,15 +2,13 @@
  * Centralized Pricing Configuration
  * Single source of truth for all pricing across the platform
  * 
- * BARK-BASED COMPETITIVE PRICING MODEL
- * Our pricing is strategically positioned relative to Bark.com:
+ * EXCLUSIVITY-BASED PRICING MODEL
+ * Our pricing is based on lead exclusivity:
  * 
- * - Premium tier (51+ leads/month): Bark price - $0.50 (undercut competitor)
- * - Pro tier (11-50 leads/month): Bark price + 50% (1.5x Bark)
- * - Standard tier (1-10 leads/month): Bark price + 100% (2x Bark)
+ * - Non-exclusive leads: Bark price - $0.50 (most affordable)
+ * - 24-hour exclusive leads: Google CPC × 2.5 (premium exclusive access)
  * 
- * This ensures we remain competitive while rewarding high-volume customers
- * with the best rates in the market.
+ * This model provides clear value differentiation and competitive pricing.
  */
 
 export type IndustryCategory = 'low-value' | 'mid-value' | 'high-value';
@@ -30,16 +28,15 @@ export interface IndustryGroup {
 export interface IndustryPricing {
   category: IndustryCategory;
   industries: string[];
-  free: number;
-  pro: number;
-  premium: number;
+  nonExclusive: number;  // Bark price - $0.50
+  exclusive24h: number;  // Google CPC × 2.5
 }
 
 export interface PricingTier {
-  id: 'free' | 'pro' | 'premium';
+  id: 'non-exclusive' | 'exclusive-24h';
   name: string;
-  price: string;
-  priceValue: number;
+  exclusivityPeriod: string;
+  description: string;
   escrowFee: string;
   escrowFeeValue: number;
   escrowProcessingFee: string;
@@ -50,11 +47,9 @@ export interface PricingTier {
   popular: boolean;
 }
 
-// Volume-based lead pricing by industry category
-// Pricing strategy based on Bark.com competitive analysis:
-// Premium tier (51+ leads/month): Bark price - $0.50
-// Pro tier (11-50 leads/month): Bark price + 50% (1.5x)
-// Standard tier (1-10 leads/month): Bark price + 100% (2x)
+// Exclusivity-based lead pricing by industry category
+// Non-exclusive: Bark price - $0.50
+// 24-hour exclusive: Google CPC × 2.5
 export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'low-value',
@@ -149,9 +144,8 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       // Marketing - Entry Level
       'Email Marketing',
     ],
-    free: 16,     // Bark avg (~$8) * 2 (Standard tier: 1-10 leads)
-    pro: 12,      // Bark avg (~$8) * 1.5 (Pro tier: 11-50 leads)
-    premium: 7.50 // Bark avg (~$8) - $0.50 (Premium tier: 51+ leads)
+    nonExclusive: 7.50,  // Bark avg (~$8) - $0.50
+    exclusive24h: 30.00  // Google CPC avg (~$12) × 2.5
   },
   {
     category: 'mid-value',
@@ -353,9 +347,8 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Landscape Architecture',
       'Urban Planning',
     ],
-    free: 30,   // Bark avg (~$15) * 2 (Standard tier: 1-10 leads)
-    pro: 22.50, // Bark avg (~$15) * 1.5 (Pro tier: 11-50 leads)
-    premium: 14.50 // Bark avg (~$15) - $0.50 (Premium tier: 51+ leads)
+    nonExclusive: 14.50,  // Bark avg (~$15) - $0.50
+    exclusive24h: 87.50   // Google CPC avg (~$35) × 2.5
   },
   {
     category: 'high-value',
@@ -488,54 +481,38 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       // Solar & Specialized
       'Solar Panel Installation',
     ],
-    free: 50,   // Bark avg (~$25) * 2 (Standard tier: 1-10 leads)
-    pro: 37.50, // Bark avg (~$25) * 1.5 (Pro tier: 11-50 leads)
-    premium: 24.50 // Bark avg (~$25) - $0.50 (Premium tier: 51+ leads)
+    nonExclusive: 24.50,   // Bark avg (~$25) - $0.50
+    exclusive24h: 187.50   // Google CPC avg (~$75) × 2.5
   }
 ];
 
 // Volume-based tier thresholds (NO monthly fees, Bark-based competitive pricing)
-// Standard tier (1-10 leads): Bark price * 2
-// Pro tier (11-50 leads): Bark price * 1.5
-// Premium tier (51+ leads): Bark price - $0.50
-// Resets monthly at midnight EST on last day of month
-export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
-  free: {
-    id: 'free',
-    name: 'Standard',
-    price: '$0/month',
-    priceValue: 0,
-    escrowFee: '8%',
-    escrowFeeValue: 8,
-    escrowProcessingFee: '8% per payment (min $10)',
-    escrowProcessingFeeValue: 0.08,
-    escrowProcessingMinimum: 10,
-    priceId: null,
-    productId: null,
-    popular: false,
-  },
-  pro: {
-    id: 'pro',
-    name: 'Pro',
-    price: '$0/month',
-    priceValue: 0,
-    escrowFee: '8%',
-    escrowFeeValue: 8,
-    escrowProcessingFee: '8% per payment (min $10)',
+// Exclusivity-based pricing tiers (NO monthly fees)
+// Non-exclusive: Bark price - $0.50
+// 24-hour exclusive: Google CPC × 2.5
+export const PRICING_TIERS: Record<'non-exclusive' | 'exclusive-24h', PricingTier> = {
+  'non-exclusive': {
+    id: 'non-exclusive',
+    name: 'Non-Exclusive',
+    exclusivityPeriod: 'Shared immediately',
+    description: 'Most affordable option - Lead shared with other diggers',
+    escrowFee: 'Optional 8% (min $10)',
+    escrowFeeValue: 0.08,
+    escrowProcessingFee: '8%',
     escrowProcessingFeeValue: 0.08,
     escrowProcessingMinimum: 10,
     priceId: null,
     productId: null,
     popular: true,
   },
-  premium: {
-    id: 'premium',
-    name: 'Premium',
-    price: '$0/month',
-    priceValue: 0,
-    escrowFee: '8%',
-    escrowFeeValue: 8,
-    escrowProcessingFee: '8% per payment (min $10)',
+  'exclusive-24h': {
+    id: 'exclusive-24h',
+    name: '24-Hour Exclusive',
+    exclusivityPeriod: '24 hours exclusive access',
+    description: 'Premium option - You get exclusive access for 24 hours',
+    escrowFee: 'Optional 8% (min $10)',
+    escrowFeeValue: 0.08,
+    escrowProcessingFee: '8%',
     escrowProcessingFeeValue: 0.08,
     escrowProcessingMinimum: 10,
     priceId: null,
@@ -544,10 +521,10 @@ export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   },
 };
 
-// Helper function to get lead cost for a specific industry and tier
+// Helper function to get lead cost for a specific industry and exclusivity type
 export const getLeadCostForIndustry = (
   industry: string,
-  tier: 'free' | 'pro' | 'premium'
+  exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive'
 ): number => {
   const industryData = INDUSTRY_PRICING.find(pricing =>
     pricing.industries.includes(industry)
@@ -555,10 +532,14 @@ export const getLeadCostForIndustry = (
   
   if (!industryData) {
     // Default to mid-value if industry not found
-    return INDUSTRY_PRICING[1][tier];
+    return exclusivity === 'non-exclusive' 
+      ? INDUSTRY_PRICING[1].nonExclusive 
+      : INDUSTRY_PRICING[1].exclusive24h;
   }
   
-  return industryData[tier];
+  return exclusivity === 'non-exclusive' 
+    ? industryData.nonExclusive 
+    : industryData.exclusive24h;
 };
 
 // Helper function to get industry category
@@ -570,8 +551,10 @@ export const getIndustryCategory = (industry: string): IndustryCategory => {
   return industryData?.category || 'mid-value';
 };
 
-export const getPricingTier = (tier: 'free' | 'pro' | 'premium' = 'free'): PricingTier => {
-  return PRICING_TIERS[tier];
+export const getPricingTier = (
+  exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive'
+): PricingTier => {
+  return PRICING_TIERS[exclusivity];
 };
 
 // Hierarchical industry structure for UI display - expanded to 22 categories with 357+ professions
