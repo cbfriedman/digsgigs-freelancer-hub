@@ -3,22 +3,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Save, ShoppingCart, FolderOpen } from "lucide-react";
-import { lookupCPC, findSimilarKeywords } from "@/utils/cpcLookup";
+import { lookupBarkPrice, findSimilarBarkKeywords } from "@/utils/barkPricingLookup";
+import { lookupCPC } from "@/utils/cpcLookup";
 import { PRICING_TIERS } from "@/config/pricing";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Profession {
   keyword: string;
-  cpl: {
-    free: number;
-    pro: number;
-    premium: number;
-  };
+  nonExclusive: number;
+  exclusive24h: number;
   valueIndicator: string;
   quantity?: number;
+  isExclusive?: boolean; // Default false for non-exclusive
 }
 
 interface ProfessionKeywordInputWithCartProps {
@@ -41,23 +42,47 @@ export function ProfessionKeywordInputWithCart({
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
-  const calculateCPL = (keyword: string) => {
-    const cpcData = lookupCPC(keyword) || findSimilarKeywords(keyword, 1)[0];
-    const baseCPC = cpcData?.estimatedCPC || 15;
+  const calculatePricing = (keyword: string) => {
+    // Try Bark pricing first (most accurate)
+    const barkData = lookupBarkPrice(keyword);
+    if (barkData) {
+      return {
+        nonExclusive: Math.max(0.50, barkData.barkPrice - 0.50), // Bark - $0.50
+        exclusive24h: barkData.barkPrice * 2.5, // Roughly Google CPC × 2.5 based on Bark
+      };
+    }
     
+    // Fallback to CPC-based estimation
+    const cpcData = lookupCPC(keyword);
+    if (cpcData) {
+      const estimatedBarkPrice = cpcData.estimatedCPC / 2; // Approximate Bark from CPC
+      return {
+        nonExclusive: Math.max(0.50, estimatedBarkPrice - 0.50),
+        exclusive24h: cpcData.estimatedCPC * 2.5,
+      };
+    }
+    
+    // Default mid-value pricing if not found
     return {
-      free: Math.round(baseCPC * 3),
-      pro: Math.round(baseCPC * 2.5),
-      premium: Math.round(baseCPC * 2),
+      nonExclusive: 14.50,
+      exclusive24h: 87.50,
     };
   };
 
   const getValueIndicator = (keyword: string): string => {
-    const cpcData = lookupCPC(keyword) || findSimilarKeywords(keyword, 1)[0];
-    if (!cpcData) return "Mid Value";
+    const barkData = lookupBarkPrice(keyword);
+    if (barkData) {
+      return barkData.valueIndicator === 'low-value' ? 'Low Value' : 
+             barkData.valueIndicator === 'mid-value' ? 'Mid Value' : 'High Value';
+    }
     
-    return cpcData.valueIndicator === 'low-value' ? 'Low Value' : 
-           cpcData.valueIndicator === 'mid-value' ? 'Mid Value' : 'High Value';
+    const cpcData = lookupCPC(keyword);
+    if (cpcData) {
+      return cpcData.valueIndicator === 'low-value' ? 'Low Value' : 
+             cpcData.valueIndicator === 'mid-value' ? 'Mid Value' : 'High Value';
+    }
+    
+    return "Mid Value";
   };
 
   const addProfession = () => {
@@ -71,11 +96,14 @@ export function ProfessionKeywordInputWithCart({
         continue;
       }
 
+      const pricing = calculatePricing(keyword);
       newProfessions.push({
         keyword: keyword,
-        cpl: calculateCPL(keyword),
+        nonExclusive: pricing.nonExclusive,
+        exclusive24h: pricing.exclusive24h,
         valueIndicator: getValueIndicator(keyword),
         quantity: 0,
+        isExclusive: false, // Default to non-exclusive
       });
     }
 
@@ -97,25 +125,21 @@ export function ProfessionKeywordInputWithCart({
     );
   };
 
+  const toggleExclusivity = (keyword: string) => {
+    onProfessionsChange(
+      professions.map(p => 
+        p.keyword === keyword ? { ...p, isExclusive: !p.isExclusive } : p
+      )
+    );
+  };
+
   // Calculate total leads for display
   const totalLeads = professions.reduce((sum, p) => sum + (p.quantity || 0), 0);
   
-  const getCostPerLead = (quantity: number, cpl: Profession['cpl']) => {
-    if (quantity >= 51) return cpl.premium;
-    if (quantity >= 11) return cpl.pro;
-    return cpl.free;
-  };
-
-  const getTierForQuantity = (quantity: number) => {
-    if (quantity >= 51) return "Premium";
-    if (quantity >= 11) return "Pro";
-    return "Standard";
-  };
-
   const total = professions.reduce((sum, prof) => {
     const quantity = prof.quantity || 0;
     if (quantity === 0) return sum;
-    const costPerLead = getCostPerLead(quantity, prof.cpl);
+    const costPerLead = prof.isExclusive ? prof.exclusive24h : prof.nonExclusive;
     return sum + (costPerLead * quantity);
   }, 0);
 
@@ -168,25 +192,14 @@ export function ProfessionKeywordInputWithCart({
       .filter(p => (p.quantity || 0) > 0)
       .map(p => {
         const quantity = p.quantity || 0;
-        let tier: 'standard' | 'pro' | 'premium';
-        let costPerLead: number;
-
-        if (quantity >= 51) {
-          tier = 'premium';
-          costPerLead = p.cpl.premium;
-        } else if (quantity >= 11) {
-          tier = 'pro';
-          costPerLead = p.cpl.pro;
-        } else {
-          tier = 'standard';
-          costPerLead = p.cpl.free;
-        }
+        const exclusivity = p.isExclusive ? 'exclusive-24h' : 'non-exclusive';
+        const costPerLead = p.isExclusive ? p.exclusive24h : p.nonExclusive;
 
         return {
           keyword: p.keyword,
           quantity,
           costPerLead,
-          tier,
+          exclusivity,
           totalCost: costPerLead * quantity,
         };
       });
@@ -233,9 +246,9 @@ export function ProfessionKeywordInputWithCart({
           <div className="space-y-3">
             {professions.map((prof) => {
               const quantity = prof.quantity || 0;
-              const costPerLead = getCostPerLead(quantity, prof.cpl);
+              const costPerLead = prof.isExclusive ? prof.exclusive24h : prof.nonExclusive;
               const lineCost = costPerLead * quantity;
-              const tier = getTierForQuantity(quantity);
+              const exclusivityLabel = prof.isExclusive ? '24-Hour Exclusive' : 'Non-Exclusive';
 
               return (
                 <div
@@ -250,9 +263,19 @@ export function ProfessionKeywordInputWithCart({
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground space-y-1">
-                      <div>Standard: ${prof.cpl.free}/lead <span className="text-xs opacity-70">(1-10 leads/mo)</span></div>
-                      <div>Pro: ${prof.cpl.pro}/lead <span className="text-xs opacity-70">(11-50 leads/mo)</span></div>
-                      <div>Premium: ${prof.cpl.premium}/lead <span className="text-xs opacity-70">(51+ leads/mo)</span></div>
+                      <div>Non-Exclusive: ${prof.nonExclusive.toFixed(2)}/lead <span className="text-xs opacity-70">(Bark - $0.50)</span></div>
+                      <div>24-Hour Exclusive: ${prof.exclusive24h.toFixed(2)}/lead <span className="text-xs opacity-70">(Google CPC × 2.5)</span></div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-3">
+                      <Switch
+                        checked={prof.isExclusive || false}
+                        onCheckedChange={() => toggleExclusivity(prof.keyword)}
+                        id={`exclusivity-${prof.keyword}`}
+                      />
+                      <Label htmlFor={`exclusivity-${prof.keyword}`} className="text-xs cursor-pointer">
+                        {prof.isExclusive ? '24-Hour Exclusive' : 'Non-Exclusive'}
+                      </Label>
                     </div>
                   </div>
                   
@@ -269,13 +292,13 @@ export function ProfessionKeywordInputWithCart({
                     </div>
                     
                     {quantity > 0 && (
-                      <div className="flex flex-col items-end min-w-[120px]">
-                        <span className="text-xs text-muted-foreground">{tier} Tier</span>
+                      <div className="flex flex-col items-end min-w-[140px]">
+                        <span className="text-xs text-muted-foreground">{exclusivityLabel}</span>
                         <span className="text-lg font-bold text-primary">
                           ${lineCost.toFixed(2)}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {quantity} × ${costPerLead}/lead
+                          {quantity} × ${costPerLead.toFixed(2)}/lead
                         </span>
                       </div>
                     )}
@@ -305,9 +328,9 @@ export function ProfessionKeywordInputWithCart({
                 </div>
                 
                 <div className="text-xs text-center text-muted-foreground mt-2">
-                  <div className="font-semibold mb-1">Per-Profession Volume Pricing</div>
-                  <div>Each profession is priced based on its own lead quantity:</div>
-                  <div className="mt-1">1-10 leads: Standard • 11-50 leads: Pro (17% off) • 51+ leads: Premium (33% off)</div>
+                  <div className="font-semibold mb-1">Exclusivity-Based Pricing</div>
+                  <div>Each profession is priced based on your exclusivity choice:</div>
+                  <div className="mt-1">Non-Exclusive: Bark - $0.50 • 24-Hour Exclusive: Google CPC × 2.5</div>
                 </div>
               </div>
 
