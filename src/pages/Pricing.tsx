@@ -470,10 +470,10 @@ export default function Pricing() {
                             return;
                           }
 
-                          // Show verification UI
+                          // Show verification UI - Supabase sends a clickable link
                           setPendingEmail(formData.email);
                           setShowVerification(true);
-                          toast.success("Please check your email for the verification code");
+                          toast.success("Verification email sent! Please check your inbox and click the link to verify.");
                           return;
                         }
 
@@ -662,24 +662,26 @@ export default function Pricing() {
                       </>
                     ) : (
                       <div className="space-y-4">
-                        <div className="p-4 bg-muted rounded-lg">
-                          <p className="text-sm font-medium mb-2">Verification Email Sent</p>
-                          <p className="text-xs text-muted-foreground">
-                            Check your email at <strong>{pendingEmail}</strong> for the verification link or code
+                        <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                          <p className="text-base font-semibold mb-3 flex items-center gap-2">
+                            <Mail className="h-5 w-5 text-primary" />
+                            Verification Email Sent!
                           </p>
+                          <p className="text-sm text-foreground mb-2">
+                            We've sent a verification email to:
+                          </p>
+                          <p className="text-sm font-medium text-primary mb-3">
+                            {pendingEmail}
+                          </p>
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            <p>📧 <strong>Check your inbox</strong> and click the verification link in the email.</p>
+                            <p>⏰ The link expires in 24 hours.</p>
+                            <p>📁 Don't see it? Check your spam folder.</p>
+                          </div>
                         </div>
                         
-                        <div className="space-y-2">
-                          <Label htmlFor="verificationCode">
-                            Enter Verification Code *
-                          </Label>
-                          <Input
-                            id="verificationCode"
-                            type="text"
-                            placeholder="Enter code from email"
-                            value={verificationCode}
-                            onChange={(e) => setVerificationCode(e.target.value)}
-                          />
+                        <div className="text-center text-sm text-muted-foreground">
+                          <p>After verifying, you'll be automatically logged in and can continue to Step 2.</p>
                         </div>
 
                         <Button
@@ -827,48 +829,21 @@ export default function Pricing() {
                       </>
                     )}
 
-                    {!showVerification ? (
-                      <Button type="submit" className="w-full" size="lg">
-                        {user ? "Continue to Step 2 →" : "Sign Up & Continue →"}
-                      </Button>
-                    ) : (
-                      <Button 
-                        type="button"
-                        className="w-full" 
-                        size="lg"
-                        onClick={async () => {
-                          if (!verificationCode.trim()) {
-                            toast.error("Please enter verification code");
-                            return;
-                          }
-                          const { data, error } = await supabase.auth.verifyOtp({
-                            email: pendingEmail,
-                            token: verificationCode.trim(),
-                            type: 'email'
-                          });
-                          if (error || !data.user) {
-                            toast.error("Invalid code");
-                            return;
-                          }
-                          const { error: insertError } = await supabase
-                            .from('digger_profiles')
-                            .insert({
-                              user_id: data.user.id,
-                              business_name: formData.companyName,
-                              phone: formData.phone,
-                              company_name: formData.companyName,
-                              location: 'To be provided',
-                              registration_status: 'incomplete',
-                            });
-                          if (insertError) console.error(insertError);
-                          setStep1Completed(true);
-                          setShowVerification(false);
-                          toast.success("Verified! Now select professions");
-                        }}
-                      >
-                        Verify & Continue →
-                      </Button>
-                    )}
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      size="lg"
+                      disabled={showVerification}
+                    >
+                      {showVerification ? (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Waiting for Email Verification...
+                        </>
+                      ) : (
+                        user ? "Continue to Step 2 →" : "Sign Up & Continue →"
+                      )}
+                    </Button>
 
                     {!showVerification && (
                       <>
@@ -1163,9 +1138,14 @@ export default function Pricing() {
         <section id="step-2-industry" className="py-8 bg-background">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <Label htmlFor="industry-select" className="text-base font-medium mb-3 block text-center">
-                Refine your Industries (optional)
-              </Label>
+              <div className="text-center mb-4">
+                <Label htmlFor="industry-select" className="text-lg font-semibold block mb-2">
+                  Refine Your Professions
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  ✅ Your selections from Step 1 are displayed below. You can add more professions if needed.
+                </p>
+              </div>
               <div className="flex items-center gap-4 justify-center">
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
@@ -1191,14 +1171,11 @@ export default function Pricing() {
                   <div className="mt-2 flex items-start gap-2">
                     <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-muted-foreground">
-                      List multiple professions and/or keywords separated by commas (,)
+                      <strong>Optional:</strong> Add more professions or keywords to expand your reach
                     </p>
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-center text-muted-foreground mt-4">
-                💡 Your selections from Step 1 are already applied
-              </p>
             </div>
           </div>
         </section>
