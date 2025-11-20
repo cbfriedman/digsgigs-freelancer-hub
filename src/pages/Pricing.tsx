@@ -18,6 +18,7 @@ import BreakevenCalculator from "@/components/BreakevenCalculator";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import SEOHead from "@/components/SEOHead";
+import { DiggerProfileSelector } from "@/components/DiggerProfileSelector";
 import { generateFAQSchema } from "@/components/StructuredData";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import EscrowFeeBreakdown from "@/components/EscrowFeeBreakdown";
@@ -1343,6 +1344,14 @@ export default function Pricing() {
                     Add your professions to see pricing
                   </p>
                 )}
+              </div>
+
+              {/* Profile Selector */}
+              <div className="flex justify-center mb-6">
+                <div className="flex items-center gap-3 p-4 bg-card rounded-lg border">
+                  <span className="text-sm text-muted-foreground">Working on:</span>
+                  <DiggerProfileSelector />
+                </div>
               </div>
 
               <Card className="mb-6">
