@@ -48,10 +48,15 @@ export default function Pricing() {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    password: "",
+    confirmPassword: "",
     phone: "",
     companyName: "",
     acceptTerms: false,
   });
+  const [verificationCode, setVerificationCode] = useState("");
+  const [showVerification, setShowVerification] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
 
   // Check if user can interact with pricing tiles - only after Step 1 is completed
   const canInteractWithPricing = step1Completed;
@@ -198,6 +203,8 @@ export default function Pricing() {
           setFormData({
             fullName: progress.fullName || "",
             email: progress.email || "",
+            password: "",
+            confirmPassword: "",
             phone: progress.phone || "",
             companyName: progress.companyName || "",
             acceptTerms: progress.acceptTerms || false,
@@ -418,16 +425,47 @@ export default function Pricing() {
                       const registrationSchema = z.object({
                         fullName: z.string().trim().min(2, "Name must be at least 2 characters"),
                         email: z.string().trim().email("Invalid email address"),
+                        password: z.string().min(8, "Password must be at least 8 characters"),
+                        confirmPassword: z.string(),
                         phone: z.string().trim().min(10, "Phone number required"),
                         companyName: z.string().trim().min(2, "Company name must be at least 2 characters"),
+                      }).refine((data) => data.password === data.confirmPassword, {
+                        message: "Passwords don't match",
+                        path: ["confirmPassword"],
                       });
                       
                       try {
                         registrationSchema.parse(formData);
                         
-                        // Save to database before industry selection
+                        // Check if user is already logged in
                         if (!user) {
-                          toast.error("Please log in to continue");
+                          // Sign up new user
+                          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                            email: formData.email,
+                            password: formData.password,
+                            options: {
+                              emailRedirectTo: `${window.location.origin}/pricing`,
+                              data: {
+                                full_name: formData.fullName,
+                                user_type: 'digger'
+                              }
+                            }
+                          });
+
+                          if (signUpError) {
+                            toast.error(signUpError.message);
+                            return;
+                          }
+
+                          if (!signUpData.user) {
+                            toast.error("Failed to create account");
+                            return;
+                          }
+
+                          // Show verification UI
+                          setPendingEmail(formData.email);
+                          setShowVerification(true);
+                          toast.success("Please check your email for the verification code");
                           return;
                         }
 
@@ -498,115 +536,186 @@ export default function Pricing() {
                     }}
                     className="space-y-6"
                   >
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">
-                        <User className="inline-block h-4 w-4 mr-1" />
-                        Full Name *
-                      </Label>
-                      <Input
-                        id="fullName"
-                        placeholder="Enter your full name"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        required
-                      />
-                    </div>
+                    {!showVerification ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="fullName">
+                            <User className="inline-block h-4 w-4 mr-1" />
+                            Full Name *
+                          </Label>
+                          <Input
+                            id="fullName"
+                            placeholder="Enter your full name"
+                            value={formData.fullName}
+                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                            required
+                          />
+                        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="companyName">
-                        <User className="inline-block h-4 w-4 mr-1" />
-                        Company Name *
-                      </Label>
-                      <Input
-                        id="companyName"
-                        placeholder="Enter your company name"
-                        value={formData.companyName}
-                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                        required
-                      />
-                    </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="companyName">
+                            <User className="inline-block h-4 w-4 mr-1" />
+                            Company Name *
+                          </Label>
+                          <Input
+                            id="companyName"
+                            placeholder="Enter your company name"
+                            value={formData.companyName}
+                            onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                            required
+                          />
+                        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="email">
-                        <Mail className="inline-block h-4 w-4 mr-1" />
-                        Email Address *
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="your.email@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        We'll use this to save your progress and help you create an account
-                      </p>
-                    </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">
+                            <Mail className="inline-block h-4 w-4 mr-1" />
+                            Email Address *
+                          </Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="your.email@example.com"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            disabled={user !== null}
+                            required
+                          />
+                          {user ? (
+                            <p className="text-xs text-muted-foreground">You're already logged in</p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              We'll send a verification code to this email
+                            </p>
+                          )}
+                        </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">
-                        <Phone className="inline-block h-4 w-4 mr-1" />
-                        Phone Number (Optional)
-                      </Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+1 (555) 123-4567"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      />
-                    </div>
+                        {!user && (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="password">
+                                Password *
+                              </Label>
+                              <Input
+                                id="password"
+                                type="password"
+                                placeholder="Min. 8 characters"
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                required
+                              />
+                            </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="industries" className="font-medium flex items-center gap-2">
-                        Select Your Profession *
-                        {selectedIndustries.length === 0 && (
-                          <Badge variant="destructive" className="text-xs">Required</Badge>
+                            <div className="space-y-2">
+                              <Label htmlFor="confirmPassword">
+                                Confirm Password *
+                              </Label>
+                              <Input
+                                id="confirmPassword"
+                                type="password"
+                                placeholder="Re-enter password"
+                                value={formData.confirmPassword}
+                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                required
+                              />
+                            </div>
+                          </>
                         )}
-                      </Label>
-                      <div className="space-y-2">
-                        <ProfessionKeywordInput
-                          professions={selectedIndustries.map(keyword => {
-                            return {
-                              keyword,
-                              cpl: {
-                                free: getLeadCostForIndustry(keyword, 'free'),
-                                pro: getLeadCostForIndustry(keyword, 'pro'),
-                                premium: getLeadCostForIndustry(keyword, 'premium')
-                              },
-                              valueIndicator: getValueIndicator(keyword)
-                            };
-                          })}
-                          onProfessionsChange={(professions) => {
-                            setSelectedIndustries(professions.map(p => p.keyword));
-                            // Initialize quantities for new professions
-                            const newQuantities = { ...professionLeadQuantities };
-                            professions.forEach(prof => {
-                              if (!(prof.keyword in newQuantities)) {
-                                newQuantities[prof.keyword] = 0;
-                              }
-                            });
-                            // Remove quantities for deselected professions
-                            Object.keys(newQuantities).forEach(keyword => {
-                              if (!professions.find(p => p.keyword === keyword)) {
-                                delete newQuantities[keyword];
-                              }
-                            });
-                            setProfessionLeadQuantities(newQuantities);
-                          }}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {selectedIndustries.length === 0 
-                            ? "👆 List multiple professions and/or keywords separated by commas (,)"
-                            : "Your pricing will update based on selected professions"
-                          }
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Lead Quantity Inputs for Each Selected Profession */}
-                    {selectedIndustries.length > 0 && (
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">
+                            <Phone className="inline-block h-4 w-4 mr-1" />
+                            Phone Number *
+                          </Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            placeholder="+1 (555) 123-4567"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="p-4 bg-muted rounded-lg">
+                          <p className="text-sm font-medium mb-2">Verification Email Sent</p>
+                          <p className="text-xs text-muted-foreground">
+                            Check your email at <strong>{pendingEmail}</strong> for the verification link or code
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="verificationCode">
+                            Enter Verification Code *
+                          </Label>
+                          <Input
+                            id="verificationCode"
+                            type="text"
+                            placeholder="Enter code from email"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={async () => {
+                            const { error } = await supabase.auth.resend({
+                              type: 'signup',
+                              email: pendingEmail,
+                            });
+                            if (error) toast.error("Failed to resend");
+                            else toast.success("Verification email resent");
+                          }}
+                        >
+                          Resend Email
+                        </Button>
+                      </div>
+                    )}
+
+                    {!showVerification && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="industries" className="font-medium flex items-center gap-2">
+                            Select Your Profession *
+                            {selectedIndustries.length === 0 && (
+                              <Badge variant="destructive" className="text-xs">Required</Badge>
+                            )}
+                          </Label>
+                          <div className="space-y-2">
+                            <ProfessionKeywordInput
+                              professions={selectedIndustries.map(keyword => ({
+                                keyword,
+                                cpl: {
+                                  free: getLeadCostForIndustry(keyword, 'free'),
+                                  pro: getLeadCostForIndustry(keyword, 'pro'),
+                                  premium: getLeadCostForIndustry(keyword, 'premium')
+                                },
+                                valueIndicator: getValueIndicator(keyword)
+                              }))}
+                              onProfessionsChange={(professions) => {
+                                setSelectedIndustries(professions.map(p => p.keyword));
+                                const newQuantities = { ...professionLeadQuantities };
+                                professions.forEach(prof => {
+                                  if (!(prof.keyword in newQuantities)) newQuantities[prof.keyword] = 0;
+                                });
+                                Object.keys(newQuantities).forEach(keyword => {
+                                  if (!professions.find(p => p.keyword === keyword)) delete newQuantities[keyword];
+                                });
+                                setProfessionLeadQuantities(newQuantities);
+                              }}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              👆 List multiple professions and/or keywords separated by commas (,)
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Lead Quantity Section */}
+                        {selectedIndustries.length > 0 && (
                       <div className="space-y-4 p-6 border rounded-lg bg-muted/30">
                         <Label className="font-semibold text-lg">
                           How many leads would you like to purchase?
@@ -683,19 +792,68 @@ export default function Pricing() {
                                   <div className="flex justify-between font-semibold text-lg">
                                     <span>Total:</span>
                                     <span className="text-primary">${calculateTotalCost().total.toFixed(2)}</span>
-                                  </div>
+                        </div>
+                      </>
+                    )}
+
+                    {!showVerification ? (
+                      <Button type="submit" className="w-full" size="lg">
+                        {user ? "Continue to Step 2 →" : "Sign Up & Continue →"}
+                      </Button>
+                    ) : (
+                      <Button 
+                        type="button"
+                        className="w-full" 
+                        size="lg"
+                        onClick={async () => {
+                          if (!verificationCode.trim()) {
+                            toast.error("Please enter verification code");
+                            return;
+                          }
+                          const { data, error } = await supabase.auth.verifyOtp({
+                            email: pendingEmail,
+                            token: verificationCode.trim(),
+                            type: 'email'
+                          });
+                          if (error || !data.user) {
+                            toast.error("Invalid code");
+                            return;
+                          }
+                          const { error: insertError } = await supabase
+                            .from('digger_profiles')
+                            .insert({
+                              user_id: data.user.id,
+                              business_name: formData.companyName,
+                              phone: formData.phone,
+                              company_name: formData.companyName,
+                              location: 'To be provided',
+                              registration_status: 'incomplete',
+                            });
+                          if (insertError) console.error(insertError);
+                          setStep1Completed(true);
+                          setShowVerification(false);
+                          toast.success("Verified! Now select professions");
+                        }}
+                      >
+                        Verify & Continue →
+                      </Button>
+                    )}
                                   <p className="text-xs text-muted-foreground mt-2">
                                     💡 Purchase 11+ leads for 15% discount or 51+ for 30% discount!
                                   </p>
-                                </div>
-                              )}
+                          </div>
+                        )}
+                      </>
+                    )}
                             </div>
                           </div>
                         )}
                       </div>
                     )}
 
-                    <div className="flex items-start gap-2">
+                    {!showVerification && (
+                      <>
+                        <div className="flex items-start gap-2">
                       <Checkbox
                         id="terms"
                         checked={formData.acceptTerms}
@@ -949,6 +1107,8 @@ export default function Pricing() {
                             fullName: "",
                             companyName: "",
                             email: "",
+                            password: "",
+                            confirmPassword: "",
                             phone: "",
                             acceptTerms: false,
                           });
