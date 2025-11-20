@@ -117,7 +117,12 @@ export function ProfessionKeywordInputWithCart({
 
   const handleSaveProfile = async () => {
     if (!userId) {
-      toast.error("Please complete Step 1 first");
+      toast.error("Please complete Step 1 first to save your profile");
+      return;
+    }
+
+    if (professions.length === 0) {
+      toast.error("Please add at least one profession before saving");
       return;
     }
 
@@ -134,10 +139,10 @@ export function ProfessionKeywordInputWithCart({
 
       if (error) throw error;
       
-      toast.success("Profile saved successfully!");
+      toast.success(`Profile saved! ${professions.length} profession(s) saved to your account.`);
     } catch (error) {
       console.error("Error saving profile:", error);
-      toast.error("Failed to save profile");
+      toast.error("Failed to save profile. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -279,9 +284,10 @@ export function ProfessionKeywordInputWithCart({
                   disabled={isSaving || !userId}
                   variant="outline"
                   className="flex-1"
+                  title={!userId ? "Complete Step 1 to enable saving" : "Save your profession selections"}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {isSaving ? "Saving..." : "Save Profile"}
+                  {isSaving ? "Saving..." : !userId ? "Complete Step 1 First" : "Save Profile"}
                 </Button>
                 
                 <Button
