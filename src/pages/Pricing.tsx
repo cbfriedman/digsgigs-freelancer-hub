@@ -604,6 +604,48 @@ export default function Pricing() {
                               We'll send a verification code to this email
                             </p>
                           )}
+                          {user && (
+                            <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/30">
+                              {user.email_confirmed_at ? (
+                                <div className="flex items-center gap-2 text-sm text-green-600">
+                                  <span className="text-base">✓</span>
+                                  <span>Email verified</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex items-center gap-2 text-sm text-amber-600">
+                                    <span className="text-base">⚠️</span>
+                                    <span>Email not verified</span>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        const { error } = await supabase.auth.resend({
+                                          type: 'signup',
+                                          email: user.email!,
+                                          options: {
+                                            emailRedirectTo: `${window.location.origin}/pricing`
+                                          }
+                                        });
+                                        if (error) {
+                                          toast.error("Failed to resend verification email");
+                                        } else {
+                                          toast.success("Verification email sent! Check your inbox.");
+                                        }
+                                      } catch (err) {
+                                        toast.error("Failed to resend verification email");
+                                      }
+                                    }}
+                                  >
+                                    Resend
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {!user ? (
