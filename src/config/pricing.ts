@@ -46,7 +46,7 @@ export interface PricingTier {
 
 // Volume-based lead pricing by industry category
 // Pricing tiers based on monthly lead volume:
-// Free tier (1-10 leads/month): Standard rate
+// Standard tier (1-10 leads/month): Standard rate
 // Pro tier (11-50 leads/month): Volume discount
 // Premium tier (51+ leads/month): Best bulk pricing
 export const INDUSTRY_PRICING: IndustryPricing[] = [
@@ -489,14 +489,14 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
 ];
 
 // Volume-based tier thresholds (NO monthly fees, automatic tier progression)
-// Leads 1-10: Free tier pricing
-// Leads 11-50: Pro tier pricing  
+// Leads 1-10: Standard tier pricing
+// Leads 11-50: Pro tier pricing
 // Leads 51+: Premium tier pricing
 // Resets monthly at midnight EST on last day of month
 export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   free: {
     id: 'free',
-    name: 'Free',
+    name: 'Standard',
     price: '$0/month',
     priceValue: 0,
     escrowFee: '8%',

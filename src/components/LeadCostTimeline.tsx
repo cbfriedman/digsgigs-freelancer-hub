@@ -47,11 +47,11 @@ export default function LeadCostTimeline() {
         <div className="space-y-4">
           <h3 className="font-semibold text-sm text-muted-foreground">Choose Your Monthly Commitment:</h3>
           
-          {/* Free Tier */}
+          {/* Standard Tier */}
           <div className="p-4 border-2 border-border rounded-lg bg-background hover:border-primary/50 transition-all">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h4 className="font-bold text-lg">Free Tier</h4>
+                <h4 className="font-bold text-lg">Standard Tier</h4>
                 <p className="text-sm text-muted-foreground">Expecting 1-10 leads per month</p>
               </div>
               <div className="text-right">
@@ -110,7 +110,7 @@ export default function LeadCostTimeline() {
           <h4 className="font-semibold text-sm">Example: Receiving 30 Leads in {selectedIndustry}</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span>Free Tier Commitment (1-10 leads expected):</span>
+              <span>Standard Tier Commitment (1-10 leads expected):</span>
               <span className="font-bold">30 × ${freeTierCost} = ${(30 * freeTierCost).toFixed(0)}</span>
             </div>
             <div className="flex justify-between text-green-600 font-medium">
@@ -123,7 +123,7 @@ export default function LeadCostTimeline() {
             </div>
             <Separator />
             <div className="flex justify-between text-primary font-bold">
-              <span>Savings with Pro vs Free:</span>
+              <span>Savings with Pro vs Standard:</span>
               <span>${((30 * freeTierCost) - (30 * proTierCost)).toFixed(0)} ({Math.round((1 - proTierCost/freeTierCost) * 100)}%)</span>
             </div>
           </div>
@@ -133,7 +133,7 @@ export default function LeadCostTimeline() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Important: Choose Wisely!</AlertTitle>
           <AlertDescription>
-            Your tier selection determines your per-lead rate for the entire month. If you commit to Free Tier but receive 30 leads, you'll pay the Free Tier rate for all 30 leads. Consider your expected volume carefully.
+            Your tier selection determines your per-lead rate for the entire month. If you commit to Standard Tier but receive 30 leads, you'll pay the Standard Tier rate for all 30 leads. Consider your expected volume carefully.
           </AlertDescription>
         </Alert>
       </CardContent>

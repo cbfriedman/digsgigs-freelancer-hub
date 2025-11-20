@@ -141,7 +141,7 @@ export default function Pricing() {
       priceId: PRICING_TIERS.free.priceId,
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
-      volumeTier: 'Free Tier (1-10 leads/mo)',
+      volumeTier: 'Standard Tier (1-10 leads/mo)',
       description: 'Full Retail price',
       savingsPercent: 0,
       features: [],
@@ -344,9 +344,9 @@ export default function Pricing() {
         description="Compare pricing plans for service professionals on digsandgigs. Choose from Free, Pro, or Premium tiers with transparent lead costs, no hidden fees, and flexible monthly subscriptions. Calculate your ROI with our interactive pricing calculator."
         keywords="pricing plans, lead costs, subscription tiers, service professional pricing, contractor leads, freelance pricing, transparent pricing"
         structuredData={generateFAQSchema([
-          { question: "What are the subscription tiers?", answer: "We offer Free ($0/month), Pro ($99/month), and Premium ($599/month) tiers with different lead costs and features." },
-          { question: "How much do leads cost?", answer: "Lead costs vary by tier: Free tier leads cost $60, Pro tier leads cost $40, and Premium tier leads are FREE." },
-          { question: "Is there a commission on completed jobs?", answer: "Commission rates depend on your tier: Free (9%), Pro (6%), Premium (0%)." }
+          { question: "What are the subscription tiers?", answer: "We offer Standard ($0/month), Pro ($99/month), and Premium ($599/month) tiers with different lead costs and features." },
+          { question: "How much do leads cost?", answer: "Lead costs vary by tier: Standard tier leads cost $60, Pro tier leads cost $40, and Premium tier leads are FREE." },
+          { question: "Is there a commission on completed jobs?", answer: "Commission rates depend on your tier: Standard (9%), Pro (6%), Premium (0%)." }
         ])}
       />
       {/* Navigation */}
@@ -1115,7 +1115,7 @@ export default function Pricing() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Free Tier */}
+                {/* Standard Tier */}
                 <Card className="relative overflow-hidden border-2 cursor-not-allowed opacity-90">
                   <CardHeader className="text-center pb-4">
                     <div className="text-sm font-semibold text-muted-foreground mb-2">
@@ -1608,8 +1608,8 @@ export default function Pricing() {
                           <TooltipContent className="max-w-xs">
                             <p className="text-sm">
                               {tier.savingsPercent === 0 
-                                ? "This is the standard Free tier rate with no volume commitment. Higher volume commitments unlock lower per-lead costs." 
-                                : `By committing to ${key === 'pro' ? '11-50' : '51+'} leads per month, you save ${tier.savingsPercent}% compared to the standard Free tier rate.`}
+                                ? "This is the standard tier rate with no volume commitment. Higher volume commitments unlock lower per-lead costs." 
+                                : `By committing to ${key === 'pro' ? '11-50' : '51+'} leads per month, you save ${tier.savingsPercent}% compared to the standard tier rate.`}
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -1644,7 +1644,7 @@ export default function Pricing() {
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
                               <p className="text-sm">
-                                {tier.volumeTier === 'Free Tier (1-10 leads/mo)' 
+                                {tier.volumeTier === 'Standard Tier (1-10 leads/mo)' 
                                   ? 'Standard pricing - Commit to receiving 1-10 leads per month. All leads charged at this rate.'
                                   : tier.volumeTier === 'Pro Tier (11-50 leads/mo)'
                                   ? 'Best Bulk Pricing - Commit to 11-50 leads/month. Lock in 17% savings on every lead.'

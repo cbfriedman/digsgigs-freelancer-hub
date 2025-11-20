@@ -355,7 +355,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
             </p>
             <div className="flex justify-center gap-4 text-xs">
               <div>
-                <span className="text-muted-foreground">Free Tier:</span>{' '}
+                <span className="text-muted-foreground">Standard Tier:</span>{' '}
                 <strong className="text-primary">${getHighestLeadCost('free')}</strong>
               </div>
               <div>
@@ -385,7 +385,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                 className="w-full"
               />
               <div className="text-xs text-muted-foreground space-y-0.5">
-                <div>• 1-10 leads = Free tier pricing</div>
+                <div>• 1-10 leads = Standard tier pricing</div>
                 <div>• 11-50 leads = Pro tier pricing (Save 17%)</div>
                 <div>• 51+ leads = Premium tier pricing (Save 33%)</div>
               </div>
