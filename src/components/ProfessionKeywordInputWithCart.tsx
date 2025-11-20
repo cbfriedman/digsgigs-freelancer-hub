@@ -26,13 +26,15 @@ interface ProfessionKeywordInputWithCartProps {
   onProfessionsChange: (professions: Profession[]) => void;
   userId?: string;
   companyName?: string;
+  profileId?: string;
 }
 
 export function ProfessionKeywordInputWithCart({ 
   professions, 
   onProfessionsChange,
   userId,
-  companyName 
+  companyName,
+  profileId 
 }: ProfessionKeywordInputWithCartProps) {
   const [input, setInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -156,21 +158,50 @@ export function ProfessionKeywordInputWithCart({
       return;
     }
 
-    // Create a cart item with the profession selections
-    const cartItem = {
-      id: `profile-${Date.now()}`,
-      title: `${companyName || 'Profile'} - ${professions.filter(p => (p.quantity || 0) > 0).length} professions`,
-      budget_min: total,
-      budget_max: total,
-      location: "Lead Package",
-      description: professions
-        .filter(p => (p.quantity || 0) > 0)
-        .map(p => `${p.keyword}: ${p.quantity} leads`)
-        .join(', '),
+    if (!profileId) {
+      toast.error("Please save your profile first before proceeding to checkout");
+      return;
+    }
+
+    // Create profession items for checkout
+    const professionsForCheckout = professions
+      .filter(p => (p.quantity || 0) > 0)
+      .map(p => {
+        const quantity = p.quantity || 0;
+        let tier: 'standard' | 'pro' | 'premium';
+        let costPerLead: number;
+
+        if (quantity >= 51) {
+          tier = 'premium';
+          costPerLead = p.cpl.premium;
+        } else if (quantity >= 11) {
+          tier = 'pro';
+          costPerLead = p.cpl.pro;
+        } else {
+          tier = 'standard';
+          costPerLead = p.cpl.free;
+        }
+
+        return {
+          keyword: p.keyword,
+          quantity,
+          costPerLead,
+          tier,
+          totalCost: costPerLead * quantity,
+        };
+      });
+
+    const checkoutData = {
+      profileId,
+      companyName: companyName || 'My Profile',
+      professions: professionsForCheckout,
+      totalCost: total,
     };
 
-    addToCart(cartItem);
-    toast.success("Added to cart!");
+    // Navigate to checkout with data
+    navigate("/checkout", { state: { checkoutData } });
+    
+    toast.success("Proceeding to checkout...");
   };
 
   return (
@@ -304,10 +335,12 @@ export function ProfessionKeywordInputWithCart({
                 
                 <Button
                   onClick={handleAddToCart}
+                  disabled={!profileId}
                   className="flex-1"
+                  title={!profileId ? "Save your profile first before checkout" : "Proceed to secure checkout"}
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  Add to Cart
+                  {!profileId ? "Save Profile First" : "Proceed to Checkout"}
                 </Button>
               </div>
             </div>

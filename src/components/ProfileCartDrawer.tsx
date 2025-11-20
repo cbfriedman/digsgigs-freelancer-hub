@@ -55,8 +55,9 @@ export const ProfileCartDrawer = ({ open, onClose }: ProfileCartDrawerProps) => 
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
     
+    // For now, navigate to registration with cart data
+    // TODO: Update this to navigate to checkout page when profession-based checkout is ready
     toast.success("Proceeding to registration with your profile configurations");
-    // Navigate to registration with cart data
     navigate("/digger-registration", { state: { profileConfigurations: cartItems } });
     onClose();
   };
