@@ -811,21 +811,66 @@ export default function Pricing() {
 
                     {/* Profession selection moved to Step 2 */}
 
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      size="lg"
-                      disabled={showVerification}
-                    >
-                      {showVerification ? (
-                        <>
-                          <Mail className="mr-2 h-4 w-4" />
-                          Waiting for Email Verification...
-                        </>
-                      ) : (
-                        "Continue to Step 2 →"
-                      )}
-                    </Button>
+                    <div className="space-y-3">
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        className="w-full" 
+                        size="lg"
+                        disabled={showVerification || !formData.fullName || !formData.companyName || !formData.email || !formData.phone || !formData.acceptTerms}
+                        onClick={async () => {
+                          if (!user) {
+                            toast.error("Please complete email verification first");
+                            return;
+                          }
+
+                          try {
+                            toast.loading('Saving profile...');
+                            const { data, error } = await supabase
+                              .from('digger_profiles')
+                              .insert({
+                                user_id: user.id,
+                                business_name: formData.companyName,
+                                company_name: formData.companyName,
+                                phone: formData.phone,
+                                location: 'To be updated',
+                                registration_status: 'incomplete'
+                              })
+                              .select()
+                              .single();
+
+                            if (error) throw error;
+                            
+                            toast.dismiss();
+                            toast.success('Profile saved! Redirecting to your profiles...');
+                            setTimeout(() => navigate('/my-profiles'), 1500);
+                          } catch (error) {
+                            toast.dismiss();
+                            toast.error('Failed to save profile. Please try again.');
+                            console.error(error);
+                          }
+                        }}
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Profile & Exit
+                      </Button>
+
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        size="lg"
+                        disabled={showVerification}
+                      >
+                        {showVerification ? (
+                          <>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Waiting for Email Verification...
+                          </>
+                        ) : (
+                          "Continue to Step 2 →"
+                        )}
+                      </Button>
+                    </div>
 
                     {!showVerification && (
                       <>
