@@ -145,7 +145,7 @@ export default function Pricing() {
       productId: PRICING_TIERS.free.productId,
       popular: PRICING_TIERS.free.popular,
       volumeTier: 'Standard Tier (1-10 leads/mo)',
-      description: 'Full Retail price',
+      description: 'Bark price × 2 (2x Bark rate)',
       savingsPercent: 0,
       features: [],
     },
@@ -164,8 +164,8 @@ export default function Pricing() {
       productId: PRICING_TIERS.pro.productId,
       popular: PRICING_TIERS.pro.popular,
       volumeTier: 'Pro Tier (11-50 leads/mo)',
-      description: 'Best Bulk Pricing - Lock in 17% savings',
-      savingsPercent: 17,
+      description: 'Bark price × 1.5 - Save 25% vs Standard',
+      savingsPercent: 25,
       features: [],
     },
     premium: {
@@ -183,8 +183,8 @@ export default function Pricing() {
       productId: PRICING_TIERS.premium.productId,
       popular: PRICING_TIERS.premium.popular,
       volumeTier: 'Premium Tier (51+ leads/mo)',
-      description: 'Best Bulk Pricing - Lock in 33% savings',
-      savingsPercent: 33,
+      description: 'Bark price - $0.50 - Save 52% vs Standard',
+      savingsPercent: 52,
       features: [],
     },
   };
@@ -345,11 +345,11 @@ export default function Pricing() {
       <SEOHead
         title="Pricing Plans - Transparent Subscription & Lead Costs"
         description="Compare pricing plans for service professionals on digsandgigs. Choose from Free, Pro, or Premium tiers with transparent lead costs, no hidden fees, and flexible monthly subscriptions. Calculate your ROI with our interactive pricing calculator."
-        keywords="pricing plans, lead costs, subscription tiers, service professional pricing, contractor leads, freelance pricing, transparent pricing"
+        keywords="pricing plans, lead costs, subscription tiers, service professional pricing, contractor leads, freelance pricing, transparent pricing, Bark alternative"
         structuredData={generateFAQSchema([
-          { question: "What are the subscription tiers?", answer: "We offer Standard ($0/month), Pro ($99/month), and Premium ($599/month) tiers with different lead costs and features." },
-          { question: "How much do leads cost?", answer: "Lead costs vary by tier: Standard tier leads cost $60, Pro tier leads cost $40, and Premium tier leads are FREE." },
-          { question: "Is there a commission on completed jobs?", answer: "Commission rates depend on your tier: Standard (9%), Pro (6%), Premium (0%)." }
+          { question: "What are the subscription tiers?", answer: "We offer volume-based pricing with no monthly fees: Standard (1-10 leads/mo), Pro (11-50 leads/mo), and Premium (51+ leads/mo)." },
+          { question: "How much do leads cost?", answer: "Our pricing is based on Bark.com rates: Standard is 2× Bark price, Pro is 1.5× Bark price, and Premium is Bark price minus $0.50 - the best rate in the market." },
+          { question: "How do you compare to Bark.com?", answer: "Our Premium tier (51+ leads/mo) beats Bark pricing by $0.50 per lead, while Pro tier (1.5× Bark) and Standard tier (2× Bark) offer competitive rates for lower volumes with no monthly subscription fees." }
         ])}
       />
       {/* Navigation */}
@@ -1667,10 +1667,10 @@ export default function Pricing() {
                             <TooltipContent className="max-w-xs">
                               <p className="text-sm">
                                 {tier.volumeTier === 'Standard Tier (1-10 leads/mo)' 
-                                  ? 'Standard pricing - Commit to receiving 1-10 leads per month. All leads charged at this rate.'
+                                  ? 'Standard pricing (2x Bark rate) - Commit to receiving 1-10 leads per month.'
                                   : tier.volumeTier === 'Pro Tier (11-50 leads/mo)'
-                                  ? 'Best Bulk Pricing - Commit to 11-50 leads/month. Lock in 17% savings on every lead.'
-                                  : 'Best Bulk Pricing - Commit to 51+ leads/month. Lock in 33% savings on every lead.'}
+                                  ? 'Bark price × 1.5 - Commit to 11-50 leads/month. Save 25% vs Standard.'
+                                  : 'Bark price - $0.50 - Commit to 51+ leads/month. Best rate in market - saves 52% vs Standard.'}
                               </p>
                             </TooltipContent>
                           </Tooltip>

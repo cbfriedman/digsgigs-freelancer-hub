@@ -1,10 +1,16 @@
 /**
  * Centralized Pricing Configuration
  * Single source of truth for all pricing across the platform
- * VOLUME-BASED CPL PRICING MODEL
- * - Leads 1-10: Standard pricing
- * - Leads 11-50: Reduced pricing (volume discount)
- * - Leads 51+: Best pricing (bulk discount)
+ * 
+ * BARK-BASED COMPETITIVE PRICING MODEL
+ * Our pricing is strategically positioned relative to Bark.com:
+ * 
+ * - Premium tier (51+ leads/month): Bark price - $0.50 (undercut competitor)
+ * - Pro tier (11-50 leads/month): Bark price + 50% (1.5x Bark)
+ * - Standard tier (1-10 leads/month): Bark price + 100% (2x Bark)
+ * 
+ * This ensures we remain competitive while rewarding high-volume customers
+ * with the best rates in the market.
  */
 
 export type IndustryCategory = 'low-value' | 'mid-value' | 'high-value';
@@ -45,10 +51,10 @@ export interface PricingTier {
 }
 
 // Volume-based lead pricing by industry category
-// Pricing tiers based on monthly lead volume:
-// Standard tier (1-10 leads/month): Standard rate
-// Pro tier (11-50 leads/month): Volume discount
-// Premium tier (51+ leads/month): Best bulk pricing
+// Pricing strategy based on Bark.com competitive analysis:
+// Premium tier (51+ leads/month): Bark price - $0.50
+// Pro tier (11-50 leads/month): Bark price + 50% (1.5x)
+// Standard tier (1-10 leads/month): Bark price + 100% (2x)
 export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'low-value',
@@ -143,9 +149,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       // Marketing - Entry Level
       'Email Marketing',
     ],
-    free: 24,   // 3x CPC (leads 1-10)
-    pro: 20,    // 2.5x CPC (leads 11-50)
-    premium: 16 // 2x CPC (leads 51+)
+    free: 16,     // Bark avg (~$8) * 2 (Standard tier: 1-10 leads)
+    pro: 12,      // Bark avg (~$8) * 1.5 (Pro tier: 11-50 leads)
+    premium: 7.50 // Bark avg (~$8) - $0.50 (Premium tier: 51+ leads)
   },
   {
     category: 'mid-value',
@@ -347,9 +353,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Landscape Architecture',
       'Urban Planning',
     ],
-    free: 120,  // 3x CPC (leads 1-10)
-    pro: 100,   // 2.5x CPC (leads 11-50)
-    premium: 80 // 2x CPC (leads 51+)
+    free: 30,   // Bark avg (~$15) * 2 (Standard tier: 1-10 leads)
+    pro: 22.50, // Bark avg (~$15) * 1.5 (Pro tier: 11-50 leads)
+    premium: 14.50 // Bark avg (~$15) - $0.50 (Premium tier: 51+ leads)
   },
   {
     category: 'high-value',
@@ -482,16 +488,16 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       // Solar & Specialized
       'Solar Panel Installation',
     ],
-    free: 750,   // 3x CPC (leads 1-10)
-    pro: 625,    // 2.5x CPC (leads 11-50)
-    premium: 500 // 2x CPC (leads 51+)
+    free: 50,   // Bark avg (~$25) * 2 (Standard tier: 1-10 leads)
+    pro: 37.50, // Bark avg (~$25) * 1.5 (Pro tier: 11-50 leads)
+    premium: 24.50 // Bark avg (~$25) - $0.50 (Premium tier: 51+ leads)
   }
 ];
 
-// Volume-based tier thresholds (NO monthly fees, automatic tier progression)
-// Leads 1-10: Standard tier pricing
-// Leads 11-50: Pro tier pricing
-// Leads 51+: Premium tier pricing
+// Volume-based tier thresholds (NO monthly fees, Bark-based competitive pricing)
+// Standard tier (1-10 leads): Bark price * 2
+// Pro tier (11-50 leads): Bark price * 1.5
+// Premium tier (51+ leads): Bark price - $0.50
 // Resets monthly at midnight EST on last day of month
 export const PRICING_TIERS: Record<'free' | 'pro' | 'premium', PricingTier> = {
   free: {
