@@ -99,3 +99,9 @@ verify_jwt = true
 [functions.stripe-webhook-profession-purchase]
 verify_jwt = false
 
+[functions.match-leads-to-diggers]
+verify_jwt = false
+
+[functions.trigger-lead-matching]
+verify_jwt = false
+
