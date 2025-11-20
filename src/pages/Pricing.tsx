@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProfessionKeywordInput } from "@/components/ProfessionKeywordInput";
 import { ProfessionKeywordInputWithCart } from "@/components/ProfessionKeywordInputWithCart";
-import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown, Eye, EyeOff, Lightbulb } from "lucide-react";
+import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown, Eye, EyeOff, Lightbulb, Save, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/Footer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1110,6 +1110,54 @@ export default function Pricing() {
               </form>
             </CardContent>
           </Card>
+        )}
+
+        {/* Action Buttons - Shown after Step 1 completion */}
+        {step1Completed && (
+          <div className="mt-8">
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-800">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-400">
+                    <Check className="h-6 w-6" />
+                    <p className="text-lg font-semibold">Step 1 Complete!</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your basic profile information has been saved. Choose your next step:
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => {
+                        toast.success("Profile saved! You can return anytime to complete Step 2.");
+                        navigate("/my-profiles");
+                      }}
+                      className="min-w-[200px]"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save & Exit
+                    </Button>
+                    <Button
+                      size="lg"
+                      onClick={() => {
+                        const step2Element = document.getElementById('step-2-industry');
+                        if (step2Element) {
+                          step2Element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
+                      className="min-w-[200px]"
+                    >
+                      Continue to Step 2 <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    💡 Save now to finish later, or continue to select your professions
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Pricing Preview - Always Visible */}
