@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProfessionKeywordInput } from "@/components/ProfessionKeywordInput";
-import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown } from "lucide-react";
+import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/Footer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -58,6 +58,8 @@ export default function Pricing() {
   const [verificationCode, setVerificationCode] = useState("");
   const [showVerification, setShowVerification] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Check if user can interact with pricing tiles - only after Step 1 is completed
   const canInteractWithPricing = step1Completed;
@@ -598,14 +600,25 @@ export default function Pricing() {
                               <Label htmlFor="password">
                                 Password *
                               </Label>
-                              <Input
-                                id="password"
-                                type="password"
-                                placeholder="Create a strong password"
-                                value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                required
-                              />
+                              <div className="relative">
+                                <Input
+                                  id="password"
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder="Create a strong password"
+                                  value={formData.password}
+                                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                  required
+                                  className="pr-10"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                  aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
                               <PasswordStrengthIndicator password={formData.password} />
                             </div>
 
@@ -613,14 +626,25 @@ export default function Pricing() {
                               <Label htmlFor="confirmPassword">
                                 Confirm Password *
                               </Label>
-                              <Input
-                                id="confirmPassword"
-                                type="password"
-                                placeholder="Re-enter password"
-                                value={formData.confirmPassword}
-                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                required
-                              />
+                              <div className="relative">
+                                <Input
+                                  id="confirmPassword"
+                                  type={showConfirmPassword ? "text" : "password"}
+                                  placeholder="Re-enter password"
+                                  value={formData.confirmPassword}
+                                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                  required
+                                  className="pr-10"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                                >
+                                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                              </div>
                             </div>
                           </>
                         )}
