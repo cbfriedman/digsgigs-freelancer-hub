@@ -583,12 +583,9 @@ export default function Pricing() {
                             placeholder="your.email@example.com"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            disabled={user !== null}
                             required
                           />
-                          {user ? (
-                            <p className="text-xs text-muted-foreground">You're already logged in</p>
-                          ) : (
+                          {!user && (
                             <p className="text-xs text-muted-foreground">
                               We'll send a verification code to this email
                             </p>
