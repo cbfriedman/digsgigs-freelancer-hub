@@ -93,36 +93,27 @@ export function ProfessionKeywordInputWithCart({
     );
   };
 
-  // Calculate total leads and costs with volume discount
+  // Calculate total leads for display
   const totalLeads = professions.reduce((sum, p) => sum + (p.quantity || 0), 0);
   
-  const getDiscountRate = () => {
-    if (totalLeads >= 51) return 0.30; // 30% discount
-    if (totalLeads >= 11) return 0.15; // 15% discount
-    return 0; // No discount
+  const getCostPerLead = (quantity: number, cpl: Profession['cpl']) => {
+    if (quantity >= 51) return cpl.premium;
+    if (quantity >= 11) return cpl.pro;
+    return cpl.free;
   };
 
-  const getTierName = () => {
-    if (totalLeads >= 51) return "Premium";
-    if (totalLeads >= 11) return "Pro";
+  const getTierForQuantity = (quantity: number) => {
+    if (quantity >= 51) return "Premium";
+    if (quantity >= 11) return "Pro";
     return "Standard";
   };
 
-  const getCostPerLead = (prof: Profession) => {
-    if (totalLeads >= 51) return prof.cpl.premium;
-    if (totalLeads >= 11) return prof.cpl.pro;
-    return prof.cpl.free;
-  };
-
-  const subtotal = professions.reduce((sum, prof) => {
+  const total = professions.reduce((sum, prof) => {
     const quantity = prof.quantity || 0;
     if (quantity === 0) return sum;
-    return sum + (getCostPerLead(prof) * quantity);
+    const costPerLead = getCostPerLead(quantity, prof.cpl);
+    return sum + (costPerLead * quantity);
   }, 0);
-
-  const discountRate = getDiscountRate();
-  const discountAmount = subtotal * discountRate;
-  const total = subtotal - discountAmount;
 
   const handleSaveProfile = async () => {
     if (!userId) {
@@ -204,8 +195,9 @@ export function ProfessionKeywordInputWithCart({
           <div className="space-y-3">
             {professions.map((prof) => {
               const quantity = prof.quantity || 0;
-              const costPerLead = getCostPerLead(prof);
+              const costPerLead = getCostPerLead(quantity, prof.cpl);
               const lineCost = costPerLead * quantity;
+              const tier = getTierForQuantity(quantity);
 
               return (
                 <div
@@ -239,13 +231,13 @@ export function ProfessionKeywordInputWithCart({
                     </div>
                     
                     {quantity > 0 && (
-                      <div className="flex flex-col items-end min-w-[100px]">
-                        <span className="text-xs text-muted-foreground">Cost</span>
+                      <div className="flex flex-col items-end min-w-[120px]">
+                        <span className="text-xs text-muted-foreground">{tier} Tier</span>
                         <span className="text-lg font-bold text-primary">
                           ${lineCost.toFixed(2)}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          @ ${costPerLead}/lead
+                          {quantity} × ${costPerLead}/lead
                         </span>
                       </div>
                     )}
@@ -267,24 +259,6 @@ export function ProfessionKeywordInputWithCart({
           {totalLeads > 0 && (
             <div className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 rounded-xl">
               <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal ({totalLeads} leads):</span>
-                  <span className="font-semibold">${subtotal.toFixed(2)}</span>
-                </div>
-                
-                {discountRate > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Volume Discount ({getTierName()} - {(discountRate * 100).toFixed(0)}%):
-                    </span>
-                    <span className="font-semibold text-green-600">
-                      -${discountAmount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                
-                <div className="h-px bg-border my-2" />
-                
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold">Total Monthly Cost:</span>
                   <span className="text-2xl font-bold text-primary">
@@ -293,10 +267,9 @@ export function ProfessionKeywordInputWithCart({
                 </div>
                 
                 <div className="text-xs text-center text-muted-foreground mt-2">
-                  <div className="font-semibold mb-1">Volume Tier Pricing</div>
-                  {totalLeads < 11 && "Standard (1-10 leads): Base pricing • Add 11+ leads for 15% Pro discount or 51+ for 30% Premium discount"}
-                  {totalLeads >= 11 && totalLeads < 51 && "Pro (11-50 leads): 15% discount applied • Add 51+ leads for 30% Premium discount"}
-                  {totalLeads >= 51 && "Premium (51+ leads): Maximum 30% volume discount applied!"}
+                  <div className="font-semibold mb-1">Per-Profession Volume Pricing</div>
+                  <div>Each profession is priced based on its own lead quantity:</div>
+                  <div className="mt-1">1-10 leads: Standard • 11-50 leads: Pro (17% off) • 51+ leads: Premium (33% off)</div>
                 </div>
               </div>
 
