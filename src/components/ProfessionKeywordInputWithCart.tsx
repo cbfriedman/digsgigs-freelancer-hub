@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Save, ShoppingCart } from "lucide-react";
+import { X, Plus, Save, ShoppingCart, FolderOpen } from "lucide-react";
 import { lookupCPC, findSimilarKeywords } from "@/utils/cpcLookup";
 import { PRICING_TIERS } from "@/config/pricing";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface Profession {
   keyword: string;
@@ -36,6 +37,7 @@ export function ProfessionKeywordInputWithCart({
   const [input, setInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   const calculateCPL = (keyword: string) => {
     const cpcData = lookupCPC(keyword) || findSimilarKeywords(keyword, 1)[0];
@@ -288,6 +290,16 @@ export function ProfessionKeywordInputWithCart({
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {isSaving ? "Saving..." : !userId ? "Complete Step 1 First" : "Save Profile"}
+                </Button>
+                
+                <Button
+                  onClick={() => navigate("/my-profiles")}
+                  variant="outline"
+                  className="flex-1"
+                  title="View your saved profiles"
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  View My Profiles
                 </Button>
                 
                 <Button
