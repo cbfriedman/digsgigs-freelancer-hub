@@ -792,9 +792,9 @@ export default function Pricing() {
                                   <div className="flex justify-between font-semibold text-lg">
                                     <span>Total:</span>
                                     <span className="text-primary">${calculateTotalCost().total.toFixed(2)}</span>
-                        </div>
-                      </>
-                    )}
+                                  </div>
+                                </div>
+                              )}
 
                     {!showVerification ? (
                       <Button type="submit" className="w-full" size="lg">
@@ -837,19 +837,7 @@ export default function Pricing() {
                       >
                         Verify & Continue →
                       </Button>
-                    )}
-                                  <p className="text-xs text-muted-foreground mt-2">
-                                    💡 Purchase 11+ leads for 15% discount or 51+ for 30% discount!
-                                  </p>
-                          </div>
-                        )}
-                      </>
-                    )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                     )}
 
                     {!showVerification && (
                       <>
@@ -1124,10 +1112,12 @@ export default function Pricing() {
                       >
                         Start New Profile (Different Person/Company)
                       </Button>
-                    </div>
-                    <p className="text-xs text-center text-muted-foreground mt-2">
-                      No payment required • No commitment to buy
-                    </p>
+                      </div>
+                      <p className="text-xs text-center text-muted-foreground mt-2">
+                        No payment required • No commitment to buy
+                      </p>
+                    </>
+                  )}
                   </form>
                 </CardContent>
               </Card>
