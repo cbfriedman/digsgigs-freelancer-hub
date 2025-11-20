@@ -219,8 +219,10 @@ export function ProfessionKeywordInputWithCart({
                         {prof.valueIndicator}
                       </Badge>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      Standard: ${prof.cpl.free} • Pro: ${prof.cpl.pro} • Premium: ${prof.cpl.premium}
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div>Standard: ${prof.cpl.free}/lead <span className="text-xs opacity-70">(1-10 leads/mo)</span></div>
+                      <div>Pro: ${prof.cpl.pro}/lead <span className="text-xs opacity-70">(11-50 leads/mo)</span></div>
+                      <div>Premium: ${prof.cpl.premium}/lead <span className="text-xs opacity-70">(51+ leads/mo)</span></div>
                     </div>
                   </div>
                   
@@ -291,9 +293,10 @@ export function ProfessionKeywordInputWithCart({
                 </div>
                 
                 <div className="text-xs text-center text-muted-foreground mt-2">
-                  {totalLeads < 11 && "Add 11+ leads for 15% discount or 51+ for 30% discount"}
-                  {totalLeads >= 11 && totalLeads < 51 && "Add 51+ leads for 30% discount"}
-                  {totalLeads >= 51 && "Maximum volume discount applied!"}
+                  <div className="font-semibold mb-1">Volume Tier Pricing</div>
+                  {totalLeads < 11 && "Standard (1-10 leads): Base pricing • Add 11+ leads for 15% Pro discount or 51+ for 30% Premium discount"}
+                  {totalLeads >= 11 && totalLeads < 51 && "Pro (11-50 leads): 15% discount applied • Add 51+ leads for 30% Premium discount"}
+                  {totalLeads >= 51 && "Premium (51+ leads): Maximum 30% volume discount applied!"}
                 </div>
               </div>
 
