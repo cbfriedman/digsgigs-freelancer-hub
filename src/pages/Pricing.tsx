@@ -716,7 +716,7 @@ export default function Pricing() {
 
                         {/* Lead Quantity Section */}
                         {selectedIndustries.length > 0 && (
-                      <div className="space-y-4 p-6 border rounded-lg bg-muted/30">
+                          <div className="space-y-4 p-6 border rounded-lg bg-muted/30">
                         <Label className="font-semibold text-lg">
                           How many leads would you like to purchase?
                         </Label>
@@ -795,6 +795,11 @@ export default function Pricing() {
                                   </div>
                                 </div>
                               )}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
 
                     {!showVerification ? (
                       <Button type="submit" className="w-full" size="lg">
@@ -837,7 +842,7 @@ export default function Pricing() {
                       >
                         Verify & Continue →
                       </Button>
-                     )}
+                    )}
 
                     {!showVerification && (
                       <>
