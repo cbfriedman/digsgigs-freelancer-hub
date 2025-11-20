@@ -1153,67 +1153,148 @@ export default function Pricing() {
               </Card>
 
               {selectedIndustries.length > 0 && (
-                <Card className="bg-primary/5 border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="text-xl">Your Lead Pricing Summary</CardTitle>
-                    <CardDescription>
-                      Cost per lead for each profession across all tiers
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {selectedIndustries.map((keyword, index) => {
-                        const freeCost = getLeadCostForIndustry(keyword, 'free');
-                        const proCost = getLeadCostForIndustry(keyword, 'pro');
-                        const premiumCost = getLeadCostForIndustry(keyword, 'premium');
-                        const valueIndicator = getValueIndicator(keyword);
-                        
-                        return (
-                          <div key={index} className="p-4 bg-background rounded-lg border border-border">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-lg">{keyword}</span>
-                                <Badge variant={
-                                  valueIndicator === 'High Value' ? 'default' : 
-                                  valueIndicator === 'Mid Value' ? 'secondary' : 'outline'
-                                }>
-                                  {valueIndicator}
-                                </Badge>
+                <>
+                  <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/30 shadow-lg">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-2xl flex items-center gap-2">
+                            <Check className="w-6 h-6 text-green-600" />
+                            Your Selected Professions
+                          </CardTitle>
+                          <CardDescription className="mt-1">
+                            {selectedIndustries.length} profession{selectedIndustries.length !== 1 ? 's' : ''} added • Cost per lead pricing shown below
+                          </CardDescription>
+                        </div>
+                        <Badge variant="default" className="text-lg px-4 py-2">
+                          {selectedIndustries.length} Selected
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {selectedIndustries.map((keyword, index) => {
+                          const freeCost = getLeadCostForIndustry(keyword, 'free');
+                          const proCost = getLeadCostForIndustry(keyword, 'pro');
+                          const premiumCost = getLeadCostForIndustry(keyword, 'premium');
+                          const valueIndicator = getValueIndicator(keyword);
+                          const savingsPro = Math.round(((freeCost - proCost) / freeCost) * 100);
+                          const savingsPremium = Math.round(((freeCost - premiumCost) / freeCost) * 100);
+                          
+                          return (
+                            <div 
+                              key={index} 
+                              className="p-5 bg-background rounded-xl border-2 border-primary/20 hover:border-primary/40 transition-all shadow-md hover:shadow-lg"
+                            >
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                                    <span className="text-lg font-bold text-primary">{index + 1}</span>
+                                  </div>
+                                  <div>
+                                    <span className="font-bold text-xl">{keyword}</span>
+                                    <Badge 
+                                      variant={
+                                        valueIndicator === 'High Value' ? 'default' : 
+                                        valueIndicator === 'Mid Value' ? 'secondary' : 'outline'
+                                      }
+                                      className="ml-2"
+                                    >
+                                      {valueIndicator}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <Check className="w-6 h-6 text-green-600 flex-shrink-0" />
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {/* Free Tier */}
+                                <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                                  <div className="text-center">
+                                    <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                                      Leads 1-10/mo
+                                    </p>
+                                    <p className="text-2xl font-bold text-foreground mb-2">
+                                      ${freeCost}
+                                      <span className="text-sm font-normal text-muted-foreground">/lead</span>
+                                    </p>
+                                    <Badge variant="outline" className="text-xs">
+                                      Standard Rate
+                                    </Badge>
+                                  </div>
+                                </div>
+                                
+                                {/* Pro Tier */}
+                                <div className="p-4 bg-primary/10 rounded-lg border-2 border-primary/30 relative overflow-hidden">
+                                  <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/20 rounded-bl-full" />
+                                  <div className="text-center relative z-10">
+                                    <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
+                                      Leads 11-50/mo
+                                    </p>
+                                    <p className="text-2xl font-bold text-primary mb-2">
+                                      ${proCost}
+                                      <span className="text-sm font-normal text-muted-foreground">/lead</span>
+                                    </p>
+                                    <Badge className="text-xs bg-green-500 hover:bg-green-600">
+                                      Save {savingsPro}%
+                                    </Badge>
+                                  </div>
+                                </div>
+                                
+                                {/* Premium Tier */}
+                                <div className="p-4 bg-primary/15 rounded-lg border-2 border-primary/40 relative overflow-hidden">
+                                  <div className="absolute top-0 right-0 w-20 h-20 bg-green-600/20 rounded-bl-full" />
+                                  <div className="text-center relative z-10">
+                                    <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
+                                      Leads 51+/mo
+                                    </p>
+                                    <p className="text-2xl font-bold text-primary mb-2">
+                                      ${premiumCost}
+                                      <span className="text-sm font-normal text-muted-foreground">/lead</span>
+                                    </p>
+                                    <Badge className="text-xs bg-green-600 hover:bg-green-700">
+                                      Save {savingsPremium}%
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Example calculation */}
+                              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <p className="text-xs text-blue-900 dark:text-blue-100">
+                                  <strong>Example:</strong> At 25 leads/month, you'd pay ${proCost}/lead = ${proCost * 25}/month (Pro tier)
+                                </p>
                               </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
-                              <div className="text-center p-3 bg-muted/30 rounded">
-                                <p className="text-xs text-muted-foreground mb-1">Leads 1-10/mo</p>
-                                <p className="text-lg font-bold text-foreground">${freeCost}/lead</p>
-                                <Badge variant="outline" className="mt-1 text-xs">Standard Rate</Badge>
-                              </div>
-                              <div className="text-center p-3 bg-primary/10 rounded border border-primary/20">
-                                <p className="text-xs text-muted-foreground mb-1">Leads 11-50/mo</p>
-                                <p className="text-lg font-bold text-primary">${proCost}/lead</p>
-                                <Badge className="mt-1 text-xs bg-green-500">Save 17%</Badge>
-                              </div>
-                              <div className="text-center p-3 bg-primary/10 rounded border border-primary/20">
-                                <p className="text-xs text-muted-foreground mb-1">Leads 51+/mo</p>
-                                <p className="text-lg font-bold text-primary">${premiumCost}/lead</p>
-                                <Badge className="mt-1 text-xs bg-green-600">Save 33%</Badge>
-                              </div>
-                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Total summary section */}
+                      <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl">
+                        <div className="flex items-start gap-3">
+                          <Info className="w-5 h-5 mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                              How Volume-Based Pricing Works:
+                            </p>
+                            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                              <li>✓ The more leads you commit to monthly, the lower your per-lead cost</li>
+                              <li>✓ All {selectedIndustries.length} profession{selectedIndustries.length !== 1 ? 's' : ''} share the same tier pricing</li>
+                              <li>✓ Choose your tier below based on total monthly lead volume</li>
+                            </ul>
                           </div>
-                        );
-                      })}
-                    </div>
-                    
-                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-sm text-blue-900 dark:text-blue-100 flex items-start gap-2">
-                        <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                        <span>
-                          <strong>Volume-based pricing:</strong> The more leads you commit to per month, the lower your per-lead cost. 
-                          Scroll down to see tier options and sign up!
-                        </span>
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 text-center">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          👇 Ready to get started? Scroll down to select your volume tier and sign up!
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
               )}
             </div>
           </div>
