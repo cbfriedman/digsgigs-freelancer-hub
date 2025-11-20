@@ -797,132 +797,7 @@ export default function Pricing() {
                       </div>
                     )}
 
-                    {!showVerification && (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="industries" className="font-medium flex items-center gap-2">
-                            Select Your Profession *
-                            {selectedIndustries.length === 0 && (
-                              <Badge variant="destructive" className="text-xs">Required</Badge>
-                            )}
-                          </Label>
-                          <div className="space-y-2">
-                            <ProfessionKeywordInput
-                              professions={selectedIndustries.map(keyword => ({
-                                keyword,
-                                cpl: {
-                                  free: getLeadCostForIndustry(keyword, 'free'),
-                                  pro: getLeadCostForIndustry(keyword, 'pro'),
-                                  premium: getLeadCostForIndustry(keyword, 'premium')
-                                },
-                                valueIndicator: getValueIndicator(keyword)
-                              }))}
-                              onProfessionsChange={(professions) => {
-                                setSelectedIndustries(professions.map(p => p.keyword));
-                                const newQuantities = { ...professionLeadQuantities };
-                                professions.forEach(prof => {
-                                  if (!(prof.keyword in newQuantities)) newQuantities[prof.keyword] = 0;
-                                });
-                                Object.keys(newQuantities).forEach(keyword => {
-                                  if (!professions.find(p => p.keyword === keyword)) delete newQuantities[keyword];
-                                });
-                                setProfessionLeadQuantities(newQuantities);
-                              }}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              👆 List multiple professions and/or keywords separated by commas (,)
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Lead Quantity Section */}
-                        {selectedIndustries.length > 0 && (
-                          <div className="space-y-4 p-6 border rounded-lg bg-muted/30">
-                        <Label className="font-semibold text-lg">
-                          How many leads would you like to purchase?
-                        </Label>
-                        <div className="space-y-3">
-                          {selectedIndustries.map((profession) => {
-                            const indicator = getValueIndicator(profession);
-                            const leadCost = getProfessionLeadCost(profession, 'free');
-                            return (
-                              <div key={profession} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-background rounded border">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <Label className="text-sm font-medium">
-                                      {profession}
-                                    </Label>
-                                    <Badge variant={indicator === 'HV' ? 'default' : indicator === 'MV' ? 'secondary' : 'outline'} className="text-xs">
-                                      {indicator}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    ${leadCost}/lead (base rate)
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    placeholder="0"
-                                    value={professionLeadQuantities[profession] || ''}
-                                    onChange={(e) => {
-                                      const value = parseInt(e.target.value) || 0;
-                                      setProfessionLeadQuantities({
-                                        ...professionLeadQuantities,
-                                        [profession]: value
-                                      });
-                                    }}
-                                    className="w-24"
-                                  />
-                                  <span className="text-sm text-muted-foreground">leads/mo</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Cost Summary */}
-                        {getTotalLeads() > 0 && (
-                          <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
-                            <div className="space-y-2">
-                              <div className="flex justify-between text-sm">
-                                <span>Total Leads:</span>
-                                <span className="font-semibold">{getTotalLeads()}</span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span>Subtotal:</span>
-                                <span>${calculateTotalCost().subtotal.toFixed(2)}</span>
-                              </div>
-                              {getVolumeDiscount() > 0 && (
-                                <>
-                                  <div className="flex justify-between text-sm text-green-600">
-                                    <span>Volume Discount ({(getVolumeDiscount() * 100).toFixed(0)}%):</span>
-                                    <span>-${calculateTotalCost().discount.toFixed(2)}</span>
-                                  </div>
-                                  <div className="pt-2 border-t border-primary/20">
-                                    <div className="flex justify-between font-semibold text-lg">
-                                      <span>Total:</span>
-                                      <span className="text-primary">${calculateTotalCost().total.toFixed(2)}</span>
-                                    </div>
-                                  </div>
-                                </>
-                              )}
-                              {getVolumeDiscount() === 0 && (
-                                <div className="pt-2 border-t border-primary/20">
-                                  <div className="flex justify-between font-semibold text-lg">
-                                    <span>Total:</span>
-                                    <span className="text-primary">${calculateTotalCost().total.toFixed(2)}</span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                          </div>
-                        )}
-                      </>
-                    )}
+                    {/* Profession selection moved to Step 2 */}
 
                     <Button 
                       type="submit" 
@@ -936,7 +811,7 @@ export default function Pricing() {
                           Waiting for Email Verification...
                         </>
                       ) : (
-                        user ? "Continue to Step 2 →" : "Sign Up & Continue →"
+                        "Continue to Step 2 →"
                       )}
                     </Button>
 
