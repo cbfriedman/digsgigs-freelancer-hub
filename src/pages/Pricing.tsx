@@ -594,60 +594,56 @@ export default function Pricing() {
                           )}
                         </div>
 
-                        {!user && (
-                          <>
-                            <div className="space-y-2">
-                              <Label htmlFor="password">
-                                Password *
-                              </Label>
-                              <div className="relative">
-                                <Input
-                                  id="password"
-                                  type={showPassword ? "text" : "password"}
-                                  placeholder="Create a strong password"
-                                  value={formData.password}
-                                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                  required
-                                  className="pr-10"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowPassword(!showPassword)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                  aria-label={showPassword ? "Hide password" : "Show password"}
-                                >
-                                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                              </div>
-                              <PasswordStrengthIndicator password={formData.password} />
-                            </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="password">
+                            Password *
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id="password"
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Create a strong password"
+                              value={formData.password}
+                              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                              required
+                              className="pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                              aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+                          <PasswordStrengthIndicator password={formData.password} />
+                        </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="confirmPassword">
-                                Confirm Password *
-                              </Label>
-                              <div className="relative">
-                                <Input
-                                  id="confirmPassword"
-                                  type={showConfirmPassword ? "text" : "password"}
-                                  placeholder="Re-enter password"
-                                  value={formData.confirmPassword}
-                                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                  required
-                                  className="pr-10"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                                >
-                                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                              </div>
-                            </div>
-                          </>
-                        )}
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword">
+                            Confirm Password *
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id="confirmPassword"
+                              type={showConfirmPassword ? "text" : "password"}
+                              placeholder="Re-enter password"
+                              value={formData.confirmPassword}
+                              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                              required
+                              className="pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                            >
+                              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+                        </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="phone">
