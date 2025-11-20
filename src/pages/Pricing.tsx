@@ -1125,7 +1125,7 @@ export default function Pricing() {
                     <CardContent>
                       <div className="text-center mb-4">
                         <div className="text-4xl font-bold text-foreground mb-2">
-                          $39<span className="text-xl">/lead</span>
+                          $18<span className="text-xl">/lead</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
                           Starting from
@@ -1156,7 +1156,7 @@ export default function Pricing() {
                     <CardContent>
                       <div className="text-center mb-4">
                         <div className="text-4xl font-bold text-primary mb-2">
-                          $33<span className="text-xl">/lead</span>
+                          $15<span className="text-xl">/lead</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
                           Starting from
@@ -1187,7 +1187,7 @@ export default function Pricing() {
                     <CardContent>
                       <div className="text-center mb-4">
                         <div className="text-4xl font-bold text-primary mb-2">
-                          $26<span className="text-xl">/lead</span>
+                          $12<span className="text-xl">/lead</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
                           Starting from
