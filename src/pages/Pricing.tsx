@@ -1206,7 +1206,7 @@ export default function Pricing() {
 
                 <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <p className="text-sm text-center text-muted-foreground">
-                    💡 <strong>Note:</strong> Actual prices will be calculated based on your selected professions in Step 2
+                    💡 <strong>Note:</strong> These values represent the lowest-cost professions (e.g., dog walkers, pet sitters). Actual prices will be calculated based on your selected professions in Step 2.
                   </p>
                 </div>
               </div>
