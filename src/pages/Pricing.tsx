@@ -393,11 +393,17 @@ export default function Pricing() {
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <span className="text-3xl font-bold text-primary">1st Step</span>
-                <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+                {!step1Completed && <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>}
+                {step1Completed && <Check className="h-8 w-8 text-green-500" />}
                 <h2 className="text-3xl font-bold">Build My Digs</h2>
+                {step1Completed && (
+                  <Badge className="ml-2 bg-green-500 text-white">Completed</Badge>
+                )}
               </div>
               <p className="text-muted-foreground">
-                Ready to get started? Fill out the form below to create your digger profile
+                {step1Completed 
+                  ? "Profile information saved! Now select your professions below."
+                  : "Complete this step first to create your digger profile and unlock profession selection"}
               </p>
             </div>
 
@@ -1189,17 +1195,45 @@ export default function Pricing() {
   </section>
 
       {/* Industry Selector - Step 2 (shown after Step 1 is completed, synced with Step 1 selection) */}
-      {step1Completed && (
-        <section id="step-2-industry" className="py-12 bg-gradient-to-b from-background to-primary/5">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
-                  <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
-                  <h2 className="text-2xl font-bold">Review Your Professions & Pricing</h2>
-                </div>
-                {selectedIndustries.length > 0 ? (
+      <section id="step-2-industry" className={`py-12 bg-gradient-to-b from-background to-primary/5 ${!step1Completed ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto relative">
+            {!step1Completed && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg">
+                <Card className="max-w-md border-2 border-primary/20 shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-primary">
+                      <Info className="h-6 w-6" />
+                      Complete Step 1 First
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">
+                      Please complete the "Build My Digs" registration form above to unlock profession selection and pricing options.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        const step1Element = document.querySelector('[class*="py-16 bg-gradient-to-b from-background to-primary/5"]');
+                        if (step1Element) {
+                          step1Element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      Go to Step 1
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="text-2xl font-bold text-primary whitespace-nowrap">2nd Step</span>
+                <span className="text-5xl text-primary animate-[pulse_1s_ease-in-out_infinite]">→</span>
+                <h2 className="text-2xl font-bold">Review Your Professions & Pricing</h2>
+              </div>
+              {selectedIndustries.length > 0 ? (
                   <p className="text-sm text-green-600 font-medium">
                     ✅ {selectedIndustries.length} profession{selectedIndustries.length !== 1 ? 's' : ''} selected
                   </p>
@@ -1418,7 +1452,6 @@ export default function Pricing() {
             </div>
           </div>
         </section>
-      )}
 
       {/* Pricing Cards - Removed from display, preview shown in Step 1 instead */}
       {false && (
@@ -1610,7 +1643,7 @@ export default function Pricing() {
           </div>
         </div>
       </section>
-      )}
+        )}
 
       {/* Hourly Upcharge Display for Logged-in Diggers */}
       {step1Completed && isDigger && user && (hourlyRateMin || hourlyRateMax) && (
