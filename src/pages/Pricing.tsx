@@ -68,6 +68,7 @@ export default function Pricing() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [savedProfileId, setSavedProfileId] = useState<string | null>(null);
 
   // Check if user can interact with pricing tiles - only after Step 1 is completed
   const canInteractWithPricing = step1Completed;
@@ -843,6 +844,9 @@ export default function Pricing() {
 
                             if (error) throw error;
                             
+                            // Store profile ID for checkout
+                            setSavedProfileId(data.id);
+                            
                             toast.dismiss();
                             toast.success(`Profile "${formData.companyName}" saved! You can continue or come back later.`);
                           } catch (error: any) {
@@ -1389,6 +1393,7 @@ export default function Pricing() {
                     }}
                     userId={user?.id}
                     companyName={formData.companyName}
+                    profileId={savedProfileId || undefined}
                   />
                 </CardContent>
               </Card>

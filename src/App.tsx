@@ -52,6 +52,8 @@ import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
 import PreDemoRegistration from "./pages/PreDemoRegistration";
 import MyProfiles from "./pages/MyProfiles";
+import Checkout from "./pages/Checkout";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +109,8 @@ const App = () => (
           <Route path="/edit-digger-profile" element={<EditDiggerProfile />} />
           <Route path="/edit-digger-profile/:profileId" element={<EditDiggerProfile />} />
           <Route path="/my-profiles" element={<MyProfiles />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout-success" element={<CheckoutSuccess />} />
           <Route path="/post-gig" element={<PostGig />} />
           <Route path="/browse-diggers" element={<BrowseDiggers />} />
           <Route path="/browse-gigs" element={<BrowseGigs />} />

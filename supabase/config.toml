@@ -93,3 +93,9 @@ verify_jwt = false
 [functions.check-upgrade-savings]
 verify_jwt = false
 
+[functions.create-profession-checkout]
+verify_jwt = true
+
+[functions.stripe-webhook-profession-purchase]
+verify_jwt = false
+
