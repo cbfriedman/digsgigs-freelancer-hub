@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProfessionKeywordInput } from "@/components/ProfessionKeywordInput";
+import { ProfessionKeywordInputWithCart } from "@/components/ProfessionKeywordInputWithCart";
 import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown, Eye, EyeOff, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/Footer";
@@ -1217,8 +1218,9 @@ export default function Pricing() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ProfessionKeywordInput
+                  <ProfessionKeywordInputWithCart
                     professions={selectedIndustries.map(keyword => {
+                      const quantity = professionLeadQuantities[keyword] || 0;
                       return {
                         keyword,
                         cpl: {
@@ -1226,158 +1228,30 @@ export default function Pricing() {
                           pro: getProfessionLeadCost(keyword, 'pro'),
                           premium: getProfessionLeadCost(keyword, 'premium')
                         },
-                        valueIndicator: getValueIndicator(keyword)
+                        valueIndicator: getValueIndicator(keyword),
+                        quantity: quantity,
                       };
                     })}
                     onProfessionsChange={(professions) => {
                       setSelectedIndustries(professions.map(p => p.keyword));
+                      // Update quantities from professions
+                      const newQuantities: Record<string, number> = {};
+                      professions.forEach(p => {
+                        if (p.quantity !== undefined) {
+                          newQuantities[p.keyword] = p.quantity;
+                        }
+                      });
+                      setProfessionLeadQuantities(newQuantities);
                     }}
+                    userId={user?.id}
+                    companyName={formData.companyName}
                   />
                 </CardContent>
               </Card>
 
               {selectedIndustries.length > 0 && (
                 <>
-                  {/* Monthly Cost Calculator */}
-                  <Card className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-purple-300 dark:border-purple-700 shadow-lg mb-6">
-                    <CardHeader>
-                      <CardTitle className="text-2xl flex items-center gap-2">
-                        📊 Monthly Cost Calculator
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        Enter your expected monthly lead volume for each profession to see your estimated costs
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {selectedIndustries.map((keyword, index) => {
-                          const freeCost = getProfessionLeadCost(keyword, 'free');
-                          const proCost = getProfessionLeadCost(keyword, 'pro');
-                          const premiumCost = getProfessionLeadCost(keyword, 'premium');
-                          const valueIndicator = getValueIndicator(keyword);
-                          const leadVolume = professionLeadQuantities[keyword] || 0;
-                          
-                          // Calculate cost based on volume tier
-                          let costPerLead = freeCost;
-                          let tierName = 'Free (1-10 leads)';
-                          if (leadVolume >= 51) {
-                            costPerLead = premiumCost;
-                            tierName = 'Premium (51+ leads)';
-                          } else if (leadVolume >= 11) {
-                            costPerLead = proCost;
-                            tierName = 'Pro (11-50 leads)';
-                          }
-                          const totalCost = leadVolume * costPerLead;
-                          
-                          return (
-                            <div 
-                              key={index} 
-                              className="p-4 bg-background rounded-lg border-2 border-purple-200 dark:border-purple-800 shadow-sm"
-                            >
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-lg">{keyword}</span>
-                                  <Badge 
-                                    variant={
-                                      valueIndicator === 'High Value' ? 'default' : 
-                                      valueIndicator === 'Mid Value' ? 'secondary' : 'outline'
-                                    }
-                                  >
-                                    {valueIndicator}
-                                  </Badge>
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <Label htmlFor={`volume-${keyword}`} className="text-sm mb-2 block">
-                                    Expected Monthly Leads
-                                  </Label>
-                                  <Input
-                                    id={`volume-${keyword}`}
-                                    type="number"
-                                    min="0"
-                                    placeholder="e.g., 25"
-                                    value={leadVolume || ''}
-                                    onChange={(e) => {
-                                      const value = parseInt(e.target.value) || 0;
-                                      setProfessionLeadQuantities({
-                                        ...professionLeadQuantities,
-                                        [keyword]: value
-                                      });
-                                    }}
-                                    className="text-lg"
-                                  />
-                                </div>
-                                
-                                <div className="flex flex-col justify-end">
-                                  {leadVolume > 0 && (
-                                    <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                                      <p className="text-xs text-muted-foreground mb-1">
-                                        {tierName} • ${costPerLead}/lead
-                                      </p>
-                                      <p className="text-2xl font-bold text-primary">
-                                        ${totalCost.toFixed(2)}
-                                        <span className="text-sm font-normal text-muted-foreground">/month</span>
-                                      </p>
-                                    </div>
-                                  )}
-                                  {leadVolume === 0 && (
-                                    <div className="p-3 bg-muted/30 rounded-lg border border-border text-center">
-                                      <p className="text-sm text-muted-foreground">Enter volume to see cost</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Total Summary */}
-                      {Object.values(professionLeadQuantities).some(v => v > 0) && (
-                        <div className="mt-6 p-6 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl border-2 border-primary/40">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div className="text-center">
-                              <p className="text-sm text-muted-foreground mb-1">Total Leads/Month</p>
-                              <p className="text-3xl font-bold text-foreground">
-                                {Object.values(professionLeadQuantities).reduce((sum, val) => sum + (val || 0), 0)}
-                              </p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm text-muted-foreground mb-1">Active Professions</p>
-                              <p className="text-3xl font-bold text-foreground">
-                                {Object.entries(professionLeadQuantities).filter(([_, v]) => v > 0).length}
-                              </p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm text-muted-foreground mb-1">Estimated Monthly Cost</p>
-                              <p className="text-3xl font-bold text-primary">
-                                ${selectedIndustries.reduce((total, keyword) => {
-                                  const volume = professionLeadQuantities[keyword] || 0;
-                                  if (volume === 0) return total;
-                                  
-                                  let costPerLead = getProfessionLeadCost(keyword, 'free');
-                                  if (volume >= 51) {
-                                    costPerLead = getProfessionLeadCost(keyword, 'premium');
-                                  } else if (volume >= 11) {
-                                    costPerLead = getProfessionLeadCost(keyword, 'pro');
-                                  }
-                                  return total + (volume * costPerLead);
-                                }, 0).toFixed(2)}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4 bg-background/80 rounded-lg">
-                            <p className="text-sm text-muted-foreground text-center">
-                              💡 <strong>Tip:</strong> Your tier is automatically determined by your total lead volume. Mix and match professions to optimize your costs!
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  {/* Monthly Cost Calculator section removed - now integrated into ProfessionKeywordInputWithCart */}
 
                   <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/30 shadow-lg">
                     <CardHeader>
