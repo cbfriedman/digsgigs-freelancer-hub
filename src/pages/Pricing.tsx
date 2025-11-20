@@ -842,24 +842,24 @@ export default function Pricing() {
                     {!showVerification && (
                       <>
                         <div className="flex items-start gap-2">
-                      <Checkbox
-                        id="terms"
-                        checked={formData.acceptTerms}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, acceptTerms: checked === true })
-                        }
-                      />
-                      <Label htmlFor="terms" className="text-sm leading-tight cursor-pointer">
-                        I agree to the{" "}
-                        <a href="/terms-of-service" className="text-primary hover:underline" target="_blank">
-                          Terms of Service
-                        </a>{" "}
-                        and{" "}
-                        <a href="/privacy-policy" className="text-primary hover:underline" target="_blank">
-                          Privacy Policy
-                        </a>
-                      </Label>
-                    </div>
+                          <Checkbox
+                            id="terms"
+                            checked={formData.acceptTerms}
+                            onCheckedChange={(checked) =>
+                              setFormData({ ...formData, acceptTerms: checked === true })
+                            }
+                          />
+                          <Label htmlFor="terms" className="text-sm leading-tight cursor-pointer">
+                            I agree to the{" "}
+                            <a href="/terms-of-service" className="text-primary hover:underline" target="_blank">
+                              Terms of Service
+                            </a>{" "}
+                            and{" "}
+                            <a href="/privacy-policy" className="text-primary hover:underline" target="_blank">
+                              Privacy Policy
+                            </a>
+                          </Label>
+                        </div>
 
                     {/* Current Profile Industry Sets Indicator */}
                     {currentProfileIndustrySets.length > 0 && (
@@ -1111,13 +1111,14 @@ export default function Pricing() {
                         }}
                       >
                         Start New Profile (Different Person/Company)
-                      </Button>
-                      </div>
-                      <p className="text-xs text-center text-muted-foreground mt-2">
-                        No payment required • No commitment to buy
-                      </p>
-                    </>
-                  )}
+                       </Button>
+                    </div>
+                    
+                    <p className="text-xs text-center text-muted-foreground mt-2">
+                      No payment required • No commitment to buy
+                    </p>
+                      </>
+                    )}
                   </form>
                 </CardContent>
               </Card>
