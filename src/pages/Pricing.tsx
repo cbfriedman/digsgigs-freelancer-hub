@@ -1101,6 +1101,115 @@ export default function Pricing() {
                     </>
                   )}
               </form>
+
+              {/* Pricing Preview - Static, Unclickable */}
+              <div className="mt-8 pt-8 border-t border-border">
+                <div className="mb-6 text-center">
+                  <h3 className="text-2xl font-bold mb-2">Volume-Based Pricing Preview</h3>
+                  <p className="text-muted-foreground">Lowest possible cost per lead shown below</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Free Tier Preview */}
+                  <Card className="relative opacity-75 cursor-not-allowed border-2">
+                    <CardHeader>
+                      <div className="text-center">
+                        <CardTitle className="text-lg font-bold mb-1">
+                          Leads 1-10 per MO.
+                        </CardTitle>
+                        <Badge variant="outline" className="mt-2">
+                          Standard Rate
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center mb-4">
+                        <div className="text-4xl font-bold text-foreground mb-2">
+                          $39<span className="text-xl">/lead</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Starting from
+                        </p>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        disabled
+                        variant="outline"
+                      >
+                        Complete Step 1 First
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Pro Tier Preview */}
+                  <Card className="relative opacity-75 cursor-not-allowed border-2 border-primary/50">
+                    <CardHeader>
+                      <div className="text-center">
+                        <CardTitle className="text-lg font-bold mb-1">
+                          Leads 11-50 per MO.
+                        </CardTitle>
+                        <Badge className="mt-2 bg-green-600">
+                          Save 17%
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center mb-4">
+                        <div className="text-4xl font-bold text-primary mb-2">
+                          $33<span className="text-xl">/lead</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Starting from
+                        </p>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        disabled
+                        variant="outline"
+                      >
+                        Complete Step 1 First
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Premium Tier Preview */}
+                  <Card className="relative opacity-75 cursor-not-allowed border-2 border-primary">
+                    <CardHeader>
+                      <div className="text-center">
+                        <CardTitle className="text-lg font-bold mb-1">
+                          Leads 51+ per MO.
+                        </CardTitle>
+                        <Badge className="mt-2 bg-green-600">
+                          Save 33%
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center mb-4">
+                        <div className="text-4xl font-bold text-primary mb-2">
+                          $26<span className="text-xl">/lead</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Starting from
+                        </p>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        disabled
+                        variant="outline"
+                      >
+                        Complete Step 1 First
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-center text-muted-foreground">
+                    💡 <strong>Note:</strong> Actual prices will be calculated based on your selected professions in Step 2
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -1318,98 +1427,118 @@ export default function Pricing() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         {selectedIndustries.map((keyword, index) => {
                           const freeCost = getProfessionLeadCost(keyword, 'free');
                           const proCost = getProfessionLeadCost(keyword, 'pro');
                           const premiumCost = getProfessionLeadCost(keyword, 'premium');
                           const valueIndicator = getValueIndicator(keyword);
-                          const savingsPro = Math.round(((freeCost - proCost) / freeCost) * 100);
-                          const savingsPremium = Math.round(((freeCost - premiumCost) / freeCost) * 100);
                           
                           return (
                             <div 
                               key={index} 
-                              className="p-5 bg-background rounded-xl border-2 border-primary/20 hover:border-primary/40 transition-all shadow-md hover:shadow-lg"
+                              className="p-6 bg-background rounded-xl border-2 border-primary/20 shadow-md"
                             >
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                                    <span className="text-lg font-bold text-primary">{index + 1}</span>
-                                  </div>
-                                  <div>
-                                    <span className="font-bold text-xl">{keyword}</span>
-                                    <Badge 
-                                      variant={
-                                        valueIndicator === 'High Value' ? 'default' : 
-                                        valueIndicator === 'Mid Value' ? 'secondary' : 'outline'
-                                      }
-                                      className="ml-2"
-                                    >
-                                      {valueIndicator}
-                                    </Badge>
-                                  </div>
+                              {/* Profession Name and Value Indicator */}
+                              <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
+                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sm font-bold text-primary">{index + 1}</span>
                                 </div>
-                                <Check className="w-6 h-6 text-green-600 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <h4 className="font-bold text-lg">{keyword}</h4>
+                                </div>
+                                <Badge 
+                                  variant={
+                                    valueIndicator === 'High Value' ? 'default' : 
+                                    valueIndicator === 'Mid Value' ? 'secondary' : 'outline'
+                                  }
+                                >
+                                  {valueIndicator}
+                                </Badge>
                               </div>
-                              
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                {/* Free Tier */}
-                                <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                                  <div className="text-center">
-                                    <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-                                      Leads 1-10/mo
-                                    </p>
-                                    <p className="text-2xl font-bold text-foreground mb-2">
-                                      ${freeCost}
-                                      <span className="text-sm font-normal text-muted-foreground">/lead</span>
-                                    </p>
-                                    <Badge variant="outline" className="text-xs">
-                                      Standard Rate
-                                    </Badge>
-                                  </div>
+
+                              {/* Pricing Tiers */}
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                                {/* Tier 1-10 leads */}
+                                <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-1 text-center">
+                                    Leads 1-10/mo
+                                  </p>
+                                  <p className="text-2xl font-bold text-center">
+                                    ${freeCost}<span className="text-sm">/lead</span>
+                                  </p>
+                                  <p className="text-xs text-center text-muted-foreground mt-1">
+                                    Standard Rate
+                                  </p>
                                 </div>
-                                
-                                {/* Pro Tier */}
-                                <div className="p-4 bg-primary/10 rounded-lg border-2 border-primary/30 relative overflow-hidden">
-                                  <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/20 rounded-bl-full" />
-                                  <div className="text-center relative z-10">
-                                    <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
-                                      Leads 11-50/mo
-                                    </p>
-                                    <p className="text-2xl font-bold text-primary mb-2">
-                                      ${proCost}
-                                      <span className="text-sm font-normal text-muted-foreground">/lead</span>
-                                    </p>
-                                    <Badge className="text-xs bg-green-500 hover:bg-green-600">
-                                      Save {savingsPro}%
-                                    </Badge>
-                                  </div>
+
+                                {/* Tier 11-50 leads */}
+                                <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
+                                  <p className="text-xs font-semibold text-primary mb-1 text-center">
+                                    Leads 11-50/mo
+                                  </p>
+                                  <p className="text-2xl font-bold text-primary text-center">
+                                    ${proCost}<span className="text-sm">/lead</span>
+                                  </p>
+                                  <p className="text-xs text-center text-muted-foreground mt-1">
+                                    Save 17%
+                                  </p>
                                 </div>
-                                
-                                {/* Premium Tier */}
-                                <div className="p-4 bg-primary/15 rounded-lg border-2 border-primary/40 relative overflow-hidden">
-                                  <div className="absolute top-0 right-0 w-20 h-20 bg-green-600/20 rounded-bl-full" />
-                                  <div className="text-center relative z-10">
-                                    <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
-                                      Leads 51+/mo
-                                    </p>
-                                    <p className="text-2xl font-bold text-primary mb-2">
-                                      ${premiumCost}
-                                      <span className="text-sm font-normal text-muted-foreground">/lead</span>
-                                    </p>
-                                    <Badge className="text-xs bg-green-600 hover:bg-green-700">
-                                      Save {savingsPremium}%
-                                    </Badge>
-                                  </div>
+
+                                {/* Tier 51+ leads */}
+                                <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
+                                  <p className="text-xs font-semibold text-primary mb-1 text-center">
+                                    Leads 51+/mo
+                                  </p>
+                                  <p className="text-2xl font-bold text-primary text-center">
+                                    ${premiumCost}<span className="text-sm">/lead</span>
+                                  </p>
+                                  <p className="text-xs text-center text-muted-foreground mt-1">
+                                    Save 33%
+                                  </p>
                                 </div>
                               </div>
-                              
-                              {/* Example calculation */}
-                              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <p className="text-xs text-blue-900 dark:text-blue-100">
-                                  <strong>Example:</strong> At 25 leads/month, you'd pay ${proCost}/lead = ${proCost * 25}/month (Pro tier)
-                                </p>
+
+                              {/* Quantity Input */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`quantity-${index}`} className="text-sm font-medium">
+                                  How many leads would you like to purchase per month?
+                                </Label>
+                                <Input
+                                  id={`quantity-${index}`}
+                                  type="number"
+                                  min="0"
+                                  placeholder="Enter quantity"
+                                  value={professionLeadQuantities[keyword] || ''}
+                                  onChange={(e) => {
+                                    const value = parseInt(e.target.value) || 0;
+                                    setProfessionLeadQuantities(prev => ({
+                                      ...prev,
+                                      [keyword]: value
+                                    }));
+                                  }}
+                                  className="w-full"
+                                />
+                                {professionLeadQuantities[keyword] > 0 && (
+                                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <p className="text-sm font-medium">
+                                      Estimated Monthly Cost: 
+                                      <span className="text-primary font-bold ml-2">
+                                        ${(() => {
+                                          const qty = professionLeadQuantities[keyword];
+                                          const costPerLead = qty <= 10 ? freeCost : qty <= 50 ? proCost : premiumCost;
+                                          return (qty * costPerLead).toFixed(2);
+                                        })()}
+                                      </span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      @ ${(() => {
+                                        const qty = professionLeadQuantities[keyword];
+                                        return qty <= 10 ? freeCost : qty <= 50 ? proCost : premiumCost;
+                                      })()}/lead
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           );
