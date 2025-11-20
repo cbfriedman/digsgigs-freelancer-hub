@@ -29,7 +29,13 @@ export const useCart = () => {
   return context;
 };
 
-const calculateLeadPrice = (budgetMin: number | null): number => {
+const calculateLeadPrice = (gig: Gig): number => {
+  // For lead packages, budget_min already contains the total calculated price
+  if (gig.location === "Lead Package") {
+    return gig.budget_min || 0;
+  }
+  // For gig leads, calculate based on budget
+  const budgetMin = gig.budget_min;
   if (!budgetMin || budgetMin === 0) return 50;
   return Math.max(50, budgetMin * 0.005);
 };
@@ -77,7 +83,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const totalPrice = cartItems.reduce((sum, gig) => {
-    return sum + calculateLeadPrice(gig.budget_min);
+    return sum + calculateLeadPrice(gig);
   }, 0);
 
   return (

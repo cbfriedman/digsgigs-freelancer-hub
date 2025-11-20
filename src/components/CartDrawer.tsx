@@ -16,9 +16,14 @@ interface CartDrawerProps {
   onClose: () => void;
 }
 
-const calculateLeadPrice = (budgetMin: number | null): number => {
-  if (!budgetMin || budgetMin === 0) return 50;
-  return Math.max(50, budgetMin * 0.005);
+const calculateLeadPrice = (gig: { budget_min: number | null; location: string }): number => {
+  // For lead packages, budget_min already contains the total calculated price
+  if (gig.location === "Lead Package") {
+    return gig.budget_min || 0;
+  }
+  // For gig leads, calculate based on budget
+  if (!gig.budget_min || gig.budget_min === 0) return 50;
+  return Math.max(50, gig.budget_min * 0.005);
 };
 
 export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
@@ -66,7 +71,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
       const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
       return Math.max(100, hourlyRate);
     }
-    return calculateLeadPrice(gig.budget_min);
+    return calculateLeadPrice(gig);
   };
 
   const handleCheckout = async () => {
