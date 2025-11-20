@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { z } from "zod";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry, getAllIndustries, getLeadTierDescription, INDUSTRY_GROUPS } from "@/config/pricing";
 
@@ -61,6 +62,9 @@ export default function Pricing() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Check if user can interact with pricing tiles - only after Step 1 is completed
   const canInteractWithPricing = step1Completed;
@@ -596,9 +600,23 @@ export default function Pricing() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="password">
-                            Password *
-                          </Label>
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="password">
+                              Choose a Password *
+                            </Label>
+                            {user && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowForgotPassword(true);
+                                  setResetEmail(formData.email);
+                                }}
+                                className="text-xs text-primary hover:underline"
+                              >
+                                Forgot password?
+                              </button>
+                            )}
+                          </div>
                           <div className="relative">
                             <Input
                               id="password"
@@ -1435,6 +1453,106 @@ export default function Pricing() {
       )}
 
       <Footer />
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Your Password</DialogTitle>
+            <DialogDescription>
+              {resetEmailSent 
+                ? "Check your email for a password reset link"
+                : "Enter your email address and we'll send you a link to reset your password"
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!resetEmailSent ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email Address</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setResetEmail("");
+                    setResetEmailSent(false);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!resetEmail) {
+                      toast.error("Please enter your email address");
+                      return;
+                    }
+
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(resetEmail)) {
+                      toast.error("Please enter a valid email address");
+                      return;
+                    }
+
+                    try {
+                      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+                        redirectTo: `${window.location.origin}/auth`,
+                      });
+
+                      if (error) throw error;
+
+                      setResetEmailSent(true);
+                      toast.success("Password reset email sent!");
+                    } catch (error: any) {
+                      console.error("Password reset error:", error);
+                      toast.error(error.message || "Failed to send reset email");
+                    }
+                  }}
+                  className="flex-1"
+                >
+                  Send Reset Link
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                <p className="text-sm mb-2">
+                  📧 We've sent a password reset link to:
+                </p>
+                <p className="text-sm font-medium text-primary mb-3">
+                  {resetEmail}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Click the link in the email to reset your password. The link will expire in 24 hours.
+                </p>
+              </div>
+              
+              <Button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setResetEmail("");
+                  setResetEmailSent(false);
+                }}
+                className="w-full"
+              >
+                Done
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
