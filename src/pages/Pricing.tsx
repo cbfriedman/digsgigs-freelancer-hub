@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProfessionKeywordInput } from "@/components/ProfessionKeywordInput";
-import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Check, Loader2, Star, RefreshCw, Info, User, Mail, Phone, ArrowDown, Eye, EyeOff, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { Footer } from "@/components/Footer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1101,118 +1101,88 @@ export default function Pricing() {
                     </>
                   )}
               </form>
-
-              {/* Pricing Preview - Static, Unclickable */}
-              <div className="mt-8 pt-8 border-t border-border">
-                <div className="mb-6 text-center">
-                  <h3 className="text-2xl font-bold mb-2">Volume-Based Pricing Preview</h3>
-                  <p className="text-muted-foreground">Lowest possible cost per lead shown below</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Free Tier Preview */}
-                  <Card className="relative opacity-75 cursor-not-allowed border-2">
-                    <CardHeader>
-                      <div className="text-center">
-                        <CardTitle className="text-lg font-bold mb-1">
-                          Leads 1-10 per MO.
-                        </CardTitle>
-                        <Badge variant="outline" className="mt-2">
-                          Standard Rate
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center mb-4">
-                        <div className="text-4xl font-bold text-foreground mb-2">
-                          $18<span className="text-xl">/lead</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Starting from
-                        </p>
-                      </div>
-                      <Button 
-                        className="w-full" 
-                        disabled
-                        variant="outline"
-                      >
-                        Complete Step 1 First
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* Pro Tier Preview */}
-                  <Card className="relative opacity-75 cursor-not-allowed border-2 border-primary/50">
-                    <CardHeader>
-                      <div className="text-center">
-                        <CardTitle className="text-lg font-bold mb-1">
-                          Leads 11-50 per MO.
-                        </CardTitle>
-                        <Badge className="mt-2 bg-green-600">
-                          Save 17%
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center mb-4">
-                        <div className="text-4xl font-bold text-primary mb-2">
-                          $15<span className="text-xl">/lead</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Starting from
-                        </p>
-                      </div>
-                      <Button 
-                        className="w-full" 
-                        disabled
-                        variant="outline"
-                      >
-                        Complete Step 1 First
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* Premium Tier Preview */}
-                  <Card className="relative opacity-75 cursor-not-allowed border-2 border-primary">
-                    <CardHeader>
-                      <div className="text-center">
-                        <CardTitle className="text-lg font-bold mb-1">
-                          Leads 51+ per MO.
-                        </CardTitle>
-                        <Badge className="mt-2 bg-green-600">
-                          Save 33%
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center mb-4">
-                        <div className="text-4xl font-bold text-primary mb-2">
-                          $12<span className="text-xl">/lead</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Starting from
-                        </p>
-                      </div>
-                      <Button 
-                        className="w-full" 
-                        disabled
-                        variant="outline"
-                      >
-                        Complete Step 1 First
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-center text-muted-foreground">
-                    💡 <strong>Note:</strong> These values represent the lowest-cost professions (e.g., dog walkers, pet sitters). Actual prices will be calculated based on your selected professions in Step 2.
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Pricing Preview - Always Visible */}
+        <div className="mt-8">
+          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+            <CardContent className="p-8">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold mb-2">Volume-Based Pricing Preview</h3>
+                <p className="text-muted-foreground">Lowest possible cost per lead shown below</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Free Tier */}
+                <Card className="relative overflow-hidden border-2 cursor-not-allowed opacity-90">
+                  <CardHeader className="text-center pb-4">
+                    <div className="text-sm font-semibold text-muted-foreground mb-2">
+                      Leads 1-10 per MO.
+                    </div>
+                    <Badge variant="outline" className="mx-auto mb-2">Standard Rate</Badge>
+                    <div className="space-y-1">
+                      <div className="text-4xl font-bold">$18</div>
+                      <div className="text-sm text-muted-foreground">/lead</div>
+                      <p className="text-xs text-muted-foreground pt-1">Starting from</p>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-2">
+                    <p className="text-center text-sm text-muted-foreground">
+                      Complete Step 1 First
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Pro Tier */}
+                <Card className="relative overflow-hidden border-2 border-primary cursor-not-allowed opacity-90">
+                  <CardHeader className="text-center pb-4">
+                    <div className="text-sm font-semibold text-muted-foreground mb-2">
+                      Leads 11-50 per MO.
+                    </div>
+                    <Badge className="mx-auto mb-2 bg-emerald-500">Save 17%</Badge>
+                    <div className="space-y-1">
+                      <div className="text-4xl font-bold text-primary">$15</div>
+                      <div className="text-sm text-muted-foreground">/lead</div>
+                      <p className="text-xs text-muted-foreground pt-1">Starting from</p>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-2">
+                    <p className="text-center text-sm text-muted-foreground">
+                      Complete Step 1 First
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Premium Tier */}
+                <Card className="relative overflow-hidden border-2 border-primary cursor-not-allowed opacity-90">
+                  <CardHeader className="text-center pb-4">
+                    <div className="text-sm font-semibold text-muted-foreground mb-2">
+                      Leads 51+ per MO.
+                    </div>
+                    <Badge className="mx-auto mb-2 bg-emerald-500">Save 33%</Badge>
+                    <div className="space-y-1">
+                      <div className="text-4xl font-bold text-primary">$12</div>
+                      <div className="text-sm text-muted-foreground">/lead</div>
+                      <p className="text-xs text-muted-foreground pt-1">Starting from</p>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-2">
+                    <p className="text-center text-sm text-muted-foreground">
+                      Complete Step 1 First
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Lightbulb className="h-4 w-4" />
+                <span>💡 <strong>Note:</strong> These values represent the lowest-cost professions (e.g., dog walkers, pet sitters). Actual prices will be calculated based on your selected professions in Step 2.</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   </section>
