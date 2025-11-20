@@ -105,11 +105,30 @@ serve(async (req) => {
       );
     }
 
-    // Create lead purchases for matching diggers
+    // Select best 4 diggers based on rating, response time, and completion rate
+    const selectedDiggers = uniqueDiggers
+      .sort((a, b) => {
+        // Sort by average rating (desc), then response time (asc), then completion rate (desc)
+        if ((b.average_rating || 0) !== (a.average_rating || 0)) {
+          return (b.average_rating || 0) - (a.average_rating || 0);
+        }
+        if ((a.response_time_hours || 999) !== (b.response_time_hours || 999)) {
+          return (a.response_time_hours || 999) - (b.response_time_hours || 999);
+        }
+        return (b.completion_rate || 0) - (a.completion_rate || 0);
+      })
+      .slice(0, 4); // Limit to top 4 diggers
+
+    logStep("Selected top diggers for lead", { 
+      totalMatches: uniqueDiggers.length,
+      selectedCount: selectedDiggers.length 
+    });
+
+    // Create lead purchases for selected diggers only
     let successfulMatches = 0;
     let failedMatches = 0;
 
-    for (const digger of uniqueDiggers) {
+    for (const digger of selectedDiggers) {
       try {
         // Create lead purchase record
         const { error: purchaseError } = await supabaseClient
@@ -191,7 +210,9 @@ serve(async (req) => {
 
     logStep("Lead matching completed", { 
       successfulMatches, 
-      failedMatches 
+      failedMatches,
+      totalMatching: uniqueDiggers.length,
+      selected: selectedDiggers.length
     });
 
     return new Response(
@@ -199,7 +220,8 @@ serve(async (req) => {
         success: true,
         matchedCount: successfulMatches,
         failedCount: failedMatches,
-        totalDiggers: uniqueDiggers.length,
+        totalMatching: uniqueDiggers.length,
+        selectedDiggers: selectedDiggers.length,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
