@@ -1442,8 +1442,8 @@ export default function Pricing() {
         </section>
       )}
 
-      {/* Pricing Cards - shown after Step 1 is completed and professions selected */}
-      {step1Completed && selectedIndustries.length > 0 && (
+      {/* Pricing Cards - Removed from display, preview shown in Step 1 instead */}
+      {false && (
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-8">
