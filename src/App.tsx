@@ -56,6 +56,7 @@ import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import TelemarketerDashboard from "./pages/TelemarketerDashboard";
 import ProfileCreationDemo from "./pages/ProfileCreationDemo";
+import Register from "./pages/Register";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/pre-demo-registration" element={<PreDemoRegistration />} />
           <Route path="/digger-registration" element={<DiggerRegistration />} />
           <Route path="/digger-registration-demo" element={<DiggerRegistrationDemo />} />
