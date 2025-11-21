@@ -28,38 +28,56 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { profession } = await req.json();
+    const { industry, profession, specialties, isNewIndustry } = await req.json();
 
-    if (!profession || typeof profession !== 'string') {
+    // Validate required fields
+    if (!industry || typeof industry !== 'string') {
       return new Response(
-        JSON.stringify({ error: 'Profession is required' }),
+        JSON.stringify({ error: 'Industry is required and must be a string' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if there's already a pending request for this profession
+    if (!profession || typeof profession !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Profession is required and must be a string' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!specialties || !Array.isArray(specialties) || specialties.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'At least one specialty is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create a composite key for checking duplicates
+    const requestKey = `${industry.toLowerCase().trim()}|${profession.toLowerCase().trim()}`;
+
+    // Check if there's already a pending request for this industry/profession combo
     const { data: existingRequest } = await supabase
       .from('keyword_suggestion_requests')
       .select('id')
-      .eq('profession', profession.toLowerCase().trim())
+      .eq('profession', requestKey)
       .eq('status', 'pending')
       .maybeSingle();
 
     if (existingRequest) {
       return new Response(
         JSON.stringify({ 
-          message: 'A request for this profession already exists',
+          message: 'A request for this industry/profession combination already exists',
           alreadyExists: true 
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Insert the new request
+    // Insert the new request with metadata
     const { data, error } = await supabase
       .from('keyword_suggestion_requests')
       .insert({
-        profession: profession.toLowerCase().trim(),
+        profession: requestKey, // Store composite key for uniqueness
         user_id: userId,
         status: 'pending'
       })
@@ -76,10 +94,13 @@ Deno.serve(async (req) => {
 
     console.log('Keyword suggestion request created:', data);
 
-    // Send notification to admins asynchronously (fire and forget)
+    // Send notification to admins asynchronously with full data
     supabase.functions.invoke('notify-keyword-request', {
       body: { 
+        industry,
         profession,
+        specialties,
+        isNewIndustry,
         requestId: data.id 
       }
     }).then(({ error: notifyError }) => {
