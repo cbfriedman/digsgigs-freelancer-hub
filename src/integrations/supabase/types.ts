@@ -820,8 +820,10 @@ export type Database = {
           created_at: string
           deadline: string | null
           description: string
+          escrow_requested_by_consumer: boolean | null
           id: string
           images: string[] | null
+          lead_source: string | null
           location: string
           location_lat: number | null
           location_lng: number | null
@@ -829,9 +831,11 @@ export type Database = {
           purchase_count: number | null
           sic_codes: string[] | null
           status: string | null
+          telemarketer_id: string | null
           timeline: string | null
           title: string
           updated_at: string
+          uploaded_by_telemarketer: boolean | null
         }
         Insert: {
           ai_matched_codes?: boolean | null
@@ -843,8 +847,10 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description: string
+          escrow_requested_by_consumer?: boolean | null
           id?: string
           images?: string[] | null
+          lead_source?: string | null
           location: string
           location_lat?: number | null
           location_lng?: number | null
@@ -852,9 +858,11 @@ export type Database = {
           purchase_count?: number | null
           sic_codes?: string[] | null
           status?: string | null
+          telemarketer_id?: string | null
           timeline?: string | null
           title: string
           updated_at?: string
+          uploaded_by_telemarketer?: boolean | null
         }
         Update: {
           ai_matched_codes?: boolean | null
@@ -866,8 +874,10 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string
+          escrow_requested_by_consumer?: boolean | null
           id?: string
           images?: string[] | null
+          lead_source?: string | null
           location?: string
           location_lat?: number | null
           location_lng?: number | null
@@ -875,9 +885,11 @@ export type Database = {
           purchase_count?: number | null
           sic_codes?: string[] | null
           status?: string | null
+          telemarketer_id?: string | null
           timeline?: string | null
           title?: string
           updated_at?: string
+          uploaded_by_telemarketer?: boolean | null
         }
         Relationships: [
           {
@@ -892,6 +904,13 @@ export type Database = {
             columns: ["consumer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
             referencedColumns: ["id"]
           },
         ]
