@@ -159,7 +159,7 @@ export const IndustryProfessionSelector = () => {
             <SelectTrigger className="bg-background">
               <SelectValue placeholder="Choose an industry category..." />
             </SelectTrigger>
-            <SelectContent className="bg-background z-50">
+            <SelectContent className="bg-background z-50 max-h-[300px] overflow-y-auto">
               {industries.map((industry) => (
                 <SelectItem key={industry} value={industry}>
                   {industry} ({industryData[industry].length} professions)
@@ -180,7 +180,7 @@ export const IndustryProfessionSelector = () => {
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Choose a profession..." />
               </SelectTrigger>
-              <SelectContent className="bg-background z-50">
+              <SelectContent className="bg-background z-50 max-h-[300px] overflow-y-auto">
                 {professions.map((profession) => (
                   <SelectItem key={profession.industry} value={profession.industry}>
                     {profession.industry}
