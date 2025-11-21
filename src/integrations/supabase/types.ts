@@ -1220,36 +1220,63 @@ export type Database = {
       lead_purchases: {
         Row: {
           amount_paid: number
+          award_expires_at: string | null
+          award_extended: boolean | null
+          awarded_at: string | null
+          base_price: number
           consumer_id: string
+          converted_from_exclusive: boolean | null
           digger_id: string
+          exclusivity_queue_position: number | null
           gig_id: string
           id: string
+          is_exclusive: boolean | null
+          lead_source: string | null
           purchase_price: number
           purchased_at: string
           status: string | null
           stripe_payment_id: string | null
+          telemarketer_id: string | null
         }
         Insert: {
           amount_paid: number
+          award_expires_at?: string | null
+          award_extended?: boolean | null
+          awarded_at?: string | null
+          base_price?: number
           consumer_id: string
+          converted_from_exclusive?: boolean | null
           digger_id: string
+          exclusivity_queue_position?: number | null
           gig_id: string
           id?: string
+          is_exclusive?: boolean | null
+          lead_source?: string | null
           purchase_price: number
           purchased_at?: string
           status?: string | null
           stripe_payment_id?: string | null
+          telemarketer_id?: string | null
         }
         Update: {
           amount_paid?: number
+          award_expires_at?: string | null
+          award_extended?: boolean | null
+          awarded_at?: string | null
+          base_price?: number
           consumer_id?: string
+          converted_from_exclusive?: boolean | null
           digger_id?: string
+          exclusivity_queue_position?: number | null
           gig_id?: string
           id?: string
+          is_exclusive?: boolean | null
+          lead_source?: string | null
           purchase_price?: number
           purchased_at?: string
           status?: string | null
           stripe_payment_id?: string | null
+          telemarketer_id?: string | null
         }
         Relationships: [
           {
@@ -1264,6 +1291,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_purchases_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
             referencedColumns: ["id"]
           },
         ]
