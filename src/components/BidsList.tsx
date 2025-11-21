@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
 import { EscrowContractDialog } from "@/components/EscrowContractDialog";
+import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { Loader2, Star } from "lucide-react";
 
 interface Bid {
@@ -16,6 +17,8 @@ interface Bid {
   proposal: string;
   status: string;
   created_at: string;
+  awarded: boolean;
+  awarded_at: string | null;
   digger_profiles: {
     id: string;
     handle: string;
@@ -257,7 +260,25 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
                   </Button>
                 )}
 
-                {isOwner && bid.status === 'accepted' && !isFixedPrice && (
+                {isOwner && bid.status === 'accepted' && !bid.awarded && (
+                  <ConfirmHireDialog
+                    bidId={bid.id}
+                    gigId={gigId}
+                    diggerId={bid.digger_profiles.id}
+                    diggerName={bid.digger_profiles.handle}
+                    bidAmount={bid.amount}
+                    gigTitle={gigTitle}
+                    onConfirm={loadBids}
+                  />
+                )}
+
+                {isOwner && bid.awarded && (
+                  <Badge variant="default" className="bg-green-600">
+                    Hired ✓
+                  </Badge>
+                )}
+
+                {isOwner && bid.status === 'accepted' && !isFixedPrice && bid.awarded && (
                   <CompleteWorkDialog
                     bidId={bid.id}
                     bidAmount={bid.amount}
