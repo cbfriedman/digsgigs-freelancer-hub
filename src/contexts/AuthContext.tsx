@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-type UserAppRole = 'digger' | 'gigger' | 'telemarketer';
+type UserAppRole = 'digger' | 'gigger' | 'telemarketer' | 'admin';
 
 interface SubscriptionStatus {
   subscribed: boolean;
@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('user_app_roles')
         .update({ last_used_at: new Date().toISOString() })
         .eq('user_id', user.id)
-        .eq('app_role', role);
+        .eq('app_role', role as any);
 
       if (error) throw error;
 
