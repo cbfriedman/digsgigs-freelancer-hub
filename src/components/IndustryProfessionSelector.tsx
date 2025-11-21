@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { GOOGLE_CPC_KEYWORDS, calculateExclusiveLeadPrice, calculateNonExclusiveLeadPrice } from "@/config/googleCpcKeywords";
 import { Target, TrendingUp } from "lucide-react";
+import { ProfessionRequestForm } from "./ProfessionRequestForm";
 
 // Reorganize data into hierarchical structure
 const organizeByIndustry = () => {
@@ -268,6 +269,11 @@ export const IndustryProfessionSelector = () => {
             </div>
           </div>
         )}
+
+        {/* Profession Request Form */}
+        <div className="mt-6 pt-6 border-t">
+          <ProfessionRequestForm />
+        </div>
       </CardContent>
     </Card>
   );
