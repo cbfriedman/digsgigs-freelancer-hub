@@ -1050,6 +1050,53 @@ export type Database = {
           },
         ]
       }
+      lead_exclusivity_extensions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          extension_cost: number
+          extension_hours: number
+          extension_number: number
+          extension_premium_percentage: number
+          id: string
+          payment_status: string
+          queue_entry_id: string
+          stripe_payment_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          extension_cost: number
+          extension_hours?: number
+          extension_number: number
+          extension_premium_percentage?: number
+          id?: string
+          payment_status?: string
+          queue_entry_id: string
+          stripe_payment_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          extension_cost?: number
+          extension_hours?: number
+          extension_number?: number
+          extension_premium_percentage?: number
+          id?: string
+          payment_status?: string
+          queue_entry_id?: string
+          stripe_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_exclusivity_extensions_queue_entry_id_fkey"
+            columns: ["queue_entry_id"]
+            isOneToOne: false
+            referencedRelation: "lead_exclusivity_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_exclusivity_queue: {
         Row: {
           awarded_at: string | null
