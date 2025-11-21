@@ -833,7 +833,12 @@ export type Database = {
           budget_max: number | null
           budget_min: number | null
           category_id: string | null
+          confirmation_method_preference: string | null
+          confirmation_sent_at: string | null
+          confirmation_status: string | null
+          confirmed_at: string | null
           consumer_id: string
+          consumer_phone: string | null
           contact_preferences: string | null
           created_at: string
           deadline: string | null
@@ -841,6 +846,7 @@ export type Database = {
           escrow_requested_by_consumer: boolean | null
           id: string
           images: string[] | null
+          is_confirmed_lead: boolean | null
           lead_source: string | null
           location: string
           location_lat: number | null
@@ -863,7 +869,12 @@ export type Database = {
           budget_max?: number | null
           budget_min?: number | null
           category_id?: string | null
+          confirmation_method_preference?: string | null
+          confirmation_sent_at?: string | null
+          confirmation_status?: string | null
+          confirmed_at?: string | null
           consumer_id: string
+          consumer_phone?: string | null
           contact_preferences?: string | null
           created_at?: string
           deadline?: string | null
@@ -871,6 +882,7 @@ export type Database = {
           escrow_requested_by_consumer?: boolean | null
           id?: string
           images?: string[] | null
+          is_confirmed_lead?: boolean | null
           lead_source?: string | null
           location: string
           location_lat?: number | null
@@ -893,7 +905,12 @@ export type Database = {
           budget_max?: number | null
           budget_min?: number | null
           category_id?: string | null
+          confirmation_method_preference?: string | null
+          confirmation_sent_at?: string | null
+          confirmation_status?: string | null
+          confirmed_at?: string | null
           consumer_id?: string
+          consumer_phone?: string | null
           contact_preferences?: string | null
           created_at?: string
           deadline?: string | null
@@ -901,6 +918,7 @@ export type Database = {
           escrow_requested_by_consumer?: boolean | null
           id?: string
           images?: string[] | null
+          is_confirmed_lead?: boolean | null
           lead_source?: string | null
           location?: string
           location_lat?: number | null

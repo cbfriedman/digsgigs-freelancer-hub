@@ -524,7 +524,8 @@ export const PRICING_TIERS: Record<'non-exclusive' | 'exclusive-24h', PricingTie
 // Helper function to get lead cost for a specific industry and exclusivity type
 export const getLeadCostForIndustry = (
   industry: string,
-  exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive'
+  exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive',
+  isConfirmed: boolean = false
 ): number => {
   const industryData = INDUSTRY_PRICING.find(pricing =>
     pricing.industries.includes(industry)
@@ -532,14 +533,28 @@ export const getLeadCostForIndustry = (
   
   if (!industryData) {
     // Default to mid-value if industry not found
-    return exclusivity === 'non-exclusive' 
+    const basePrice = exclusivity === 'non-exclusive' 
       ? INDUSTRY_PRICING[1].nonExclusive 
       : INDUSTRY_PRICING[1].exclusive24h;
+    
+    // Add 20% confirmation premium for non-exclusive confirmed leads
+    if (exclusivity === 'non-exclusive' && isConfirmed) {
+      return Math.round(basePrice * 1.20 * 2) / 2; // Round to nearest $0.50
+    }
+    
+    return basePrice;
   }
   
-  return exclusivity === 'non-exclusive' 
+  const basePrice = exclusivity === 'non-exclusive' 
     ? industryData.nonExclusive 
     : industryData.exclusive24h;
+  
+  // Add 20% confirmation premium for non-exclusive confirmed leads
+  if (exclusivity === 'non-exclusive' && isConfirmed) {
+    return Math.round(basePrice * 1.20 * 2) / 2; // Round to nearest $0.50
+  }
+  
+  return basePrice;
 };
 
 // Helper function to get industry category
