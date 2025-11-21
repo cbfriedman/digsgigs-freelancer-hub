@@ -17,6 +17,10 @@ export type Database = {
       bids: {
         Row: {
           amount: number
+          award_method: string | null
+          awarded: boolean | null
+          awarded_at: string | null
+          awarded_by: string | null
           created_at: string
           digger_id: string
           gig_id: string
@@ -30,6 +34,10 @@ export type Database = {
         }
         Insert: {
           amount: number
+          award_method?: string | null
+          awarded?: boolean | null
+          awarded_at?: string | null
+          awarded_by?: string | null
           created_at?: string
           digger_id: string
           gig_id: string
@@ -43,6 +51,10 @@ export type Database = {
         }
         Update: {
           amount?: number
+          award_method?: string | null
+          awarded?: boolean | null
+          awarded_at?: string | null
+          awarded_by?: string | null
           created_at?: string
           digger_id?: string
           gig_id?: string
@@ -812,6 +824,9 @@ export type Database = {
       gigs: {
         Row: {
           ai_matched_codes: boolean | null
+          awarded_at: string | null
+          awarded_bid_id: string | null
+          awarded_digger_id: string | null
           budget_max: number | null
           budget_min: number | null
           category_id: string | null
@@ -839,6 +854,9 @@ export type Database = {
         }
         Insert: {
           ai_matched_codes?: boolean | null
+          awarded_at?: string | null
+          awarded_bid_id?: string | null
+          awarded_digger_id?: string | null
           budget_max?: number | null
           budget_min?: number | null
           category_id?: string | null
@@ -866,6 +884,9 @@ export type Database = {
         }
         Update: {
           ai_matched_codes?: boolean | null
+          awarded_at?: string | null
+          awarded_bid_id?: string | null
+          awarded_digger_id?: string | null
           budget_max?: number | null
           budget_min?: number | null
           category_id?: string | null
@@ -892,6 +913,20 @@ export type Database = {
           uploaded_by_telemarketer?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "gigs_awarded_bid_id_fkey"
+            columns: ["awarded_bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_awarded_digger_id_fkey"
+            columns: ["awarded_digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gigs_category_id_fkey"
             columns: ["category_id"]
