@@ -45,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
         phone: method === "sms" ? phone : null,
         code,
         expires_at: expiresAt.toISOString(),
-        verification_type: method,
+        verification_type: method === "email" ? "email" : "phone",
       });
 
     if (dbError) {
