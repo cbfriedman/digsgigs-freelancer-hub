@@ -105,3 +105,9 @@ verify_jwt = false
 [functions.trigger-lead-matching]
 verify_jwt = false
 
+[functions.handle-exclusivity-expiration]
+verify_jwt = false
+
+[functions.extend-exclusivity]
+verify_jwt = true
+

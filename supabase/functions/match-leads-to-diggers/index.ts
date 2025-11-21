@@ -11,6 +11,42 @@ const logStep = (step: string, details?: any) => {
   console.log(`[MATCH-LEADS] ${step}${detailsStr}`);
 };
 
+// Industry pricing mapping
+const INDUSTRY_PRICING: Record<string, { nonExclusive: number; exclusive24h: number }> = {
+  'low-value': { nonExclusive: 7.50, exclusive24h: 30.00 },
+  'mid-value': { nonExclusive: 14.50, exclusive24h: 87.50 },
+  'high-value': { nonExclusive: 24.50, exclusive24h: 187.50 },
+};
+
+// Minimum exclusive pricing by lead source
+const EXCLUSIVE_MINIMUMS = {
+  internet: 80,
+  telemarketing: 60
+};
+
+const calculateLeadPricing = (leadSource: string = 'internet', industryCategory: string = 'mid-value') => {
+  const pricing = INDUSTRY_PRICING[industryCategory] || INDUSTRY_PRICING['mid-value'];
+  
+  let exclusivePrice = pricing.exclusive24h;
+  
+  // Apply telemarketing discount (25% off = multiply by 0.75)
+  if (leadSource === 'telemarketing') {
+    exclusivePrice = pricing.exclusive24h * 0.75;
+  }
+  
+  // Apply minimum pricing
+  const minimum = leadSource === 'telemarketing' 
+    ? EXCLUSIVE_MINIMUMS.telemarketing 
+    : EXCLUSIVE_MINIMUMS.internet;
+  
+  exclusivePrice = Math.max(exclusivePrice, minimum);
+  
+  return {
+    nonExclusive: pricing.nonExclusive,
+    exclusive24h: exclusivePrice
+  };
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -42,21 +78,19 @@ serve(async (req) => {
       throw new Error(`Gig not found: ${gigError?.message}`);
     }
 
-    logStep("Gig details retrieved", { title: gig.title });
+    logStep("Gig details retrieved", { title: gig.title, leadSource: gig.lead_source });
 
-    // Calculate lead price
-    const { data: priceData, error: priceError } = await supabaseClient
-      .rpc("calculate_lead_price", {
-        gig_budget_min: gig.budget_min || 0,
-        gig_budget_max: gig.budget_max || 0,
-      });
-
-    if (priceError) {
-      throw new Error(`Price calculation failed: ${priceError.message}`);
-    }
-
-    const leadPrice = priceData || 50;
-    logStep("Lead price calculated", { leadPrice });
+    // Determine lead source (default to internet if not specified)
+    const leadSource = gig.lead_source || 'internet';
+    
+    // Calculate pricing (use mid-value as default if category not determined)
+    const pricing = calculateLeadPricing(leadSource, 'mid-value');
+    
+    logStep("Lead pricing calculated", { 
+      leadSource,
+      nonExclusive: pricing.nonExclusive,
+      exclusive24h: pricing.exclusive24h
+    });
 
     // Find matching diggers based on NAICS/SIC codes if available
     let matchingDiggers: any[] = [];
@@ -105,89 +139,83 @@ serve(async (req) => {
       );
     }
 
-    // Create lead purchases for all matching diggers
+    // Create exclusivity queue entries for all matching diggers
     let successfulMatches = 0;
     let failedMatches = 0;
 
-    for (const digger of uniqueDiggers) {
+    for (let i = 0; i < uniqueDiggers.length; i++) {
+      const digger = uniqueDiggers[i];
+      
       try {
-        // Create lead purchase record
-        const { error: purchaseError } = await supabaseClient
-          .from("lead_purchases")
+        // Create exclusivity queue entry
+        const { error: queueError } = await supabaseClient
+          .from("lead_exclusivity_queue")
           .insert({
             gig_id: gigId,
             digger_id: digger.id,
-            consumer_id: gig.consumer_id,
-            purchase_price: leadPrice,
-            amount_paid: leadPrice,
-            status: "active",
+            queue_position: i + 1,
+            base_price: pricing.exclusive24h,
+            lead_source: leadSource,
+            status: i === 0 ? 'active' : 'queued', // First digger gets active status
           });
 
-        if (purchaseError) {
-          logStep("Failed to create lead purchase", { 
+        if (queueError) {
+          logStep("Failed to create queue entry", { 
             diggerId: digger.id, 
-            error: purchaseError.message 
+            error: queueError.message 
           });
           failedMatches++;
           continue;
         }
 
-        // Decrement monthly lead count
-        const { error: updateError } = await supabaseClient
-          .from("digger_profiles")
-          .update({ 
-            monthly_lead_count: digger.monthly_lead_count - 1 
-          })
-          .eq("id", digger.id);
+        // If this is the first digger (position 1), set exclusivity window and create notification
+        if (i === 0) {
+          const exclusivityStarts = new Date();
+          const exclusivityEnds = new Date(exclusivityStarts.getTime() + 24 * 60 * 60 * 1000);
+          
+          await supabaseClient
+            .from("lead_exclusivity_queue")
+            .update({ 
+              exclusivity_starts_at: exclusivityStarts.toISOString(),
+              exclusivity_ends_at: exclusivityEnds.toISOString(),
+            })
+            .eq("gig_id", gigId)
+            .eq("digger_id", digger.id);
 
-        if (updateError) {
-          logStep("Failed to update lead count", { 
-            diggerId: digger.id, 
-            error: updateError.message 
-          });
-        }
-
-        // Create notification
-        const { error: notifError } = await supabaseClient
-          .from("notifications")
-          .insert({
-            user_id: digger.user_id,
-            type: "new_lead",
-            title: "New Lead Available!",
-            message: `A new gig "${gig.title}" matches your profile. View it now!`,
-            link: `/gig/${gigId}`,
-            metadata: {
-              gig_id: gigId,
-              lead_price: leadPrice,
-            },
-          });
-
-        if (notifError) {
-          logStep("Failed to create notification", { 
-            diggerId: digger.id, 
-            error: notifError.message 
+          // Create notification for exclusive lead
+          await supabaseClient
+            .from("notifications")
+            .insert({
+              user_id: digger.user_id,
+              type: "new_lead",
+              title: "🔒 Exclusive Lead Available!",
+              message: `You have 24-hour exclusive access to "${gig.title}". Act fast!`,
+              link: `/gig/${gigId}`,
+              metadata: {
+                gig_id: gigId,
+                lead_price: pricing.exclusive24h,
+                is_exclusive: true,
+                expires_at: exclusivityEnds.toISOString(),
+              },
+            });
+          
+          logStep("First digger activated with exclusivity", { 
+            diggerId: digger.id,
+            expiresAt: exclusivityEnds.toISOString()
           });
         }
 
         successfulMatches++;
-        logStep("Lead matched successfully", { diggerId: digger.id });
+        logStep("Digger added to queue", { diggerId: digger.id, position: i + 1 });
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        logStep("Error matching lead", { 
+        logStep("Error adding to queue", { 
           diggerId: digger.id, 
           error: errorMsg 
         });
         failedMatches++;
       }
     }
-
-    // Update gig purchase count
-    await supabaseClient
-      .from("gigs")
-      .update({ 
-        purchase_count: (gig.purchase_count || 0) + successfulMatches 
-      })
-      .eq("id", gigId);
 
     logStep("Lead matching completed", { 
       successfulMatches, 
@@ -201,6 +229,7 @@ serve(async (req) => {
         matchedCount: successfulMatches,
         failedCount: failedMatches,
         totalMatching: uniqueDiggers.length,
+        queueCreated: true,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
