@@ -384,9 +384,6 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                 onChange={(e) => setLeadsPerMonth(e.target.value)}
                 className="w-full"
               />
-              <div className="text-xs text-muted-foreground">
-                Pricing: Bark - $0.50 per lead
-              </div>
             </div>
 
             <div className="space-y-2">
