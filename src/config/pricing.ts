@@ -6,9 +6,12 @@
  * Our pricing is based on lead exclusivity:
  * 
  * - Non-exclusive leads: Bark price - $0.50 (most affordable)
- * - 24-hour exclusive leads: Google CPC × 2.5 (premium exclusive access)
+ * - Semi-exclusive leads: Sold to up to 4 people (balanced option)
+ * - 24-hour exclusive leads: Premium exclusive access
  * 
  * This model provides clear value differentiation and competitive pricing.
+ * 
+ * NOTE: Prices fluctuate daily and are subject to change based on market conditions.
  */
 
 export type IndustryCategory = 'low-value' | 'mid-value' | 'high-value';

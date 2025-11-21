@@ -23,6 +23,9 @@ export default function Pricing() {
               Fair, transparent pricing based on real market value. Compare our exclusive and non-exclusive 
               lead costs to industry benchmarks—no hidden fees, no surprises.
             </p>
+            <p className="text-sm text-muted-foreground/70 mt-2">
+              Note: Prices fluctuate daily and are subject to change
+            </p>
             <Button 
               onClick={() => navigate("/profile-demo")}
               className="mt-4"

@@ -135,6 +135,9 @@ export const IndustryProfessionSelector = () => {
         </div>
         <CardDescription>
           Select your industry, profession, and specialty to see pricing
+          <span className="block text-xs text-muted-foreground/60 mt-1">
+            Note: Prices fluctuate daily and are subject to change
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

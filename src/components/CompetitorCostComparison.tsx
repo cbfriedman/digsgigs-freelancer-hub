@@ -89,6 +89,9 @@ export default function CompetitorCostComparison() {
               <CardTitle className="text-2xl">Platform Cost Comparison</CardTitle>
               <CardDescription className="mt-2">
                 See how DigsandGigs stacks up against competitors
+                <span className="block text-xs text-muted-foreground/60 mt-1">
+                  Note: Prices fluctuate daily and are subject to change
+                </span>
               </CardDescription>
             </div>
           </div>
