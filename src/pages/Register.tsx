@@ -463,37 +463,6 @@ const Register = () => {
                   </p>
                 </div>
 
-                {/* Verification Method Selection */}
-                {!codeSent && (
-                  <div className="space-y-2 p-4 border rounded-lg bg-accent/5">
-                    <Label className="text-sm font-medium">Verify your account via:</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={verificationMethod === "email" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setVerificationMethod("email")}
-                        className="flex-1"
-                      >
-                        📧 Email
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={verificationMethod === "sms" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setVerificationMethod("sms")}
-                        disabled={!phone}
-                        className="flex-1"
-                      >
-                        📱 SMS {!phone && "(Add phone)"}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      We'll send a verification code to continue
-                    </p>
-                  </div>
-                )}
-
                 <div className="space-y-2">
                   <Label htmlFor="password">Password *</Label>
                   <div className="relative">
@@ -554,6 +523,37 @@ const Register = () => {
                     </Button>
                   </div>
                 </div>
+
+                {/* Verification Method Selection */}
+                {!codeSent && (
+                  <div className="space-y-2 p-4 border rounded-lg bg-accent/5">
+                    <Label className="text-sm font-medium">Verify your account via:</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={verificationMethod === "email" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setVerificationMethod("email")}
+                        className="flex-1"
+                      >
+                        📧 Email
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={verificationMethod === "sms" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setVerificationMethod("sms")}
+                        disabled={!phone}
+                        className="flex-1"
+                      >
+                        📱 SMS {!phone && "(Add phone)"}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      We'll send a verification code to continue
+                    </p>
+                  </div>
+                )}
 
                 {/* Verification Code Field - Shows after code is sent */}
                 {codeSent && (
