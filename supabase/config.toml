@@ -117,3 +117,9 @@ verify_jwt = false
 [functions.award-lead]
 verify_jwt = true
 
+[functions.create-extension-checkout]
+verify_jwt = true
+
+[functions.stripe-webhook-extension]
+verify_jwt = false
+
