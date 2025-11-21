@@ -267,6 +267,10 @@ const Index = () => {
             </Button>
             {user ? (
               <>
+                <Button variant="default" size="sm" onClick={() => navigate("/role-dashboard")}>
+                  <User className="mr-2 h-4 w-4" />
+                  My Dashboard
+                </Button>
                 <NotificationBell />
                 <Button variant="ghost" size="sm" onClick={() => navigate("/transactions")}>
                   <Receipt className="mr-2 h-4 w-4" />
@@ -388,24 +392,55 @@ const Index = () => {
                 A two-sided marketplace built for the modern gig economy.
               </p>
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                  <Button 
-                    variant="hero" 
-                    size="lg" 
-                    className="text-base w-full sm:w-[180px]"
-                    onClick={() => user ? navigate("/post-gig") : navigate("/auth?redirect=/post-gig")}
-                  >
-                    Post a Gig <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    size="lg" 
-                    className="text-base w-full sm:w-[180px]"
-                    onClick={() => navigate("/pricing")}
-                  >
-                    Build My Digs
-                  </Button>
-                </div>
+                {user ? (
+                  // Authenticated users - show dashboard and quick actions
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Button 
+                      variant="hero" 
+                      size="lg" 
+                      className="text-base w-full sm:w-auto"
+                      onClick={() => navigate("/role-dashboard")}
+                    >
+                      Go to My Dashboard <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="lg" 
+                      className="text-base w-full sm:w-auto"
+                      onClick={() => navigate("/post-gig")}
+                    >
+                      Post a Gig
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      className="text-base w-full sm:w-auto"
+                      onClick={() => navigate("/pricing")}
+                    >
+                      Buy Leads
+                    </Button>
+                  </div>
+                ) : (
+                  // Non-authenticated users - show sign up options
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Button 
+                      variant="hero" 
+                      size="lg" 
+                      className="text-base w-full sm:w-[180px]"
+                      onClick={() => navigate("/auth?redirect=/post-gig")}
+                    >
+                      Post a Gig <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="lg" 
+                      className="text-base w-full sm:w-[180px]"
+                      onClick={() => navigate("/pricing")}
+                    >
+                      Build My Digs
+                    </Button>
+                  </div>
+                )}
                 <div className="flex items-center gap-3 mt-4">
                   <div className="h-px flex-1 bg-border"></div>
                   <span className="text-sm text-muted-foreground">Try without signing up</span>

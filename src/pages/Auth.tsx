@@ -58,7 +58,7 @@ const Auth = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   
-  const redirectTo = searchParams.get("redirect") || "/";
+  const redirectTo = searchParams.get("redirect") || "/role-dashboard";
   const defaultUserType = searchParams.get("type") as "digger" | "consumer" || "consumer";
   const [userType, setUserType] = useState<"digger" | "consumer">(defaultUserType);
   const recoveryModeRef = useRef(false);
