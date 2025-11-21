@@ -24,7 +24,7 @@ export default function Pricing() {
               lead costs to industry benchmarks—no hidden fees, no surprises.
             </p>
             <Button 
-              onClick={() => navigate("/profile-creation-demo")}
+              onClick={() => navigate("/profile-demo")}
               className="mt-4"
               size="lg"
             >
