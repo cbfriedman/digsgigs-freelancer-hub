@@ -3,6 +3,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+type UserAppRole = 'digger' | 'gigger' | 'telemarketer';
+
 interface SubscriptionStatus {
   subscribed: boolean;
   subscription_tier: 'free' | 'pro' | 'premium';
@@ -14,11 +16,17 @@ interface SubscriptionStatus {
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  isDigger: boolean;
+  userRoles: UserAppRole[];
+  activeRole: UserAppRole | null;
   subscriptionStatus: SubscriptionStatus | null;
   loading: boolean;
+  hasRole: (role: UserAppRole) => boolean;
+  getRoles: () => UserAppRole[];
+  switchRole: (role: UserAppRole) => Promise<void>;
   checkSubscription: () => Promise<void>;
   signOut: () => Promise<void>;
+  // Backward compatibility
+  isDigger: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,30 +46,83 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isDigger, setIsDigger] = useState(false);
+  const [userRoles, setUserRoles] = useState<UserAppRole[]>([]);
+  const [activeRole, setActiveRole] = useState<UserAppRole | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkUserType = async (userId: string) => {
+  // Fetch user roles from user_app_roles table
+  const fetchUserRoles = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', userId)
-        .single();
+        .from('user_app_roles')
+        .select('app_role, last_used_at')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('last_used_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      setIsDigger(data?.user_type === 'digger');
-      
-      // If user is a digger, check subscription
-      if (data?.user_type === 'digger') {
-        checkSubscription().catch((error) => {
-          console.error('Error checking subscription:', error);
-        });
+
+      const roles = (data || []).map(r => r.app_role as UserAppRole);
+      setUserRoles(roles);
+
+      // Set active role to the most recently used, or first role if none set
+      if (roles.length > 0) {
+        const mostRecentRole = roles[0];
+        setActiveRole(mostRecentRole);
+        
+        // If user has digger role, check subscription
+        if (roles.includes('digger')) {
+          checkSubscription().catch((error) => {
+            console.error('Error checking subscription:', error);
+          });
+        }
       }
     } catch (error) {
-      console.error('Error checking user type:', error);
-      setIsDigger(false);
+      console.error('Error fetching user roles:', error);
+      setUserRoles([]);
+      setActiveRole(null);
+    }
+  };
+
+  // Check if user has a specific role
+  const hasRole = (role: UserAppRole): boolean => {
+    return userRoles.includes(role);
+  };
+
+  // Get all user roles
+  const getRoles = (): UserAppRole[] => {
+    return userRoles;
+  };
+
+  // Switch active role and update last_used_at
+  const switchRole = async (role: UserAppRole): Promise<void> => {
+    if (!user || !hasRole(role)) {
+      toast.error('You do not have access to this role');
+      return;
+    }
+
+    try {
+      // Update last_used_at for this role
+      const { error } = await supabase
+        .from('user_app_roles')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .eq('app_role', role);
+
+      if (error) throw error;
+
+      setActiveRole(role);
+      
+      // If switching to digger role, check subscription
+      if (role === 'digger') {
+        await checkSubscription();
+      }
+
+      toast.success(`Switched to ${role} mode`);
+    } catch (error) {
+      console.error('Error switching role:', error);
+      toast.error('Failed to switch role');
     }
   };
 
@@ -93,7 +154,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       setUser(null);
       setSession(null);
-      setIsDigger(false);
+      setUserRoles([]);
+      setActiveRole(null);
       setSubscriptionStatus(null);
       
       toast.success('Signed out successfully');
@@ -111,12 +173,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Use useEffect pattern instead of setTimeout for better error handling
-          checkUserType(session.user.id).catch((error) => {
-            console.error('Error checking user type:', error);
+          // Fetch user roles instead of checking user_type
+          fetchUserRoles(session.user.id).catch((error) => {
+            console.error('Error fetching user roles:', error);
           });
         } else {
-          setIsDigger(false);
+          setUserRoles([]);
+          setActiveRole(null);
           setSubscriptionStatus(null);
         }
       }
@@ -128,7 +191,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkUserType(session.user.id);
+        fetchUserRoles(session.user.id);
       }
       
       setLoading(false);
@@ -137,25 +200,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Auto-refresh subscription status every 60 seconds for active users
+  // Auto-refresh subscription status every 60 seconds for diggers
   useEffect(() => {
-    if (!isDigger || !session) return;
+    if (!hasRole('digger') || !session) return;
 
     const interval = setInterval(() => {
       checkSubscription();
     }, 60000); // 60 seconds
 
     return () => clearInterval(interval);
-  }, [isDigger, session]);
+  }, [userRoles, session]);
 
   const value = {
     user,
     session,
-    isDigger,
+    userRoles,
+    activeRole,
     subscriptionStatus,
     loading,
+    hasRole,
+    getRoles,
+    switchRole,
     checkSubscription,
     signOut,
+    // Backward compatibility: isDigger checks if user has digger role
+    isDigger: userRoles.includes('digger'),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
