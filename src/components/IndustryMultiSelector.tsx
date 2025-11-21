@@ -21,6 +21,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [leadsPerMonth, setLeadsPerMonth] = useState<string>("");
+  const [exclusiveLeadsPerMonth, setExclusiveLeadsPerMonth] = useState<string>("");
 
   const toggleCategory = (categoryName: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -98,20 +99,35 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   const selectedCategories = getSelectedCategories();
   const hasMultipleCategories = selectedCategories.size > 1;
 
-  // Calculate total cost based on selected industries and lead quantity (non-exclusive)
+  // Calculate total cost based on selected industries and lead quantities (both types)
   const calculatedCost = useMemo(() => {
-    if (!leadsPerMonth || selectedIndustries.length === 0) return null;
+    if ((!leadsPerMonth && !exclusiveLeadsPerMonth) || selectedIndustries.length === 0) return null;
     
-    const leads = parseInt(leadsPerMonth);
-    if (isNaN(leads) || leads <= 0) return null;
+    const nonExclusiveLeads = leadsPerMonth ? parseInt(leadsPerMonth) : 0;
+    const exclusiveLeads = exclusiveLeadsPerMonth ? parseInt(exclusiveLeadsPerMonth) : 0;
     
-    const totalCost = selectedIndustries.reduce((sum, industry) => {
+    if ((isNaN(nonExclusiveLeads) || nonExclusiveLeads < 0) && (isNaN(exclusiveLeads) || exclusiveLeads < 0)) return null;
+    if (nonExclusiveLeads === 0 && exclusiveLeads === 0) return null;
+    
+    const nonExclusiveCost = selectedIndustries.reduce((sum, industry) => {
       const costPerLead = getLeadCostForIndustry(industry, 'non-exclusive');
-      return sum + (costPerLead * leads);
+      return sum + (costPerLead * nonExclusiveLeads);
     }, 0);
     
-    return { totalCost, leads };
-  }, [leadsPerMonth, selectedIndustries]);
+    const exclusiveCost = selectedIndustries.reduce((sum, industry) => {
+      const costPerLead = getLeadCostForIndustry(industry, 'exclusive-24h');
+      return sum + (costPerLead * exclusiveLeads);
+    }, 0);
+    
+    return { 
+      nonExclusiveCost, 
+      exclusiveCost,
+      totalCost: nonExclusiveCost + exclusiveCost,
+      nonExclusiveLeads, 
+      exclusiveLeads,
+      totalLeads: nonExclusiveLeads + exclusiveLeads
+    };
+  }, [leadsPerMonth, exclusiveLeadsPerMonth, selectedIndustries]);
 
   return (
     <div className="space-y-3">
@@ -362,7 +378,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
               <label className="text-sm font-medium">How many non-exclusive leads would you like per month?</label>
               <Input
                 type="number"
-                min="1"
+                min="0"
                 placeholder="Enter number of leads..."
                 value={leadsPerMonth}
                 onChange={(e) => setLeadsPerMonth(e.target.value)}
@@ -370,6 +386,21 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
               />
               <div className="text-xs text-muted-foreground">
                 Pricing: Bark - $0.50 per lead
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">How many 24hr exclusive leads would you like per month?</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="Enter number of leads..."
+                value={exclusiveLeadsPerMonth}
+                onChange={(e) => setExclusiveLeadsPerMonth(e.target.value)}
+                className="w-full"
+              />
+              <div className="text-xs text-muted-foreground">
+                Priority placement with 24-hour exclusivity
               </div>
             </div>
 
@@ -381,10 +412,37 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     <span className="text-sm font-medium">Selected Industries:</span>
                     <span className="text-sm">{selectedIndustries.length}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Leads per Month:</span>
-                    <span className="text-sm">{calculatedCost.leads}</span>
-                  </div>
+                  
+                  {calculatedCost.nonExclusiveLeads > 0 && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Non-Exclusive Leads:</span>
+                        <span className="text-sm">{calculatedCost.nonExclusiveLeads}/month</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Non-Exclusive Cost:</span>
+                        <span className="text-sm font-medium">
+                          ${calculatedCost.nonExclusiveCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  
+                  {calculatedCost.exclusiveLeads > 0 && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">24hr Exclusive Leads:</span>
+                        <span className="text-sm">{calculatedCost.exclusiveLeads}/month</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Exclusive Cost:</span>
+                        <span className="text-sm font-medium">
+                          ${calculatedCost.exclusiveCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  
                   <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total Monthly Cost:</span>
@@ -393,7 +451,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      * Based on non-exclusive lead pricing (Bark - $0.50)
+                      {calculatedCost.totalLeads} total leads per month
                     </p>
                   </div>
                 </div>
