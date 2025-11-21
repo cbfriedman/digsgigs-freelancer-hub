@@ -1597,7 +1597,7 @@ export type Database = {
           full_name: string | null
           id: string
           updated_at: string
-          user_type: string
+          user_type: string | null
         }
         Insert: {
           created_at?: string
@@ -1605,7 +1605,7 @@ export type Database = {
           full_name?: string | null
           id: string
           updated_at?: string
-          user_type: string
+          user_type?: string | null
         }
         Update: {
           created_at?: string
@@ -1613,7 +1613,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
-          user_type?: string
+          user_type?: string | null
         }
         Relationships: []
       }
@@ -2058,6 +2058,33 @@ export type Database = {
           },
         ]
       }
+      user_app_roles: {
+        Row: {
+          app_role: Database["public"]["Enums"]["user_app_role"]
+          created_at: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          app_role: Database["public"]["Enums"]["user_app_role"]
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          app_role?: Database["public"]["Enums"]["user_app_role"]
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2192,6 +2219,17 @@ export type Database = {
         Returns: string
       }
       get_tier_for_lead_count: { Args: { lead_count: number }; Returns: string }
+      get_user_app_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_app_role"][]
+      }
+      has_app_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2215,6 +2253,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "telemarketer"
+      user_app_role: "digger" | "gigger" | "telemarketer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2343,6 +2382,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user", "telemarketer"],
+      user_app_role: ["digger", "gigger", "telemarketer"],
     },
   },
 } as const
