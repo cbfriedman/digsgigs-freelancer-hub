@@ -38,42 +38,67 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const { extensionId } = await req.json();
+    const { queueEntryId, extensionNumber } = await req.json();
     
-    if (!extensionId) {
-      throw new Error("extensionId is required");
+    if (!queueEntryId || !extensionNumber) {
+      throw new Error("queueEntryId and extensionNumber are required");
     }
 
-    logStep("Processing extension checkout", { extensionId, userId: user.id });
+    logStep("Processing extension checkout", { queueEntryId, extensionNumber, userId: user.id });
 
-    // Get the extension details
-    const { data: extension, error: extensionError } = await supabaseClient
-      .from("lead_exclusivity_extensions")
+    // Get the queue entry details
+    const { data: queueEntry, error: queueError } = await supabaseClient
+      .from("lead_exclusivity_queue")
       .select(`
         *,
-        queue_entry:lead_exclusivity_queue!inner(
-          *,
-          gig:gigs!inner(title),
-          digger:digger_profiles!inner(user_id)
-        )
+        gig:gigs!inner(title),
+        digger:digger_profiles!inner(user_id)
       `)
-      .eq("id", extensionId)
-      .eq("payment_status", "pending")
+      .eq("id", queueEntryId)
+      .eq("status", "active")
       .single();
 
-    if (extensionError || !extension) {
-      throw new Error("Extension not found or already paid");
+    if (queueError || !queueEntry) {
+      throw new Error("Queue entry not found or not active");
     }
 
-    // Verify the user owns this extension
-    if (extension.queue_entry.digger.user_id !== user.id) {
-      throw new Error("Unauthorized - not your extension");
+    // Verify the user owns this queue entry
+    if (queueEntry.digger.user_id !== user.id) {
+      throw new Error("Unauthorized - not your lead");
     }
 
-    logStep("Extension verified", { 
-      extensionCost: extension.extension_cost,
-      gigTitle: extension.queue_entry.gig.title 
+    // Calculate extension cost (33% premium)
+    const extensionCost = queueEntry.base_price * 1.33;
+    
+    // Calculate new expiry time
+    const currentExpiry = new Date(queueEntry.exclusivity_ends_at);
+    const newExpiry = new Date(currentExpiry.getTime() + 24 * 60 * 60 * 1000);
+
+    logStep("Extension calculated", { 
+      extensionCost,
+      currentExpiry,
+      newExpiry,
+      gigTitle: queueEntry.gig.title 
     });
+
+    // Create the extension record
+    const { data: extension, error: extensionInsertError } = await supabaseClient
+      .from("lead_exclusivity_extensions")
+      .insert({
+        queue_entry_id: queueEntryId,
+        extension_number: extensionNumber,
+        extension_cost: extensionCost,
+        expires_at: newExpiry.toISOString(),
+        payment_status: "pending",
+      })
+      .select()
+      .single();
+
+    if (extensionInsertError || !extension) {
+      throw new Error("Failed to create extension record");
+    }
+
+    logStep("Extension record created", { extensionId: extension.id });
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -118,10 +143,10 @@ serve(async (req) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `24-Hour Exclusivity Extension #${extension.extension_number}`,
-              description: `Extend exclusive access to "${extension.queue_entry.gig.title}" for 24 hours`,
+              name: `24-Hour Exclusivity Extension #${extensionNumber}`,
+              description: `Extend exclusive access to "${queueEntry.gig.title}" for 24 hours`,
             },
-            unit_amount: Math.round(extension.extension_cost * 100), // Convert to cents
+            unit_amount: Math.round(extensionCost * 100), // Convert to cents
           },
           quantity: 1,
         },
@@ -130,8 +155,8 @@ serve(async (req) => {
       success_url: `${origin}/my-leads?extension_success=true`,
       cancel_url: `${origin}/my-leads?extension_canceled=true`,
       metadata: {
-        extension_id: extensionId,
-        queue_entry_id: extension.queue_entry_id,
+        extension_id: extension.id,
+        queue_entry_id: queueEntryId,
         user_id: user.id,
         type: "exclusivity_extension",
       },
