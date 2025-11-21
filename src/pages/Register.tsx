@@ -12,6 +12,7 @@ import { z } from "zod";
 import SEOHead from "@/components/SEOHead";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DiggerRoleForm from "@/components/registration/DiggerRoleForm";
 import GiggerRoleForm from "@/components/registration/GiggerRoleForm";
 import TelemarketerRoleForm from "@/components/registration/TelemarketerRoleForm";
@@ -281,7 +282,13 @@ const Register = () => {
               Home
             </Button>
             
-            <CardTitle className="text-2xl font-bold mt-8">Create Your Account</CardTitle>
+            <CardTitle className="text-2xl font-bold mt-8">
+              {step === 1 && "Create Your Account"}
+              {step === 2 && "Create Your Account"}
+              {step > 2 && currentRole === 'digger' && "Create Your Dig"}
+              {step > 2 && currentRole === 'gigger' && "Create Your Gig"}
+              {step > 2 && currentRole === 'telemarketer' && "Telemarketer Registration"}
+            </CardTitle>
             <CardDescription>
               {step === 1 && "Let's start with your basic information"}
               {step === 2 && "What would you like to do on DigsandGigs?"}
@@ -539,6 +546,36 @@ const Register = () => {
                     Setting up your {currentRole} profile
                   </span>
                 </div>
+
+                {/* Skip to dropdown when multiple roles selected */}
+                {roleArray.length > 1 && (
+                  <div className="flex items-center gap-3 p-3 border rounded-lg bg-background">
+                    <Label className="text-sm font-medium whitespace-nowrap">Skip to:</Label>
+                    <Select
+                      value={currentRole}
+                      onValueChange={(value) => {
+                        const roleIndex = roleArray.indexOf(value as UserAppRole);
+                        if (roleIndex !== -1) {
+                          setCurrentRoleIndex(roleIndex);
+                          setStep(3 + roleIndex);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roleArray.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role === 'digger' ? '🔧 Digger Profile' : 
+                             role === 'gigger' ? '📋 Gigger Profile' : 
+                             '📞 Telemarketer Profile'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {currentRole === 'digger' && (
                   <DiggerRoleForm
