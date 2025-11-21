@@ -1,4 +1,6 @@
 import { Top20ExpensiveKeywords } from "@/components/Top20ExpensiveKeywords";
+import { IndustryProfessionSelector } from "@/components/IndustryProfessionSelector";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Pricing() {
   return (
@@ -16,7 +18,18 @@ export default function Pricing() {
             </p>
           </div>
           
-          <Top20ExpensiveKeywords />
+          <Tabs defaultValue="selector" className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+              <TabsTrigger value="selector">Find Your Specialty</TabsTrigger>
+              <TabsTrigger value="full-data">View All Keywords</TabsTrigger>
+            </TabsList>
+            <TabsContent value="selector" className="mt-8">
+              <IndustryProfessionSelector />
+            </TabsContent>
+            <TabsContent value="full-data" className="mt-8">
+              <Top20ExpensiveKeywords />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
