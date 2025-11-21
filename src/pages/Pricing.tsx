@@ -10,8 +10,9 @@ export default function Pricing() {
               Google CPC-Based Pricing Research
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              We've analyzed the top 20 most expensive Google Ads keywords across all industries 
-              to create transparent, value-based pricing for exclusive leads.
+              We've analyzed the top 20 most expensive Google Ads keywords across all industries. 
+              Our exclusive leads are priced at just <span className="font-semibold text-foreground">1.2x the average CPC</span>—
+              offering transparent, value-based pricing that beats competitors who charge arbitrary fees.
             </p>
           </div>
           
