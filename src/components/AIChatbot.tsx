@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,20 +35,7 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Load chat history when chatbot opens
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      loadChatHistory();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const loadChatHistory = async () => {
+  const loadChatHistory = useCallback(async () => {
     setIsLoadingHistory(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -81,7 +68,21 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
     } finally {
       setIsLoadingHistory(false);
     }
-  };
+  }, []);
+
+  // Load chat history when chatbot opens
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      loadChatHistory();
+    }
+  }, [isOpen, messages.length, loadChatHistory]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
 
   const clearChatHistory = async () => {
     try {
@@ -127,15 +128,18 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
     setIsLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user, session } } = await supabase.auth.getUser();
       const sessionId = getSessionId();
+      
+      // Use session token for authenticated requests, fallback to anon key for public access
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-bot`;
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({ 
           messages: newMessages,

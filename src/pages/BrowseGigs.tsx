@@ -154,11 +154,16 @@ const BrowseGigs = () => {
   const loadData = async () => {
     setLoading(true);
 
-    const { data: categoriesData } = await supabase
+    const { data: categoriesData, error: categoriesError } = await supabase
       .from("categories")
       .select("id, name")
       .is("parent_category_id", null)
       .order("name");
+
+    if (categoriesError) {
+      console.error("Error loading categories:", categoriesError);
+      toast.error("Failed to load categories");
+    }
 
     setCategories(categoriesData || []);
 
@@ -172,10 +177,14 @@ const BrowseGigs = () => {
       .order("created_at", { ascending: false });
 
     if (selectedCategory !== "all") {
-      const { data: subcategories } = await supabase
+      const { data: subcategories, error: subcategoriesError } = await supabase
         .from("categories")
         .select("id")
         .eq("parent_category_id", selectedCategory);
+      
+      if (subcategoriesError) {
+        console.error("Error loading subcategories:", subcategoriesError);
+      }
       
       const categoryIds = [selectedCategory, ...(subcategories?.map(sc => sc.id) || [])];
       query = query.in("category_id", categoryIds);

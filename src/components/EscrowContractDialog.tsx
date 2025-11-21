@@ -9,7 +9,11 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-const stripePromise = loadStripe(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "");
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+if (!STRIPE_PUBLISHABLE_KEY) {
+  console.warn('VITE_STRIPE_PUBLISHABLE_KEY is not set. Stripe payments will not work.');
+}
+const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
 interface Milestone {
   description: string;
@@ -100,6 +104,9 @@ export const EscrowContractDialog = ({
       const { clientSecret, escrowContractId } = data;
 
       // Initialize Stripe
+      if (!stripePromise) {
+        throw new Error("Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY environment variable.");
+      }
       const stripe = await stripePromise;
       if (!stripe) throw new Error("Stripe failed to load");
 
@@ -111,10 +118,11 @@ export const EscrowContractDialog = ({
       }
 
       // Confirm payment on backend
+      const paymentIntentId = clientSecret?.split("_secret_")[0] || clientSecret;
       await supabase.functions.invoke("confirm-escrow-payment", {
         body: {
           escrowContractId,
-          paymentIntentId: clientSecret.split("_secret_")[0],
+          paymentIntentId,
         },
       });
 

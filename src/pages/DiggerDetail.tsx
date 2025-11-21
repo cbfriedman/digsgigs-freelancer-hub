@@ -624,15 +624,15 @@ const DiggerDetail = () => {
                   </div>
                 </div>
 
-                {digger.digger_categories.length > 0 && (
+                {(digger.digger_categories?.length ?? 0) > 0 && (
                   <>
                     <Separator className="my-6" />
                     <div>
                       <h2 className="text-lg font-semibold mb-3">Skills & Expertise</h2>
                       <div className="flex flex-wrap gap-2">
-                        {digger.digger_categories.map((dc, idx) => (
+                        {(digger.digger_categories || []).map((dc, idx) => (
                           <Badge key={idx} variant="secondary" className="text-sm px-3 py-1">
-                            {dc.categories.name}
+                            {dc.categories?.name || ''}
                           </Badge>
                         ))}
                       </div>

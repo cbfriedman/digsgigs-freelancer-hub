@@ -55,9 +55,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // If user is a digger, check subscription
       if (data?.user_type === 'digger') {
-        setTimeout(() => {
-          checkSubscription();
-        }, 0);
+        checkSubscription().catch((error) => {
+          console.error('Error checking subscription:', error);
+        });
       }
     } catch (error) {
       console.error('Error checking user type:', error);
@@ -111,9 +111,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setTimeout(() => {
-            checkUserType(session.user.id);
-          }, 0);
+          // Use useEffect pattern instead of setTimeout for better error handling
+          checkUserType(session.user.id).catch((error) => {
+            console.error('Error checking user type:', error);
+          });
         } else {
           setIsDigger(false);
           setSubscriptionStatus(null);

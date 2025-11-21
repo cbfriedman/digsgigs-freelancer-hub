@@ -523,16 +523,16 @@ const BrowseDiggers = () => {
                     </p>
                   )}
 
-                  {digger.digger_categories.length > 0 && (
+                  {(digger.digger_categories?.length ?? 0) > 0 && (
                     <div className="flex flex-wrap gap-2">
-                      {digger.digger_categories.slice(0, 3).map((dc, idx) => (
+                      {(digger.digger_categories || []).slice(0, 3).map((dc, idx) => (
                         <Badge key={idx} variant="secondary" className="text-xs">
-                          {dc.categories.name}
+                          {dc.categories?.name || ''}
                         </Badge>
                       ))}
-                      {digger.digger_categories.length > 3 && (
+                      {(digger.digger_categories?.length ?? 0) > 3 && (
                         <Badge variant="secondary" className="text-xs">
-                          +{digger.digger_categories.length - 3}
+                          +{(digger.digger_categories?.length ?? 0) - 3}
                         </Badge>
                       )}
                     </div>
