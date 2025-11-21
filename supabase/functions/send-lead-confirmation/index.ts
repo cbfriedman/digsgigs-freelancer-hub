@@ -8,6 +8,36 @@ const corsHeaders = {
 };
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
+const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
+const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER");
+
+async function sendTwilioSMS(to: string, message: string) {
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+  const auth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+  
+  const body = new URLSearchParams({
+    To: to,
+    From: TWILIO_PHONE_NUMBER!,
+    Body: message,
+  });
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Twilio API error: ${error}`);
+  }
+
+  return await response.json();
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -94,24 +124,34 @@ serve(async (req) => {
 
       console.log("[SEND-LEAD-CONFIRMATION] Confirmation email sent to:", consumerEmail);
     } else if (confirmationMethod === "sms" && gig.consumer_phone) {
-      // TODO: Implement SMS sending (requires Twilio or similar service)
-      console.log("[SEND-LEAD-CONFIRMATION] SMS not yet implemented, would send to:", gig.consumer_phone);
-      console.log("[SEND-LEAD-CONFIRMATION] Confirmation code:", confirmationCode);
-      
-      // For now, fall back to email if available
-      if (consumerEmail) {
-        const { error: emailError } = await resend.emails.send({
-          from: "FindGig <noreply@resend.dev>",
-          to: [consumerEmail],
-          subject: "Confirm Your Service Request",
-          html: `
-            <p>Your confirmation code is: <strong>${confirmationCode}</strong></p>
-            <p>Note: SMS delivery is not yet available. We've sent this via email instead.</p>
-          `,
-        });
+      try {
+        const smsMessage = `FindGig: Your confirmation code for "${gig.title}" is: ${confirmationCode}. Enter this code to activate your service request.`;
+        
+        await sendTwilioSMS(gig.consumer_phone, smsMessage);
+        
+        console.log("[SEND-LEAD-CONFIRMATION] SMS sent to:", gig.consumer_phone);
+      } catch (smsError) {
+        console.error("[SEND-LEAD-CONFIRMATION] SMS error:", smsError);
+        
+        // Fall back to email if SMS fails and email is available
+        if (consumerEmail) {
+          const { error: emailError } = await resend.emails.send({
+            from: "FindGig <noreply@resend.dev>",
+            to: [consumerEmail],
+            subject: "Confirm Your Service Request",
+            html: `
+              <p>Your confirmation code is: <strong>${confirmationCode}</strong></p>
+              <p>Note: We couldn't deliver your SMS. We've sent this via email instead.</p>
+            `,
+          });
 
-        if (emailError) {
-          throw new Error(`Failed to send fallback email: ${emailError.message}`);
+          if (emailError) {
+            throw new Error(`Failed to send fallback email: ${emailError.message}`);
+          }
+          
+          console.log("[SEND-LEAD-CONFIRMATION] Fallback email sent to:", consumerEmail);
+        } else {
+          throw new Error(`SMS failed and no email available: ${smsError}`);
         }
       }
     }
