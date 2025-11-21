@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileCartDrawer } from "@/components/ProfileCartDrawer";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCart } from "@/contexts/CartContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,12 +25,13 @@ interface NavigationProps {
   backLabel?: string;
 }
 
-type UserAppRole = 'digger' | 'gigger' | 'telemarketer';
+type UserAppRole = 'digger' | 'gigger' | 'telemarketer' | 'admin';
 
 const roleConfig: Record<UserAppRole, { label: string; emoji: string; color: string }> = {
   digger: { label: 'Digger', emoji: '🔧', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' },
   gigger: { label: 'Gigger', emoji: '📋', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' },
   telemarketer: { label: 'Telemarketer', emoji: '📞', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100' },
+  admin: { label: 'Admin', emoji: '👑', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100' },
 };
 
 export function Navigation({ showBackButton = false, backTo = "/", backLabel = "Back to Home" }: NavigationProps) {
@@ -40,12 +42,35 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const { user, userRoles, activeRole, switchRole, signOut } = useAuth();
   const { cartCount } = useCart();
   const [profileCartCount, setProfileCartCount] = useState(0);
+  const [adminId, setAdminId] = useState<string | null>(null);
 
   // Clear old profile cart data since profiles now save directly to database
   useEffect(() => {
     localStorage.removeItem("profileCart");
     setProfileCartCount(0);
   }, []);
+
+  // Fetch admin ID if user is admin
+  useEffect(() => {
+    const fetchAdminId = async () => {
+      if (user && userRoles.includes('admin')) {
+        const { data, error } = await supabase
+          .from('user_app_roles')
+          .select('created_at, user_id')
+          .eq('app_role', 'admin' as any)
+          .order('created_at', { ascending: true });
+
+        if (!error && data) {
+          const position = data.findIndex((role) => role.user_id === user.id);
+          if (position !== -1) {
+            setAdminId(`DG-${position + 1}`);
+          }
+        }
+      }
+    };
+
+    fetchAdminId();
+  }, [user, userRoles]);
 
   return (
     <>
@@ -103,7 +128,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <Button variant="outline" className="gap-2 px-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
-                        {user.email?.split('@')[0] || user.id.slice(0, 8)}
+                        {userRoles.includes('admin') && adminId ? adminId : (user.email?.split('@')[0] || user.id.slice(0, 8))}
                       </span>
                       <div className="flex gap-1">
                         {userRoles.map((role) => (
