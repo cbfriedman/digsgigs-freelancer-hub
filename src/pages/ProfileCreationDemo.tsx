@@ -10,6 +10,7 @@ import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
 import { Briefcase } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Navigation } from "@/components/Navigation";
 
 export default function ProfileCreationDemo() {
   const [photoUrl, setPhotoUrl] = useState("");
@@ -27,6 +28,8 @@ export default function ProfileCreationDemo() {
         <title>Profile Creation Demo - DigsandGigs</title>
         <meta name="description" content="See how to create your professional digger profile with AI-powered suggestions" />
       </Helmet>
+
+      <Navigation />
 
       <div className="min-h-screen bg-background py-8">
         <div className="container max-w-7xl mx-auto px-4">
