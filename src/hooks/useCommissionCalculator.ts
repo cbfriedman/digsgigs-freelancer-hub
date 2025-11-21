@@ -22,23 +22,33 @@ export const useCommissionCalculator = () => {
   /**
    * Calculate lead cost for a specific industry and exclusivity type
    * Returns default mid-value if industry not specified
+   * 
+   * @param exclusivity - Type of lead (non-exclusive or exclusive-24h)
+   * @param industry - The industry/profession
+   * @param isConfirmed - Whether the lead is confirmed (adds 20% premium for non-exclusive)
    */
   const calculateLeadCost = (
     exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive',
-    industry?: string
+    industry?: string,
+    isConfirmed: boolean = false
   ): {
     leadCost: number;
   } => {
     if (industry) {
-      return { leadCost: getLeadCostForIndustry(industry, exclusivity) };
+      return { leadCost: getLeadCostForIndustry(industry, exclusivity, isConfirmed) };
     }
     
     // Default to mid-value pricing if no industry specified
-    return { 
-      leadCost: exclusivity === 'non-exclusive' 
-        ? INDUSTRY_PRICING[1].nonExclusive 
-        : INDUSTRY_PRICING[1].exclusive24h 
-    };
+    const basePrice = exclusivity === 'non-exclusive' 
+      ? INDUSTRY_PRICING[1].nonExclusive 
+      : INDUSTRY_PRICING[1].exclusive24h;
+    
+    // Add 20% confirmation premium for non-exclusive confirmed leads
+    if (exclusivity === 'non-exclusive' && isConfirmed) {
+      return { leadCost: Math.round(basePrice * 1.20 * 2) / 2 }; // Round to nearest $0.50
+    }
+    
+    return { leadCost: basePrice };
   };
 
   /**
