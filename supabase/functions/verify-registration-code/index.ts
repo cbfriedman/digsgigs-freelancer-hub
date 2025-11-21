@@ -28,18 +28,27 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check if code exists and is valid
-    const { data: verificationData, error: fetchError } = await supabase
+    // Check if identifier is email or phone and query accordingly
+    const isEmail = identifier.includes("@");
+    
+    const query = supabase
       .from("verification_codes")
       .select("*")
-      .eq("identifier", identifier)
       .eq("code", code)
       .eq("verification_type", "registration")
       .eq("verified", false)
       .gte("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
+
+    // Add email or phone filter
+    if (isEmail) {
+      query.eq("email", identifier);
+    } else {
+      query.eq("phone", identifier);
+    }
+
+    const { data: verificationData, error: fetchError } = await query.maybeSingle();
 
     if (fetchError) {
       console.error("Database error:", fetchError);
