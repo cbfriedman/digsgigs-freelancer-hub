@@ -1,10 +1,13 @@
 import { Top20ExpensiveKeywords } from "@/components/Top20ExpensiveKeywords";
 import { IndustryProfessionSelector } from "@/components/IndustryProfessionSelector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Navigation } from "@/components/Navigation";
 
 export default function Pricing() {
   return (
-    <div className="min-h-screen bg-background py-12">
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto px-4">
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="text-center space-y-4">
@@ -33,5 +36,6 @@ export default function Pricing() {
         </div>
       </div>
     </div>
+    </>
   );
 }
