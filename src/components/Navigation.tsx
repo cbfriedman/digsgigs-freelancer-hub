@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ArrowUp, ShoppingCart } from "lucide-react";
+import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";
 import { DiggerProfileSelector } from "@/components/DiggerProfileSelector";
@@ -9,6 +9,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileCartDrawer } from "@/components/ProfileCartDrawer";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCart } from "@/contexts/CartContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavigationProps {
   showBackButton?: boolean;
@@ -16,12 +24,20 @@ interface NavigationProps {
   backLabel?: string;
 }
 
+type UserAppRole = 'digger' | 'gigger' | 'telemarketer';
+
+const roleConfig: Record<UserAppRole, { label: string; emoji: string; color: string }> = {
+  digger: { label: 'Digger', emoji: '🔧', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' },
+  gigger: { label: 'Gigger', emoji: '📋', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' },
+  telemarketer: { label: 'Telemarketer', emoji: '📞', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100' },
+};
+
 export function Navigation({ showBackButton = false, backTo = "/", backLabel = "Back to Home" }: NavigationProps) {
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [profileCartOpen, setProfileCartOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, userRoles, activeRole, switchRole, signOut } = useAuth();
   const { cartCount } = useCart();
   const [profileCartCount, setProfileCartCount] = useState(0);
 
@@ -50,6 +66,78 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             >
               HOME
             </Button>
+
+            {/* Auth Buttons for non-authenticated users */}
+            {!user && (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/auth")}
+                >
+                  Sign In
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => navigate("/register")}
+                >
+                  Get Started
+                </Button>
+              </>
+            )}
+
+            {/* Role Switcher - Only show if user has roles */}
+            {user && userRoles.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    {activeRole ? (
+                      <>
+                        <span>{roleConfig[activeRole].emoji}</span>
+                        <span className="hidden sm:inline">{roleConfig[activeRole].label}</span>
+                        {userRoles.length > 1 && <ChevronDown className="h-4 w-4 opacity-50" />}
+                      </>
+                    ) : (
+                      <>
+                        <User className="h-4 w-4" />
+                        <span className="hidden sm:inline">My Account</span>
+                        <ChevronDown className="h-4 w-4 opacity-50" />
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-background border shadow-lg z-50">
+                  <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {userRoles.map((role) => (
+                    <DropdownMenuItem
+                      key={role}
+                      onClick={() => switchRole(role)}
+                      className={`cursor-pointer ${activeRole === role ? 'bg-accent' : ''}`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <span>{roleConfig[role].emoji}</span>
+                          <span>{roleConfig[role].label}</span>
+                        </div>
+                        {activeRole === role && (
+                          <Badge variant="secondary" className="text-xs">
+                            Active
+                          </Badge>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/pricing')} className="cursor-pointer">
+                    <span className="text-muted-foreground">Manage Profiles</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             {user && <DiggerProfileSelector />}
             
             {/* Cart Icon */}
