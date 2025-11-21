@@ -1050,6 +1050,69 @@ export type Database = {
           },
         ]
       }
+      lead_exclusivity_queue: {
+        Row: {
+          awarded_at: string | null
+          base_price: number
+          converted_to_nonexclusive_at: string | null
+          created_at: string | null
+          digger_id: string
+          exclusivity_ends_at: string | null
+          exclusivity_starts_at: string | null
+          gig_id: string
+          id: string
+          lead_source: string
+          queue_position: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          awarded_at?: string | null
+          base_price: number
+          converted_to_nonexclusive_at?: string | null
+          created_at?: string | null
+          digger_id: string
+          exclusivity_ends_at?: string | null
+          exclusivity_starts_at?: string | null
+          gig_id: string
+          id?: string
+          lead_source: string
+          queue_position: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          awarded_at?: string | null
+          base_price?: number
+          converted_to_nonexclusive_at?: string | null
+          created_at?: string | null
+          digger_id?: string
+          exclusivity_ends_at?: string | null
+          exclusivity_starts_at?: string | null
+          gig_id?: string
+          id?: string
+          lead_source?: string
+          queue_position?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_exclusivity_queue_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_exclusivity_queue_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_issues: {
         Row: {
           created_at: string
