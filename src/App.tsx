@@ -57,6 +57,7 @@ import CheckoutSuccess from "./pages/CheckoutSuccess";
 import TelemarketerDashboard from "./pages/TelemarketerDashboard";
 import ProfileCreationDemo from "./pages/ProfileCreationDemo";
 import Register from "./pages/Register";
+import RoleDashboard from "./pages/RoleDashboard";
 
 const queryClient = new QueryClient();
 
@@ -153,6 +154,7 @@ const App = () => (
           <Route path="/digger-subscription" element={<DiggerSubscription />} />
           <Route path="/telemarketer-dashboard" element={<TelemarketerDashboard />} />
           <Route path="/profile-demo" element={<ProfileCreationDemo />} />
+          <Route path="/role-dashboard" element={<RoleDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
