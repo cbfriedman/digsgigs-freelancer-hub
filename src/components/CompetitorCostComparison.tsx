@@ -9,22 +9,13 @@ import { Label } from "@/components/ui/label";
 export default function CompetitorCostComparison() {
   const [leadVolume, setLeadVolume] = useState(30);
   const [selectedIndustry, setSelectedIndustry] = useState('HVAC');
+  const [exclusivity, setExclusivity] = useState<'non-exclusive' | 'exclusive-24h'>('non-exclusive');
 
   // DigsandGigs costs - industry-specific
-  const tier1Cost = getLeadCostForIndustry(selectedIndustry, 'free');
-  const tier2Cost = getLeadCostForIndustry(selectedIndustry, 'pro');
-  const tier3Cost = getLeadCostForIndustry(selectedIndustry, 'premium');
+  const digsAndGigsCost = getLeadCostForIndustry(selectedIndustry, exclusivity);
 
   const calculateDigsAndGigsCost = (leads: number) => {
-    let total = 0;
-    if (leads <= 10) {
-      total = leads * tier1Cost;
-    } else if (leads <= 50) {
-      total = (10 * tier1Cost) + ((leads - 10) * tier2Cost);
-    } else {
-      total = (10 * tier1Cost) + (40 * tier2Cost) + ((leads - 50) * tier3Cost);
-    }
-    return total;
+    return leads * digsAndGigsCost;
   };
 
   // Get industry-specific competitor pricing
@@ -47,7 +38,7 @@ export default function CompetitorCostComparison() {
       bgColor: "bg-primary/10",
       borderColor: "border-primary/30",
       cost: calculateDigsAndGigsCost(leadVolume),
-      description: "Volume-based pricing",
+      description: `${exclusivity === 'non-exclusive' ? 'Non-Exclusive (Bark - $0.50)' : '24-Hour Exclusive (CPC × 2.5)'}`,
       badge: "Our Platform",
       badgeColor: "bg-primary text-white"
     },
@@ -123,6 +114,18 @@ export default function CompetitorCostComparison() {
                       ))}
                     </div>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium">Exclusivity:</Label>
+              <Select value={exclusivity} onValueChange={(v) => setExclusivity(v as 'non-exclusive' | 'exclusive-24h')}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="non-exclusive">Non-Exclusive</SelectItem>
+                  <SelectItem value="exclusive-24h">24-Hour Exclusive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -246,9 +249,9 @@ export default function CompetitorCostComparison() {
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
                 <DollarSign className="h-8 w-8 mx-auto text-blue-600" />
-                <div className="text-sm text-muted-foreground">Avg. Cost Per Lead</div>
+                <div className="text-sm text-muted-foreground">Cost Per Lead</div>
                 <div className="text-3xl font-bold text-blue-600">
-                  ${(platforms[0].cost / leadVolume).toFixed(2)}
+                  ${digsAndGigsCost.toFixed(2)}
                 </div>
                 <div className="text-xs text-muted-foreground">with DigsandGigs</div>
               </div>
@@ -279,7 +282,7 @@ export default function CompetitorCostComparison() {
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p><strong>Volume Discounts:</strong> Your cost per lead decreases as you receive more leads</p>
+                  <p><strong>Choose Your Exclusivity:</strong> Pay less for non-exclusive or more for 24-hour exclusive leads</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
@@ -289,11 +292,11 @@ export default function CompetitorCostComparison() {
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p><strong>Transparent Pricing:</strong> Every lead is numbered and priced clearly</p>
+                  <p><strong>Transparent Pricing:</strong> Every lead is priced clearly based on Bark or Google CPC rates</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p><strong>Fair 9% Escrow:</strong> Lower than most platforms and protects both parties</p>
+                  <p><strong>Fair 8% Escrow:</strong> Lower than most platforms and protects both parties</p>
                 </div>
               </div>
             </div>

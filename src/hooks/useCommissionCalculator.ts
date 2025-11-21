@@ -1,35 +1,44 @@
 import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry } from '@/config/pricing';
 
 /**
- * Hook for calculating costs based on subscription tier, pricing model, and industry
+ * Hook for calculating costs based on exclusivity and industry
  * Uses centralized industry-specific pricing configuration from @/config/pricing
  * 
- * NEW PRICING MODEL (CPL Only - No Commissions):
- * - Industry-specific lead costs based on three value tiers:
- *   - Low-value (cleaning, handyman): $15/$10/$5 (Free/Pro/Premium)
- *   - Mid-value (HVAC, plumbing, etc.): $40/$25/$15
- *   - High-value (legal, insurance): $200/$125/$75
+ * EXCLUSIVITY-BASED PRICING MODEL:
+ * - Non-exclusive leads: Bark price - $0.50
+ *   - Low-value: $7.50
+ *   - Mid-value: $14.50
+ *   - High-value: $24.50
  * 
- * - Escrow processing fees (paid by digger):
+ * - 24-hour exclusive leads: Google CPC × 2.5
+ *   - Low-value: $30.00
+ *   - Mid-value: $87.50
+ *   - High-value: $187.50
+ * 
+ * - Escrow processing fees (optional, paid by digger):
  *   - All tiers: 8% (min $10)
  */
 export const useCommissionCalculator = () => {
   /**
-   * Calculate lead cost for a specific industry and tier
+   * Calculate lead cost for a specific industry and exclusivity type
    * Returns default mid-value if industry not specified
    */
   const calculateLeadCost = (
-    tier: 'free' | 'pro' | 'premium' = 'free',
+    exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive',
     industry?: string
   ): {
     leadCost: number;
   } => {
     if (industry) {
-      return { leadCost: getLeadCostForIndustry(industry, tier) };
+      return { leadCost: getLeadCostForIndustry(industry, exclusivity) };
     }
     
     // Default to mid-value pricing if no industry specified
-    return { leadCost: INDUSTRY_PRICING[1][tier] };
+    return { 
+      leadCost: exclusivity === 'non-exclusive' 
+        ? INDUSTRY_PRICING[1].nonExclusive 
+        : INDUSTRY_PRICING[1].exclusive24h 
+    };
   };
 
   /**
@@ -71,9 +80,9 @@ export const useCommissionCalculator = () => {
    */
   const calculateEscrowFee = (
     amount: number,
-    tier: 'free' | 'pro' | 'premium' = 'free'
+    exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive'
   ): number => {
-    const pricingTier = PRICING_TIERS[tier];
+    const pricingTier = PRICING_TIERS[exclusivity];
     const calculatedFee = amount * pricingTier.escrowProcessingFeeValue;
     return Math.max(calculatedFee, pricingTier.escrowProcessingMinimum);
   };

@@ -52,6 +52,10 @@ import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
 import PreDemoRegistration from "./pages/PreDemoRegistration";
 import MyProfiles from "./pages/MyProfiles";
+import Checkout from "./pages/Checkout";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import TelemarketerDashboard from "./pages/TelemarketerDashboard";
+import ProfileCreationDemo from "./pages/ProfileCreationDemo";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +111,8 @@ const App = () => (
           <Route path="/edit-digger-profile" element={<EditDiggerProfile />} />
           <Route path="/edit-digger-profile/:profileId" element={<EditDiggerProfile />} />
           <Route path="/my-profiles" element={<MyProfiles />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout-success" element={<CheckoutSuccess />} />
           <Route path="/post-gig" element={<PostGig />} />
           <Route path="/browse-diggers" element={<BrowseDiggers />} />
           <Route path="/browse-gigs" element={<BrowseGigs />} />
@@ -143,6 +149,8 @@ const App = () => (
           <Route path="/sitemap.xml" element={<SitemapXML />} />
           <Route path="/escrow-dashboard" element={<EscrowDashboard />} />
           <Route path="/digger-subscription" element={<DiggerSubscription />} />
+          <Route path="/telemarketer-dashboard" element={<TelemarketerDashboard />} />
+          <Route path="/profile-demo" element={<ProfileCreationDemo />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

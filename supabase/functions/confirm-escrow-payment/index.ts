@@ -39,16 +39,53 @@ serve(async (req) => {
     }
 
     // Update escrow contract status
-    const { error: updateError } = await supabaseClient
+    const { data: contract, error: updateError } = await supabaseClient
       .from("escrow_contracts")
       .update({
         status: "funded",
         funded_at: new Date().toISOString(),
       })
       .eq("id", escrowContractId)
-      .eq("consumer_id", user.id);
+      .eq("consumer_id", user.id)
+      .select(`
+        *,
+        gigs!inner(id, awarded_at)
+      `)
+      .single();
 
     if (updateError) throw updateError;
+
+    // Award the lead if not already awarded
+    if (contract && !contract.gigs.awarded_at) {
+      console.log("Awarding lead via escrow payment", { 
+        escrowContractId, 
+        gigId: contract.gig_id,
+        diggerId: contract.digger_id 
+      });
+      
+      try {
+        // Find the bid associated with this escrow
+        const { data: bid } = await supabaseClient
+          .from("bids")
+          .select("id")
+          .eq("gig_id", contract.gig_id)
+          .eq("digger_id", contract.digger_id)
+          .single();
+
+        await supabaseClient.functions.invoke("award-lead", {
+          body: {
+            gigId: contract.gig_id,
+            diggerId: contract.digger_id,
+            bidId: bid?.id,
+            awardMethod: "escrow_payment",
+          },
+        });
+        console.log("Lead awarded successfully via escrow");
+      } catch (awardError) {
+        console.error("Error awarding lead:", awardError);
+        // Don't fail the escrow confirmation if award fails
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true }),

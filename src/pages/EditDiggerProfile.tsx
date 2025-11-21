@@ -22,6 +22,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
 import { getLeadTierDescription } from "@/config/pricing";
+import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
+import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
+import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -50,6 +53,9 @@ const EditDiggerProfile = () => {
   const [profileData, setProfileData] = useState<any>(null);
   const [expectedLeadVolume, setExpectedLeadVolume] = useState<number | null>(null);
   const [expectedLeadPeriod, setExpectedLeadPeriod] = useState<string>('monthly');
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [tagline, setTagline] = useState("");
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -145,6 +151,9 @@ const EditDiggerProfile = () => {
         setOffersFreEstimates(profile.offers_free_estimates || false);
         setExpectedLeadVolume(profile.expected_lead_volume);
         setExpectedLeadPeriod(profile.expected_lead_period || 'monthly');
+        setPhotoUrl(profile.profile_image_url || "");
+        setTitle(profile.custom_occupation_title || "");
+        setTagline(profile.tagline || "");
         setProfileData(profile);
         
         const categoryIds = profile.digger_categories?.map((dc: any) => dc.category_id) || [];
@@ -195,6 +204,9 @@ const EditDiggerProfile = () => {
           expected_lead_volume: expectedLeadVolume,
           expected_lead_period: expectedLeadPeriod,
           lead_tier_description: leadTierDescription || null,
+          profile_image_url: photoUrl || null,
+          custom_occupation_title: title || null,
+          tagline: tagline || null,
         })
         .eq("id", profileId);
 
@@ -306,7 +318,41 @@ const EditDiggerProfile = () => {
           
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Main Form */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Profile Photo, Title & Tagline Section */}
+              <Card className="p-6">
+                <h2 className="text-xl font-bold mb-4">Profile Branding</h2>
+                <div className="space-y-6">
+                  <ProfilePhotoUpload
+                    currentPhotoUrl={photoUrl}
+                    onPhotoChange={setPhotoUrl}
+                    companyName={businessName}
+                  />
+                  
+                  <ProfileTitleTaglineEditor
+                    title={title}
+                    tagline={tagline}
+                    onTitleChange={setTitle}
+                    onTaglineChange={setTagline}
+                    companyName={businessName}
+                    profession={profession}
+                    keywords={keywords}
+                  />
+                </div>
+              </Card>
+
+              {/* Profile Preview */}
+              <DiggerProfileCard
+                photoUrl={photoUrl}
+                title={title}
+                tagline={tagline}
+                companyName={businessName}
+                location={location}
+                keywords={keywords}
+                profession={profession}
+                offersFreEstimates={offersFreEstimates}
+              />
+
               <form onSubmit={handleSubmit} className="space-y-6" id="profile-form">
             <div className="space-y-2">
               <Label htmlFor="businessName">Business Name *</Label>
@@ -513,7 +559,7 @@ const EditDiggerProfile = () => {
                 </div>
               </RadioGroup>
 
-              <div className="flex items-start space-x-3 p-4 mt-4 rounded-lg border bg-accent/30 hover:bg-accent/50 transition-colors">
+              <div className="flex items-start space-x-3 p-4 mt-4 rounded-lg border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors">
                 <Checkbox 
                   id="free_estimates_edit" 
                   checked={offersFreEstimates}
@@ -521,19 +567,31 @@ const EditDiggerProfile = () => {
                   className="mt-1"
                 />
                 <div className="flex-1">
-                  <Label htmlFor="free_estimates_edit" className="font-semibold cursor-pointer">
-                    Available for Free Estimates
+                  <Label htmlFor="free_estimates_edit" className="font-semibold cursor-pointer flex items-center gap-2">
+                    Offer Free Estimates
+                    <Badge variant="secondary" className="text-xs">Priority Placement</Badge>
                   </Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Free Estimate Charges: $150/$100/$50 (will be rebated against Awards of $5,000 or more, excluding hourly contracts)
-                  </p>
+                  <div className="space-y-2 mt-2">
+                    <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                      ⚠️ $50 charge per free estimate request (both exclusive & non-exclusive leads)
+                    </p>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p className="font-semibold text-foreground">Benefits of offering free estimates:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li><strong>Priority placement</strong> in exclusive lead rotations</li>
+                        <li><strong>Higher conversion rates</strong> - clients are more likely to hire after seeing your estimate</li>
+                        <li><strong>Build trust</strong> - demonstrate your professionalism upfront</li>
+                        <li><strong>Competitive edge</strong> - stand out from diggers who don't offer estimates</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2" id="keywords">
               <div className="flex items-center justify-between">
-                <Label htmlFor="keywords">Keywords</Label>
+                <Label htmlFor="keywords">Keywords / Specialties</Label>
                 <div className="flex items-center gap-2">
                   <Tag className="h-4 w-4 text-muted-foreground" />
                   <Badge variant={keywords.length > 0 ? "default" : "secondary"}>
@@ -541,6 +599,16 @@ const EditDiggerProfile = () => {
                   </Badge>
                 </div>
               </div>
+              
+              <div className="p-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5 space-y-2">
+                <p className="text-sm font-semibold text-foreground">
+                  ⚠️ Important: Lead Matching Criteria
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>You will only receive leads that contain your selected specialties.</strong> To maximize your lead opportunities, we recommend selecting all available specialty keywords related to your profession or creating your own custom keywords below.
+                </p>
+              </div>
+              
               <Textarea
                 id="keywords"
                 value={keywordsInput}

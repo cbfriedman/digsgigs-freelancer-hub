@@ -42,6 +42,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             digsandgigs
           </h1>
           <div className="flex items-center gap-4">
+            {/* Home Button */}
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="font-semibold"
+            >
+              HOME
+            </Button>
             {user && <DiggerProfileSelector />}
             
             {/* Cart Icon */}

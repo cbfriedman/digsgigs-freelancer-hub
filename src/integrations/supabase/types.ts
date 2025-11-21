@@ -17,6 +17,10 @@ export type Database = {
       bids: {
         Row: {
           amount: number
+          award_method: string | null
+          awarded: boolean | null
+          awarded_at: string | null
+          awarded_by: string | null
           created_at: string
           digger_id: string
           gig_id: string
@@ -30,6 +34,10 @@ export type Database = {
         }
         Insert: {
           amount: number
+          award_method?: string | null
+          awarded?: boolean | null
+          awarded_at?: string | null
+          awarded_by?: string | null
           created_at?: string
           digger_id: string
           gig_id: string
@@ -43,6 +51,10 @@ export type Database = {
         }
         Update: {
           amount?: number
+          award_method?: string | null
+          awarded?: boolean | null
+          awarded_at?: string | null
+          awarded_by?: string | null
           created_at?: string
           digger_id?: string
           gig_id?: string
@@ -543,6 +555,7 @@ export type Database = {
           subscription_end_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
+          tagline: string | null
           total_ratings: number | null
           updated_at: string
           user_id: string
@@ -604,6 +617,7 @@ export type Database = {
           subscription_end_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          tagline?: string | null
           total_ratings?: number | null
           updated_at?: string
           user_id: string
@@ -665,6 +679,7 @@ export type Database = {
           subscription_end_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          tagline?: string | null
           total_ratings?: number | null
           updated_at?: string
           user_id?: string
@@ -812,6 +827,9 @@ export type Database = {
       gigs: {
         Row: {
           ai_matched_codes: boolean | null
+          awarded_at: string | null
+          awarded_bid_id: string | null
+          awarded_digger_id: string | null
           budget_max: number | null
           budget_min: number | null
           category_id: string | null
@@ -820,8 +838,10 @@ export type Database = {
           created_at: string
           deadline: string | null
           description: string
+          escrow_requested_by_consumer: boolean | null
           id: string
           images: string[] | null
+          lead_source: string | null
           location: string
           location_lat: number | null
           location_lng: number | null
@@ -829,12 +849,17 @@ export type Database = {
           purchase_count: number | null
           sic_codes: string[] | null
           status: string | null
+          telemarketer_id: string | null
           timeline: string | null
           title: string
           updated_at: string
+          uploaded_by_telemarketer: boolean | null
         }
         Insert: {
           ai_matched_codes?: boolean | null
+          awarded_at?: string | null
+          awarded_bid_id?: string | null
+          awarded_digger_id?: string | null
           budget_max?: number | null
           budget_min?: number | null
           category_id?: string | null
@@ -843,8 +868,10 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description: string
+          escrow_requested_by_consumer?: boolean | null
           id?: string
           images?: string[] | null
+          lead_source?: string | null
           location: string
           location_lat?: number | null
           location_lng?: number | null
@@ -852,12 +879,17 @@ export type Database = {
           purchase_count?: number | null
           sic_codes?: string[] | null
           status?: string | null
+          telemarketer_id?: string | null
           timeline?: string | null
           title: string
           updated_at?: string
+          uploaded_by_telemarketer?: boolean | null
         }
         Update: {
           ai_matched_codes?: boolean | null
+          awarded_at?: string | null
+          awarded_bid_id?: string | null
+          awarded_digger_id?: string | null
           budget_max?: number | null
           budget_min?: number | null
           category_id?: string | null
@@ -866,8 +898,10 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string
+          escrow_requested_by_consumer?: boolean | null
           id?: string
           images?: string[] | null
+          lead_source?: string | null
           location?: string
           location_lat?: number | null
           location_lng?: number | null
@@ -875,11 +909,27 @@ export type Database = {
           purchase_count?: number | null
           sic_codes?: string[] | null
           status?: string | null
+          telemarketer_id?: string | null
           timeline?: string | null
           title?: string
           updated_at?: string
+          uploaded_by_telemarketer?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "gigs_awarded_bid_id_fkey"
+            columns: ["awarded_bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_awarded_digger_id_fkey"
+            columns: ["awarded_digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gigs_category_id_fkey"
             columns: ["category_id"]
@@ -892,6 +942,13 @@ export type Database = {
             columns: ["consumer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1031,6 +1088,116 @@ export type Database = {
           },
         ]
       }
+      lead_exclusivity_extensions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          extension_cost: number
+          extension_hours: number
+          extension_number: number
+          extension_premium_percentage: number
+          id: string
+          payment_status: string
+          queue_entry_id: string
+          stripe_payment_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          extension_cost: number
+          extension_hours?: number
+          extension_number: number
+          extension_premium_percentage?: number
+          id?: string
+          payment_status?: string
+          queue_entry_id: string
+          stripe_payment_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          extension_cost?: number
+          extension_hours?: number
+          extension_number?: number
+          extension_premium_percentage?: number
+          id?: string
+          payment_status?: string
+          queue_entry_id?: string
+          stripe_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_exclusivity_extensions_queue_entry_id_fkey"
+            columns: ["queue_entry_id"]
+            isOneToOne: false
+            referencedRelation: "lead_exclusivity_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_exclusivity_queue: {
+        Row: {
+          awarded_at: string | null
+          base_price: number
+          converted_to_nonexclusive_at: string | null
+          created_at: string | null
+          digger_id: string
+          exclusivity_ends_at: string | null
+          exclusivity_starts_at: string | null
+          gig_id: string
+          id: string
+          lead_source: string
+          queue_position: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          awarded_at?: string | null
+          base_price: number
+          converted_to_nonexclusive_at?: string | null
+          created_at?: string | null
+          digger_id: string
+          exclusivity_ends_at?: string | null
+          exclusivity_starts_at?: string | null
+          gig_id: string
+          id?: string
+          lead_source: string
+          queue_position: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          awarded_at?: string | null
+          base_price?: number
+          converted_to_nonexclusive_at?: string | null
+          created_at?: string | null
+          digger_id?: string
+          exclusivity_ends_at?: string | null
+          exclusivity_starts_at?: string | null
+          gig_id?: string
+          id?: string
+          lead_source?: string
+          queue_position?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_exclusivity_queue_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_exclusivity_queue_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_issues: {
         Row: {
           created_at: string
@@ -1091,36 +1258,63 @@ export type Database = {
       lead_purchases: {
         Row: {
           amount_paid: number
+          award_expires_at: string | null
+          award_extended: boolean | null
+          awarded_at: string | null
+          base_price: number
           consumer_id: string
+          converted_from_exclusive: boolean | null
           digger_id: string
+          exclusivity_queue_position: number | null
           gig_id: string
           id: string
+          is_exclusive: boolean | null
+          lead_source: string | null
           purchase_price: number
           purchased_at: string
           status: string | null
           stripe_payment_id: string | null
+          telemarketer_id: string | null
         }
         Insert: {
           amount_paid: number
+          award_expires_at?: string | null
+          award_extended?: boolean | null
+          awarded_at?: string | null
+          base_price?: number
           consumer_id: string
+          converted_from_exclusive?: boolean | null
           digger_id: string
+          exclusivity_queue_position?: number | null
           gig_id: string
           id?: string
+          is_exclusive?: boolean | null
+          lead_source?: string | null
           purchase_price: number
           purchased_at?: string
           status?: string | null
           stripe_payment_id?: string | null
+          telemarketer_id?: string | null
         }
         Update: {
           amount_paid?: number
+          award_expires_at?: string | null
+          award_extended?: boolean | null
+          awarded_at?: string | null
+          base_price?: number
           consumer_id?: string
+          converted_from_exclusive?: boolean | null
           digger_id?: string
+          exclusivity_queue_position?: number | null
           gig_id?: string
           id?: string
+          is_exclusive?: boolean | null
+          lead_source?: string | null
           purchase_price?: number
           purchased_at?: string
           status?: string | null
           stripe_payment_id?: string | null
+          telemarketer_id?: string | null
         }
         Relationships: [
           {
@@ -1135,6 +1329,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_purchases_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1630,6 +1831,133 @@ export type Database = {
         }
         Relationships: []
       }
+      telemarketer_commissions: {
+        Row: {
+          awarded_at: string
+          commission_amount: number
+          commission_percentage: number | null
+          commission_type: string
+          created_at: string
+          gig_id: string
+          id: string
+          lead_price: number
+          lead_purchase_id: string
+          notes: string | null
+          paid_at: string | null
+          payment_status: string
+          stripe_transfer_id: string | null
+          telemarketer_id: string
+        }
+        Insert: {
+          awarded_at: string
+          commission_amount: number
+          commission_percentage?: number | null
+          commission_type: string
+          created_at?: string
+          gig_id: string
+          id?: string
+          lead_price: number
+          lead_purchase_id: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_status?: string
+          stripe_transfer_id?: string | null
+          telemarketer_id: string
+        }
+        Update: {
+          awarded_at?: string
+          commission_amount?: number
+          commission_percentage?: number | null
+          commission_type?: string
+          created_at?: string
+          gig_id?: string
+          id?: string
+          lead_price?: number
+          lead_purchase_id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_status?: string
+          stripe_transfer_id?: string | null
+          telemarketer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemarketer_commissions_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemarketer_commissions_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemarketer_commissions_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telemarketer_profiles: {
+        Row: {
+          business_name: string
+          commission_percentage: number | null
+          compensation_type: string
+          created_at: string | null
+          email: string
+          flat_fee_amount: number | null
+          id: string
+          paid_commissions: number | null
+          pending_commissions: number | null
+          phone: string
+          stripe_connect_account_id: string | null
+          total_commissions_earned: number | null
+          total_leads_uploaded: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_name: string
+          commission_percentage?: number | null
+          compensation_type?: string
+          created_at?: string | null
+          email: string
+          flat_fee_amount?: number | null
+          id?: string
+          paid_commissions?: number | null
+          pending_commissions?: number | null
+          phone: string
+          stripe_connect_account_id?: string | null
+          total_commissions_earned?: number | null
+          total_leads_uploaded?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_name?: string
+          commission_percentage?: number | null
+          compensation_type?: string
+          created_at?: string | null
+          email?: string
+          flat_fee_amount?: number | null
+          id?: string
+          paid_commissions?: number | null
+          pending_commissions?: number | null
+          phone?: string
+          stripe_connect_account_id?: string | null
+          total_commissions_earned?: number | null
+          total_leads_uploaded?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           bid_id: string
@@ -1886,7 +2214,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "telemarketer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2014,7 +2342,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "telemarketer"],
     },
   },
 } as const

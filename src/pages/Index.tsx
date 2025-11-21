@@ -210,8 +210,8 @@ const Index = () => {
     { 
       name: "Pro Tier (11-50 leads/mo)", 
       subtitle: "Expected: 11-50 leads per month",
-      tagline: "Save 17%",
-      description: "Best Bulk Pricing - Lock in 17% savings",
+      tagline: "Save 25%",
+      description: "Bulk Pricing - Lock in 25% savings vs Bark",
       leadCost: "$100",
       leadLabel: "Lead Cost (HVAC):",
       savingsPercent: 17,
@@ -221,8 +221,8 @@ const Index = () => {
     { 
       name: "Premium Tier (51+ leads/mo)", 
       subtitle: "Expected: 51+ leads per month",
-      tagline: "Save 33%",
-      description: "Best Bulk Pricing - Lock in 33% savings",
+      tagline: "Save 52%",
+      description: "Best Market Price - Beat Bark by $0.50/lead",
       leadCost: "$80",
       leadLabel: "Lead Cost (HVAC):",
       savingsPercent: 33,
