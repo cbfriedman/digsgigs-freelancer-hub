@@ -11,6 +11,7 @@ interface DiggerProfileCardProps {
   location?: string;
   keywords?: string[];
   profession?: string;
+  offersFreEstimates?: boolean;
 }
 
 export const DiggerProfileCard = ({
@@ -20,7 +21,8 @@ export const DiggerProfileCard = ({
   companyName,
   location,
   keywords,
-  profession
+  profession,
+  offersFreEstimates
 }: DiggerProfileCardProps) => {
   return (
     <Card className="w-full">
@@ -72,6 +74,15 @@ export const DiggerProfileCard = ({
           {tagline && (
             <div className="mb-4 p-3 bg-primary/5 rounded-md border border-primary/10">
               <p className="text-sm italic text-foreground">{tagline}</p>
+            </div>
+          )}
+
+          {/* Free Estimates Badge */}
+          {offersFreEstimates && (
+            <div className="mb-4">
+              <Badge variant="default" className="bg-primary">
+                ✓ Offers Free Estimates
+              </Badge>
             </div>
           )}
 

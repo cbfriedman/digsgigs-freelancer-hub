@@ -350,6 +350,7 @@ const EditDiggerProfile = () => {
                 location={location}
                 keywords={keywords}
                 profession={profession}
+                offersFreEstimates={offersFreEstimates}
               />
 
               <form onSubmit={handleSubmit} className="space-y-6" id="profile-form">
@@ -558,7 +559,7 @@ const EditDiggerProfile = () => {
                 </div>
               </RadioGroup>
 
-              <div className="flex items-start space-x-3 p-4 mt-4 rounded-lg border bg-accent/30 hover:bg-accent/50 transition-colors">
+              <div className="flex items-start space-x-3 p-4 mt-4 rounded-lg border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors">
                 <Checkbox 
                   id="free_estimates_edit" 
                   checked={offersFreEstimates}
@@ -566,12 +567,24 @@ const EditDiggerProfile = () => {
                   className="mt-1"
                 />
                 <div className="flex-1">
-                  <Label htmlFor="free_estimates_edit" className="font-semibold cursor-pointer">
-                    Available for Free Estimates
+                  <Label htmlFor="free_estimates_edit" className="font-semibold cursor-pointer flex items-center gap-2">
+                    Offer Free Estimates
+                    <Badge variant="secondary" className="text-xs">Priority Placement</Badge>
                   </Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Free Estimate Charges: $150/$100/$50 (will be rebated against Awards of $5,000 or more, excluding hourly contracts)
-                  </p>
+                  <div className="space-y-2 mt-2">
+                    <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                      ⚠️ $50 charge per free estimate request (both exclusive & non-exclusive leads)
+                    </p>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p className="font-semibold text-foreground">Benefits of offering free estimates:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li><strong>Priority placement</strong> in exclusive lead rotations</li>
+                        <li><strong>Higher conversion rates</strong> - clients are more likely to hire after seeing your estimate</li>
+                        <li><strong>Build trust</strong> - demonstrate your professionalism upfront</li>
+                        <li><strong>Competitive edge</strong> - stand out from diggers who don't offer estimates</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

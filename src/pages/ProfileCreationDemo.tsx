@@ -8,6 +8,8 @@ import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEdito
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
 import { Briefcase } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 export default function ProfileCreationDemo() {
   const [photoUrl, setPhotoUrl] = useState("");
@@ -17,6 +19,7 @@ export default function ProfileCreationDemo() {
   const [location, setLocation] = useState("Los Angeles, CA");
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(["Kitchen Remodeling", "Bathroom Renovation", "Custom Cabinets"]);
   const [profession, setProfession] = useState("Home Remodeling Contractor");
+  const [offersFreEstimates, setOffersFreEstimates] = useState(false);
 
   return (
     <>
@@ -97,6 +100,36 @@ export default function ProfileCreationDemo() {
                       onIndustriesChange={setSelectedIndustries}
                     />
                   </div>
+
+                  {/* Free Estimates Option */}
+                  <div className="flex items-start space-x-3 p-4 rounded-lg border-2 border-primary/30 bg-primary/5">
+                    <Checkbox 
+                      id="free_estimates" 
+                      checked={offersFreEstimates}
+                      onCheckedChange={(checked) => setOffersFreEstimates(checked === true)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="free_estimates" className="font-semibold cursor-pointer flex items-center gap-2">
+                        Offer Free Estimates
+                        <Badge variant="secondary" className="text-xs">Priority Placement</Badge>
+                      </Label>
+                      <div className="space-y-2 mt-2">
+                        <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                          ⚠️ $50 charge per free estimate request (both exclusive & non-exclusive leads)
+                        </p>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p className="font-semibold text-foreground">Benefits:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-2">
+                            <li>Priority placement in exclusive lead rotations</li>
+                            <li>Higher conversion rates with clients</li>
+                            <li>Build trust and credibility</li>
+                            <li>Competitive advantage</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -123,15 +156,16 @@ export default function ProfileCreationDemo() {
 
             {/* Right Column - Preview */}
             <div className="lg:sticky lg:top-8 h-fit">
-              <DiggerProfileCard
-                photoUrl={photoUrl}
-                title={title}
-                tagline={tagline}
-                companyName={companyName}
-                location={location}
-                keywords={selectedIndustries}
-                profession={profession}
-              />
+            <DiggerProfileCard
+              photoUrl={photoUrl}
+              title={title}
+              tagline={tagline}
+              companyName={companyName}
+              location={location}
+              keywords={selectedIndustries}
+              profession={profession}
+              offersFreEstimates={offersFreEstimates}
+            />
             </div>
           </div>
         </div>
