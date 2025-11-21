@@ -63,10 +63,10 @@ const AdminUserManagement = () => {
 
       // Check if user is admin
       const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
+        .from("user_app_roles")
+        .select("app_role")
         .eq("user_id", user.id)
-        .eq("role", "admin")
+        .eq("app_role", "admin")
         .maybeSingle();
 
       if (rolesError) {
@@ -100,10 +100,10 @@ const AdminUserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      // Get all user roles
+      // Get all user app roles
       const { data: userRoles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
+        .from("user_app_roles")
+        .select("user_id, app_role");
 
       if (rolesError) throw rolesError;
 
@@ -116,7 +116,7 @@ const AdminUserManagement = () => {
         created_at: profile.created_at,
         roles: userRoles
           ?.filter(ur => ur.user_id === profile.id)
-          .map(ur => ur.role) || [],
+          .map(ur => ur.app_role) || [],
       }));
 
       setUsers(usersWithRoles);
@@ -131,10 +131,11 @@ const AdminUserManagement = () => {
 
     try {
       const { error } = await supabase
-        .from("user_roles")
+        .from("user_app_roles")
         .insert({
           user_id: selectedUser,
-          role: selectedRole as "admin" | "moderator" | "user",
+          app_role: selectedRole as any,
+          is_active: true,
         });
 
       if (error) {
@@ -163,10 +164,10 @@ const AdminUserManagement = () => {
 
     try {
       const { error } = await supabase
-        .from("user_roles")
+        .from("user_app_roles")
         .delete()
         .eq("user_id", selectedUser)
-        .eq("role", selectedRole as "admin" | "moderator" | "user");
+        .eq("app_role", selectedRole as any);
 
       if (error) throw error;
 
@@ -323,7 +324,9 @@ const AdminUserManagement = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="moderator">Moderator</SelectItem>
+                            <SelectItem value="digger">Digger</SelectItem>
+                            <SelectItem value="gigger">Gigger</SelectItem>
+                            <SelectItem value="telemarketer">Telemarketer</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>

@@ -103,6 +103,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               </Button>
             )}
 
+            {/* Admin Button - only for admins */}
+            {user && userRoles.includes('admin') && (
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/admin/users")}
+                className="font-semibold flex items-center gap-2"
+              >
+                👑 ADMIN
+              </Button>
+            )}
+
             {/* Auth Buttons for non-authenticated users */}
             {!user && (
               <>
