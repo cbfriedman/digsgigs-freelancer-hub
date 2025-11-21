@@ -9,20 +9,48 @@ import { Target, TrendingUp } from "lucide-react";
 const organizeByIndustry = () => {
   const industryMap: Record<string, typeof GOOGLE_CPC_KEYWORDS> = {
     "Legal Services": [],
-    "Insurance & Financial": [],
-    "Home Services": [],
-    "Healthcare": []
+    "Insurance & Financial Services": [],
+    "Construction & Home Services": [],
+    "Medical & Healthcare": [],
+    "Technology Services": [],
+    "Business Services": []
   };
 
   GOOGLE_CPC_KEYWORDS.forEach(item => {
-    if (item.industry.includes("Law") || item.industry.includes("Legal") || item.industry.includes("Lawyer") || item.industry.includes("Attorney")) {
+    const industry = item.industry.toLowerCase();
+    
+    // Legal Services
+    if (industry.includes("law") || industry.includes("legal") || industry.includes("lawyer") || 
+        industry.includes("attorney") || industry.includes("bankruptcy") || industry.includes("immigration") ||
+        industry.includes("employment") || industry.includes("estate planning") || industry.includes("real estate law")) {
       industryMap["Legal Services"].push(item);
-    } else if (item.industry.includes("Insurance") || item.industry.includes("Loan") || item.industry.includes("Mortgage") || item.industry.includes("Trading")) {
-      industryMap["Insurance & Financial"].push(item);
-    } else if (item.industry.includes("Plumb") || item.industry.includes("HVAC") || item.industry.includes("Roof") || item.industry.includes("Contractor")) {
-      industryMap["Home Services"].push(item);
-    } else if (item.industry.includes("Treatment") || item.industry.includes("Rehab") || item.industry.includes("Medical") || item.industry.includes("Health")) {
-      industryMap["Healthcare"].push(item);
+    } 
+    // Insurance & Financial
+    else if (industry.includes("insurance") || industry.includes("loan") || industry.includes("mortgage") || 
+             industry.includes("refinancing") || industry.includes("trading") || industry.includes("business loan")) {
+      industryMap["Insurance & Financial Services"].push(item);
+    } 
+    // Construction & Home Services
+    else if (industry.includes("plumb") || industry.includes("hvac") || industry.includes("roof") || 
+             industry.includes("electrical") || industry.includes("contractor") || industry.includes("kitchen") ||
+             industry.includes("bathroom") || industry.includes("landscaping") || industry.includes("remodeling")) {
+      industryMap["Construction & Home Services"].push(item);
+    } 
+    // Medical & Healthcare
+    else if (industry.includes("treatment") || industry.includes("rehab") || industry.includes("medical") || 
+             industry.includes("health") || industry.includes("dental") || industry.includes("cosmetic surgery") ||
+             industry.includes("surgery")) {
+      industryMap["Medical & Healthcare"].push(item);
+    }
+    // Technology Services
+    else if (industry.includes("web") || industry.includes("seo") || industry.includes("digital") ||
+             industry.includes("marketing") || industry.includes("development")) {
+      industryMap["Technology Services"].push(item);
+    }
+    // Business Services
+    else if (industry.includes("accounting") || industry.includes("cpa") || industry.includes("tax") ||
+             industry.includes("bookkeeping") || industry.includes("payroll")) {
+      industryMap["Business Services"].push(item);
     }
   });
 
