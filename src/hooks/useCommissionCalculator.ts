@@ -10,10 +10,15 @@ import { PRICING_TIERS, INDUSTRY_PRICING, getLeadCostForIndustry } from '@/confi
  *   - Mid-value: $14.50
  *   - High-value: $24.50
  * 
- * - 24-hour exclusive leads: Google CPC × 2.5
+ * - Semi-exclusive leads: Sold to up to 4 people
  *   - Low-value: $30.00
- *   - Mid-value: $87.50
- *   - High-value: $187.50
+ *   - Mid-value: $58.00
+ *   - High-value: $99.00
+ * 
+ * - 24-hour exclusive leads: Premium exclusive access
+ *   - Low-value: $60.00
+ *   - Mid-value: $125.00
+ *   - High-value: $275.00
  * 
  * - Escrow processing fees (optional, paid by digger):
  *   - All tiers: 8% (min $10)
@@ -23,12 +28,12 @@ export const useCommissionCalculator = () => {
    * Calculate lead cost for a specific industry and exclusivity type
    * Returns default mid-value if industry not specified
    * 
-   * @param exclusivity - Type of lead (non-exclusive or exclusive-24h)
+   * @param exclusivity - Type of lead (non-exclusive, semi-exclusive, or exclusive-24h)
    * @param industry - The industry/profession
    * @param isConfirmed - Whether the lead is confirmed (adds 20% premium for non-exclusive)
    */
   const calculateLeadCost = (
-    exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive',
+    exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
     industry?: string,
     isConfirmed: boolean = false
   ): {
@@ -41,6 +46,8 @@ export const useCommissionCalculator = () => {
     // Default to mid-value pricing if no industry specified
     const basePrice = exclusivity === 'non-exclusive' 
       ? INDUSTRY_PRICING[1].nonExclusive 
+      : exclusivity === 'semi-exclusive'
+      ? INDUSTRY_PRICING[1].semiExclusive
       : INDUSTRY_PRICING[1].exclusive24h;
     
     // Add 20% confirmation premium for non-exclusive confirmed leads
@@ -90,7 +97,7 @@ export const useCommissionCalculator = () => {
    */
   const calculateEscrowFee = (
     amount: number,
-    exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive'
+    exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive'
   ): number => {
     const pricingTier = PRICING_TIERS[exclusivity];
     const calculatedFee = amount * pricingTier.escrowProcessingFeeValue;

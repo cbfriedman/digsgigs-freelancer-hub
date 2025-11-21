@@ -29,11 +29,12 @@ export interface IndustryPricing {
   category: IndustryCategory;
   industries: string[];
   nonExclusive: number;  // Bark price - $0.50
-  exclusive24h: number;  // Google CPC × 2.5
+  semiExclusive: number; // Sold to up to 4 people
+  exclusive24h: number;  // Premium exclusive access
 }
 
 export interface PricingTier {
-  id: 'non-exclusive' | 'exclusive-24h';
+  id: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
   name: string;
   exclusivityPeriod: string;
   description: string;
@@ -145,7 +146,8 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Email Marketing',
     ],
     nonExclusive: 7.50,  // Bark avg (~$8) - $0.50
-    exclusive24h: 30.00  // Google CPC avg (~$12) × 2.5
+    semiExclusive: 30.00,  // Sold to up to 4 people
+    exclusive24h: 60.00  // Premium exclusive access
   },
   {
     category: 'mid-value',
@@ -348,7 +350,8 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Urban Planning',
     ],
     nonExclusive: 14.50,  // Bark avg (~$15) - $0.50
-    exclusive24h: 87.50   // Google CPC avg (~$35) × 2.5
+    semiExclusive: 58.00,   // Sold to up to 4 people
+    exclusive24h: 125.00   // Premium exclusive access
   },
   {
     category: 'high-value',
@@ -482,20 +485,36 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Solar Panel Installation',
     ],
     nonExclusive: 24.50,   // Bark avg (~$25) - $0.50
-    exclusive24h: 187.50   // Google CPC avg (~$75) × 2.5
+    semiExclusive: 99.00,   // Sold to up to 4 people
+    exclusive24h: 275.00   // Premium exclusive access
   }
 ];
 
 // Volume-based tier thresholds (NO monthly fees, Bark-based competitive pricing)
 // Exclusivity-based pricing tiers (NO monthly fees)
 // Non-exclusive: Bark price - $0.50
-// 24-hour exclusive: Google CPC × 2.5
-export const PRICING_TIERS: Record<'non-exclusive' | 'exclusive-24h', PricingTier> = {
+// Semi-exclusive: Sold to up to 4 people
+// Exclusive: Premium exclusive access
+export const PRICING_TIERS: Record<'non-exclusive' | 'semi-exclusive' | 'exclusive-24h', PricingTier> = {
   'non-exclusive': {
     id: 'non-exclusive',
     name: 'Non-Exclusive',
     exclusivityPeriod: 'Shared immediately',
     description: 'Most affordable option - Lead shared with other diggers',
+    escrowFee: 'Optional 8% (min $10)',
+    escrowFeeValue: 0.08,
+    escrowProcessingFee: '8%',
+    escrowProcessingFeeValue: 0.08,
+    escrowProcessingMinimum: 10,
+    priceId: null,
+    productId: null,
+    popular: false,
+  },
+  'semi-exclusive': {
+    id: 'semi-exclusive',
+    name: 'Semi-Exclusive',
+    exclusivityPeriod: 'Shared with up to 4 diggers',
+    description: 'Balanced option - Lead shared with up to 3 other diggers',
     escrowFee: 'Optional 8% (min $10)',
     escrowFeeValue: 0.08,
     escrowProcessingFee: '8%',
@@ -524,7 +543,7 @@ export const PRICING_TIERS: Record<'non-exclusive' | 'exclusive-24h', PricingTie
 // Helper function to get lead cost for a specific industry and exclusivity type
 export const getLeadCostForIndustry = (
   industry: string,
-  exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive',
+  exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
   isConfirmed: boolean = false
 ): number => {
   const industryData = INDUSTRY_PRICING.find(pricing =>
@@ -535,6 +554,8 @@ export const getLeadCostForIndustry = (
     // Default to mid-value if industry not found
     const basePrice = exclusivity === 'non-exclusive' 
       ? INDUSTRY_PRICING[1].nonExclusive 
+      : exclusivity === 'semi-exclusive'
+      ? INDUSTRY_PRICING[1].semiExclusive
       : INDUSTRY_PRICING[1].exclusive24h;
     
     // Add 20% confirmation premium for non-exclusive confirmed leads
@@ -547,6 +568,8 @@ export const getLeadCostForIndustry = (
   
   const basePrice = exclusivity === 'non-exclusive' 
     ? industryData.nonExclusive 
+    : exclusivity === 'semi-exclusive'
+    ? industryData.semiExclusive
     : industryData.exclusive24h;
   
   // Add 20% confirmation premium for non-exclusive confirmed leads
@@ -567,7 +590,7 @@ export const getIndustryCategory = (industry: string): IndustryCategory => {
 };
 
 export const getPricingTier = (
-  exclusivity: 'non-exclusive' | 'exclusive-24h' = 'non-exclusive'
+  exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive'
 ): PricingTier => {
   return PRICING_TIERS[exclusivity];
 };
