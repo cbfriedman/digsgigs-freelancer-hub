@@ -1793,6 +1793,79 @@ export type Database = {
         }
         Relationships: []
       }
+      telemarketer_commissions: {
+        Row: {
+          awarded_at: string
+          commission_amount: number
+          commission_percentage: number | null
+          commission_type: string
+          created_at: string
+          gig_id: string
+          id: string
+          lead_price: number
+          lead_purchase_id: string
+          notes: string | null
+          paid_at: string | null
+          payment_status: string
+          stripe_transfer_id: string | null
+          telemarketer_id: string
+        }
+        Insert: {
+          awarded_at: string
+          commission_amount: number
+          commission_percentage?: number | null
+          commission_type: string
+          created_at?: string
+          gig_id: string
+          id?: string
+          lead_price: number
+          lead_purchase_id: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_status?: string
+          stripe_transfer_id?: string | null
+          telemarketer_id: string
+        }
+        Update: {
+          awarded_at?: string
+          commission_amount?: number
+          commission_percentage?: number | null
+          commission_type?: string
+          created_at?: string
+          gig_id?: string
+          id?: string
+          lead_price?: number
+          lead_purchase_id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_status?: string
+          stripe_transfer_id?: string | null
+          telemarketer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemarketer_commissions_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemarketer_commissions_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemarketer_commissions_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telemarketer_profiles: {
         Row: {
           business_name: string
