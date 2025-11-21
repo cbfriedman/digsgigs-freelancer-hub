@@ -10,6 +10,11 @@ export const Top20ExpensiveKeywords = () => {
   const totalIndustries = GOOGLE_CPC_KEYWORDS.length;
   const totalKeywords = GOOGLE_CPC_KEYWORDS.reduce((sum, ind) => sum + ind.keywords.length, 0);
   
+  // Calculate overall average CPC
+  const overallAvgCpc = Math.round(
+    GOOGLE_CPC_KEYWORDS.reduce((sum, ind) => sum + ind.averageCpc, 0) / totalIndustries
+  );
+  
   return (
     <Card className="w-full">
       <CardHeader>
@@ -48,25 +53,23 @@ export const Top20ExpensiveKeywords = () => {
             <div className="bg-muted/50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Exclusive Lead</span>
+                <span className="text-sm font-medium">Avg CPC</span>
               </div>
-              <div className="text-2xl font-bold">
-                ${calculateExclusiveLeadPrice(highestCpc).toFixed(0)}
-              </div>
+              <div className="text-2xl font-bold">${overallAvgCpc}</div>
               <div className="text-xs text-muted-foreground mt-1">
-                90% of Google CPC
+                Across all industries
               </div>
             </div>
             <div className="bg-muted/50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Non-Exclusive</span>
+                <span className="text-sm font-medium">Our Exclusive</span>
               </div>
               <div className="text-2xl font-bold">
-                ${calculateNonExclusiveLeadPrice(highestCpc).toFixed(0)}
+                ${calculateExclusiveLeadPrice(overallAvgCpc).toFixed(0)}
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                20% of Google CPC
+                1.2x Average CPC
               </div>
             </div>
           </div>
@@ -80,16 +83,18 @@ export const Top20ExpensiveKeywords = () => {
             <p className="text-sm text-muted-foreground">
               We limit our diggers to the top 20 most expensive keywords in each industry, ensuring 
               they only receive <span className="font-semibold text-foreground">premium, high-value leads</span>. 
-              Our pricing is tied directly to Google CPC, offering transparency and exceptional value compared 
-              to competitors who charge arbitrary fees regardless of lead quality.
+              Our exclusive leads are priced at just <span className="font-semibold text-foreground">1.2x the average CPC</span> for 
+              that specialty—offering transparency and exceptional value compared to competitors who charge arbitrary 
+              fees regardless of lead quality. Compare our pricing to the highest CPC in each category to see the savings.
             </p>
           </div>
 
           {/* Industries Accordion */}
           <Accordion type="multiple" className="w-full">
             {GOOGLE_CPC_KEYWORDS.map((industry, index) => {
-              const avgCpc = Math.round(industry.keywords.reduce((sum, kw) => sum + kw.cpc, 0) / industry.keywords.length);
-              const highestKeyword = industry.keywords[0];
+              const avgCpc = industry.averageCpc;
+              const highestCpc = Math.max(...industry.keywords.map(kw => kw.cpc));
+              const exclusivePrice = calculateExclusiveLeadPrice(avgCpc);
               
               return (
                 <AccordionItem key={index} value={`industry-${index}`}>
@@ -103,7 +108,8 @@ export const Top20ExpensiveKeywords = () => {
                       </div>
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-muted-foreground">Avg CPC: ${avgCpc}</span>
-                        <span className="text-muted-foreground">Top: ${highestKeyword.cpc}</span>
+                        <span className="text-muted-foreground">Highest: ${highestCpc}</span>
+                        <span className="font-semibold text-primary">Our Price: ${exclusivePrice.toFixed(0)}</span>
                       </div>
                     </div>
                   </AccordionTrigger>
@@ -120,13 +126,13 @@ export const Top20ExpensiveKeywords = () => {
                                 Keyword
                               </th>
                               <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Google CPC
+                                Keyword CPC
                               </th>
                               <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Our Exclusive
+                                Highest in Category
                               </th>
                               <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Non-Exclusive
+                                Our Exclusive (1.2x Avg)
                               </th>
                               <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 Monthly Searches
@@ -138,9 +144,6 @@ export const Top20ExpensiveKeywords = () => {
                           </thead>
                           <tbody className="divide-y divide-border">
                             {industry.keywords.map((keyword, kwIndex) => {
-                              const exclusivePrice = calculateExclusiveLeadPrice(keyword.cpc);
-                              const nonExclusivePrice = calculateNonExclusiveLeadPrice(keyword.cpc);
-                              
                               return (
                                 <tr key={kwIndex} className="hover:bg-muted/30 transition-colors">
                                   <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -149,14 +152,14 @@ export const Top20ExpensiveKeywords = () => {
                                   <td className="px-4 py-3 font-medium">
                                     {keyword.keyword}
                                   </td>
-                                  <td className="px-4 py-3 text-right font-semibold">
+                                  <td className="px-4 py-3 text-right font-medium">
                                     ${keyword.cpc.toLocaleString()}
                                   </td>
-                                  <td className="px-4 py-3 text-right text-green-600 dark:text-green-400 font-semibold">
-                                    ${exclusivePrice.toFixed(0)}
+                                  <td className="px-4 py-3 text-right font-semibold text-muted-foreground">
+                                    ${highestCpc.toLocaleString()}
                                   </td>
-                                  <td className="px-4 py-3 text-right text-blue-600 dark:text-blue-400 font-semibold">
-                                    ${nonExclusivePrice.toFixed(0)}
+                                  <td className="px-4 py-3 text-right text-primary font-bold text-lg">
+                                    ${exclusivePrice.toFixed(0)}
                                   </td>
                                   <td className="px-4 py-3 text-right text-sm text-muted-foreground">
                                     {keyword.searchVolume.toLocaleString()}

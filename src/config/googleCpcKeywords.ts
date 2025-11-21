@@ -503,28 +503,24 @@ export const GOOGLE_CPC_KEYWORDS: IndustryCpcData[] = [
 ];
 
 /**
- * Calculate exclusive lead price based on Google CPC
- * Default: 90% of Google CPC (10% discount)
+ * Calculate exclusive lead price based on average CPC
+ * Formula: 1.2x the average CPC
  */
-export const calculateExclusiveLeadPrice = (
-  googleCpc: number,
-  discountPercentage: number = 10
-): number => {
-  const multiplier = (100 - discountPercentage) / 100;
-  const calculatedPrice = googleCpc * multiplier;
+export const calculateExclusiveLeadPrice = (averageCpc: number): number => {
+  const calculatedPrice = averageCpc * 1.2;
   // Enforce minimum of $80
   return Math.max(80, calculatedPrice);
 };
 
 /**
- * Calculate non-exclusive lead price based on Google CPC
- * Default: 20% of Google CPC
+ * Calculate non-exclusive lead price based on average CPC
+ * Default: 20% of average CPC
  */
 export const calculateNonExclusiveLeadPrice = (
-  googleCpc: number,
+  averageCpc: number,
   percentage: number = 20
 ): number => {
-  const calculatedPrice = googleCpc * (percentage / 100);
+  const calculatedPrice = averageCpc * (percentage / 100);
   // Enforce minimum of $20
   return Math.max(20, calculatedPrice);
 };
@@ -563,6 +559,8 @@ export const getPricingForKeyword = (
   exclusivePrice: number;
   nonExclusivePrice: number;
   searchVolume: number;
+  averageCpc: number;
+  highestCpc: number;
 } | null => {
   const industry = GOOGLE_CPC_KEYWORDS.find(ind => ind.industry === industryName);
   if (!industry) return null;
@@ -570,12 +568,17 @@ export const getPricingForKeyword = (
   const keywordData = industry.keywords.find(kw => kw.keyword === keyword);
   if (!keywordData) return null;
 
+  const averageCpc = industry.averageCpc;
+  const highestCpc = Math.max(...industry.keywords.map(k => k.cpc));
+
   return {
     keyword: keywordData.keyword,
     googleCpc: keywordData.cpc,
-    exclusivePrice: calculateExclusiveLeadPrice(keywordData.cpc),
-    nonExclusivePrice: calculateNonExclusiveLeadPrice(keywordData.cpc),
+    exclusivePrice: calculateExclusiveLeadPrice(averageCpc),
+    nonExclusivePrice: calculateNonExclusiveLeadPrice(averageCpc),
     searchVolume: keywordData.searchVolume,
+    averageCpc,
+    highestCpc,
   };
 };
 
