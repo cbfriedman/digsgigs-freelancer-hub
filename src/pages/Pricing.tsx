@@ -2,8 +2,13 @@ import { Top20ExpensiveKeywords } from "@/components/Top20ExpensiveKeywords";
 import { IndustryProfessionSelector } from "@/components/IndustryProfessionSelector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigation } from "@/components/Navigation";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Pricing() {
+  const navigate = useNavigate();
+
   return (
     <>
       <Navigation />
@@ -18,6 +23,14 @@ export default function Pricing() {
               Fair, transparent pricing based on real market value. Compare our exclusive and non-exclusive 
               lead costs to industry benchmarks—no hidden fees, no surprises.
             </p>
+            <Button 
+              onClick={() => navigate("/profile-creation-demo")}
+              className="mt-4"
+              size="lg"
+            >
+              <Eye className="mr-2 h-5 w-5" />
+              Preview My Profile
+            </Button>
           </div>
           
           <Tabs defaultValue="selector" className="w-full">
