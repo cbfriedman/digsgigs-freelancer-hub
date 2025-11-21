@@ -13,7 +13,15 @@ const organizeByIndustry = () => {
     "Construction & Home Services": [],
     "Medical & Healthcare": [],
     "Technology Services": [],
-    "Business Services": []
+    "Business Services": [],
+    "Automotive Services": [],
+    "Pet Care": [],
+    "Education & Tutoring": [],
+    "Fitness & Wellness": [],
+    "Event Services": [],
+    "Cleaning & Maintenance": [],
+    "Moving & Storage": [],
+    "Beauty & Personal Care": []
   };
 
   GOOGLE_CPC_KEYWORDS.forEach(item => {
@@ -51,6 +59,46 @@ const organizeByIndustry = () => {
     else if (industry.includes("accounting") || industry.includes("cpa") || industry.includes("tax") ||
              industry.includes("bookkeeping") || industry.includes("payroll")) {
       industryMap["Business Services"].push(item);
+    }
+    // Automotive Services
+    else if (industry.includes("auto") || industry.includes("car") || industry.includes("vehicle") ||
+             industry.includes("body") || industry.includes("paint")) {
+      industryMap["Automotive Services"].push(item);
+    }
+    // Pet Care
+    else if (industry.includes("pet") || industry.includes("dog") || industry.includes("cat") ||
+             industry.includes("animal") || industry.includes("grooming")) {
+      industryMap["Pet Care"].push(item);
+    }
+    // Education & Tutoring
+    else if (industry.includes("tutor") || industry.includes("lessons") || industry.includes("music") ||
+             industry.includes("education") || industry.includes("teaching")) {
+      industryMap["Education & Tutoring"].push(item);
+    }
+    // Fitness & Wellness
+    else if (industry.includes("training") || industry.includes("fitness") || industry.includes("massage") ||
+             industry.includes("yoga") || industry.includes("wellness") || industry.includes("coach")) {
+      industryMap["Fitness & Wellness"].push(item);
+    }
+    // Event Services
+    else if (industry.includes("wedding") || industry.includes("event") || industry.includes("party") ||
+             industry.includes("photography") || industry.includes("photographer")) {
+      industryMap["Event Services"].push(item);
+    }
+    // Cleaning & Maintenance
+    else if (industry.includes("cleaning") || industry.includes("clean") || industry.includes("maid") ||
+             industry.includes("janitorial")) {
+      industryMap["Cleaning & Maintenance"].push(item);
+    }
+    // Moving & Storage
+    else if (industry.includes("moving") || industry.includes("movers") || industry.includes("storage") ||
+             industry.includes("relocation")) {
+      industryMap["Moving & Storage"].push(item);
+    }
+    // Beauty & Personal Care
+    else if (industry.includes("hair") || industry.includes("salon") || industry.includes("beauty") ||
+             industry.includes("barber") || industry.includes("stylist")) {
+      industryMap["Beauty & Personal Care"].push(item);
     }
   });
 
