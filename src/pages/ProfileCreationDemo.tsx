@@ -93,8 +93,18 @@ export default function ProfileCreationDemo() {
                   </div>
 
                   {/* Keywords/Specialties */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label>Specialties</Label>
+                    
+                    <div className="p-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5 space-y-2">
+                      <p className="text-sm font-semibold text-foreground">
+                        ⚠️ Important: Lead Matching Criteria
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>You will only receive leads that contain your selected specialties.</strong> To maximize your lead opportunities, we recommend selecting all available specialty keywords related to your profession or creating your own custom keywords.
+                      </p>
+                    </div>
+                    
                     <IndustryMultiSelector
                       selectedIndustries={selectedIndustries}
                       onIndustriesChange={setSelectedIndustries}
