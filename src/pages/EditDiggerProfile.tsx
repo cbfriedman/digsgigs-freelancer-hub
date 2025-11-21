@@ -22,6 +22,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
 import { getLeadTierDescription } from "@/config/pricing";
+import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
+import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
+import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -50,6 +53,9 @@ const EditDiggerProfile = () => {
   const [profileData, setProfileData] = useState<any>(null);
   const [expectedLeadVolume, setExpectedLeadVolume] = useState<number | null>(null);
   const [expectedLeadPeriod, setExpectedLeadPeriod] = useState<string>('monthly');
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [tagline, setTagline] = useState("");
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -145,6 +151,9 @@ const EditDiggerProfile = () => {
         setOffersFreEstimates(profile.offers_free_estimates || false);
         setExpectedLeadVolume(profile.expected_lead_volume);
         setExpectedLeadPeriod(profile.expected_lead_period || 'monthly');
+        setPhotoUrl(profile.profile_image_url || "");
+        setTitle(profile.custom_occupation_title || "");
+        setTagline(profile.tagline || "");
         setProfileData(profile);
         
         const categoryIds = profile.digger_categories?.map((dc: any) => dc.category_id) || [];
@@ -195,6 +204,9 @@ const EditDiggerProfile = () => {
           expected_lead_volume: expectedLeadVolume,
           expected_lead_period: expectedLeadPeriod,
           lead_tier_description: leadTierDescription || null,
+          profile_image_url: photoUrl || null,
+          custom_occupation_title: title || null,
+          tagline: tagline || null,
         })
         .eq("id", profileId);
 
@@ -306,7 +318,40 @@ const EditDiggerProfile = () => {
           
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Main Form */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Profile Photo, Title & Tagline Section */}
+              <Card className="p-6">
+                <h2 className="text-xl font-bold mb-4">Profile Branding</h2>
+                <div className="space-y-6">
+                  <ProfilePhotoUpload
+                    currentPhotoUrl={photoUrl}
+                    onPhotoChange={setPhotoUrl}
+                    companyName={businessName}
+                  />
+                  
+                  <ProfileTitleTaglineEditor
+                    title={title}
+                    tagline={tagline}
+                    onTitleChange={setTitle}
+                    onTaglineChange={setTagline}
+                    companyName={businessName}
+                    profession={profession}
+                    keywords={keywords}
+                  />
+                </div>
+              </Card>
+
+              {/* Profile Preview */}
+              <DiggerProfileCard
+                photoUrl={photoUrl}
+                title={title}
+                tagline={tagline}
+                companyName={businessName}
+                location={location}
+                keywords={keywords}
+                profession={profession}
+              />
+
               <form onSubmit={handleSubmit} className="space-y-6" id="profile-form">
             <div className="space-y-2">
               <Label htmlFor="businessName">Business Name *</Label>
