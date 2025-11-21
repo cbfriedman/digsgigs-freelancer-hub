@@ -112,7 +112,9 @@ export const IndustryProfessionSelector = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
 
   const industryData = organizeByIndustry();
-  const industries = Object.keys(industryData).filter(key => industryData[key].length > 0);
+  const industries = Object.keys(industryData)
+    .filter(key => industryData[key].length > 0)
+    .sort((a, b) => a.localeCompare(b)); // Sort alphabetically
   
   const professions = selectedIndustry ? industryData[selectedIndustry] : [];
   const selectedProfessionData = professions.find(p => p.industry === selectedProfession);
