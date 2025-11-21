@@ -159,6 +159,9 @@ export const BarkComparisonTable = () => {
         <CardTitle className="text-2xl">DigsandGigs vs Bark.com: Cost Per Lead Comparison</CardTitle>
         <CardDescription>
           See how our transparent, exclusivity-based pricing compares to Bark's credit system
+          <span className="block text-xs text-muted-foreground/60 mt-1">
+            Note: Prices fluctuate daily and are subject to change
+          </span>
         </CardDescription>
         <div className="mt-4">
           <label className="text-sm font-medium mb-2 block">Select Industry:</label>
