@@ -88,7 +88,7 @@ const Register = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        navigate("/role-dashboard");
       }
     });
   }, [navigate]);
@@ -238,16 +238,8 @@ const Register = () => {
 
       toast.success("Registration complete! Welcome to DigsandGigs!");
       
-      // Navigate based on primary role
-      if (selectedRoles.has('digger')) {
-        navigate('/pricing');
-      } else if (selectedRoles.has('gigger')) {
-        navigate('/post-gig');
-      } else if (selectedRoles.has('telemarketer')) {
-        navigate('/telemarketer-dashboard');
-      } else {
-        navigate('/');
-      }
+      // Navigate to unified dashboard
+      navigate('/role-dashboard');
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "An error occurred during registration");

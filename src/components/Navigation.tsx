@@ -67,6 +67,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               HOME
             </Button>
 
+            {/* Dashboard Button for authenticated users */}
+            {user && (
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/role-dashboard")}
+                className="font-semibold"
+              >
+                DASHBOARD
+              </Button>
+            )}
+
             {/* Auth Buttons for non-authenticated users */}
             {!user && (
               <>
