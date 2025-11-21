@@ -111,3 +111,6 @@ verify_jwt = false
 [functions.extend-exclusivity]
 verify_jwt = true
 
+[functions.calculate-telemarketer-commission]
+verify_jwt = false
+
