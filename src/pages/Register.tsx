@@ -125,15 +125,44 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Send verification code
-      await sendVerificationCode();
+      setLoading(true);
+      
+      // Automatically send verification code
+      const identifier = verificationMethod === "email" ? email : phone;
+      
+      if (!identifier) {
+        toast.error(`Please provide a ${verificationMethod === "email" ? "email" : "phone number"}`);
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke("send-verification-code", {
+        body: {
+          email: verificationMethod === "email" ? email : undefined,
+          phone: verificationMethod === "sms" ? phone : undefined,
+          method: verificationMethod,
+        },
+      });
+
+      if (error) {
+        console.error("Error sending code:", error);
+        toast.error("Failed to send verification code. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      setCodeSent(true);
+      setResendTimer(60);
+      toast.success(`Verification code sent via ${verificationMethod}`);
       setStep(2); // Move to verification step
+      setLoading(false);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
         toast.error("Please fill in all required fields correctly");
       }
+      setLoading(false);
     }
   };
 
@@ -434,6 +463,35 @@ const Register = () => {
                   </p>
                 </div>
 
+                {/* Verification Method Selection */}
+                <div className="space-y-2 p-4 border rounded-lg bg-accent/5">
+                  <Label className="text-sm font-medium">Verify your account via:</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={verificationMethod === "email" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setVerificationMethod("email")}
+                      className="flex-1"
+                    >
+                      📧 Email
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={verificationMethod === "sms" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setVerificationMethod("sms")}
+                      disabled={!phone}
+                      className="flex-1"
+                    >
+                      📱 SMS {!phone && "(Add phone)"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    We'll send a verification code to continue
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="password">Password *</Label>
                   <div className="relative">
@@ -514,93 +572,61 @@ const Register = () => {
             {step === 2 && (
               <form onSubmit={handleVerificationSubmit} className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2 p-4 bg-accent/50 rounded-lg">
-                    <Label className="text-sm font-medium">Send code via:</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={verificationMethod === "email" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setVerificationMethod("email")}
-                        disabled={!email}
-                      >
-                        📧 Email
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={verificationMethod === "sms" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setVerificationMethod("sms")}
-                        disabled={!phone}
-                      >
-                        📱 SMS
-                      </Button>
-                    </div>
+                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                    <p className="text-sm text-center">
+                      ✅ Verification code sent to{" "}
+                      <strong>{verificationMethod === "email" ? email : phone}</strong>
+                    </p>
                   </div>
 
-                  {!codeSent ? (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        We'll send a 6-digit code to{" "}
-                        <strong>{verificationMethod === "email" ? email : phone}</strong>
-                      </p>
-                      <Button
-                        type="button"
-                        onClick={sendVerificationCode}
-                        disabled={loading}
-                        className="w-full"
-                      >
-                        Send Verification Code
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="verificationCode">Enter 6-Digit Code</Label>
-                        <Input
-                          id="verificationCode"
-                          type="text"
-                          placeholder="000000"
-                          value={verificationCode}
-                          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          maxLength={6}
-                          className="text-center text-2xl tracking-widest font-mono"
-                          autoFocus
-                        />
-                        <p className="text-xs text-muted-foreground text-center">
-                          Code sent to {verificationMethod === "email" ? email : phone}
-                        </p>
-                      </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="verificationCode">Enter 6-Digit Code</Label>
+                    <Input
+                      id="verificationCode"
+                      type="text"
+                      placeholder="000000"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      maxLength={6}
+                      className="text-center text-2xl tracking-widest font-mono"
+                      autoFocus
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                      Check your {verificationMethod === "email" ? "email inbox" : "text messages"}
+                    </p>
+                  </div>
 
-                      <div className="text-center">
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          onClick={sendVerificationCode}
-                          disabled={loading || resendTimer > 0}
-                        >
-                          {resendTimer > 0
-                            ? `Resend code in ${resendTimer}s`
-                            : "Resend code"}
-                        </Button>
-                      </div>
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      onClick={sendVerificationCode}
+                      disabled={loading || resendTimer > 0}
+                    >
+                      {resendTimer > 0
+                        ? `Resend code in ${resendTimer}s`
+                        : "Resend code"}
+                    </Button>
+                  </div>
 
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={loading || verificationCode.length !== 6}
-                      >
-                        Verify & Continue <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loading || verificationCode.length !== 6}
+                  >
+                    Verify & Continue <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </div>
 
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setStep(1)}
+                  onClick={() => {
+                    setStep(1);
+                    setCodeSent(false);
+                    setVerificationCode("");
+                  }}
                   className="w-full"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
