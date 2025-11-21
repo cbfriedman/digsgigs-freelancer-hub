@@ -591,7 +591,7 @@ const EditDiggerProfile = () => {
 
             <div className="space-y-2" id="keywords">
               <div className="flex items-center justify-between">
-                <Label htmlFor="keywords">Keywords</Label>
+                <Label htmlFor="keywords">Keywords / Specialties</Label>
                 <div className="flex items-center gap-2">
                   <Tag className="h-4 w-4 text-muted-foreground" />
                   <Badge variant={keywords.length > 0 ? "default" : "secondary"}>
@@ -599,6 +599,16 @@ const EditDiggerProfile = () => {
                   </Badge>
                 </div>
               </div>
+              
+              <div className="p-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5 space-y-2">
+                <p className="text-sm font-semibold text-foreground">
+                  ⚠️ Important: Lead Matching Criteria
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>You will only receive leads that contain your selected specialties.</strong> To maximize your lead opportunities, we recommend selecting all available specialty keywords related to your profession or creating your own custom keywords below.
+                </p>
+              </div>
+              
               <Textarea
                 id="keywords"
                 value={keywordsInput}
