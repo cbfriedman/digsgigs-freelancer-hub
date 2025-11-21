@@ -1630,6 +1630,60 @@ export type Database = {
         }
         Relationships: []
       }
+      telemarketer_profiles: {
+        Row: {
+          business_name: string
+          commission_percentage: number | null
+          compensation_type: string
+          created_at: string | null
+          email: string
+          flat_fee_amount: number | null
+          id: string
+          paid_commissions: number | null
+          pending_commissions: number | null
+          phone: string
+          stripe_connect_account_id: string | null
+          total_commissions_earned: number | null
+          total_leads_uploaded: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_name: string
+          commission_percentage?: number | null
+          compensation_type?: string
+          created_at?: string | null
+          email: string
+          flat_fee_amount?: number | null
+          id?: string
+          paid_commissions?: number | null
+          pending_commissions?: number | null
+          phone: string
+          stripe_connect_account_id?: string | null
+          total_commissions_earned?: number | null
+          total_leads_uploaded?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_name?: string
+          commission_percentage?: number | null
+          compensation_type?: string
+          created_at?: string | null
+          email?: string
+          flat_fee_amount?: number | null
+          id?: string
+          paid_commissions?: number | null
+          pending_commissions?: number | null
+          phone?: string
+          stripe_connect_account_id?: string | null
+          total_commissions_earned?: number | null
+          total_leads_uploaded?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           bid_id: string
@@ -1886,7 +1940,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "telemarketer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2014,7 +2068,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "telemarketer"],
     },
   },
 } as const
