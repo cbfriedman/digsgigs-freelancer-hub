@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,7 +23,7 @@ interface DiggerProfile {
 }
 
 export const DiggerProfileSelector = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<DiggerProfile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<DiggerProfile | null>(null);
@@ -145,6 +146,16 @@ export const DiggerProfileSelector = () => {
         >
           <Plus className="h-4 w-4 mr-2" />
           Create New Profile
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem
+          onClick={() => signOut()}
+          className="cursor-pointer text-destructive"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
