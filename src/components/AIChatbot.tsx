@@ -128,7 +128,7 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
     setIsLoading(true);
 
     try {
-      const { data: { user, session } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       const sessionId = getSessionId();
       
       // Use session token for authenticated requests, fallback to anon key for public access
@@ -143,7 +143,7 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
         },
         body: JSON.stringify({ 
           messages: newMessages,
-          userId: user?.id,
+          userId: session?.user?.id,
           sessionId: sessionId,
         }),
       });
