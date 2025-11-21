@@ -96,24 +96,24 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               </>
             )}
 
-            {/* Role Switcher - Only show if user has roles */}
+            {/* User ID and Role Icons */}
             {user && userRoles.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    {activeRole ? (
-                      <>
-                        <span>{roleConfig[activeRole].emoji}</span>
-                        <span className="hidden sm:inline">{roleConfig[activeRole].label}</span>
-                        {userRoles.length > 1 && <ChevronDown className="h-4 w-4 opacity-50" />}
-                      </>
-                    ) : (
-                      <>
-                        <User className="h-4 w-4" />
-                        <span className="hidden sm:inline">My Account</span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </>
-                    )}
+                  <Button variant="outline" className="gap-2 px-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {user.email?.split('@')[0] || user.id.slice(0, 8)}
+                      </span>
+                      <div className="flex gap-1">
+                        {userRoles.map((role) => (
+                          <span key={role} className="text-base" title={roleConfig[role].label}>
+                            {roleConfig[role].emoji}
+                          </span>
+                        ))}
+                      </div>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-background border shadow-lg z-50">
