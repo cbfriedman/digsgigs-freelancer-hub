@@ -54,6 +54,7 @@ import PreDemoRegistration from "./pages/PreDemoRegistration";
 import MyProfiles from "./pages/MyProfiles";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
+import TelemarketerDashboard from "./pages/TelemarketerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -147,6 +148,7 @@ const App = () => (
           <Route path="/sitemap.xml" element={<SitemapXML />} />
           <Route path="/escrow-dashboard" element={<EscrowDashboard />} />
           <Route path="/digger-subscription" element={<DiggerSubscription />} />
+          <Route path="/telemarketer-dashboard" element={<TelemarketerDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
