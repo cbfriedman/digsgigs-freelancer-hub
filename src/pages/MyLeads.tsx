@@ -5,11 +5,13 @@ import { Navigation } from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, Calendar, DollarSign, Mail, AlertCircle } from "lucide-react";
+import { Loader2, MapPin, Calendar, DollarSign, Mail, AlertCircle, Lock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import SEOHead from "@/components/SEOHead";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
+import { LeadExclusivityExtension } from "@/components/LeadExclusivityExtension";
+import { LeadCountdownTimer } from "@/components/LeadCountdownTimer";
 import { formatDistanceToNow } from "date-fns";
 
 export default function MyLeads() {
@@ -96,6 +98,8 @@ export default function MyLeads() {
             created_at,
             status,
             deadline,
+            lead_source,
+            awarded_at,
             profiles!gigs_consumer_id_fkey (
               full_name,
               email
@@ -105,6 +109,19 @@ export default function MyLeads() {
             id,
             business_name,
             profile_name
+          ),
+          lead_exclusivity_queue!inner (
+            id,
+            status,
+            exclusivity_starts_at,
+            exclusivity_ends_at,
+            awarded_at,
+            base_price,
+            lead_exclusivity_extensions (
+              extension_number,
+              expires_at,
+              extension_cost
+            )
           )
         `)
         .eq("digger_id", selectedProfile)
@@ -207,24 +224,81 @@ export default function MyLeads() {
           ) : (
             <div className="grid gap-6">
               {leads.map((lead) => {
-                const isExclusive = isExclusivePeriod(lead.purchased_at);
                 const gig = lead.gigs;
                 const consumer = gig?.profiles;
+                const queueEntry = lead.lead_exclusivity_queue?.[0];
+                const isExclusive = lead.is_exclusive && queueEntry?.status === "active";
+                const isAwarded = gig?.awarded_at;
+                const extensions = queueEntry?.lead_exclusivity_extensions || [];
+                const latestExtension = extensions[extensions.length - 1];
+                
+                // Determine if we're in post-award 48hr lock
+                const isPostAwardLocked = isAwarded && !lead.awarded_at && (() => {
+                  const awardTime = new Date(gig.awarded_at).getTime();
+                  const now = new Date().getTime();
+                  const hoursSince = (now - awardTime) / (1000 * 60 * 60);
+                  return hoursSince < 48;
+                })();
+
+                const postAwardExpiresAt = isPostAwardLocked
+                  ? new Date(new Date(gig.awarded_at).getTime() + 48 * 60 * 60 * 1000).toISOString()
+                  : null;
                 
                 return (
                   <Card key={lead.id} className="p-6">
-                    {isExclusive && (
-                      <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium text-primary">
-                          Exclusive Lead - {Math.ceil(24 - ((new Date().getTime() - new Date(lead.purchased_at).getTime()) / (1000 * 60 * 60)))} hours remaining
-                        </span>
+                    {/* Post-Award 48hr Lock Banner */}
+                    {isPostAwardLocked && (
+                      <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Lock className="h-4 w-4 text-yellow-600" />
+                            <span className="text-sm font-medium text-yellow-700">
+                              Lead Awarded - 48hr Lock Period
+                            </span>
+                          </div>
+                          {postAwardExpiresAt && (
+                            <LeadCountdownTimer 
+                              expiresAt={postAwardExpiresAt}
+                              label="Lock ends in"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Exclusivity Banner */}
+                    {isExclusive && !isPostAwardLocked && (
+                      <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium text-primary">
+                              Exclusive Lead
+                              {extensions.length > 0 && ` (Extended ${extensions.length}x)`}
+                            </span>
+                          </div>
+                          {queueEntry?.exclusivity_ends_at && (
+                            <div className="flex items-center gap-3">
+                              <LeadCountdownTimer 
+                                expiresAt={queueEntry.exclusivity_ends_at}
+                                label="Expires in"
+                                onExpire={() => loadLeads()}
+                              />
+                              <LeadExclusivityExtension
+                                queueEntryId={queueEntry.id}
+                                basePrice={queueEntry.base_price}
+                                currentExtensionNumber={extensions.length}
+                                onSuccess={loadLeads}
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                     
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <h3 className="text-xl font-semibold">
                             {gig?.title || "Untitled Gig"}
                           </h3>
@@ -234,6 +308,22 @@ export default function MyLeads() {
                           {isExclusive && (
                             <Badge variant="outline" className="border-primary text-primary">
                               Exclusive
+                            </Badge>
+                          )}
+                          {!isExclusive && lead.is_exclusive && (
+                            <Badge variant="outline">
+                              Was Exclusive
+                            </Badge>
+                          )}
+                          {gig?.lead_source && (
+                            <Badge variant="secondary">
+                              {gig.lead_source === "telemarketing" ? "📞 Telemarketing" : "🌐 Internet"}
+                            </Badge>
+                          )}
+                          {isPostAwardLocked && (
+                            <Badge variant="outline" className="border-yellow-500 text-yellow-700">
+                              <Lock className="h-3 w-3 mr-1" />
+                              Locked
                             </Badge>
                           )}
                         </div>
@@ -270,10 +360,12 @@ export default function MyLeads() {
                           </div>
                         </div>
 
-                        {/* Consumer Contact Info (only for exclusive leads) */}
-                        {isExclusive && consumer && (
+                        {/* Consumer Contact Info (only for exclusive/awarded leads) */}
+                        {(isExclusive || lead.awarded_at) && consumer && (
                           <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                            <h4 className="font-medium mb-2 text-sm">Contact Information</h4>
+                            <h4 className="font-medium mb-2 text-sm">
+                              {isExclusive ? "Contact Information (Exclusive Access)" : "Contact Information"}
+                            </h4>
                             <div className="grid gap-2 text-sm">
                               {consumer.full_name && (
                                 <div className="flex items-center gap-2">
@@ -292,19 +384,41 @@ export default function MyLeads() {
                             </div>
                           </div>
                         )}
+
+                        {/* Extension History */}
+                        {extensions.length > 0 && (
+                          <div className="mt-4 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                            <h4 className="font-medium mb-2 text-sm">Extension History</h4>
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              {extensions.map((ext: any, idx: number) => (
+                                <div key={idx} className="flex justify-between">
+                                  <span>Extension #{ext.extension_number}</span>
+                                  <span>${ext.extension_cost.toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       <div className="text-right ml-4">
                         <p className="text-sm text-muted-foreground mb-1">Lead Cost</p>
-                        <p className="text-2xl font-bold">${lead.purchase_price}</p>
+                        <p className="text-2xl font-bold">${lead.purchase_price.toFixed(2)}</p>
+                        {extensions.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            +${extensions.reduce((sum: number, ext: any) => sum + ext.extension_cost, 0).toFixed(2)} extensions
+                          </p>
+                        )}
                       </div>
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button asChild className="flex-1">
-                        <Link to={`/gig/${lead.gig_id}`}>View Full Details</Link>
+                      <Button asChild className="flex-1" disabled={isPostAwardLocked}>
+                        <Link to={`/gig/${lead.gig_id}`}>
+                          {isPostAwardLocked ? "Locked - View After 48hrs" : "View Full Details"}
+                        </Link>
                       </Button>
-                      {!isExclusive && (
+                      {!isExclusive && !isPostAwardLocked && (
                         <LeadReturnDialog 
                           leadPurchaseId={lead.id}
                           gigTitle={gig?.title || ""}
