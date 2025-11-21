@@ -145,8 +145,8 @@ export const IndustryProfessionSelector = () => {
             DigsandGigs Advantage
           </h4>
           <p className="text-sm text-muted-foreground">
-            Our exclusive leads are priced at just <span className="font-semibold text-foreground">1.2x the average CPC</span> for 
-            your specialty—offering transparent, value-based pricing. Compare to the highest CPC in your category to see the savings.
+            Compare our exclusive and non-exclusive lead pricing to the highest market costs in your industry. 
+            See real value at a glance—transparent pricing that makes sense for your business.
           </p>
         </div>
 
@@ -230,14 +230,14 @@ export const IndustryProfessionSelector = () => {
               <div className="text-2xl font-bold">${highestCpc}</div>
             </div>
             <div className="bg-primary/10 p-4 rounded-lg border-2 border-primary">
-              <div className="text-sm text-muted-foreground mb-1">Our Exclusive</div>
+              <div className="text-sm text-muted-foreground mb-1">Our Exclusive Lead</div>
               <div className="text-2xl font-bold text-primary">${exclusivePrice.toFixed(0)}</div>
-              <div className="text-xs text-muted-foreground">1.2x Avg CPC</div>
+              <div className="text-xs text-muted-foreground">24-hour priority</div>
             </div>
             <div className="bg-muted/50 p-4 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">Non-Exclusive</div>
+              <div className="text-sm text-muted-foreground mb-1">Non-Exclusive Lead</div>
               <div className="text-2xl font-bold">${nonExclusivePrice.toFixed(0)}</div>
-              <div className="text-xs text-muted-foreground">20% of Avg CPC</div>
+              <div className="text-xs text-muted-foreground">Shared access</div>
             </div>
           </div>
         )}

@@ -12,11 +12,11 @@ export default function Pricing() {
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold">
-              Google CPC-Based Pricing Research
+              Industry-Specific Lead Pricing
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              We've analyzed the top 20 most expensive Google Ads keywords across all industries 
-              to offer transparent, value-based pricing that beats competitors who charge arbitrary fees.
+              Fair, transparent pricing based on real market value. Compare our exclusive and non-exclusive 
+              lead costs to industry benchmarks—no hidden fees, no surprises.
             </p>
           </div>
           
