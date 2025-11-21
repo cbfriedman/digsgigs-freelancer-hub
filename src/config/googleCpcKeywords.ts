@@ -578,3 +578,70 @@ export const getPricingForKeyword = (
     searchVolume: keywordData.searchVolume,
   };
 };
+
+/**
+ * Get the top 20 most expensive CPC keywords across ALL industries
+ */
+export const getTop20MostExpensiveKeywords = (): Array<{
+  keyword: string;
+  cpc: number;
+  industry: string;
+  exclusivePrice: number;
+  nonExclusivePrice: number;
+  searchVolume: number;
+}> => {
+  const allKeywords: Array<{
+    keyword: string;
+    cpc: number;
+    industry: string;
+    exclusivePrice: number;
+    nonExclusivePrice: number;
+    searchVolume: number;
+  }> = [];
+
+  // Collect all keywords from all industries
+  GOOGLE_CPC_KEYWORDS.forEach(industry => {
+    industry.keywords.forEach(keyword => {
+      allKeywords.push({
+        keyword: keyword.keyword,
+        cpc: keyword.cpc,
+        industry: industry.industry,
+        exclusivePrice: calculateExclusiveLeadPrice(keyword.cpc),
+        nonExclusivePrice: calculateNonExclusiveLeadPrice(keyword.cpc),
+        searchVolume: keyword.searchVolume,
+      });
+    });
+  });
+
+  // Sort by CPC descending and return top 20
+  return allKeywords
+    .sort((a, b) => b.cpc - a.cpc)
+    .slice(0, 20);
+};
+
+/**
+ * TOP 20 MOST EXPENSIVE KEYWORDS ACROSS ALL INDUSTRIES
+ * Updated: 2025
+ */
+export const TOP_20_MOST_EXPENSIVE_KEYWORDS = [
+  { rank: 1, keyword: 'mesothelioma lawyer', cpc: 935, industry: 'Personal Injury Law', searchVolume: 8100 },
+  { rank: 2, keyword: 'structured settlement', cpc: 875, industry: 'Personal Injury Law', searchVolume: 4400 },
+  { rank: 3, keyword: 'car accident lawyer', cpc: 520, industry: 'Personal Injury Law', searchVolume: 27100 },
+  { rank: 4, keyword: 'truck accident lawyer', cpc: 485, industry: 'Personal Injury Law', searchVolume: 18100 },
+  { rank: 5, keyword: 'motorcycle accident lawyer', cpc: 465, industry: 'Personal Injury Law', searchVolume: 14800 },
+  { rank: 6, keyword: 'personal injury attorney', cpc: 445, industry: 'Personal Injury Law', searchVolume: 33100 },
+  { rank: 7, keyword: 'wrongful death lawyer', cpc: 425, industry: 'Personal Injury Law', searchVolume: 9900 },
+  { rank: 8, keyword: 'slip and fall lawyer', cpc: 410, industry: 'Personal Injury Law', searchVolume: 12100 },
+  { rank: 9, keyword: 'medical malpractice lawyer', cpc: 395, industry: 'Personal Injury Law', searchVolume: 8100 },
+  { rank: 10, keyword: 'birth injury lawyer', cpc: 385, industry: 'Personal Injury Law', searchVolume: 5400 },
+  { rank: 11, keyword: 'DUI lawyer', cpc: 385, industry: 'Criminal Defense Law', searchVolume: 49500 },
+  { rank: 12, keyword: 'health insurance quotes', cpc: 385, industry: 'Health Insurance', searchVolume: 74000 },
+  { rank: 13, keyword: 'brain injury lawyer', cpc: 375, industry: 'Personal Injury Law', searchVolume: 4400 },
+  { rank: 14, keyword: 'affordable health insurance', cpc: 365, industry: 'Health Insurance', searchVolume: 40500 },
+  { rank: 15, keyword: 'DWI attorney', cpc: 365, industry: 'Criminal Defense Law', searchVolume: 22200 },
+  { rank: 16, keyword: 'spinal cord injury lawyer', cpc: 365, industry: 'Personal Injury Law', searchVolume: 3600 },
+  { rank: 17, keyword: 'work injury lawyer', cpc: 355, industry: 'Personal Injury Law', searchVolume: 8100 },
+  { rank: 18, keyword: 'individual health insurance', cpc: 345, industry: 'Health Insurance', searchVolume: 33100 },
+  { rank: 19, keyword: 'criminal defense lawyer', cpc: 345, industry: 'Criminal Defense Law', searchVolume: 27100 },
+  { rank: 20, keyword: 'construction accident lawyer', cpc: 345, industry: 'Personal Injury Law', searchVolume: 5400 },
+] as const;
