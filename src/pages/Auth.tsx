@@ -494,15 +494,23 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center relative">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="absolute left-4 top-4"
+            className="absolute left-4 top-4 z-10"
             onClick={() => navigate("/")}
           >
             <Home className="w-4 h-4 mr-2" />
             Home
           </Button>
-          <CardTitle className="text-3xl font-bold cursor-pointer" onClick={() => navigate("/")}>
+          
+          <h1 
+            className="absolute left-1/2 -translate-x-1/2 top-4 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate("/")}
+          >
+            digsandgigs
+          </h1>
+          
+          <CardTitle className="text-3xl font-bold mt-8">
             {pageTitle}
           </CardTitle>
           <CardDescription>
