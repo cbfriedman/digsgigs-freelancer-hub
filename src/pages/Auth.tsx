@@ -798,6 +798,24 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <div className="space-y-4">
+                <div className="p-4 bg-primary/10 border border-primary/20 rounded-md mb-4">
+                  <p className="text-sm font-semibold mb-2">Create Your Account</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Our new registration process lets you select multiple roles and customize your experience.
+                  </p>
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={() => navigate("/register")}
+                  >
+                    Go to Registration →
+                  </Button>
+                </div>
+                
+                <Separator />
+                
+                <p className="text-xs text-muted-foreground text-center">Or quick sign up with social login:</p>
+                
                 <div className="space-y-2">
                   <Label>I am a</Label>
                   <RadioGroup value={userType} onValueChange={(value: "digger" | "consumer") => setUserType(value)}>
