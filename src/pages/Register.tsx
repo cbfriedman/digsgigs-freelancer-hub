@@ -294,7 +294,7 @@ const Register = () => {
               Digs and Gigs
             </h1>
             
-            <CardTitle className="text-2xl font-bold mt-8">
+            <CardTitle className="text-2xl font-bold mt-16">
               {step === 1 && "Create Your Account"}
               {step === 2 && "Create Your Account"}
               {step > 2 && currentRole === 'digger' && "Create Your Dig"}
