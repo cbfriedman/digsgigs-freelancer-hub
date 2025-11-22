@@ -13,14 +13,11 @@ import { Navigation } from "@/components/Navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { VerificationForm } from "@/components/VerificationForm";
 
 const GigRegistrationDemo = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const [verifiedContact, setVerifiedContact] = useState<{ email: string }>({ email: "" });
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -67,12 +64,6 @@ const GigRegistrationDemo = () => {
       setLoading(false);
       setShowPreview(true);
     }, 500);
-  };
-
-  const handleVerification = (data: { email: string }) => {
-    setIsVerified(true);
-    setVerifiedContact(data);
-    toast.success("Email verified! You can now post your gig.");
   };
 
   const handleApprove = () => {
@@ -123,32 +114,11 @@ const GigRegistrationDemo = () => {
       <Navigation />
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
-        {!isVerified ? (
-          <>
-            <Alert className="mb-6 bg-primary/10 border-primary/30">
-              <AlertDescription className="text-center font-medium">
-                🔒 Verification Required - Please verify your contact information to continue
-              </AlertDescription>
-            </Alert>
-
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/")}
-              className="mb-6"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-
-            <VerificationForm onVerified={handleVerification} />
-          </>
-        ) : (
-          <>
-            <Alert className="mb-6 bg-primary/10 border-primary/30">
-              <AlertDescription className="text-center font-medium">
-                🧪 Demo Mode - This is a preview of the gig posting form. Fill it out to see how your gig will appear to diggers.
-              </AlertDescription>
-            </Alert>
+        <Alert className="mb-6 bg-primary/10 border-primary/30">
+          <AlertDescription className="text-center font-medium">
+            🧪 Demo Mode - This is a preview of the gig posting form. Fill it out to see how your gig will appear to diggers.
+          </AlertDescription>
+        </Alert>
 
         <Button
           variant="ghost"
@@ -213,25 +183,19 @@ const GigRegistrationDemo = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">
-                  <MapPin className="inline-block h-4 w-4 mr-1" />
-                  Location *
-                </Label>
+                <Label htmlFor="location">Location *</Label>
                 <Input
                   id="location"
-                  placeholder="e.g., 123 Main St, New York, NY"
+                  placeholder="City, State or ZIP Code"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter the full address where the work will be performed
-                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="budget_min">Budget Min ($)</Label>
+                  <Label htmlFor="budget_min">Minimum Budget ($)</Label>
                   <Input
                     id="budget_min"
                     type="number"
@@ -239,28 +203,26 @@ const GigRegistrationDemo = () => {
                     value={formData.budget_min}
                     onChange={(e) => setFormData({ ...formData, budget_min: e.target.value })}
                     min="0"
-                    step="0.01"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="budget_max">Budget Max ($)</Label>
+                  <Label htmlFor="budget_max">Maximum Budget ($)</Label>
                   <Input
                     id="budget_max"
                     type="number"
-                    placeholder="2000"
+                    placeholder="5000"
                     value={formData.budget_max}
                     onChange={(e) => setFormData({ ...formData, budget_max: e.target.value })}
                     min="0"
-                    step="0.01"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="timeline">Timeline (Optional)</Label>
+                <Label htmlFor="timeline">Timeline</Label>
                 <Input
                   id="timeline"
-                  placeholder="e.g., 2-3 weeks"
+                  placeholder="e.g., Within 2 weeks"
                   value={formData.timeline}
                   onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
                 />
@@ -273,7 +235,6 @@ const GigRegistrationDemo = () => {
                   type="date"
                   value={formData.deadline}
                   onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
                 />
               </div>
 
@@ -281,65 +242,75 @@ const GigRegistrationDemo = () => {
                 <Label htmlFor="contact_preferences">Contact Preferences (Optional)</Label>
                 <Textarea
                   id="contact_preferences"
-                  placeholder="e.g., Best time to call, preferred communication method"
+                  placeholder="e.g., Prefer calls after 6 PM, available on weekends"
                   value={formData.contact_preferences}
                   onChange={(e) => setFormData({ ...formData, contact_preferences: e.target.value })}
-                  rows={3}
+                  className="min-h-[80px]"
                 />
               </div>
 
-              <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
-                <Label className="text-base font-semibold">Proposal Preferences</Label>
+              <div className="space-y-3">
+                <Label>Proposal Preferences</Label>
                 
-                <div className="flex items-start gap-2">
+                <div className="flex items-center space-x-2">
                   <Checkbox
                     id="fixedPriceOnly"
                     checked={formData.fixedPriceOnly}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked) => 
                       setFormData({ ...formData, fixedPriceOnly: checked as boolean })
                     }
                   />
-                  <Label htmlFor="fixedPriceOnly" className="text-sm leading-relaxed cursor-pointer">
-                    Fixed prices only proposal acceptable
+                  <Label 
+                    htmlFor="fixedPriceOnly" 
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    Fixed price proposals only
                   </Label>
                 </div>
 
-                <div className="flex items-start gap-2">
+                <div className="flex items-center space-x-2">
                   <Checkbox
                     id="openToHourly"
                     checked={formData.openToHourly}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked) => 
                       setFormData({ ...formData, openToHourly: checked as boolean })
                     }
                   />
-                  <Label htmlFor="openToHourly" className="text-sm leading-relaxed cursor-pointer">
-                    Open to hourly rates proposals
+                  <Label 
+                    htmlFor="openToHourly" 
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    Open to hourly rate proposals
                   </Label>
                 </div>
 
-                <div className="flex items-start gap-2">
+                <div className="flex items-center space-x-2">
                   <Checkbox
                     id="acceptFreeEstimate"
                     checked={formData.acceptFreeEstimate}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked) => 
                       setFormData({ ...formData, acceptFreeEstimate: checked as boolean })
                     }
                   />
-                  <Label htmlFor="acceptFreeEstimate" className="text-sm leading-relaxed cursor-pointer">
-                    Would you like to receive free estimate if offered?
+                  <Label 
+                    htmlFor="acceptFreeEstimate" 
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    Accept free estimate requests
                   </Label>
                 </div>
               </div>
 
-              <div className="flex items-start gap-2">
+              <div className="flex items-start space-x-2 p-4 border rounded-lg bg-accent/5">
                 <Checkbox
-                  id="terms"
+                  id="acceptTerms"
                   checked={formData.acceptTerms}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={(checked) => 
                     setFormData({ ...formData, acceptTerms: checked as boolean })
                   }
+                  required
                 />
-                <Label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer">
+                <Label htmlFor="acceptTerms" className="text-sm font-normal cursor-pointer leading-relaxed">
                   I agree to the{" "}
                   <a href="/terms-of-service" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                     Terms of Service
@@ -354,8 +325,6 @@ const GigRegistrationDemo = () => {
             </form>
           </CardContent>
         </Card>
-          </>
-        )}
       </div>
 
       {/* Preview Dialog */}
