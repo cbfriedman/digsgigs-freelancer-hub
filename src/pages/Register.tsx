@@ -288,13 +288,13 @@ const Register = () => {
             </Button>
             
             <h1 
-              className="absolute left-1/2 -translate-x-1/2 top-2 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+              className="absolute left-1/2 -translate-x-1/2 top-0 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate("/")}
             >
               Digs and Gigs
             </h1>
             
-            <CardTitle className="text-2xl font-bold mt-64">
+            <CardTitle className="text-2xl font-bold mt-96">
               {step === 1 && "Create Your Account"}
               {step === 2 && "Create Your Account"}
               {step > 2 && currentRole === 'digger' && "Create Your Dig"}
