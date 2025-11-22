@@ -10,6 +10,14 @@ import { INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, IndustryCate
 import { LeadPricingChart } from "@/components/LeadPricingChart";
 import { lookupCPC, findSimilarKeywords } from "@/utils/cpcLookup";
 
+interface IndustryLeadQuantities {
+  [industry: string]: {
+    nonExclusive: number;
+    semiExclusive: number;
+    exclusive24h: number;
+  };
+}
+
 interface IndustryMultiSelectorProps {
   selectedIndustries: string[];
   onIndustriesChange: (industries: string[]) => void;
@@ -20,8 +28,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   const [open, setOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
-  const [leadsPerMonth, setLeadsPerMonth] = useState<string>("");
-  const [exclusiveLeadsPerMonth, setExclusiveLeadsPerMonth] = useState<string>("");
+  const [industryLeadQuantities, setIndustryLeadQuantities] = useState<IndustryLeadQuantities>({});
 
   const toggleCategory = (categoryName: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -49,10 +56,38 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
       ? selectedIndustries.filter(i => i !== industry)
       : [...selectedIndustries, industry];
     onIndustriesChange(newSelected);
+    
+    // Initialize quantities for new industries
+    if (!selectedIndustries.includes(industry)) {
+      setIndustryLeadQuantities(prev => ({
+        ...prev,
+        [industry]: {
+          nonExclusive: 0,
+          semiExclusive: 0,
+          exclusive24h: 0
+        }
+      }));
+    }
   };
 
   const removeIndustry = (industry: string) => {
     onIndustriesChange(selectedIndustries.filter(i => i !== industry));
+    // Clean up quantities for removed industry
+    setIndustryLeadQuantities(prev => {
+      const newQuantities = { ...prev };
+      delete newQuantities[industry];
+      return newQuantities;
+    });
+  };
+
+  const updateIndustryQuantity = (industry: string, type: 'nonExclusive' | 'semiExclusive' | 'exclusive24h', value: number) => {
+    setIndustryLeadQuantities(prev => ({
+      ...prev,
+      [industry]: {
+        ...(prev[industry] || { nonExclusive: 0, semiExclusive: 0, exclusive24h: 0 }),
+        [type]: value
+      }
+    }));
   };
 
   // Filter groups based on search query
@@ -99,35 +134,56 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   const selectedCategories = getSelectedCategories();
   const hasMultipleCategories = selectedCategories.size > 1;
 
-  // Calculate total cost based on selected industries and lead quantities (both types)
+  // Calculate total cost based on per-industry quantities
   const calculatedCost = useMemo(() => {
-    if ((!leadsPerMonth && !exclusiveLeadsPerMonth) || selectedIndustries.length === 0) return null;
+    if (selectedIndustries.length === 0) return null;
     
-    const nonExclusiveLeads = leadsPerMonth ? parseInt(leadsPerMonth) : 0;
-    const exclusiveLeads = exclusiveLeadsPerMonth ? parseInt(exclusiveLeadsPerMonth) : 0;
+    let nonExclusiveCost = 0;
+    let semiExclusiveCost = 0;
+    let exclusiveCost = 0;
+    let nonExclusiveLeads = 0;
+    let semiExclusiveLeads = 0;
+    let exclusiveLeads = 0;
     
-    if ((isNaN(nonExclusiveLeads) || nonExclusiveLeads < 0) && (isNaN(exclusiveLeads) || exclusiveLeads < 0)) return null;
-    if (nonExclusiveLeads === 0 && exclusiveLeads === 0) return null;
+    selectedIndustries.forEach(industry => {
+      const quantities = industryLeadQuantities[industry] || { nonExclusive: 0, semiExclusive: 0, exclusive24h: 0 };
+      
+      const neQuantity = quantities.nonExclusive || 0;
+      const seQuantity = quantities.semiExclusive || 0;
+      const exQuantity = quantities.exclusive24h || 0;
+      
+      if (neQuantity > 0) {
+        nonExclusiveCost += getLeadCostForIndustry(industry, 'non-exclusive') * neQuantity;
+        nonExclusiveLeads += neQuantity;
+      }
+      
+      if (seQuantity > 0) {
+        semiExclusiveCost += getLeadCostForIndustry(industry, 'semi-exclusive') * seQuantity;
+        semiExclusiveLeads += seQuantity;
+      }
+      
+      if (exQuantity > 0) {
+        exclusiveCost += getLeadCostForIndustry(industry, 'exclusive-24h') * exQuantity;
+        exclusiveLeads += exQuantity;
+      }
+    });
     
-    const nonExclusiveCost = selectedIndustries.reduce((sum, industry) => {
-      const costPerLead = getLeadCostForIndustry(industry, 'non-exclusive');
-      return sum + (costPerLead * nonExclusiveLeads);
-    }, 0);
+    const totalCost = nonExclusiveCost + semiExclusiveCost + exclusiveCost;
+    const totalLeads = nonExclusiveLeads + semiExclusiveLeads + exclusiveLeads;
     
-    const exclusiveCost = selectedIndustries.reduce((sum, industry) => {
-      const costPerLead = getLeadCostForIndustry(industry, 'exclusive-24h');
-      return sum + (costPerLead * exclusiveLeads);
-    }, 0);
+    if (totalCost === 0) return null;
     
     return { 
       nonExclusiveCost, 
+      semiExclusiveCost,
       exclusiveCost,
-      totalCost: nonExclusiveCost + exclusiveCost,
+      totalCost,
       nonExclusiveLeads, 
+      semiExclusiveLeads,
       exclusiveLeads,
-      totalLeads: nonExclusiveLeads + exclusiveLeads
+      totalLeads
     };
-  }, [leadsPerMonth, exclusiveLeadsPerMonth, selectedIndustries]);
+  }, [selectedIndustries, industryLeadQuantities]);
 
   return (
     <div className="space-y-3">
@@ -378,37 +434,79 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
             </div>
           </div>
 
-          {/* Lead Quantity Selector and Cost Calculator */}
+          {/* Per-Industry Lead Quantity Selectors */}
           <div className="space-y-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">How many non-exclusive leads would you like per month?</label>
-              <Input
-                type="number"
-                min="0"
-                placeholder="Enter number of leads..."
-                value={leadsPerMonth}
-                onChange={(e) => setLeadsPerMonth(e.target.value)}
-                className="w-full"
-              />
-            </div>
+            <p className="text-sm font-medium">Set lead quantities for each industry:</p>
+            {selectedIndustries.map(industry => {
+              const quantities = industryLeadQuantities[industry] || { nonExclusive: 0, semiExclusive: 0, exclusive24h: 0 };
+              const nonExclusiveCost = getLeadCostForIndustry(industry, 'non-exclusive');
+              const semiExclusiveCost = getLeadCostForIndustry(industry, 'semi-exclusive');
+              const exclusiveCost = getLeadCostForIndustry(industry, 'exclusive-24h');
+              
+              return (
+                <Card key={industry} className="p-3 space-y-2 bg-muted/30">
+                  <div className="font-medium text-sm flex items-center justify-between">
+                    <span>{industry}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => removeIndustry(industry)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">
+                        Non-Exclusive (${nonExclusiveCost}/lead)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={quantities.nonExclusive || ''}
+                        onChange={(e) => updateIndustryQuantity(industry, 'nonExclusive', parseInt(e.target.value) || 0)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">
+                        Semi-Exclusive (${semiExclusiveCost}/lead)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={quantities.semiExclusive || ''}
+                        onChange={(e) => updateIndustryQuantity(industry, 'semiExclusive', parseInt(e.target.value) || 0)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">
+                        24hr Exclusive (${exclusiveCost}/lead)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={quantities.exclusive24h || ''}
+                        onChange={(e) => updateIndustryQuantity(industry, 'exclusive24h', parseInt(e.target.value) || 0)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">How many 24hr exclusive leads would you like per month?</label>
-              <Input
-                type="number"
-                min="0"
-                placeholder="Enter number of leads..."
-                value={exclusiveLeadsPerMonth}
-                onChange={(e) => setExclusiveLeadsPerMonth(e.target.value)}
-                className="w-full"
-              />
-              <div className="text-xs text-muted-foreground">
-                Priority placement with 24-hour exclusivity
-              </div>
-            </div>
-
-            {/* Cost Calculator Display */}
-            {calculatedCost && (
+          {/* Cost Calculator Display */}
+          {calculatedCost && (
               <Card className="p-4 bg-primary/5 border-primary/20">
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -426,6 +524,21 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                         <span className="text-sm">Non-Exclusive Cost:</span>
                         <span className="text-sm font-medium">
                           ${calculatedCost.nonExclusiveCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  
+                  {calculatedCost.semiExclusiveLeads > 0 && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Semi-Exclusive Leads:</span>
+                        <span className="text-sm">{calculatedCost.semiExclusiveLeads}/month</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Semi-Exclusive Cost:</span>
+                        <span className="text-sm font-medium">
+                          ${calculatedCost.semiExclusiveCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                     </>
@@ -458,9 +571,8 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     </p>
                   </div>
                 </div>
-              </Card>
-            )}
-          </div>
+            </Card>
+          )}
 
           {/* Multiple Categories Warning */}
           {hasMultipleCategories && (
