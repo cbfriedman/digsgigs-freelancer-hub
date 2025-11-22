@@ -105,11 +105,9 @@ const App = () => (
         <AuthRecoveryGuard />
         <Routes>
           {/* Public routes - no authentication required */}
+          <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/register" element={<Register />} />
-          
-          {/* All other routes require authentication and verification */}
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/pre-demo-registration" element={<ProtectedRoute><PreDemoRegistration /></ProtectedRoute>} />
           <Route path="/digger-registration" element={<ProtectedRoute><DiggerRegistration /></ProtectedRoute>} />
           <Route path="/digger-registration-demo" element={<ProtectedRoute><DiggerRegistrationDemo /></ProtectedRoute>} />
