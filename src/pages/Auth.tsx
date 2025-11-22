@@ -476,16 +476,32 @@ const Auth = () => {
   const handleSocialLogin = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/`,
           queryParams: {
             selected_roles: selectedRoles.join(','),
           },
+          skipBrowserRedirect: true, // Prevent automatic redirect
         },
       });
+      
       if (error) throw error;
+      
+      // Open OAuth URL in a popup window
+      if (data?.url) {
+        const width = 500;
+        const height = 600;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+        
+        window.open(
+          data.url,
+          'oauth-popup',
+          `width=${width},height=${height},left=${left},top=${top},popup=yes`
+        );
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in');
     } finally {
