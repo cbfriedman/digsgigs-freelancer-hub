@@ -278,9 +278,9 @@ const Register = () => {
         <Card className="w-full max-w-2xl">
           <CardHeader className="text-center relative">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="absolute left-4 top-4"
+              className="absolute left-4 top-4 z-10"
               onClick={() => navigate("/")}
             >
               <Home className="h-4 w-4 mr-2" />
