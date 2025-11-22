@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Top20ExpensiveKeywords } from "@/components/Top20ExpensiveKeywords";
 import { IndustryProfessionSelector } from "@/components/IndustryProfessionSelector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,18 +5,11 @@ import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 
 export default function Pricing() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
-
-  useEffect(() => {
-    // Redirect to registration if not logged in
-    if (!loading && !user) {
-      navigate("/register");
-    }
-  }, [user, loading, navigate]);
+  const { loading } = useProtectedRoute({ requireVerified: true });
 
   return (
     <>
