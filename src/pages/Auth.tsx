@@ -82,14 +82,24 @@ const Auth = () => {
       if (hash.includes('error=') || search.includes('error=')) {
         const errorDescription = new URLSearchParams(hash.substring(1)).get('error_description') || 
                                 new URLSearchParams(search).get('error_description') || '';
+        const errorCode = new URLSearchParams(hash.substring(1)).get('error') || 
+                         new URLSearchParams(search).get('error') || '';
         
         // Handle password reset specific errors
         if (hash.includes('type=recovery') || errorDescription.toLowerCase().includes('expired')) {
           setShowResetForm(true);
           toast.error('Reset link expired. Please request a new one.');
         }
-        // Handle OAuth errors (Google, etc.)
-        else if (hash.includes('error=access_denied') || errorDescription.toLowerCase().includes('oauth')) {
+        // Handle OAuth errors (Google, etc.) - check for common OAuth error codes
+        else if (
+          errorCode === 'access_denied' || 
+          errorCode === 'server_error' ||
+          errorCode === 'temporarily_unavailable' ||
+          errorCode === 'invalid_request' ||
+          errorCode === 'unauthorized_client' ||
+          errorDescription.toLowerCase().includes('oauth') ||
+          errorDescription.toLowerCase().includes('google')
+        ) {
           toast.error('Authentication with Google failed. Please check your Google OAuth configuration or try email signup.');
         }
         // Generic fallback
@@ -571,6 +581,8 @@ const Auth = () => {
               
               const errorDescription = new URLSearchParams(hash.substring(1)).get('error_description') || 
                                       new URLSearchParams(search).get('error_description') || '';
+              const errorCode = new URLSearchParams(hash.substring(1)).get('error') || 
+                               new URLSearchParams(search).get('error') || '';
               
               // Password reset error
               if (hash.includes('type=recovery') || errorDescription.toLowerCase().includes('expired')) {
@@ -584,8 +596,16 @@ const Auth = () => {
                 );
               }
               
-              // OAuth error (Google, etc.)
-              if (hash.includes('error=access_denied') || errorDescription.toLowerCase().includes('oauth')) {
+              // OAuth error (Google, etc.) - check for common OAuth error codes
+              if (
+                errorCode === 'access_denied' || 
+                errorCode === 'server_error' ||
+                errorCode === 'temporarily_unavailable' ||
+                errorCode === 'invalid_request' ||
+                errorCode === 'unauthorized_client' ||
+                errorDescription.toLowerCase().includes('oauth') ||
+                errorDescription.toLowerCase().includes('google')
+              ) {
                 return (
                   <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
                     <p className="text-sm font-semibold text-destructive mb-1">Google Authentication Failed</p>
