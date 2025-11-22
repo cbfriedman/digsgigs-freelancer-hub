@@ -500,6 +500,41 @@ export type Database = {
           },
         ]
       }
+      digger_professions: {
+        Row: {
+          created_at: string
+          digger_profile_id: string
+          id: string
+          keywords: string[] | null
+          profession_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          digger_profile_id: string
+          id?: string
+          keywords?: string[] | null
+          profession_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          digger_profile_id?: string
+          id?: string
+          keywords?: string[] | null
+          profession_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digger_professions_digger_profile_id_fkey"
+            columns: ["digger_profile_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digger_profiles: {
         Row: {
           availability: string | null
@@ -691,8 +726,43 @@ export type Database = {
           {
             foreignKeyName: "digger_profiles_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digger_specialties: {
+        Row: {
+          created_at: string
+          id: string
+          keywords: string[] | null
+          profession_id: string
+          specialty_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          keywords?: string[] | null
+          profession_id: string
+          specialty_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          keywords?: string[] | null
+          profession_id?: string
+          specialty_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digger_specialties_profession_id_fkey"
+            columns: ["profession_id"]
+            isOneToOne: false
+            referencedRelation: "digger_professions"
             referencedColumns: ["id"]
           },
         ]
