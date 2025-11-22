@@ -65,7 +65,7 @@ const Auth = () => {
   
   const pageTitle = defaultUserType === "digger" ? "Digger Portal" : 
                     redirectTo === "/post-gig" ? "Post a Gig" : 
-                    "DiggsAndGiggs";
+                    "Digs and Gigs";
 
   useEffect(() => {
     // Initialize recovery mode from URL and handle expired links

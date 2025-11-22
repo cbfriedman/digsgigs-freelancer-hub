@@ -80,7 +80,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            digsandgigs
+            Digs and Gigs
           </h1>
           <div className="flex items-center gap-4">
             {/* Home Button */}

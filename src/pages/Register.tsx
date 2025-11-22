@@ -291,7 +291,7 @@ const Register = () => {
               className="absolute left-1/2 -translate-x-1/2 top-4 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate("/")}
             >
-              digsandgigs
+              Digs and Gigs
             </h1>
             
             <CardTitle className="text-2xl font-bold mt-8">
