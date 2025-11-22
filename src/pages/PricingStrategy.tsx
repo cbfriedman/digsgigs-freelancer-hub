@@ -4,11 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, TrendingDown, Target, Users, DollarSign, Award, AlertCircle, Lightbulb, Calculator } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 
 const PricingStrategy = () => {
   const navigate = useNavigate();
-  useProtectedRoute({ requireVerified: true });
 
   const categoryAverages = [
     { category: "Web Development", avgRate: "$75-150/hr", competitive: "$100-125/hr" },
