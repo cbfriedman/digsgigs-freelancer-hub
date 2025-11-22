@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DiggerRegistration from "./pages/DiggerRegistration";
@@ -103,58 +104,61 @@ const App = () => (
           <BrowserRouter>
         <AuthRecoveryGuard />
         <Routes>
-          <Route path="/" element={<Index />} />
+          {/* Public routes - no authentication required */}
           <Route path="/auth" element={<Auth />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/pre-demo-registration" element={<PreDemoRegistration />} />
-          <Route path="/digger-registration" element={<DiggerRegistration />} />
-          <Route path="/digger-registration-demo" element={<DiggerRegistrationDemo />} />
-          <Route path="/gig-registration-demo" element={<GigRegistrationDemo />} />
-          <Route path="/edit-profile" element={<EditDiggerProfile />} />
-          <Route path="/edit-digger-profile" element={<EditDiggerProfile />} />
-          <Route path="/edit-digger-profile/:profileId" element={<EditDiggerProfile />} />
-          <Route path="/my-profiles" element={<MyProfiles />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/checkout-success" element={<CheckoutSuccess />} />
-          <Route path="/post-gig" element={<PostGig />} />
-          <Route path="/browse-diggers" element={<BrowseDiggers />} />
-          <Route path="/browse-gigs" element={<BrowseGigs />} />
-          <Route path="/digger/:id" element={<DiggerDetail />} />
-          <Route path="/gig/:id" element={<GigDetail />} />
-          <Route path="/my-leads" element={<MyLeads />} />
-          <Route path="/my-bids" element={<MyBids />} />
-          <Route path="/my-gigs" element={<MyGigs />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/subscription" element={<Subscription />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/pricing-strategy" element={<PricingStrategy />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/email-preferences" element={<EmailPreferences />} />
-          <Route path="/lead-limits" element={<LeadLimits />} />
-          <Route path="/digger-guide" element={<DiggerGuide />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/profile-completion" element={<ProfileCompletion />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/notification-preferences" element={<AdminNotificationPreferences />} />
-          <Route path="/admin/users" element={<AdminUserManagement />} />
-          <Route path="/saved-searches" element={<SavedSearches />} />
-          <Route path="/test-ai-matching" element={<TestAIMatching />} />
-          <Route path="/e2e-test" element={<E2ETestSuite />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
-          <Route path="/admin/blog" element={<AdminBlog />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/sitemap" element={<Sitemap />} />
-          <Route path="/sitemap.xml" element={<SitemapXML />} />
-          <Route path="/escrow-dashboard" element={<EscrowDashboard />} />
-          <Route path="/digger-subscription" element={<DiggerSubscription />} />
-          <Route path="/telemarketer-dashboard" element={<TelemarketerDashboard />} />
-          <Route path="/profile-demo" element={<ProfileCreationDemo />} />
-          <Route path="/role-dashboard" element={<RoleDashboard />} />
+          
+          {/* All other routes require authentication and verification */}
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/pre-demo-registration" element={<ProtectedRoute><PreDemoRegistration /></ProtectedRoute>} />
+          <Route path="/digger-registration" element={<ProtectedRoute><DiggerRegistration /></ProtectedRoute>} />
+          <Route path="/digger-registration-demo" element={<ProtectedRoute><DiggerRegistrationDemo /></ProtectedRoute>} />
+          <Route path="/gig-registration-demo" element={<ProtectedRoute><GigRegistrationDemo /></ProtectedRoute>} />
+          <Route path="/edit-profile" element={<ProtectedRoute><EditDiggerProfile /></ProtectedRoute>} />
+          <Route path="/edit-digger-profile" element={<ProtectedRoute><EditDiggerProfile /></ProtectedRoute>} />
+          <Route path="/edit-digger-profile/:profileId" element={<ProtectedRoute><EditDiggerProfile /></ProtectedRoute>} />
+          <Route path="/my-profiles" element={<ProtectedRoute><MyProfiles /></ProtectedRoute>} />
+          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+          <Route path="/checkout-success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
+          <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
+          <Route path="/browse-diggers" element={<ProtectedRoute><BrowseDiggers /></ProtectedRoute>} />
+          <Route path="/browse-gigs" element={<ProtectedRoute><BrowseGigs /></ProtectedRoute>} />
+          <Route path="/digger/:id" element={<ProtectedRoute><DiggerDetail /></ProtectedRoute>} />
+          <Route path="/gig/:id" element={<ProtectedRoute><GigDetail /></ProtectedRoute>} />
+          <Route path="/my-leads" element={<ProtectedRoute><MyLeads /></ProtectedRoute>} />
+          <Route path="/my-bids" element={<ProtectedRoute><MyBids /></ProtectedRoute>} />
+          <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
+          <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
+          <Route path="/how-it-works" element={<ProtectedRoute><HowItWorks /></ProtectedRoute>} />
+          <Route path="/terms" element={<ProtectedRoute><TermsOfService /></ProtectedRoute>} />
+          <Route path="/privacy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
+          <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+          <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
+          <Route path="/pricing-strategy" element={<ProtectedRoute><PricingStrategy /></ProtectedRoute>} />
+          <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/email-preferences" element={<ProtectedRoute><EmailPreferences /></ProtectedRoute>} />
+          <Route path="/lead-limits" element={<ProtectedRoute><LeadLimits /></ProtectedRoute>} />
+          <Route path="/digger-guide" element={<ProtectedRoute><DiggerGuide /></ProtectedRoute>} />
+          <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+          <Route path="/profile-completion" element={<ProtectedRoute><ProfileCompletion /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/notification-preferences" element={<ProtectedRoute><AdminNotificationPreferences /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute><AdminUserManagement /></ProtectedRoute>} />
+          <Route path="/saved-searches" element={<ProtectedRoute><SavedSearches /></ProtectedRoute>} />
+          <Route path="/test-ai-matching" element={<ProtectedRoute><TestAIMatching /></ProtectedRoute>} />
+          <Route path="/e2e-test" element={<ProtectedRoute><E2ETestSuite /></ProtectedRoute>} />
+          <Route path="/blog" element={<ProtectedRoute><Blog /></ProtectedRoute>} />
+          <Route path="/blog/:slug" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
+          <Route path="/admin/blog" element={<ProtectedRoute><AdminBlog /></ProtectedRoute>} />
+          <Route path="/faq" element={<ProtectedRoute><FAQ /></ProtectedRoute>} />
+          <Route path="/sitemap" element={<ProtectedRoute><Sitemap /></ProtectedRoute>} />
+          <Route path="/sitemap.xml" element={<ProtectedRoute><SitemapXML /></ProtectedRoute>} />
+          <Route path="/escrow-dashboard" element={<ProtectedRoute><EscrowDashboard /></ProtectedRoute>} />
+          <Route path="/digger-subscription" element={<ProtectedRoute><DiggerSubscription /></ProtectedRoute>} />
+          <Route path="/telemarketer-dashboard" element={<ProtectedRoute><TelemarketerDashboard /></ProtectedRoute>} />
+          <Route path="/profile-demo" element={<ProtectedRoute><ProfileCreationDemo /></ProtectedRoute>} />
+          <Route path="/role-dashboard" element={<ProtectedRoute><RoleDashboard /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

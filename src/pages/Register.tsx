@@ -16,7 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import DiggerRoleForm from "@/components/registration/DiggerRoleForm";
 import GiggerRoleForm from "@/components/registration/GiggerRoleForm";
 import TelemarketerRoleForm from "@/components/registration/TelemarketerRoleForm";
-import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 
 // SECURITY: Input validation schemas
 const basicInfoSchema = z.object({
@@ -73,7 +72,13 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Redirect authenticated users away from registration
-  useProtectedRoute({ redirectIfAuthenticated: true });
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/role-dashboard');
+      }
+    });
+  }, [navigate]);
 
   // Step 1: Basic Info
   const [fullName, setFullName] = useState("");
