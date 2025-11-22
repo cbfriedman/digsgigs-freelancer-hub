@@ -76,7 +76,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
   }, [searchQuery]);
 
   // Get highest lead cost from selected industries
-  const getHighestLeadCost = (exclusivity: 'non-exclusive' | 'exclusive-24h'): number => {
+  const getHighestLeadCost = (exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h'): number => {
     if (selectedIndustries.length === 0) {
       // Default to least expensive (low-value category minimum)
       return INDUSTRY_PRICING[0][exclusivity]; // Low-value services
@@ -183,13 +183,13 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
             {/* Value Legend */}
             <div className="mt-3 pt-3 border-t space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Value Tiers:</p>
-              <div className="flex flex-wrap gap-3 text-xs">
+              <div className="flex flex-col gap-2 text-xs">
                 <div className="flex items-center gap-1.5">
                   <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 px-1.5 py-0">
                     LV
                   </Badge>
                   <span className="text-muted-foreground">
-                    Low Value: ${INDUSTRY_PRICING[0].nonExclusive}-${INDUSTRY_PRICING[0].exclusive24h}/lead
+                    Low Value: ${INDUSTRY_PRICING[0].nonExclusive} (NE) • ${INDUSTRY_PRICING[0].semiExclusive} (SE) • ${INDUSTRY_PRICING[0].exclusive24h} (24h Ex)
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -197,7 +197,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     MV
                   </Badge>
                   <span className="text-muted-foreground">
-                    Mid Value: ${INDUSTRY_PRICING[1].nonExclusive}-${INDUSTRY_PRICING[1].exclusive24h}/lead
+                    Mid Value: ${INDUSTRY_PRICING[1].nonExclusive} (NE) • ${INDUSTRY_PRICING[1].semiExclusive} (SE) • ${INDUSTRY_PRICING[1].exclusive24h} (24h Ex)
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -205,7 +205,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     HV
                   </Badge>
                   <span className="text-muted-foreground">
-                    High Value: ${INDUSTRY_PRICING[2].nonExclusive}-${INDUSTRY_PRICING[2].exclusive24h}/lead
+                    High Value: ${INDUSTRY_PRICING[2].nonExclusive} (NE) • ${INDUSTRY_PRICING[2].semiExclusive} (SE) • ${INDUSTRY_PRICING[2].exclusive24h} (24h Ex)
                   </span>
                 </div>
               </div>
@@ -285,9 +285,10 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                 {/* Category Industries */}
                 {expandedCategories.has(group.categoryName) && (
                   <div className="bg-accent/5 divide-y">
-                    {group.industries.map((industry) => {
+                  {group.industries.map((industry) => {
                       const isSelected = selectedIndustries.includes(industry.name);
                       const nonExclusiveCost = getLeadCostForIndustry(industry.name, 'non-exclusive');
+                      const semiExclusiveCost = getLeadCostForIndustry(industry.name, 'semi-exclusive');
                       const exclusiveCost = getLeadCostForIndustry(industry.name, 'exclusive-24h');
                       return (
                         <div
@@ -311,6 +312,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                             </Badge>
                             <div className="text-xs text-muted-foreground whitespace-nowrap">
                               <div className="font-medium">Non-Exclusive: ${nonExclusiveCost}</div>
+                              <div>Semi-Exclusive: ${semiExclusiveCost}</div>
                               <div>24hr Exclusive: ${exclusiveCost}</div>
                             </div>
                             <Button
@@ -360,10 +362,14 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
             <p className="text-sm font-semibold text-center">
               Your lead costs (based on highest value selection):
             </p>
-            <div className="flex justify-center gap-4 text-xs">
+            <div className="flex justify-center gap-3 text-xs flex-wrap">
               <div>
                 <span className="text-muted-foreground">Non-Exclusive:</span>{' '}
                 <strong className="text-primary">${getHighestLeadCost('non-exclusive')}</strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Semi-Exclusive:</span>{' '}
+                <strong className="text-primary">${getHighestLeadCost('semi-exclusive')}</strong>
               </div>
               <div>
                 <span className="text-muted-foreground">24hr Exclusive:</span>{' '}
