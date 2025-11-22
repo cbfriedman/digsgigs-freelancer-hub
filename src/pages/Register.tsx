@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import DiggerRoleForm from "@/components/registration/DiggerRoleForm";
 import GiggerRoleForm from "@/components/registration/GiggerRoleForm";
 import TelemarketerRoleForm from "@/components/registration/TelemarketerRoleForm";
+import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 
 // SECURITY: Input validation schemas
 const basicInfoSchema = z.object({
@@ -66,19 +67,15 @@ interface RoleFormData {
 
 const Register = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useProtectedRoute({ 
+    requireVerified: true, 
+    redirectTo: '/auth' 
+  });
+  
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Redirect authenticated users away from registration
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/role-dashboard');
-      }
-    });
-  }, [navigate]);
 
   // Step 1: Basic Info
   const [fullName, setFullName] = useState("");
@@ -94,14 +91,9 @@ const Register = () => {
   const [roleFormData, setRoleFormData] = useState<RoleFormData>({});
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
 
-  // Check if user is already authenticated
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/role-dashboard");
-      }
-    });
-  }, [navigate]);
+  if (authLoading) {
+    return null;
+  }
 
   const roleArray = Array.from(selectedRoles);
   const totalSteps = 2 + roleArray.length; // Basic Info + Role Selection + Role Forms
