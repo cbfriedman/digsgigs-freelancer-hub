@@ -549,8 +549,9 @@ export const getLeadCostForIndustry = (
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
   isConfirmed: boolean = false
 ): number => {
+  const normalizedIndustry = industry.toLowerCase().trim();
   const industryData = INDUSTRY_PRICING.find(pricing =>
-    pricing.industries.includes(industry)
+    pricing.industries.some(ind => ind.toLowerCase().trim() === normalizedIndustry)
   );
   
   if (!industryData) {
@@ -585,8 +586,9 @@ export const getLeadCostForIndustry = (
 
 // Helper function to get industry category
 export const getIndustryCategory = (industry: string): IndustryCategory => {
+  const normalizedIndustry = industry.toLowerCase().trim();
   const industryData = INDUSTRY_PRICING.find(pricing =>
-    pricing.industries.includes(industry)
+    pricing.industries.some(ind => ind.toLowerCase().trim() === normalizedIndustry)
   );
   
   return industryData?.category || 'mid-value';
