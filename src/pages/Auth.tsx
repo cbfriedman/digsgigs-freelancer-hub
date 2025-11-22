@@ -511,22 +511,23 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
+      {/* Fixed Home Button - Always Visible */}
+      <Link to="/" className="fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          className="shadow-lg"
+          type="button"
+        >
+          <Home className="w-4 h-4 mr-2" />
+          Home
+        </Button>
+      </Link>
+
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center relative">
-          <Link to="/">
-            <Button
-              variant="outline"
-              size="sm"
-              className="absolute left-4 top-4 z-10"
-              type="button"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Home
-            </Button>
-          </Link>
-          
+        <CardHeader className="text-center">
           <Link to="/" className="block">
-            <CardTitle className="text-3xl font-bold mt-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity">
+            <CardTitle className="text-3xl font-bold mt-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity">
               {pageTitle}
             </CardTitle>
           </Link>
