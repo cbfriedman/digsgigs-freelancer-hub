@@ -79,9 +79,23 @@ const Auth = () => {
         recoveryModeRef.current = true;
         setShowNewPasswordForm(true);
       }
-      if (hash.includes('error=access_denied') || hash.includes('error=') || search.includes('error=')) {
-        setShowResetForm(true);
-        toast.error('Reset link expired. Please request a new one.');
+      if (hash.includes('error=') || search.includes('error=')) {
+        const errorDescription = new URLSearchParams(hash.substring(1)).get('error_description') || 
+                                new URLSearchParams(search).get('error_description') || '';
+        
+        // Handle password reset specific errors
+        if (hash.includes('type=recovery') || errorDescription.toLowerCase().includes('expired')) {
+          setShowResetForm(true);
+          toast.error('Reset link expired. Please request a new one.');
+        }
+        // Handle OAuth errors (Google, etc.)
+        else if (hash.includes('error=access_denied') || errorDescription.toLowerCase().includes('oauth')) {
+          toast.error('Authentication with Google failed. Please check your Google OAuth configuration or try email signup.');
+        }
+        // Generic fallback
+        else {
+          toast.error('Authentication error. Please try again or contact support.');
+        }
       }
     }
 
