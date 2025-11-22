@@ -459,8 +459,11 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                   
                   <div className="grid grid-cols-1 gap-2">
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">
-                        Non-Exclusive (${nonExclusiveCost}/lead)
+                      <label className="text-xs text-muted-foreground flex justify-between">
+                        <span>Non-Exclusive (${nonExclusiveCost}/lead)</span>
+                        <span className="font-semibold text-foreground">
+                          Total: ${((quantities.nonExclusive || 0) * nonExclusiveCost).toFixed(2)}
+                        </span>
                       </label>
                       <Input
                         type="number"
@@ -473,8 +476,11 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     </div>
                     
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">
-                        Semi-Exclusive (${semiExclusiveCost}/lead)
+                      <label className="text-xs text-muted-foreground flex justify-between">
+                        <span>Semi-Exclusive (${semiExclusiveCost}/lead)</span>
+                        <span className="font-semibold text-foreground">
+                          Total: ${((quantities.semiExclusive || 0) * semiExclusiveCost).toFixed(2)}
+                        </span>
                       </label>
                       <Input
                         type="number"
@@ -487,8 +493,11 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                     </div>
                     
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">
-                        24hr Exclusive (${exclusiveCost}/lead)
+                      <label className="text-xs text-muted-foreground flex justify-between">
+                        <span>24hr Exclusive (${exclusiveCost}/lead)</span>
+                        <span className="font-semibold text-foreground">
+                          Total: ${((quantities.exclusive24h || 0) * exclusiveCost).toFixed(2)}
+                        </span>
                       </label>
                       <Input
                         type="number"
@@ -498,6 +507,20 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                         onChange={(e) => updateIndustryQuantity(industry, 'exclusive24h', parseInt(e.target.value) || 0)}
                         className="h-8 text-sm"
                       />
+                    </div>
+                  </div>
+                  
+                  {/* Industry Total */}
+                  <div className="pt-2 mt-2 border-t border-border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold">Industry Total:</span>
+                      <span className="text-sm font-bold text-primary">
+                        ${(
+                          (quantities.nonExclusive || 0) * nonExclusiveCost +
+                          (quantities.semiExclusive || 0) * semiExclusiveCost +
+                          (quantities.exclusive24h || 0) * exclusiveCost
+                        ).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </Card>
