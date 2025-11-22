@@ -359,8 +359,8 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="text-sm">{industry.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                <span className="font-bold">${nonExclusiveCost}</span> NE • <span className="font-bold">${semiExclusiveCost}</span> SE • <span className="font-bold">${exclusiveCost}</span> 24h Ex
+                              <span className="text-sm font-semibold text-foreground">
+                                ${nonExclusiveCost} NE • ${semiExclusiveCost} SE • ${exclusiveCost} 24h Ex
                               </span>
                             </div>
                           </div>
