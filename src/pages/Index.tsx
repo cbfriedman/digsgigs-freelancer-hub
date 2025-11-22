@@ -367,7 +367,7 @@ const Index = () => {
             ) : (
               <>
                 <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
-                <Button variant="hero" onClick={() => navigate("/auth?redirect=/post-gig")}>Get Started</Button>
+                <Button variant="hero" onClick={() => navigate("/register")}>Get Started</Button>
               </>
             )}
           </div>
@@ -560,7 +560,7 @@ const Index = () => {
             {/* For Clients */}
             <div 
               className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-accent/50 hover:-translate-y-1"
-              onClick={() => navigate("/auth?redirect=/post-gig")}
+              onClick={() => navigate("/register")}
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
