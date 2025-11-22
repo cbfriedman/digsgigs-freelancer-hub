@@ -68,8 +68,7 @@ interface RoleFormData {
 const Register = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useProtectedRoute({ 
-    requireVerified: true, 
-    redirectTo: '/auth' 
+    redirectIfAuthenticated: true
   });
   
   const [step, setStep] = useState(1);
