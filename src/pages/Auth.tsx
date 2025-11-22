@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Home } from "lucide-react";
 import { z } from "zod";
@@ -61,6 +62,7 @@ const Auth = () => {
   const redirectTo = searchParams.get("redirect") || "/role-dashboard";
   const defaultUserType = searchParams.get("type") as "digger" | "consumer" | "telemarketer" || "consumer";
   const [userType, setUserType] = useState<"digger" | "consumer" | "telemarketer">(defaultUserType);
+  const [selectedRoles, setSelectedRoles] = useState<("digger" | "consumer" | "telemarketer")[]>([defaultUserType]);
   const recoveryModeRef = useRef(false);
   
   const pageTitle = defaultUserType === "digger" ? "Digger Portal" : 
@@ -478,7 +480,9 @@ const Auth = () => {
         provider,
         options: {
           redirectTo: `${window.location.origin}/`,
-          queryParams: userType === 'digger' ? { user_type: 'digger' } : undefined,
+          queryParams: {
+            selected_roles: selectedRoles.join(','),
+          },
         },
       });
       if (error) throw error;
@@ -503,7 +507,7 @@ const Auth = () => {
             Home
           </Button>
           
-          <CardTitle className="text-3xl font-bold mt-8">
+          <CardTitle className="text-3xl font-bold mt-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {pageTitle}
           </CardTitle>
           <CardDescription>
@@ -786,21 +790,51 @@ const Auth = () => {
                 <p className="text-xs text-muted-foreground text-center">Or quick sign up with Google:</p>
                 
                 <div className="space-y-2">
-                  <Label>I am a</Label>
-                  <RadioGroup value={userType} onValueChange={(value: "digger" | "consumer" | "telemarketer") => setUserType(value)}>
+                  <Label>Select your role(s) - you can select multiple:</Label>
+                  <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="consumer" id="consumer-social" />
-                      <Label htmlFor="consumer-social" className="cursor-pointer">Consumer (Looking for services)</Label>
+                      <Checkbox 
+                        id="consumer-checkbox" 
+                        checked={selectedRoles.includes('consumer')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedRoles([...selectedRoles, 'consumer']);
+                          } else {
+                            setSelectedRoles(selectedRoles.filter(r => r !== 'consumer'));
+                          }
+                        }}
+                      />
+                      <Label htmlFor="consumer-checkbox" className="cursor-pointer">Consumer (Looking for services)</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="digger" id="digger-social" />
-                      <Label htmlFor="digger-social" className="cursor-pointer">Digger (Service provider)</Label>
+                      <Checkbox 
+                        id="digger-checkbox" 
+                        checked={selectedRoles.includes('digger')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedRoles([...selectedRoles, 'digger']);
+                          } else {
+                            setSelectedRoles(selectedRoles.filter(r => r !== 'digger'));
+                          }
+                        }}
+                      />
+                      <Label htmlFor="digger-checkbox" className="cursor-pointer">Digger (Service provider)</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="telemarketer" id="telemarketer-social" />
-                      <Label htmlFor="telemarketer-social" className="cursor-pointer">Telemarketer (Lead generation)</Label>
+                      <Checkbox 
+                        id="telemarketer-checkbox" 
+                        checked={selectedRoles.includes('telemarketer')}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedRoles([...selectedRoles, 'telemarketer']);
+                          } else {
+                            setSelectedRoles(selectedRoles.filter(r => r !== 'telemarketer'));
+                          }
+                        }}
+                      />
+                      <Label htmlFor="telemarketer-checkbox" className="cursor-pointer">Telemarketer (Lead generation)</Label>
                     </div>
-                  </RadioGroup>
+                  </div>
                 </div>
 
                 <Button
@@ -808,7 +842,7 @@ const Auth = () => {
                   variant="outline"
                   className="w-full"
                   onClick={() => handleSocialLogin('google')}
-                  disabled={loading}
+                  disabled={loading || selectedRoles.length === 0}
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
