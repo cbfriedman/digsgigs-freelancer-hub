@@ -561,18 +561,51 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="signin">
-              {typeof window !== 'undefined' && (
-                (window.location.hash.includes('error=access_denied') ||
-                 window.location.hash.includes('error=') ||
-                 window.location.search.includes('error='))
-              ) && (
+            {(() => {
+              if (typeof window === 'undefined') return null;
+              
+              const hash = window.location.hash;
+              const search = window.location.search;
+              
+              if (!hash.includes('error=') && !search.includes('error=')) return null;
+              
+              const errorDescription = new URLSearchParams(hash.substring(1)).get('error_description') || 
+                                      new URLSearchParams(search).get('error_description') || '';
+              
+              // Password reset error
+              if (hash.includes('type=recovery') || errorDescription.toLowerCase().includes('expired')) {
+                return (
+                  <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm font-semibold text-destructive mb-1">Reset Link Expired</p>
+                    <p className="text-xs text-muted-foreground">
+                      Your password reset link has expired. Click "Forgot password?" below to request a new one.
+                    </p>
+                  </div>
+                );
+              }
+              
+              // OAuth error (Google, etc.)
+              if (hash.includes('error=access_denied') || errorDescription.toLowerCase().includes('oauth')) {
+                return (
+                  <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm font-semibold text-destructive mb-1">Google Authentication Failed</p>
+                    <p className="text-xs text-muted-foreground">
+                      Unable to sign in with Google. Please check your Google OAuth configuration in the backend or try email signup below.
+                    </p>
+                  </div>
+                );
+              }
+              
+              // Generic error
+              return (
                 <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <p className="text-sm font-semibold text-destructive mb-1">Reset Link Expired</p>
+                  <p className="text-sm font-semibold text-destructive mb-1">Authentication Error</p>
                   <p className="text-xs text-muted-foreground">
-                    Your password reset link has expired. Click "Forgot password?" below to request a new one.
+                    Something went wrong. Please try again or contact support.
                   </p>
                 </div>
-              )}
+              );
+            })()}
               
               {showNewPasswordForm ? (
                 <form onSubmit={handleUpdatePassword} className="space-y-4">
