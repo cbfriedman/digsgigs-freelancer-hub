@@ -357,7 +357,12 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                             }`}>
                               {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                             </div>
-                            <span className="text-sm truncate">{industry.name}</span>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm">{industry.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                ${nonExclusiveCost} NE • ${semiExclusiveCost} SE • ${exclusiveCost} 24h Ex
+                              </span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-3 shrink-0">
                             <Badge 
@@ -366,11 +371,6 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                             >
                               {industry.indicator}
                             </Badge>
-                            <div className="text-xs text-muted-foreground whitespace-nowrap">
-                              <div className="font-medium">Non-Exclusive: ${nonExclusiveCost}</div>
-                              <div>Semi-Exclusive: ${semiExclusiveCost}</div>
-                              <div>24hr Exclusive: ${exclusiveCost}</div>
-                            </div>
                             <Button
                               size="sm"
                               variant={isSelected ? "secondary" : "default"}
