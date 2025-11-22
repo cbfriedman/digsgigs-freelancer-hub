@@ -70,12 +70,6 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Verification step
-  const [verificationCode, setVerificationCode] = useState("");
-  const [verificationMethod, setVerificationMethod] = useState<"email" | "sms">("email");
-  const [codeSent, setCodeSent] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
 
   // Step 1: Basic Info
   const [fullName, setFullName] = useState("");
@@ -101,16 +95,8 @@ const Register = () => {
   }, [navigate]);
 
   const roleArray = Array.from(selectedRoles);
-  const totalSteps = 2 + roleArray.length; // Basic Info+Verification (combined) + Role Selection + Role Forms
+  const totalSteps = 2 + roleArray.length; // Basic Info + Role Selection + Role Forms
   const progressPercentage = (step / totalSteps) * 100;
-
-  // Resend timer effect
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,110 +111,14 @@ const Register = () => {
         phone: phone || "",
       });
 
-      setLoading(true);
-      
-      // Automatically send verification code
-      const identifier = verificationMethod === "email" ? email : phone;
-      
-      if (!identifier) {
-        toast.error(`Please provide a ${verificationMethod === "email" ? "email" : "phone number"}`);
-        setLoading(false);
-        return;
-      }
-
-      const { error } = await supabase.functions.invoke("send-verification-code", {
-        body: {
-          email: verificationMethod === "email" ? email : undefined,
-          phone: verificationMethod === "sms" ? phone : undefined,
-          method: verificationMethod,
-        },
-      });
-
-      if (error) {
-        console.error("Error sending code:", error);
-        toast.error("Failed to send verification code. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      setCodeSent(true);
-      setResendTimer(60);
-      toast.success(`Verification code sent via ${verificationMethod}`);
-      setLoading(false);
+      // No verification needed - just move to next step
+      setStep(2); // Move to role selection
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
         toast.error("Please fill in all required fields correctly");
       }
-      setLoading(false);
-    }
-  };
-
-  const sendVerificationCode = async () => {
-    setLoading(true);
-    try {
-      const identifier = verificationMethod === "email" ? email : phone;
-      
-      if (!identifier) {
-        toast.error(`Please provide a ${verificationMethod === "email" ? "email" : "phone number"}`);
-        setLoading(false);
-        return;
-      }
-
-      const { error } = await supabase.functions.invoke("send-verification-code", {
-        body: {
-          email: verificationMethod === "email" ? email : undefined,
-          phone: verificationMethod === "sms" ? phone : undefined,
-          method: verificationMethod,
-        },
-      });
-
-      if (error) throw error;
-
-      setCodeSent(true);
-      setResendTimer(60);
-      toast.success(`Verification code sent via ${verificationMethod}`);
-    } catch (error: any) {
-      console.error("Error sending code:", error);
-      toast.error("Failed to send verification code. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerificationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!verificationCode || verificationCode.length !== 6) {
-      toast.error("Please enter the 6-digit verification code");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const identifier = verificationMethod === "email" ? email : phone;
-
-      const { data, error } = await supabase.functions.invoke("verify-registration-code", {
-        body: {
-          identifier,
-          code: verificationCode,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success("Verification successful!");
-        setStep(2); // Move to role selection (was step 3, now step 2)
-      } else {
-        toast.error(data?.error || "Invalid verification code");
-      }
-    } catch (error: any) {
-      console.error("Verification error:", error);
-      toast.error("Failed to verify code. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -264,12 +154,12 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Create auth account
+      // Create auth account with Supabase's built-in email verification
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/role-dashboard`,
           data: {
             full_name: fullName,
             phone: phone || null,
@@ -348,10 +238,14 @@ const Register = () => {
         }
       }
 
-      toast.success("Registration complete! Welcome to DigsandGigs!");
+      // Show appropriate message based on email confirmation requirement
+      toast.success(
+        "Registration complete! Check your email to confirm your account.",
+        { duration: 6000 }
+      );
       
-      // Navigate to unified dashboard
-      navigate('/role-dashboard');
+      // Redirect to auth page (they'll need to confirm email first)
+      navigate('/auth');
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "An error occurred during registration");
@@ -418,7 +312,7 @@ const Register = () => {
           <CardContent>
             {/* Step 1: Basic Information */}
             {step === 1 && (
-              <form onSubmit={codeSent ? handleVerificationSubmit : handleBasicInfoSubmit} className="space-y-4">
+              <form onSubmit={handleBasicInfoSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name *</Label>
                   <Input
@@ -429,7 +323,6 @@ const Register = () => {
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     maxLength={100}
-                    disabled={codeSent}
                   />
                 </div>
 
@@ -443,7 +336,6 @@ const Register = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     maxLength={255}
-                    disabled={codeSent}
                   />
                 </div>
 
@@ -456,7 +348,6 @@ const Register = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     maxLength={15}
-                    disabled={codeSent}
                   />
                   <p className="text-xs text-muted-foreground">
                     Use international format (e.g., +1234567890)
@@ -474,7 +365,6 @@ const Register = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       maxLength={100}
-                      disabled={codeSent}
                     />
                     <Button
                       type="button"
@@ -506,7 +396,6 @@ const Register = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       maxLength={100}
-                      disabled={codeSent}
                     />
                     <Button
                       type="button"
@@ -524,89 +413,12 @@ const Register = () => {
                   </div>
                 </div>
 
-                {/* Verification Method Selection */}
-                {!codeSent && (
-                  <div className="space-y-2 p-4 border rounded-lg bg-accent/5">
-                    <Label className="text-sm font-medium">Verify your account via:</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={verificationMethod === "email" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setVerificationMethod("email")}
-                        className="flex-1"
-                      >
-                        📧 Email
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={verificationMethod === "sms" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setVerificationMethod("sms")}
-                        disabled={!phone}
-                        className="flex-1"
-                      >
-                        📱 SMS {!phone && "(Add phone)"}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      We'll send a verification code to continue
-                    </p>
-                  </div>
-                )}
-
-                {/* Verification Code Field - Shows after code is sent */}
-                {codeSent && (
-                  <div className="space-y-4 p-4 border-2 border-primary rounded-lg bg-primary/5">
-                    <div className="flex items-center gap-2 text-sm text-primary font-medium">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Code sent to {verificationMethod === "email" ? email : phone}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="verificationCode">Enter 6-Digit Verification Code *</Label>
-                      <Input
-                        id="verificationCode"
-                        type="text"
-                        placeholder="000000"
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        maxLength={6}
-                        className="text-center text-2xl tracking-widest font-mono"
-                        autoFocus
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground text-center">
-                        Check your {verificationMethod === "email" ? "email inbox" : "text messages"}
-                      </p>
-                    </div>
-
-                    <div className="text-center">
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        onClick={sendVerificationCode}
-                        disabled={loading || resendTimer > 0}
-                      >
-                        {resendTimer > 0
-                          ? `Resend code in ${resendTimer}s`
-                          : "Resend code"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={loading || (codeSent && verificationCode.length !== 6)}
+                  disabled={loading}
                 >
-                  {codeSent ? (
-                    <>Verify & Continue <ArrowRight className="ml-2 h-4 w-4" /></>
-                  ) : (
-                    <>Continue <ArrowRight className="ml-2 h-4 w-4" /></>
-                  )}
+                  Continue <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
