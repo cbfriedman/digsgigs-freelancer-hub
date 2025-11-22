@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -497,23 +497,23 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center relative">
-          <Button
-            variant="outline"
-            size="sm"
-            className="absolute left-4 top-4 z-10"
-            onClick={() => navigate("/")}
-            type="button"
-          >
-            <Home className="w-4 h-4 mr-2" />
-            Home
-          </Button>
+          <Link to="/">
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute left-4 top-4 z-10"
+              type="button"
+            >
+              <Home className="w-4 h-4 mr-2" />
+              Home
+            </Button>
+          </Link>
           
-          <CardTitle 
-            className="text-3xl font-bold mt-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => navigate("/")}
-          >
-            {pageTitle}
-          </CardTitle>
+          <Link to="/" className="block">
+            <CardTitle className="text-3xl font-bold mt-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity">
+              {pageTitle}
+            </CardTitle>
+          </Link>
           <CardDescription>
             {defaultUserType === "digger" 
               ? "Build your professional profile and get discovered by clients"
