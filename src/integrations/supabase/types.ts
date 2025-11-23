@@ -2295,6 +2295,11 @@ export type Database = {
         Args: { post_slug: string }
         Returns: undefined
       }
+      is_digger: { Args: { _user_id: string }; Returns: boolean }
+      is_gig_owner: {
+        Args: { _gig_id: string; _user_id: string }
+        Returns: boolean
+      }
       reset_monthly_lead_counts: { Args: never; Returns: undefined }
       track_keyword_usage: {
         Args: {
