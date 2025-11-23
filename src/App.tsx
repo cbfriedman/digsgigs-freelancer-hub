@@ -58,6 +58,7 @@ import CheckoutSuccess from "./pages/CheckoutSuccess";
 import TelemarketerDashboard from "./pages/TelemarketerDashboard";
 import ProfileCreationDemo from "./pages/ProfileCreationDemo";
 import Register from "./pages/Register";
+import RegisterTest from "./pages/RegisterTest";
 import RoleDashboard from "./pages/RoleDashboard";
 
 const queryClient = new QueryClient();
@@ -106,9 +107,9 @@ const App = () => (
         <Routes>
           {/* Public routes - no authentication required */}
           <Route path="/" element={<Index />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/register" element={<RegisterTest />} />
           {/* Redirect /auth to /register */}
-          <Route path="/auth" element={<Register />} />
+          <Route path="/auth" element={<RegisterTest />} />
           <Route path="/pre-demo-registration" element={<ProtectedRoute><PreDemoRegistration /></ProtectedRoute>} />
           <Route path="/digger-registration" element={<ProtectedRoute><DiggerRegistration /></ProtectedRoute>} />
           <Route path="/digger-registration-demo" element={<ProtectedRoute><DiggerRegistrationDemo /></ProtectedRoute>} />
