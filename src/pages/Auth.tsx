@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Home } from "lucide-react";
 import { z } from "zod";
@@ -25,13 +23,6 @@ const authSchema = z.object({
     .max(100, "Password must be less than 100 characters"),
 });
 
-const signUpSchema = authSchema.extend({
-  fullName: z.string()
-    .trim()
-    .min(2, "Full name must be at least 2 characters")
-    .max(100, "Full name must be less than 100 characters"),
-});
-
 const phoneSchema = z.object({
   phone: z.string()
     .trim()
@@ -46,7 +37,6 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -60,14 +50,7 @@ const Auth = () => {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   
   const redirectTo = searchParams.get("redirect") || "/role-dashboard";
-  const defaultUserType = searchParams.get("type") as "digger" | "consumer" | "telemarketer" || "consumer";
-  const [userType, setUserType] = useState<"digger" | "consumer" | "telemarketer">(defaultUserType);
-  const [selectedRoles, setSelectedRoles] = useState<("digger" | "consumer" | "telemarketer")[]>([defaultUserType]);
   const recoveryModeRef = useRef(false);
-  
-  const pageTitle = defaultUserType === "digger" ? "Digger Portal" : 
-                    redirectTo === "/post-gig" ? "Post a Gig" : 
-                    "Digs and Gigs";
 
   useEffect(() => {
     // Initialize recovery mode from URL and handle expired links
@@ -82,27 +65,12 @@ const Auth = () => {
       if (hash.includes('error=') || search.includes('error=')) {
         const errorDescription = new URLSearchParams(hash.substring(1)).get('error_description') || 
                                 new URLSearchParams(search).get('error_description') || '';
-        const errorCode = new URLSearchParams(hash.substring(1)).get('error') || 
-                         new URLSearchParams(search).get('error') || '';
         
         // Handle password reset specific errors
         if (hash.includes('type=recovery') || errorDescription.toLowerCase().includes('expired')) {
           setShowResetForm(true);
           toast.error('Reset link expired. Please request a new one.');
         }
-        // Handle OAuth errors (Google, etc.) - check for common OAuth error codes
-        else if (
-          errorCode === 'access_denied' || 
-          errorCode === 'server_error' ||
-          errorCode === 'temporarily_unavailable' ||
-          errorCode === 'invalid_request' ||
-          errorCode === 'unauthorized_client' ||
-          errorDescription.toLowerCase().includes('oauth') ||
-          errorDescription.toLowerCase().includes('google')
-        ) {
-          toast.error('Authentication with Google failed. Please check your Google OAuth configuration or try email signup.');
-        }
-        // Generic fallback
         else {
           toast.error('Authentication error. Please try again or contact support.');
         }
@@ -151,55 +119,6 @@ const Auth = () => {
       return () => clearTimeout(timer);
     }
   }, [resendCountdown]);
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // SECURITY: Validate inputs before submission
-      const validated = signUpSchema.parse({
-        email: email,
-        password: password,
-        fullName: fullName,
-      });
-
-      const { data, error } = await supabase.auth.signUp({
-        email: validated.email,
-        password: validated.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: validated.fullName,
-            user_type: userType,
-          },
-        },
-      });
-
-      if (error) {
-        // User-friendly error messages
-        if (error.message.includes('already registered')) {
-          toast.error("This email is already registered. Please sign in instead.");
-        } else {
-          toast.error(error.message);
-        }
-        return;
-      }
-
-      if (data.user) {
-        toast.success("Account created! Redirecting...");
-      }
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        // Show validation errors
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error(error.message || "An error occurred during sign up");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,44 +287,6 @@ const Auth = () => {
     }
   };
 
-  const handlePhoneSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // SECURITY: Validate phone number and full name
-      const validatedPhone = phoneSchema.parse({ phone });
-      const validatedName = z.string().trim().min(2).max(100).parse(fullName);
-
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: validatedPhone.phone,
-        options: {
-          data: {
-            full_name: validatedName,
-            user_type: userType,
-          },
-        },
-      });
-
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-
-      setOtpSent(true);
-      setResendCountdown(30);
-      toast.success("Verification code sent! Enter it to complete signup.");
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error(error.message || "An error occurred during phone sign up");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -476,63 +357,6 @@ const Auth = () => {
     }
   };
 
-  const handleMagicLink = async () => {
-    setLoading(true);
-    try {
-      const emailValidation = z.string().trim().email("Invalid email format").max(255);
-      const validatedEmail = emailValidation.parse(email);
-      const { error } = await supabase.auth.signInWithOtp({
-        email: validatedEmail,
-        options: { emailRedirectTo: `${window.location.origin}/` },
-      });
-      if (error) throw error;
-      toast.success("Magic sign-in link sent! Check your inbox.");
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error(error.message || "Failed to send magic link");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleSocialLogin = async (provider: 'google' | 'github' | 'linkedin_oidc') => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/`,
-          queryParams: {
-            selected_roles: selectedRoles.join(','),
-          },
-          skipBrowserRedirect: true, // Prevent automatic redirect
-        },
-      });
-      
-      if (error) throw error;
-      
-      // Open OAuth URL in a popup window
-      if (data?.url) {
-        const width = 500;
-        const height = 600;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        
-        window.open(
-          data.url,
-          'oauth-popup',
-          `width=${width},height=${height},left=${left},top=${top},popup=yes`
-        );
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
       {/* Fixed Home Button - Always Visible */}
@@ -570,8 +394,6 @@ const Auth = () => {
             
             const errorDescription = new URLSearchParams(hash.substring(1)).get('error_description') || 
                                     new URLSearchParams(search).get('error_description') || '';
-            const errorCode = new URLSearchParams(hash.substring(1)).get('error') || 
-                             new URLSearchParams(search).get('error') || '';
             
             // Password reset error
             if (hash.includes('type=recovery') || errorDescription.toLowerCase().includes('expired')) {
@@ -597,82 +419,74 @@ const Auth = () => {
           })()}
             
           {showNewPasswordForm ? (
-                <form onSubmit={handleUpdatePassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Updating..." : "Update Password"}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    className="w-full" 
-                    onClick={() => setShowNewPasswordForm(false)}
-                  >
-                    Back to Sign In
-                  </Button>
-                </form>
-              ) : showResetForm ? (
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">Email</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Sending..." : "Send Reset Link"}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    className="w-full" 
-                    onClick={() => setShowResetForm(false)}
-                  >
-                    Back to Sign In
-                  </Button>
-                </form>
-              ) : (
-                <div className="space-y-4">
-                  <div className="text-center mb-4 p-3 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-semibold text-foreground">For Diggers, Consumers & Telemarketers</span>
-                      <br />
-                      All users share the same login portal
-                    </p>
-                  </div>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Updating..." : "Update Password"}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full" 
+                onClick={() => setShowNewPasswordForm(false)}
+              >
+                Back to Sign In
+              </Button>
+            </form>
+          ) : showResetForm ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Sending..." : "Send Reset Link"}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full" 
+                onClick={() => setShowResetForm(false)}
+              >
+                Back to Sign In
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as "email" | "phone")} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="email">Email</TabsTrigger>
+                  <TabsTrigger value="phone">Phone</TabsTrigger>
+                </TabsList>
 
-                  <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as "email" | "phone")} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
-                      <TabsTrigger value="email">Email</TabsTrigger>
-                      <TabsTrigger value="phone">Phone</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="email">
-                      <form onSubmit={handleSignIn} className="space-y-4">
+                <TabsContent value="email">
+                  <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="signin-email">Email</Label>
                       <Input
@@ -711,106 +525,106 @@ const Auth = () => {
                         </Button>
                       </div>
                     </div>
-                        <Button type="submit" className="w-full" disabled={loading}>
-                          {loading ? "Signing in..." : "Sign In"}
-                        </Button>
-                        <Button 
-                          type="button" 
-                          variant="link" 
-                          className="w-full text-sm" 
-                          onClick={() => setShowResetForm(true)}
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Signing in..." : "Sign In"}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="link" 
+                      className="w-full text-sm" 
+                      onClick={() => setShowResetForm(true)}
+                    >
+                      Forgot password?
+                    </Button>
+                  </form>
+                </TabsContent>
+
+                <TabsContent value="phone">
+                  {!otpSent ? (
+                    <form onSubmit={handlePhoneSignIn} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-phone">Phone Number</Label>
+                        <Input
+                          id="signin-phone"
+                          type="tel"
+                          placeholder="+1234567890"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Include country code (e.g., +1 for US)
+                        </p>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? "Sending code..." : "Send verification code"}
+                      </Button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyOtp} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="otp-code">Verification Code</Label>
+                        <Input
+                          id="otp-code"
+                          type="text"
+                          placeholder="123456"
+                          value={otp}
+                          onChange={(e) => handleOtpChange(e.target.value)}
+                          required
+                          maxLength={6}
+                          className="text-center text-lg tracking-widest"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter the 6-digit code sent to {phone}
+                        </p>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? "Verifying..." : "Verify Code"}
+                      </Button>
+                      <div className="flex items-center justify-between text-sm">
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="p-0 h-auto"
+                          onClick={handleResendOtp}
+                          disabled={loading || resendCountdown > 0}
                         >
-                          Forgot password?
+                          {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend code"}
                         </Button>
-                      </form>
-                    </TabsContent>
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="p-0 h-auto"
+                          onClick={() => {
+                            setOtpSent(false);
+                            setOtp("");
+                          }}
+                        >
+                          Change number
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
 
-                    <TabsContent value="phone">
-                      {!otpSent ? (
-                        <form onSubmit={handlePhoneSignIn} className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="signin-phone">Phone Number</Label>
-                            <Input
-                              id="signin-phone"
-                              type="tel"
-                              placeholder="+1234567890"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              required
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Include country code (e.g., +1 for US)
-                            </p>
-                          </div>
-                          <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? "Sending code..." : "Send verification code"}
-                          </Button>
-                        </form>
-                      ) : (
-                        <form onSubmit={handleVerifyOtp} className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="otp-code">Verification Code</Label>
-                            <Input
-                              id="otp-code"
-                              type="text"
-                              placeholder="123456"
-                              value={otp}
-                              onChange={(e) => handleOtpChange(e.target.value)}
-                              required
-                              maxLength={6}
-                              className="text-center text-lg tracking-widest"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Enter the 6-digit code sent to {phone}
-                            </p>
-                          </div>
-                          <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? "Verifying..." : "Verify Code"}
-                          </Button>
-                          <div className="flex items-center justify-between text-sm">
-                            <Button
-                              type="button"
-                              variant="link"
-                              className="p-0 h-auto"
-                              onClick={handleResendOtp}
-                              disabled={loading || resendCountdown > 0}
-                            >
-                              {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend code"}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="link"
-                              className="p-0 h-auto"
-                              onClick={() => {
-                                setOtpSent(false);
-                                setOtp("");
-                              }}
-                            >
-                              Change number
-                            </Button>
-                          </div>
-                        </form>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                </div>
-              )}
+          <Separator className="my-6" />
 
-              <Separator className="my-6" />
-
-              {/* New User Link */}
-              <div className="text-center space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Don't have an account?
-                </p>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => navigate("/register")}
-                >
-                  Create New Account
-                </Button>
-              </div>
+          {/* New User Link */}
+          <div className="text-center space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?
+            </p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate("/register")}
+            >
+              Create New Account
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
