@@ -427,7 +427,7 @@ const Index = () => {
                       variant="hero" 
                       size="lg" 
                       className="text-base w-full sm:w-[180px]"
-                      onClick={() => navigate("/auth?redirect=/post-gig")}
+                      onClick={() => navigate("/register")}
                     >
                       Post a Gig <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
@@ -528,7 +528,7 @@ const Index = () => {
             {/* For Diggers */}
             <div 
               className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 hover:-translate-y-1"
-              onClick={() => navigate("/digger-registration")}
+              onClick={() => navigate("/register")}
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
