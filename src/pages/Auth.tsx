@@ -109,9 +109,9 @@ const Auth = () => {
       }
     }
 
-    // If already authenticated (and not in recovery), redirect
+    // If already authenticated AND verified (and not in recovery), redirect
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !recoveryModeRef.current) {
+      if (session && session.user?.email_confirmed_at && !recoveryModeRef.current) {
         navigate(redirectTo);
       }
     });
@@ -134,7 +134,7 @@ const Auth = () => {
         }
       }
 
-      if (session && !recoveryModeRef.current) {
+      if (session && session.user?.email_confirmed_at && !recoveryModeRef.current) {
         navigate(redirectTo);
       }
     });
