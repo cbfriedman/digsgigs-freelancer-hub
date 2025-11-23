@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Eye, EyeOff, Home, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Home, ArrowRight, ArrowLeft, CheckCircle2, Mail, Smartphone } from "lucide-react";
 import { z } from "zod";
 import SEOHead from "@/components/SEOHead";
 import { Progress } from "@/components/ui/progress";
@@ -17,6 +18,7 @@ import DiggerRoleForm from "@/components/registration/DiggerRoleForm";
 import GiggerRoleForm from "@/components/registration/GiggerRoleForm";
 import TelemarketerRoleForm from "@/components/registration/TelemarketerRoleForm";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 // SECURITY: Input validation schemas
 const basicInfoSchema = z.object({
@@ -82,6 +84,11 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
+  const [verificationMethod, setVerificationMethod] = useState<'email' | 'sms'>('email');
+
+  // Step 1.5: Verification
+  const [verificationCode, setVerificationCode] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Step 2: Role Selection
   const [selectedRoles, setSelectedRoles] = useState<Set<UserAppRole>>(new Set());
@@ -95,11 +102,12 @@ const Register = () => {
   }
 
   const roleArray = Array.from(selectedRoles);
-  const totalSteps = 2 + roleArray.length; // Basic Info + Role Selection + Role Forms
+  const totalSteps = 3 + roleArray.length; // Basic Info + Verification + Role Selection + Role Forms
   const progressPercentage = (step / totalSteps) * 100;
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
     try {
       // SECURITY: Validate inputs before proceeding
@@ -111,14 +119,151 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // No verification needed - just move to next step
-      setStep(2); // Move to role selection
+      // Validate phone is provided if SMS method selected
+      if (verificationMethod === 'sms' && !phone) {
+        toast.error("Phone number is required for SMS verification");
+        setLoading(false);
+        return;
+      }
+
+      // Create Supabase account immediately
+      let authData, authError;
+      
+      if (verificationMethod === 'email') {
+        // Email signup
+        const result = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/role-dashboard`,
+            data: {
+              full_name: fullName,
+              phone: phone || null,
+            },
+          },
+        });
+        authData = result.data;
+        authError = result.error;
+      } else {
+        // SMS signup
+        const result = await supabase.auth.signUp({
+          phone,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              email: email,
+            },
+          },
+        });
+        authData = result.data;
+        authError = result.error;
+      }
+
+      if (authError) {
+        if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
+          toast.error(`This ${verificationMethod === 'email' ? 'email' : 'phone number'} is already registered. Please sign in instead.`);
+        } else {
+          toast.error(authError.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (!authData.user) {
+        toast.error("Failed to create account");
+        setLoading(false);
+        return;
+      }
+
+      // Store user ID for later use
+      setUserId(authData.user.id);
+
+      // Move to verification step
+      toast.success(
+        `Verification code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}!`,
+        { duration: 5000 }
+      );
+      setStep(2); // Move to verification screen
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        toast.error("Please fill in all required fields correctly");
+        console.error("Account creation error:", error);
+        toast.error(error.message || "An error occurred during account creation");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerification = async () => {
+    if (verificationCode.length !== 6) {
+      toast.error("Please enter the 6-digit verification code");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      let verifyResult;
+      
+      if (verificationMethod === 'email') {
+        verifyResult = await supabase.auth.verifyOtp({
+          email: email,
+          token: verificationCode,
+          type: 'signup',
+        });
+      } else {
+        verifyResult = await supabase.auth.verifyOtp({
+          phone: phone,
+          token: verificationCode,
+          type: 'sms',
+        });
+      }
+
+      if (verifyResult.error) {
+        toast.error(verifyResult.error.message || "Invalid verification code");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Account verified successfully!");
+      setStep(3); // Move to role selection
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      toast.error(error.message || "Verification failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    
+    try {
+      if (verificationMethod === 'email') {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email,
+        });
+        
+        if (error) throw error;
+        toast.success("Verification code resent to your email!");
+      } else {
+        const { error } = await supabase.auth.resend({
+          type: 'sms',
+          phone: phone,
+        });
+        
+        if (error) throw error;
+        toast.success("Verification code resent to your phone!");
+      }
+    } catch (error: any) {
+      console.error("Resend error:", error);
+      toast.error(error.message || "Failed to resend code");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,7 +274,7 @@ const Register = () => {
     }
 
     // Move to first role form
-    setStep(3);
+    setStep(4);
     setCurrentRoleIndex(0);
   };
 
@@ -151,41 +296,18 @@ const Register = () => {
   };
 
   const completeRegistration = async () => {
+    if (!userId) {
+      toast.error("Session expired. Please start over.");
+      setStep(1);
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Create auth account with Supabase's built-in email verification
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/role-dashboard`,
-          data: {
-            full_name: fullName,
-            phone: phone || null,
-          },
-        },
-      });
-
-      if (authError) {
-        if (authError.message.includes('already registered')) {
-          toast.error("This email is already registered. Please sign in instead.");
-        } else {
-          toast.error(authError.message);
-        }
-        setLoading(false);
-        return;
-      }
-
-      if (!authData.user) {
-        toast.error("Failed to create account");
-        setLoading(false);
-        return;
-      }
-
-      // Create user_app_roles entries
+      // Create user_app_roles entries (account already created)
       const roleInserts = roleArray.map(role => ({
-        user_id: authData.user.id,
+        user_id: userId,
         app_role: role,
         is_active: true,
       }));
@@ -196,7 +318,7 @@ const Register = () => {
 
       if (rolesError) {
         console.error("Error creating roles:", rolesError);
-        toast.error("Account created but roles setup failed. Please contact support.");
+        toast.error("Roles setup failed. Please contact support.");
         setLoading(false);
         return;
       }
@@ -206,7 +328,7 @@ const Register = () => {
         const { error: diggerError } = await supabase
           .from('digger_profiles')
           .insert({
-            user_id: authData.user.id,
+            user_id: userId,
             business_name: roleFormData.digger.companyName,
             phone: phone || '',
             location: '',
@@ -224,7 +346,7 @@ const Register = () => {
         const { error: telemarketerError } = await supabase
           .from('telemarketer_profiles')
           .insert({
-            user_id: authData.user.id,
+            user_id: userId,
             email: email,
             phone: phone || '',
             business_name: roleFormData.telemarketer.businessInfo?.companyName || fullName,
@@ -238,14 +360,12 @@ const Register = () => {
         }
       }
 
-      // Show appropriate message based on email confirmation requirement
-      toast.success(
-        "Registration complete! Check your email to confirm your account.",
-        { duration: 6000 }
-      );
+      toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
       
-      // Redirect to auth page (they'll need to confirm email first)
-      navigate('/auth');
+      // Redirect to role dashboard
+      setTimeout(() => {
+        navigate('/role-dashboard');
+      }, 1500);
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "An error occurred during registration");
@@ -296,15 +416,17 @@ const Register = () => {
             
             <CardTitle className="text-2xl font-bold mt-[35rem]">
               {step === 1 && "Create Your Account"}
-              {step === 2 && "Create Your Account"}
-              {step > 2 && currentRole === 'digger' && "Create Your Dig"}
-              {step > 2 && currentRole === 'gigger' && "Create Your Gig"}
-              {step > 2 && currentRole === 'telemarketer' && "Telemarketer Registration"}
+              {step === 2 && "Verify Your Account"}
+              {step === 3 && "Select Your Roles"}
+              {step > 3 && currentRole === 'digger' && "Create Your Dig"}
+              {step > 3 && currentRole === 'gigger' && "Create Your Gig"}
+              {step > 3 && currentRole === 'telemarketer' && "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
               {step === 1 && "Let's start with your basic information"}
-              {step === 2 && "What would you like to do on DigsandGigs?"}
-              {step > 2 && `Set up your ${currentRole} profile`}
+              {step === 2 && `Enter the code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}`}
+              {step === 3 && "What would you like to do on DigsandGigs?"}
+              {step > 3 && `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar */}
@@ -347,18 +469,54 @@ const Register = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number (Optional)</Label>
+                  <Label htmlFor="phone">
+                    Phone Number {verificationMethod === 'sms' ? '*' : '(Optional)'}
+                  </Label>
                   <Input
                     id="phone"
                     type="tel"
                     placeholder="+1234567890"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    required={verificationMethod === 'sms'}
                     maxLength={15}
                   />
                   <p className="text-xs text-muted-foreground">
                     Use international format (e.g., +1234567890)
                   </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Verification Method *</Label>
+                  <RadioGroup
+                    value={verificationMethod}
+                    onValueChange={(value: 'email' | 'sms') => setVerificationMethod(value)}
+                  >
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent cursor-pointer">
+                      <RadioGroupItem value="email" id="email-verify" />
+                      <Label htmlFor="email-verify" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Mail className="h-4 w-4 text-primary" />
+                        <div>
+                          <div className="font-medium">Email Verification</div>
+                          <div className="text-xs text-muted-foreground">
+                            Receive a code via email
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent cursor-pointer">
+                      <RadioGroupItem value="sms" id="sms-verify" />
+                      <Label htmlFor="sms-verify" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Smartphone className="h-4 w-4 text-primary" />
+                        <div>
+                          <div className="font-medium">SMS Verification</div>
+                          <div className="text-xs text-muted-foreground">
+                            Receive a code via text message
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
                 <div className="space-y-2">
@@ -425,7 +583,8 @@ const Register = () => {
                   className="w-full" 
                   disabled={loading}
                 >
-                  Continue <ArrowRight className="ml-2 h-4 w-4" />
+                  {loading ? "Creating Account..." : "Save and Continue"} 
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
@@ -441,8 +600,89 @@ const Register = () => {
               </form>
             )}
 
-            {/* Step 2: Role Selection */}
+            {/* Step 2: Verification */}
             {step === 2 && (
+              <div className="space-y-6">
+                <div className="text-center space-y-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+                    {verificationMethod === 'email' ? (
+                      <Mail className="h-8 w-8 text-primary" />
+                    ) : (
+                      <Smartphone className="h-8 w-8 text-primary" />
+                    )}
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-lg">Check your {verificationMethod === 'email' ? 'email' : 'phone'}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      We sent a 6-digit code to{' '}
+                      <span className="font-medium text-foreground">
+                        {verificationMethod === 'email' ? email : phone}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="verification-code" className="text-center block">
+                      Enter Verification Code
+                    </Label>
+                    <div className="flex justify-center">
+                      <InputOTP
+                        maxLength={6}
+                        value={verificationCode}
+                        onChange={(value) => setVerificationCode(value)}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleVerification}
+                    disabled={loading || verificationCode.length !== 6}
+                    className="w-full"
+                  >
+                    {loading ? "Verifying..." : "Verify Code"}
+                    <CheckCircle2 className="ml-2 h-4 w-4" />
+                  </Button>
+
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Didn't receive the code?
+                    </p>
+                    <Button
+                      variant="link"
+                      onClick={handleResendCode}
+                      disabled={loading}
+                      className="p-0 h-auto"
+                    >
+                      Resend Code
+                    </Button>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                    className="w-full"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Account Info
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Role Selection */}
+            {step === 3 && (
               <div className="space-y-6">
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
@@ -534,7 +774,7 @@ const Register = () => {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(2)}
                     className="flex-1"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -551,8 +791,8 @@ const Register = () => {
               </div>
             )}
 
-            {/* Step 3+: Role-specific Forms */}
-            {step > 2 && currentRole && (
+            {/* Step 4+: Role-specific Forms */}
+            {step > 3 && currentRole && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
                   <Badge>
@@ -598,7 +838,7 @@ const Register = () => {
                     onComplete={(data) => handleRoleFormComplete('digger', data)}
                     onBack={() => {
                       if (currentRoleIndex === 0) {
-                        setStep(2);
+                        setStep(3);
                       } else {
                         setCurrentRoleIndex(currentRoleIndex - 1);
                         setStep(step - 1);
@@ -612,7 +852,7 @@ const Register = () => {
                     onComplete={(data) => handleRoleFormComplete('gigger', data)}
                     onBack={() => {
                       if (currentRoleIndex === 0) {
-                        setStep(2);
+                        setStep(3);
                       } else {
                         setCurrentRoleIndex(currentRoleIndex - 1);
                         setStep(step - 1);
@@ -626,7 +866,7 @@ const Register = () => {
                     onComplete={(data) => handleRoleFormComplete('telemarketer', data)}
                     onBack={() => {
                       if (currentRoleIndex === 0) {
-                        setStep(2);
+                        setStep(3);
                       } else {
                         setCurrentRoleIndex(currentRoleIndex - 1);
                         setStep(step - 1);
