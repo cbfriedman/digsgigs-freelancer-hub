@@ -9,7 +9,7 @@ import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
+// Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
 import GigRegistrationDemo from "./pages/GigRegistrationDemo";
@@ -106,8 +106,9 @@ const App = () => (
         <Routes>
           {/* Public routes - no authentication required */}
           <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
           <Route path="/register" element={<Register />} />
+          {/* Redirect /auth to /register */}
+          <Route path="/auth" element={<Register />} />
           <Route path="/pre-demo-registration" element={<ProtectedRoute><PreDemoRegistration /></ProtectedRoute>} />
           <Route path="/digger-registration" element={<ProtectedRoute><DiggerRegistration /></ProtectedRoute>} />
           <Route path="/digger-registration-demo" element={<ProtectedRoute><DiggerRegistrationDemo /></ProtectedRoute>} />
