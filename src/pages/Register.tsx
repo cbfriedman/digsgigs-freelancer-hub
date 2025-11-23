@@ -74,6 +74,7 @@ const Register = () => {
     requireVerified: false // Allow unverified users to complete registration
   });
   
+  const [isSignInMode, setIsSignInMode] = useState(false);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -389,6 +390,34 @@ const Register = () => {
     }
   };
 
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        toast.success("Signed in successfully!");
+        navigate('/role-dashboard');
+      }
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      toast.error(error.message || "Sign in failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleRole = (role: UserAppRole) => {
     const newRoles = new Set(selectedRoles);
     if (newRoles.has(role)) {
@@ -430,18 +459,10 @@ const Register = () => {
             </h1>
             
             <CardTitle className="text-2xl font-bold mt-[35rem]">
-              {step === 1 && "Create Your Account"}
-              {step === 2 && "Verify Your Account"}
-              {step === 3 && "Select Your Roles"}
-              {step > 3 && currentRole === 'digger' && "Create Your Dig"}
-              {step > 3 && currentRole === 'gigger' && "Create Your Gig"}
-              {step > 3 && currentRole === 'telemarketer' && "Telemarketer Registration"}
+              {isSignInMode ? "Sign In" : step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {step === 1 && "Let's start with your basic information"}
-              {step === 2 && `Enter the code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}`}
-              {step === 3 && "What would you like to do on DigsandGigs?"}
-              {step > 3 && `Set up your ${currentRole} profile`}
+              {isSignInMode ? "Welcome back! Sign in to your account" : step === 1 ? "Let's start with your basic information" : step === 2 ? `Enter the code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}` : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar */}
@@ -454,8 +475,76 @@ const Register = () => {
           </CardHeader>
 
           <CardContent>
+            {/* Sign In Form */}
+            {isSignInMode && (
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email Address</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    placeholder="john@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="signin-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                >
+                  {loading ? "Signing In..." : "Sign In"}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  Don't have an account?{" "}
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto"
+                    onClick={() => {
+                      setIsSignInMode(false);
+                      setEmail("");
+                      setPassword("");
+                    }}
+                  >
+                    Create new account
+                  </Button>
+                </p>
+              </form>
+            )}
+
             {/* Step 1: Basic Information */}
-            {step === 1 && (
+            {!isSignInMode && step === 1 && (
               <form onSubmit={handleBasicInfoSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name *</Label>
@@ -607,7 +696,12 @@ const Register = () => {
                   <Button
                     variant="link"
                     className="p-0 h-auto"
-                    onClick={() => navigate("/auth")}
+                    onClick={() => {
+                      setIsSignInMode(true);
+                      setFullName("");
+                      setConfirmPassword("");
+                      setPhone("");
+                    }}
                   >
                     Sign in
                   </Button>
