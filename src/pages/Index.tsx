@@ -366,7 +366,7 @@ const Index = () => {
               </>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => navigate("/auth")}>Sign In</Button>
+                <Button variant="ghost" onClick={() => navigate("/register")}>Sign In</Button>
                 <Button variant="hero" onClick={() => navigate("/register")}>Get Started</Button>
               </>
             )}
