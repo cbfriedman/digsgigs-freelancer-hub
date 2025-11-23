@@ -70,7 +70,8 @@ interface RoleFormData {
 const Register = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useProtectedRoute({ 
-    redirectIfAuthenticated: true
+    redirectIfAuthenticated: true,
+    requireVerified: false // Allow unverified users to complete registration
   });
   
   const [step, setStep] = useState(1);
@@ -119,15 +120,22 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Validate phone is provided if SMS method selected
-      if (verificationMethod === 'sms' && !phone) {
-        toast.error("Phone number is required for SMS verification");
-        setLoading(false);
-        return;
+      // Validate and format phone for SMS
+      if (verificationMethod === 'sms') {
+        if (!phone) {
+          toast.error("Phone number is required for SMS verification");
+          setLoading(false);
+          return;
+        }
+        
+        // Ensure phone starts with + for E.164 format
+        const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+        setPhone(formattedPhone);
       }
 
       // Create Supabase account immediately
       let authData, authError;
+      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
       
       if (verificationMethod === 'email') {
         // Email signup
@@ -138,16 +146,16 @@ const Register = () => {
             emailRedirectTo: `${window.location.origin}/role-dashboard`,
             data: {
               full_name: fullName,
-              phone: phone || null,
+              phone: formattedPhone || null,
             },
           },
         });
         authData = result.data;
         authError = result.error;
       } else {
-        // SMS signup
+        // SMS signup - use formatted phone
         const result = await supabase.auth.signUp({
-          phone,
+          phone: formattedPhone,
           password,
           options: {
             data: {
@@ -179,11 +187,15 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      // Move to verification step
+      // Don't auto-login, just move to verification
       toast.success(
         `Verification code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}!`,
         { duration: 5000 }
       );
+      
+      // Sign out immediately to prevent auto-redirect
+      await supabase.auth.signOut();
+      
       setStep(2); // Move to verification screen
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -207,6 +219,7 @@ const Register = () => {
 
     try {
       let verifyResult;
+      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
       
       if (verificationMethod === 'email') {
         verifyResult = await supabase.auth.verifyOtp({
@@ -216,7 +229,7 @@ const Register = () => {
         });
       } else {
         verifyResult = await supabase.auth.verifyOtp({
-          phone: phone,
+          phone: formattedPhone,
           token: verificationCode,
           type: 'sms',
         });
@@ -242,6 +255,8 @@ const Register = () => {
     setLoading(true);
     
     try {
+      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
+      
       if (verificationMethod === 'email') {
         const { error } = await supabase.auth.resend({
           type: 'signup',
@@ -253,7 +268,7 @@ const Register = () => {
       } else {
         const { error } = await supabase.auth.resend({
           type: 'sms',
-          phone: phone,
+          phone: formattedPhone,
         });
         
         if (error) throw error;
