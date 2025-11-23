@@ -552,82 +552,51 @@ const Auth = () => {
         <CardHeader className="text-center">
           <Link to="/" className="block">
             <CardTitle className="text-3xl font-bold mt-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity">
-              {pageTitle}
+              Sign In to Digs and Gigs
             </CardTitle>
           </Link>
           <CardDescription>
-            {defaultUserType === "digger" 
-              ? "Build your professional profile and get discovered by clients"
-              : redirectTo === "/post-gig"
-              ? "Sign in or create an account to post your gig"
-              : "Welcome back! Sign in to your account or create a new one."}
+            Welcome back! Sign in to access your account.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
+          {(() => {
+            if (typeof window === 'undefined') return null;
             
-            <TabsContent value="signin">
-            {(() => {
-              if (typeof window === 'undefined') return null;
-              
-              const hash = window.location.hash;
-              const search = window.location.search;
-              
-              if (!hash.includes('error=') && !search.includes('error=')) return null;
-              
-              const errorDescription = new URLSearchParams(hash.substring(1)).get('error_description') || 
-                                      new URLSearchParams(search).get('error_description') || '';
-              const errorCode = new URLSearchParams(hash.substring(1)).get('error') || 
-                               new URLSearchParams(search).get('error') || '';
-              
-              // Password reset error
-              if (hash.includes('type=recovery') || errorDescription.toLowerCase().includes('expired')) {
-                return (
-                  <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-                    <p className="text-sm font-semibold text-destructive mb-1">Reset Link Expired</p>
-                    <p className="text-xs text-muted-foreground">
-                      Your password reset link has expired. Click "Forgot password?" below to request a new one.
-                    </p>
-                  </div>
-                );
-              }
-              
-              // OAuth error (Google, etc.) - check for common OAuth error codes
-              if (
-                errorCode === 'access_denied' || 
-                errorCode === 'server_error' ||
-                errorCode === 'temporarily_unavailable' ||
-                errorCode === 'invalid_request' ||
-                errorCode === 'unauthorized_client' ||
-                errorDescription.toLowerCase().includes('oauth') ||
-                errorDescription.toLowerCase().includes('google')
-              ) {
-                return (
-                  <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-                    <p className="text-sm font-semibold text-destructive mb-1">Google Authentication Failed</p>
-                    <p className="text-xs text-muted-foreground">
-                      Unable to sign in with Google. Please check your Google OAuth configuration in the backend or try email signup below.
-                    </p>
-                  </div>
-                );
-              }
-              
-              // Generic error
+            const hash = window.location.hash;
+            const search = window.location.search;
+            
+            if (!hash.includes('error=') && !search.includes('error=')) return null;
+            
+            const errorDescription = new URLSearchParams(hash.substring(1)).get('error_description') || 
+                                    new URLSearchParams(search).get('error_description') || '';
+            const errorCode = new URLSearchParams(hash.substring(1)).get('error') || 
+                             new URLSearchParams(search).get('error') || '';
+            
+            // Password reset error
+            if (hash.includes('type=recovery') || errorDescription.toLowerCase().includes('expired')) {
               return (
                 <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <p className="text-sm font-semibold text-destructive mb-1">Authentication Error</p>
+                  <p className="text-sm font-semibold text-destructive mb-1">Reset Link Expired</p>
                   <p className="text-xs text-muted-foreground">
-                    Something went wrong. Please try again or contact support.
+                    Your password reset link has expired. Click "Forgot password?" below to request a new one.
                   </p>
                 </div>
               );
-            })()}
-              
-              {showNewPasswordForm ? (
+            }
+            
+            // Generic error
+            return (
+              <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm font-semibold text-destructive mb-1">Authentication Error</p>
+                <p className="text-xs text-muted-foreground">
+                  Something went wrong. Please try again or contact support.
+                </p>
+              </div>
+            );
+          })()}
+            
+          {showNewPasswordForm ? (
                 <form onSubmit={handleUpdatePassword} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
@@ -826,26 +795,22 @@ const Auth = () => {
                   </Tabs>
                 </div>
               )}
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <div className="space-y-4">
-                <div className="p-4 bg-primary/10 border border-primary/20 rounded-md mb-4">
-                  <p className="text-sm font-semibold mb-2">Create Your Account</p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Our new registration process lets you select multiple roles and customize your experience.
-                  </p>
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={() => navigate("/register")}
-                  >
-                    Go to Registration →
-                  </Button>
-                </div>
+
+              <Separator className="my-6" />
+
+              {/* New User Link */}
+              <div className="text-center space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Don't have an account?
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate("/register")}
+                >
+                  Create New Account
+                </Button>
               </div>
-            </TabsContent>
-          </Tabs>
         </CardContent>
       </Card>
     </div>
