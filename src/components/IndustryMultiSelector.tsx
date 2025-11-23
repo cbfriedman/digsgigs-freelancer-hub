@@ -414,24 +414,13 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
       {/* Pricing Display */}
       {selectedIndustries.length > 0 && (
         <div className="space-y-3">
-          <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
+          <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
             <p className="text-sm font-semibold text-center">
-              Your lead costs (based on highest value selection):
+              Your Leads costs
             </p>
-            <div className="flex justify-center gap-3 text-xs flex-wrap">
-              <div>
-                <span className="text-muted-foreground">Non-Exclusive:</span>{' '}
-                <strong className="text-primary">${getHighestLeadCost('non-exclusive')}</strong>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Semi-Exclusive:</span>{' '}
-                <strong className="text-primary">${getHighestLeadCost('semi-exclusive')}</strong>
-              </div>
-              <div>
-                <span className="text-muted-foreground">24hr Exclusive:</span>{' '}
-                <strong className="text-primary">${getHighestLeadCost('exclusive-24h')}</strong>
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              (based on your selections below)
+            </p>
           </div>
 
           {/* Per-Industry Lead Quantity Selectors */}
