@@ -12,7 +12,7 @@ interface UseProtectedRouteOptions {
 export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
   const {
     requireVerified = true,
-    redirectTo = '/auth',
+    redirectTo = '/register',
     redirectIfAuthenticated = false,
   } = options;
 
@@ -38,7 +38,7 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     // Require email verification (but allow access to register page for unverified users)
     if (requireVerified && user && !user.email_confirmed_at) {
       toast.error('Please verify your email to access this page. Check your inbox for the confirmation link.');
-      navigate('/auth');
+      navigate('/register');
       return;
     }
   }, [user, loading, navigate, requireVerified, redirectTo, redirectIfAuthenticated]);
