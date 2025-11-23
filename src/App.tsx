@@ -68,7 +68,7 @@ const PresenceTracker = () => {
   return null;
 };
 
-// Global router guard to detect recovery/error parameters and redirect to /auth
+// Global router guard to detect recovery/error parameters and redirect to /register
 const AuthRecoveryGuard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,9 +83,9 @@ const AuthRecoveryGuard = () => {
       search.includes('type=recovery') ||
       search.includes('error=');
 
-    if (hasRecoveryOrError && location.pathname !== '/auth') {
-      // Redirect to /auth while preserving query and hash
-      const target = '/auth' + (search || '') + (hash || '');
+    if (hasRecoveryOrError && location.pathname !== '/register') {
+      // Redirect to /register while preserving query and hash
+      const target = '/register' + (search || '') + (hash || '');
       navigate(target, { replace: true });
     }
   }, [navigate, location]);
