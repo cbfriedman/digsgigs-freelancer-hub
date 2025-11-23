@@ -22,8 +22,8 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
   useEffect(() => {
     if (loading) return;
 
-    // Redirect authenticated users away (for pages like register/login)
-    if (redirectIfAuthenticated && user) {
+    // Redirect VERIFIED authenticated users away (for pages like register/login)
+    if (redirectIfAuthenticated && user && user.email_confirmed_at) {
       navigate('/role-dashboard');
       return;
     }
@@ -35,7 +35,7 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
       return;
     }
 
-    // Require email verification
+    // Require email verification (but allow access to register page for unverified users)
     if (requireVerified && user && !user.email_confirmed_at) {
       toast.error('Please verify your email to access this page. Check your inbox for the confirmation link.');
       navigate('/auth');
