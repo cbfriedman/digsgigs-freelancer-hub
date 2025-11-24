@@ -179,12 +179,31 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      // Always require email verification
-      toast.success(
-        `Verification code sent to ${email}! Please check your email.`,
-        { duration: 5000 }
-      );
-      setStep(2); // Move to verification screen
+      // Check if email confirmation is required based on the response
+      console.log("Auth data:", {
+        user: authData.user,
+        email_confirmed_at: authData.user.email_confirmed_at,
+        confirmed_at: authData.user.confirmed_at,
+        identities: authData.user.identities
+      });
+
+      const emailConfirmationRequired = authData.user.email_confirmed_at === null &&
+                                        authData.user.confirmed_at === null;
+
+      if (emailConfirmationRequired) {
+        // Email confirmation is enabled
+        console.log("Email confirmation required - showing verification screen");
+        toast.success(
+          `Verification code sent to ${email}! Please check your email (including spam folder).`,
+          { duration: 7000 }
+        );
+        setStep(2); // Move to verification screen
+      } else {
+        // Email confirmation is disabled, proceed directly
+        console.log("Email confirmation disabled - proceeding to role selection");
+        toast.success("Account created successfully!");
+        setStep(3); // Skip verification, go to role selection
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -766,6 +785,15 @@ const Register = () => {
                 </div>
 
                 <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                    <p className="font-medium mb-1">Check your email inbox</p>
+                    <ul className="list-disc ml-4 space-y-1">
+                      <li>Look for an email from DigsandGigs</li>
+                      <li>Check your spam/junk folder if not in inbox</li>
+                      <li>The code expires in 60 minutes</li>
+                    </ul>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="verification-code" className="text-center block">
                       Enter Verification Code
