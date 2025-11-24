@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -99,6 +99,22 @@ const Register = () => {
   const [roleFormData, setRoleFormData] = useState<RoleFormData>({});
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
 
+  // Reset registration state when switching to sign-in mode
+  useEffect(() => {
+    if (isSignInMode) {
+      setStep(1);
+      setFullName("");
+      setConfirmPassword("");
+      setPhone("");
+      setVerificationMethod('email');
+      setVerificationCode("");
+      setUserId(null);
+      setSelectedRoles(new Set());
+      setRoleFormData({});
+      setCurrentRoleIndex(0);
+    }
+  }, [isSignInMode]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -176,7 +192,9 @@ const Register = () => {
       if (authError) {
         if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
           // Auto-switch to sign-in mode for existing accounts
-          toast.error(`This account already exists. Switching to sign in mode...`);
+          toast.error(`This account already exists. Please sign in with your password.`, {
+            duration: 5000,
+          });
           setEmail(email); // Preserve email
           setPassword(""); // Clear password for security
           setIsSignInMode(true);
@@ -466,20 +484,33 @@ const Register = () => {
               Digs and Gigs
             </h1>
             
-            <CardTitle className="text-2xl font-bold mt-[35rem]">
-              {isSignInMode ? "Sign In" : step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              {isSignInMode ? (
+                <Badge variant="outline" className="text-base px-3 py-1">
+                  Sign In
+                </Badge>
+              ) : (
+                <Badge variant="default" className="text-base px-3 py-1">
+                  Register
+                </Badge>
+              )}
+            </div>
+            <CardTitle className="text-2xl font-bold">
+              {isSignInMode ? "Welcome Back" : step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isSignInMode ? "Welcome back! Sign in to your account" : step === 1 ? "Let's start with your basic information" : step === 2 ? `Enter the code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}` : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isSignInMode ? "Sign in to access your DigsandGigs account" : step === 1 ? "Let's start with your basic information" : step === 2 ? `Enter the code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}` : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
-            {/* Progress Bar */}
-            <div className="mt-4 space-y-2">
-              <Progress value={progressPercentage} className="w-full" />
-              <p className="text-xs text-muted-foreground">
-                Step {step} of {totalSteps}
-              </p>
-            </div>
+            {/* Progress Bar - Only show during registration */}
+            {!isSignInMode && (
+              <div className="mt-4 space-y-2">
+                <Progress value={progressPercentage} className="w-full" />
+                <p className="text-xs text-muted-foreground">
+                  Step {step} of {totalSteps}
+                </p>
+              </div>
+            )}
           </CardHeader>
 
           <CardContent>
