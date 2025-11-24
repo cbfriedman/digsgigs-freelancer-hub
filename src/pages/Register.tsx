@@ -143,53 +143,21 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Validate and format phone for SMS
-      if (verificationMethod === 'sms') {
-        if (!phone) {
-          toast.error("Phone number is required for SMS verification");
-          setLoading(false);
-          return;
-        }
+      // Format phone if provided
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
 
-        // Ensure phone starts with + for E.164 format
-        const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
-        setPhone(formattedPhone);
-      }
-
-      // Create Supabase account immediately
-      let authData, authError;
-      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
-
-      if (verificationMethod === 'email') {
-        // Email signup
-        const result = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/role-dashboard`,
-            data: {
-              full_name: fullName,
-              phone: formattedPhone || null,
-            },
+      // Create Supabase account with email only
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/role-dashboard`,
+          data: {
+            full_name: fullName,
+            phone: formattedPhone,
           },
-        });
-        authData = result.data;
-        authError = result.error;
-      } else {
-        // SMS signup - use formatted phone
-        const result = await supabase.auth.signUp({
-          phone: formattedPhone,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              email: email,
-            },
-          },
-        });
-        authData = result.data;
-        authError = result.error;
-      }
+        },
+      });
 
       if (authError) {
         if (authError.message.includes('already registered') || authError.message.includes('already exists') || authError.message.includes('User already registered')) {
@@ -214,7 +182,7 @@ const Register = () => {
 
       // Don't auto-login, just move to verification
       toast.success(
-        `Verification code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}!`,
+        `Verification code sent to your email!`,
         { duration: 5000 }
       );
 
@@ -240,22 +208,11 @@ const Register = () => {
     setLoading(true);
 
     try {
-      let verifyResult;
-      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
-      
-      if (verificationMethod === 'email') {
-        verifyResult = await supabase.auth.verifyOtp({
-          email: email,
-          token: verificationCode,
-          type: 'signup',
-        });
-      } else {
-        verifyResult = await supabase.auth.verifyOtp({
-          phone: formattedPhone,
-          token: verificationCode,
-          type: 'sms',
-        });
-      }
+      const verifyResult = await supabase.auth.verifyOtp({
+        email: email,
+        token: verificationCode,
+        type: 'signup',
+      });
 
       if (verifyResult.error) {
         toast.error(verifyResult.error.message || "Invalid verification code");
@@ -275,27 +232,15 @@ const Register = () => {
 
   const handleResendCode = async () => {
     setLoading(true);
-    
+
     try {
-      const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
-      
-      if (verificationMethod === 'email') {
-        const { error } = await supabase.auth.resend({
-          type: 'signup',
-          email: email,
-        });
-        
-        if (error) throw error;
-        toast.success("Verification code resent to your email!");
-      } else {
-        const { error } = await supabase.auth.resend({
-          type: 'sms',
-          phone: formattedPhone,
-        });
-        
-        if (error) throw error;
-        toast.success("Verification code resent to your phone!");
-      }
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+
+      if (error) throw error;
+      toast.success("Verification code resent to your email!");
     } catch (error: any) {
       console.error("Resend error:", error);
       toast.error(error.message || "Failed to resend code");
@@ -677,7 +622,7 @@ const Register = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">
-                    Phone Number {verificationMethod === 'sms' ? '*' : '(Optional)'}
+                    Phone Number (Optional)
                   </Label>
                   <Input
                     id="phone"
@@ -685,7 +630,7 @@ const Register = () => {
                     placeholder="+1234567890"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    required={verificationMethod === 'sms'}
+                    required={false}
                     maxLength={15}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -694,36 +639,15 @@ const Register = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Verification Method *</Label>
-                  <RadioGroup
-                    value={verificationMethod}
-                    onValueChange={(value: 'email' | 'sms') => setVerificationMethod(value)}
-                  >
-                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent cursor-pointer">
-                      <RadioGroupItem value="email" id="email-verify" />
-                      <Label htmlFor="email-verify" className="flex items-center gap-2 cursor-pointer flex-1">
-                        <Mail className="h-4 w-4 text-primary" />
-                        <div>
-                          <div className="font-medium">Email Verification</div>
-                          <div className="text-xs text-muted-foreground">
-                            Receive a code via email
-                          </div>
-                        </div>
-                      </Label>
+                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-accent/50">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <div>
+                      <div className="font-medium">Email Verification</div>
+                      <div className="text-xs text-muted-foreground">
+                        You'll receive a verification code via email
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent cursor-pointer">
-                      <RadioGroupItem value="sms" id="sms-verify" />
-                      <Label htmlFor="sms-verify" className="flex items-center gap-2 cursor-pointer flex-1">
-                        <Smartphone className="h-4 w-4 text-primary" />
-                        <div>
-                          <div className="font-medium">SMS Verification</div>
-                          <div className="text-xs text-muted-foreground">
-                            Receive a code via text message
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-                  </RadioGroup>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -825,19 +749,15 @@ const Register = () => {
               <div className="space-y-6">
                 <div className="text-center space-y-4">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-                    {verificationMethod === 'email' || email ? (
-                      <Mail className="h-8 w-8 text-primary" />
-                    ) : (
-                      <Smartphone className="h-8 w-8 text-primary" />
-                    )}
+                    <Mail className="h-8 w-8 text-primary" />
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-lg">Check your {email ? 'email' : 'phone'}</h3>
+                    <h3 className="font-semibold text-lg">Check your email</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       We sent a 6-digit code to{' '}
                       <span className="font-medium text-foreground">
-                        {email || phone}
+                        {email}
                       </span>
                     </p>
                   </div>
