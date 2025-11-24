@@ -41,7 +41,11 @@ export default function RoleDashboard() {
 
   useEffect(() => {
     if (!user) {
-      navigate("/auth");
+      navigate("/register");
+      return;
+    }
+    if (userRoles.length === 0) {
+      navigate("/register");
       return;
     }
     fetchRoleStats();
@@ -49,6 +53,8 @@ export default function RoleDashboard() {
 
   const fetchRoleStats = async () => {
     if (!user) return;
+
+    setLoading(true);
 
     try {
       const newStats: RoleStats = {};
