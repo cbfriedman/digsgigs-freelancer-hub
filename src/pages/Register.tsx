@@ -115,17 +115,6 @@ const Register = () => {
     }
   }, [isSignInMode]);
 
-  // Check if user is already authenticated but unverified on mount
-  useEffect(() => {
-    if (!authLoading && user && !user.email_confirmed_at && !user.phone_confirmed_at) {
-      // User exists but is unverified - show verification step
-      setUserId(user.id);
-      setEmail(user.email || '');
-      setStep(2);
-      setIsSignInMode(false);
-      toast.info('Please verify your account to continue', { duration: 5000 });
-    }
-  }, [user, authLoading]);
 
   if (authLoading) {
     return (
@@ -202,17 +191,10 @@ const Register = () => {
       }
 
       if (authError) {
-        if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
-          // Auto-switch to sign-in mode for existing accounts
-          toast.error(`This account already exists. Please sign in with your password.`, {
-            duration: 5000,
+        if (authError.message.includes('already registered') || authError.message.includes('already exists') || authError.message.includes('User already registered')) {
+          toast.error(`This email is already registered. Please use the "Sign in" link below if this is your account.`, {
+            duration: 7000,
           });
-          setEmail(email); // Preserve email
-          setPassword(""); // Clear password for security
-          setIsSignInMode(true);
-          setStep(1); // Reset to step 1
-          setLoading(false);
-          return;
         } else {
           toast.error(authError.message);
         }
@@ -445,16 +427,6 @@ const Register = () => {
       }
 
       if (data.user) {
-        // Check if user is verified
-        if (!data.user.email_confirmed_at && !data.user.phone_confirmed_at) {
-          toast.info("Please verify your account. Check your email or phone for the verification code.");
-          setUserId(data.user.id);
-          setStep(2);
-          setIsSignInMode(false);
-          setLoading(false);
-          return;
-        }
-
         toast.success("Signed in successfully!");
         navigate('/role-dashboard');
       }
