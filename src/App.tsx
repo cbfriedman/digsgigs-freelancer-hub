@@ -68,7 +68,7 @@ const PresenceTracker = () => {
   return null;
 };
 
-// Create router with all routes
+// Create router with all routes - forcing fresh registration
 const router = createBrowserRouter([
   {
     path: "/",
@@ -77,6 +77,8 @@ const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register />,
+    // Explicitly ensure this route exists
+    errorElement: <div>Register route error</div>,
   },
   {
     path: "/auth",
