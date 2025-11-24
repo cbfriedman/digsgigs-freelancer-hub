@@ -94,13 +94,22 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
             {/* Dashboard Button for authenticated users */}
             {user && (
-              <Button
-                variant="ghost"
-                onClick={() => navigate("/role-dashboard")}
-                className="font-semibold"
-              >
-                DASHBOARD
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/role-dashboard")}
+                  className="font-semibold"
+                >
+                  DASHBOARD
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => signOut()}
+                  className="font-semibold text-destructive hover:text-destructive"
+                >
+                  SIGN OUT
+                </Button>
+              </>
             )}
 
             {/* Admin Button - only for admins */}
