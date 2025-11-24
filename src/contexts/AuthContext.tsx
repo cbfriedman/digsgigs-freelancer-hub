@@ -151,14 +151,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
+
       setUser(null);
       setSession(null);
       setUserRoles([]);
       setActiveRole(null);
       setSubscriptionStatus(null);
-      
+
       toast.success('Signed out successfully');
+
+      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Error signing out');
