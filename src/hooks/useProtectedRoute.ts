@@ -28,6 +28,12 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
       return;
     }
 
+    // Allow unverified authenticated users to stay on register page for verification completion
+    if (redirectIfAuthenticated && user && !user.email_confirmed_at) {
+      // Don't redirect - let them complete verification
+      return;
+    }
+
     // Require authentication
     if (!redirectIfAuthenticated && !user) {
       toast.error('Please log in to access this page');

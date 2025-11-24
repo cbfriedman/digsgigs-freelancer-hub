@@ -114,7 +114,7 @@ const Register = () => {
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       // SECURITY: Validate inputs before proceeding
       basicInfoSchema.parse({
@@ -132,7 +132,7 @@ const Register = () => {
           setLoading(false);
           return;
         }
-        
+
         // Ensure phone starts with + for E.164 format
         const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
         setPhone(formattedPhone);
@@ -141,7 +141,7 @@ const Register = () => {
       // Create Supabase account immediately
       let authData, authError;
       const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
-      
+
       if (verificationMethod === 'email') {
         // Email signup
         const result = await supabase.auth.signUp({
@@ -175,7 +175,14 @@ const Register = () => {
 
       if (authError) {
         if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
-          toast.error(`This ${verificationMethod === 'email' ? 'email' : 'phone number'} is already registered. Please sign in instead.`);
+          // Auto-switch to sign-in mode for existing accounts
+          toast.error(`This account already exists. Switching to sign in mode...`);
+          setEmail(email); // Preserve email
+          setPassword(""); // Clear password for security
+          setIsSignInMode(true);
+          setStep(1); // Reset to step 1
+          setLoading(false);
+          return;
         } else {
           toast.error(authError.message);
         }
@@ -197,10 +204,7 @@ const Register = () => {
         `Verification code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}!`,
         { duration: 5000 }
       );
-      
-      // Sign out immediately to prevent auto-redirect
-      await supabase.auth.signOut();
-      
+
       setStep(2); // Move to verification screen
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -537,8 +541,17 @@ const Register = () => {
                     className="p-0 h-auto"
                     onClick={() => {
                       setIsSignInMode(false);
-                      setEmail("");
                       setPassword("");
+                      setConfirmPassword("");
+                      setFullName("");
+                      setPhone("");
+                      setVerificationMethod('email');
+                      setVerificationCode("");
+                      setUserId(null);
+                      setStep(1);
+                      setSelectedRoles(new Set());
+                      setRoleFormData({});
+                      setCurrentRoleIndex(0);
                     }}
                   >
                     Create new account
@@ -705,6 +718,14 @@ const Register = () => {
                       setFullName("");
                       setConfirmPassword("");
                       setPhone("");
+                      setPassword("");
+                      setVerificationMethod('email');
+                      setVerificationCode("");
+                      setUserId(null);
+                      setStep(1);
+                      setSelectedRoles(new Set());
+                      setRoleFormData({});
+                      setCurrentRoleIndex(0);
                     }}
                   >
                     Sign in
