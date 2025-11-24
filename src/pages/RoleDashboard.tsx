@@ -41,15 +41,17 @@ export default function RoleDashboard() {
 
   useEffect(() => {
     if (!user) {
+      setLoading(false);
       navigate("/register");
       return;
     }
     if (userRoles.length === 0) {
+      setLoading(false);
       navigate("/register");
       return;
     }
     fetchRoleStats();
-  }, [user, userRoles]);
+  }, [user, userRoles, navigate]);
 
   const fetchRoleStats = async () => {
     if (!user) return;
@@ -156,10 +158,19 @@ export default function RoleDashboard() {
     });
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading dashboard...</p>
+        <Button variant="outline" onClick={handleSignOut}>
+          Sign Out
+        </Button>
       </div>
     );
   }
