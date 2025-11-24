@@ -188,19 +188,24 @@ const Register = () => {
         toast.success("Account created successfully!");
         setStep(3);
       } else {
-        // Email confirmation is enabled - sign out and send OTP
+        // Email confirmation is enabled - send custom OTP
         await supabase.auth.signOut();
 
-        // Send OTP code
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-          }
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store OTP in session storage for verification
+        sessionStorage.setItem('pending_otp', otp);
+        sessionStorage.setItem('pending_otp_email', email);
+        sessionStorage.setItem('pending_otp_time', Date.now().toString());
+
+        // Send OTP via custom email
+        const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
+          body: { email, code: otp, name: fullName }
         });
 
-        if (otpError) {
-          toast.error("Failed to send verification code: " + otpError.message);
+        if (emailError) {
+          toast.error("Failed to send verification code: " + emailError.message);
           setLoading(false);
           return;
         }
@@ -229,24 +234,56 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const verifyResult = await supabase.auth.verifyOtp({
-        email: email,
-        token: verificationCode,
-        type: isSignInMode ? 'email' : 'signup',
+      // Get stored OTP
+      const storedOtp = sessionStorage.getItem('pending_otp');
+      const storedEmail = sessionStorage.getItem('pending_otp_email');
+      const storedTime = sessionStorage.getItem('pending_otp_time');
+
+      // Validate OTP hasn't expired (10 minutes)
+      if (!storedOtp || !storedEmail || !storedTime) {
+        toast.error("Verification session expired. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      const otpAge = Date.now() - parseInt(storedTime);
+      if (otpAge > 10 * 60 * 1000) {
+        toast.error("Verification code expired. Please request a new one.");
+        sessionStorage.removeItem('pending_otp');
+        sessionStorage.removeItem('pending_otp_email');
+        sessionStorage.removeItem('pending_otp_time');
+        setLoading(false);
+        return;
+      }
+
+      // Verify OTP matches
+      if (verificationCode !== storedOtp || email !== storedEmail) {
+        toast.error("Invalid verification code");
+        setLoading(false);
+        return;
+      }
+
+      // Clear OTP from storage
+      sessionStorage.removeItem('pending_otp');
+      sessionStorage.removeItem('pending_otp_email');
+      sessionStorage.removeItem('pending_otp_time');
+
+      // Sign in the user with their credentials
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (verifyResult.error) {
-        toast.error(verifyResult.error.message || "Invalid verification code");
+      if (signInError) {
+        toast.error("Failed to verify: " + signInError.message);
         setLoading(false);
         return;
       }
 
       if (isSignInMode) {
-        // Sign in successful, redirect to dashboard
         toast.success("Signed in successfully!");
         navigate('/role-dashboard');
       } else {
-        // Registration verified, move to role selection
         toast.success("Account verified successfully!");
         setStep(3);
       }
@@ -262,25 +299,20 @@ const Register = () => {
     setLoading(true);
 
     try {
-      if (isSignInMode) {
-        // For sign-in, send a new OTP
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-          },
-        });
-        if (error) throw error;
-      } else {
-        // For signup, resend OTP
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-          },
-        });
-        if (error) throw error;
-      }
+      // Generate new 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store OTP in session storage
+      sessionStorage.setItem('pending_otp', otp);
+      sessionStorage.setItem('pending_otp_email', email);
+      sessionStorage.setItem('pending_otp_time', Date.now().toString());
+
+      // Send OTP via custom email
+      const { error } = await supabase.functions.invoke('send-otp-email', {
+        body: { email, code: otp, name: fullName }
+      });
+      
+      if (error) throw error;
 
       toast.success("Verification code resent!");
     } catch (error: any) {
@@ -403,22 +435,27 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Send OTP to email
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-        },
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store OTP in session storage
+      sessionStorage.setItem('pending_otp', otp);
+      sessionStorage.setItem('pending_otp_email', email);
+      sessionStorage.setItem('pending_otp_time', Date.now().toString());
+
+      // Send OTP via custom email
+      const { error } = await supabase.functions.invoke('send-otp-email', {
+        body: { email, code: otp }
       });
 
       if (error) {
-        toast.error(error.message);
+        toast.error("Failed to send verification code: " + error.message);
         setLoading(false);
         return;
       }
 
       toast.success(`Verification code sent to ${email}! Please check your email.`, { duration: 5000 });
-      setStep(2); // Move to OTP verification step
+      setStep(2);
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast.error(error.message || "Failed to send verification code");
