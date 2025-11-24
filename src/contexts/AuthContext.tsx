@@ -168,15 +168,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session);
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           // Fetch user roles instead of checking user_type
-          fetchUserRoles(session.user.id).catch((error) => {
+          await fetchUserRoles(session.user.id).catch((error) => {
             console.error('Error fetching user roles:', error);
           });
+
+          // Handle email confirmation callback
+          if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+            // Clear the hash from URL
+            window.history.replaceState(null, '', window.location.pathname);
+
+            // Check if user has completed registration by checking for roles
+            const { data: roles } = await supabase
+              .from('user_app_roles')
+              .select('app_role')
+              .eq('user_id', session.user.id);
+
+            if (!roles || roles.length === 0) {
+              // User hasn't selected roles yet, redirect to registration
+              toast.success('Email verified! Please complete your registration.');
+              window.location.href = '/register';
+            } else {
+              // User has roles, redirect to dashboard
+              toast.success('Welcome back! Successfully signed in.');
+              window.location.href = '/role-dashboard';
+            }
+          }
         } else {
           setUserRoles([]);
           setActiveRole(null);
@@ -189,11 +213,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         fetchUserRoles(session.user.id);
       }
-      
+
       setLoading(false);
     });
 
