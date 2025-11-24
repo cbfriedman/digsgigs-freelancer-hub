@@ -74,7 +74,10 @@ const Register = () => {
     requireVerified: false // Allow unverified users to complete registration
   });
   
-  const [isSignInMode, setIsSignInMode] = useState(false);
+  const [isSignInMode, setIsSignInMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'signin';
+  });
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

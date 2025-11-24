@@ -119,7 +119,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               <>
                 <Button
                   variant="ghost"
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate("/register?mode=signin")}
                 >
                   Sign In
                 </Button>
