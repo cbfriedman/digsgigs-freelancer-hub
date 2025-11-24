@@ -12,6 +12,25 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
+    mode === "development" && {
+      name: 'spa-fallback',
+      configureServer(server: any) {
+        return () => {
+          server.middlewares.use((req: any, res: any, next: any) => {
+            const accept = req.headers.accept || '';
+            // Only rewrite GET requests for HTML
+            if (req.method === 'GET' && accept.includes('text/html')) {
+              const url = req.url || '';
+              // Don't rewrite if it has a file extension or is an API call
+              if (!url.includes('.') && !url.startsWith('/api') && !url.startsWith('/@')) {
+                req.url = '/index.html';
+              }
+            }
+            next();
+          });
+        };
+      },
+    },
   ].filter(Boolean),
   resolve: {
     alias: {
