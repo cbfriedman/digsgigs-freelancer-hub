@@ -191,13 +191,14 @@ const Register = () => {
                                         authData.user.confirmed_at === null;
 
       if (emailConfirmationRequired) {
-        // Email confirmation is enabled
-        console.log("Email confirmation required - showing verification screen");
+        // Email confirmation is enabled - show instructions for magic link
+        console.log("Email confirmation required - user needs to click link in email");
         toast.success(
-          `Verification code sent to ${email}! Please check your email (including spam folder).`,
-          { duration: 7000 }
+          `Confirmation email sent to ${email}! Click the link in the email to verify your account.`,
+          { duration: 10000 }
         );
-        setStep(2); // Move to verification screen
+        // Show a waiting screen instead of OTP input
+        setStep(2);
       } else {
         // Email confirmation is disabled, proceed directly
         console.log("Email confirmation disabled - proceeding to role selection");
@@ -484,7 +485,7 @@ const Register = () => {
               {isSignInMode && step === 1 ? "Welcome Back" : isSignInMode && step === 2 ? "Verify Your Email" : !isSignInMode && step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isSignInMode && step === 1 ? "We'll send a verification code to your email" : isSignInMode && step === 2 ? "Enter the code sent to your email" : !isSignInMode && step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isSignInMode && step === 1 ? "We'll send a verification code to your email" : isSignInMode && step === 2 ? "Click the link in your email to sign in" : !isSignInMode && step === 1 ? "Let's start with your basic information" : step === 2 ? "Click the confirmation link sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar - Only show during registration */}
@@ -776,7 +777,7 @@ const Register = () => {
                   <div>
                     <h3 className="font-semibold text-lg">Check your email</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      We sent a 6-digit code to{' '}
+                      We sent a confirmation email to{' '}
                       <span className="font-medium text-foreground">
                         {email}
                       </span>
@@ -786,48 +787,28 @@ const Register = () => {
 
                 <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                    <p className="font-medium mb-1">Check your email inbox</p>
-                    <ul className="list-disc ml-4 space-y-1">
-                      <li>Look for an email from DigsandGigs</li>
-                      <li>Check your spam/junk folder if not in inbox</li>
-                      <li>The code expires in 60 minutes</li>
-                    </ul>
+                    <p className="font-medium mb-2">To complete your registration:</p>
+                    <ol className="list-decimal ml-4 space-y-2">
+                      <li>Check your email inbox for a message from DigsandGigs</li>
+                      <li>Click the "Log In" or "Confirm Email" button in the email</li>
+                      <li>You'll be automatically signed in and redirected</li>
+                    </ol>
+                    <p className="mt-3 text-xs">
+                      <strong>Note:</strong> Check your spam/junk folder if you don't see the email. The link expires in 60 minutes.
+                    </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="verification-code" className="text-center block">
-                      Enter Verification Code
-                    </Label>
-                    <div className="flex justify-center">
-                      <InputOTP
-                        maxLength={6}
-                        value={verificationCode}
-                        onChange={(value) => setVerificationCode(value)}
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Waiting for email confirmation...</strong>
+                      <br />
+                      Once you click the link in your email, you'll be redirected back here automatically.
+                    </p>
                   </div>
-
-                  <Button
-                    onClick={handleVerification}
-                    disabled={loading || verificationCode.length !== 6}
-                    className="w-full"
-                  >
-                    {loading ? "Verifying..." : "Verify Code"}
-                    <CheckCircle2 className="ml-2 h-4 w-4" />
-                  </Button>
 
                   <div className="text-center space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Didn't receive the code?
+                      Didn't receive the email?
                     </p>
                     <Button
                       variant="link"
@@ -835,7 +816,7 @@ const Register = () => {
                       disabled={loading}
                       className="p-0 h-auto"
                     >
-                      Resend Code
+                      Resend Confirmation Email
                     </Button>
                   </div>
 
