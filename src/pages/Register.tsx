@@ -769,59 +769,44 @@ const Register = () => {
 
             {/* Step 2: Verification */}
             {step === 2 && (
-              <div className="space-y-6">
-                <div className="text-center space-y-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-                    <Mail className="h-8 w-8 text-primary" />
+              <div className="space-y-4">
+                <div className="text-center space-y-2">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                    <Mail className="h-6 w-6 text-primary" />
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-lg">Check your email</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      We sent a verification link to{' '}
-                      <span className="font-medium text-foreground">
-                        {email}
-                      </span>
+                    <h3 className="font-semibold">Check your email</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Verification link sent to <span className="font-medium text-foreground">{email}</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                    <p className="font-medium mb-2">To complete your registration:</p>
-                    <ol className="list-decimal ml-4 space-y-2">
-                      <li>Check your email inbox for a message from DigsandGigs</li>
-                      <li>Click the verification link in the email</li>
-                      <li>You'll be automatically redirected back here</li>
+                <div className="space-y-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                    <ol className="list-decimal ml-4 space-y-1">
+                      <li>Check your inbox (and spam folder)</li>
+                      <li>Click the verification link</li>
+                      <li>Keep this tab open - we'll auto-continue</li>
                     </ol>
-                    <p className="mt-3 text-xs">
-                      <strong>Note:</strong> Check your spam/junk folder if you don't see the email. The link expires in 60 minutes.
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-yellow-600 border-t-transparent rounded-full flex-shrink-0"></div>
+                    <p className="text-xs text-yellow-800">
+                      Waiting for verification... (auto-detects when you click the link)
                     </p>
                   </div>
 
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-                    <div className="flex-shrink-0">
-                      <div className="animate-spin h-5 w-5 border-2 border-yellow-600 border-t-transparent rounded-full"></div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-yellow-800">Waiting for email verification...</p>
-                      <p className="text-xs text-yellow-700 mt-1">
-                        Once you click the link in your email, you'll automatically continue to the next step.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-center space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Didn't receive the email?
-                    </p>
+                  <div className="text-center pt-1">
                     <Button
                       variant="link"
                       onClick={handleResendCode}
                       disabled={loading}
-                      className="p-0 h-auto"
+                      className="text-sm"
                     >
-                      Resend Verification Email
+                      Resend email
                     </Button>
                   </div>
 
