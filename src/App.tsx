@@ -59,6 +59,7 @@ import TelemarketerDashboard from "./pages/TelemarketerDashboard";
 import ProfileCreationDemo from "./pages/ProfileCreationDemo";
 import Register from "./pages/Register";
 import RoleDashboard from "./pages/RoleDashboard";
+import Logout from "./pages/Logout";
 
 const queryClient = new QueryClient();
 
@@ -77,8 +78,11 @@ const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register />,
-    // Explicitly ensure this route exists
     errorElement: <div>Register route error</div>,
+  },
+  {
+    path: "/logout",
+    element: <Logout />,
   },
   {
     path: "/auth",
