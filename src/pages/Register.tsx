@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Eye, EyeOff, Home, ArrowRight, ArrowLeft, CheckCircle2, Mail, Smartphone } from "lucide-react";
+import { Eye, EyeOff, Home, ArrowRight, ArrowLeft, CheckCircle2, Mail, Smartphone, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import SEOHead from "@/components/SEOHead";
 import { Progress } from "@/components/ui/progress";
@@ -79,6 +79,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [existingAccountError, setExistingAccountError] = useState(false);
 
   // Step 1: Basic Info
   const [fullName, setFullName] = useState("");
@@ -192,14 +193,14 @@ const Register = () => {
 
       if (authError) {
         if (authError.message.includes('already registered') || authError.message.includes('already exists') || authError.message.includes('User already registered')) {
-          toast.error(`This email is already registered. Please use the "Sign in" link below if this is your account.`, {
-            duration: 7000,
-          });
+          setExistingAccountError(true);
+          setLoading(false);
+          return;
         } else {
           toast.error(authError.message);
+          setLoading(false);
+          return;
         }
-        setLoading(false);
-        return;
       }
 
       if (!authData.user) {
@@ -588,6 +589,61 @@ const Register = () => {
             {/* Step 1: Basic Information */}
             {!isSignInMode && step === 1 && (
               <form onSubmit={handleBasicInfoSubmit} className="space-y-4">
+                {existingAccountError && (
+                  <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                      <div className="flex-1 space-y-2">
+                        <h4 className="font-semibold text-destructive">This Account Already Exists</h4>
+                        <p className="text-sm text-muted-foreground">
+                          The email <strong>{email}</strong> is already registered. Please choose an option below:
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setIsSignInMode(true);
+                              setExistingAccountError(false);
+                              setPassword("");
+                            }}
+                            className="flex-1"
+                          >
+                            Sign In Instead
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigate('/register?reset=true');
+                              setExistingAccountError(false);
+                            }}
+                            className="flex-1"
+                          >
+                            Reset Password
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setExistingAccountError(false);
+                              setEmail("");
+                              setPassword("");
+                              setConfirmPassword("");
+                            }}
+                            className="flex-1"
+                          >
+                            Use Different Email
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name *</Label>
                   <Input
@@ -608,7 +664,12 @@ const Register = () => {
                     type="email"
                     placeholder="john@example.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (existingAccountError) {
+                        setExistingAccountError(false);
+                      }
+                    }}
                     required
                     maxLength={255}
                   />
