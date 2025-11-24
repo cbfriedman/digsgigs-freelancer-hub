@@ -146,7 +146,7 @@ const Register = () => {
       // Format phone if provided
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
 
-      // First, try to sign up the user to create the account
+      // Create Supabase account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -155,7 +155,6 @@ const Register = () => {
             full_name: fullName,
             phone: formattedPhone,
           },
-          emailRedirectTo: undefined,
         },
       });
 
@@ -180,38 +179,32 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      // Check if email confirmation is required
-      const emailConfirmationRequired = authData.user.email_confirmed_at === null &&
-                                        authData.user.confirmed_at === null;
-
-      if (emailConfirmationRequired) {
-        // Sign out the user temporarily and send OTP
-        await supabase.auth.signOut();
-
-        // Request OTP code via email
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-          }
-        });
-
-        if (otpError) {
-          toast.error("Failed to send verification code: " + otpError.message);
-          setLoading(false);
-          return;
-        }
-
-        toast.success(
-          `Verification code sent to ${email}! Please check your email.`,
-          { duration: 7000 }
-        );
-        setStep(2);
-      } else {
-        // Email confirmation is disabled, proceed directly
-        console.log("Email confirmation disabled - proceeding to role selection");
+      // Check if we have an active session (email confirmation disabled)
+      if (authData.session) {
+        // User is already signed in, proceed directly to role selection
         toast.success("Account created successfully!");
         setStep(3);
+      } else {
+        // Email confirmation is enabled
+        toast.info(
+          "Check your email and click the verification link, then you'll be automatically redirected back here.",
+          { duration: 10000 }
+        );
+
+        // Poll for session - check if user clicked the link
+        const pollInterval = setInterval(async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            clearInterval(pollInterval);
+            toast.success("Email verified! Continuing registration...");
+            setStep(3);
+          }
+        }, 2000);
+
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollInterval), 300000);
+
+        setStep(2);
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -277,20 +270,18 @@ const Register = () => {
         });
         if (error) throw error;
       } else {
-        // For signup, resend OTP
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-          },
+        // For signup, resend confirmation email
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email,
         });
         if (error) throw error;
       }
 
-      toast.success("Verification code resent to your email!");
+      toast.success("Verification email resent!");
     } catch (error: any) {
       console.error("Resend error:", error);
-      toast.error(error.message || "Failed to resend code");
+      toast.error(error.message || "Failed to resend email");
     } finally {
       setLoading(false);
     }
@@ -495,7 +486,7 @@ const Register = () => {
               {isSignInMode && step === 1 ? "Welcome Back" : isSignInMode && step === 2 ? "Verify Your Email" : !isSignInMode && step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isSignInMode && step === 1 ? "We'll send a verification code to your email" : isSignInMode && step === 2 ? "Enter the code sent to your email" : !isSignInMode && step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isSignInMode && step === 1 ? "We'll send a verification code to your email" : isSignInMode && step === 2 ? "Click the link in your email to sign in" : !isSignInMode && step === 1 ? "Let's start with your basic information" : step === 2 ? "Click the verification link sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar - Only show during registration */}
@@ -787,7 +778,7 @@ const Register = () => {
                   <div>
                     <h3 className="font-semibold text-lg">Check your email</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      We sent a 6-digit code to{' '}
+                      We sent a verification link to{' '}
                       <span className="font-medium text-foreground">
                         {email}
                       </span>
@@ -797,48 +788,32 @@ const Register = () => {
 
                 <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                    <p className="font-medium mb-1">Check your email inbox</p>
-                    <ul className="list-disc ml-4 space-y-1">
-                      <li>Look for an email from DigsandGigs</li>
-                      <li>Check your spam/junk folder if not in inbox</li>
-                      <li>The code expires in 60 minutes</li>
-                    </ul>
+                    <p className="font-medium mb-2">To complete your registration:</p>
+                    <ol className="list-decimal ml-4 space-y-2">
+                      <li>Check your email inbox for a message from DigsandGigs</li>
+                      <li>Click the verification link in the email</li>
+                      <li>You'll be automatically redirected back here</li>
+                    </ol>
+                    <p className="mt-3 text-xs">
+                      <strong>Note:</strong> Check your spam/junk folder if you don't see the email. The link expires in 60 minutes.
+                    </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="verification-code" className="text-center block">
-                      Enter Verification Code
-                    </Label>
-                    <div className="flex justify-center">
-                      <InputOTP
-                        maxLength={6}
-                        value={verificationCode}
-                        onChange={(value) => setVerificationCode(value)}
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="animate-spin h-5 w-5 border-2 border-yellow-600 border-t-transparent rounded-full"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-yellow-800">Waiting for email verification...</p>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        Once you click the link in your email, you'll automatically continue to the next step.
+                      </p>
                     </div>
                   </div>
 
-                  <Button
-                    onClick={handleVerification}
-                    disabled={loading || verificationCode.length !== 6}
-                    className="w-full"
-                  >
-                    {loading ? "Verifying..." : "Verify Code"}
-                    <CheckCircle2 className="ml-2 h-4 w-4" />
-                  </Button>
-
                   <div className="text-center space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Didn't receive the code?
+                      Didn't receive the email?
                     </p>
                     <Button
                       variant="link"
@@ -846,7 +821,7 @@ const Register = () => {
                       disabled={loading}
                       className="p-0 h-auto"
                     >
-                      Resend Code
+                      Resend Verification Email
                     </Button>
                   </div>
 
