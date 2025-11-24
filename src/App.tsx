@@ -93,20 +93,29 @@ const AuthRecoveryGuard = () => {
   return null;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <PresenceTracker />
-          <BrowserRouter>
-        <AuthRecoveryGuard />
-        <Routes>
-          {/* Public routes - no authentication required */}
-          <Route path="/" element={<Index />} />
-          <Route path="/register" element={<Register />} />
+const App = () => {
+  console.log('App component rendering');
+  console.log('Current location:', window.location.pathname);
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <PresenceTracker />
+            <BrowserRouter>
+              <AuthRecoveryGuard />
+              <Routes>
+                {/* Public routes - no authentication required */}
+                <Route path="/" element={<Index />} />
+                <Route path="/register" element={
+                  <>
+                    {console.log('Register route matched!')}
+                    <Register />
+                  </>
+                } />
           {/* Redirect /auth to /register */}
           <Route path="/auth" element={<Register />} />
           <Route path="/pre-demo-registration" element={<ProtectedRoute><PreDemoRegistration /></ProtectedRoute>} />
@@ -166,6 +175,7 @@ const App = () => (
     </CartProvider>
     </AuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
