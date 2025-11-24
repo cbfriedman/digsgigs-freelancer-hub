@@ -140,7 +140,12 @@ const Index = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+      window.location.href = '/';
+    }
   };
   const sampleDiggers = [
     {
