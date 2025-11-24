@@ -449,25 +449,26 @@ const Register = () => {
       
       <div className="min-h-screen bg-gradient-primary">
         {/* Top Navigation */}
-        <div className="w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="w-full bg-card border-b-2 border-primary/20 shadow-lg sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
+              size="default"
               onClick={() => navigate("/")}
+              className="font-medium hover:bg-primary/10 hover:border-primary"
             >
-              <Home className="h-4 w-4 mr-2" />
+              <Home className="h-5 w-5 mr-2" />
               Home
             </Button>
             
             <h1 
-              className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+              className="text-2xl font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors"
               onClick={() => navigate("/")}
             >
               Digs and Gigs
             </h1>
             
-            <div className="w-20" /> {/* Spacer for balance */}
+            <div className="w-28" /> {/* Spacer for balance */}
           </div>
         </div>
         
