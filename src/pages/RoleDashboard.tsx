@@ -58,6 +58,16 @@ export default function RoleDashboard() {
 
     setLoading(true);
 
+    const timeoutId = setTimeout(() => {
+      console.error('Stats fetch timed out');
+      setLoading(false);
+      toast({
+        title: "Loading timed out",
+        description: "Taking too long to load. Please try signing out and back in.",
+        variant: "destructive",
+      });
+    }, 10000);
+
     try {
       const newStats: RoleStats = {};
 
@@ -138,8 +148,10 @@ export default function RoleDashboard() {
       }
 
       setStats(newStats);
+      clearTimeout(timeoutId);
     } catch (error) {
       console.error('Error fetching role stats:', error);
+      clearTimeout(timeoutId);
       toast({
         title: "Error loading stats",
         description: "Could not load role statistics",
