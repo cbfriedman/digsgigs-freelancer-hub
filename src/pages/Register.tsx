@@ -185,25 +185,24 @@ const Register = () => {
         toast.success("Account created successfully!");
         setStep(3);
       } else {
-        // Email confirmation is enabled
-        toast.info(
-          "Check your email and click the verification link, then you'll be automatically redirected back here.",
-          { duration: 10000 }
-        );
+        // Email confirmation is enabled - sign out and send OTP
+        await supabase.auth.signOut();
 
-        // Poll for session - check if user clicked the link
-        const pollInterval = setInterval(async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            clearInterval(pollInterval);
-            toast.success("Email verified! Continuing registration...");
-            setStep(3);
+        // Send OTP code
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
           }
-        }, 2000);
+        });
 
-        // Stop polling after 5 minutes
-        setTimeout(() => clearInterval(pollInterval), 300000);
+        if (otpError) {
+          toast.error("Failed to send verification code: " + otpError.message);
+          setLoading(false);
+          return;
+        }
 
+        toast.success("Verification code sent to your email!");
         setStep(2);
       }
     } catch (error: any) {
@@ -270,15 +269,17 @@ const Register = () => {
         });
         if (error) throw error;
       } else {
-        // For signup, resend confirmation email
-        const { error } = await supabase.auth.resend({
-          type: 'signup',
-          email: email,
+        // For signup, resend OTP
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+          },
         });
         if (error) throw error;
       }
 
-      toast.success("Verification email resent!");
+      toast.success("Verification code resent!");
     } catch (error: any) {
       console.error("Resend error:", error);
       toast.error(error.message || "Failed to resend email");
@@ -486,7 +487,7 @@ const Register = () => {
               {isSignInMode && step === 1 ? "Welcome Back" : isSignInMode && step === 2 ? "Verify Your Email" : !isSignInMode && step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isSignInMode && step === 1 ? "We'll send a verification code to your email" : isSignInMode && step === 2 ? "Click the link in your email to sign in" : !isSignInMode && step === 1 ? "Let's start with your basic information" : step === 2 ? "Click the verification link sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isSignInMode && step === 1 ? "We'll send a verification code to your email" : isSignInMode && step === 2 ? "Enter the code sent to your email" : !isSignInMode && step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code from your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar - Only show during registration */}
@@ -776,37 +777,57 @@ const Register = () => {
                   </div>
 
                   <div>
-                    <h3 className="font-semibold">Check your email</h3>
+                    <h3 className="font-semibold">Enter verification code</h3>
                     <p className="text-sm text-muted-foreground">
-                      Verification link sent to <span className="font-medium text-foreground">{email}</span>
+                      Code sent to <span className="font-medium text-foreground">{email}</span>
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                    <ol className="list-decimal ml-4 space-y-1">
-                      <li>Check your inbox (and spam folder)</li>
-                      <li>Click the verification link</li>
-                      <li>Keep this tab open - we'll auto-continue</li>
-                    </ol>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+                    Check your email for a 6-digit code (check spam folder if needed)
                   </div>
 
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center gap-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-yellow-600 border-t-transparent rounded-full flex-shrink-0"></div>
-                    <p className="text-xs text-yellow-800">
-                      Waiting for verification... (auto-detects when you click the link)
-                    </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="verification-code" className="text-center block text-sm">
+                      Verification Code
+                    </Label>
+                    <div className="flex justify-center">
+                      <InputOTP
+                        maxLength={6}
+                        value={verificationCode}
+                        onChange={(value) => setVerificationCode(value)}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
                   </div>
 
-                  <div className="text-center pt-1">
+                  <Button
+                    onClick={handleVerification}
+                    disabled={loading || verificationCode.length !== 6}
+                    className="w-full"
+                  >
+                    {loading ? "Verifying..." : "Verify Code"}
+                    <CheckCircle2 className="ml-2 h-4 w-4" />
+                  </Button>
+
+                  <div className="text-center">
                     <Button
                       variant="link"
                       onClick={handleResendCode}
                       disabled={loading}
                       className="text-sm"
                     >
-                      Resend email
+                      Resend code
                     </Button>
                   </div>
 
