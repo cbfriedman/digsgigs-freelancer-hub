@@ -92,26 +92,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               HOME
             </Button>
 
-            {/* Dashboard Button for authenticated users */}
-            {user && (
-              <>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate("/role-dashboard")}
-                  className="font-semibold"
-                >
-                  DASHBOARD
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => signOut()}
-                  className="font-semibold text-destructive hover:text-destructive"
-                >
-                  SIGN OUT
-                </Button>
-              </>
-            )}
-
             {/* Admin Button - only for admins */}
             {user && userRoles.includes('admin') && (
               <Button
@@ -141,15 +121,34 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               </>
             )}
 
-            {/* User ID and Role Icons */}
+            {/* User Dropdown Menu */}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2 font-semibold">
+                    <User className="h-4 w-4" />
+                    <span>{user.email?.split('@')[0] || 'User'}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg z-50">
+                  <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Role Icons for authenticated users */}
             {user && userRoles.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2 px-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        {userRoles.includes('admin') && adminId ? adminId : (user.email?.split('@')[0] || user.id.slice(0, 8))}
-                      </span>
                       <div className="flex gap-1">
                         {userRoles.map((role) => (
                           <span key={role} className="text-base" title={roleConfig[role].label}>
@@ -183,13 +182,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </div>
                     </DropdownMenuItem>
                   ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/pricing')} className="cursor-pointer">
-                    <span className="text-muted-foreground">Manage Profiles</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
-                    Sign Out
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
