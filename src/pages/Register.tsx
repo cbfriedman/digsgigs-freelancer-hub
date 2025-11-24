@@ -461,7 +461,7 @@ const Register = () => {
       
       <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
         <Card className="w-full max-w-2xl">
-          <CardHeader className="text-center relative">
+          <CardHeader className="text-center relative pt-16">
             <Button
               variant="outline"
               size="sm"
@@ -473,7 +473,7 @@ const Register = () => {
             </Button>
             
             <h1 
-              className="absolute left-1/2 -translate-x-1/2 top-0 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+              className="absolute left-1/2 -translate-x-1/2 top-4 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate("/")}
             >
               Digs and Gigs
