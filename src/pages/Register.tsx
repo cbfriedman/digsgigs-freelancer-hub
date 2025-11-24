@@ -179,20 +179,12 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      // Check if email confirmation is required
-      const needsEmailConfirmation = authData.user.identities && authData.user.identities.length === 0;
-
-      if (needsEmailConfirmation) {
-        toast.success(
-          `Verification code sent to your email!`,
-          { duration: 5000 }
-        );
-        setStep(2); // Move to verification screen
-      } else {
-        // Email confirmation is disabled, go straight to role selection
-        toast.success("Account created successfully!");
-        setStep(3); // Move to role selection
-      }
+      // Always require email verification
+      toast.success(
+        `Verification code sent to ${email}! Please check your email.`,
+        { duration: 5000 }
+      );
+      setStep(2); // Move to verification screen
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -217,7 +209,7 @@ const Register = () => {
       const verifyResult = await supabase.auth.verifyOtp({
         email: email,
         token: verificationCode,
-        type: 'signup',
+        type: isSignInMode ? 'email' : 'signup',
       });
 
       if (verifyResult.error) {
@@ -226,8 +218,15 @@ const Register = () => {
         return;
       }
 
-      toast.success("Account verified successfully!");
-      setStep(3); // Move to role selection
+      if (isSignInMode) {
+        // Sign in successful, redirect to dashboard
+        toast.success("Signed in successfully!");
+        navigate('/role-dashboard');
+      } else {
+        // Registration verified, move to role selection
+        toast.success("Account verified successfully!");
+        setStep(3);
+      }
     } catch (error: any) {
       console.error("Verification error:", error);
       toast.error(error.message || "Verification failed");
@@ -240,12 +239,24 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-      });
+      if (isSignInMode) {
+        // For sign-in, send a new OTP
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+          },
+        });
+        if (error) throw error;
+      } else {
+        // For signup, resend the signup confirmation
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email,
+        });
+        if (error) throw error;
+      }
 
-      if (error) throw error;
       toast.success("Verification code resent to your email!");
     } catch (error: any) {
       console.error("Resend error:", error);
@@ -367,9 +378,12 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Send OTP to email
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password,
+        options: {
+          shouldCreateUser: false,
+        },
       });
 
       if (error) {
@@ -378,13 +392,11 @@ const Register = () => {
         return;
       }
 
-      if (data.user) {
-        toast.success("Signed in successfully!");
-        navigate('/role-dashboard');
-      }
+      toast.success(`Verification code sent to ${email}! Please check your email.`, { duration: 5000 });
+      setStep(2); // Move to OTP verification step
     } catch (error: any) {
       console.error("Sign in error:", error);
-      toast.error(error.message || "Sign in failed");
+      toast.error(error.message || "Failed to send verification code");
     } finally {
       setLoading(false);
     }
@@ -442,10 +454,10 @@ const Register = () => {
               )}
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isSignInMode ? "Welcome Back" : step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
+              {isSignInMode && step === 1 ? "Welcome Back" : isSignInMode && step === 2 ? "Verify Your Email" : !isSignInMode && step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isSignInMode ? "Sign in to access your DigsandGigs account" : step === 1 ? "Let's start with your basic information" : step === 2 ? `Enter the code sent to your ${verificationMethod === 'email' ? 'email' : 'phone'}` : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isSignInMode && step === 1 ? "We'll send a verification code to your email" : isSignInMode && step === 2 ? "Enter the code sent to your email" : !isSignInMode && step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar - Only show during registration */}
@@ -461,7 +473,7 @@ const Register = () => {
 
           <CardContent>
             {/* Sign In Form */}
-            {isSignInMode && (
+            {isSignInMode && step === 1 && (
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email Address</Label>
@@ -473,41 +485,17 @@ const Register = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    We'll send a verification code to this email
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="signin-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full" 
+                <Button
+                  type="submit"
+                  className="w-full"
                   disabled={loading}
                 >
-                  {loading ? "Signing In..." : "Sign In"}
+                  {loading ? "Sending Code..." : "Send Verification Code"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
