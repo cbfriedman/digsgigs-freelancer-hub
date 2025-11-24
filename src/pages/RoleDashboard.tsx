@@ -54,107 +54,137 @@ export default function RoleDashboard() {
   }, [user, userRoles, navigate]);
 
   const fetchRoleStats = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
-
-    const timeoutId = setTimeout(() => {
-      console.error('Stats fetch timed out');
-      setLoading(false);
-      toast({
-        title: "Loading timed out",
-        description: "Taking too long to load. Please try signing out and back in.",
-        variant: "destructive",
-      });
-    }, 10000);
+    let timeoutId: NodeJS.Timeout | null = null;
 
     try {
+      timeoutId = setTimeout(() => {
+        console.error('Stats fetch timed out');
+        setLoading(false);
+        toast({
+          title: "Loading timed out",
+          description: "Taking too long to load. Please refresh the page.",
+          variant: "destructive",
+        });
+      }, 8000);
+
       const newStats: RoleStats = {};
 
       // Fetch Digger stats
       if (userRoles.includes('digger')) {
-        const [leadsResponse, profilesResponse, activeLeadsResponse] = await Promise.all([
-          supabase
-            .from('lead_purchases')
-            .select('id', { count: 'exact', head: true })
-            .eq('digger_id', user.id),
-          supabase
-            .from('digger_profiles')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id),
-          supabase
-            .from('lead_purchases')
-            .select('id', { count: 'exact', head: true })
-            .eq('digger_id', user.id)
-            .eq('status', 'completed')
-        ]);
+        try {
+          const [leadsResponse, profilesResponse, activeLeadsResponse] = await Promise.all([
+            supabase
+              .from('lead_purchases')
+              .select('id', { count: 'exact', head: true })
+              .eq('digger_id', user.id),
+            supabase
+              .from('digger_profiles')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id),
+            supabase
+              .from('lead_purchases')
+              .select('id', { count: 'exact', head: true })
+              .eq('digger_id', user.id)
+              .eq('status', 'completed')
+          ]);
 
-        newStats.digger = {
-          leadsCount: leadsResponse.count || 0,
-          profilesCount: profilesResponse.count || 0,
-          activeLeadsCount: activeLeadsResponse.count || 0,
-        };
+          newStats.digger = {
+            leadsCount: leadsResponse.count || 0,
+            profilesCount: profilesResponse.count || 0,
+            activeLeadsCount: activeLeadsResponse.count || 0,
+          };
+        } catch (err) {
+          console.error('Error fetching digger stats:', err);
+          newStats.digger = {
+            leadsCount: 0,
+            profilesCount: 0,
+            activeLeadsCount: 0,
+          };
+        }
       }
 
       // Fetch Gigger stats
       if (userRoles.includes('gigger')) {
-        // First get gig IDs
-        const { data: userGigs } = await supabase
-          .from('gigs')
-          .select('id')
-          .eq('consumer_id', user.id);
-
-        const gigIds = userGigs?.map(g => g.id) || [];
-
-        const [gigsResponse, bidsResponse, awardedResponse] = await Promise.all([
-          supabase
+        try {
+          const { data: userGigs } = await supabase
             .from('gigs')
-            .select('id', { count: 'exact', head: true })
-            .eq('consumer_id', user.id),
-          gigIds.length > 0
-            ? supabase
-                .from('bids')
-                .select('id', { count: 'exact', head: true })
-                .in('gig_id', gigIds)
-                .eq('status', 'pending')
-            : { count: 0 },
-          supabase
-            .from('gigs')
-            .select('id', { count: 'exact', head: true })
-            .eq('consumer_id', user.id)
-            .not('awarded_digger_id', 'is', null)
-        ]);
+            .select('id')
+            .eq('consumer_id', user.id);
 
-        newStats.gigger = {
-          gigsCount: gigsResponse.count || 0,
-          activeBidsCount: bidsResponse.count || 0,
-          awardedGigsCount: awardedResponse.count || 0,
-        };
+          const gigIds = userGigs?.map(g => g.id) || [];
+
+          const [gigsResponse, bidsResponse, awardedResponse] = await Promise.all([
+            supabase
+              .from('gigs')
+              .select('id', { count: 'exact', head: true })
+              .eq('consumer_id', user.id),
+            gigIds.length > 0
+              ? supabase
+                  .from('bids')
+                  .select('id', { count: 'exact', head: true })
+                  .in('gig_id', gigIds)
+                  .eq('status', 'pending')
+              : { count: 0 },
+            supabase
+              .from('gigs')
+              .select('id', { count: 'exact', head: true })
+              .eq('consumer_id', user.id)
+              .not('awarded_digger_id', 'is', null)
+          ]);
+
+          newStats.gigger = {
+            gigsCount: gigsResponse.count || 0,
+            activeBidsCount: bidsResponse.count || 0,
+            awardedGigsCount: awardedResponse.count || 0,
+          };
+        } catch (err) {
+          console.error('Error fetching gigger stats:', err);
+          newStats.gigger = {
+            gigsCount: 0,
+            activeBidsCount: 0,
+            awardedGigsCount: 0,
+          };
+        }
       }
 
       // Fetch Telemarketer stats
       if (userRoles.includes('telemarketer')) {
-        const { data: teleProfile } = await supabase
-          .from('telemarketer_profiles')
-          .select('total_leads_uploaded, pending_commissions, paid_commissions')
-          .eq('user_id', user.id)
-          .single();
+        try {
+          const { data: teleProfile } = await supabase
+            .from('telemarketer_profiles')
+            .select('total_leads_uploaded, pending_commissions, paid_commissions')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        newStats.telemarketer = {
-          leadsUploadedCount: teleProfile?.total_leads_uploaded || 0,
-          pendingCommissions: teleProfile?.pending_commissions || 0,
-          paidCommissions: teleProfile?.paid_commissions || 0,
-        };
+          newStats.telemarketer = {
+            leadsUploadedCount: teleProfile?.total_leads_uploaded || 0,
+            pendingCommissions: teleProfile?.pending_commissions || 0,
+            paidCommissions: teleProfile?.paid_commissions || 0,
+          };
+        } catch (err) {
+          console.error('Error fetching telemarketer stats:', err);
+          newStats.telemarketer = {
+            leadsUploadedCount: 0,
+            pendingCommissions: 0,
+            paidCommissions: 0,
+          };
+        }
       }
 
       setStats(newStats);
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     } catch (error) {
       console.error('Error fetching role stats:', error);
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       toast({
-        title: "Error loading stats",
-        description: "Could not load role statistics",
+        title: "Error loading dashboard",
+        description: "Could not load dashboard. Please try again.",
         variant: "destructive",
       });
     } finally {
