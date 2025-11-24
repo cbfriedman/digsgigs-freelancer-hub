@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
@@ -68,35 +68,211 @@ const PresenceTracker = () => {
   return null;
 };
 
-// Global router guard to detect recovery/error parameters and redirect to /register
-const AuthRecoveryGuard = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    const hash = typeof window !== 'undefined' ? (window.location.hash || '') : '';
-    const search = typeof window !== 'undefined' ? (window.location.search || '') : '';
-
-    const hasRecoveryOrError =
-      hash.includes('type=recovery') ||
-      hash.includes('error=') ||
-      search.includes('type=recovery') ||
-      search.includes('error=');
-
-    if (hasRecoveryOrError && location.pathname !== '/register') {
-      // Redirect to /register while preserving query and hash
-      const target = '/register' + (search || '') + (hash || '');
-      navigate(target, { replace: true });
-    }
-  }, [navigate, location]);
-
-  return null;
-};
+// Create router with all routes
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Index />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
+  },
+  {
+    path: "/auth",
+    element: <Navigate to="/register" replace />,
+  },
+  {
+    path: "/pre-demo-registration",
+    element: <ProtectedRoute><PreDemoRegistration /></ProtectedRoute>,
+  },
+  {
+    path: "/role-dashboard",
+    element: <ProtectedRoute><RoleDashboard /></ProtectedRoute>,
+  },
+  {
+    path: "/digger-subscription",
+    element: <ProtectedRoute><DiggerSubscription /></ProtectedRoute>,
+  },
+  {
+    path: "/subscription",
+    element: <ProtectedRoute><Subscription /></ProtectedRoute>,
+  },
+  {
+    path: "/checkout",
+    element: <ProtectedRoute><Checkout /></ProtectedRoute>,
+  },
+  {
+    path: "/checkout-success",
+    element: <ProtectedRoute><CheckoutSuccess /></ProtectedRoute>,
+  },
+  {
+    path: "/browse-diggers",
+    element: <ProtectedRoute><BrowseDiggers /></ProtectedRoute>,
+  },
+  {
+    path: "/browse-gigs",
+    element: <ProtectedRoute><BrowseGigs /></ProtectedRoute>,
+  },
+  {
+    path: "/my-profiles",
+    element: <ProtectedRoute><MyProfiles /></ProtectedRoute>,
+  },
+  {
+    path: "/edit-digger-profile/:id",
+    element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
+  },
+  {
+    path: "/profile-completion",
+    element: <ProtectedRoute><ProfileCompletion /></ProtectedRoute>,
+  },
+  {
+    path: "/post-gig",
+    element: <ProtectedRoute><PostGig /></ProtectedRoute>,
+  },
+  {
+    path: "/my-gigs",
+    element: <ProtectedRoute><MyGigs /></ProtectedRoute>,
+  },
+  {
+    path: "/my-bids",
+    element: <ProtectedRoute><MyBids /></ProtectedRoute>,
+  },
+  {
+    path: "/my-leads",
+    element: <ProtectedRoute><MyLeads /></ProtectedRoute>,
+  },
+  {
+    path: "/messages",
+    element: <ProtectedRoute><Messages /></ProtectedRoute>,
+  },
+  {
+    path: "/transactions",
+    element: <ProtectedRoute><Transactions /></ProtectedRoute>,
+  },
+  {
+    path: "/notifications",
+    element: <ProtectedRoute><Notifications /></ProtectedRoute>,
+  },
+  {
+    path: "/gig/:id",
+    element: <ProtectedRoute><GigDetail /></ProtectedRoute>,
+  },
+  {
+    path: "/digger/:id",
+    element: <ProtectedRoute><DiggerDetail /></ProtectedRoute>,
+  },
+  {
+    path: "/how-it-works",
+    element: <HowItWorks />,
+  },
+  {
+    path: "/pricing",
+    element: <Pricing />,
+  },
+  {
+    path: "/pricing-strategy",
+    element: <PricingStrategy />,
+  },
+  {
+    path: "/lead-limits",
+    element: <LeadLimits />,
+  },
+  {
+    path: "/faq",
+    element: <FAQ />,
+  },
+  {
+    path: "/contact",
+    element: <Contact />,
+  },
+  {
+    path: "/blog",
+    element: <Blog />,
+  },
+  {
+    path: "/blog/:slug",
+    element: <BlogPost />,
+  },
+  {
+    path: "/digger-guide",
+    element: <DiggerGuide />,
+  },
+  {
+    path: "/terms",
+    element: <TermsOfService />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPolicy />,
+  },
+  {
+    path: "/sitemap",
+    element: <Sitemap />,
+  },
+  {
+    path: "/sitemap.xml",
+    element: <SitemapXML />,
+  },
+  {
+    path: "/saved-searches",
+    element: <ProtectedRoute><SavedSearches /></ProtectedRoute>,
+  },
+  {
+    path: "/email-preferences",
+    element: <ProtectedRoute><EmailPreferences /></ProtectedRoute>,
+  },
+  {
+    path: "/escrow-dashboard",
+    element: <ProtectedRoute><EscrowDashboard /></ProtectedRoute>,
+  },
+  {
+    path: "/telemarketer-dashboard",
+    element: <ProtectedRoute><TelemarketerDashboard /></ProtectedRoute>,
+  },
+  {
+    path: "/admin",
+    element: <ProtectedRoute><AdminDashboard /></ProtectedRoute>,
+  },
+  {
+    path: "/admin/users",
+    element: <ProtectedRoute><AdminUserManagement /></ProtectedRoute>,
+  },
+  {
+    path: "/admin/blog",
+    element: <ProtectedRoute><AdminBlog /></ProtectedRoute>,
+  },
+  {
+    path: "/admin/notifications",
+    element: <ProtectedRoute><AdminNotificationPreferences /></ProtectedRoute>,
+  },
+  {
+    path: "/test/ai-matching",
+    element: <ProtectedRoute><TestAIMatching /></ProtectedRoute>,
+  },
+  {
+    path: "/e2e-test-suite",
+    element: <ProtectedRoute><E2ETestSuite /></ProtectedRoute>,
+  },
+  {
+    path: "/demo/profile-creation",
+    element: <ProfileCreationDemo />,
+  },
+  {
+    path: "/demo/digger-registration",
+    element: <DiggerRegistrationDemo />,
+  },
+  {
+    path: "/demo/gig-registration",
+    element: <GigRegistrationDemo />,
+  },
+  {
+    path: "*",
+    element: <NotFound />,
+  },
+]);
 
 const App = () => {
-  console.log('App component rendering');
-  console.log('Current location:', window.location.pathname);
-  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -105,76 +281,11 @@ const App = () => {
             <Toaster />
             <Sonner />
             <PresenceTracker />
-            <BrowserRouter>
-              <AuthRecoveryGuard />
-              <Routes>
-                {/* Public routes - no authentication required */}
-                <Route path="/" element={<Index />} />
-                <Route path="/register" element={
-                  <>
-                    {console.log('Register route matched!')}
-                    <Register />
-                  </>
-                } />
-          {/* Redirect /auth to /register */}
-          <Route path="/auth" element={<Register />} />
-          <Route path="/pre-demo-registration" element={<ProtectedRoute><PreDemoRegistration /></ProtectedRoute>} />
-          <Route path="/digger-registration" element={<ProtectedRoute><DiggerRegistration /></ProtectedRoute>} />
-          <Route path="/digger-registration-demo" element={<ProtectedRoute><DiggerRegistrationDemo /></ProtectedRoute>} />
-          <Route path="/gig-registration-demo" element={<ProtectedRoute><GigRegistrationDemo /></ProtectedRoute>} />
-          <Route path="/edit-profile" element={<ProtectedRoute><EditDiggerProfile /></ProtectedRoute>} />
-          <Route path="/edit-digger-profile" element={<ProtectedRoute><EditDiggerProfile /></ProtectedRoute>} />
-          <Route path="/edit-digger-profile/:profileId" element={<ProtectedRoute><EditDiggerProfile /></ProtectedRoute>} />
-          <Route path="/my-profiles" element={<ProtectedRoute><MyProfiles /></ProtectedRoute>} />
-          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-          <Route path="/checkout-success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
-          <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
-          <Route path="/browse-diggers" element={<ProtectedRoute><BrowseDiggers /></ProtectedRoute>} />
-          <Route path="/browse-gigs" element={<ProtectedRoute><BrowseGigs /></ProtectedRoute>} />
-          <Route path="/digger/:id" element={<ProtectedRoute><DiggerDetail /></ProtectedRoute>} />
-          <Route path="/gig/:id" element={<ProtectedRoute><GigDetail /></ProtectedRoute>} />
-          <Route path="/my-leads" element={<ProtectedRoute><MyLeads /></ProtectedRoute>} />
-          <Route path="/my-bids" element={<ProtectedRoute><MyBids /></ProtectedRoute>} />
-          <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
-          <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
-          <Route path="/how-it-works" element={<ProtectedRoute><HowItWorks /></ProtectedRoute>} />
-          <Route path="/terms" element={<ProtectedRoute><TermsOfService /></ProtectedRoute>} />
-          <Route path="/privacy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
-          <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
-          <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
-          <Route path="/pricing-strategy" element={<ProtectedRoute><PricingStrategy /></ProtectedRoute>} />
-          <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-          <Route path="/email-preferences" element={<ProtectedRoute><EmailPreferences /></ProtectedRoute>} />
-          <Route path="/lead-limits" element={<ProtectedRoute><LeadLimits /></ProtectedRoute>} />
-          <Route path="/digger-guide" element={<ProtectedRoute><DiggerGuide /></ProtectedRoute>} />
-          <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-          <Route path="/profile-completion" element={<ProtectedRoute><ProfileCompletion /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/admin/notification-preferences" element={<ProtectedRoute><AdminNotificationPreferences /></ProtectedRoute>} />
-          <Route path="/admin/users" element={<ProtectedRoute><AdminUserManagement /></ProtectedRoute>} />
-          <Route path="/saved-searches" element={<ProtectedRoute><SavedSearches /></ProtectedRoute>} />
-          <Route path="/test-ai-matching" element={<ProtectedRoute><TestAIMatching /></ProtectedRoute>} />
-          <Route path="/e2e-test" element={<ProtectedRoute><E2ETestSuite /></ProtectedRoute>} />
-          <Route path="/blog" element={<ProtectedRoute><Blog /></ProtectedRoute>} />
-          <Route path="/blog/:slug" element={<ProtectedRoute><BlogPost /></ProtectedRoute>} />
-          <Route path="/admin/blog" element={<ProtectedRoute><AdminBlog /></ProtectedRoute>} />
-          <Route path="/faq" element={<ProtectedRoute><FAQ /></ProtectedRoute>} />
-          <Route path="/sitemap" element={<ProtectedRoute><Sitemap /></ProtectedRoute>} />
-          <Route path="/sitemap.xml" element={<ProtectedRoute><SitemapXML /></ProtectedRoute>} />
-          <Route path="/escrow-dashboard" element={<ProtectedRoute><EscrowDashboard /></ProtectedRoute>} />
-          <Route path="/digger-subscription" element={<ProtectedRoute><DiggerSubscription /></ProtectedRoute>} />
-          <Route path="/telemarketer-dashboard" element={<ProtectedRoute><TelemarketerDashboard /></ProtectedRoute>} />
-          <Route path="/profile-demo" element={<ProtectedRoute><ProfileCreationDemo /></ProtectedRoute>} />
-          <Route path="/role-dashboard" element={<ProtectedRoute><RoleDashboard /></ProtectedRoute>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-    </CartProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+            <RouterProvider router={router} />
+          </TooltipProvider>
+        </CartProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 };
 
