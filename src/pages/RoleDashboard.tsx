@@ -78,27 +78,38 @@ export default function RoleDashboard() {
       // Fetch Digger stats
       if (userRoles.includes('digger')) {
         try {
-          const [leadsResponse, profilesResponse, activeLeadsResponse] = await Promise.all([
-            supabase
-              .from('lead_purchases')
-              .select('id', { count: 'exact', head: true })
-              .eq('digger_id', user.id),
-            supabase
-              .from('digger_profiles')
-              .select('id', { count: 'exact', head: true })
-              .eq('user_id', user.id),
-            supabase
-              .from('lead_purchases')
-              .select('id', { count: 'exact', head: true })
-              .eq('digger_id', user.id)
-              .eq('status', 'completed')
-          ]);
+          // First get the digger profile ID
+          const { data: diggerProfile } = await supabase
+            .from('digger_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-          newStats.digger = {
-            leadsCount: leadsResponse.count || 0,
-            profilesCount: profilesResponse.count || 0,
-            activeLeadsCount: activeLeadsResponse.count || 0,
-          };
+          if (diggerProfile) {
+            const [leadsResponse, activeLeadsResponse] = await Promise.all([
+              supabase
+                .from('lead_purchases')
+                .select('id', { count: 'exact', head: true })
+                .eq('digger_id', diggerProfile.id),
+              supabase
+                .from('lead_purchases')
+                .select('id', { count: 'exact', head: true })
+                .eq('digger_id', diggerProfile.id)
+                .eq('status', 'completed')
+            ]);
+
+            newStats.digger = {
+              leadsCount: leadsResponse.count || 0,
+              profilesCount: 1,
+              activeLeadsCount: activeLeadsResponse.count || 0,
+            };
+          } else {
+            newStats.digger = {
+              leadsCount: 0,
+              profilesCount: 0,
+              activeLeadsCount: 0,
+            };
+          }
         } catch (err) {
           console.error('Error fetching digger stats:', err);
           newStats.digger = {
