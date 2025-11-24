@@ -115,6 +115,18 @@ const Register = () => {
     }
   }, [isSignInMode]);
 
+  // Check if user is already authenticated but unverified on mount
+  useEffect(() => {
+    if (!authLoading && user && !user.email_confirmed_at && !user.phone_confirmed_at) {
+      // User exists but is unverified - show verification step
+      setUserId(user.id);
+      setEmail(user.email || '');
+      setStep(2);
+      setIsSignInMode(false);
+      toast.info('Please verify your account to continue', { duration: 5000 });
+    }
+  }, [user, authLoading]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -433,6 +445,16 @@ const Register = () => {
       }
 
       if (data.user) {
+        // Check if user is verified
+        if (!data.user.email_confirmed_at && !data.user.phone_confirmed_at) {
+          toast.info("Please verify your account. Check your email or phone for the verification code.");
+          setUserId(data.user.id);
+          setStep(2);
+          setIsSignInMode(false);
+          setLoading(false);
+          return;
+        }
+
         toast.success("Signed in successfully!");
         navigate('/role-dashboard');
       }
@@ -770,19 +792,19 @@ const Register = () => {
               <div className="space-y-6">
                 <div className="text-center space-y-4">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-                    {verificationMethod === 'email' ? (
+                    {verificationMethod === 'email' || email ? (
                       <Mail className="h-8 w-8 text-primary" />
                     ) : (
                       <Smartphone className="h-8 w-8 text-primary" />
                     )}
                   </div>
-                  
+
                   <div>
-                    <h3 className="font-semibold text-lg">Check your {verificationMethod === 'email' ? 'email' : 'phone'}</h3>
+                    <h3 className="font-semibold text-lg">Check your {email ? 'email' : 'phone'}</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       We sent a 6-digit code to{' '}
                       <span className="font-medium text-foreground">
-                        {verificationMethod === 'email' ? email : phone}
+                        {email || phone}
                       </span>
                     </p>
                   </div>
@@ -834,14 +856,35 @@ const Register = () => {
                     </Button>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep(1)}
-                    className="w-full"
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Account Info
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        setStep(1);
+                        setIsSignInMode(false);
+                        setEmail("");
+                        setPassword("");
+                        setVerificationCode("");
+                        setUserId(null);
+                        toast.info("Signed out. You can start fresh or try signing in again.");
+                      }}
+                      className="flex-1"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Start Over
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStep(1);
+                        setIsSignInMode(true);
+                      }}
+                      className="flex-1"
+                    >
+                      Try Sign In
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
