@@ -267,98 +267,20 @@ const Index = () => {
             </Button>
             {user ? (
               <>
-                <Button variant="default" size="sm" onClick={() => navigate("/role-dashboard")}>
-                  <User className="mr-2 h-4 w-4" />
-                  My Dashboard
-                </Button>
-                <NotificationBell />
-                <Button variant="ghost" size="sm" onClick={() => navigate("/transactions")}>
-                  <Receipt className="mr-2 h-4 w-4" />
-                  Transactions
-                </Button>
-                {isDigger && (
-                  <>
-                    <Button variant="ghost" size="sm" onClick={() => navigate("/lead-limits")}>
-                      Lead Limits
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => navigate("/digger-guide")}>
-                      Digger Guide
-                    </Button>
-                  </>
-                )}
-                {!isDigger && (
-                  <Button onClick={() => navigate("/post-gig")}>
-                    <Briefcase className="mr-2 h-4 w-4" />
-                    Post a Gig
-                  </Button>
-                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      <User className="mr-2 h-4 w-4" />
-                      {userName}
-                      <ChevronDown className="ml-2 h-4 w-4" />
+                    <Button variant="ghost" className="gap-2 font-semibold">
+                      <User className="h-4 w-4" />
+                      <span>{userName}</span>
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56 bg-background z-50" align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuContent className="w-48 bg-background z-50" align="end">
+                    <DropdownMenuItem onClick={() => navigate("/role-dashboard")}>
+                      Dashboard
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    {isDigger && (
-                      <>
-                        <DropdownMenuItem onClick={() => navigate("/edit-profile")} className="flex justify-between">
-                          <div className="flex items-center">
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Profile
-                          </div>
-                          <Badge 
-                            variant={profileCompletion === 100 ? "default" : "secondary"}
-                            className="ml-2 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate("/profile-completion");
-                            }}
-                          >
-                            {profileCompletion}%
-                          </Badge>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/my-leads")}>
-                          <FileText className="mr-2 h-4 w-4" />
-                          My Leads
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/my-bids")}>
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          My Bids
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    <DropdownMenuItem onClick={() => navigate("/my-gigs")}>
-                      <Briefcase className="mr-2 h-4 w-4" />
-                      My Gigs
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/messages")}>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Messages
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/notifications")}>
-                      <Bell className="mr-2 h-4 w-4" />
-                      Notifications
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/saved-searches")}>
-                      <Bookmark className="mr-2 h-4 w-4" />
-                      Saved Searches
-                    </DropdownMenuItem>
-                    {isAdmin && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate("/admin")}>
-                          <Settings className="mr-2 h-4 w-4" />
-                          Admin Dashboard
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                       Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
