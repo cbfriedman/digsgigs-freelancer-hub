@@ -126,3 +126,6 @@ verify_jwt = true
 [functions.stripe-webhook-extension]
 verify_jwt = false
 
+[functions.send-otp-email]
+verify_jwt = false
+
