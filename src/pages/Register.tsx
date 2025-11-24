@@ -151,7 +151,6 @@ const Register = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/role-dashboard`,
           data: {
             full_name: fullName,
             phone: formattedPhone,
@@ -180,13 +179,20 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      // Don't auto-login, just move to verification
-      toast.success(
-        `Verification code sent to your email!`,
-        { duration: 5000 }
-      );
+      // Check if email confirmation is required
+      const needsEmailConfirmation = authData.user.identities && authData.user.identities.length === 0;
 
-      setStep(2); // Move to verification screen
+      if (needsEmailConfirmation) {
+        toast.success(
+          `Verification code sent to your email!`,
+          { duration: 5000 }
+        );
+        setStep(2); // Move to verification screen
+      } else {
+        // Email confirmation is disabled, go straight to role selection
+        toast.success("Account created successfully!");
+        setStep(3); // Move to role selection
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
