@@ -422,13 +422,13 @@ const Register = () => {
         canonical="/register"
       />
       
-      <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
-        <Card className="w-full max-w-2xl">
-          <CardHeader className="text-center relative pt-16">
+      <div className="min-h-screen bg-gradient-primary">
+        {/* Top Navigation */}
+        <div className="w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="absolute left-4 top-4 z-10"
               onClick={() => navigate("/")}
             >
               <Home className="h-4 w-4 mr-2" />
@@ -436,13 +436,21 @@ const Register = () => {
             </Button>
             
             <h1 
-              className="absolute left-1/2 -translate-x-1/2 top-4 text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+              className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate("/")}
             >
               Digs and Gigs
             </h1>
             
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="w-20" /> {/* Spacer for balance */}
+          </div>
+        </div>
+        
+        {/* Main Content */}
+        <div className="flex items-center justify-center p-4 pt-8">
+          <Card className="w-full max-w-2xl">
+            <CardHeader className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
               {isSignInMode ? (
                 <Badge variant="outline" className="text-base px-3 py-1">
                   Sign In
@@ -1034,6 +1042,7 @@ const Register = () => {
           </CardContent>
         </Card>
       </div>
+    </div>
     </>
   );
 };
