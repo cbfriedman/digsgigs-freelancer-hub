@@ -2,14 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Fallback values for Lovable Cloud environment variable injection issue
+const FALLBACK_SUPABASE_URL = 'https://ibyhvkfrbdwrnxutnkdy.supabase.co';
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlieWh2a2ZyYmR3cm54dXRua2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2Njg4NDcsImV4cCI6MjA3NzI0NDg0N30.fU0B8A_VTfFaGvhrNMV5kWK_YA98p4bv3HAH6ekpJEM';
 
-// Validate required environment variables
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error(
-    'Missing required environment variables: VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be set'
-  );
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_SUPABASE_PUBLISHABLE_KEY;
+
+// Warn if using fallback values (indicates platform bug)
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
+  console.warn('⚠️ Using hardcoded Supabase configuration fallback values due to missing environment variables. This indicates a Lovable Cloud platform issue.');
 }
 
 // Import the supabase client like this:
