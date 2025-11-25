@@ -63,11 +63,19 @@ export const AIPoweredKeywordInput = () => {
     setMatches([]);
 
     try {
-      const { data, error } = await supabase.functions.invoke('suggest-keywords-from-description', {
+      // Add timeout to prevent indefinite hanging
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout - please try again')), 30000)
+      );
+
+      const invokePromise = supabase.functions.invoke('suggest-keywords-from-description', {
         body: { description: description.trim() }
       });
 
+      const { data, error } = await Promise.race([invokePromise, timeout]) as any;
+
       if (error) {
+        console.error("Function returned error:", error);
         throw error;
       }
 
@@ -82,9 +90,9 @@ export const AIPoweredKeywordInput = () => {
           toast.success(`Found ${foundMatches.length} matching keywords!`);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error analyzing description:", error);
-      toast.error("Failed to analyze description. Please try again.");
+      toast.error(error?.message || "Failed to analyze description. Please try again.");
     } finally {
       setIsAnalyzing(false);
     }
