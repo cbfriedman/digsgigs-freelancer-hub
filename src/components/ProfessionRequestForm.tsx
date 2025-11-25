@@ -71,7 +71,17 @@ export const ProfessionRequestForm = () => {
       return;
     }
 
-    if (specialties.length === 0) {
+    // Parse comma-separated specialties from input field if any
+    let finalSpecialties = [...specialties];
+    if (specialtyInput.trim()) {
+      const inputSpecialties = specialtyInput
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s && !finalSpecialties.includes(s));
+      finalSpecialties = [...finalSpecialties, ...inputSpecialties];
+    }
+
+    if (finalSpecialties.length === 0) {
       toast({
         title: "Error",
         description: "Please add at least one specialty",
@@ -89,7 +99,7 @@ export const ProfessionRequestForm = () => {
         body: { 
           industry: industry,
           profession: profession.trim(),
-          specialties: specialties,
+          specialties: finalSpecialties,
           isNewIndustry: industryType === "new"
         }
       });
@@ -240,7 +250,7 @@ export const ProfessionRequestForm = () => {
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Add multiple specialties by typing and clicking "Add" or pressing Enter
+              Add multiple specialties by typing and clicking "Add" or pressing Enter. You can also use commas to separate multiple specialties.
             </p>
           </div>
 
