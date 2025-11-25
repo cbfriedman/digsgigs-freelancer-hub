@@ -44,6 +44,7 @@ export const CategoryBrowserWithDescription = () => {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -121,17 +122,8 @@ export const CategoryBrowserWithDescription = () => {
       if (error) throw error;
 
       if (data?.keywords && data.keywords.length > 0) {
-        // Store the results in session storage to pass to next page
-        sessionStorage.setItem('suggestedKeywords', JSON.stringify({
-          category: selectedCategory,
-          description: description,
-          keywords: data.keywords
-        }));
-        
-        // Navigate to a keyword selection page (we'll need to create this)
+        setSuggestedKeywords(data.keywords);
         toast.success(`Found ${data.keywords.length} relevant keywords!`);
-        // For now, just show the keywords in console and toast
-        console.log('Suggested keywords:', data.keywords);
       } else {
         toast.error("No keywords were suggested. Please try a more detailed description.");
       }
@@ -250,7 +242,7 @@ export const CategoryBrowserWithDescription = () => {
         )}
 
         {/* Info Box and Continue Button */}
-        {selectedCategory && description && (
+        {selectedCategory && description && !suggestedKeywords.length && (
           <div className="space-y-4">
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
               <h4 className="font-semibold mb-2">Next Steps</h4>
@@ -274,6 +266,44 @@ export const CategoryBrowserWithDescription = () => {
                 'Continue to Keyword Selection'
               )}
             </Button>
+          </div>
+        )}
+
+        {/* Suggested Keywords Display */}
+        {suggestedKeywords.length > 0 && (
+          <div className="space-y-4">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+              <h4 className="font-semibold mb-3">Suggested Keywords ({suggestedKeywords.length})</h4>
+              <div className="flex flex-wrap gap-2">
+                {suggestedKeywords.map((keyword, index) => (
+                  <div
+                    key={index}
+                    className="px-3 py-1.5 bg-background border border-border rounded-md text-sm"
+                  >
+                    {keyword}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                className="flex-1" 
+                size="lg"
+                onClick={() => {
+                  // TODO: Proceed with these keywords
+                  toast.success("Proceeding with selected keywords...");
+                }}
+              >
+                Use These Keywords
+              </Button>
+              <Button 
+                variant="outline"
+                size="lg"
+                onClick={() => setSuggestedKeywords([])}
+              >
+                Try Again
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>
