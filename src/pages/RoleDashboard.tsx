@@ -1,11 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Wrench, Briefcase, Phone, TrendingUp, FileText, DollarSign } from "lucide-react";
+import { Wrench, Briefcase, Phone, TrendingUp, FileText, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface RoleStats {
@@ -36,67 +36,39 @@ export default function RoleDashboard() {
   const { user, userRoles, activeRole, switchRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<RoleStats>({});
 
-  const fetchRoleStats = useCallback(async () => {
+  useEffect(() => {
     if (!user) {
-      setLoading(false);
+      navigate("/register");
       return;
     }
 
-    // If user has no roles, skip stats fetching entirely
-    if (userRoles.length === 0) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const newStats: RoleStats = {};
-
-      // Only fetch stats for roles the user actually has
-      if (userRoles.includes('gigger')) {
+    // Fetch stats in background if user has roles
+    if (userRoles.length > 0 && userRoles.includes('gigger')) {
+      const fetchStats = async () => {
         try {
-          const { count: gigsCount } = await supabase
+          const { count } = await supabase
             .from('gigs')
             .select('id', { count: 'exact', head: true })
             .eq('consumer_id', user.id);
 
-          newStats.gigger = {
-            gigsCount: gigsCount || 0,
-            activeBidsCount: 0,
-            awardedGigsCount: 0,
-          };
+          setStats(prev => ({
+            ...prev,
+            gigger: {
+              gigsCount: count || 0,
+              activeBidsCount: 0,
+              awardedGigsCount: 0,
+            }
+          }));
         } catch (err) {
           console.error('Error fetching gigger stats:', err);
         }
-      }
-
-      setStats(newStats);
-    } catch (error) {
-      console.error('Error fetching role stats:', error);
-    } finally {
-      setLoading(false);
+      };
+      
+      fetchStats();
     }
-  }, [user, userRoles]);
-
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      navigate("/register");
-      return;
-    }
-    
-    // Set loading to false immediately if no roles
-    if (userRoles.length === 0) {
-      setLoading(false);
-      return;
-    }
-    
-    fetchRoleStats();
-  }, [user, userRoles, navigate, fetchRoleStats]);
+  }, [user, navigate, userRoles]);
 
   const handleSwitchRole = async (role: 'digger' | 'gigger' | 'telemarketer') => {
     await switchRole(role);
@@ -110,18 +82,6 @@ export default function RoleDashboard() {
     await supabase.auth.signOut();
     navigate("/");
   };
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Loading dashboard...</p>
-        <Button variant="outline" onClick={handleSignOut}>
-          Sign Out
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
