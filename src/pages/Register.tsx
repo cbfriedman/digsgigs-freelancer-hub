@@ -78,11 +78,20 @@ const Register = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get('mode') === 'signin';
   });
+  const [isPasswordResetMode, setIsPasswordResetMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'reset-password';
+  });
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [existingAccountError, setExistingAccountError] = useState(false);
+  
+  // Password reset state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   // Step 1: Basic Info
   const [fullName, setFullName] = useState("");
@@ -456,6 +465,45 @@ const Register = () => {
     }
   };
 
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password updated successfully!");
+      
+      // Redirect to sign-in mode
+      setTimeout(() => {
+        setIsPasswordResetMode(false);
+        setIsSignInMode(true);
+        setNewPassword("");
+        setConfirmNewPassword("");
+        navigate('/register?mode=signin');
+      }, 1500);
+    } catch (error: any) {
+      console.error("Password update error:", error);
+      toast.error(error.message || "Failed to update password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleRole = (role: UserAppRole) => {
     const newRoles = new Set(selectedRoles);
     if (newRoles.has(role)) {
@@ -506,7 +554,11 @@ const Register = () => {
           <Card className="w-full max-w-2xl">
             <CardHeader className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-              {isSignInMode ? (
+              {isPasswordResetMode ? (
+                <Badge variant="outline" className="text-base px-3 py-1">
+                  Reset Password
+                </Badge>
+              ) : isSignInMode ? (
                 <Badge variant="outline" className="text-base px-3 py-1">
                   Sign In
                 </Badge>
@@ -517,14 +569,14 @@ const Register = () => {
               )}
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isSignInMode ? "Welcome Back" : step === 1 ? "Create Your Account" : step === 2 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
+              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : step === 1 ? "Create Your Account" : step === 2 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isSignInMode ? "Sign in to your account" : step === 1 ? "Let's start with your basic information" : step === 2 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : step === 1 ? "Let's start with your basic information" : step === 2 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar - Only show during registration */}
-            {!isSignInMode && (
+            {!isSignInMode && !isPasswordResetMode && (
               <div className="mt-4 space-y-2">
                 <Progress value={progressPercentage} className="w-full" />
                 <p className="text-xs text-muted-foreground">
@@ -535,8 +587,83 @@ const Register = () => {
           </CardHeader>
 
           <CardContent>
+            {/* Password Reset Form */}
+            {isPasswordResetMode && (
+              <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="new-password"
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Enter your new password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Must be at least 8 characters
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                  <Input
+                    id="confirm-new-password"
+                    type="password"
+                    placeholder="Confirm your new password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Updating Password..." : "Update Password"}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  Remember your password?{" "}
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto"
+                    onClick={() => {
+                      setIsPasswordResetMode(false);
+                      setIsSignInMode(true);
+                      setNewPassword("");
+                      setConfirmNewPassword("");
+                      navigate('/register?mode=signin');
+                    }}
+                  >
+                    Sign in instead
+                  </Button>
+                </p>
+              </form>
+            )}
+
             {/* Sign In Form */}
-            {isSignInMode && (
+            {!isPasswordResetMode && isSignInMode && (
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email Address</Label>
@@ -625,7 +752,7 @@ const Register = () => {
             )}
 
             {/* Step 1: Basic Information */}
-            {!isSignInMode && step === 1 && (
+            {!isSignInMode && !isPasswordResetMode && step === 1 && (
               <form onSubmit={handleBasicInfoSubmit} className="space-y-4">
                 {existingAccountError && (
                   <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
@@ -838,7 +965,7 @@ const Register = () => {
             )}
 
             {/* Step 2: Role Selection (was Step 3 with verification) */}
-            {step === 2 && (
+            {!isPasswordResetMode && step === 2 && (
               <div className="space-y-6">
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
@@ -948,7 +1075,7 @@ const Register = () => {
             )}
 
             {/* Step 3+: Role-specific Forms (was Step 4+ with verification) */}
-            {step > 2 && currentRole && (
+            {!isPasswordResetMode && step > 2 && currentRole && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
                   <Badge>
