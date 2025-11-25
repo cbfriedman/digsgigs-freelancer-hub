@@ -112,6 +112,25 @@ const Register = () => {
   const [roleFormData, setRoleFormData] = useState<RoleFormData>({});
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
 
+  // Handle expired password reset tokens
+  useEffect(() => {
+    if (isPasswordResetMode) {
+      const hash = window.location.hash.substring(1);
+      const hashParams = new URLSearchParams(hash);
+      const errorCode = hashParams.get('error_code');
+      const error = hashParams.get('error');
+      
+      if (errorCode === 'otp_expired' || error === 'access_denied') {
+        toast.error('Password reset link expired. Please request a new one.');
+        setTimeout(() => {
+          setIsPasswordResetMode(false);
+          setIsSignInMode(true);
+          navigate('/register?mode=signin');
+        }, 2000);
+      }
+    }
+  }, [isPasswordResetMode, navigate]);
+
   // Reset registration state when switching to sign-in mode
   useEffect(() => {
     if (isSignInMode) {
