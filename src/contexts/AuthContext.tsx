@@ -182,8 +182,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (session?.user) {
           // Handle password recovery before other flows
           if (event === 'PASSWORD_RECOVERY') {
-            // Redirect to password reset page
-            window.location.href = '/register?mode=reset-password';
+            // Don't redirect - user is already on the right page
+            // The URL already has mode=reset-password from the email link
+            console.log('Password recovery mode activated');
             return;
           }
 
