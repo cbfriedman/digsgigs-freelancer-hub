@@ -433,6 +433,29 @@ const Register = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Please enter your email address first");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/register?mode=reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password reset email sent! Check your inbox.");
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      toast.error(error.message || "Failed to send reset email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleRole = (role: UserAppRole) => {
     const newRoles = new Set(selectedRoles);
     if (newRoles.has(role)) {
@@ -563,6 +586,17 @@ const Register = () => {
                   {loading ? "Signing In..." : "Sign In"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
+
+                <div className="text-center text-sm space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-primary hover:underline"
+                    disabled={loading}
+                  >
+                    Forgot your password?
+                  </button>
+                </div>
 
                 <p className="text-center text-sm text-muted-foreground">
                   Don't have an account?{" "}
