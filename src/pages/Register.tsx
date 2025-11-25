@@ -129,7 +129,7 @@ const Register = () => {
   }
 
   const roleArray = Array.from(selectedRoles);
-  const totalSteps = 3 + roleArray.length; // Basic Info + Verification + Role Selection + Role Forms
+  const totalSteps = 2 + roleArray.length; // Basic Info + Role Selection + Role Forms (no verification step)
   const progressPercentage = (step / totalSteps) * 100;
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
@@ -149,7 +149,7 @@ const Register = () => {
       // Format phone if provided
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
 
-      // Create Supabase account
+      // Create Supabase account with auto-confirmation enabled
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -158,6 +158,7 @@ const Register = () => {
             full_name: fullName,
             phone: formattedPhone,
           },
+          emailRedirectTo: `${window.location.origin}/role-dashboard`,
         },
       });
 
@@ -182,37 +183,9 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      // Check if we have an active session (email confirmation disabled)
-      if (authData.session) {
-        // User is already signed in, proceed directly to role selection
-        toast.success("Account created successfully!");
-        setStep(3);
-      } else {
-        // Email confirmation is enabled - send custom OTP
-        await supabase.auth.signOut();
-
-        // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        // Store OTP in session storage for verification
-        sessionStorage.setItem('pending_otp', otp);
-        sessionStorage.setItem('pending_otp_email', email);
-        sessionStorage.setItem('pending_otp_time', Date.now().toString());
-
-        // Send OTP via custom email
-        const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
-          body: { email, code: otp, name: fullName }
-        });
-
-        if (emailError) {
-          toast.error("Failed to send verification code: " + emailError.message);
-          setLoading(false);
-          return;
-        }
-
-        toast.success("Verification code sent to your email!");
-        setStep(2);
-      }
+      // With auto-confirm enabled, user should have immediate session
+      toast.success("Account created successfully!");
+      setStep(2); // Go directly to role selection (was step 3, now step 2)
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -329,8 +302,8 @@ const Register = () => {
       return;
     }
 
-    // Move to first role form
-    setStep(4);
+    // Move to first role form (was step 4, now step 3 without verification)
+    setStep(3);
     setCurrentRoleIndex(0);
   };
 
@@ -435,30 +408,25 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Store OTP in session storage
-      sessionStorage.setItem('pending_otp', otp);
-      sessionStorage.setItem('pending_otp_email', email);
-      sessionStorage.setItem('pending_otp_time', Date.now().toString());
-
-      // Send OTP via custom email
-      const { error } = await supabase.functions.invoke('send-otp-email', {
-        body: { email, code: otp }
+      // Use Supabase's native password authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
       if (error) {
-        toast.error("Failed to send verification code: " + error.message);
+        toast.error(error.message);
         setLoading(false);
         return;
       }
 
-      toast.success(`Verification code sent to ${email}! Please check your email.`, { duration: 5000 });
-      setStep(2);
+      if (data.user) {
+        toast.success("Signed in successfully!");
+        navigate('/role-dashboard');
+      }
     } catch (error: any) {
       console.error("Sign in error:", error);
-      toast.error(error.message || "Failed to send verification code");
+      toast.error(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
     }
@@ -809,104 +777,8 @@ const Register = () => {
               </form>
             )}
 
-            {/* Step 2: Verification */}
+            {/* Step 2: Role Selection (was Step 3 with verification) */}
             {step === 2 && (
-              <div className="space-y-4">
-                <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-                    <Mail className="h-6 w-6 text-primary" />
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold">Enter verification code</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Code sent to <span className="font-medium text-foreground">{email}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
-                    Check your email for a 6-digit code (check spam folder if needed)
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="verification-code" className="text-center block text-sm">
-                      Verification Code
-                    </Label>
-                    <div className="flex justify-center">
-                      <InputOTP
-                        maxLength={6}
-                        value={verificationCode}
-                        onChange={(value) => setVerificationCode(value)}
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleVerification}
-                    disabled={loading || verificationCode.length !== 6}
-                    className="w-full"
-                  >
-                    {loading ? "Verifying..." : "Verify Code"}
-                    <CheckCircle2 className="ml-2 h-4 w-4" />
-                  </Button>
-
-                  <div className="text-center">
-                    <Button
-                      variant="link"
-                      onClick={handleResendCode}
-                      disabled={loading}
-                      className="text-sm"
-                    >
-                      Resend code
-                    </Button>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={async () => {
-                        await supabase.auth.signOut();
-                        setStep(1);
-                        setIsSignInMode(false);
-                        setEmail("");
-                        setPassword("");
-                        setVerificationCode("");
-                        setUserId(null);
-                        toast.info("Signed out. You can start fresh or try signing in again.");
-                      }}
-                      className="flex-1"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Start Over
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setStep(1);
-                        setIsSignInMode(true);
-                      }}
-                      className="flex-1"
-                    >
-                      Try Sign In
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Role Selection */}
-            {step === 3 && (
               <div className="space-y-6">
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
@@ -998,7 +870,7 @@ const Register = () => {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(1)}
                     className="flex-1"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -1015,8 +887,8 @@ const Register = () => {
               </div>
             )}
 
-            {/* Step 4+: Role-specific Forms */}
-            {step > 3 && currentRole && (
+            {/* Step 3+: Role-specific Forms (was Step 4+ with verification) */}
+            {step > 2 && currentRole && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
                   <Badge>
