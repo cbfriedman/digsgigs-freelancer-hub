@@ -122,25 +122,11 @@ export default function RoleDashboard() {
       // Fetch Gigger stats
       if (userRoles.includes('gigger')) {
         try {
-          const { data: userGigs } = await supabase
-            .from('gigs')
-            .select('id')
-            .eq('consumer_id', user.id);
-
-          const gigIds = userGigs?.map(g => g.id) || [];
-
-          const [gigsResponse, bidsResponse, awardedResponse] = await Promise.all([
+          const [gigsResponse, awardedResponse] = await Promise.all([
             supabase
               .from('gigs')
               .select('id', { count: 'exact', head: true })
               .eq('consumer_id', user.id),
-            gigIds.length > 0
-              ? supabase
-                  .from('bids')
-                  .select('id', { count: 'exact', head: true })
-                  .in('gig_id', gigIds)
-                  .eq('status', 'pending')
-              : { count: 0 },
             supabase
               .from('gigs')
               .select('id', { count: 'exact', head: true })
@@ -150,7 +136,7 @@ export default function RoleDashboard() {
 
           newStats.gigger = {
             gigsCount: gigsResponse.count || 0,
-            activeBidsCount: bidsResponse.count || 0,
+            activeBidsCount: 0, // Simplified - can be enhanced later if needed
             awardedGigsCount: awardedResponse.count || 0,
           };
         } catch (err) {
