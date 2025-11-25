@@ -493,10 +493,10 @@ const Register = () => {
               )}
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isSignInMode && step === 1 ? "Welcome Back" : isSignInMode && step === 2 ? "Verify Your Email" : !isSignInMode && step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Account" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
+              {isSignInMode ? "Welcome Back" : step === 1 ? "Create Your Account" : step === 2 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isSignInMode && step === 1 ? "We'll send a verification code to your email" : isSignInMode && step === 2 ? "Enter the code sent to your email" : !isSignInMode && step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code from your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isSignInMode ? "Sign in to your account" : step === 1 ? "Let's start with your basic information" : step === 2 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar - Only show during registration */}
@@ -512,7 +512,7 @@ const Register = () => {
 
           <CardContent>
             {/* Sign In Form */}
-            {isSignInMode && step === 1 && (
+            {isSignInMode && (
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email Address</Label>
@@ -524,9 +524,18 @@ const Register = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
-                  <p className="text-xs text-muted-foreground">
-                    We'll send a verification code to this email
-                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
                 </div>
 
                 <Button
@@ -534,7 +543,7 @@ const Register = () => {
                   className="w-full"
                   disabled={loading}
                 >
-                  {loading ? "Sending Code..." : "Send Verification Code"}
+                  {loading ? "Signing In..." : "Sign In"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
