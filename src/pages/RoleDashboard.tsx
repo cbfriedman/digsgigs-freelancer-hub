@@ -45,10 +45,13 @@ export default function RoleDashboard() {
       navigate("/register");
       return;
     }
+    
+    // Set loading to false immediately if no roles
     if (userRoles.length === 0) {
       setLoading(false);
       return;
     }
+    
     fetchRoleStats();
   }, [user, userRoles, navigate]);
 
@@ -58,131 +61,38 @@ export default function RoleDashboard() {
       return;
     }
 
+    // If user has no roles, skip stats fetching entirely
+    if (userRoles.length === 0) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    let timeoutId: NodeJS.Timeout | null = null;
 
     try {
-      timeoutId = setTimeout(() => {
-        console.error('Stats fetch timed out');
-        setLoading(false);
-        toast({
-          title: "Loading timed out",
-          description: "Taking too long to load. Please refresh the page.",
-          variant: "destructive",
-        });
-      }, 8000);
-
       const newStats: RoleStats = {};
 
-      // Fetch Digger stats
-      if (userRoles.includes('digger')) {
-        try {
-          // First get the digger profile ID
-          const { data: diggerProfile } = await supabase
-            .from('digger_profiles')
-            .select('id')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          if (diggerProfile) {
-            const [leadsResponse, activeLeadsResponse] = await Promise.all([
-              supabase
-                .from('lead_purchases')
-                .select('id', { count: 'exact', head: true })
-                .eq('digger_id', diggerProfile.id),
-              supabase
-                .from('lead_purchases')
-                .select('id', { count: 'exact', head: true })
-                .eq('digger_id', diggerProfile.id)
-                .eq('status', 'completed')
-            ]);
-
-            newStats.digger = {
-              leadsCount: leadsResponse.count || 0,
-              profilesCount: 1,
-              activeLeadsCount: activeLeadsResponse.count || 0,
-            };
-          } else {
-            newStats.digger = {
-              leadsCount: 0,
-              profilesCount: 0,
-              activeLeadsCount: 0,
-            };
-          }
-        } catch (err) {
-          console.error('Error fetching digger stats:', err);
-          newStats.digger = {
-            leadsCount: 0,
-            profilesCount: 0,
-            activeLeadsCount: 0,
-          };
-        }
-      }
-
-      // Fetch Gigger stats
+      // Only fetch stats for roles the user actually has
       if (userRoles.includes('gigger')) {
         try {
-          const [gigsResponse, awardedResponse] = await Promise.all([
-            supabase
-              .from('gigs')
-              .select('id', { count: 'exact', head: true })
-              .eq('consumer_id', user.id),
-            supabase
-              .from('gigs')
-              .select('id', { count: 'exact', head: true })
-              .eq('consumer_id', user.id)
-              .not('awarded_digger_id', 'is', null)
-          ]);
+          const { count: gigsCount } = await supabase
+            .from('gigs')
+            .select('id', { count: 'exact', head: true })
+            .eq('consumer_id', user.id);
 
           newStats.gigger = {
-            gigsCount: gigsResponse.count || 0,
-            activeBidsCount: 0, // Simplified - can be enhanced later if needed
-            awardedGigsCount: awardedResponse.count || 0,
-          };
-        } catch (err) {
-          console.error('Error fetching gigger stats:', err);
-          newStats.gigger = {
-            gigsCount: 0,
+            gigsCount: gigsCount || 0,
             activeBidsCount: 0,
             awardedGigsCount: 0,
           };
-        }
-      }
-
-      // Fetch Telemarketer stats
-      if (userRoles.includes('telemarketer')) {
-        try {
-          const { data: teleProfile } = await supabase
-            .from('telemarketer_profiles')
-            .select('total_leads_uploaded, pending_commissions, paid_commissions')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          newStats.telemarketer = {
-            leadsUploadedCount: teleProfile?.total_leads_uploaded || 0,
-            pendingCommissions: teleProfile?.pending_commissions || 0,
-            paidCommissions: teleProfile?.paid_commissions || 0,
-          };
         } catch (err) {
-          console.error('Error fetching telemarketer stats:', err);
-          newStats.telemarketer = {
-            leadsUploadedCount: 0,
-            pendingCommissions: 0,
-            paidCommissions: 0,
-          };
+          console.error('Error fetching gigger stats:', err);
         }
       }
 
       setStats(newStats);
-      if (timeoutId) clearTimeout(timeoutId);
     } catch (error) {
       console.error('Error fetching role stats:', error);
-      if (timeoutId) clearTimeout(timeoutId);
-      toast({
-        title: "Error loading dashboard",
-        description: "Could not load dashboard. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
