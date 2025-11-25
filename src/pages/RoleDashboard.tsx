@@ -47,7 +47,6 @@ export default function RoleDashboard() {
     }
     if (userRoles.length === 0) {
       setLoading(false);
-      navigate("/register");
       return;
     }
     fetchRoleStats();
@@ -239,214 +238,234 @@ export default function RoleDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Digger Role Card */}
-        {userRoles.includes('digger') && stats.digger && (
-          <Card className="relative overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
-                    <Wrench className="h-6 w-6 text-blue-600 dark:text-blue-300" />
-                  </div>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      Digger
-                      {activeRole === 'digger' && (
-                        <Badge variant="secondary" className="text-xs">Active</Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>Service Provider</CardDescription>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Profiles</p>
-                  <p className="text-2xl font-bold">{stats.digger.profilesCount}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Leads</p>
-                  <p className="text-2xl font-bold">{stats.digger.leadsCount}</p>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Active Leads</p>
-                <p className="text-xl font-semibold text-primary">{stats.digger.activeLeadsCount}</p>
-              </div>
-              <div className="flex flex-col gap-2 pt-4 border-t">
-                <Button 
-                  variant="default" 
-                  className="w-full"
-                  onClick={() => {
-                    handleSwitchRole('digger');
-                    navigate('/my-leads');
-                  }}
-                >
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  View Leads
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    handleSwitchRole('digger');
-                    navigate('/pricing');
-                  }}
-                >
-                  Buy More Leads
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Gigger Role Card */}
-        {userRoles.includes('gigger') && stats.gigger && (
-          <Card className="relative overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
-                    <Briefcase className="h-6 w-6 text-green-600 dark:text-green-300" />
-                  </div>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      Gigger
-                      {activeRole === 'gigger' && (
-                        <Badge variant="secondary" className="text-xs">Active</Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>Project Poster</CardDescription>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Gigs Posted</p>
-                  <p className="text-2xl font-bold">{stats.gigger.gigsCount}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Active Bids</p>
-                  <p className="text-2xl font-bold">{stats.gigger.activeBidsCount}</p>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Awarded Gigs</p>
-                <p className="text-xl font-semibold text-primary">{stats.gigger.awardedGigsCount}</p>
-              </div>
-              <div className="flex flex-col gap-2 pt-4 border-t">
-                <Button 
-                  variant="default" 
-                  className="w-full"
-                  onClick={() => {
-                    handleSwitchRole('gigger');
-                    navigate('/my-gigs');
-                  }}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  View My Gigs
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    handleSwitchRole('gigger');
-                    navigate('/post-gig');
-                  }}
-                >
-                  Post New Gig
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Telemarketer Role Card */}
-        {userRoles.includes('telemarketer') && stats.telemarketer && (
-          <Card className="relative overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
-                    <Phone className="h-6 w-6 text-purple-600 dark:text-purple-300" />
-                  </div>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      Telemarketer
-                      {activeRole === 'telemarketer' && (
-                        <Badge variant="secondary" className="text-xs">Active</Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>Lead Provider</CardDescription>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Leads Uploaded</p>
-                  <p className="text-2xl font-bold">{stats.telemarketer.leadsUploadedCount}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold text-amber-500">
-                    ${stats.telemarketer.pendingCommissions.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Total Earned</p>
-                <p className="text-xl font-semibold text-primary">
-                  ${stats.telemarketer.paidCommissions.toFixed(2)}
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 pt-4 border-t">
-                <Button 
-                  variant="default" 
-                  className="w-full"
-                  onClick={() => {
-                    handleSwitchRole('telemarketer');
-                    navigate('/telemarketer-dashboard');
-                  }}
-                >
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  View Commissions
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    handleSwitchRole('telemarketer');
-                    navigate('/telemarketer-dashboard');
-                  }}
-                >
-                  Upload Leads
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {userRoles.length === 0 && (
-        <Card>
+        <Card className="relative overflow-hidden">
           <CardHeader>
-            <CardTitle>No Active Roles</CardTitle>
-            <CardDescription>
-              You don't have any active roles yet. Register to get started.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                  <Wrench className="h-6 w-6 text-blue-600 dark:text-blue-300" />
+                </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    Digger
+                    {activeRole === 'digger' && (
+                      <Badge variant="secondary" className="text-xs">Active</Badge>
+                    )}
+                    {!userRoles.includes('digger') && (
+                      <Badge variant="outline" className="text-xs">Not Registered</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>Service Provider</CardDescription>
+                </div>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate('/register')}>
-              Get Started
-            </Button>
+          <CardContent className="space-y-4">
+            {userRoles.includes('digger') && stats.digger ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Profiles</p>
+                    <p className="text-2xl font-bold">{stats.digger.profilesCount}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Leads</p>
+                    <p className="text-2xl font-bold">{stats.digger.leadsCount}</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Active Leads</p>
+                  <p className="text-xl font-semibold text-primary">{stats.digger.activeLeadsCount}</p>
+                </div>
+                <div className="flex flex-col gap-2 pt-4 border-t">
+                  <Button 
+                    variant="default" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSwitchRole('digger');
+                      navigate('/my-leads');
+                    }}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    View Leads
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSwitchRole('digger');
+                      navigate('/pricing');
+                    }}
+                  >
+                    Buy More Leads
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">Register as a Digger to find work opportunities</p>
+                <Button onClick={() => navigate('/register')}>
+                  Register as Digger
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
+
+        {/* Gigger Role Card */}
+        <Card className="relative overflow-hidden">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
+                  <Briefcase className="h-6 w-6 text-green-600 dark:text-green-300" />
+                </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    Gigger
+                    {activeRole === 'gigger' && (
+                      <Badge variant="secondary" className="text-xs">Active</Badge>
+                    )}
+                    {!userRoles.includes('gigger') && (
+                      <Badge variant="outline" className="text-xs">Not Registered</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>Project Poster</CardDescription>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {userRoles.includes('gigger') && stats.gigger ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Gigs Posted</p>
+                    <p className="text-2xl font-bold">{stats.gigger.gigsCount}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Active Bids</p>
+                    <p className="text-2xl font-bold">{stats.gigger.activeBidsCount}</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Awarded Gigs</p>
+                  <p className="text-xl font-semibold text-primary">{stats.gigger.awardedGigsCount}</p>
+                </div>
+                <div className="flex flex-col gap-2 pt-4 border-t">
+                  <Button 
+                    variant="default" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSwitchRole('gigger');
+                      navigate('/my-gigs');
+                    }}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    View My Gigs
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSwitchRole('gigger');
+                      navigate('/post-gig');
+                    }}
+                  >
+                    Post New Gig
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">Register as a Gigger to post projects</p>
+                <Button onClick={() => navigate('/register')}>
+                  Register as Gigger
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Telemarketer Role Card */}
+        <Card className="relative overflow-hidden">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
+                  <Phone className="h-6 w-6 text-purple-600 dark:text-purple-300" />
+                </div>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    Telemarketer
+                    {activeRole === 'telemarketer' && (
+                      <Badge variant="secondary" className="text-xs">Active</Badge>
+                    )}
+                    {!userRoles.includes('telemarketer') && (
+                      <Badge variant="outline" className="text-xs">Not Registered</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>Lead Provider</CardDescription>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {userRoles.includes('telemarketer') && stats.telemarketer ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Leads Uploaded</p>
+                    <p className="text-2xl font-bold">{stats.telemarketer.leadsUploadedCount}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Pending</p>
+                    <p className="text-2xl font-bold text-amber-500">
+                      ${stats.telemarketer.pendingCommissions.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Total Earned</p>
+                  <p className="text-xl font-semibold text-primary">
+                    ${stats.telemarketer.paidCommissions.toFixed(2)}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 pt-4 border-t">
+                  <Button 
+                    variant="default" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSwitchRole('telemarketer');
+                      navigate('/telemarketer-dashboard');
+                    }}
+                  >
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    View Commissions
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSwitchRole('telemarketer');
+                      navigate('/telemarketer-dashboard');
+                    }}
+                  >
+                    Upload Leads
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">Register as a Telemarketer to earn commissions</p>
+                <Button onClick={() => navigate('/register')}>
+                  Register as Telemarketer
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
