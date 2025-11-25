@@ -133,6 +133,14 @@ The platform is ready for launch when:
 ✅ Accessibility WCAG 2.1 Level AA compliance  
 ✅ UAT feedback incorporated and users satisfied  
 
+### Accessing Testing Documentation
+
+The complete `QA_DELIVERABLES.md` document (30+ pages) is available for review before applying. To receive a copy:
+- Request it in your application/proposal, OR
+- The document will be attached to this job posting for download
+
+This document contains detailed testing requirements, acceptance criteria, and deliverable specifications that you should review before submitting your proposal.
+
 ### How to Apply
 
 Please include in your proposal:
