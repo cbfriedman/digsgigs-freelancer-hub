@@ -5,10 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Plus } from "lucide-react";
+import { Target, Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const DEFAULT_CATEGORIES = [
   "Legal Services",
@@ -35,12 +36,14 @@ interface CustomCategory {
 
 export const CategoryBrowserWithDescription = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -99,6 +102,44 @@ export const CategoryBrowserWithDescription = () => {
       toast.error(error.message || "Failed to create category");
     } finally {
       setIsCreatingCategory(false);
+    }
+  };
+
+  const handleContinue = async () => {
+    if (!description.trim()) {
+      toast.error("Please describe your specialties");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('suggest-keywords-from-description', {
+        body: { description: description.trim() }
+      });
+
+      if (error) throw error;
+
+      if (data?.keywords && data.keywords.length > 0) {
+        // Store the results in session storage to pass to next page
+        sessionStorage.setItem('suggestedKeywords', JSON.stringify({
+          category: selectedCategory,
+          description: description,
+          keywords: data.keywords
+        }));
+        
+        // Navigate to a keyword selection page (we'll need to create this)
+        toast.success(`Found ${data.keywords.length} relevant keywords!`);
+        // For now, just show the keywords in console and toast
+        console.log('Suggested keywords:', data.keywords);
+      } else {
+        toast.error("No keywords were suggested. Please try a more detailed description.");
+      }
+    } catch (error: any) {
+      console.error("Error getting keyword suggestions:", error);
+      toast.error(error.message || "Failed to get keyword suggestions");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -221,13 +262,17 @@ export const CategoryBrowserWithDescription = () => {
             <Button 
               className="w-full" 
               size="lg"
-              onClick={() => {
-                // TODO: Navigate to keyword suggestions or next step
-                toast.success("Processing your specialties...");
-                console.log('Continue with:', { category: selectedCategory, description });
-              }}
+              onClick={handleContinue}
+              disabled={isProcessing}
             >
-              Continue to Keyword Selection
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing your specialties...
+                </>
+              ) : (
+                'Continue to Keyword Selection'
+              )}
             </Button>
           </div>
         )}
