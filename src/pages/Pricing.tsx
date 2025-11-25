@@ -1,6 +1,4 @@
-import { Top20ExpensiveKeywords } from "@/components/Top20ExpensiveKeywords";
-import { AIPoweredKeywordInput } from "@/components/AIPoweredKeywordInput";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CategoryBrowserWithDescription } from "@/components/CategoryBrowserWithDescription";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
@@ -36,18 +34,7 @@ export default function Pricing() {
             </Button>
           </div>
           
-          <Tabs defaultValue="ai-suggest" className="w-full">
-            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-2">
-              <TabsTrigger value="ai-suggest">AI Suggestions</TabsTrigger>
-              <TabsTrigger value="full-data">All Keywords</TabsTrigger>
-            </TabsList>
-            <TabsContent value="ai-suggest" className="mt-8">
-              <AIPoweredKeywordInput />
-            </TabsContent>
-            <TabsContent value="full-data" className="mt-8">
-              <Top20ExpensiveKeywords />
-            </TabsContent>
-          </Tabs>
+          <CategoryBrowserWithDescription />
         </div>
       </div>
     </div>
