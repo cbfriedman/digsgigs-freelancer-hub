@@ -160,7 +160,7 @@ export default function RoleDashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Register as a Digger to find work opportunities</p>
-                <Button onClick={() => navigate('/register')}>
+                <Button onClick={() => navigate('/digger-registration')}>
                   Register as Digger
                 </Button>
               </div>
@@ -235,7 +235,7 @@ export default function RoleDashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Register as a Gigger to post projects</p>
-                <Button onClick={() => navigate('/register')}>
+                <Button onClick={() => navigate('/gig-registration-demo')}>
                   Register as Gigger
                 </Button>
               </div>
@@ -314,7 +314,7 @@ export default function RoleDashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Register as a Telemarketer to earn commissions</p>
-                <Button onClick={() => navigate('/register')}>
+                <Button onClick={() => navigate('/register?role=telemarketer')}>
                   Register as Telemarketer
                 </Button>
               </div>

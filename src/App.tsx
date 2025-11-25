@@ -97,6 +97,10 @@ const router = createBrowserRouter([
     element: <ProtectedRoute><RoleDashboard /></ProtectedRoute>,
   },
   {
+    path: "/digger-registration",
+    element: <ProtectedRoute><DiggerRegistration /></ProtectedRoute>,
+  },
+  {
     path: "/digger-subscription",
     element: <ProtectedRoute><DiggerSubscription /></ProtectedRoute>,
   },
