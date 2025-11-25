@@ -112,22 +112,27 @@ const Register = () => {
   const [roleFormData, setRoleFormData] = useState<RoleFormData>({});
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
 
-  // Handle expired password reset tokens
+  // Handle expired password reset tokens - but delay check to allow Supabase to process token first
   useEffect(() => {
     if (isPasswordResetMode) {
-      const hash = window.location.hash.substring(1);
-      const hashParams = new URLSearchParams(hash);
-      const errorCode = hashParams.get('error_code');
-      const error = hashParams.get('error');
+      // Delay the expired token check to give Supabase time to process the token
+      const timeoutId = setTimeout(() => {
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        const errorCode = hashParams.get('error_code');
+        const error = hashParams.get('error');
+        
+        if (errorCode === 'otp_expired' || error === 'access_denied') {
+          toast.error('Password reset link expired. Please request a new one.');
+          setTimeout(() => {
+            setIsPasswordResetMode(false);
+            setIsSignInMode(true);
+            navigate('/register?mode=signin');
+          }, 2000);
+        }
+      }, 1000); // Wait 1 second for Supabase to process
       
-      if (errorCode === 'otp_expired' || error === 'access_denied') {
-        toast.error('Password reset link expired. Please request a new one.');
-        setTimeout(() => {
-          setIsPasswordResetMode(false);
-          setIsSignInMode(true);
-          navigate('/register?mode=signin');
-        }, 2000);
-      }
+      return () => clearTimeout(timeoutId);
     }
   }, [isPasswordResetMode, navigate]);
 
@@ -500,11 +505,18 @@ const Register = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
+      console.log('Attempting to update password...');
+      
+      const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      if (error) throw error;
+      console.log('Update password response:', { data, error });
+
+      if (error) {
+        console.error('Password update error:', error);
+        throw error;
+      }
 
       toast.success("Password updated successfully!");
       
@@ -518,7 +530,7 @@ const Register = () => {
       }, 1500);
     } catch (error: any) {
       console.error("Password update error:", error);
-      toast.error(error.message || "Failed to update password");
+      toast.error(error.message || "Failed to update password. The reset link may have expired.");
     } finally {
       setLoading(false);
     }
