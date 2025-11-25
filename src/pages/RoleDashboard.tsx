@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,23 +39,7 @@ export default function RoleDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<RoleStats>({});
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      navigate("/register");
-      return;
-    }
-    
-    // Set loading to false immediately if no roles
-    if (userRoles.length === 0) {
-      setLoading(false);
-      return;
-    }
-    
-    fetchRoleStats();
-  }, [user, userRoles, navigate]);
-
-  const fetchRoleStats = async () => {
+  const fetchRoleStats = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -96,7 +80,23 @@ export default function RoleDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, userRoles]);
+
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      navigate("/register");
+      return;
+    }
+    
+    // Set loading to false immediately if no roles
+    if (userRoles.length === 0) {
+      setLoading(false);
+      return;
+    }
+    
+    fetchRoleStats();
+  }, [user, userRoles, navigate, fetchRoleStats]);
 
   const handleSwitchRole = async (role: 'digger' | 'gigger' | 'telemarketer') => {
     await switchRole(role);
