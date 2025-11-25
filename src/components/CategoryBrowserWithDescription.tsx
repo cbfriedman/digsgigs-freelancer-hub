@@ -208,14 +208,27 @@ export const CategoryBrowserWithDescription = () => {
           </div>
         )}
 
-        {/* Info Box */}
+        {/* Info Box and Continue Button */}
         {selectedCategory && description && (
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-            <h4 className="font-semibold mb-2">Next Steps</h4>
-            <p className="text-sm text-muted-foreground">
-              Your description will be used to match you with relevant leads in the {selectedCategory} category.
-              The more specific you are, the better your matches will be.
-            </p>
+          <div className="space-y-4">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+              <h4 className="font-semibold mb-2">Next Steps</h4>
+              <p className="text-sm text-muted-foreground">
+                Your description will be used to match you with relevant leads in the {selectedCategory} category.
+                The more specific you are, the better your matches will be.
+              </p>
+            </div>
+            <Button 
+              className="w-full" 
+              size="lg"
+              onClick={() => {
+                // TODO: Navigate to keyword suggestions or next step
+                toast.success("Processing your specialties...");
+                console.log('Continue with:', { category: selectedCategory, description });
+              }}
+            >
+              Continue to Keyword Selection
+            </Button>
           </div>
         )}
       </CardContent>
