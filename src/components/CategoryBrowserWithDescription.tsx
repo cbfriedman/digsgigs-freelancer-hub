@@ -45,6 +45,9 @@ export const CategoryBrowserWithDescription = () => {
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
+  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
+  const [newKeyword, setNewKeyword] = useState("");
+  const [isAddingKeyword, setIsAddingKeyword] = useState(false);
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -123,6 +126,7 @@ export const CategoryBrowserWithDescription = () => {
 
       if (data?.keywords && data.keywords.length > 0) {
         setSuggestedKeywords(data.keywords);
+        setSelectedKeywords(new Set(data.keywords)); // Select all by default
         toast.success(`Found ${data.keywords.length} relevant keywords!`);
       } else {
         toast.error("No keywords were suggested. Please try a more detailed description.");
@@ -274,15 +278,108 @@ export const CategoryBrowserWithDescription = () => {
           <div className="space-y-4">
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
               <h4 className="font-semibold mb-3">Suggested Keywords ({suggestedKeywords.length})</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Click keywords to select/deselect them, or click the X to remove them.
+              </p>
               <div className="flex flex-wrap gap-2">
-                {suggestedKeywords.map((keyword, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-1.5 bg-background border border-border rounded-md text-sm"
+                {suggestedKeywords.map((keyword, index) => {
+                  const isSelected = selectedKeywords.has(keyword);
+                  return (
+                    <div
+                      key={index}
+                      className={`group relative px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all ${
+                        isSelected
+                          ? 'bg-primary/10 border-2 border-primary text-primary font-medium'
+                          : 'bg-background border-2 border-dashed border-border text-muted-foreground hover:border-primary/50'
+                      }`}
+                      onClick={() => {
+                        const newSelected = new Set(selectedKeywords);
+                        if (isSelected) {
+                          newSelected.delete(keyword);
+                        } else {
+                          newSelected.add(keyword);
+                        }
+                        setSelectedKeywords(newSelected);
+                      }}
+                    >
+                      {isSelected && <span className="mr-1">✓</span>}
+                      {keyword}
+                      <button
+                        className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newKeywords = suggestedKeywords.filter((k) => k !== keyword);
+                          setSuggestedKeywords(newKeywords);
+                          const newSelected = new Set(selectedKeywords);
+                          newSelected.delete(keyword);
+                          setSelectedKeywords(newSelected);
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Add Custom Keyword */}
+              <div className="mt-4 pt-4 border-t border-border">
+                {!isAddingKeyword ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAddingKeyword(true)}
+                    className="w-full"
                   >
-                    {keyword}
+                    + Add Custom Keyword
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter keyword..."
+                      value={newKeyword}
+                      onChange={(e) => setNewKeyword(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newKeyword.trim()) {
+                          const trimmed = newKeyword.trim();
+                          if (!suggestedKeywords.includes(trimmed)) {
+                            setSuggestedKeywords([...suggestedKeywords, trimmed]);
+                            setSelectedKeywords(new Set([...selectedKeywords, trimmed]));
+                          }
+                          setNewKeyword("");
+                          setIsAddingKeyword(false);
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const trimmed = newKeyword.trim();
+                        if (trimmed) {
+                          if (!suggestedKeywords.includes(trimmed)) {
+                            setSuggestedKeywords([...suggestedKeywords, trimmed]);
+                            setSelectedKeywords(new Set([...selectedKeywords, trimmed]));
+                          }
+                          setNewKeyword("");
+                          setIsAddingKeyword(false);
+                        }
+                      }}
+                      disabled={!newKeyword.trim()}
+                    >
+                      Add
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setNewKeyword("");
+                        setIsAddingKeyword(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
                   </div>
-                ))}
+                )}
               </div>
             </div>
             <div className="flex gap-2">
@@ -290,16 +387,28 @@ export const CategoryBrowserWithDescription = () => {
                 className="flex-1" 
                 size="lg"
                 onClick={() => {
-                  // TODO: Proceed with these keywords
-                  toast.success("Proceeding with selected keywords...");
+                  const selected = Array.from(selectedKeywords);
+                  // TODO: Proceed with selected keywords
+                  sessionStorage.setItem('selectedKeywords', JSON.stringify({
+                    category: selectedCategory,
+                    description: description,
+                    keywords: selected
+                  }));
+                  toast.success(`Proceeding with ${selected.length} keyword${selected.length !== 1 ? 's' : ''}...`);
                 }}
+                disabled={selectedKeywords.size === 0}
               >
-                Use These Keywords
+                Use {selectedKeywords.size} Selected Keyword{selectedKeywords.size !== 1 ? 's' : ''}
               </Button>
               <Button 
                 variant="outline"
                 size="lg"
-                onClick={() => setSuggestedKeywords([])}
+                onClick={() => {
+                  setSuggestedKeywords([]);
+                  setSelectedKeywords(new Set());
+                  setIsAddingKeyword(false);
+                  setNewKeyword("");
+                }}
               >
                 Try Again
               </Button>
