@@ -180,6 +180,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
+          // Handle password recovery before other flows
+          if (event === 'PASSWORD_RECOVERY') {
+            // Redirect to password reset page
+            window.location.href = '/register?mode=reset-password';
+            return;
+          }
+
           // Fetch user roles instead of checking user_type
           await fetchUserRoles(session.user.id).catch((error) => {
             console.error('Error fetching user roles:', error);
