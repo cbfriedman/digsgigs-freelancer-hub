@@ -504,13 +504,37 @@ const Register = () => {
     }
 
     setLoading(true);
+    
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      toast.error("Password update timed out. The reset link may have expired. Please request a new one.");
+    }, 15000); // 15 second timeout
+
     try {
       console.log('Attempting to update password...');
       
+      // Ensure we have a valid session from the reset token
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session ? 'Valid' : 'None');
+      
+      if (!session) {
+        clearTimeout(timeoutId);
+        toast.error("Invalid or expired reset link. Please request a new password reset.");
+        setLoading(false);
+        setTimeout(() => {
+          setIsPasswordResetMode(false);
+          setIsSignInMode(true);
+          navigate('/register?mode=signin');
+        }, 2000);
+        return;
+      }
+
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
+      clearTimeout(timeoutId);
       console.log('Update password response:', { data, error });
 
       if (error) {
@@ -529,6 +553,7 @@ const Register = () => {
         navigate('/register?mode=signin');
       }, 1500);
     } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error("Password update error:", error);
       toast.error(error.message || "Failed to update password. The reset link may have expired.");
     } finally {
@@ -656,14 +681,30 @@ const Register = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="confirm-new-password">Confirm New Password</Label>
-                  <Input
-                    id="confirm-new-password"
-                    type="password"
-                    placeholder="Confirm your new password"
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="confirm-new-password"
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Confirm your new password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 <Button
