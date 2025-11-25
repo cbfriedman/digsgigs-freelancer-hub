@@ -95,7 +95,12 @@ export const ProfessionRequestForm = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { error } = await supabase.functions.invoke('request-keyword-suggestions', {
+      // Add timeout to prevent indefinite hanging
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 30000)
+      );
+
+      const invokePromise = supabase.functions.invoke('request-keyword-suggestions', {
         body: { 
           industry: industry,
           profession: profession.trim(),
@@ -104,7 +109,12 @@ export const ProfessionRequestForm = () => {
         }
       });
 
-      if (error) throw error;
+      const { data, error } = await Promise.race([invokePromise, timeout]) as any;
+
+      if (error) {
+        console.error("Function returned error:", error);
+        throw error;
+      }
 
       toast({
         title: "Request Submitted",
@@ -117,11 +127,11 @@ export const ProfessionRequestForm = () => {
       setProfession("");
       setSpecialties([]);
       setSpecialtyInput("");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting request:", error);
       toast({
         title: "Error",
-        description: "Failed to submit request. Please try again.",
+        description: error?.message || "Failed to submit request. Please try again.",
         variant: "destructive",
       });
     } finally {

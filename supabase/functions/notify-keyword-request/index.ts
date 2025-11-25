@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { profession, requestId } = await req.json();
+    const { profession, industry, specialties, isNewIndustry, requestId } = await req.json();
 
     if (!profession) {
       return new Response(
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Notifying admins about keyword request for:', profession);
+    console.log('Notifying admins about keyword request:', { profession, industry, specialties, isNewIndustry });
 
     // Get all admin users
     const { data: adminRoles, error: adminError } = await supabase
@@ -110,10 +110,10 @@ Deno.serve(async (req) => {
           </h1>
           
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #4CAF50; margin-top: 0;">Profession Requested:</h2>
-            <p style="font-size: 18px; font-weight: bold; color: #333; text-transform: capitalize;">
-              ${profession}
-            </p>
+            <h2 style="color: #4CAF50; margin-top: 0;">Request Details:</h2>
+            <p><strong>Industry:</strong> ${industry || 'N/A'} ${isNewIndustry ? '(New)' : ''}</p>
+            <p><strong>Profession:</strong> ${profession}</p>
+            <p><strong>Specialties:</strong> ${Array.isArray(specialties) ? specialties.join(', ') : 'N/A'}</p>
           </div>
           
           <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">

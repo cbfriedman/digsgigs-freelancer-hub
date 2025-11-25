@@ -135,3 +135,6 @@ verify_jwt = false
 [functions.request-keyword-suggestions]
 verify_jwt = false
 
+[functions.notify-keyword-request]
+verify_jwt = false
+
