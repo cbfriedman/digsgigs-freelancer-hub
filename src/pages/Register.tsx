@@ -422,7 +422,8 @@ const Register = () => {
 
       if (data.user) {
         toast.success("Signed in successfully!");
-        navigate('/role-dashboard');
+        // Redirect to home page after sign-in
+        navigate('/');
       }
     } catch (error: any) {
       console.error("Sign in error:", error);
