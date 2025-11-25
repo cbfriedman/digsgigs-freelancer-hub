@@ -1,5 +1,6 @@
 import { Top20ExpensiveKeywords } from "@/components/Top20ExpensiveKeywords";
 import { IndustryProfessionSelector } from "@/components/IndustryProfessionSelector";
+import { AIPoweredKeywordInput } from "@/components/AIPoweredKeywordInput";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -36,11 +37,15 @@ export default function Pricing() {
             </Button>
           </div>
           
-          <Tabs defaultValue="selector" className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-              <TabsTrigger value="selector">Find Your Specialty</TabsTrigger>
-              <TabsTrigger value="full-data">View All Keywords</TabsTrigger>
+          <Tabs defaultValue="ai-suggest" className="w-full">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3">
+              <TabsTrigger value="ai-suggest">AI Suggestions</TabsTrigger>
+              <TabsTrigger value="selector">Browse Categories</TabsTrigger>
+              <TabsTrigger value="full-data">All Keywords</TabsTrigger>
             </TabsList>
+            <TabsContent value="ai-suggest" className="mt-8">
+              <AIPoweredKeywordInput />
+            </TabsContent>
             <TabsContent value="selector" className="mt-8">
               <IndustryProfessionSelector />
             </TabsContent>
