@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, ArrowLeft, Edit } from "lucide-react";
 import { toast } from "sonner";
+import { Navigation } from "@/components/Navigation";
 
 interface ProfileField {
   name: string;
@@ -219,17 +220,22 @@ const ProfileCompletion = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading profile...</p>
+      <>
+        <Navigation />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading profile...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Button
           variant="ghost"
@@ -362,6 +368,7 @@ const ProfileCompletion = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
