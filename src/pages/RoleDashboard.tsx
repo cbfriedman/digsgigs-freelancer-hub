@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Wrench, Briefcase, Phone, TrendingUp, FileText, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Navigation } from "@/components/Navigation";
 
 interface RoleStats {
   digger?: {
@@ -84,7 +85,9 @@ export default function RoleDashboard() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
+      <Navigation />
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">My Dashboard</h1>
         <p className="text-muted-foreground">
@@ -322,6 +325,7 @@ export default function RoleDashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
