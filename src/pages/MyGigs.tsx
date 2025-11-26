@@ -67,7 +67,7 @@ const MyGigs = () => {
     
     if (!session) {
       toast.error("Please sign in to view your gigs");
-      navigate("/auth");
+      navigate("/register");
       return;
     }
 

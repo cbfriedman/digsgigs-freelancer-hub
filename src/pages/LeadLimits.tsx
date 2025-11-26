@@ -28,7 +28,7 @@ export default function LeadLimits() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/auth?type=digger');
+        navigate('/register');
         return;
       }
 

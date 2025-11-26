@@ -53,7 +53,7 @@ export default function EscrowDashboard() {
 
   useEffect(() => {
     if (!user) {
-      navigate("/auth");
+      navigate("/register");
       return;
     }
     loadContracts();
