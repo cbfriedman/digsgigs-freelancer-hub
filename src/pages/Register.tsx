@@ -206,44 +206,16 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Check if email already exists
-      const { data: existingUser } = await supabase.auth.admin.listUsers();
-      // Note: We can't actually use admin.listUsers from client, so let's try to sign in first to check
-      
-      // Generate 6-digit OTP
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-      // Store OTP in database (without user_id since account doesn't exist yet)
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minute expiry
-
-      const { error: otpError } = await supabase
-        .from('verification_codes')
-        .insert({
-          email,
-          code: otpCode,
-          expires_at: expiresAt.toISOString(),
-          user_id: null, // No user yet
-        });
-
-      if (otpError) {
-        console.error("Failed to store OTP:", otpError);
-        toast.error("Failed to send verification code");
-        setLoading(false);
-        return;
-      }
-
-      // Send OTP email using custom edge function
-      const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
-        body: {
-          email,
-          code: otpCode,
-          name: fullName,
+      // Use Supabase's native email OTP
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false, // Don't create user yet
         },
       });
 
-      if (emailError) {
-        console.error("Failed to send OTP email:", emailError);
+      if (otpError) {
+        console.error("Failed to send OTP:", otpError);
         toast.error("Failed to send verification code. Please try again.");
         setLoading(false);
         return;
@@ -268,31 +240,11 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // First verify the OTP code
-      const { data: verificationData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
-        body: {
-          email,
-          code: verificationCode,
-        },
-      });
-
-      if (verifyError || !verificationData?.success) {
-        throw new Error("Invalid verification code");
-      }
-
-      // OTP verified! Now create the Supabase account
-      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
-
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Verify OTP and create account
+      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
         email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: formattedPhone,
-          },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
+        token: verificationCode,
+        type: 'email',
       });
 
       if (authError) {
@@ -306,7 +258,25 @@ const Register = () => {
       }
 
       if (!authData.user) {
-        throw new Error("Failed to create account");
+        throw new Error("Failed to verify code");
+      }
+
+      // Now that email is verified, update the user with additional info
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+        phone: formattedPhone,
+        data: {
+          full_name: fullName,
+        },
+      });
+
+      if (updateError) {
+        console.error("Update error:", updateError);
+        toast.error(updateError.message);
+        setLoading(false);
+        return;
       }
 
       // Store user ID for role creation later
@@ -326,40 +296,16 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Generate new 6-digit OTP
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-      // Store new OTP in database
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minute expiry
-
-      const { error: otpError } = await supabase
-        .from('verification_codes')
-        .insert({
-          email,
-          code: otpCode,
-          expires_at: expiresAt.toISOString(),
-          user_id: null, // No user yet since account isn't created
-        });
-
-      if (otpError) {
-        console.error("Failed to store OTP:", otpError);
-        toast.error("Failed to resend verification code");
-        setLoading(false);
-        return;
-      }
-
-      // Send new OTP email
-      const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
-        body: {
-          email,
-          code: otpCode,
-          name: fullName,
+      // Use Supabase's native email OTP
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
         },
       });
 
-      if (emailError) {
-        console.error("Failed to send OTP email:", emailError);
+      if (otpError) {
+        console.error("Failed to resend OTP:", otpError);
         toast.error("Failed to resend verification code");
         setLoading(false);
         return;
