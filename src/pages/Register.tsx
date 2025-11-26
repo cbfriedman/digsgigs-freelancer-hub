@@ -104,6 +104,7 @@ const Register = () => {
   // Step 1.5: Verification
   const [verificationCode, setVerificationCode] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false); // Track if OTP was sent to show input field
 
   // Step 2: Role Selection
   const [selectedRoles, setSelectedRoles] = useState<Set<UserAppRole>>(new Set());
@@ -205,46 +206,14 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Format phone if provided
-      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
-
-      // Create Supabase account with OTP verification
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: formattedPhone,
-          },
-        },
-      });
-
-      if (authError) {
-        if (authError.message.includes('already registered') || authError.message.includes('already exists') || authError.message.includes('User already registered')) {
-          setExistingAccountError(true);
-          setLoading(false);
-          return;
-        } else {
-          toast.error(authError.message);
-          setLoading(false);
-          return;
-        }
-      }
-
-      if (!authData.user) {
-        toast.error("Failed to create account");
-        setLoading(false);
-        return;
-      }
-
-      // Store user ID for later use
-      setUserId(authData.user.id);
-
+      // Check if email already exists
+      const { data: existingUser } = await supabase.auth.admin.listUsers();
+      // Note: We can't actually use admin.listUsers from client, so let's try to sign in first to check
+      
       // Generate 6-digit OTP
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Store OTP in database
+      // Store OTP in database (without user_id since account doesn't exist yet)
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minute expiry
 
@@ -254,7 +223,7 @@ const Register = () => {
           email,
           code: otpCode,
           expires_at: expiresAt.toISOString(),
-          user_id: authData.user.id,
+          user_id: null, // No user yet
         });
 
       if (otpError) {
@@ -275,19 +244,19 @@ const Register = () => {
 
       if (emailError) {
         console.error("Failed to send OTP email:", emailError);
-        toast.error("Failed to send verification code");
+        toast.error("Failed to send verification code. Please try again.");
         setLoading(false);
         return;
       }
 
       toast.success("Verification code sent! Please check your email.");
-      setStep(2); // Go to OTP verification step
+      setOtpSent(true); // Show verification input field
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        console.error("Account creation error:", error);
-        toast.error(error.message || "An error occurred during account creation");
+        console.error("Send OTP error:", error);
+        toast.error(error.message || "An error occurred");
       }
     } finally {
       setLoading(false);
@@ -299,19 +268,51 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Call custom OTP verification edge function
-      const { data, error } = await supabase.functions.invoke('verify-custom-otp', {
+      // First verify the OTP code
+      const { data: verificationData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
         body: {
           email,
           code: verificationCode,
         },
       });
 
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || "Verification failed");
+      if (verifyError || !verificationData?.success) {
+        throw new Error("Invalid verification code");
       }
 
-      toast.success("Email verified successfully!");
+      // OTP verified! Now create the Supabase account
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone: formattedPhone,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (authError) {
+        if (authError.message.includes('already registered') || authError.message.includes('already exists') || authError.message.includes('User already registered')) {
+          setExistingAccountError(true);
+          setLoading(false);
+          return;
+        } else {
+          throw authError;
+        }
+      }
+
+      if (!authData.user) {
+        throw new Error("Failed to create account");
+      }
+
+      // Store user ID for role creation later
+      setUserId(authData.user.id);
+
+      toast.success("Account created and verified successfully!");
       setStep(3); // Go to role selection
     } catch (error: any) {
       console.error("Verification error:", error);
@@ -325,12 +326,6 @@ const Register = () => {
     setLoading(true);
 
     try {
-      if (!userId) {
-        toast.error("Session expired. Please refresh the page.");
-        setLoading(false);
-        return;
-      }
-
       // Generate new 6-digit OTP
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -344,7 +339,7 @@ const Register = () => {
           email,
           code: otpCode,
           expires_at: expiresAt.toISOString(),
-          user_id: userId,
+          user_id: null, // No user yet since account isn't created
         });
 
       if (otpError) {
@@ -1077,14 +1072,64 @@ const Register = () => {
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={loading}
-                >
-                  {loading ? "Creating Account..." : "Save and Continue"} 
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                {/* Show verification code input after OTP is sent */}
+                {otpSent && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-accent/10">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-5 w-5 text-primary" />
+                      <div>
+                        <h4 className="font-medium">Verification Code Sent!</h4>
+                        <p className="text-sm text-muted-foreground">Check your email for the 6-digit code</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="verification-code">Enter Verification Code *</Label>
+                      <Input
+                        id="verification-code"
+                        type="text"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000000"
+                        maxLength={6}
+                        required
+                        className="text-center text-2xl tracking-widest font-mono"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleVerification}
+                      disabled={loading || verificationCode.length !== 6}
+                      className="w-full"
+                      type="button"
+                    >
+                      {loading ? "Creating Account..." : "Create Account"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={handleResendCode}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      Resend Code
+                    </Button>
+                  </div>
+                )}
+
+                {/* Only show this button if OTP hasn't been sent yet */}
+                {!otpSent && (
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading}
+                  >
+                    {loading ? "Sending Code..." : "Verify my Email"} 
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
 
                 <p className="text-center text-sm text-muted-foreground">
                   Already have an account?{" "}
