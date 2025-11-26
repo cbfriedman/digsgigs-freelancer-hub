@@ -459,7 +459,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Verify password is correct first
+      // Sign in with password
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -488,20 +488,11 @@ const Register = () => {
         return;
       }
 
-      // Sign out and send OTP for verification
-      await supabase.auth.signOut();
-      
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false
-        }
-      });
-
-      if (otpError) throw otpError;
-
-      toast.success("Verification code sent! Please check your email.");
-      setStep(2);
+      // Email is verified - redirect to dashboard
+      toast.success("Welcome back!");
+      setTimeout(() => {
+        navigate('/role-dashboard');
+      }, 500);
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast.error(error.message || "Failed to sign in");
