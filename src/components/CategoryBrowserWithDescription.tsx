@@ -417,13 +417,19 @@ export const CategoryBrowserWithDescription = () => {
                 size="lg"
                 onClick={() => {
                   const selected = Array.from(selectedKeywords);
-                  // TODO: Proceed with selected keywords
                   sessionStorage.setItem('selectedKeywords', JSON.stringify({
                     category: selectedCategory,
                     description: description,
                     keywords: selected
                   }));
-                  toast.success(`Proceeding with ${selected.length} keyword${selected.length !== 1 ? 's' : ''}...`);
+                  toast.success(`Saved ${selected.length} keyword${selected.length !== 1 ? 's' : ''}!`);
+                  
+                  // Navigate to profile creation or dashboard
+                  if (user) {
+                    navigate('/profile-completion');
+                  } else {
+                    navigate('/register');
+                  }
                 }}
                 disabled={selectedKeywords.size === 0}
               >
