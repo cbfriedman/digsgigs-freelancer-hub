@@ -208,7 +208,7 @@ const Register = () => {
       // Format phone if provided
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
 
-      // Create Supabase account with auto-confirmation enabled
+      // Create Supabase account with email confirmation required
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -217,7 +217,7 @@ const Register = () => {
             full_name: fullName,
             phone: formattedPhone,
           },
-          // Don't redirect to dashboard - complete registration flow first
+          // Supabase will send verification email automatically
           emailRedirectTo: `${window.location.origin}/register`,
         },
       });
@@ -243,28 +243,8 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Store OTP in session storage with timestamp
-      sessionStorage.setItem('pending_otp', otp);
-      sessionStorage.setItem('pending_otp_email', email);
-      sessionStorage.setItem('pending_otp_time', Date.now().toString());
-
-      // Send OTP via email
-      const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
-        body: { email, code: otp, name: fullName }
-      });
-      
-      if (emailError) {
-        console.error("Failed to send verification email:", emailError);
-        toast.error("Failed to send verification email. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      toast.success("Verification code sent to your email!");
-      setStep(2); // Go to verification step
+      toast.success("Verification email sent! Please check your inbox.");
+      setStep(2); // Go to verification waiting step
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -278,95 +258,23 @@ const Register = () => {
   };
 
   const handleVerification = async () => {
-    if (verificationCode.length !== 6) {
-      toast.error("Please enter the 6-digit verification code");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Get stored OTP
-      const storedOtp = sessionStorage.getItem('pending_otp');
-      const storedEmail = sessionStorage.getItem('pending_otp_email');
-      const storedTime = sessionStorage.getItem('pending_otp_time');
-
-      // Validate OTP hasn't expired (10 minutes)
-      if (!storedOtp || !storedEmail || !storedTime) {
-        toast.error("Verification session expired. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      const otpAge = Date.now() - parseInt(storedTime);
-      if (otpAge > 10 * 60 * 1000) {
-        toast.error("Verification code expired. Please request a new one.");
-        sessionStorage.removeItem('pending_otp');
-        sessionStorage.removeItem('pending_otp_email');
-        sessionStorage.removeItem('pending_otp_time');
-        setLoading(false);
-        return;
-      }
-
-      // Verify OTP matches
-      if (verificationCode !== storedOtp || email !== storedEmail) {
-        toast.error("Invalid verification code");
-        setLoading(false);
-        return;
-      }
-
-      // Clear OTP from storage
-      sessionStorage.removeItem('pending_otp');
-      sessionStorage.removeItem('pending_otp_email');
-      sessionStorage.removeItem('pending_otp_time');
-
-      // Sign in the user with their credentials
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        toast.error("Failed to verify: " + signInError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (isSignInMode) {
-        toast.success("Signed in successfully!");
-        navigate('/role-dashboard');
-      } else {
-        toast.success("Account verified successfully!");
-        setStep(3); // Go to role selection
-      }
-    } catch (error: any) {
-      console.error("Verification error:", error);
-      toast.error(error.message || "Verification failed");
-    } finally {
-      setLoading(false);
-    }
+    // Supabase handles email verification via the link in the email
+    // This step just waits for user to click the link
+    toast.info("Please click the verification link in your email to continue");
   };
 
   const handleResendCode = async () => {
     setLoading(true);
 
     try {
-      // Generate new 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Store OTP in session storage
-      sessionStorage.setItem('pending_otp', otp);
-      sessionStorage.setItem('pending_otp_email', email);
-      sessionStorage.setItem('pending_otp_time', Date.now().toString());
-
-      // Send OTP via custom email
-      const { error } = await supabase.functions.invoke('send-otp-email', {
-        body: { email, code: otp, name: fullName }
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
       });
       
       if (error) throw error;
 
-      toast.success("Verification code resent!");
+      toast.success("Verification email resent! Please check your inbox.");
     } catch (error: any) {
       console.error("Resend error:", error);
       toast.error(error.message || "Failed to resend email");
@@ -487,7 +395,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // First verify credentials are valid
+      // Sign in with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -500,36 +408,16 @@ const Register = () => {
       }
 
       if (data.user) {
-        // Credentials valid - now require email verification with OTP
-        // Sign them out immediately
-        await supabase.auth.signOut();
-        
-        // Store user info for verification
-        setUserId(data.user.id);
-        setFullName(data.user.user_metadata?.full_name || '');
-        
-        // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() + 900000).toString();
-        
-        // Store OTP in session storage with timestamp
-        sessionStorage.setItem('pending_otp', otp);
-        sessionStorage.setItem('pending_otp_email', email);
-        sessionStorage.setItem('pending_otp_time', Date.now().toString());
-
-        // Send OTP via email
-        const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
-          body: { email, code: otp, name: data.user.user_metadata?.full_name || 'User' }
-        });
-        
-        if (emailError) {
-          console.error("Failed to send verification email:", emailError);
-          toast.error("Failed to send verification email. Please try again.");
+        // Check if email is verified
+        if (!data.user.email_confirmed_at) {
+          toast.error("Please verify your email before signing in. Check your inbox for the verification link.");
+          await supabase.auth.signOut();
           setLoading(false);
           return;
         }
 
-        toast.success("Verification code sent to your email!");
-        setStep(2); // Go to verification step
+        toast.success("Signed in successfully!");
+        navigate('/role-dashboard');
       }
     } catch (error: any) {
       console.error("Sign in error:", error);
@@ -859,13 +747,6 @@ const Register = () => {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
-                {loading && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-accent/50 border border-primary/20 rounded-lg p-3">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <span>Check your email for the verification code</span>
-                  </div>
-                )}
-
                 <div className="text-center text-sm space-y-2">
                   <button
                     type="button"
@@ -1090,13 +971,6 @@ const Register = () => {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
-                {loading && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-accent/50 border border-primary/20 rounded-lg p-3">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <span>Check your email for the verification code</span>
-                  </div>
-                )}
-
                 <p className="text-center text-sm text-muted-foreground">
                   Already have an account?{" "}
                   <Button
@@ -1133,57 +1007,37 @@ const Register = () => {
                 </div>
                 
                 <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold">Check Your Email</h3>
                   <p className="text-sm text-muted-foreground">
-                    We've sent a 6-digit verification code to
+                    We've sent a verification link to
                   </p>
                   <p className="font-medium">{email}</p>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    Click the link in the email to verify your account and continue registration.
+                  </p>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="verification-code" className="text-center block">
-                      Enter Verification Code
-                    </Label>
-                    <div className="flex justify-center">
-                      <InputOTP
-                        maxLength={6}
-                        value={verificationCode}
-                        onChange={(value) => setVerificationCode(value)}
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
-                  </div>
+                <div className="bg-accent/50 border border-primary/20 rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-medium">What to do next:</p>
+                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>Check your inbox for an email from Digs and Gigs</li>
+                    <li>Click the verification link in the email</li>
+                    <li>You'll be automatically redirected back here to continue</li>
+                  </ol>
+                </div>
 
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Didn't receive the email?
+                  </p>
                   <Button
-                    onClick={handleVerification}
-                    disabled={loading || verificationCode.length !== 6}
-                    className="w-full"
+                    variant="link"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                    className="h-auto p-0"
                   >
-                    {loading ? "Verifying..." : "Verify Email"}
-                    <CheckCircle2 className="ml-2 h-4 w-4" />
+                    Resend Verification Email
                   </Button>
-
-                  <div className="text-center space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Didn't receive the code?
-                    </p>
-                    <Button
-                      variant="link"
-                      onClick={handleResendCode}
-                      disabled={loading}
-                      className="h-auto p-0"
-                    >
-                      Resend Code
-                    </Button>
-                  </div>
                 </div>
 
                 <Button
