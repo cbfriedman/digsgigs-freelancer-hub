@@ -208,7 +208,7 @@ const Register = () => {
       // Format phone if provided
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
 
-      // Create Supabase account with email confirmation required
+      // Create Supabase account with OTP verification
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -217,8 +217,6 @@ const Register = () => {
             full_name: fullName,
             phone: formattedPhone,
           },
-          // Supabase will send verification email automatically
-          emailRedirectTo: `${window.location.origin}/register`,
         },
       });
 
@@ -243,8 +241,8 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      toast.success("Verification email sent! Please check your inbox.");
-      setStep(2); // Go to verification waiting step
+      toast.success("Verification code sent! Please check your email.");
+      setStep(2); // Go to OTP verification step
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -257,10 +255,27 @@ const Register = () => {
     }
   };
 
-  const handleVerification = async () => {
-    // Supabase handles email verification via the link in the email
-    // This step just waits for user to click the link
-    toast.info("Please click the verification link in your email to continue");
+  const handleVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: verificationCode,
+        type: 'email'
+      });
+
+      if (error) throw error;
+
+      toast.success("Email verified successfully!");
+      setStep(3); // Go to role selection
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      toast.error(error.message || "Invalid verification code");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResendCode = async () => {
@@ -274,7 +289,7 @@ const Register = () => {
       
       if (error) throw error;
 
-      toast.success("Verification email resent! Please check your inbox.");
+      toast.success("Verification code resent! Please check your email.");
     } catch (error: any) {
       console.error("Resend error:", error);
       toast.error(error.message || "Failed to resend email");
@@ -395,30 +410,49 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Sign in with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Verify password is correct first
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) {
-        toast.error(error.message);
+      if (signInError) throw signInError;
+
+      // Check if email is verified
+      if (!signInData.user?.email_confirmed_at) {
+        await supabase.auth.signOut();
+        toast.error("Please verify your email first. We'll send you a new code.");
+        
+        // Send OTP for verification
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false
+          }
+        });
+
+        if (otpError) throw otpError;
+
+        toast.success("Verification code sent! Please check your email.");
+        setStep(2);
         setLoading(false);
         return;
       }
 
-      if (data.user) {
-        // Check if email is verified
-        if (!data.user.email_confirmed_at) {
-          toast.error("Please verify your email before signing in. Check your inbox for the verification link.");
-          await supabase.auth.signOut();
-          setLoading(false);
-          return;
+      // Sign out and send OTP for verification
+      await supabase.auth.signOut();
+      
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false
         }
+      });
 
-        toast.success("Signed in successfully!");
-        navigate('/role-dashboard');
-      }
+      if (otpError) throw otpError;
+
+      toast.success("Verification code sent! Please check your email.");
+      setStep(2);
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast.error(error.message || "Failed to sign in");
@@ -997,7 +1031,7 @@ const Register = () => {
               </form>
             )}
 
-            {/* Step 2: Email Verification */}
+            {/* Step 2: OTP Verification */}
             {!isPasswordResetMode && step === 2 && (
               <div className="space-y-6">
                 <div className="flex items-center justify-center">
@@ -1007,28 +1041,40 @@ const Register = () => {
                 </div>
                 
                 <div className="text-center space-y-2">
-                  <h3 className="text-lg font-semibold">Check Your Email</h3>
+                  <h3 className="text-lg font-semibold">Verify Your Email</h3>
                   <p className="text-sm text-muted-foreground">
-                    We've sent a verification link to
+                    We've sent a 6-digit verification code to
                   </p>
                   <p className="font-medium">{email}</p>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Click the link in the email to verify your account and continue registration.
-                  </p>
                 </div>
 
-                <div className="bg-accent/50 border border-primary/20 rounded-lg p-4 space-y-2">
-                  <p className="text-sm font-medium">What to do next:</p>
-                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Check your inbox for an email from Digs and Gigs</li>
-                    <li>Click the verification link in the email</li>
-                    <li>You'll be automatically redirected back here to continue</li>
-                  </ol>
-                </div>
+                <form onSubmit={handleVerification} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="verification-code">Verification Code</Label>
+                    <Input
+                      id="verification-code"
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      maxLength={6}
+                      required
+                      className="text-center text-2xl tracking-widest font-mono"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={loading || verificationCode.length !== 6}
+                    className="w-full"
+                  >
+                    {loading ? "Verifying..." : "Verify Email"}
+                  </Button>
+                </form>
 
                 <div className="text-center space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Didn't receive the email?
+                    Didn't receive the code?
                   </p>
                   <Button
                     variant="link"
@@ -1036,7 +1082,7 @@ const Register = () => {
                     disabled={loading}
                     className="h-auto p-0"
                   >
-                    Resend Verification Email
+                    Resend Code
                   </Button>
                 </div>
 
