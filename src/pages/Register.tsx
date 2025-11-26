@@ -206,20 +206,39 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Use Supabase's native email OTP
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+      // Create account with Supabase - this sends verification email automatically
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
+        password,
         options: {
-          shouldCreateUser: false, // Don't create user yet
+          data: {
+            full_name: fullName,
+            phone: formattedPhone,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
-      if (otpError) {
-        console.error("Failed to send OTP:", otpError);
-        toast.error("Failed to send verification code. Please try again.");
+      if (authError) {
+        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+          toast.error("This email is already registered. Please sign in instead.");
+        } else {
+          toast.error(authError.message);
+        }
         setLoading(false);
         return;
       }
+
+      if (!authData.user) {
+        toast.error("Failed to create account");
+        setLoading(false);
+        return;
+      }
+
+      // Store user ID for later
+      setUserId(authData.user.id);
 
       toast.success("Verification code sent! Please check your email.");
       setOtpSent(true); // Show verification input field
@@ -227,7 +246,7 @@ const Register = () => {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        console.error("Send OTP error:", error);
+        console.error("Signup error:", error);
         toast.error(error.message || "An error occurred");
       }
     } finally {
@@ -240,7 +259,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Verify OTP and create account
+      // Verify OTP code
       const { data: authData, error: authError } = await supabase.auth.verifyOtp({
         email,
         token: verificationCode,
@@ -248,41 +267,14 @@ const Register = () => {
       });
 
       if (authError) {
-        if (authError.message.includes('already registered') || authError.message.includes('already exists') || authError.message.includes('User already registered')) {
-          setExistingAccountError(true);
-          setLoading(false);
-          return;
-        } else {
-          throw authError;
-        }
+        throw authError;
       }
 
       if (!authData.user) {
-        throw new Error("Failed to verify code");
+        throw new Error("Verification failed");
       }
 
-      // Now that email is verified, update the user with additional info
-      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
-      
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
-        phone: formattedPhone,
-        data: {
-          full_name: fullName,
-        },
-      });
-
-      if (updateError) {
-        console.error("Update error:", updateError);
-        toast.error(updateError.message);
-        setLoading(false);
-        return;
-      }
-
-      // Store user ID for role creation later
-      setUserId(authData.user.id);
-
-      toast.success("Account created and verified successfully!");
+      toast.success("Email verified successfully!");
       setStep(3); // Go to role selection
     } catch (error: any) {
       console.error("Verification error:", error);
@@ -296,25 +288,20 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Use Supabase's native email OTP
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+      // Resend OTP using Supabase's resend method
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
         email,
-        options: {
-          shouldCreateUser: false,
-        },
       });
 
-      if (otpError) {
-        console.error("Failed to resend OTP:", otpError);
-        toast.error("Failed to resend verification code");
-        setLoading(false);
-        return;
+      if (resendError) {
+        throw resendError;
       }
 
       toast.success("Verification code resent! Please check your email.");
     } catch (error: any) {
       console.error("Resend error:", error);
-      toast.error(error.message || "Failed to resend email");
+      toast.error(error.message || "Failed to resend verification code");
     } finally {
       setLoading(false);
     }
