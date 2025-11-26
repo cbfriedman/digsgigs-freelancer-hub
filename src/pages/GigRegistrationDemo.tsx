@@ -69,7 +69,7 @@ const GigRegistrationDemo = () => {
   const handleApprove = () => {
     setShowPreview(false);
     toast.success("Great! Now let's create your account to post this gig.");
-    navigate("/auth");
+    navigate("/register");
   };
 
   const handleEdit = () => {

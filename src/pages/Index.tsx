@@ -721,7 +721,7 @@ const Index = () => {
                   variant="hero" 
                   size="lg" 
                   className="text-base bg-white text-primary hover:bg-white/90"
-                  onClick={() => user ? navigate("/digger-registration") : navigate("/auth?type=digger&redirect=/digger-registration")}
+                  onClick={() => navigate("/register")}
                 >
                   Create Your Dig <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
@@ -729,7 +729,7 @@ const Index = () => {
                   variant="outline" 
                   size="lg" 
                   className="text-base border-white/30 text-white hover:bg-white/10"
-                  onClick={() => user ? navigate("/post-gig") : navigate("/auth?redirect=/post-gig")}
+                  onClick={() => navigate("/register")}
                 >
                   Post a Gig
                 </Button>
