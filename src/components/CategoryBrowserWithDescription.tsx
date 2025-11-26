@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { generateKeywordSuggestions } from "@/utils/keywordSuggestions";
 
 const DEFAULT_CATEGORIES = [
   "Legal Services",
@@ -118,22 +119,50 @@ export const CategoryBrowserWithDescription = () => {
     setIsProcessing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('suggest-keywords-from-description', {
+      // Try AI-powered edge function with 10-second timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      const edgeFunctionPromise = supabase.functions.invoke('suggest-keywords-from-description', {
         body: { description: description.trim() }
       });
+
+      const { data, error } = await Promise.race([edgeFunctionPromise, timeoutPromise]) as any;
 
       if (error) throw error;
 
       if (data?.keywords && data.keywords.length > 0) {
         setSuggestedKeywords(data.keywords);
-        setSelectedKeywords(new Set(data.keywords)); // Select all by default
-        toast.success(`Found ${data.keywords.length} relevant keywords!`);
-      } else {
-        toast.error("No keywords were suggested. Please try a more detailed description.");
+        setSelectedKeywords(new Set(data.keywords));
+        toast.success(`AI found ${data.keywords.length} relevant keywords!`);
+        return;
       }
     } catch (error: any) {
-      console.error("Error getting keyword suggestions:", error);
-      toast.error(error.message || "Failed to get keyword suggestions");
+      console.log("Edge function failed, using local keyword suggestions:", error);
+      
+      // Fallback to local keyword generation
+      const categoryToprofession: Record<string, string> = {
+        "Construction & Home Services": "contractor",
+        "Legal Services": "lawyer",
+        "Medical & Healthcare": "consultant",
+        "Automotive Services": "mechanic",
+        "Cleaning & Maintenance": "cleaner",
+        "Technology Services": "designer",
+        "Business Services": "consultant",
+        "Event Services": "photographer"
+      };
+
+      const profession = categoryToprofession[selectedCategory] || "contractor";
+      const localKeywords = generateKeywordSuggestions(profession, [selectedCategory.toLowerCase()]);
+
+      if (localKeywords.length > 0) {
+        setSuggestedKeywords(localKeywords);
+        setSelectedKeywords(new Set(localKeywords));
+        toast.success(`Found ${localKeywords.length} relevant keywords from our database!`);
+      } else {
+        toast.error("No keywords found. Please try a more detailed description.");
+      }
     } finally {
       setIsProcessing(false);
     }
