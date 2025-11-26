@@ -155,17 +155,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setActiveRole(null);
       setSubscriptionStatus(null);
 
-      const { error } = await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) throw error;
+
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      try {
+        indexedDB.deleteDatabase('supabase');
+      } catch (e) {
+        console.warn('Could not clear IndexedDB:', e);
+      }
 
       toast.success('Signed out successfully');
 
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Error signing out');
+      localStorage.clear();
+      sessionStorage.clear();
       window.location.href = '/';
     }
   };

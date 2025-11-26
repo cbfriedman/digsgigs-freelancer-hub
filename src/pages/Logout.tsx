@@ -8,9 +8,16 @@ export default function Logout() {
 
   useEffect(() => {
     const signOut = async () => {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'global' });
       localStorage.clear();
       sessionStorage.clear();
+      
+      try {
+        indexedDB.deleteDatabase('supabase');
+      } catch (e) {
+        console.warn('Could not clear IndexedDB:', e);
+      }
+      
       navigate('/');
     };
     signOut();
