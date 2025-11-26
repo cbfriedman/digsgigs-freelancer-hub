@@ -29,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Digs and Gigs <onboarding@resend.dev>",
+        from: "Digs and Gigs <noreply@digsandgigs.net>",
         to: [email],
         subject: "Your Verification Code",
         html: `
