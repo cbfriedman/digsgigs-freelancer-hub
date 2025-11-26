@@ -190,7 +190,7 @@ const Register = () => {
   }
 
   const roleArray = Array.from(selectedRoles);
-  const totalSteps = 3 + roleArray.length; // Basic Info + Verification + Role Selection + Role Forms
+  const totalSteps = 2 + roleArray.length; // Basic Info + Role Selection + Role Forms (skip verification)
   const progressPercentage = (step / totalSteps) * 100;
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
@@ -207,28 +207,42 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Generate 6-digit OTP code
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtpCode(otpCode); // Store the code we're sending
+      // With auto-confirm enabled, create account directly without OTP
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
       
-      // Send OTP via Resend edge function
-      const { data, error } = await supabase.functions.invoke('send-otp-email', {
-        body: {
-          email,
-          code: otpCode,
-          name: fullName,
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone: formattedPhone,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
         },
       });
 
-      if (error) {
-        console.error("Failed to send OTP:", error);
-        toast.error("Failed to send verification code. Please try again.");
+      if (authError) {
+        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+          toast.error("This email is already registered. Please sign in instead.");
+        } else {
+          toast.error(authError.message);
+        }
         setLoading(false);
         return;
       }
 
-      toast.success("Verification code sent! Please check your email.");
-      setOtpSent(true); // Show verification input field
+      if (!authData.user) {
+        toast.error("Failed to create account");
+        setLoading(false);
+        return;
+      }
+
+      // Store user ID for role creation
+      setUserId(authData.user.id);
+
+      toast.success("Account created successfully!");
+      setStep(3); // Skip verification, go directly to role selection
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -964,9 +978,9 @@ const Register = () => {
                   <div className="flex items-center gap-2 p-3 border rounded-lg bg-accent/50">
                     <Mail className="h-4 w-4 text-primary" />
                     <div>
-                      <div className="font-medium">Email Verification</div>
+                      <div className="font-medium">Instant Account Creation</div>
                       <div className="text-xs text-muted-foreground">
-                        You'll receive a verification code via email
+                        Your account will be created immediately
                       </div>
                     </div>
                   </div>
