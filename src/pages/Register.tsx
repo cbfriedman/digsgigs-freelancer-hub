@@ -859,6 +859,13 @@ const Register = () => {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
 
+                {loading && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-accent/50 border border-primary/20 rounded-lg p-3">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span>Check your email for the verification code</span>
+                  </div>
+                )}
+
                 <div className="text-center text-sm space-y-2">
                   <button
                     type="button"
@@ -1082,6 +1089,13 @@ const Register = () => {
                   {loading ? "Creating Account..." : "Save and Continue"} 
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
+
+                {loading && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-accent/50 border border-primary/20 rounded-lg p-3">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span>Check your email for the verification code</span>
+                  </div>
+                )}
 
                 <p className="text-center text-sm text-muted-foreground">
                   Already have an account?{" "}
