@@ -241,6 +241,45 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
+      // Generate 6-digit OTP
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Store OTP in database
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minute expiry
+
+      const { error: otpError } = await supabase
+        .from('verification_codes')
+        .insert({
+          email,
+          code: otpCode,
+          expires_at: expiresAt.toISOString(),
+          user_id: authData.user.id,
+        });
+
+      if (otpError) {
+        console.error("Failed to store OTP:", otpError);
+        toast.error("Failed to send verification code");
+        setLoading(false);
+        return;
+      }
+
+      // Send OTP email using custom edge function
+      const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
+        body: {
+          email,
+          code: otpCode,
+          name: fullName,
+        },
+      });
+
+      if (emailError) {
+        console.error("Failed to send OTP email:", emailError);
+        toast.error("Failed to send verification code");
+        setLoading(false);
+        return;
+      }
+
       toast.success("Verification code sent! Please check your email.");
       setStep(2); // Go to OTP verification step
     } catch (error: any) {
@@ -260,13 +299,17 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: verificationCode,
-        type: 'email'
+      // Call custom OTP verification edge function
+      const { data, error } = await supabase.functions.invoke('verify-custom-otp', {
+        body: {
+          email,
+          code: verificationCode,
+        },
       });
 
-      if (error) throw error;
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || "Verification failed");
+      }
 
       toast.success("Email verified successfully!");
       setStep(3); // Go to role selection
@@ -282,12 +325,50 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
+      if (!userId) {
+        toast.error("Session expired. Please refresh the page.");
+        setLoading(false);
+        return;
+      }
+
+      // Generate new 6-digit OTP
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // Store new OTP in database
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minute expiry
+
+      const { error: otpError } = await supabase
+        .from('verification_codes')
+        .insert({
+          email,
+          code: otpCode,
+          expires_at: expiresAt.toISOString(),
+          user_id: userId,
+        });
+
+      if (otpError) {
+        console.error("Failed to store OTP:", otpError);
+        toast.error("Failed to resend verification code");
+        setLoading(false);
+        return;
+      }
+
+      // Send new OTP email
+      const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
+        body: {
+          email,
+          code: otpCode,
+          name: fullName,
+        },
       });
-      
-      if (error) throw error;
+
+      if (emailError) {
+        console.error("Failed to send OTP email:", emailError);
+        toast.error("Failed to resend verification code");
+        setLoading(false);
+        return;
+      }
 
       toast.success("Verification code resent! Please check your email.");
     } catch (error: any) {
