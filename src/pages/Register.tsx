@@ -152,6 +152,31 @@ const Register = () => {
     }
   }, [isSignInMode]);
 
+  // Auto-advance verified users without roles to role selection
+  useEffect(() => {
+    if (!authLoading && !isSignInMode && !isPasswordResetMode && user && user.email_confirmed_at && step === 1) {
+      // Check if user has roles
+      const checkUserRoles = async () => {
+        const { data, error } = await supabase
+          .from('user_app_roles')
+          .select('id')
+          .eq('user_id', user.id);
+        
+        if (!error && (!data || data.length === 0)) {
+          // User is verified but has no roles - advance to role selection
+          setUserId(user.id);
+          setEmail(user.email || '');
+          setFullName(user.user_metadata?.full_name || '');
+          setPhone(user.user_metadata?.phone || '');
+          setStep(3); // Jump to role selection
+          toast.info("Please select your role(s) to complete registration");
+        }
+      };
+      
+      checkUserRoles();
+    }
+  }, [authLoading, isSignInMode, isPasswordResetMode, user, step]);
+
 
   // Don't show loading spinner in password reset mode - show the form immediately
   if (authLoading && !isPasswordResetMode) {
@@ -192,7 +217,8 @@ const Register = () => {
             full_name: fullName,
             phone: formattedPhone,
           },
-          emailRedirectTo: `${window.location.origin}/role-dashboard`,
+          // Don't redirect to dashboard - complete registration flow first
+          emailRedirectTo: `${window.location.origin}/register`,
         },
       });
 

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseProtectedRouteOptions {
   requireVerified?: boolean;
@@ -18,13 +19,36 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
 
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [hasCheckedRoles, setHasCheckedRoles] = useState(false);
+  const [userHasRoles, setUserHasRoles] = useState(false);
+
+  // Check if user has roles (for register page logic)
+  useEffect(() => {
+    if (user && redirectIfAuthenticated && !hasCheckedRoles) {
+      const checkRoles = async () => {
+        const { data, error } = await supabase
+          .from('user_app_roles')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+        
+        setUserHasRoles(!error && data && data.length > 0);
+        setHasCheckedRoles(true);
+      };
+      checkRoles();
+    }
+  }, [user, redirectIfAuthenticated, hasCheckedRoles]);
 
   useEffect(() => {
     if (loading) return;
 
-    // Redirect VERIFIED authenticated users away (for pages like register/login)
-    if (redirectIfAuthenticated && user && user.email_confirmed_at) {
-      navigate('/role-dashboard');
+    // For register page: only redirect verified users who ALREADY have roles
+    if (redirectIfAuthenticated && user && user.email_confirmed_at && hasCheckedRoles) {
+      if (userHasRoles) {
+        navigate('/role-dashboard');
+        return;
+      }
+      // If verified but no roles, let them stay on register to complete role setup
       return;
     }
 
@@ -47,7 +71,7 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
       navigate('/register');
       return;
     }
-  }, [user, loading, navigate, requireVerified, redirectTo, redirectIfAuthenticated]);
+  }, [user, loading, navigate, requireVerified, redirectTo, redirectIfAuthenticated, hasCheckedRoles, userHasRoles]);
 
   return { user, loading, isVerified: !!user?.email_confirmed_at };
 };
