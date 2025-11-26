@@ -487,7 +487,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Use Supabase's native password authentication
+      // First verify credentials are valid
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -500,9 +500,36 @@ const Register = () => {
       }
 
       if (data.user) {
-        toast.success("Signed in successfully!");
-        // Redirect to home page after sign-in
-        navigate('/');
+        // Credentials valid - now require email verification with OTP
+        // Sign them out immediately
+        await supabase.auth.signOut();
+        
+        // Store user info for verification
+        setUserId(data.user.id);
+        setFullName(data.user.user_metadata?.full_name || '');
+        
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() + 900000).toString();
+        
+        // Store OTP in session storage with timestamp
+        sessionStorage.setItem('pending_otp', otp);
+        sessionStorage.setItem('pending_otp_email', email);
+        sessionStorage.setItem('pending_otp_time', Date.now().toString());
+
+        // Send OTP via email
+        const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
+          body: { email, code: otp, name: data.user.user_metadata?.full_name || 'User' }
+        });
+        
+        if (emailError) {
+          console.error("Failed to send verification email:", emailError);
+          toast.error("Failed to send verification email. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        toast.success("Verification code sent to your email!");
+        setStep(2); // Go to verification step
       }
     } catch (error: any) {
       console.error("Sign in error:", error);
