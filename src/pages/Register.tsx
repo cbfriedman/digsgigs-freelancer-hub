@@ -102,7 +102,8 @@ const Register = () => {
   const [verificationMethod, setVerificationMethod] = useState<'email' | 'sms'>('email');
 
   // Step 1.5: Verification
-  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationCode, setVerificationCode] = useState(""); // User-entered code
+  const [sentOtpCode, setSentOtpCode] = useState(""); // OTP code we sent
   const [userId, setUserId] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false); // Track if OTP was sent to show input field
 
@@ -206,7 +207,59 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Create account with Supabase - this sends verification email automatically
+      // Generate 6-digit OTP code
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentOtpCode(otpCode); // Store the code we're sending
+      
+      // Send OTP via Resend edge function
+      const { data, error } = await supabase.functions.invoke('send-otp-email', {
+        body: {
+          email,
+          code: otpCode,
+          name: fullName,
+        },
+      });
+
+      if (error) {
+        console.error("Failed to send OTP:", error);
+        toast.error("Failed to send verification code. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Verification code sent! Please check your email.");
+      setOtpSent(true); // Show verification input field
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        console.error("Signup error:", error);
+        toast.error(error.message || "An error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Verify the OTP code matches what we sent
+      if (!verificationCode || verificationCode.length !== 6) {
+        toast.error("Please enter the 6-digit verification code.");
+        setLoading(false);
+        return;
+      }
+
+      if (verificationCode !== sentOtpCode) {
+        toast.error("Invalid verification code. Please try again.");
+        setLoading(false);
+        return;
+      }
+      
+      // Code is correct! Now create the Supabase account
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -237,44 +290,10 @@ const Register = () => {
         return;
       }
 
-      // Store user ID for later
+      // Store user ID for role creation
       setUserId(authData.user.id);
 
-      toast.success("Verification code sent! Please check your email.");
-      setOtpSent(true); // Show verification input field
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
-      } else {
-        console.error("Signup error:", error);
-        toast.error(error.message || "An error occurred");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerification = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // Verify OTP code
-      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
-        email,
-        token: verificationCode,
-        type: 'email',
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error("Verification failed");
-      }
-
-      toast.success("Email verified successfully!");
+      toast.success("Email verified and account created successfully!");
       setStep(3); // Go to role selection
     } catch (error: any) {
       console.error("Verification error:", error);
@@ -288,14 +307,21 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Resend OTP using Supabase's resend method
-      const { error: resendError } = await supabase.auth.resend({
-        type: 'signup',
-        email,
+      // Generate new 6-digit OTP code
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentOtpCode(otpCode); // Store the new code
+      
+      // Send OTP via Resend edge function
+      const { data, error } = await supabase.functions.invoke('send-otp-email', {
+        body: {
+          email,
+          code: otpCode,
+          name: fullName,
+        },
       });
 
-      if (resendError) {
-        throw resendError;
+      if (error) {
+        throw error;
       }
 
       toast.success("Verification code resent! Please check your email.");
