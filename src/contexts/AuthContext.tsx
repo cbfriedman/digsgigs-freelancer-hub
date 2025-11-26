@@ -262,19 +262,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        fetchUserRoles(session.user.id);
-      }
-
+    // Safety timeout to ensure loading always completes
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Auth loading timeout - forcing loading to false');
       setLoading(false);
-    });
+    }, 5000);
 
-    return () => subscription.unsubscribe();
+    // THEN check for existing session with error handling
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          fetchUserRoles(session.user.id);
+        }
+
+        setLoading(false);
+        clearTimeout(loadingTimeout);
+      })
+      .catch((error) => {
+        console.error('Error getting session:', error);
+        setLoading(false);
+        clearTimeout(loadingTimeout);
+      });
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   // Auto-refresh subscription status every 60 seconds for diggers
