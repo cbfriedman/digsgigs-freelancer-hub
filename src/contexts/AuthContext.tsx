@@ -155,27 +155,48 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setActiveRole(null);
       setSubscriptionStatus(null);
 
+      // Clear all Supabase-specific storage keys first
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      // Sign out with global scope
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) throw error;
 
+      // Clear all storage
       localStorage.clear();
       sessionStorage.clear();
       
       try {
         indexedDB.deleteDatabase('supabase');
+        indexedDB.deleteDatabase('supabase-auth');
       } catch (e) {
         console.warn('Could not clear IndexedDB:', e);
       }
 
       toast.success('Signed out successfully');
 
-      window.location.href = '/';
+      // Use replace instead of href to prevent back button issues
+      setTimeout(() => {
+        window.location.replace('/');
+      }, 100);
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Error signing out');
+      
+      // Force clear everything on error
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = '/';
+      
+      setTimeout(() => {
+        window.location.replace('/');
+      }, 100);
     }
   };
 
@@ -184,6 +205,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session);
+
+        // Ignore SIGNED_OUT events to prevent re-authentication
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setUserRoles([]);
+          setActiveRole(null);
+          setSubscriptionStatus(null);
+          return;
+        }
 
         setSession(session);
         setUser(session?.user ?? null);
