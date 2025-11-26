@@ -415,7 +415,7 @@ export const CategoryBrowserWithDescription = () => {
               <Button 
                 className="flex-1" 
                 size="lg"
-                onClick={() => {
+                onClick={async () => {
                   const selected = Array.from(selectedKeywords);
                   sessionStorage.setItem('selectedKeywords', JSON.stringify({
                     category: selectedCategory,
@@ -424,9 +424,19 @@ export const CategoryBrowserWithDescription = () => {
                   }));
                   toast.success(`Saved ${selected.length} keyword${selected.length !== 1 ? 's' : ''}!`);
                   
-                  // Navigate to profile creation or dashboard
+                  // Check if user has a digger profile
                   if (user) {
-                    navigate('/profile-completion');
+                    const { data: diggerProfile } = await supabase
+                      .from('digger_profiles')
+                      .select('id')
+                      .eq('user_id', user.id)
+                      .maybeSingle();
+                    
+                    if (diggerProfile) {
+                      navigate('/edit-digger-profile');
+                    } else {
+                      navigate('/digger-registration');
+                    }
                   } else {
                     navigate('/register');
                   }
