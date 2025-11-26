@@ -489,14 +489,12 @@ const Register = () => {
       }
 
       // Email is verified - redirect to dashboard
+      setLoading(false);
       toast.success("Welcome back!");
-      setTimeout(() => {
-        navigate('/role-dashboard');
-      }, 500);
+      navigate('/role-dashboard');
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast.error(error.message || "Failed to sign in");
-    } finally {
       setLoading(false);
     }
   };
