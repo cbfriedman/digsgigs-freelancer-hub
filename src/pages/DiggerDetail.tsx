@@ -161,7 +161,7 @@ const DiggerDetail = () => {
   const handleSendMessage = async () => {
     if (!currentUser) {
       toast.error("Please sign in to send messages");
-      navigate("/auth");
+      navigate("/register");
       return;
     }
 
@@ -204,7 +204,7 @@ const DiggerDetail = () => {
   const handleRequestReferenceContact = async (referenceId: string) => {
     if (!currentUser) {
       toast.error("Please sign in to request reference contact");
-      navigate("/auth");
+      navigate("/register");
       return;
     }
 
@@ -237,7 +237,7 @@ const DiggerDetail = () => {
   const handleUnlockContact = async () => {
     if (!currentUser) {
       toast.error("Please sign in to view contact information");
-      navigate("/auth");
+      navigate("/register");
       return;
     }
 

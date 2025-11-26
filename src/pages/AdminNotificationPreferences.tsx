@@ -46,7 +46,7 @@ const AdminNotificationPreferences = () => {
       
       if (!user) {
         toast.error("Please sign in to access this page");
-        navigate("/auth");
+        navigate("/register");
         return;
       }
 

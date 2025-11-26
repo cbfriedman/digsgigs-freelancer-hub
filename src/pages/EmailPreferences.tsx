@@ -40,7 +40,7 @@ const EmailPreferences = () => {
       await loadPreferences();
     } catch (error) {
       console.error('Error checking auth:', error);
-      navigate('/auth');
+      navigate('/register');
     } finally {
       setLoading(false);
     }

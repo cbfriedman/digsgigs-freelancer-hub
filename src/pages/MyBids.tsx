@@ -58,7 +58,7 @@ const MyBids = () => {
     
     if (!session) {
       toast.error("Please sign in to view your bids");
-      navigate("/auth?type=digger");
+      navigate("/register");
       return;
     }
 

@@ -65,7 +65,7 @@ export default function DiggerGuide() {
                       <li>2-3 minutes to complete signup</li>
                     </ul>
                   </div>
-                  <Button onClick={() => navigate('/auth?type=digger')} className="w-full">
+                  <Button onClick={() => navigate('/register')} className="w-full">
                     Start Sign Up
                   </Button>
                 </div>
