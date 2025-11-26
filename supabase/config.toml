@@ -138,3 +138,6 @@ verify_jwt = false
 [functions.notify-keyword-request]
 verify_jwt = false
 
+[functions.verify-custom-otp]
+verify_jwt = false
+
