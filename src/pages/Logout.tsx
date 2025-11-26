@@ -8,12 +8,24 @@ export default function Logout() {
 
   useEffect(() => {
     const signOut = async () => {
+      // Clear Supabase-specific keys first
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
       await supabase.auth.signOut({ scope: 'global' });
+      
       localStorage.clear();
       sessionStorage.clear();
       
       try {
         indexedDB.deleteDatabase('supabase');
+        indexedDB.deleteDatabase('supabase-auth');
       } catch (e) {
         console.warn('Could not clear IndexedDB:', e);
       }
