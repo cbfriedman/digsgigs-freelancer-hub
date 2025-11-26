@@ -163,7 +163,7 @@ const GigDetail = () => {
         description: "Please log in to send messages",
         variant: "destructive",
       });
-      navigate("/auth");
+      navigate("/register");
       return;
     }
 
@@ -550,7 +550,7 @@ const GigDetail = () => {
                   </p>
                   <Button
                     className="w-full"
-                    onClick={() => navigate('/auth')}
+                    onClick={() => navigate('/register')}
                   >
                     Sign In as Digger
                   </Button>

@@ -37,7 +37,7 @@ export default function Checkout() {
   useEffect(() => {
     if (!user) {
       toast.error("Please log in to continue with checkout");
-      navigate("/auth");
+      navigate("/register");
       return;
     }
 
