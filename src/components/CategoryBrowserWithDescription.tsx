@@ -118,10 +118,8 @@ export const CategoryBrowserWithDescription = () => {
   };
 
   const handleContinue = async () => {
-    if (!description.trim()) {
-      toast.error("Please describe your specialties");
-      return;
-    }
+    // Description is optional - if empty, generate keywords from category/specialty
+    const descriptionText = description.trim() || `${selectedCategory} ${selectedSpecialty}`.trim();
 
     setIsProcessing(true);
 
@@ -132,7 +130,7 @@ export const CategoryBrowserWithDescription = () => {
       );
 
       const edgeFunctionPromise = supabase.functions.invoke('suggest-keywords-from-description', {
-        body: { description: description.trim() }
+        body: { description: descriptionText }
       });
 
       const { data, error } = await Promise.race([edgeFunctionPromise, timeoutPromise]) as any;
@@ -501,10 +499,10 @@ export const CategoryBrowserWithDescription = () => {
                   
                   toast.success(`Saved ${selected.length} keyword${selected.length !== 1 ? 's' : ''}!`);
                   
-                  // Navigate based on user state
+                  // Navigate to profile completion, not registration start
                   if (user) {
-                    console.log('User logged in, navigating to digger registration');
-                    navigate('/digger-registration');
+                    console.log('User logged in, navigating to profile completion');
+                    navigate('/profile-completion');
                   } else {
                     console.log('No user, navigating to register');
                     navigate('/register');
