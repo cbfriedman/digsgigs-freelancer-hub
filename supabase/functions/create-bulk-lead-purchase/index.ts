@@ -57,17 +57,19 @@ serve(async (req) => {
       averageRate
     });
 
-    // Parse request body to get gig IDs
-    const { gigIds } = await req.json();
-    if (!gigIds || !Array.isArray(gigIds) || gigIds.length === 0) {
-      throw new Error("No gig IDs provided");
+    // Parse request body to get purchases with exclusivity types
+    const { purchases } = await req.json();
+    if (!purchases || !Array.isArray(purchases) || purchases.length === 0) {
+      throw new Error("No purchases provided");
     }
-    logStep("Processing gigs", { count: gigIds.length, gigIds });
+    
+    const gigIds = purchases.map((p: any) => p.gigId);
+    logStep("Processing gigs", { count: gigIds.length, purchases });
 
-    // Fetch gig details and calculate prices
+    // Fetch gig details
     const { data: gigs, error: gigsError } = await supabaseClient
       .from("gigs")
-      .select("id, title, budget_min, budget_max, consumer_id")
+      .select("id, title, description, budget_min, budget_max, consumer_id")
       .in("id", gigIds);
 
     if (gigsError || !gigs || gigs.length === 0) {
@@ -87,80 +89,95 @@ serve(async (req) => {
       throw new Error(`You have already purchased leads for some of these gigs: ${alreadyPurchasedIds.join(", ")}`);
     }
 
-    // Check subscription tier - Pro and Premium get unlimited access without payment
-    const isPremiumTier = diggerProfile.subscription_tier === 'pro' || 
-                          diggerProfile.subscription_tier === 'premium';
-    const hasActiveSubscription = diggerProfile.subscription_status === 'active';
+    // Import pricing configuration (inline for edge function)
+    interface IndustryPricing {
+      category: 'low-value' | 'mid-value' | 'high-value';
+      industries: string[];
+      nonExclusive: number;
+      semiExclusive: number;
+      exclusive24h: number;
+    }
     
-    if (isPremiumTier && hasActiveSubscription) {
-      logStep("Premium tier detected - granting free access", { 
-        tier: diggerProfile.subscription_tier 
-      });
-
-      // Create lead purchases directly without payment
-      const leadPurchases = gigs.map(gig => ({
-        digger_id: diggerProfile.id,
-        gig_id: gig.id,
-        consumer_id: gig.consumer_id,
-        purchase_price: 0,
-        amount_paid: 0,
-        status: 'completed',
-        stripe_payment_id: null,
-      }));
-
-      const { error: insertError } = await supabaseClient
-        .from("lead_purchases")
-        .insert(leadPurchases);
-
-      if (insertError) {
-        logStep("Error creating lead purchases", { error: insertError });
-        throw new Error("Failed to grant lead access");
+    const INDUSTRY_PRICING: IndustryPricing[] = [
+      {
+        category: 'low-value',
+        industries: ['Cleaning', 'Handyman', 'Pet Care', 'Tutoring', 'Moving', 'Delivery'],
+        nonExclusive: 7.50,
+        semiExclusive: 30.00,
+        exclusive24h: 60.00
+      },
+      {
+        category: 'mid-value',
+        industries: ['HVAC', 'Plumbing', 'Electrical', 'Landscaping', 'Roofing', 'Carpentry', 'Painting'],
+        nonExclusive: 14.50,
+        semiExclusive: 58.00,
+        exclusive24h: 125.00
+      },
+      {
+        category: 'high-value',
+        industries: ['Legal', 'Insurance', 'Financial Planning', 'Real Estate', 'Medical', 'Dental', 'Consulting'],
+        nonExclusive: 24.50,
+        semiExclusive: 99.00,
+        exclusive24h: 275.00
       }
-
-      logStep("Lead purchases created successfully", { count: leadPurchases.length });
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Leads granted successfully",
-          count: leadPurchases.length
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
+    ];
+    
+    // Determine industry category
+    const determineCategory = (gig: any): 'low-value' | 'mid-value' | 'high-value' => {
+      const searchText = `${gig.title} ${gig.description || ''}`.toLowerCase();
+      
+      for (const pricing of INDUSTRY_PRICING) {
+        for (const industry of pricing.industries) {
+          if (searchText.includes(industry.toLowerCase())) {
+            return pricing.category;
+          }
         }
-      );
-    }
-
-    // Free tier - proceed with Stripe payment
-    logStep("Free tier - proceeding with Stripe checkout");
+      }
+      
+      return 'mid-value'; // Default
+    };
     
-    // Get tier-based pricing
-    const tier = diggerProfile.subscription_tier || 'free';
-    let leadCost = 20; // Default: free tier
-    if (tier === 'premium') {
-      leadCost = 5;
-    } else if (tier === 'pro') {
-      leadCost = 10;
-    }
-    
-    logStep("Tier-based pricing calculated", { tier, leadCost });
+    // Calculate price based on exclusivity
+    const calculatePrice = (gig: any, exclusivityType: string): number => {
+      const category = determineCategory(gig);
+      const pricing = INDUSTRY_PRICING.find(p => p.category === category)!;
+      
+      switch (exclusivityType) {
+        case 'semi-exclusive':
+          return pricing.semiExclusive;
+        case 'exclusive':
+          return pricing.exclusive24h;
+        default:
+          return pricing.nonExclusive;
+      }
+    };
 
-    // Calculate prices for each lead using tier-based pricing
-    const lineItems = gigs.map(gig => {
+    // Calculate prices for each lead using exclusivity-based pricing
+    const lineItems = purchases.map((purchase: any) => {
+      const gig = gigs.find(g => g.id === purchase.gigId);
+      if (!gig) throw new Error(`Gig not found: ${purchase.gigId}`);
+      
+      const leadCost = calculatePrice(gig, purchase.exclusivityType);
       const priceInCents = Math.round(leadCost * 100);
+      
+      const exclusivityLabel = purchase.exclusivityType === 'semi-exclusive' 
+        ? 'Semi-Exclusive (4 max)' 
+        : purchase.exclusivityType === 'exclusive'
+        ? '24hr Exclusive'
+        : 'Non-Exclusive';
 
       return {
         price_data: {
           currency: "usd",
           product_data: {
-            name: `Lead: ${gig.title}`,
-            description: `Contact information for gig opportunity (${tier} tier)`,
+            name: `${exclusivityLabel} Lead: ${gig.title}`,
+            description: `Contact information for gig opportunity`,
             metadata: {
               gig_id: gig.id,
               digger_id: diggerProfile.id,
               consumer_id: gig.consumer_id,
               lead_price: leadCost.toString(),
+              exclusivity_type: purchase.exclusivityType,
             }
           },
           unit_amount: priceInCents,

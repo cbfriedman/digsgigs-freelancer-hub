@@ -1,14 +1,14 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
-import { X, ShoppingCart, Trash2, Info } from "lucide-react";
+import { X, ShoppingCart, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface CartDrawerProps {
@@ -16,63 +16,11 @@ interface CartDrawerProps {
   onClose: () => void;
 }
 
-const calculateLeadPrice = (gig: { budget_min: number | null; location: string }): number => {
-  // For lead packages, budget_min already contains the total calculated price
-  if (gig.location === "Lead Package") {
-    return gig.budget_min || 0;
-  }
-  // For gig leads, calculate based on budget
-  if (!gig.budget_min || gig.budget_min === 0) return 50;
-  return Math.max(50, gig.budget_min * 0.005);
-};
-
 export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
-  const { cartItems, removeFromCart, clearCart, totalPrice, cartCount } = useCart();
+  const { cartItems, removeFromCart, clearCart, getTotalPrice, cartCount, updateExclusivity } = useCart();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [diggerProfile, setDiggerProfile] = useState<any>(null);
   const navigate = useNavigate();
-  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'premium'>('free');
-
-  useEffect(() => {
-    const loadDiggerProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('digger_profiles')
-        .select('hourly_rate, hourly_rate_min, subscription_tier, subscription_status')
-        .eq('user_id', user.id)
-        .single();
-
-      if (data) {
-        setDiggerProfile(data);
-        const tier = data.subscription_tier as 'free' | 'pro' | 'premium';
-        setSubscriptionTier(tier || 'free');
-      }
-    };
-
-    if (open) {
-      loadDiggerProfile();
-    }
-  }, [open]);
-
-  const getLeadPrice = () => {
-    if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
-      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-      const leadCost = Math.max(100, hourlyRate);
-      return leadCost * cartItems.length;
-    }
-    return totalPrice;
-  };
-
-  const getIndividualLeadPrice = (gig: any) => {
-    if (diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) {
-      const hourlyRate = diggerProfile.hourly_rate || diggerProfile.hourly_rate_min;
-      return Math.max(100, hourlyRate);
-    }
-    return calculateLeadPrice(gig);
-  };
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
@@ -90,27 +38,17 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
         return;
       }
 
-      const gigIds = cartItems.map(item => item.id);
+      const purchases = cartItems.map(item => ({
+        gigId: item.id,
+        exclusivityType: item.exclusivity_type || 'non-exclusive'
+      }));
       
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-purchase", {
-        body: { gigIds },
+        body: { purchases },
       });
 
       if (error) throw error;
 
-      // Check if premium tier (no payment needed)
-      if (data?.success && !data?.url) {
-        clearCart();
-        toast({
-          title: "Leads Accessed Successfully!",
-          description: `${data.count} lead${data.count > 1 ? 's' : ''} unlocked with your ${subscriptionTier.toUpperCase()} subscription`,
-        });
-        onClose();
-        navigate("/my-leads");
-        return;
-      }
-
-      // Free tier - redirect to Stripe checkout
       if (data?.url) {
         window.open(data.url, "_blank");
         toast({
@@ -142,17 +80,9 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                 {cartCount} {cartCount === 1 ? "item" : "items"}
               </Badge>
             )}
-            {(subscriptionTier === 'pro' || subscriptionTier === 'premium') && (
-              <Badge variant="default" className="ml-auto bg-gradient-to-r from-primary to-primary/80">
-                {subscriptionTier.toUpperCase()}
-              </Badge>
-            )}
           </SheetTitle>
           <SheetDescription>
-            {subscriptionTier === 'pro' || subscriptionTier === 'premium'
-              ? `Access unlimited leads with your ${subscriptionTier.toUpperCase()} subscription`
-              : 'Review your selected gig leads before checkout'
-            }
+            Review your leads and select exclusivity type before checkout
           </SheetDescription>
         </SheetHeader>
 
@@ -168,9 +98,8 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
           ) : (
             <>
               {cartItems.map((gig) => {
-                const leadPrice = getIndividualLeadPrice(gig);
                 return (
-                  <Card key={gig.id} className="p-4">
+                  <Card key={gig.id} className="p-4 space-y-3">
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-sm truncate">{gig.title}</h4>
@@ -181,44 +110,31 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                             {gig.budget_max ? ` - $${gig.budget_max.toLocaleString()}` : "+"}
                           </p>
                         )}
-                        {(diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min) && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge 
-                                  variant="outline" 
-                                  className="mt-2 text-xs cursor-help inline-flex items-center gap-1"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate("/pricing-strategy");
-                                  }}
-                                >
-                                  Upfront: Tier cost. Awarded: ${diggerProfile.hourly_rate || diggerProfile.hourly_rate_min}/hr
-                                  <Info className="h-3 w-3" />
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="font-semibold mb-1">Hourly Pricing Model</p>
-                                <p className="text-sm mb-2">
-                                  Pay tier-based cost upfront (Free: $3, Pro: $1.50, Premium: $0). When awarded the job, pay an additional 1 hour of your rate. No commission on completed work.
-                                </p>
-                                <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/pricing-strategy")}>
-                                  View pricing strategies →
-                              </Button>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <p className="font-bold text-primary">${leadPrice.toFixed(2)}</p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFromCart(gig.id)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFromCart(gig.id)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between gap-3">
+                      <Select
+                        value={gig.exclusivity_type || 'non-exclusive'}
+                        onValueChange={(value: any) => updateExclusivity(gig.id, value)}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="non-exclusive">Non-Exclusive</SelectItem>
+                          <SelectItem value="semi-exclusive">Semi-Exclusive (4 max)</SelectItem>
+                          <SelectItem value="exclusive">24hr Exclusive</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </Card>
                 );
@@ -234,18 +150,9 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">Total:</span>
                 <span className="text-2xl font-bold text-primary">
-                  {subscriptionTier === 'pro' || subscriptionTier === 'premium' 
-                    ? 'FREE' 
-                    : `$${getLeadPrice().toFixed(2)}`
-                  }
+                  ${getTotalPrice().toFixed(2)}
                 </span>
               </div>
-              
-              {(subscriptionTier === 'pro' || subscriptionTier === 'premium') && (
-                <p className="text-sm text-muted-foreground text-center">
-                  🎉 Your {subscriptionTier.toUpperCase()} subscription includes unlimited lead access
-                </p>
-              )}
               
               <SheetFooter className="flex-col gap-2 sm:flex-col">
                 <Button
@@ -256,9 +163,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                 >
                   {isProcessing 
                     ? "Processing..." 
-                    : subscriptionTier === 'pro' || subscriptionTier === 'premium'
-                      ? `Access ${cartCount} ${cartCount === 1 ? "Lead" : "Leads"} (Free)`
-                      : `Checkout (${cartCount} ${cartCount === 1 ? "lead" : "leads"})`
+                    : `Checkout (${cartCount} ${cartCount === 1 ? "lead" : "leads"})`
                   }
                 </Button>
                 <Button
