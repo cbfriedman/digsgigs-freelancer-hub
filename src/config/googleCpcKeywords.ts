@@ -1253,6 +1253,35 @@ export const GOOGLE_CPC_KEYWORDS: IndustryCpcData[] = [
       { keyword: 'hair treatment specialist', cpc: 50, searchVolume: 49500, competitionLevel: 'low' },
     ],
   },
+
+  // INVESTMENT & FINANCIAL SERVICES
+  {
+    industry: 'Investors',
+    category: 'high-value',
+    averageCpc: 285,
+    keywords: [
+      { keyword: 'angel investor near me', cpc: 425, searchVolume: 18100, competitionLevel: 'high' },
+      { keyword: 'venture capital funding', cpc: 415, searchVolume: 27100, competitionLevel: 'high' },
+      { keyword: 'startup investment opportunities', cpc: 405, searchVolume: 22200, competitionLevel: 'high' },
+      { keyword: 'investment banker services', cpc: 395, searchVolume: 14800, competitionLevel: 'high' },
+      { keyword: 'accredited investor opportunities', cpc: 385, searchVolume: 9900, competitionLevel: 'high' },
+      { keyword: 'private equity investor', cpc: 375, searchVolume: 12100, competitionLevel: 'high' },
+      { keyword: 'seed funding investor', cpc: 365, searchVolume: 16500, competitionLevel: 'high' },
+      { keyword: 'series A funding', cpc: 355, searchVolume: 14800, competitionLevel: 'high' },
+      { keyword: 'commercial lender near me', cpc: 345, searchVolume: 33100, competitionLevel: 'high' },
+      { keyword: 'business loan lender', cpc: 335, searchVolume: 40500, competitionLevel: 'high' },
+      { keyword: 'hard money lender', cpc: 325, searchVolume: 49500, competitionLevel: 'high' },
+      { keyword: 'SBA loan lender', cpc: 315, searchVolume: 27100, competitionLevel: 'high' },
+      { keyword: 'real estate investor funding', cpc: 305, searchVolume: 22200, competitionLevel: 'high' },
+      { keyword: 'crowdfunding investment', cpc: 295, searchVolume: 18100, competitionLevel: 'medium' },
+      { keyword: 'growth capital investor', cpc: 285, searchVolume: 12100, competitionLevel: 'medium' },
+      { keyword: 'equity investment opportunities', cpc: 275, searchVolume: 16500, competitionLevel: 'medium' },
+      { keyword: 'mezzanine financing', cpc: 265, searchVolume: 8100, competitionLevel: 'medium' },
+      { keyword: 'bridge loan lender', cpc: 255, searchVolume: 33100, competitionLevel: 'medium' },
+      { keyword: 'alternative investment opportunities', cpc: 245, searchVolume: 14800, competitionLevel: 'medium' },
+      { keyword: 'investment portfolio diversification', cpc: 235, searchVolume: 22200, competitionLevel: 'medium' },
+    ],
+  },
 ];
 
 
