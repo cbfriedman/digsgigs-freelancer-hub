@@ -9,9 +9,11 @@ import { ArrowLeft, CreditCard, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLeadCostForIndustry } from "@/config/pricing";
 
 interface LeadSelection {
   keyword: string;
+  industry: string;
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
   quantity: number;
 }
@@ -37,49 +39,9 @@ export default function LeadCheckout() {
     }
   }, [navigate, toast]);
 
-  // Helper function to determine industry category from keyword
-  const getIndustryCategory = (keyword: string): 'high-value' | 'mid-value' | 'low-value' => {
-    // Import pricing data - personal injury is in high-value
-    const highValueKeywords = ['personal injury', 'legal services', 'insurance', 'real estate', 'medical', 'dental', 'financial planning', 'investment', 'business consulting'];
-    const midValueKeywords = ['hvac', 'plumbing', 'electrical', 'roofing', 'web development', 'seo', 'marketing'];
-    
-    const keywordLower = keyword.toLowerCase();
-    
-    if (highValueKeywords.some(kw => keywordLower.includes(kw))) {
-      return 'high-value';
-    } else if (midValueKeywords.some(kw => keywordLower.includes(kw))) {
-      return 'mid-value';
-    }
-    return 'low-value';
-  };
-
-  const getLeadPrice = (keyword: string, exclusivity: string): number => {
-    const category = getIndustryCategory(keyword);
-    
-    const pricing: Record<string, Record<string, number>> = {
-      'high-value': {
-        'non-exclusive': 24.50,
-        'semi-exclusive': 99.00,
-        'exclusive-24h': 275.00
-      },
-      'mid-value': {
-        'non-exclusive': 14.50,
-        'semi-exclusive': 58.00,
-        'exclusive-24h': 125.00
-      },
-      'low-value': {
-        'non-exclusive': 7.50,
-        'semi-exclusive': 30.00,
-        'exclusive-24h': 60.00
-      }
-    };
-
-    return pricing[category]?.[exclusivity] || 7.50;
-  };
-
   const calculateTotal = (): number => {
     return selections.reduce((total, selection) => {
-      const price = getLeadPrice(selection.keyword, selection.exclusivity);
+      const price = getLeadCostForIndustry(selection.industry, selection.exclusivity);
       return total + (price * selection.quantity);
     }, 0);
   };
@@ -98,7 +60,7 @@ export default function LeadCheckout() {
     setLoading(true);
     try {
       // Create checkout session for lead purchase
-      const { data, error } = await supabase.functions.invoke("create-lead-purchase-checkout", {
+      const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
         body: {
           selections: selections,
           totalAmount: calculateTotal()
@@ -183,7 +145,7 @@ export default function LeadCheckout() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {selections.map((selection, index) => {
-                    const price = getLeadPrice(selection.keyword, selection.exclusivity);
+                    const price = getLeadCostForIndustry(selection.industry, selection.exclusivity);
                     const subtotal = price * selection.quantity;
 
                     return (
