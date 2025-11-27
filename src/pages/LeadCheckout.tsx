@@ -59,6 +59,9 @@ export default function LeadCheckout() {
 
     setLoading(true);
     try {
+      console.log("Starting checkout with selections:", selections);
+      console.log("Total amount:", calculateTotal());
+      
       // Create checkout session for lead purchase
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
         body: {
@@ -67,12 +70,19 @@ export default function LeadCheckout() {
         }
       });
 
-      if (error) throw error;
+      console.log("Edge function response:", { data, error });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
 
       if (data?.url) {
+        console.log("Redirecting to:", data.url);
         // Redirect to Stripe checkout in the same window
         window.location.href = data.url;
       } else {
+        console.error("No URL in response:", data);
         throw new Error("No checkout URL received");
       }
     } catch (error: any) {
