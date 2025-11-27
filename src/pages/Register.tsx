@@ -456,19 +456,35 @@ const Register = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Sign in started");
     setLoading(true);
 
     try {
+      console.log("Attempting sign in with email:", email);
+      
       // Sign in with password
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) throw signInError;
+      console.log("Sign in response:", { signInData, signInError });
+
+      if (signInError) {
+        console.error("Sign in error:", signInError);
+        throw signInError;
+      }
+
+      if (!signInData.user) {
+        console.error("No user data returned");
+        throw new Error("No user data returned from sign in");
+      }
+
+      console.log("Sign in successful, user:", signInData.user);
 
       // Check if email is verified
       if (!signInData.user?.email_confirmed_at) {
+        console.log("Email not verified, sending OTP");
         await supabase.auth.signOut();
         toast.error("Please verify your email first. We'll send you a new code.");
         
@@ -489,12 +505,17 @@ const Register = () => {
       }
 
       // Email is verified - redirect to dashboard
+      console.log("Email verified, redirecting to dashboard");
       setLoading(false);
       toast.success("Welcome back!");
-      navigate('/role-dashboard');
+      
+      // Use setTimeout to ensure state updates before navigation
+      setTimeout(() => {
+        navigate('/role-dashboard');
+      }, 100);
     } catch (error: any) {
-      console.error("Sign in error:", error);
-      toast.error(error.message || "Failed to sign in");
+      console.error("Sign in error caught:", error);
+      toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
       setLoading(false);
     }
   };
