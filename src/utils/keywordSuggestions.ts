@@ -190,6 +190,78 @@ export const professionKeywords: Record<string, string[]> = {
     "preventive maintenance",
     "tire service",
     "inspection"
+  ],
+  "angel investor": [
+    "startup funding",
+    "seed capital",
+    "equity investment",
+    "early-stage funding",
+    "startup mentorship",
+    "investment portfolio",
+    "due diligence",
+    "term sheets",
+    "valuation",
+    "investment thesis"
+  ],
+  "venture capital": [
+    "growth capital",
+    "series funding",
+    "portfolio management",
+    "institutional investment",
+    "VC funding",
+    "investment committee",
+    "deal sourcing",
+    "exit strategy",
+    "board seats",
+    "fund management"
+  ],
+  "investment banker": [
+    "mergers and acquisitions",
+    "M&A advisory",
+    "capital raising",
+    "IPO services",
+    "financial restructuring",
+    "valuation services",
+    "debt financing",
+    "equity financing",
+    "transaction advisory",
+    "corporate finance"
+  ],
+  "accredited investor": [
+    "private equity",
+    "hedge funds",
+    "alternative investments",
+    "investment opportunities",
+    "qualified investments",
+    "portfolio diversification",
+    "wealth management",
+    "high net worth",
+    "investment strategies",
+    "asset allocation"
+  ],
+  "non-accredited investor": [
+    "retail investing",
+    "crowdfunding",
+    "public markets",
+    "investment education",
+    "mutual funds",
+    "ETFs",
+    "index funds",
+    "401k investments",
+    "IRA investments",
+    "accessible investments"
+  ],
+  lender: [
+    "business loans",
+    "commercial lending",
+    "real estate loans",
+    "mortgage lending",
+    "equipment financing",
+    "working capital",
+    "credit lines",
+    "term loans",
+    "SBA loans",
+    "hard money loans"
   ]
 };
 
@@ -259,6 +331,18 @@ export const categoryKeywords: Record<string, string[]> = {
     "laminate flooring",
     "floor refinishing",
     "floor repair"
+  ],
+  investors: [
+    "capital investment",
+    "funding opportunities",
+    "investment deals",
+    "financial backing",
+    "investor relations",
+    "investment terms",
+    "funding rounds",
+    "investment agreements",
+    "capital allocation",
+    "investment returns"
   ]
 };
 
