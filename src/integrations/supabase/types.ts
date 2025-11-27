@@ -1958,6 +1958,48 @@ export type Database = {
         }
         Relationships: []
       }
+      specialty_requests: {
+        Row: {
+          admin_notes: string | null
+          approved_by: string | null
+          created_at: string
+          description: string | null
+          id: string
+          industry: string
+          profession: string
+          specialty_name: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry: string
+          profession: string
+          specialty_name: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry?: string
+          profession?: string
+          specialty_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       telemarketer_commissions: {
         Row: {
           awarded_at: string
