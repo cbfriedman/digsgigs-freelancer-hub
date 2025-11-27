@@ -265,6 +265,42 @@ export const professionKeywords: Record<string, string[]> = {
   ]
 };
 
+// Specialty-specific keyword suggestions
+export const specialtyKeywords: Record<string, string[]> = {
+  // Legal specialties
+  "personal injury": ["car accidents", "slip and fall", "medical malpractice", "wrongful death", "accident claims"],
+  "family law": ["divorce", "child custody", "adoption", "prenuptial agreements", "spousal support"],
+  "criminal defense": ["DUI defense", "felony defense", "misdemeanor defense", "appeals", "expungement"],
+  "estate planning": ["wills", "trusts", "probate", "power of attorney", "estate administration"],
+  "real estate law": ["property disputes", "title issues", "landlord-tenant", "closing services", "zoning"],
+  
+  // Construction specialties
+  "kitchen remodeling": ["cabinet installation", "countertops", "backsplash", "flooring", "lighting"],
+  "bathroom remodeling": ["tile work", "shower installation", "vanity", "fixtures", "waterproofing"],
+  "deck building": ["composite decking", "wood decking", "railings", "stairs", "pergolas"],
+  "concrete work": ["foundations", "driveways", "patios", "sidewalks", "stamped concrete"],
+  
+  // HVAC specialties
+  "furnace repair": ["gas furnace", "electric furnace", "heat pump", "burner replacement", "thermostat"],
+  "ac installation": ["central air", "ductless mini-split", "heat pump", "energy efficient", "smart thermostats"],
+  "duct cleaning": ["air quality", "mold removal", "sanitization", "airflow optimization", "allergen reduction"],
+  
+  // Plumbing specialties
+  "water heater repair": ["tankless", "gas water heater", "electric water heater", "installation", "maintenance"],
+  "drain cleaning": ["clogged drains", "sewer line", "hydro jetting", "camera inspection", "root removal"],
+  "pipe repair": ["leak detection", "repiping", "frozen pipes", "burst pipes", "corrosion"],
+  
+  // Electrical specialties
+  "panel upgrade": ["circuit breaker", "electrical capacity", "code compliance", "surge protection", "safety inspection"],
+  "lighting installation": ["recessed lighting", "chandelier", "outdoor lighting", "LED retrofit", "smart lighting"],
+  
+  // Investor specialties
+  "startup funding": ["seed investment", "pre-seed", "convertible notes", "SAFE agreements", "pitch evaluation"],
+  "real estate investment": ["fix and flip", "rental properties", "commercial real estate", "REITs", "property management"],
+  "growth capital": ["expansion funding", "series A", "series B", "scaling", "market expansion"],
+  "debt financing": ["term loans", "lines of credit", "bridge loans", "mezzanine financing", "invoice factoring"]
+};
+
 export const categoryKeywords: Record<string, string[]> = {
   construction: [
     "new construction",
@@ -346,12 +382,21 @@ export const categoryKeywords: Record<string, string[]> = {
   ]
 };
 
-// Generate keyword suggestions based on profession and categories
+// Generate keyword suggestions based on profession, categories, and specialties
 export const generateKeywordSuggestions = (
   profession: string,
-  categoryNames: string[]
+  categoryNames: string[],
+  specialty?: string
 ): string[] => {
   const suggestions: Set<string> = new Set();
+  
+  // Add specialty-specific keywords first (most specific)
+  if (specialty) {
+    const specialtyKey = specialty.toLowerCase().trim();
+    if (specialtyKeywords[specialtyKey]) {
+      specialtyKeywords[specialtyKey].forEach(kw => suggestions.add(kw));
+    }
+  }
   
   // Add profession-specific keywords
   const professionKey = profession.toLowerCase().trim();
@@ -386,4 +431,25 @@ export const generateKeywordSuggestions = (
   }
   
   return Array.from(suggestions);
+};
+
+// Get specialty suggestions for a given profession
+export const getSpecialtySuggestions = (profession: string): string[] => {
+  const professionKey = profession.toLowerCase().trim();
+  
+  // Map of professions to their common specialties
+  const professionSpecialties: Record<string, string[]> = {
+    lawyer: ["personal injury", "family law", "criminal defense", "estate planning", "real estate law", "business law"],
+    attorney: ["personal injury", "family law", "criminal defense", "estate planning", "real estate law", "business law"],
+    contractor: ["kitchen remodeling", "bathroom remodeling", "deck building", "concrete work", "home additions"],
+    hvac: ["furnace repair", "ac installation", "duct cleaning", "heat pump service", "thermostat installation"],
+    plumber: ["water heater repair", "drain cleaning", "pipe repair", "fixture installation", "leak detection"],
+    electrician: ["panel upgrade", "lighting installation", "outlet repair", "wiring", "generator installation"],
+    "angel investor": ["startup funding", "seed capital", "early-stage funding", "mentorship"],
+    "venture capital": ["growth capital", "series funding", "portfolio management", "exit strategy"],
+    lender: ["business loans", "real estate investment", "debt financing", "commercial lending"],
+    "investment banker": ["mergers and acquisitions", "IPO services", "capital raising", "financial restructuring"]
+  };
+  
+  return professionSpecialties[professionKey] || [];
 };
