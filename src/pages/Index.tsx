@@ -423,6 +423,94 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Value Proposition Banner - PPC Cost Comparison */}
+      <section className="py-16 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border-y border-primary/10">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            {/* Main Headline */}
+            <div className="text-center mb-12">
+              <Badge className="mb-4 bg-destructive/10 text-destructive border-destructive/20 text-base px-4 py-1">
+                🔥 Stop Burning Money on Google Ads
+              </Badge>
+              <h3 className="text-4xl lg:text-5xl font-bold mb-4">
+                Leads That Actually <span className="text-primary">Convert</span>
+              </h3>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Our leads cost up to <span className="font-bold text-foreground">60% less</span> than Google Ads with <span className="font-bold text-foreground">3x higher</span> conversion rates
+              </p>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid md:grid-cols-3 gap-6 mb-10">
+              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-3xl font-bold text-primary">$7.50</div>
+                </div>
+                <div className="text-sm text-muted-foreground">Starting cost per lead</div>
+                <div className="text-xs text-muted-foreground mt-1">vs. $45+ PPC average</div>
+              </div>
+
+              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-3xl font-bold text-primary">25%+</div>
+                </div>
+                <div className="text-sm text-muted-foreground">Average conversion rate</div>
+                <div className="text-xs text-muted-foreground mt-1">vs. 7% PPC average</div>
+              </div>
+
+              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-3xl font-bold text-primary">Zero</div>
+                </div>
+                <div className="text-sm text-muted-foreground">Wasted ad clicks</div>
+                <div className="text-xs text-muted-foreground mt-1">Pay only for real leads</div>
+              </div>
+            </div>
+
+            {/* Comparison Example */}
+            <div className="bg-background/90 backdrop-blur-sm rounded-xl p-6 border border-accent/30 max-w-2xl mx-auto mb-8">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="text-sm text-muted-foreground mb-1">Real Example: HVAC Lead</div>
+                  <div className="text-2xl font-bold text-primary">$14.50</div>
+                  <div className="text-xs text-muted-foreground">on digsandgigs</div>
+                </div>
+                <div className="text-muted-foreground text-2xl font-light">vs.</div>
+                <div className="flex-1 min-w-[200px]">
+                  <div className="text-sm text-muted-foreground mb-1">Google Ads CPC</div>
+                  <div className="text-2xl font-bold text-destructive line-through">$228</div>
+                  <div className="text-xs text-muted-foreground">average per conversion</div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="text-center">
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="text-lg px-8"
+                onClick={() => navigate("/pricing")}
+              >
+                See Full Pricing Comparison <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+              <p className="text-sm text-muted-foreground mt-3">
+                Join 10,000+ service professionals who switched from PPC
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Digger Onboarding - Show choice dialog or checklist */}
       {isDigger && showOnboardingChoice && (
         <section className="py-8 bg-background">
