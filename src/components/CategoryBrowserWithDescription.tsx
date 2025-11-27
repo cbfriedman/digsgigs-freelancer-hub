@@ -512,12 +512,17 @@ export const CategoryBrowserWithDescription = () => {
                         console.log('Existing profile found, navigating to edit');
                         navigate(`/edit-digger-profile?profileId=${diggerProfile.id}`);
                       } else {
-                        console.log('No profile, navigating to edit (will create)');
+                        console.log('No profile, navigating to edit (create mode)');
+                        // Update user_type to digger if currently consumer
+                        await supabase
+                          .from('profiles')
+                          .update({ user_type: 'digger' })
+                          .eq('id', user.id);
                         navigate('/edit-digger-profile');
                       }
                     } catch (err) {
                       console.error('Profile check error:', err);
-                      navigate('/edit-digger-profile');
+                      navigate('/digger-registration');
                     }
                   } else {
                     console.log('No user, navigating to register');
