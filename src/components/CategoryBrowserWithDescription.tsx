@@ -225,6 +225,58 @@ export const CategoryBrowserWithDescription = () => {
           </Select>
         </div>
 
+        {/* Add Custom Industry Category */}
+        {user && (
+          <div className="space-y-2">
+            {!isAddingCategory ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsAddingCategory(true)}
+                className="w-full"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add custom Industry Category
+              </Button>
+            ) : (
+              <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+                <Label htmlFor="newCategory">New Category Name</Label>
+                <Input
+                  id="newCategory"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Enter category name..."
+                  className="bg-background"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleCreateCategory}
+                    disabled={isCreatingCategory}
+                    size="sm"
+                  >
+                    {isCreatingCategory ? "Creating..." : "Create"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryName("");
+                    }}
+                    size="sm"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This category will only be visible to you
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Specialty Selection */}
         {selectedCategory && hasIndustrySpecialties(selectedCategory) && (
           <div className="space-y-2">
@@ -269,57 +321,6 @@ export const CategoryBrowserWithDescription = () => {
           </div>
         )}
 
-        {/* Add Custom Category */}
-        {user && (
-          <div className="space-y-2">
-            {!isAddingCategory ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsAddingCategory(true)}
-                className="w-full"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Custom Category
-              </Button>
-            ) : (
-              <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
-                <Label htmlFor="newCategory">New Category Name</Label>
-                <Input
-                  id="newCategory"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Enter category name..."
-                  className="bg-background"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleCreateCategory}
-                    disabled={isCreatingCategory}
-                    size="sm"
-                  >
-                    {isCreatingCategory ? "Creating..." : "Create"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddingCategory(false);
-                      setNewCategoryName("");
-                    }}
-                    size="sm"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  This category will only be visible to you
-                </p>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Specialty Description */}
         {selectedCategory && (
