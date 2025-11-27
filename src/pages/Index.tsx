@@ -3,6 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { DiggerCard } from "@/components/DiggerCard";
 import { GigCard } from "@/components/GigCard";
 import { Footer } from "@/components/Footer";
@@ -31,7 +38,8 @@ import {
   Settings,
   DollarSign,
   Bell,
-  Bookmark
+  Bookmark,
+  Menu
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -55,6 +63,7 @@ const Index = () => {
   const [userName, setUserName] = useState<string>("");
   const [profileCompletion, setProfileCompletion] = useState<number>(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -239,7 +248,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Connect Skilled Service Professionals with Local Clients"
-        description="digsandgigs connects skilled service professionals (diggers) with clients seeking local services. Post gigs, browse qualified diggers, and grow your business with transparent pricing. No subscriptions required."
+        description="Digs and Gigs connects skilled service professionals (diggers) with clients seeking local services. Post gigs, browse qualified diggers, and grow your business with transparent pricing. No subscriptions required."
         keywords="local services, service marketplace, hire professionals, post gigs, contractors, freelancers, lead generation, service providers, home services"
         structuredData={{
           "@context": "https://schema.org",
@@ -256,9 +265,17 @@ const Index = () => {
             className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            digsandgigs
+            Digs and Gigs
           </h1>
-          <div className="flex items-center gap-4">
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/browse-diggers")}>
+              Browse Diggers
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/browse-gigs")}>
+              Browse Gigs
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")}>
               Pricing
             </Button>
@@ -298,6 +315,126 @@ const Index = () => {
               </>
             )}
           </div>
+
+          {/* Mobile Navigation */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild className="md:hidden">
+              <Button variant="ghost" size="icon">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <SheetHeader>
+                <SheetTitle>Menu</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-4 mt-6">
+                <Button 
+                  variant="ghost" 
+                  className="justify-start" 
+                  onClick={() => {
+                    navigate("/browse-diggers");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Browse Diggers
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="justify-start" 
+                  onClick={() => {
+                    navigate("/browse-gigs");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Briefcase className="mr-2 h-4 w-4" />
+                  Browse Gigs
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="justify-start" 
+                  onClick={() => {
+                    navigate("/pricing");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Pricing
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="justify-start" 
+                  onClick={() => {
+                    navigate("/how-it-works");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  How It Works
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="justify-start" 
+                  onClick={() => {
+                    navigate("/contact");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Contact
+                </Button>
+                <div className="border-t border-border my-4" />
+                {user ? (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start" 
+                      onClick={() => {
+                        navigate("/role-dashboard");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Dashboard ({userName})
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start text-destructive" 
+                      onClick={() => {
+                        handleSignOut();
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start" 
+                      onClick={() => {
+                        navigate("/register?mode=signin");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      Sign In
+                    </Button>
+                    <Button 
+                      variant="hero" 
+                      onClick={() => {
+                        navigate("/register");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      Get Started
+                    </Button>
+                  </>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </nav>
 
