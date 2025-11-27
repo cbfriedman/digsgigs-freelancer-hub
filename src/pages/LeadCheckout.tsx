@@ -70,8 +70,8 @@ export default function LeadCheckout() {
       if (error) throw error;
 
       if (data?.url) {
-        // Redirect to Stripe checkout
-        window.open(data.url, '_blank');
+        // Redirect to Stripe checkout in the same window
+        window.location.href = data.url;
       } else {
         throw new Error("No checkout URL received");
       }
