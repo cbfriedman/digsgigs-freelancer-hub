@@ -502,7 +502,7 @@ export const CategoryBrowserWithDescription = () => {
                       .maybeSingle();
                     
                     if (diggerProfile) {
-                      navigate('/edit-digger-profile');
+                      navigate(`/edit-digger-profile?profileId=${diggerProfile.id}`);
                     } else {
                       navigate('/digger-registration');
                     }

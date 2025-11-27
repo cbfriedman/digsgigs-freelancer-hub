@@ -133,6 +133,10 @@ const router = createBrowserRouter([
     element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
   },
   {
+    path: "/edit-digger-profile",
+    element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
+  },
+  {
     path: "/profile-completion",
     element: <ProtectedRoute><ProfileCompletion /></ProtectedRoute>,
   },
