@@ -92,6 +92,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               HOME
             </Button>
 
+            {/* My Dashboard Button - only for authenticated users */}
+            {user && (
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/role-dashboard")}
+                className="font-semibold"
+              >
+                MY DASHBOARD
+              </Button>
+            )}
+
             {/* Admin Button - only for admins */}
             {user && userRoles.includes('admin') && (
               <Button
