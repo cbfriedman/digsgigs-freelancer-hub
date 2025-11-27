@@ -7,16 +7,18 @@ interface Gig {
   budget_max: number | null;
   location: string;
   description: string;
+  exclusivity_type?: 'non-exclusive' | 'semi-exclusive' | 'exclusive';
 }
 
 interface CartContextType {
   cartItems: Gig[];
-  addToCart: (gig: Gig) => void;
+  addToCart: (gig: Gig, exclusivityType?: 'non-exclusive' | 'semi-exclusive' | 'exclusive') => void;
   removeFromCart: (gigId: string) => void;
   clearCart: () => void;
   isInCart: (gigId: string) => boolean;
   cartCount: number;
-  totalPrice: number;
+  updateExclusivity: (gigId: string, exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive') => void;
+  getTotalPrice: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -29,15 +31,41 @@ export const useCart = () => {
   return context;
 };
 
-const calculateLeadPrice = (gig: Gig): number => {
-  // For lead packages, budget_min already contains the total calculated price
-  if (gig.location === "Lead Package") {
-    return gig.budget_min || 0;
+// Import pricing from centralized config
+import { INDUSTRY_PRICING } from '@/config/pricing';
+
+// Determine industry category based on gig title/description (simplified)
+const determineIndustryCategory = (gig: Gig): 'low-value' | 'mid-value' | 'high-value' => {
+  const searchText = `${gig.title} ${gig.description}`.toLowerCase();
+  
+  // Check each pricing category for keyword matches
+  for (const pricing of INDUSTRY_PRICING) {
+    for (const industry of pricing.industries) {
+      if (searchText.includes(industry.toLowerCase())) {
+        return pricing.category;
+      }
+    }
   }
-  // For gig leads, calculate based on budget
-  const budgetMin = gig.budget_min;
-  if (!budgetMin || budgetMin === 0) return 50;
-  return Math.max(50, budgetMin * 0.005);
+  
+  // Default to mid-value if no match found
+  return 'mid-value';
+};
+
+const calculateLeadPrice = (gig: Gig): number => {
+  const category = determineIndustryCategory(gig);
+  const pricing = INDUSTRY_PRICING.find(p => p.category === category)!;
+  const exclusivityType = gig.exclusivity_type || 'non-exclusive';
+  
+  switch (exclusivityType) {
+    case 'non-exclusive':
+      return pricing.nonExclusive;
+    case 'semi-exclusive':
+      return pricing.semiExclusive;
+    case 'exclusive':
+      return pricing.exclusive24h;
+    default:
+      return pricing.nonExclusive;
+  }
 };
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -60,13 +88,21 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("gigCart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (gig: Gig) => {
+  const addToCart = (gig: Gig, exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive' = 'non-exclusive') => {
     setCartItems((prev) => {
       if (prev.some((item) => item.id === gig.id)) {
         return prev;
       }
-      return [...prev, gig];
+      return [...prev, { ...gig, exclusivity_type: exclusivityType }];
     });
+  };
+
+  const updateExclusivity = (gigId: string, exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive') => {
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.id === gigId ? { ...item, exclusivity_type: exclusivityType } : item
+      )
+    );
   };
 
   const removeFromCart = (gigId: string) => {
@@ -82,9 +118,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return cartItems.some((item) => item.id === gigId);
   };
 
-  const totalPrice = cartItems.reduce((sum, gig) => {
-    return sum + calculateLeadPrice(gig);
-  }, 0);
+  const getTotalPrice = () => {
+    return cartItems.reduce((sum, gig) => {
+      return sum + calculateLeadPrice(gig);
+    }, 0);
+  };
 
   return (
     <CartContext.Provider
@@ -95,7 +133,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearCart,
         isInCart,
         cartCount: cartItems.length,
-        totalPrice,
+        updateExclusivity,
+        getTotalPrice,
       }}
     >
       {children}
