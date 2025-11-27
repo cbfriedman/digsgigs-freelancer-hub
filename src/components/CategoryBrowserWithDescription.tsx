@@ -485,74 +485,20 @@ export const CategoryBrowserWithDescription = () => {
               <Button 
                 className="flex-1" 
                 size="lg"
-                onClick={async () => {
-                  try {
-                    console.log('=== Button clicked - starting navigation ===');
-                    const selected = Array.from(selectedKeywords);
-                    console.log('Selected keywords:', selected);
-                    
-                    sessionStorage.setItem('selectedKeywords', JSON.stringify({
-                      category: selectedCategory,
-                      description: description,
-                      keywords: selected,
-                      specialty: selectedSpecialty
-                    }));
-                    console.log('✓ Saved to sessionStorage');
-                    
-                    toast.success(`Saved ${selected.length} keyword${selected.length !== 1 ? 's' : ''}!`);
-                    
-                    // Check if user has existing profile to determine navigation
-                    if (user) {
-                      console.log('✓ User logged in, checking for profile...');
-                      try {
-                        console.log('Querying digger_profiles for user:', user.id);
-                        const { data: diggerProfile, error: profileError } = await supabase
-                          .from('digger_profiles')
-                          .select('id')
-                          .eq('user_id', user.id)
-                          .maybeSingle();
-                        
-                        if (profileError) {
-                          console.error('Profile query error:', profileError);
-                          throw profileError;
-                        }
-                        
-                        console.log('Profile query result:', diggerProfile);
-                        
-                        if (diggerProfile) {
-                          console.log('✓ Existing profile found, navigating to edit with ID:', diggerProfile.id);
-                          navigate(`/edit-digger-profile?profileId=${diggerProfile.id}`);
-                        } else {
-                          console.log('✓ No profile found, creating new one');
-                          // Update user_type to digger if currently consumer
-                          console.log('Updating user_type to digger...');
-                          const { error: updateError } = await supabase
-                            .from('profiles')
-                            .update({ user_type: 'digger' })
-                            .eq('id', user.id);
-                          
-                          if (updateError) {
-                            console.error('User type update error:', updateError);
-                          } else {
-                            console.log('✓ User type updated successfully');
-                          }
-                          
-                          console.log('Navigating to /edit-digger-profile');
-                          navigate('/edit-digger-profile');
-                        }
-                      } catch (err) {
-                        console.error('❌ Profile check error:', err);
-                        toast.error('Error checking profile. Please try again.');
-                      }
-                    } else {
-                      console.log('No user logged in, redirecting to register');
-                      navigate('/register');
-                    }
-                    console.log('=== Navigation complete ===');
-                  } catch (err) {
-                    console.error('❌ Button click error:', err);
-                    toast.error('An error occurred. Please try again.');
-                  }
+                onClick={() => {
+                  const selected = Array.from(selectedKeywords);
+                  
+                  sessionStorage.setItem('selectedKeywords', JSON.stringify({
+                    keywords: selected.map(kw => ({ 
+                      keyword: kw, 
+                      industry: selectedCategory 
+                    })),
+                    categoryName: selectedCategory,
+                    specialty: selectedSpecialty
+                  }));
+                  
+                  toast.success(`Saved ${selected.length} keyword${selected.length !== 1 ? 's' : ''}!`);
+                  navigate('/keyword-summary');
                 }}
                 disabled={selectedKeywords.size === 0}
               >
