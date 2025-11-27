@@ -377,7 +377,7 @@ export const CategoryBrowserWithDescription = () => {
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
               <h4 className="font-semibold mb-3">Suggested Keywords ({suggestedKeywords.length})</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Click keywords to select/deselect them, or click the X to remove them.
+                Click keywords to select/deselect them. Selected keywords have a checkmark and colored background. Click the X to remove them entirely.
               </p>
               <div className="flex flex-wrap gap-2">
                 {suggestedKeywords.map((keyword, index) => {
@@ -485,7 +485,10 @@ export const CategoryBrowserWithDescription = () => {
                 className="flex-1" 
                 size="lg"
                 onClick={async () => {
+                  console.log('Button clicked - starting navigation');
                   const selected = Array.from(selectedKeywords);
+                  console.log('Selected keywords:', selected);
+                  
                   sessionStorage.setItem('selectedKeywords', JSON.stringify({
                     category: selectedCategory,
                     description: description,
@@ -495,18 +498,25 @@ export const CategoryBrowserWithDescription = () => {
                   
                   // Check if user has a digger profile
                   if (user) {
-                    const { data: diggerProfile } = await supabase
+                    console.log('User exists, checking for digger profile');
+                    const { data: diggerProfile, error } = await supabase
                       .from('digger_profiles')
                       .select('id')
                       .eq('user_id', user.id)
                       .maybeSingle();
                     
+                    console.log('Digger profile result:', diggerProfile, error);
+                    
                     if (diggerProfile) {
-                      navigate(`/edit-digger-profile?profileId=${diggerProfile.id}`);
+                      const targetUrl = `/edit-digger-profile?profileId=${diggerProfile.id}`;
+                      console.log('Navigating to:', targetUrl);
+                      navigate(targetUrl);
                     } else {
+                      console.log('No profile found, navigating to registration');
                       navigate('/digger-registration');
                     }
                   } else {
+                    console.log('No user, navigating to register');
                     navigate('/register');
                   }
                 }}
