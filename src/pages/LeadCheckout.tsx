@@ -12,7 +12,6 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface LeadSelection {
   keyword: string;
-  industry: string;
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
   quantity: number;
 }
@@ -38,32 +37,49 @@ export default function LeadCheckout() {
     }
   }, [navigate, toast]);
 
-  const getLeadPrice = (industry: string, exclusivity: string): number => {
-    // This should match your pricing logic from getLeadCostForIndustry
+  // Helper function to determine industry category from keyword
+  const getIndustryCategory = (keyword: string): 'high-value' | 'mid-value' | 'low-value' => {
+    // Import pricing data - personal injury is in high-value
+    const highValueKeywords = ['personal injury', 'legal services', 'insurance', 'real estate', 'medical', 'dental', 'financial planning', 'investment', 'business consulting'];
+    const midValueKeywords = ['hvac', 'plumbing', 'electrical', 'roofing', 'web development', 'seo', 'marketing'];
+    
+    const keywordLower = keyword.toLowerCase();
+    
+    if (highValueKeywords.some(kw => keywordLower.includes(kw))) {
+      return 'high-value';
+    } else if (midValueKeywords.some(kw => keywordLower.includes(kw))) {
+      return 'mid-value';
+    }
+    return 'low-value';
+  };
+
+  const getLeadPrice = (keyword: string, exclusivity: string): number => {
+    const category = getIndustryCategory(keyword);
+    
     const pricing: Record<string, Record<string, number>> = {
       'high-value': {
-        'non-exclusive': 55.00,
+        'non-exclusive': 24.50,
         'semi-exclusive': 99.00,
         'exclusive-24h': 275.00
       },
       'mid-value': {
-        'non-exclusive': 29.00,
+        'non-exclusive': 14.50,
         'semi-exclusive': 58.00,
         'exclusive-24h': 125.00
       },
       'low-value': {
-        'non-exclusive': 15.00,
+        'non-exclusive': 7.50,
         'semi-exclusive': 30.00,
         'exclusive-24h': 60.00
       }
     };
 
-    return pricing[industry]?.[exclusivity] || 15.00;
+    return pricing[category]?.[exclusivity] || 7.50;
   };
 
   const calculateTotal = (): number => {
     return selections.reduce((total, selection) => {
-      const price = getLeadPrice(selection.industry, selection.exclusivity);
+      const price = getLeadPrice(selection.keyword, selection.exclusivity);
       return total + (price * selection.quantity);
     }, 0);
   };
@@ -167,7 +183,7 @@ export default function LeadCheckout() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {selections.map((selection, index) => {
-                    const price = getLeadPrice(selection.industry, selection.exclusivity);
+                    const price = getLeadPrice(selection.keyword, selection.exclusivity);
                     const subtotal = price * selection.quantity;
 
                     return (
