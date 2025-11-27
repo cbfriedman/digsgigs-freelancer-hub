@@ -485,7 +485,7 @@ export const CategoryBrowserWithDescription = () => {
               <Button 
                 className="flex-1" 
                 size="lg"
-                onClick={() => {
+                onClick={async () => {
                   console.log('Button clicked - starting navigation');
                   const selected = Array.from(selectedKeywords);
                   console.log('Selected keywords:', selected);
@@ -499,10 +499,26 @@ export const CategoryBrowserWithDescription = () => {
                   
                   toast.success(`Saved ${selected.length} keyword${selected.length !== 1 ? 's' : ''}!`);
                   
-                  // Navigate to profile completion, not registration start
+                  // Check if user has existing profile to determine navigation
                   if (user) {
-                    console.log('User logged in, navigating to profile completion');
-                    navigate('/profile-completion');
+                    try {
+                      const { data: diggerProfile } = await supabase
+                        .from('digger_profiles')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+                      
+                      if (diggerProfile) {
+                        console.log('Existing profile found, navigating to edit');
+                        navigate(`/edit-digger-profile?profileId=${diggerProfile.id}`);
+                      } else {
+                        console.log('No profile, navigating to edit (will create)');
+                        navigate('/edit-digger-profile');
+                      }
+                    } catch (err) {
+                      console.error('Profile check error:', err);
+                      navigate('/edit-digger-profile');
+                    }
                   } else {
                     console.log('No user, navigating to register');
                     navigate('/register');
