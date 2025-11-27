@@ -1256,10 +1256,14 @@ export type Database = {
           digger_id: string
           exclusivity_ends_at: string | null
           exclusivity_starts_at: string | null
+          exclusivity_type: string | null
           gig_id: string
           id: string
           lead_source: string
           queue_position: number
+          semi_exclusive_count: number | null
+          semi_exclusive_expires_at: string | null
+          semi_exclusive_max: number | null
           status: string
           updated_at: string | null
         }
@@ -1271,10 +1275,14 @@ export type Database = {
           digger_id: string
           exclusivity_ends_at?: string | null
           exclusivity_starts_at?: string | null
+          exclusivity_type?: string | null
           gig_id: string
           id?: string
           lead_source: string
           queue_position: number
+          semi_exclusive_count?: number | null
+          semi_exclusive_expires_at?: string | null
+          semi_exclusive_max?: number | null
           status?: string
           updated_at?: string | null
         }
@@ -1286,10 +1294,14 @@ export type Database = {
           digger_id?: string
           exclusivity_ends_at?: string | null
           exclusivity_starts_at?: string | null
+          exclusivity_type?: string | null
           gig_id?: string
           id?: string
           lead_source?: string
           queue_position?: number
+          semi_exclusive_count?: number | null
+          semi_exclusive_expires_at?: string | null
+          semi_exclusive_max?: number | null
           status?: string
           updated_at?: string | null
         }
@@ -1378,6 +1390,7 @@ export type Database = {
           converted_from_exclusive: boolean | null
           digger_id: string
           exclusivity_queue_position: number | null
+          exclusivity_type: string | null
           gig_id: string
           id: string
           is_exclusive: boolean | null
@@ -1398,6 +1411,7 @@ export type Database = {
           converted_from_exclusive?: boolean | null
           digger_id: string
           exclusivity_queue_position?: number | null
+          exclusivity_type?: string | null
           gig_id: string
           id?: string
           is_exclusive?: boolean | null
@@ -1418,6 +1432,7 @@ export type Database = {
           converted_from_exclusive?: boolean | null
           digger_id?: string
           exclusivity_queue_position?: number | null
+          exclusivity_type?: string | null
           gig_id?: string
           id?: string
           is_exclusive?: boolean | null
