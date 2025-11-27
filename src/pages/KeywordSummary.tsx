@@ -3,46 +3,105 @@ import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ShoppingCart } from "lucide-react";
 import { getLeadCostForIndustry } from "@/config/pricing";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 interface SelectedKeyword {
   keyword: string;
   industry: string;
 }
 
+interface LeadSelection {
+  keyword: string;
+  industry: string;
+  exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
+  quantity: number;
+}
+
 export default function KeywordSummary() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [keywords, setKeywords] = useState<SelectedKeyword[]>([]);
   const [categoryName, setCategoryName] = useState("");
+  const [selections, setSelections] = useState<Map<string, LeadSelection>>(new Map());
 
   useEffect(() => {
     const savedData = sessionStorage.getItem('selectedKeywords');
     if (savedData) {
       const data = JSON.parse(savedData);
-      setKeywords(data.keywords || []);
+      const loadedKeywords = data.keywords || [];
+      setKeywords(loadedKeywords);
       setCategoryName(data.categoryName || "");
+      
+      // Initialize selections with default values
+      const initialSelections = new Map<string, LeadSelection>();
+      loadedKeywords.forEach((kw: SelectedKeyword) => {
+        initialSelections.set(kw.keyword, {
+          keyword: kw.keyword,
+          industry: kw.industry,
+          exclusivity: 'non-exclusive',
+          quantity: 1
+        });
+      });
+      setSelections(initialSelections);
     } else {
       // No keywords selected, redirect back
       navigate('/pricing');
     }
   }, [navigate]);
 
-  const calculateTotals = () => {
-    let nonExclusiveTotal = 0;
-    let semiExclusiveTotal = 0;
-    let exclusiveTotal = 0;
-
-    keywords.forEach(({ industry }) => {
-      nonExclusiveTotal += getLeadCostForIndustry(industry, 'non-exclusive');
-      semiExclusiveTotal += getLeadCostForIndustry(industry, 'semi-exclusive');
-      exclusiveTotal += getLeadCostForIndustry(industry, 'exclusive-24h');
+  const updateSelection = (keyword: string, field: 'exclusivity' | 'quantity', value: any) => {
+    setSelections(prev => {
+      const newSelections = new Map(prev);
+      const current = newSelections.get(keyword);
+      if (current) {
+        newSelections.set(keyword, { ...current, [field]: value });
+      }
+      return newSelections;
     });
-
-    return { nonExclusiveTotal, semiExclusiveTotal, exclusiveTotal };
   };
 
-  const totals = calculateTotals();
+  const calculateGrandTotal = () => {
+    let total = 0;
+    selections.forEach(selection => {
+      const pricePerLead = getLeadCostForIndustry(selection.industry, selection.exclusivity);
+      total += pricePerLead * selection.quantity;
+    });
+    return total;
+  };
+
+  const handleProceedToCheckout = () => {
+    const leadPurchases = Array.from(selections.values()).filter(s => s.quantity > 0);
+    
+    if (leadPurchases.length === 0) {
+      toast({
+        title: "No Leads Selected",
+        description: "Please select at least one lead to purchase",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Save lead purchase selections to sessionStorage
+    sessionStorage.setItem('leadPurchaseSelections', JSON.stringify(leadPurchases));
+    
+    toast({
+      title: "Proceeding to Checkout",
+      description: `${leadPurchases.length} lead type${leadPurchases.length !== 1 ? 's' : ''} ready for purchase`,
+    });
+    
+    navigate('/checkout');
+  };
 
   if (keywords.length === 0) {
     return null; // Will redirect in useEffect
@@ -74,30 +133,63 @@ export default function KeywordSummary() {
 
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Keyword Pricing Overview</CardTitle>
+              <CardTitle>Configure Your Lead Purchases</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {keywords.map(({ keyword, industry }, index) => {
-                  const nonExclusive = getLeadCostForIndustry(industry, 'non-exclusive');
-                  const semiExclusive = getLeadCostForIndustry(industry, 'semi-exclusive');
-                  const exclusive = getLeadCostForIndustry(industry, 'exclusive-24h');
+                  const selection = selections.get(keyword);
+                  if (!selection) return null;
+
+                  const pricePerLead = getLeadCostForIndustry(industry, selection.exclusivity);
+                  const subtotal = pricePerLead * selection.quantity;
 
                   return (
-                    <div key={index} className="border-b pb-4 last:border-b-0">
-                      <h3 className="font-semibold text-lg mb-2">{keyword}</h3>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div key={index} className="border rounded-lg p-4">
+                      <h3 className="font-semibold text-lg mb-4">{keyword}</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <p className="text-muted-foreground">Non-Exclusive</p>
-                          <p className="font-bold text-primary">${nonExclusive.toFixed(2)}</p>
+                          <Label htmlFor={`exclusivity-${index}`}>Exclusivity Type</Label>
+                          <Select
+                            value={selection.exclusivity}
+                            onValueChange={(value: any) => updateSelection(keyword, 'exclusivity', value)}
+                          >
+                            <SelectTrigger id={`exclusivity-${index}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="non-exclusive">
+                                Non-Exclusive - ${getLeadCostForIndustry(industry, 'non-exclusive').toFixed(2)}/lead
+                              </SelectItem>
+                              <SelectItem value="semi-exclusive">
+                                Semi-Exclusive - ${getLeadCostForIndustry(industry, 'semi-exclusive').toFixed(2)}/lead
+                              </SelectItem>
+                              <SelectItem value="exclusive-24h">
+                                24hr Exclusive - ${getLeadCostForIndustry(industry, 'exclusive-24h').toFixed(2)}/lead
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
+
                         <div>
-                          <p className="text-muted-foreground">Semi-Exclusive</p>
-                          <p className="font-bold text-primary">${semiExclusive.toFixed(2)}</p>
+                          <Label htmlFor={`quantity-${index}`}>Number of Leads</Label>
+                          <Input
+                            id={`quantity-${index}`}
+                            type="number"
+                            min="0"
+                            value={selection.quantity}
+                            onChange={(e) => updateSelection(keyword, 'quantity', parseInt(e.target.value) || 0)}
+                          />
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">24hr Exclusive</p>
-                          <p className="font-bold text-primary">${exclusive.toFixed(2)}</p>
+
+                        <div className="flex items-end">
+                          <div className="w-full">
+                            <Label>Subtotal</Label>
+                            <div className="text-2xl font-bold text-primary">
+                              ${subtotal.toFixed(2)}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -108,50 +200,29 @@ export default function KeywordSummary() {
           </Card>
 
           <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Estimated Totals Per Lead Type</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-6">
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Non-Exclusive Total</p>
-                  <p className="text-2xl font-bold text-primary">
-                    ${totals.nonExclusiveTotal.toFixed(2)}
+            <CardContent className="pt-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Grand Total</p>
+                  <p className="text-3xl font-bold text-primary">
+                    ${calculateGrandTotal().toFixed(2)}
                   </p>
                 </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Semi-Exclusive Total</p>
-                  <p className="text-2xl font-bold text-primary">
-                    ${totals.semiExclusiveTotal.toFixed(2)}
-                  </p>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">24hr Exclusive Total</p>
-                  <p className="text-2xl font-bold text-primary">
-                    ${totals.exclusiveTotal.toFixed(2)}
-                  </p>
-                </div>
+                <Button onClick={handleProceedToCheckout} size="lg">
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  Proceed to Checkout
+                </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-4 text-center">
-                These are base prices per keyword. Actual costs depend on lead exclusivity type selected.
-              </p>
             </CardContent>
           </Card>
 
-          <div className="flex justify-between">
+          <div className="flex justify-start">
             <Button
               variant="outline"
               onClick={() => navigate('/pricing')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Modify Selection
-            </Button>
-            <Button
-              onClick={() => navigate('/digger-registration')}
-              size="lg"
-            >
-              Continue to Create Profile
-              <ArrowRight className="ml-2 h-4 w-4" />
+              Back to Keyword Selection
             </Button>
           </div>
         </div>
