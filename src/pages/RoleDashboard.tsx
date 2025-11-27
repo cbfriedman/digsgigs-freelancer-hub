@@ -46,9 +46,38 @@ export default function RoleDashboard() {
     }
 
     // Fetch stats in background if user has roles
-    if (userRoles.length > 0 && userRoles.includes('gigger')) {
-      const fetchStats = async () => {
-        try {
+    const fetchStats = async () => {
+      try {
+        // Fetch Digger stats
+        if (userRoles.includes('digger')) {
+          const { count: profilesCount } = await supabase
+            .from('digger_profiles')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+
+          const { count: leadsCount } = await supabase
+            .from('lead_purchases')
+            .select('id', { count: 'exact', head: true })
+            .eq('digger_id', user.id);
+
+          const { count: activeLeadsCount } = await supabase
+            .from('lead_purchases')
+            .select('id', { count: 'exact', head: true })
+            .eq('digger_id', user.id)
+            .eq('status', 'active');
+
+          setStats(prev => ({
+            ...prev,
+            digger: {
+              profilesCount: profilesCount || 0,
+              leadsCount: leadsCount || 0,
+              activeLeadsCount: activeLeadsCount || 0,
+            }
+          }));
+        }
+
+        // Fetch Gigger stats
+        if (userRoles.includes('gigger')) {
           const { count } = await supabase
             .from('gigs')
             .select('id', { count: 'exact', head: true })
@@ -62,11 +91,13 @@ export default function RoleDashboard() {
               awardedGigsCount: 0,
             }
           }));
-        } catch (err) {
-          console.error('Error fetching gigger stats:', err);
         }
-      };
-      
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      }
+    };
+    
+    if (userRoles.length > 0) {
       fetchStats();
     }
   }, [user, navigate, userRoles]);
@@ -153,10 +184,20 @@ export default function RoleDashboard() {
                     className="w-full"
                     onClick={() => {
                       handleSwitchRole('digger');
+                      navigate('/my-profiles');
+                    }}
+                  >
+                    My Profiles
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSwitchRole('digger');
                       navigate('/pricing');
                     }}
                   >
-                    Buy More Leads
+                    Manage Keywords
                   </Button>
                 </div>
               </>
