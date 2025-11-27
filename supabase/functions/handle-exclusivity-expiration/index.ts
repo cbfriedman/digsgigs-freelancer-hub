@@ -32,10 +32,11 @@ serve(async (req) => {
 
     logStep("Checking for expired exclusivity periods");
 
-    // Find all expired exclusive queue entries that haven't been awarded or converted
+    // Find all expired EXCLUSIVE queue entries (not semi-exclusive)
     const { data: expiredEntries, error: fetchError } = await supabaseClient
       .from("lead_exclusivity_queue")
       .select("*, gigs!inner(*)")
+      .eq("exclusivity_type", "exclusive")
       .eq("status", "active")
       .lt("exclusivity_ends_at", new Date().toISOString())
       .is("awarded_at", null)

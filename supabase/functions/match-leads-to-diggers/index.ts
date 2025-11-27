@@ -12,10 +12,10 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Industry pricing mapping
-const INDUSTRY_PRICING: Record<string, { nonExclusive: number; exclusive24h: number }> = {
-  'low-value': { nonExclusive: 7.50, exclusive24h: 30.00 },
-  'mid-value': { nonExclusive: 14.50, exclusive24h: 87.50 },
-  'high-value': { nonExclusive: 24.50, exclusive24h: 187.50 },
+const INDUSTRY_PRICING: Record<string, { nonExclusive: number; semiExclusive: number; exclusive24h: number }> = {
+  'low-value': { nonExclusive: 7.50, semiExclusive: 30.00, exclusive24h: 60.00 },
+  'mid-value': { nonExclusive: 14.50, semiExclusive: 58.00, exclusive24h: 125.00 },
+  'high-value': { nonExclusive: 24.50, semiExclusive: 99.00, exclusive24h: 275.00 },
 };
 
 // Minimum exclusive pricing by lead source
@@ -24,25 +24,33 @@ const EXCLUSIVE_MINIMUMS = {
   telemarketing: 60
 };
 
-const calculateLeadPricing = (leadSource: string = 'internet', industryCategory: string = 'mid-value') => {
+const calculateLeadPricing = (
+  leadSource: string = 'internet', 
+  industryCategory: string = 'mid-value',
+  exclusivityType: 'exclusive' | 'semi-exclusive' = 'exclusive'
+) => {
   const pricing = INDUSTRY_PRICING[industryCategory] || INDUSTRY_PRICING['mid-value'];
   
   let exclusivePrice = pricing.exclusive24h;
+  let semiExclusivePrice = pricing.semiExclusive;
   
   // Apply telemarketing discount (25% off = multiply by 0.75)
   if (leadSource === 'telemarketing') {
     exclusivePrice = pricing.exclusive24h * 0.75;
+    semiExclusivePrice = pricing.semiExclusive * 0.75;
   }
   
-  // Apply minimum pricing
-  const minimum = leadSource === 'telemarketing' 
-    ? EXCLUSIVE_MINIMUMS.telemarketing 
-    : EXCLUSIVE_MINIMUMS.internet;
-  
-  exclusivePrice = Math.max(exclusivePrice, minimum);
+  // Apply minimum pricing for exclusive only
+  if (exclusivityType === 'exclusive') {
+    const minimum = leadSource === 'telemarketing' 
+      ? EXCLUSIVE_MINIMUMS.telemarketing 
+      : EXCLUSIVE_MINIMUMS.internet;
+    exclusivePrice = Math.max(exclusivePrice, minimum);
+  }
   
   return {
     nonExclusive: pricing.nonExclusive,
+    semiExclusive: semiExclusivePrice,
     exclusive24h: exclusivePrice
   };
 };
@@ -59,10 +67,14 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const { gigId } = await req.json();
+    const { gigId, exclusivityType = 'exclusive' } = await req.json();
     
     if (!gigId) {
       throw new Error("gigId is required");
+    }
+    
+    if (exclusivityType !== 'exclusive' && exclusivityType !== 'semi-exclusive') {
+      throw new Error("exclusivityType must be 'exclusive' or 'semi-exclusive'");
     }
 
     logStep("Starting lead matching", { gigId });
@@ -84,11 +96,13 @@ serve(async (req) => {
     const leadSource = gig.lead_source || 'internet';
     
     // Calculate pricing (use mid-value as default if category not determined)
-    const pricing = calculateLeadPricing(leadSource, 'mid-value');
+    const pricing = calculateLeadPricing(leadSource, 'mid-value', exclusivityType);
     
     logStep("Lead pricing calculated", { 
       leadSource,
+      exclusivityType,
       nonExclusive: pricing.nonExclusive,
+      semiExclusive: pricing.semiExclusive,
       exclusive24h: pricing.exclusive24h
     });
 
@@ -143,77 +157,139 @@ serve(async (req) => {
     let successfulMatches = 0;
     let failedMatches = 0;
 
-    for (let i = 0; i < uniqueDiggers.length; i++) {
-      const digger = uniqueDiggers[i];
+    if (exclusivityType === 'semi-exclusive') {
+      // Semi-exclusive: Create ONE queue entry, notify first 4 diggers simultaneously
+      const semiExclusiveStarts = new Date();
+      const semiExclusiveEnds = new Date(semiExclusiveStarts.getTime() + 24 * 60 * 60 * 1000);
       
       try {
-        // Create exclusivity queue entry
         const { error: queueError } = await supabaseClient
           .from("lead_exclusivity_queue")
           .insert({
             gig_id: gigId,
-            digger_id: digger.id,
-            queue_position: i + 1,
-            base_price: pricing.exclusive24h,
+            digger_id: uniqueDiggers[0]?.id || null, // Use first digger as placeholder
+            queue_position: 1,
+            base_price: pricing.semiExclusive,
             lead_source: leadSource,
-            status: i === 0 ? 'active' : 'queued', // First digger gets active status
+            status: 'active',
+            exclusivity_type: 'semi-exclusive',
+            semi_exclusive_count: 0,
+            semi_exclusive_max: 4,
+            semi_exclusive_expires_at: semiExclusiveEnds.toISOString(),
+            exclusivity_starts_at: semiExclusiveStarts.toISOString(),
+            exclusivity_ends_at: semiExclusiveEnds.toISOString(),
           });
 
         if (queueError) {
-          logStep("Failed to create queue entry", { 
-            diggerId: digger.id, 
-            error: queueError.message 
-          });
-          failedMatches++;
-          continue;
+          throw new Error(`Failed to create semi-exclusive queue: ${queueError.message}`);
         }
 
-        // If this is the first digger (position 1), set exclusivity window and create notification
-        if (i === 0) {
-          const exclusivityStarts = new Date();
-          const exclusivityEnds = new Date(exclusivityStarts.getTime() + 24 * 60 * 60 * 1000);
-          
-          await supabaseClient
-            .from("lead_exclusivity_queue")
-            .update({ 
-              exclusivity_starts_at: exclusivityStarts.toISOString(),
-              exclusivity_ends_at: exclusivityEnds.toISOString(),
-            })
-            .eq("gig_id", gigId)
-            .eq("digger_id", digger.id);
-
-          // Create notification for exclusive lead
+        // Notify up to 4 matching diggers simultaneously
+        const diggersToNotify = uniqueDiggers.slice(0, 4);
+        for (const digger of diggersToNotify) {
           await supabaseClient
             .from("notifications")
             .insert({
               user_id: digger.user_id,
               type: "new_lead",
-              title: "🔒 Exclusive Lead Available!",
-              message: `You have 24-hour exclusive access to "${gig.title}". Act fast!`,
+              title: "⚡ Semi-Exclusive Lead Available!",
+              message: `Limited to 4 diggers - 24-hour window for "${gig.title}". Act now!`,
               link: `/gig/${gigId}`,
               metadata: {
                 gig_id: gigId,
-                lead_price: pricing.exclusive24h,
-                is_exclusive: true,
-                expires_at: exclusivityEnds.toISOString(),
+                lead_price: pricing.semiExclusive,
+                is_semi_exclusive: true,
+                max_diggers: 4,
+                expires_at: semiExclusiveEnds.toISOString(),
               },
             });
-          
-          logStep("First digger activated with exclusivity", { 
-            diggerId: digger.id,
-            expiresAt: exclusivityEnds.toISOString()
-          });
         }
 
-        successfulMatches++;
-        logStep("Digger added to queue", { diggerId: digger.id, position: i + 1 });
+        successfulMatches = diggersToNotify.length;
+        logStep("Semi-exclusive lead created", { 
+          notifiedDiggers: successfulMatches,
+          expiresAt: semiExclusiveEnds.toISOString()
+        });
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        logStep("Error adding to queue", { 
-          diggerId: digger.id, 
-          error: errorMsg 
-        });
-        failedMatches++;
+        logStep("Error creating semi-exclusive queue", { error: errorMsg });
+        failedMatches = uniqueDiggers.length;
+      }
+    } else {
+      // Exclusive: Sequential queue logic (existing behavior)
+      for (let i = 0; i < uniqueDiggers.length; i++) {
+        const digger = uniqueDiggers[i];
+        
+        try {
+          // Create exclusivity queue entry
+          const { error: queueError } = await supabaseClient
+            .from("lead_exclusivity_queue")
+            .insert({
+              gig_id: gigId,
+              digger_id: digger.id,
+              queue_position: i + 1,
+              base_price: pricing.exclusive24h,
+              lead_source: leadSource,
+              status: i === 0 ? 'active' : 'queued',
+              exclusivity_type: 'exclusive',
+            });
+
+          if (queueError) {
+            logStep("Failed to create queue entry", { 
+              diggerId: digger.id, 
+              error: queueError.message 
+            });
+            failedMatches++;
+            continue;
+          }
+
+          // If this is the first digger (position 1), set exclusivity window and create notification
+          if (i === 0) {
+            const exclusivityStarts = new Date();
+            const exclusivityEnds = new Date(exclusivityStarts.getTime() + 24 * 60 * 60 * 1000);
+            
+            await supabaseClient
+              .from("lead_exclusivity_queue")
+              .update({ 
+                exclusivity_starts_at: exclusivityStarts.toISOString(),
+                exclusivity_ends_at: exclusivityEnds.toISOString(),
+              })
+              .eq("gig_id", gigId)
+              .eq("digger_id", digger.id);
+
+            // Create notification for exclusive lead
+            await supabaseClient
+              .from("notifications")
+              .insert({
+                user_id: digger.user_id,
+                type: "new_lead",
+                title: "🔒 Exclusive Lead Available!",
+                message: `You have 24-hour exclusive access to "${gig.title}". Act fast!`,
+                link: `/gig/${gigId}`,
+                metadata: {
+                  gig_id: gigId,
+                  lead_price: pricing.exclusive24h,
+                  is_exclusive: true,
+                  expires_at: exclusivityEnds.toISOString(),
+                },
+              });
+            
+            logStep("First digger activated with exclusivity", { 
+              diggerId: digger.id,
+              expiresAt: exclusivityEnds.toISOString()
+            });
+          }
+
+          successfulMatches++;
+          logStep("Digger added to queue", { diggerId: digger.id, position: i + 1 });
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          logStep("Error adding to queue", { 
+            diggerId: digger.id, 
+            error: errorMsg 
+          });
+          failedMatches++;
+        }
       }
     }
 
