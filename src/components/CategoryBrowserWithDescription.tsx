@@ -281,12 +281,12 @@ export const CategoryBrowserWithDescription = () => {
         {selectedCategory && hasIndustrySpecialties(selectedCategory) && (
           <div className="space-y-2">
             <Label htmlFor="specialty">Select Specialty</Label>
-            <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
+            <Select value={selectedSpecialty} onValueChange={(value) => setSelectedSpecialty(value === "__clear__" ? "" : value)}>
               <SelectTrigger id="specialty" className="bg-background">
                 <SelectValue placeholder="Choose a specialty..." />
               </SelectTrigger>
               <SelectContent className="bg-background z-50 max-h-[300px] overflow-y-auto">
-                <SelectItem key="clear" value="">
+                <SelectItem key="clear" value="__clear__">
                   — Clear Selection —
                 </SelectItem>
                 {industrySpecialties.map((specialty) => (
