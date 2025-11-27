@@ -46,12 +46,12 @@ export default function KeywordSummary() {
       // Initialize selections with default values
       const initialSelections = new Map<string, LeadSelection>();
       loadedKeywords.forEach((kw: SelectedKeyword) => {
-        initialSelections.set(kw.keyword, {
-          keyword: kw.keyword,
-          industry: kw.industry,
-          exclusivity: 'non-exclusive',
-          quantity: 1
-        });
+      initialSelections.set(kw.keyword, {
+        keyword: kw.keyword,
+        industry: kw.industry,
+        exclusivity: 'non-exclusive',
+        quantity: 0
+      });
       });
       setSelections(initialSelections);
     } else {
@@ -100,7 +100,7 @@ export default function KeywordSummary() {
       description: `${leadPurchases.length} lead type${leadPurchases.length !== 1 ? 's' : ''} ready for purchase`,
     });
     
-    navigate('/checkout');
+    navigate('/role-dashboard');
   };
 
   if (keywords.length === 0) {
