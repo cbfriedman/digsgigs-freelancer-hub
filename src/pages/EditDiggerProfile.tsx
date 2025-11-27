@@ -144,7 +144,26 @@ const EditDiggerProfile = () => {
         setLocation(profile.location || "");
         setPhone(profile.phone || "");
         setBio(profile.bio || "");
-        setKeywordsInput(profile.keywords?.join(", ") || "");
+        
+        // Check for keywords from sessionStorage first (from category browser)
+        const savedKeywordsData = sessionStorage.getItem('selectedKeywords');
+        if (savedKeywordsData) {
+          try {
+            const parsedData = JSON.parse(savedKeywordsData);
+            if (parsedData.keywords && parsedData.keywords.length > 0) {
+              setKeywordsInput(parsedData.keywords.join(", "));
+              // Clear from sessionStorage after using
+              sessionStorage.removeItem('selectedKeywords');
+            } else {
+              setKeywordsInput(profile.keywords?.join(", ") || "");
+            }
+          } catch {
+            setKeywordsInput(profile.keywords?.join(", ") || "");
+          }
+        } else {
+          setKeywordsInput(profile.keywords?.join(", ") || "");
+        }
+        
         setHourlyRateMin(profile.hourly_rate_min);
         setHourlyRateMax(profile.hourly_rate_max);
         setPricingModel(profile.pricing_model || "commission");
