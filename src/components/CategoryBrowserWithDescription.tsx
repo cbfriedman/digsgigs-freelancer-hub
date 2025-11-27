@@ -286,6 +286,9 @@ export const CategoryBrowserWithDescription = () => {
                 <SelectValue placeholder="Choose a specialty..." />
               </SelectTrigger>
               <SelectContent className="bg-background z-50 max-h-[300px] overflow-y-auto">
+                <SelectItem key="clear" value="">
+                  — Clear Selection —
+                </SelectItem>
                 {industrySpecialties.map((specialty) => (
                   <SelectItem key={specialty} value={specialty}>
                     {specialty}
@@ -485,39 +488,47 @@ export const CategoryBrowserWithDescription = () => {
                 className="flex-1" 
                 size="lg"
                 onClick={async () => {
-                  console.log('Button clicked - starting navigation');
-                  const selected = Array.from(selectedKeywords);
-                  console.log('Selected keywords:', selected);
-                  
-                  sessionStorage.setItem('selectedKeywords', JSON.stringify({
-                    category: selectedCategory,
-                    description: description,
-                    keywords: selected
-                  }));
-                  toast.success(`Saved ${selected.length} keyword${selected.length !== 1 ? 's' : ''}!`);
-                  
-                  // Check if user has a digger profile
-                  if (user) {
-                    console.log('User exists, checking for digger profile');
-                    const { data: diggerProfile, error } = await supabase
-                      .from('digger_profiles')
-                      .select('id')
-                      .eq('user_id', user.id)
-                      .maybeSingle();
+                  try {
+                    console.log('Button clicked - starting navigation');
+                    const selected = Array.from(selectedKeywords);
+                    console.log('Selected keywords:', selected);
                     
-                    console.log('Digger profile result:', diggerProfile, error);
+                    sessionStorage.setItem('selectedKeywords', JSON.stringify({
+                      category: selectedCategory,
+                      description: description,
+                      keywords: selected,
+                      specialty: selectedSpecialty
+                    }));
                     
-                    if (diggerProfile) {
-                      const targetUrl = `/edit-digger-profile?profileId=${diggerProfile.id}`;
-                      console.log('Navigating to:', targetUrl);
-                      navigate(targetUrl);
+                    // Check if user has a digger profile
+                    if (user) {
+                      console.log('User exists, checking for digger profile');
+                      const { data: diggerProfile, error } = await supabase
+                        .from('digger_profiles')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+                      
+                      if (error) throw error;
+                      
+                      console.log('Digger profile result:', diggerProfile);
+                      
+                      if (diggerProfile) {
+                        const targetUrl = `/edit-digger-profile?profileId=${diggerProfile.id}`;
+                        console.log('Navigating to:', targetUrl);
+                        navigate(targetUrl);
+                      } else {
+                        console.log('No profile found, navigating to registration');
+                        navigate('/digger-registration');
+                      }
                     } else {
-                      console.log('No profile found, navigating to registration');
-                      navigate('/digger-registration');
+                      console.log('No user, navigating to register');
+                      navigate('/register');
                     }
-                  } else {
-                    console.log('No user, navigating to register');
-                    navigate('/register');
+                  } catch (err) {
+                    console.error('Navigation error:', err);
+                    toast.error('Redirecting to registration...');
+                    navigate(user ? '/digger-registration' : '/register');
                   }
                 }}
                 disabled={selectedKeywords.size === 0}
