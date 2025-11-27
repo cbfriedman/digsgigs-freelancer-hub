@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { generateKeywordSuggestions } from "@/utils/keywordSuggestions";
+import { getIndustrySpecialties, hasIndustrySpecialties } from "@/utils/industrySpecialties";
+import { SpecialtyRequestForm } from "./SpecialtyRequestForm";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 const DEFAULT_CATEGORIES = [
   "Legal Services",
@@ -40,6 +43,7 @@ export const CategoryBrowserWithDescription = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -50,6 +54,8 @@ export const CategoryBrowserWithDescription = () => {
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
   const [newKeyword, setNewKeyword] = useState("");
   const [isAddingKeyword, setIsAddingKeyword] = useState(false);
+  const [showSpecialtyRequest, setShowSpecialtyRequest] = useState(false);
+  const [industrySpecialties, setIndustrySpecialties] = useState<string[]>([]);
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -170,6 +176,18 @@ export const CategoryBrowserWithDescription = () => {
     }
   };
 
+  // Update industry specialties when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      const specialties = getIndustrySpecialties(selectedCategory);
+      setIndustrySpecialties(specialties);
+      setSelectedSpecialty(""); // Reset specialty when category changes
+    } else {
+      setIndustrySpecialties([]);
+      setSelectedSpecialty("");
+    }
+  }, [selectedCategory]);
+
   const allCategories = [
     ...DEFAULT_CATEGORIES,
     ...customCategories.map(c => c.name)
@@ -206,6 +224,50 @@ export const CategoryBrowserWithDescription = () => {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Specialty Selection */}
+        {selectedCategory && hasIndustrySpecialties(selectedCategory) && (
+          <div className="space-y-2">
+            <Label htmlFor="specialty">Select Specialty</Label>
+            <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
+              <SelectTrigger id="specialty" className="bg-background">
+                <SelectValue placeholder="Choose a specialty..." />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50 max-h-[300px] overflow-y-auto">
+                {industrySpecialties.map((specialty) => (
+                  <SelectItem key={specialty} value={specialty}>
+                    {specialty}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Request Custom Specialty */}
+            <Dialog open={showSpecialtyRequest} onOpenChange={setShowSpecialtyRequest}>
+              <DialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Request Custom Specialty
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <SpecialtyRequestForm
+                  industry={selectedCategory}
+                  profession={selectedCategory}
+                  onSuccess={() => {
+                    setShowSpecialtyRequest(false);
+                    toast.success("You can now add keywords for your custom specialty!");
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
 
         {/* Add Custom Category */}
         {user && (
@@ -267,11 +329,15 @@ export const CategoryBrowserWithDescription = () => {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what you do within this category, your specific services, expertise, and specializations..."
+              placeholder={
+                selectedSpecialty
+                  ? `Describe your expertise in ${selectedSpecialty}...`
+                  : "Describe what you do within this category, your specific services, expertise, and specializations..."
+              }
               className="min-h-[150px] bg-background"
             />
             <p className="text-sm text-muted-foreground">
-              Be specific about your services and expertise within {selectedCategory}
+              Be specific about your services and expertise within {selectedSpecialty || selectedCategory}
             </p>
           </div>
         )}
