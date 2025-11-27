@@ -60,6 +60,7 @@ import ProfileCreationDemo from "./pages/ProfileCreationDemo";
 import Register from "./pages/Register";
 import RoleDashboard from "./pages/RoleDashboard";
 import Logout from "./pages/Logout";
+import KeywordSummary from "./pages/KeywordSummary";
 
 const queryClient = new QueryClient();
 
@@ -183,6 +184,10 @@ const router = createBrowserRouter([
   {
     path: "/pricing",
     element: <Pricing />,
+  },
+  {
+    path: "/keyword-summary",
+    element: <ProtectedRoute><KeywordSummary /></ProtectedRoute>,
   },
   {
     path: "/pricing-strategy",
