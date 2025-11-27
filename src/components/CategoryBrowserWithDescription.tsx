@@ -15,6 +15,7 @@ import { generateKeywordSuggestions } from "@/utils/keywordSuggestions";
 const DEFAULT_CATEGORIES = [
   "Legal Services",
   "Insurance & Financial Services",
+  "Investors",
   "Construction & Home Services",
   "Medical & Healthcare",
   "Technology Services",
@@ -150,7 +151,8 @@ export const CategoryBrowserWithDescription = () => {
         "Cleaning & Maintenance": "cleaner",
         "Technology Services": "designer",
         "Business Services": "consultant",
-        "Event Services": "photographer"
+        "Event Services": "photographer",
+        "Investors": "angel investor"
       };
 
       const profession = categoryToprofession[selectedCategory] || "contractor";
