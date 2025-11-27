@@ -54,6 +54,7 @@ import EscrowDashboard from "./pages/EscrowDashboard";
 import PreDemoRegistration from "./pages/PreDemoRegistration";
 import MyProfiles from "./pages/MyProfiles";
 import Checkout from "./pages/Checkout";
+import LeadCheckout from "./pages/LeadCheckout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import TelemarketerDashboard from "./pages/TelemarketerDashboard";
 import ProfileCreationDemo from "./pages/ProfileCreationDemo";
@@ -111,6 +112,10 @@ const router = createBrowserRouter([
   },
   {
     path: "/checkout",
+    element: <ProtectedRoute><LeadCheckout /></ProtectedRoute>,
+  },
+  {
+    path: "/profession-checkout",
     element: <ProtectedRoute><Checkout /></ProtectedRoute>,
   },
   {

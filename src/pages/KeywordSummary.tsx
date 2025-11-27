@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Info } from "lucide-react";
 import { getLeadCostForIndustry } from "@/config/pricing";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
 
 interface SelectedKeyword {
   keyword: string;
@@ -60,6 +62,21 @@ export default function KeywordSummary() {
     }
   }, [navigate]);
 
+  // Function to lookup Google CPC for a keyword
+  const lookupGoogleCPC = (keyword: string, industry: string): number => {
+    // Search through all industry categories in GOOGLE_CPC_KEYWORDS
+    for (const industryData of GOOGLE_CPC_KEYWORDS) {
+      const keywordData = industryData.keywords.find(
+        kw => kw.keyword.toLowerCase() === keyword.toLowerCase()
+      );
+      if (keywordData) {
+        return keywordData.cpc;
+      }
+    }
+    // Default fallback CPC if not found
+    return 45; // Average CPC as fallback
+  };
+
   const updateSelection = (keyword: string, field: 'exclusivity' | 'quantity', value: any) => {
     setSelections(prev => {
       const newSelections = new Map(prev);
@@ -100,7 +117,7 @@ export default function KeywordSummary() {
       description: `${leadPurchases.length} lead type${leadPurchases.length !== 1 ? 's' : ''} ready for purchase`,
     });
     
-    navigate('/role-dashboard');
+    navigate('/checkout');
   };
 
   if (keywords.length === 0) {
@@ -141,12 +158,25 @@ export default function KeywordSummary() {
                   const selection = selections.get(keyword);
                   if (!selection) return null;
 
+                  const googleCPC = lookupGoogleCPC(keyword, industry);
                   const pricePerLead = getLeadCostForIndustry(industry, selection.exclusivity);
+                  const nonExclusivePrice = getLeadCostForIndustry(industry, 'non-exclusive');
                   const subtotal = pricePerLead * selection.quantity;
 
                   return (
-                    <div key={index} className="border rounded-lg p-4">
-                      <h3 className="font-semibold text-lg mb-4">{keyword}</h3>
+                    <div key={index} className="border rounded-lg p-4 bg-card">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">{keyword}</h3>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Info className="h-4 w-4" />
+                            <span>Google CPC: <span className="font-semibold text-foreground">${googleCPC.toFixed(2)}</span></span>
+                            <Badge variant="outline" className="ml-2">
+                              Non-Exclusive: ${nonExclusivePrice.toFixed(2)} (20% of CPC)
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
