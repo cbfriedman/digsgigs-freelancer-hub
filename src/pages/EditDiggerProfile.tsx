@@ -30,7 +30,7 @@ const EditDiggerProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const { profileId: profileIdParam } = useParams<{ profileId: string }>();
+  const { id: profileIdParam } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [businessName, setBusinessName] = useState("");
