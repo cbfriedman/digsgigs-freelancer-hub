@@ -542,43 +542,21 @@ export const CategoryBrowserWithDescription = () => {
                       toast.success("Registered as Digger!");
                     }
 
-                    // 2. Check if user has a digger profile
-                    const { data: existingProfile } = await supabase
+                    // 2. Always create a new profile (never update existing)
+                    const { error: createError } = await supabase
                       .from('digger_profiles')
-                      .select('id')
-                      .eq('user_id', user.id)
-                      .maybeSingle();
+                      .insert({
+                        user_id: user.id,
+                        business_name: profileName.trim(),
+                        profile_name: profileName.trim(),
+                        profession: selectedSpecialty,
+                        keywords: selected,
+                        location: 'Not specified',
+                        phone: 'Not specified'
+                      });
 
-                    if (existingProfile) {
-                      // Update existing profile
-                      const { error: updateError } = await supabase
-                        .from('digger_profiles')
-                        .update({
-                          profession: selectedSpecialty,
-                          keywords: selected,
-                          updated_at: new Date().toISOString()
-                        })
-                        .eq('id', existingProfile.id);
-
-                      if (updateError) throw updateError;
-                      toast.success(`Updated your Digger profile with ${selected.length} keywords!`);
-                    } else {
-                      // Create new profile with user-provided name
-                      const { error: createError } = await supabase
-                        .from('digger_profiles')
-                        .insert({
-                          user_id: user.id,
-                          business_name: profileName.trim(),
-                          profile_name: profileName.trim(),
-                          profession: selectedSpecialty,
-                          keywords: selected,
-                          location: 'Not specified',
-                          phone: 'Not specified'
-                        });
-
-                      if (createError) throw createError;
-                      toast.success(`Created your Digger profile "${profileName.trim()}" with ${selected.length} keywords!`);
-                    }
+                    if (createError) throw createError;
+                    toast.success(`Created your Digger profile "${profileName.trim()}" with ${selected.length} keywords!`);
 
                     // Refresh roles in AuthContext so dashboard sees new role immediately
                     await refreshRoles();
