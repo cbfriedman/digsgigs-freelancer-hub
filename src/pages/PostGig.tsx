@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Briefcase, MapPin, DollarSign, Clock, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
-import { GigCategoryBrowser } from "@/components/GigCategoryBrowser";
 import { geocodeAddress } from "@/utils/geocoding";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
@@ -23,7 +23,7 @@ const gigSchema = z.object({
   description: z.string().trim().min(50, "Description must be at least 50 characters").max(2000, "Description must be less than 2000 characters"),
   budget_min: z.number().min(0, "Budget must be positive").optional(),
   budget_max: z.number().min(0, "Budget must be positive").optional(),
-  category_id: z.string().uuid("Please select a category"),
+  category_id: z.string().uuid("Category will be auto-detected").optional(),
   deadline: z.string().optional(),
 });
 
@@ -88,11 +88,18 @@ const PostGig = () => {
     setLoading(true);
 
     try {
+      // Auto-detect category if not already set
+      if (!formData.category_id && formData.title && formData.description) {
+        toast.info("Analyzing your gig to determine the best category...");
+        await handleAutoDetect();
+      }
+
       const validatedData = gigSchema.parse({
         ...formData,
-        budget_min: formData.budget_min ? parseFloat(formData.budget_min) : undefined,
-        budget_max: formData.budget_max ? parseFloat(formData.budget_max) : undefined,
+        budget_min: formData.budget_min ? parseFloat(formData.budget_min.replace(/[^0-9.]/g, '')) : undefined,
+        budget_max: formData.budget_max ? parseFloat(formData.budget_max.replace(/[^0-9.]/g, '')) : undefined,
         deadline: formData.deadline || undefined,
+        category_id: formData.category_id || undefined,
       });
 
       if (validatedData.budget_min && validatedData.budget_max && validatedData.budget_min > validatedData.budget_max) {
@@ -121,9 +128,10 @@ const PostGig = () => {
     try {
       const validatedData = gigSchema.parse({
         ...formData,
-        budget_min: formData.budget_min ? parseFloat(formData.budget_min) : undefined,
-        budget_max: formData.budget_max ? parseFloat(formData.budget_max) : undefined,
+        budget_min: formData.budget_min ? parseFloat(formData.budget_min.replace(/[^0-9.]/g, '')) : undefined,
+        budget_max: formData.budget_max ? parseFloat(formData.budget_max.replace(/[^0-9.]/g, '')) : undefined,
         deadline: formData.deadline || undefined,
+        category_id: formData.category_id || undefined,
       });
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -251,7 +259,6 @@ const PostGig = () => {
 
   const handleAutoDetect = async () => {
     if (!formData.title || !formData.description) {
-      toast.error("Please enter a title and description first");
       return;
     }
 
@@ -268,21 +275,36 @@ const PostGig = () => {
 
       if (data.category_id) {
         setSuggestedCategory(data.category_id);
-        setFormData({ ...formData, category_id: data.category_id });
+        setFormData((prev) => ({ ...prev, category_id: data.category_id }));
         toast.success(
           <div className="space-y-1">
             <div className="font-semibold">Category detected!</div>
             <div className="text-sm">{data.parent_category} → {data.category_name}</div>
-            <div className="text-xs text-muted-foreground">{data.reasoning}</div>
           </div>
         );
       }
     } catch (error: any) {
       console.error("Auto-detect error:", error);
-      toast.error(error.message || "Failed to auto-detect category");
+      // Silently fail during auto-detection
     } finally {
       setAutoDetecting(false);
     }
+  };
+
+  const formatCurrency = (value: string): string => {
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    if (!numericValue) return '';
+    const number = parseFloat(numericValue);
+    if (isNaN(number)) return '';
+    return number.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+  };
+
+  const handleBudgetChange = (field: 'budget_min' | 'budget_max', value: string) => {
+    const formatted = formatCurrency(value);
+    setFormData({ ...formData, [field]: formatted });
   };
 
   const formatBudget = () => {
@@ -379,41 +401,34 @@ const PostGig = () => {
                 />
               </div>
 
-              <GigCategoryBrowser
-                value={formData.category_id}
-                onChange={(categoryId) => {
-                  setFormData({ ...formData, category_id: categoryId });
-                  setSuggestedCategory(null);
-                }}
-                onAutoDetect={handleAutoDetect}
-                autoDetecting={autoDetecting}
-                suggestedCategory={suggestedCategory}
-              />
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="budget_min">Min Budget ($)</Label>
-                  <Input
-                    id="budget_min"
-                    type="number"
-                    placeholder="500"
-                    value={formData.budget_min}
-                    onChange={(e) => setFormData({ ...formData, budget_min: e.target.value })}
-                    min="0"
-                    step="1"
-                  />
+                  <Label htmlFor="budget_min">Min Budget</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="budget_min"
+                      type="text"
+                      placeholder="500"
+                      value={formData.budget_min}
+                      onChange={(e) => handleBudgetChange('budget_min', e.target.value)}
+                      className="pl-7"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="budget_max">Max Budget ($)</Label>
-                  <Input
-                    id="budget_max"
-                    type="number"
-                    placeholder="1000"
-                    value={formData.budget_max}
-                    onChange={(e) => setFormData({ ...formData, budget_max: e.target.value })}
-                    min="0"
-                    step="1"
-                  />
+                  <Label htmlFor="budget_max">Max Budget</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="budget_max"
+                      type="text"
+                      placeholder="1,000"
+                      value={formData.budget_max}
+                      onChange={(e) => handleBudgetChange('budget_max', e.target.value)}
+                      className="pl-7"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -430,12 +445,21 @@ const PostGig = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="contact_preferences">Contact Preferences</Label>
-                <Input
-                  id="contact_preferences"
-                  placeholder="e.g., Email only, Phone preferred, Text messages OK"
+                <Select
                   value={formData.contact_preferences}
-                  onChange={(e) => setFormData({ ...formData, contact_preferences: e.target.value })}
-                />
+                  onValueChange={(value) => setFormData({ ...formData, contact_preferences: value })}
+                >
+                  <SelectTrigger id="contact_preferences">
+                    <SelectValue placeholder="Select your preferred contact method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="email_only">Email only</SelectItem>
+                    <SelectItem value="phone_preferred">Phone preferred</SelectItem>
+                    <SelectItem value="text_messages">Text messages OK</SelectItem>
+                    <SelectItem value="email_and_phone">Email and Phone</SelectItem>
+                    <SelectItem value="any_method">Any method</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Escrow Protection Option */}
