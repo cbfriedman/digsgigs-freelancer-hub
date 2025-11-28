@@ -559,13 +559,11 @@ export const CategoryBrowserWithDescription = () => {
                       .single();
 
                     if (createError) throw createError;
-                    toast.success(`Created your Digger profile "${profileName.trim()}" with ${selected.length} keywords!`);
+                    
+                    toast.success(`Profile "${profileName.trim()}" created with ${selected.length} keywords!`);
 
-                    // Refresh roles in AuthContext so dashboard sees new role immediately
-                    await refreshRoles();
-
-                    // Navigate to My Profiles page
-                    navigate('/my-profiles');
+                    // Navigate to My Profiles page immediately
+                    navigate('/my-profiles', { replace: true });
                   } catch (error: any) {
                     console.error("Error saving Digger profile:", error);
                     toast.error(error.message || "Failed to save profile");
