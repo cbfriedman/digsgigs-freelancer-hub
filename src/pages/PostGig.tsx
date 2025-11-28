@@ -49,6 +49,7 @@ const PostGig = () => {
     category_id: "",
     deadline: "",
     contact_preferences: "",
+    consumer_phone: "",
     acceptTerms: false,
     requestEscrow: false,
   });
@@ -250,6 +251,7 @@ const PostGig = () => {
           category_id: validatedData.category_id,
           deadline: validatedData.deadline,
           contact_preferences: formData.contact_preferences || null,
+          consumer_phone: formData.consumer_phone || null,
           status: "open",
           documents: documentUrls.length > 0 ? documentUrls : null,
         })
@@ -479,6 +481,21 @@ const PostGig = () => {
                     We'll convert this to map coordinates for location-based filtering
                   </p>
                 </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="consumer_phone">Your Phone Number *</Label>
+                <Input
+                  id="consumer_phone"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  value={formData.consumer_phone}
+                  onChange={(e) => setFormData({ ...formData, consumer_phone: e.target.value })}
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  Professionals will use this to contact you about your project
+                </p>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="timeline">Project Timeline *</Label>
@@ -743,6 +760,7 @@ const PostGig = () => {
               </div>
               
               <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                     <MapPin className="h-4 w-4" />
@@ -758,6 +776,12 @@ const PostGig = () => {
                   </div>
                   <p>{formData.timeline}</p>
                 </div>
+              </div>
+
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Contact Phone</div>
+                <p className="font-medium">{formData.consumer_phone}</p>
+              </div>
               </div>
               
               <div>
