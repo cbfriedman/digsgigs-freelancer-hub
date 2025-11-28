@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { lookupCPC } from "@/utils/cpcLookup";
+import { INDUSTRY_PRICING } from "@/config/pricing";
 
 export default function ProfileCreationDemo() {
   const { user } = useAuth();
@@ -25,6 +27,7 @@ export default function ProfileCreationDemo() {
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(["Kitchen Remodeling", "Bathroom Renovation", "Custom Cabinets"]);
   const [profession, setProfession] = useState("Home Remodeling Contractor");
   const [offersFreEstimates, setOffersFreEstimates] = useState(false);
+  const [keywordQuantities, setKeywordQuantities] = useState<Record<string, { nonExclusive: number; semiExclusive: number; exclusive24h: number }>>({});
 
   // Load user's actual profile data if logged in
   useEffect(() => {
@@ -64,6 +67,42 @@ export default function ProfileCreationDemo() {
 
     loadProfileData();
   }, [user]);
+
+  // Calculate pricing for a keyword
+  const calculatePricing = (keyword: string) => {
+    const cpcData = lookupCPC(keyword);
+    const googleCPC = cpcData?.estimatedCPC || 37.50;
+    
+    // Non-exclusive = 20% of Google CPC
+    const nonExclusive = googleCPC * 0.20;
+    // Semi-exclusive = Google CPC
+    const semiExclusive = googleCPC;
+    // 24hr Exclusive = 2x Google CPC
+    const exclusive24h = googleCPC * 2;
+    
+    return {
+      googleCPC,
+      nonExclusive: Math.round(nonExclusive * 100) / 100,
+      semiExclusive: Math.round(semiExclusive * 100) / 100,
+      exclusive24h: Math.round(exclusive24h * 100) / 100
+    };
+  };
+
+  // Update quantity for a keyword and exclusivity type
+  const updateQuantity = (keyword: string, type: 'nonExclusive' | 'semiExclusive' | 'exclusive24h', value: number) => {
+    setKeywordQuantities(prev => ({
+      ...prev,
+      [keyword]: {
+        ...prev[keyword],
+        [type]: Math.max(0, value)
+      }
+    }));
+  };
+
+  // Get quantity for a keyword and type
+  const getQuantity = (keyword: string, type: 'nonExclusive' | 'semiExclusive' | 'exclusive24h') => {
+    return keywordQuantities[keyword]?.[type] || 0;
+  };
 
   return (
     <>
@@ -165,25 +204,89 @@ export default function ProfileCreationDemo() {
                     />
                     
                     {selectedIndustries.length > 0 && (
-                      <div className="space-y-2 mt-4">
-                        <Label className="text-sm font-medium">Selected Keywords with Lead Types</Label>
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                          {selectedIndustries.map((keyword) => (
-                            <div key={keyword} className="flex items-center justify-between p-2 rounded-lg border bg-card gap-3">
-                              <span className="text-sm font-medium flex-shrink-0">{keyword}</span>
-                              <div className="flex gap-2 flex-shrink-0">
-                                <button className="px-3 py-1 text-xs rounded-md border bg-background hover:bg-accent transition-colors">
-                                  Non-Exclusive
-                                </button>
-                                <button className="px-3 py-1 text-xs rounded-md border bg-background hover:bg-accent transition-colors">
-                                  Semi
-                                </button>
-                                <button className="px-3 py-1 text-xs rounded-md border bg-background hover:bg-accent transition-colors">
-                                  24hr Exclusive
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                      <div className="space-y-3 mt-4">
+                        <Label className="text-sm font-medium">Lead Pricing & Quantities</Label>
+                        <div className="rounded-lg border overflow-hidden">
+                          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-muted sticky top-0">
+                                <tr>
+                                  <th className="text-left p-3 font-semibold">Keyword</th>
+                                  <th className="text-right p-3 font-semibold whitespace-nowrap">Google CPC</th>
+                                  <th className="text-center p-3 font-semibold border-l" colSpan={3}>Non-Exclusive</th>
+                                  <th className="text-center p-3 font-semibold border-l" colSpan={3}>Semi-Exclusive</th>
+                                  <th className="text-center p-3 font-semibold border-l" colSpan={3}>24hr Exclusive</th>
+                                </tr>
+                                <tr className="bg-muted/50 text-xs text-muted-foreground">
+                                  <th className="p-2"></th>
+                                  <th className="p-2"></th>
+                                  <th className="text-center p-2 border-l">Qty</th>
+                                  <th className="text-right p-2">Unit</th>
+                                  <th className="text-right p-2">Total</th>
+                                  <th className="text-center p-2 border-l">Qty</th>
+                                  <th className="text-right p-2">Unit</th>
+                                  <th className="text-right p-2">Total</th>
+                                  <th className="text-center p-2 border-l">Qty</th>
+                                  <th className="text-right p-2">Unit</th>
+                                  <th className="text-right p-2">Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {selectedIndustries.map((keyword) => {
+                                  const pricing = calculatePricing(keyword);
+                                  const nonExQty = getQuantity(keyword, 'nonExclusive');
+                                  const semiExQty = getQuantity(keyword, 'semiExclusive');
+                                  const ex24Qty = getQuantity(keyword, 'exclusive24h');
+                                  
+                                  return (
+                                    <tr key={keyword} className="border-t hover:bg-muted/30">
+                                      <td className="p-3 font-medium">{keyword}</td>
+                                      <td className="p-3 text-right font-semibold text-primary">${pricing.googleCPC.toFixed(2)}</td>
+                                      
+                                      {/* Non-Exclusive */}
+                                      <td className="p-2 border-l">
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={nonExQty}
+                                          onChange={(e) => updateQuantity(keyword, 'nonExclusive', parseInt(e.target.value) || 0)}
+                                          className="w-16 h-8 text-center"
+                                        />
+                                      </td>
+                                      <td className="p-2 text-right text-muted-foreground">${pricing.nonExclusive.toFixed(2)}</td>
+                                      <td className="p-2 text-right font-medium">${(nonExQty * pricing.nonExclusive).toFixed(2)}</td>
+                                      
+                                      {/* Semi-Exclusive */}
+                                      <td className="p-2 border-l">
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={semiExQty}
+                                          onChange={(e) => updateQuantity(keyword, 'semiExclusive', parseInt(e.target.value) || 0)}
+                                          className="w-16 h-8 text-center"
+                                        />
+                                      </td>
+                                      <td className="p-2 text-right text-muted-foreground">${pricing.semiExclusive.toFixed(2)}</td>
+                                      <td className="p-2 text-right font-medium">${(semiExQty * pricing.semiExclusive).toFixed(2)}</td>
+                                      
+                                      {/* 24hr Exclusive */}
+                                      <td className="p-2 border-l">
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={ex24Qty}
+                                          onChange={(e) => updateQuantity(keyword, 'exclusive24h', parseInt(e.target.value) || 0)}
+                                          className="w-16 h-8 text-center"
+                                        />
+                                      </td>
+                                      <td className="p-2 text-right text-muted-foreground">${pricing.exclusive24h.toFixed(2)}</td>
+                                      <td className="p-2 text-right font-medium">${(ex24Qty * pricing.exclusive24h).toFixed(2)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
                     )}
