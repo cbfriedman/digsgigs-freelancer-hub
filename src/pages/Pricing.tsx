@@ -25,7 +25,7 @@ export default function Pricing() {
               Note: Prices fluctuate daily and are subject to change
             </p>
             <Button 
-              onClick={() => navigate("/profile-demo")}
+              onClick={() => navigate("/demo/profile-creation")}
               className="mt-4"
               size="lg"
             >
