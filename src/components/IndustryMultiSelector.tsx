@@ -432,87 +432,90 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
               const semiExclusiveCost = getLeadCostForIndustry(industry, 'semi-exclusive');
               const exclusiveCost = getLeadCostForIndustry(industry, 'exclusive-24h');
               
+              const cpcData = lookupCPC(industry);
+              const googleCPC = cpcData?.estimatedCPC || semiExclusiveCost; // Semi-exclusive matches CPC
+              const grandTotal = (
+                (quantities.nonExclusive || 0) * nonExclusiveCost +
+                (quantities.semiExclusive || 0) * semiExclusiveCost +
+                (quantities.exclusive24h || 0) * exclusiveCost
+              );
+              
               return (
-                <Card key={industry} className="p-3 space-y-2 bg-muted/30">
-                  <div className="font-medium text-sm flex items-center justify-between">
-                    <span>{industry}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => removeIndustry(industry)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground flex justify-between">
-                        <span>Non-Exclusive (${nonExclusiveCost}/lead)</span>
-                        <span className="font-semibold text-foreground">
-                          Total: ${((quantities.nonExclusive || 0) * nonExclusiveCost).toFixed(2)}
-                        </span>
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={quantities.nonExclusive || ''}
-                        onChange={(e) => updateIndustryQuantity(industry, 'nonExclusive', parseInt(e.target.value) || 0)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground flex justify-between">
-                        <span>Semi-Exclusive (${semiExclusiveCost}/lead)</span>
-                        <span className="font-semibold text-foreground">
-                          Total: ${((quantities.semiExclusive || 0) * semiExclusiveCost).toFixed(2)}
-                        </span>
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={quantities.semiExclusive || ''}
-                        onChange={(e) => updateIndustryQuantity(industry, 'semiExclusive', parseInt(e.target.value) || 0)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground flex justify-between">
-                        <span>24hr Exclusive (${exclusiveCost}/lead)</span>
-                        <span className="font-semibold text-foreground">
-                          Total: ${((quantities.exclusive24h || 0) * exclusiveCost).toFixed(2)}
-                        </span>
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={quantities.exclusive24h || ''}
-                        onChange={(e) => updateIndustryQuantity(industry, 'exclusive24h', parseInt(e.target.value) || 0)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Industry Total */}
-                  <div className="pt-2 mt-2 border-t border-border">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-semibold">Industry Total:</span>
-                      <span className="text-sm font-bold text-primary">
-                        ${(
-                          (quantities.nonExclusive || 0) * nonExclusiveCost +
-                          (quantities.semiExclusive || 0) * semiExclusiveCost +
-                          (quantities.exclusive24h || 0) * exclusiveCost
-                        ).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
+                <div key={industry} className="rounded-lg border bg-card overflow-hidden">
+                  <table className="w-full text-sm border-collapse">
+                    <tbody>
+                      <tr className="border-b bg-muted/50">
+                        <td className="p-3 font-bold flex items-center justify-between">
+                          <span>{industry}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 ml-2"
+                            onClick={() => removeIndustry(industry)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </td>
+                        <td className="p-3 font-semibold whitespace-nowrap">CPC ${googleCPC.toFixed(2)}</td>
+                        <td className="text-center p-3 font-medium">Non Exclusive</td>
+                        <td className="text-center p-3 font-medium">Semi-Exclusive</td>
+                        <td className="text-center p-3 font-medium">Exclusive</td>
+                        <td className="p-3"></td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-3"></td>
+                        <td className="p-3 font-medium">Cost per Lead</td>
+                        <td className="text-center p-3">${nonExclusiveCost.toFixed(2)}</td>
+                        <td className="text-center p-3">${semiExclusiveCost.toFixed(2)}</td>
+                        <td className="text-center p-3">${exclusiveCost.toFixed(2)}</td>
+                        <td className="p-3"></td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-3"></td>
+                        <td className="p-3 font-medium">No. of Leads</td>
+                        <td className="text-center p-3">
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={quantities.nonExclusive || ''}
+                            onChange={(e) => updateIndustryQuantity(industry, 'nonExclusive', parseInt(e.target.value) || 0)}
+                            className="w-20 h-9 text-center mx-auto"
+                          />
+                        </td>
+                        <td className="text-center p-3">
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={quantities.semiExclusive || ''}
+                            onChange={(e) => updateIndustryQuantity(industry, 'semiExclusive', parseInt(e.target.value) || 0)}
+                            className="w-20 h-9 text-center mx-auto"
+                          />
+                        </td>
+                        <td className="text-center p-3">
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={quantities.exclusive24h || ''}
+                            onChange={(e) => updateIndustryQuantity(industry, 'exclusive24h', parseInt(e.target.value) || 0)}
+                            className="w-20 h-9 text-center mx-auto"
+                          />
+                        </td>
+                        <td className="text-right p-3 font-semibold">Total</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3"></td>
+                        <td className="p-3 font-medium">Total</td>
+                        <td className="text-center p-3 font-semibold">${((quantities.nonExclusive || 0) * nonExclusiveCost).toFixed(2)}</td>
+                        <td className="text-center p-3 font-semibold">${((quantities.semiExclusive || 0) * semiExclusiveCost).toFixed(2)}</td>
+                        <td className="text-center p-3 font-semibold">${((quantities.exclusive24h || 0) * exclusiveCost).toFixed(2)}</td>
+                        <td className="text-right p-3 font-bold text-primary">${grandTotal.toFixed(2)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               );
             })}
           </div>
