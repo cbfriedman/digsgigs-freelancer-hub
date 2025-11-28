@@ -492,9 +492,10 @@ export const CategoryBrowserWithDescription = () => {
                 onChange={(e) => setProfileName(e.target.value)}
                 placeholder="e.g., Office Cleaning Services"
                 className="w-full"
+                required
               />
               <p className="text-xs text-muted-foreground">
-                Give your profile a memorable name to help you manage multiple profiles
+                Required: Give your profile a memorable name to help you manage multiple profiles
               </p>
             </div>
 
