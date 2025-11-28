@@ -3,13 +3,13 @@
  * Single source of truth for all pricing across the platform
  * 
  * EXCLUSIVITY-BASED PRICING MODEL
- * Our pricing is based on lead exclusivity:
+ * Our pricing is based on lead exclusivity and Google CPC:
  * 
- * - Non-exclusive leads: Bark price - $0.50 (most affordable)
- * - Semi-exclusive leads: Sold to up to 4 people (balanced option)
- * - 24-hour exclusive leads: Premium exclusive access
+ * - Non-exclusive leads: 20% of Google CPC (most affordable)
+ * - Semi-exclusive leads: Google CPC, sold to up to 4 people (balanced option)
+ * - 24-hour exclusive leads: 2x Google CPC, premium exclusive access
  * 
- * This model provides clear value differentiation and competitive pricing.
+ * This model provides clear value differentiation tied to Google Ads pricing.
  * 
  * NOTE: Prices fluctuate daily and are subject to change based on market conditions.
  */
@@ -52,8 +52,9 @@ export interface PricingTier {
 }
 
 // Exclusivity-based lead pricing by industry category
-// Non-exclusive: Bark price - $0.50
-// 24-hour exclusive: Google CPC × 2.5
+// Non-exclusive: 20% of Google CPC (Bark price - $0.50)
+// Semi-exclusive: Google CPC (estimated as non-exclusive / 0.20)
+// Exclusive-24h: 2x Google CPC (2x semi-exclusive)
 export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'low-value',
@@ -148,9 +149,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       // Marketing - Entry Level
       'Email Marketing',
     ],
-    nonExclusive: 7.50,  // Bark avg (~$8) - $0.50
-    semiExclusive: 30.00,  // Sold to up to 4 people
-    exclusive24h: 60.00  // Premium exclusive access
+    nonExclusive: 7.50,     // 20% of Google CPC (~$37.50)
+    semiExclusive: 37.50,   // = Google CPC (non-exclusive / 0.20)
+    exclusive24h: 75.00     // = 2x Google CPC (2x semi-exclusive)
   },
   {
     category: 'mid-value',
@@ -352,9 +353,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Landscape Architecture',
       'Urban Planning',
     ],
-    nonExclusive: 14.50,  // Bark avg (~$15) - $0.50
-    semiExclusive: 58.00,   // Sold to up to 4 people
-    exclusive24h: 125.00   // Premium exclusive access
+    nonExclusive: 14.50,    // 20% of Google CPC (~$72.50)
+    semiExclusive: 72.50,   // = Google CPC (non-exclusive / 0.20)
+    exclusive24h: 145.00    // = 2x Google CPC (2x semi-exclusive)
   },
   {
     category: 'high-value',
@@ -487,23 +488,23 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       // Solar & Specialized
       'Solar Panel Installation',
     ],
-    nonExclusive: 24.50,   // Bark avg (~$25) - $0.50
-    semiExclusive: 99.00,   // Sold to up to 4 people
-    exclusive24h: 275.00   // Premium exclusive access
+    nonExclusive: 24.50,   // 20% of Google CPC (~$122.50)
+    semiExclusive: 122.50, // = Google CPC (non-exclusive / 0.20)
+    exclusive24h: 245.00   // = 2x Google CPC (2x semi-exclusive)
   }
 ];
 
-// Volume-based tier thresholds (NO monthly fees, Bark-based competitive pricing)
+// Volume-based tier thresholds (NO monthly fees, competitive pricing)
 // Exclusivity-based pricing tiers (NO monthly fees)
-// Non-exclusive: Bark price - $0.50
-// Semi-exclusive: Sold to up to 4 people
-// Exclusive: Premium exclusive access
+// Non-exclusive: 20% of Google CPC
+// Semi-exclusive: Google CPC (estimated as non-exclusive / 0.20)
+// Exclusive-24h: 2x Google CPC (2x semi-exclusive)
 export const PRICING_TIERS: Record<'non-exclusive' | 'semi-exclusive' | 'exclusive-24h', PricingTier> = {
   'non-exclusive': {
     id: 'non-exclusive',
     name: 'Non-Exclusive',
     exclusivityPeriod: 'Shared immediately',
-    description: 'Most affordable option - Lead shared with other diggers',
+    description: 'Most affordable option - 20% of Google CPC, lead shared with other diggers',
     escrowFee: 'Optional 8% (min $10)',
     escrowFeeValue: 0.08,
     escrowProcessingFee: '8%',
@@ -517,7 +518,7 @@ export const PRICING_TIERS: Record<'non-exclusive' | 'semi-exclusive' | 'exclusi
     id: 'semi-exclusive',
     name: 'Semi-Exclusive',
     exclusivityPeriod: 'Shared with up to 4 diggers',
-    description: 'Balanced option - Lead shared with up to 3 other diggers',
+    description: 'Balanced option - Google CPC pricing, shared with up to 3 other diggers',
     escrowFee: 'Optional 8% (min $10)',
     escrowFeeValue: 0.08,
     escrowProcessingFee: '8%',
@@ -531,7 +532,7 @@ export const PRICING_TIERS: Record<'non-exclusive' | 'semi-exclusive' | 'exclusi
     id: 'exclusive-24h',
     name: '24-Hour Exclusive',
     exclusivityPeriod: '24 hours exclusive access',
-    description: 'Premium option - You get exclusive access for 24 hours',
+    description: 'Premium option - 2x Google CPC, exclusive access for 24 hours',
     escrowFee: 'Optional 8% (min $10)',
     escrowFeeValue: 0.08,
     escrowProcessingFee: '8%',
