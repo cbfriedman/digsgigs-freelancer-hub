@@ -220,20 +220,20 @@ export default function ProfileCreationDemo() {
 
             {/* Right Column - Preview */}
             <div className="lg:sticky lg:top-8 h-fit">
-            <DiggerProfileCard
-              photoUrl={photoUrl}
-              title={title}
-              tagline={tagline}
-              companyName={companyName}
-              location={location}
-              keywords={selectedIndustries}
-              profession={profession}
-              offersFreEstimates={offersFreEstimates}
-            />
+              <DiggerProfileCard
+                photoUrl={photoUrl}
+                title={title}
+                tagline={tagline}
+                companyName={companyName}
+                location={location}
+                keywords={selectedIndustries}
+                profession={profession}
+                offersFreEstimates={offersFreEstimates}
+              />
             </div>
           </div>
         </div>
-        </div>
+      </div>
       )}
     </>
   );
