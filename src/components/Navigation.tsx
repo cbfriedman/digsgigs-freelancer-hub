@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,7 @@ const roleConfig: Record<UserAppRole, { label: string; emoji: string; color: str
 
 export function Navigation({ showBackButton = false, backTo = "/", backLabel = "Back to Home" }: NavigationProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [chatOpen, setChatOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [profileCartOpen, setProfileCartOpen] = useState(false);
@@ -43,6 +44,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const { cartCount } = useCart();
   const [profileCartCount, setProfileCartCount] = useState(0);
   const [adminId, setAdminId] = useState<string | null>(null);
+
+  // Hide digger profile selector on client-facing pages (gig posting, etc.)
+  const hideDiggerSelector = ['/post-gig', '/browse-gigs'].includes(location.pathname);
 
   // Clear old profile cart data since profiles now save directly to database
   useEffect(() => {
@@ -197,7 +201,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               </DropdownMenu>
             )}
 
-            {user && <DiggerProfileSelector />}
+            {user && !hideDiggerSelector && <DiggerProfileSelector />}
             
             {/* Cart Icon */}
             <Button
