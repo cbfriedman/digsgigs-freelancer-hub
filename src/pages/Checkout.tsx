@@ -67,13 +67,22 @@ export default function Checkout() {
   }, [navigate]);
 
   const handleCheckout = async () => {
+    console.log("=== CHECKOUT STARTED ===");
+    console.log("User:", user);
+    console.log("Selections:", selections);
+    console.log("ProfileId:", profileId);
+    
     if (!user) {
+      console.error("No user found");
       toast.error("Please log in to continue");
       navigate("/register");
       return;
     }
     
-    if (selections.length === 0) return;
+    if (selections.length === 0) {
+      console.error("No selections");
+      return;
+    }
 
     setProcessing(true);
     try {
@@ -81,6 +90,9 @@ export default function Checkout() {
         const pricePerLead = getLeadCostForIndustry(sel.industry, sel.exclusivity);
         return sum + (pricePerLead * sel.quantity);
       }, 0);
+
+      console.log("Calculated total amount:", totalAmount);
+      console.log("Calling edge function...");
 
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
         body: {
@@ -90,16 +102,33 @@ export default function Checkout() {
         },
       });
 
-      if (error) throw error;
+      console.log("Edge function response:", { data, error });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
+
+      if (!data) {
+        console.error("No data received from edge function");
+        throw new Error("No response data received");
+      }
+
+      console.log("Checkout URL:", data.url);
 
       if (data.url) {
+        console.log("Redirecting to Stripe checkout...");
         // Redirect to Stripe checkout in same window
         window.location.href = data.url;
       } else {
+        console.error("No URL in response data:", data);
         throw new Error("No checkout URL received");
       }
     } catch (error: any) {
-      console.error("Checkout error:", error);
+      console.error("=== CHECKOUT ERROR ===");
+      console.error("Error object:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
       toast.error(error.message || "Failed to process checkout");
       setProcessing(false);
     }
