@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Star, Edit, Trash2, Eye, Award, MessageSquare, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plus, Star, Edit, Trash2, Eye, Award, MessageSquare, RefreshCw, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/utils/retryWithBackoff";
 
@@ -35,6 +38,12 @@ export default function MyProfiles() {
     open: false,
     profileId: null,
   });
+  const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: string | null; currentName: string }>({
+    open: false,
+    profileId: null,
+    currentName: '',
+  });
+  const [newProfileName, setNewProfileName] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -151,6 +160,28 @@ export default function MyProfiles() {
     }
   };
 
+  const handleRename = async () => {
+    if (!renameDialog.profileId || !newProfileName.trim()) return;
+
+    try {
+      await retryWithBackoff(async () => {
+        const { error } = await supabase
+          .from("digger_profiles")
+          .update({ profile_name: newProfileName.trim() })
+          .eq("id", renameDialog.profileId);
+        if (error) throw error;
+      });
+
+      toast.success("Profile renamed successfully");
+      setRenameDialog({ open: false, profileId: null, currentName: '' });
+      setNewProfileName('');
+      loadProfiles();
+    } catch (error) {
+      console.error("Error renaming profile:", error);
+      toast.error("Failed to rename profile - please check your connection");
+    }
+  };
+
   const getProfileDisplayName = (profile: ProfileWithStats) => {
     return profile.profile_name || profile.business_name;
   };
@@ -235,7 +266,11 @@ export default function MyProfiles() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {profiles.map((profile) => (
-              <Card key={profile.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
+              <Card 
+                key={profile.id} 
+                className="relative overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate(`/edit-digger-profile?profileId=${profile.id}`)}
+              >
                 {profile.is_primary && (
                   <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 rounded-bl-lg">
                     <Star className="h-3 w-3 inline mr-1" />
@@ -279,14 +314,26 @@ export default function MyProfiles() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <Button variant="outline" size="sm" onClick={() => navigate(`/digger/${profile.id}`)} className="flex-1">
                       <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/edit-digger-profile?profileId=${profile.id}`)} className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        setRenameDialog({ 
+                          open: true, 
+                          profileId: profile.id, 
+                          currentName: getProfileDisplayName(profile) 
+                        });
+                        setNewProfileName(getProfileDisplayName(profile));
+                      }} 
+                      className="flex-1"
+                    >
                       <Edit className="h-3 w-3 mr-1" />
-                      Edit
+                      Rename
                     </Button>
                     {!profile.is_primary && (
                       <Button variant="outline" size="sm" onClick={() => handleSetPrimary(profile.id)} title="Set as primary">
@@ -318,6 +365,34 @@ export default function MyProfiles() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={renameDialog.open} onOpenChange={(open) => setRenameDialog({ open, profileId: null, currentName: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Profile</DialogTitle>
+            <DialogDescription>Enter a new name for this profile</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="profile-name">Profile Name</Label>
+              <Input
+                id="profile-name"
+                value={newProfileName}
+                onChange={(e) => setNewProfileName(e.target.value)}
+                placeholder="Enter profile name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialog({ open: false, profileId: null, currentName: '' })}>
+              Cancel
+            </Button>
+            <Button onClick={handleRename} disabled={!newProfileName.trim()}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
