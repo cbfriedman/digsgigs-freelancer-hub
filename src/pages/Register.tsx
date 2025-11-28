@@ -468,22 +468,26 @@ const Register = () => {
         password,
       });
 
-      console.log("Sign in response:", { signInData, signInError });
+      console.log("Sign in response received");
 
       if (signInError) {
         console.error("Sign in error:", signInError);
-        throw signInError;
+        setLoading(false);
+        toast.error(signInError.message || "Failed to sign in. Please check your credentials.");
+        return;
       }
 
       if (!signInData.user) {
         console.error("No user data returned");
-        throw new Error("No user data returned from sign in");
+        setLoading(false);
+        toast.error("No user data returned from sign in");
+        return;
       }
 
-      console.log("Sign in successful, user:", signInData.user);
+      console.log("User authenticated:", signInData.user.email);
 
       // Check if email is verified
-      if (!signInData.user?.email_confirmed_at) {
+      if (!signInData.user.email_confirmed_at) {
         console.log("Email not verified, sending OTP");
         await supabase.auth.signOut();
         toast.error("Please verify your email first. We'll send you a new code.");
@@ -496,7 +500,11 @@ const Register = () => {
           }
         });
 
-        if (otpError) throw otpError;
+        if (otpError) {
+          setLoading(false);
+          toast.error(otpError.message);
+          return;
+        }
 
         toast.success("Verification code sent! Please check your email.");
         setStep(2);
@@ -504,15 +512,12 @@ const Register = () => {
         return;
       }
 
-      // Email is verified - redirect to dashboard
-      console.log("Email verified, redirecting to dashboard");
-      setLoading(false);
+      // Email is verified - navigate directly to dashboard
+      console.log("Email verified, navigating to dashboard");
       toast.success("Welcome back!");
       
-      // Use setTimeout to ensure state updates before navigation
-      setTimeout(() => {
-        navigate('/role-dashboard');
-      }, 100);
+      // Navigate immediately - don't wait for loading state
+      navigate('/role-dashboard');
     } catch (error: any) {
       console.error("Sign in error caught:", error);
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
