@@ -151,21 +151,21 @@ export default function RoleDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {userRoles.includes('digger') && stats.digger ? (
+            {userRoles.includes('digger') ? (
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Profiles</p>
-                    <p className="text-2xl font-bold">{stats.digger.profilesCount}</p>
+                    <p className="text-2xl font-bold">{stats.digger?.profilesCount ?? 0}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Leads</p>
-                    <p className="text-2xl font-bold">{stats.digger.leadsCount}</p>
+                    <p className="text-2xl font-bold">{stats.digger?.leadsCount ?? 0}</p>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Active Leads</p>
-                  <p className="text-xl font-semibold text-primary">{stats.digger.activeLeadsCount}</p>
+                  <p className="text-xl font-semibold text-primary">{stats.digger?.activeLeadsCount ?? 0}</p>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t">
                   <Button 
@@ -236,21 +236,21 @@ export default function RoleDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {userRoles.includes('gigger') && stats.gigger ? (
+            {userRoles.includes('gigger') ? (
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Gigs Posted</p>
-                    <p className="text-2xl font-bold">{stats.gigger.gigsCount}</p>
+                    <p className="text-2xl font-bold">{stats.gigger?.gigsCount ?? 0}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Active Bids</p>
-                    <p className="text-2xl font-bold">{stats.gigger.activeBidsCount}</p>
+                    <p className="text-2xl font-bold">{stats.gigger?.activeBidsCount ?? 0}</p>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Awarded Gigs</p>
-                  <p className="text-xl font-semibold text-primary">{stats.gigger.awardedGigsCount}</p>
+                  <p className="text-xl font-semibold text-primary">{stats.gigger?.awardedGigsCount ?? 0}</p>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t">
                   <Button 
@@ -311,24 +311,24 @@ export default function RoleDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {userRoles.includes('telemarketer') && stats.telemarketer ? (
+            {userRoles.includes('telemarketer') ? (
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Leads Uploaded</p>
-                    <p className="text-2xl font-bold">{stats.telemarketer.leadsUploadedCount}</p>
+                    <p className="text-2xl font-bold">{stats.telemarketer?.leadsUploadedCount ?? 0}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Pending</p>
                     <p className="text-2xl font-bold text-amber-500">
-                      ${stats.telemarketer.pendingCommissions.toFixed(2)}
+                      ${(stats.telemarketer?.pendingCommissions ?? 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Total Earned</p>
                   <p className="text-xl font-semibold text-primary">
-                    ${stats.telemarketer.paidCommissions.toFixed(2)}
+                    ${(stats.telemarketer?.paidCommissions ?? 0).toFixed(2)}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t">
