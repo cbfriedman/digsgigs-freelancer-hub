@@ -39,6 +39,7 @@ interface Digger {
   handle: string | null;
   business_name: string;
   profession: string;
+  profile_name?: string | null;
   bio: string | null;
   location: string;
   phone: string;
@@ -335,26 +336,20 @@ const DiggerDetail = () => {
   };
 
   const getDisplayProfession = () => {
-    // If we have a custom occupation title, use it
+    // First priority: profile_name or business_name (user-defined profile names)
+    const profileName = (digger as any)?.profile_name || (digger as any)?.business_name;
+    if (profileName && profileName !== 'Not specified') {
+      return profileName;
+    }
+    
+    // Second priority: custom occupation title
     if (digger?.custom_occupation_title) {
       const titles = digger.custom_occupation_title.split(", ");
       const primaryIndex = digger.primary_profession_index || 0;
-      // Return the primary profession if valid index, otherwise return first
       return titles[primaryIndex] || titles[0] || digger.custom_occupation_title;
     }
     
-    // Otherwise, fetch from industry codes based on primary index
-    const primaryIndex = digger?.primary_profession_index || 0;
-    const allCodes = [
-      ...(digger?.sic_code || []),
-      ...(digger?.naics_code || [])
-    ];
-    
-    if (allCodes.length > primaryIndex) {
-      // This will be resolved by getOccupationBadge
-      return digger?.profession || "";
-    }
-    
+    // Fallback: profession field
     return digger?.profession || "";
   };
 
