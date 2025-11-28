@@ -25,6 +25,7 @@ interface AuthContextType {
   switchRole: (role: UserAppRole) => Promise<void>;
   checkSubscription: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshRoles: () => Promise<void>;
   // Backward compatibility
   isDigger: boolean;
 }
@@ -322,6 +323,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     switchRole,
     checkSubscription,
     signOut,
+    refreshRoles: async () => {
+      if (user?.id) {
+        await fetchUserRoles(user.id);
+      }
+    },
     // Backward compatibility: isDigger checks if user has digger role
     isDigger: userRoles.includes('digger'),
   };

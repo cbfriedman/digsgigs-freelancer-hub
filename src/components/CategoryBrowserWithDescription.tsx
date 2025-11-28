@@ -40,7 +40,7 @@ interface CustomCategory {
 }
 
 export const CategoryBrowserWithDescription = () => {
-  const { user } = useAuth();
+  const { user, refreshRoles } = useAuth();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
@@ -556,6 +556,9 @@ export const CategoryBrowserWithDescription = () => {
                       if (createError) throw createError;
                       toast.success(`Created your Digger profile with ${selected.length} keywords!`);
                     }
+
+                    // Refresh roles in AuthContext so dashboard sees new role immediately
+                    await refreshRoles();
 
                     // Navigate to dashboard
                     navigate('/role-dashboard');
