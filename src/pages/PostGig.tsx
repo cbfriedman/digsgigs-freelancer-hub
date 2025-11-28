@@ -34,6 +34,8 @@ const PostGig = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [autoDetecting, setAutoDetecting] = useState(false);
   const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -121,6 +123,59 @@ const PostGig = () => {
     }
   };
 
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setDocuments(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const handleRemoveDocument = (index: number) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadDocuments = async (): Promise<string[]> => {
+    if (documents.length === 0) return [];
+
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
+      for (const file of documents) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+        const filePath = `${session.user.id}/${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('gig-documents')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error('Error uploading document:', uploadError);
+          throw uploadError;
+        }
+
+        if (data) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('gig-documents')
+            .getPublicUrl(filePath);
+          
+          uploadedUrls.push(publicUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error in document upload:', error);
+      toast.error("Failed to upload some documents. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+
+    return uploadedUrls;
+  };
+
   const handleApproveAndPost = async () => {
     setShowPreview(false);
     setLoading(true);
@@ -140,6 +195,9 @@ const PostGig = () => {
         navigate("/auth");
         return;
       }
+
+      // Upload documents first
+      const documentUrls = await uploadDocuments();
 
       // Geocode the location
       let locationLat: number | undefined;
@@ -175,6 +233,7 @@ const PostGig = () => {
           deadline: validatedData.deadline,
           contact_preferences: formData.contact_preferences || null,
           status: "open",
+          documents: documentUrls.length > 0 ? documentUrls : null,
         })
         .select()
         .single();
@@ -539,6 +598,45 @@ const PostGig = () => {
                 </CardContent>
               </Card>
 
+              {/* Document Upload Section */}
+              <div className="space-y-2">
+                <Label htmlFor="documents" className="flex items-center gap-2">
+                  Upload Documents (Optional)
+                  <span className="text-xs text-muted-foreground font-normal">Plans, Specs, Photos, etc.</span>
+                </Label>
+                <Input
+                  id="documents"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.xls,.xlsx"
+                  onChange={handleDocumentChange}
+                  className="cursor-pointer"
+                />
+                {documents.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium">
+                      {documents.length} document(s) selected:
+                    </p>
+                    <div className="space-y-2">
+                      {documents.map((doc, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                          <span className="text-sm truncate flex-1">{doc.name}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveDocument(index)}
+                            className="ml-2 h-7 text-xs"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Terms Acceptance */}
               <div className="space-y-4 pt-4">
                 <div className="flex items-start space-x-2">
@@ -571,10 +669,10 @@ const PostGig = () => {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={loading} className="flex-1">
-                  {loading ? "Posting..." : "Post Gig"}
+                <Button type="submit" disabled={loading || uploading} className="flex-1">
+                  {uploading ? "Uploading documents..." : loading ? "Posting..." : "Preview Gig Post"}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => navigate("/")} disabled={loading}>
+                <Button type="button" variant="outline" onClick={() => navigate("/")} disabled={loading || uploading}>
                   Cancel
                 </Button>
               </div>
