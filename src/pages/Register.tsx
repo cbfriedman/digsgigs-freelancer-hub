@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,7 @@ interface RoleFormData {
 
 const Register = () => {
   const navigate = useNavigate();
+  const isNavigatingRef = useRef(false); // Prevent race conditions with useProtectedRoute
   const { user, loading: authLoading } = useProtectedRoute({ 
     redirectIfAuthenticated: true,
     requireVerified: false // Allow unverified users to complete registration
@@ -514,10 +515,14 @@ const Register = () => {
 
       // Email is verified - navigate directly to dashboard
       console.log("Email verified, navigating to dashboard");
-      toast.success("Welcome back!");
       
-      // Navigate immediately - don't wait for loading state
-      navigate('/role-dashboard');
+      // Prevent race condition with useProtectedRoute
+      if (!isNavigatingRef.current) {
+        isNavigatingRef.current = true;
+        setLoading(false); // Reset loading state BEFORE navigation
+        toast.success("Welcome back!");
+        navigate('/role-dashboard');
+      }
     } catch (error: any) {
       console.error("Sign in error caught:", error);
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
