@@ -452,6 +452,11 @@ const PostGig = () => {
                       </CardDescription>
                     </div>
                   </div>
+                  <Alert className="mt-3 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+                    <AlertDescription className="text-sm text-amber-800 dark:text-amber-300">
+                      ⚠️ <strong>Important:</strong> Requesting escrow may result in higher bids, as diggers often include the 8% escrow fee in their pricing.
+                    </AlertDescription>
+                  </Alert>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-start space-x-3">
@@ -476,8 +481,8 @@ const PostGig = () => {
                               <li>• Professional dispute resolution if needed</li>
                             </ul>
                             <div className="pt-2 mt-2 border-t border-blue-200 dark:border-blue-800">
-                              <div className="text-sm font-medium text-amber-700 dark:text-amber-500">
-                                ⚠️ Note: Diggers may reflect the escrow fee in their bid amounts.
+                              <div className="text-sm font-medium text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/50 p-3 rounded-lg">
+                                ⚠️ <strong>Warning:</strong> Diggers typically increase their bid amounts to cover the 8% escrow fee. Expect bids to be approximately 8% higher than without escrow.
                               </div>
                             </div>
                             {(formData.budget_min || formData.budget_max) && (
