@@ -2389,6 +2389,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_app_role"][]
       }
+      gigger_has_access_to_digger: {
+        Args: { _digger_profile_id: string; _gigger_user_id: string }
+        Returns: boolean
+      }
       has_app_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_app_role"]
