@@ -541,12 +541,14 @@ export const CategoryBrowserWithDescription = () => {
                       if (updateError) throw updateError;
                       toast.success(`Updated your Digger profile with ${selected.length} keywords!`);
                     } else {
-                      // Create new profile with minimal required fields
+                      // Create new profile with meaningful default name
+                      const profileName = selectedSpecialty || selectedCategory;
                       const { error: createError } = await supabase
                         .from('digger_profiles')
                         .insert({
                           user_id: user.id,
-                          business_name: user.email?.split('@')[0] || 'My Business',
+                          business_name: profileName,
+                          profile_name: profileName,
                           profession: selectedSpecialty,
                           keywords: selected,
                           location: 'Not specified',
