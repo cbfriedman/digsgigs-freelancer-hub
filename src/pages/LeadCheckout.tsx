@@ -24,8 +24,16 @@ export default function LeadCheckout() {
   const { user } = useAuth();
   const [selections, setSelections] = useState<LeadSelection[]>([]);
   const [loading, setLoading] = useState(false);
+  const [diggerProfileId, setDiggerProfileId] = useState<string>('');
 
   useEffect(() => {
+    // Get diggerProfileId from URL params
+    const params = new URLSearchParams(window.location.search);
+    const profileId = params.get('profileId');
+    if (profileId) {
+      setDiggerProfileId(profileId);
+    }
+
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
     if (savedSelections) {
       setSelections(JSON.parse(savedSelections));
@@ -66,7 +74,8 @@ export default function LeadCheckout() {
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
         body: {
           selections: selections,
-          totalAmount: calculateTotal()
+          totalAmount: calculateTotal(),
+          diggerProfileId: diggerProfileId
         }
       });
 

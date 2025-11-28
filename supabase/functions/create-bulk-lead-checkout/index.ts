@@ -35,13 +35,17 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { selections, totalAmount } = await req.json();
+    const { selections, totalAmount, diggerProfileId } = await req.json();
     
     if (!selections || !Array.isArray(selections) || selections.length === 0) {
       throw new Error("No lead selections provided");
     }
+    
+    if (!diggerProfileId) {
+      throw new Error("Digger profile ID is required");
+    }
 
-    logStep("Lead selections received", { count: selections.length, totalAmount });
+    logStep("Lead selections received", { count: selections.length, totalAmount, diggerProfileId });
 
     // Initialize Stripe for payment
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -75,10 +79,12 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: lineItems,
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/role-dashboard?lead_purchase=success`,
-      cancel_url: `${req.headers.get("origin")}/checkout?cancelled=true`,
+      success_url: `${req.headers.get("origin")}/checkout-success?type=lead_credits`,
+      cancel_url: `${req.headers.get("origin")}/keyword-summary?profileId=${diggerProfileId}&cancelled=true`,
       metadata: {
         user_id: user.id,
+        digger_profile_id: diggerProfileId,
+        purchase_type: "keyword_bulk",
         lead_selections: JSON.stringify(selections),
         total_amount: totalAmount.toString(),
       },

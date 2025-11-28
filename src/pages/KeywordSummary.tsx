@@ -209,7 +209,9 @@ export default function KeywordSummary() {
       description: `${leadPurchases.length} lead type${leadPurchases.length !== 1 ? 's' : ''} ready for purchase`,
     });
     
-    navigate('/checkout');
+    // Navigate to checkout with profileId if available
+    const checkoutUrl = profileId ? `/checkout?profileId=${profileId}` : '/checkout';
+    navigate(checkoutUrl);
   };
 
   if (keywords.length === 0) {
