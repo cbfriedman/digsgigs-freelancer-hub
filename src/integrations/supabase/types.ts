@@ -937,6 +937,7 @@ export type Database = {
           created_at: string
           deadline: string | null
           description: string
+          documents: string[] | null
           escrow_requested_by_consumer: boolean | null
           id: string
           images: string[] | null
@@ -973,6 +974,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description: string
+          documents?: string[] | null
           escrow_requested_by_consumer?: boolean | null
           id?: string
           images?: string[] | null
@@ -1009,6 +1011,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string
+          documents?: string[] | null
           escrow_requested_by_consumer?: boolean | null
           id?: string
           images?: string[] | null
