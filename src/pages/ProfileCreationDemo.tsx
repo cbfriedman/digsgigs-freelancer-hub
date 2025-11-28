@@ -216,6 +216,7 @@ export default function ProfileCreationDemo() {
                             
                             return (
                               <div key={keyword} className="rounded-lg border bg-card overflow-hidden">
+                                {/* Lead purchase format table - force rebuild */}
                                 <table className="w-full text-sm border-collapse">
                                   <tbody>
                                     <tr className="border-b bg-muted/50">
