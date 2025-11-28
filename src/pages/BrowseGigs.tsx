@@ -73,6 +73,7 @@ const BrowseGigs = () => {
     selectedCategories: [],
     locationRadius: 50,
   });
+  const [showEscrowGigs, setShowEscrowGigs] = useState(true);
   const { addToCart, removeFromCart, isInCart, cartCount } = useCart();
 
   useEffect(() => {
@@ -225,10 +226,17 @@ const BrowseGigs = () => {
 
   const filteredGigs = gigs.filter((gig) => {
     const searchLower = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       gig.title.toLowerCase().includes(searchLower) ||
       gig.description.toLowerCase().includes(searchLower)
     );
+    
+    // Apply escrow filter for diggers only
+    if (diggerProfile && !showEscrowGigs && (gig as any).escrow_requested_by_consumer) {
+      return false;
+    }
+    
+    return matchesSearch;
   });
 
   const isOldGig = (createdAt: string) => {
@@ -360,6 +368,21 @@ const BrowseGigs = () => {
               <SelectItem value="over5k">Over $5,000</SelectItem>
             </SelectContent>
           </Select>
+          {diggerProfile && (
+            <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-md bg-background">
+              <Checkbox
+                id="show-escrow"
+                checked={showEscrowGigs}
+                onCheckedChange={(checked) => setShowEscrowGigs(checked as boolean)}
+              />
+              <label
+                htmlFor="show-escrow"
+                className="text-sm font-medium cursor-pointer whitespace-nowrap"
+              >
+                Show Escrow Gigs
+              </label>
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -443,11 +466,18 @@ const BrowseGigs = () => {
                     onClick={() => navigate(`/gig/${gig.id}`)}
                   >
                     <div className="flex-1 min-w-0">
-                      {inCart && (
-                        <Badge variant="secondary" className="mb-2">
-                          In Cart
-                        </Badge>
-                      )}
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        {inCart && (
+                          <Badge variant="secondary">
+                            In Cart
+                          </Badge>
+                        )}
+                        {(gig as any).escrow_requested_by_consumer && (
+                          <Badge variant="outline" className="border-blue-500 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30">
+                            🔒 Escrow Required
+                          </Badge>
+                        )}
+                      </div>
                       <h3 className="text-xl font-semibold mb-2 hover:text-primary transition-colors">
                         {gig.title}
                       </h3>
