@@ -49,8 +49,6 @@ const PostGig = () => {
     category_id: "",
     deadline: "",
     contact_preferences: "",
-    consumer_phone: "",
-    consumer_email: "",
     acceptTerms: false,
     requestEscrow: false,
   });
@@ -237,67 +235,85 @@ const PostGig = () => {
         }
       }
 
-      // Send confirmation email before posting
+      const { data: gigData, error } = await supabase
+        .from("gigs")
+        .insert({
+          consumer_id: session.user.id,
+          title: validatedData.title,
+          description: validatedData.description,
+          location: formData.location,
+          location_lat: locationLat,
+          location_lng: locationLng,
+          timeline: formData.timeline,
+          budget_min: validatedData.budget_min,
+          budget_max: validatedData.budget_max,
+          category_id: validatedData.category_id,
+          deadline: validatedData.deadline,
+          contact_preferences: formData.contact_preferences || null,
+          status: "open",
+          documents: documentUrls.length > 0 ? documentUrls : null,
+        })
+        .select()
+        .single();
 
-      // Send confirmation email before posting
-      const { data: confirmationData, error: confirmationError } = await supabase.functions.invoke(
-        'send-gig-confirmation',
-        {
-          body: {
-            gigData: {
-              title: validatedData.title,
-              description: validatedData.description,
-              location: formData.location,
-              timeline: formData.timeline,
-              budget_min: validatedData.budget_min,
-              budget_max: validatedData.budget_max,
-              consumer_id: session.user.id,
-              category_id: validatedData.category_id,
-              deadline: validatedData.deadline,
-              contact_preferences: formData.contact_preferences || null,
-              consumer_phone: formData.consumer_phone || null,
-              consumer_email: formData.consumer_email,
-              status: "open",
-              documents: documentUrls.length > 0 ? documentUrls : null,
-              keywords: keywords,
-              escrow_requested_by_consumer: formData.requestEscrow,
-            },
-          },
+      if (error) throw error;
+
+      // Match diggers using AI semantic matching
+      toast.info("Analyzing gig and matching with relevant professionals...");
+      
+      try {
+        // Get category name for better matching
+        let categoryName = "";
+        if (validatedData.category_id) {
+          const { data: categoryData } = await supabase
+            .from("categories")
+            .select("name")
+            .eq("id", validatedData.category_id)
+            .single();
+          categoryName = categoryData?.name || "";
         }
-      );
 
-      if (confirmationError) {
-        console.error("Error sending confirmation email:", confirmationError);
-        throw new Error("Failed to send confirmation email");
+        const { data: matchData, error: matchError } = await supabase.functions.invoke(
+          "match-diggers-semantic",
+          {
+            body: {
+              gig_title: validatedData.title,
+              gig_description: validatedData.description,
+              gig_category: categoryName,
+            },
+          }
+        );
+
+        if (!matchError && matchData?.matches && matchData.matches.length > 0) {
+          console.log(`AI semantic matching found ${matchData.matches.length} relevant diggers`);
+          
+          // Send notifications to matched diggers
+          for (const match of matchData.matches) {
+            try {
+              await supabase.rpc('create_notification', {
+                p_user_id: match.user_id,
+                p_title: 'New Gig Match',
+                p_message: `${match.business_name}, we found a gig that matches your expertise! "${validatedData.title}"`,
+                p_type: 'new_gig',
+                p_link: `/gig/${gigData.id}`,
+                p_metadata: {
+                  gig_id: gigData.id,
+                  confidence: match.confidence,
+                  reasoning: match.reasoning
+                }
+              });
+            } catch (notifError) {
+              console.error('Error sending notification:', notifError);
+            }
+          }
+        }
+      } catch (matchError) {
+        console.error("Error matching diggers:", matchError);
+        // Don't fail the gig posting if matching fails
       }
 
-      toast.success("Confirmation Email Sent!", {
-        description: `Please check ${formData.consumer_email} and click the confirmation link to post your gig.`,
-        duration: 8000,
-      });
-
-      // Reset form
-      setFormData({
-        title: "",
-        description: "",
-        location: "",
-        timeline: "",
-        budget_min: "",
-        budget_max: "",
-        category_id: "",
-        deadline: "",
-        contact_preferences: "",
-        consumer_phone: "",
-        consumer_email: "",
-        acceptTerms: false,
-        requestEscrow: false,
-      });
-      setDocuments([]);
-      setKeywords([]);
-      setShowPreview(false);
-      
-      // Navigate to dashboard
-      navigate("/role-dashboard");
+      toast.success("Gig posted and matched with relevant professionals!");
+      navigate("/");
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -463,36 +479,6 @@ const PostGig = () => {
                     We'll convert this to map coordinates for location-based filtering
                   </p>
                 </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="consumer_phone">Your Phone Number *</Label>
-                <Input
-                  id="consumer_phone"
-                  type="tel"
-                  placeholder="(555) 123-4567"
-                  value={formData.consumer_phone}
-                  onChange={(e) => setFormData({ ...formData, consumer_phone: e.target.value })}
-                  required
-                />
-                <p className="text-sm text-muted-foreground">
-                  Professionals will use this to contact you about your project
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="consumer_email">Your Email Address *</Label>
-                <Input
-                  id="consumer_email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={formData.consumer_email}
-                  onChange={(e) => setFormData({ ...formData, consumer_email: e.target.value })}
-                  required
-                />
-                <p className="text-sm text-muted-foreground">
-                  We'll send a confirmation email before posting your gig
-                </p>
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="timeline">Project Timeline *</Label>
@@ -757,7 +743,6 @@ const PostGig = () => {
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                     <MapPin className="h-4 w-4" />
@@ -773,17 +758,6 @@ const PostGig = () => {
                   </div>
                   <p>{formData.timeline}</p>
                 </div>
-              </div>
-
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Contact Phone</div>
-                <p className="font-medium">{formData.consumer_phone}</p>
-              </div>
-
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Contact Email</div>
-                <p className="font-medium">{formData.consumer_email}</p>
-              </div>
               </div>
               
               <div>
