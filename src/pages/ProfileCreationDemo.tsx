@@ -134,7 +134,7 @@ export default function ProfileCreationDemo() {
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-[2fr_1fr] gap-8">
             {/* Left Column - Form */}
             <div className="space-y-6">
               <Card>
@@ -215,9 +215,9 @@ export default function ProfileCreationDemo() {
                             const grandTotal = (nonExQty * pricing.nonExclusive) + (semiExQty * pricing.semiExclusive) + (ex24Qty * pricing.exclusive24h);
                             
                             return (
-                              <div key={keyword} className="rounded-lg border bg-card overflow-hidden">
+                              <div key={keyword} className="rounded-lg border bg-card overflow-x-auto">
                                 {/* Lead purchase format table - force rebuild */}
-                                <table className="w-full text-sm border-collapse">
+                                <table className="w-full text-sm border-collapse min-w-[700px]">
                                   <tbody>
                                     <tr className="border-b bg-muted/50">
                                       <td className="p-3 font-bold">{keyword}</td>
