@@ -485,24 +485,97 @@ export const CategoryBrowserWithDescription = () => {
               <Button 
                 className="flex-1" 
                 size="lg"
-                onClick={() => {
+                onClick={async () => {
+                  if (!user?.id) {
+                    toast.error("You must be logged in to save your profile");
+                    return;
+                  }
+
+                  if (!selectedSpecialty?.trim()) {
+                    toast.error("Please select or describe a specialty before continuing");
+                    return;
+                  }
+
                   const selected = Array.from(selectedKeywords);
-                  
-                  sessionStorage.setItem('selectedKeywords', JSON.stringify({
-                    keywords: selected.map(kw => ({ 
-                      keyword: kw, 
-                      industry: selectedCategory 
-                    })),
-                    categoryName: selectedCategory,
-                    specialty: selectedSpecialty
-                  }));
-                  
-                  toast.success(`Saved ${selected.length} keyword${selected.length !== 1 ? 's' : ''}!`);
-                  navigate('/keyword-summary');
+                  setIsProcessing(true);
+
+                  try {
+                    // 1. Check if user has digger role, if not, assign it
+                    const { data: existingRoles } = await supabase
+                      .from('user_app_roles')
+                      .select('app_role')
+                      .eq('user_id', user.id);
+
+                    const hasDiggerRole = existingRoles?.some(r => r.app_role === 'digger');
+
+                    if (!hasDiggerRole) {
+                      const { error: roleError } = await supabase
+                        .from('user_app_roles')
+                        .insert({
+                          user_id: user.id,
+                          app_role: 'digger'
+                        });
+
+                      if (roleError) throw roleError;
+                      toast.success("Registered as Digger!");
+                    }
+
+                    // 2. Check if user has a digger profile
+                    const { data: existingProfile } = await supabase
+                      .from('digger_profiles')
+                      .select('id')
+                      .eq('user_id', user.id)
+                      .maybeSingle();
+
+                    if (existingProfile) {
+                      // Update existing profile
+                      const { error: updateError } = await supabase
+                        .from('digger_profiles')
+                        .update({
+                          profession: selectedSpecialty,
+                          keywords: selected,
+                          updated_at: new Date().toISOString()
+                        })
+                        .eq('id', existingProfile.id);
+
+                      if (updateError) throw updateError;
+                      toast.success(`Updated your Digger profile with ${selected.length} keywords!`);
+                    } else {
+                      // Create new profile with minimal required fields
+                      const { error: createError } = await supabase
+                        .from('digger_profiles')
+                        .insert({
+                          user_id: user.id,
+                          business_name: user.email?.split('@')[0] || 'My Business',
+                          profession: selectedSpecialty,
+                          keywords: selected,
+                          location: 'Not specified',
+                          phone: 'Not specified'
+                        });
+
+                      if (createError) throw createError;
+                      toast.success(`Created your Digger profile with ${selected.length} keywords!`);
+                    }
+
+                    // Navigate to dashboard
+                    navigate('/role-dashboard');
+                  } catch (error: any) {
+                    console.error("Error saving Digger profile:", error);
+                    toast.error(error.message || "Failed to save profile");
+                  } finally {
+                    setIsProcessing(false);
+                  }
                 }}
-                disabled={selectedKeywords.size === 0}
+                disabled={selectedKeywords.size === 0 || isProcessing || !selectedSpecialty?.trim()}
               >
-                Use {selectedKeywords.size} Selected Keyword{selectedKeywords.size !== 1 ? 's' : ''}
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving your profile...
+                  </>
+                ) : (
+                  `Use ${selectedKeywords.size} Selected Keyword${selectedKeywords.size !== 1 ? 's' : ''}`
+                )}
               </Button>
               <Button 
                 variant="outline"
