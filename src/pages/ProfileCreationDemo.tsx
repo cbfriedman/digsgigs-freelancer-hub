@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,16 @@ import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
-import { Briefcase } from "lucide-react";
+import { Briefcase, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Navigation } from "@/components/Navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ProfileCreationDemo() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [photoUrl, setPhotoUrl] = useState("");
   const [companyName, setCompanyName] = useState("Elite Home Services");
   const [title, setTitle] = useState("");
@@ -21,6 +25,45 @@ export default function ProfileCreationDemo() {
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(["Kitchen Remodeling", "Bathroom Renovation", "Custom Cabinets"]);
   const [profession, setProfession] = useState("Home Remodeling Contractor");
   const [offersFreEstimates, setOffersFreEstimates] = useState(false);
+
+  // Load user's actual profile data if logged in
+  useEffect(() => {
+    const loadProfileData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data: profiles, error } = await supabase
+          .from("digger_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+
+        if (profiles && profiles.length > 0) {
+          const profile = profiles[0];
+          setPhotoUrl(profile.profile_image_url || "");
+          setCompanyName(profile.business_name || "Elite Home Services");
+          setTitle(profile.custom_occupation_title || "");
+          setTagline(profile.tagline || "");
+          setLocation(profile.location || "Los Angeles, CA");
+          setSelectedIndustries(profile.keywords || ["Kitchen Remodeling", "Bathroom Renovation", "Custom Cabinets"]);
+          setProfession(profile.profession || "Home Remodeling Contractor");
+          setOffersFreEstimates(profile.offers_free_estimates || false);
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfileData();
+  }, [user]);
 
   return (
     <>
@@ -31,7 +74,15 @@ export default function ProfileCreationDemo() {
 
       <Navigation />
 
-      <div className="min-h-screen bg-background py-8">
+      {loading ? (
+        <div className="min-h-screen bg-background py-8 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading your profile...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="min-h-screen bg-background py-8">
         <div className="container max-w-7xl mx-auto px-4">
           {/* Header */}
           <div className="text-center mb-8">
@@ -182,7 +233,8 @@ export default function ProfileCreationDemo() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
     </>
   );
 }
