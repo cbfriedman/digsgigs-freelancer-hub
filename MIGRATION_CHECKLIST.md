@@ -13,6 +13,7 @@ This document provides a comprehensive checklist for migrating the Digs and Gigs
 - [ ] `award-lead` - Awards leads to diggers
 - [ ] `calculate-lead-price` - Calculates lead pricing
 - [ ] `charge-awarded-lead` - Charges for awarded leads
+- [ ] `create-bulk-lead-checkout` - Creates bulk lead checkout ⚠️ (Being modified - checkout flow fixes)
 - [ ] `create-bulk-lead-purchase` - Processes bulk lead purchases
 - [ ] `create-lead-purchase-checkout` - Creates lead purchase checkout
 - [ ] `extend-exclusivity` - Extends exclusivity periods
@@ -37,9 +38,10 @@ This document provides a comprehensive checklist for migrating the Digs and Gigs
 - [ ] `create-transaction` - Creates transaction records
 - [ ] `customer-portal` - Manages Stripe customer portal
 - [ ] `process-withdrawal-payment` - Processes withdrawal payments
-- [ ] `stripe-webhook` - Handles Stripe webhooks
+- [ ] `stripe-webhook` - Handles Stripe webhooks ⚠️ (Being modified - checkout flow fixes)
 - [ ] `stripe-webhook-extension` - Handles extension purchase webhooks
 - [ ] `stripe-webhook-lead-purchase` - Handles lead purchase webhooks
+- [ ] `stripe-webhook-lead-credits` - Handles lead credit purchase webhooks
 - [ ] `stripe-webhook-profession-purchase` - Handles profession purchase webhooks
 - [ ] `stripe-webhook-profile-view` - Handles profile view webhooks
 
@@ -442,12 +444,14 @@ If migration fails:
 ## Notes
 
 - **Edge Functions:** 62 total (categorized by function type)
-- **Database Tables:** 47 total with RLS policies
+  - 2 functions being modified: `create-bulk-lead-checkout`, `stripe-webhook` (checkout flow fixes)
+- **Database Tables:** 48 total with RLS policies (includes new `lead_credits` table)
 - **Database Functions:** 27 total across migrations
 - **Storage Buckets:** 3 total
 - **Secrets Required:** 10 (2 critical for current issues)
 - All secrets must be configured in Supabase dashboard before functions will work
 - Auto-confirm email is currently enabled as workaround for OTP email issues
+- **Recent Changes:** Checkout flow fixes adding `lead_credits` table and updating webhook handlers
 - See MIGRATION_INVENTORY.md for complete detailed inventory
 
 ---

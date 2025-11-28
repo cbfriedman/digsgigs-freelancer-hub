@@ -13,6 +13,7 @@ This document provides the complete, accurate inventory of all components for mi
 - [ ] `award-lead` - Awards leads to diggers
 - [ ] `calculate-lead-price` - Calculates lead pricing
 - [ ] `charge-awarded-lead` - Charges for awarded leads
+- [ ] `create-bulk-lead-checkout` - Creates bulk lead checkout ⚠️ (Being modified - checkout flow fixes)
 - [ ] `create-bulk-lead-purchase` - Processes bulk lead purchases
 - [ ] `create-lead-purchase-checkout` - Creates lead purchase checkout
 - [ ] `extend-exclusivity` - Extends exclusivity periods
@@ -37,9 +38,10 @@ This document provides the complete, accurate inventory of all components for mi
 - [ ] `create-transaction` - Creates transaction records
 - [ ] `customer-portal` - Manages Stripe customer portal
 - [ ] `process-withdrawal-payment` - Processes withdrawal payments
-- [ ] `stripe-webhook` - Handles Stripe webhooks
+- [ ] `stripe-webhook` - Handles Stripe webhooks ⚠️ (Being modified - checkout flow fixes)
 - [ ] `stripe-webhook-extension` - Handles extension purchase webhooks
 - [ ] `stripe-webhook-lead-purchase` - Handles lead purchase webhooks
+- [ ] `stripe-webhook-lead-credits` - Handles lead credit purchase webhooks
 - [ ] `stripe-webhook-profession-purchase` - Handles profession purchase webhooks
 - [ ] `stripe-webhook-profile-view` - Handles profile view webhooks
 
@@ -106,6 +108,7 @@ This document provides the complete, accurate inventory of all components for mi
 ### Lead Management
 - [ ] `gigs` - Job postings by Giggers
 - [ ] `lead_purchases` - Lead purchase records
+- [ ] `lead_credits` - Pre-purchased lead allowances/credits ⚠️ (New table - checkout flow fixes)
 - [ ] `lead_exclusivity_queue` - Exclusive lead queue management
 - [ ] `lead_exclusivity_extensions` - Extension purchases
 - [ ] `lead_balance_transactions` - Balance transaction history
@@ -255,12 +258,25 @@ This document provides the complete, accurate inventory of all components for mi
 
 | Component | Count |
 |-----------|-------|
-| Edge Functions | 62 |
-| Database Tables | 47 |
+| Edge Functions | 62 (2 being modified for checkout flow fixes) |
+| Database Tables | 48 (includes new `lead_credits` table) |
 | Database Functions | 27 |
 | Storage Buckets | 3 |
 | Secrets Required | 10 |
-| SQL Migrations | 95 files |
+| SQL Migrations | 95+ files |
+
+## 8. Recent Changes / In Progress
+
+### Checkout Flow Fixes (In Progress)
+- **Modified Functions:**
+  - `create-bulk-lead-checkout` - Checkout flow improvements
+  - `stripe-webhook` - Webhook handling updates
+  
+- **New Table:**
+  - `lead_credits` - Tracks pre-purchased lead allowances
+    - Migration: `20251128172137_1e39f07e-94c4-4bb5-a1bd-0ef1fc342afe.sql`
+    - Purpose: Store bulk-purchased lead credits for non-exclusive leads
+    - Key fields: keyword, quantity_purchased, quantity_remaining, price_per_lead
 
 ---
 
