@@ -1200,6 +1200,65 @@ export type Database = {
           },
         ]
       }
+      lead_credits: {
+        Row: {
+          created_at: string
+          digger_profile_id: string | null
+          exclusivity_type: string
+          expires_at: string | null
+          id: string
+          industry: string | null
+          keyword: string
+          price_per_lead: number
+          quantity_purchased: number
+          quantity_remaining: number
+          stripe_payment_id: string | null
+          stripe_session_id: string | null
+          total_paid: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          digger_profile_id?: string | null
+          exclusivity_type?: string
+          expires_at?: string | null
+          id?: string
+          industry?: string | null
+          keyword: string
+          price_per_lead: number
+          quantity_purchased: number
+          quantity_remaining: number
+          stripe_payment_id?: string | null
+          stripe_session_id?: string | null
+          total_paid: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          digger_profile_id?: string | null
+          exclusivity_type?: string
+          expires_at?: string | null
+          id?: string
+          industry?: string | null
+          keyword?: string
+          price_per_lead?: number
+          quantity_purchased?: number
+          quantity_remaining?: number
+          stripe_payment_id?: string | null
+          stripe_session_id?: string | null
+          total_paid?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_credits_digger_profile_id_fkey"
+            columns: ["digger_profile_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_exclusivity_extensions: {
         Row: {
           created_at: string | null

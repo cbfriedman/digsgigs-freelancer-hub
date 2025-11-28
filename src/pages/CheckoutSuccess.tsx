@@ -11,9 +11,16 @@ export default function CheckoutSuccess() {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Clear checkout data from localStorage
-    localStorage.removeItem("checkoutData");
-    localStorage.removeItem("profileCart");
+    // Get the purchase type from URL params
+    const type = searchParams.get("type");
+    
+    // Clear appropriate data from storage based on purchase type
+    if (type === 'lead_credits') {
+      sessionStorage.removeItem("leadPurchaseSelections");
+    } else {
+      localStorage.removeItem("checkoutData");
+      localStorage.removeItem("profileCart");
+    }
 
     // Trigger confetti celebration using canvas-confetti dynamically
     import("canvas-confetti").then((confetti) => {
@@ -56,9 +63,11 @@ export default function CheckoutSuccess() {
     }).catch(() => {
       // Silently fail if confetti can't load
     });
-  }, []);
+  }, [searchParams]);
 
   const sessionId = searchParams.get("session_id");
+  const type = searchParams.get("type");
+  const isLeadCredits = type === "lead_credits";
 
   return (
     <>
@@ -81,11 +90,13 @@ export default function CheckoutSuccess() {
             </div>
 
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              Purchase Successful! 🎉
+              {isLeadCredits ? "Lead Credits Purchased! 🎉" : "Purchase Successful! 🎉"}
             </h1>
             
             <p className="text-lg text-muted-foreground mb-8">
-              Your lead purchase has been processed successfully. You'll start receiving matching leads immediately!
+              {isLeadCredits 
+                ? "Your lead credits have been added to your account. You'll automatically receive matching gigs!"
+                : "Your lead purchase has been processed successfully. You'll start receiving matching leads immediately!"}
             </p>
 
             <div className="bg-muted/50 rounded-lg p-6 mb-8 text-left">
@@ -93,12 +104,21 @@ export default function CheckoutSuccess() {
                 <Sparkles className="h-5 w-5 text-primary mt-1" />
                 <div>
                   <h3 className="font-semibold mb-2">What happens next?</h3>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>✓ Your profile is now active and visible to gig posters</li>
-                    <li>✓ You'll receive email notifications for matching gigs</li>
-                    <li>✓ Access your leads dashboard to view all opportunities</li>
-                    <li>✓ You can purchase additional leads anytime from your profile</li>
-                  </ul>
+                  {isLeadCredits ? (
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li>✓ Your lead credits are ready to use</li>
+                      <li>✓ When new gigs match your keywords, credits will be automatically deducted</li>
+                      <li>✓ You'll receive email notifications for each matched gig</li>
+                      <li>✓ View your credit balance and purchase history in your dashboard</li>
+                    </ul>
+                  ) : (
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li>✓ Your profile is now active and visible to gig posters</li>
+                      <li>✓ You'll receive email notifications for matching gigs</li>
+                      <li>✓ Access your leads dashboard to view all opportunities</li>
+                      <li>✓ You can purchase additional leads anytime from your profile</li>
+                    </ul>
+                  )}
                 </div>
               </div>
               
