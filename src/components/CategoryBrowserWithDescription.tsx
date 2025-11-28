@@ -56,6 +56,7 @@ export const CategoryBrowserWithDescription = () => {
   const [isAddingKeyword, setIsAddingKeyword] = useState(false);
   const [showSpecialtyRequest, setShowSpecialtyRequest] = useState(false);
   const [industrySpecialties, setIndustrySpecialties] = useState<string[]>([]);
+  const [profileName, setProfileName] = useState("");
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -481,6 +482,22 @@ export const CategoryBrowserWithDescription = () => {
                 )}
               </div>
             </div>
+            
+            {/* Profile Name Input */}
+            <div className="space-y-2 mt-4">
+              <Label htmlFor="profile-name">Profile Name <span className="text-destructive">*</span></Label>
+              <Input
+                id="profile-name"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="e.g., Office Cleaning Services"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground">
+                Give your profile a memorable name to help you manage multiple profiles
+              </p>
+            </div>
+
             <div className="flex gap-2">
               <Button 
                 className="flex-1" 
@@ -493,6 +510,11 @@ export const CategoryBrowserWithDescription = () => {
 
                   if (!selectedSpecialty?.trim()) {
                     toast.error("Please select or describe a specialty before continuing");
+                    return;
+                  }
+
+                  if (!profileName.trim()) {
+                    toast.error("Please enter a profile name");
                     return;
                   }
 
@@ -541,14 +563,13 @@ export const CategoryBrowserWithDescription = () => {
                       if (updateError) throw updateError;
                       toast.success(`Updated your Digger profile with ${selected.length} keywords!`);
                     } else {
-                      // Create new profile with meaningful default name
-                      const profileName = selectedSpecialty || selectedCategory;
+                      // Create new profile with user-provided name
                       const { error: createError } = await supabase
                         .from('digger_profiles')
                         .insert({
                           user_id: user.id,
-                          business_name: profileName,
-                          profile_name: profileName,
+                          business_name: profileName.trim(),
+                          profile_name: profileName.trim(),
                           profession: selectedSpecialty,
                           keywords: selected,
                           location: 'Not specified',
@@ -556,7 +577,7 @@ export const CategoryBrowserWithDescription = () => {
                         });
 
                       if (createError) throw createError;
-                      toast.success(`Created your Digger profile with ${selected.length} keywords!`);
+                      toast.success(`Created your Digger profile "${profileName.trim()}" with ${selected.length} keywords!`);
                     }
 
                     // Refresh roles in AuthContext so dashboard sees new role immediately
@@ -571,7 +592,7 @@ export const CategoryBrowserWithDescription = () => {
                     setIsProcessing(false);
                   }
                 }}
-                disabled={selectedKeywords.size === 0 || isProcessing || !selectedSpecialty?.trim()}
+                disabled={selectedKeywords.size === 0 || isProcessing || !selectedSpecialty?.trim() || !profileName.trim()}
               >
                 {isProcessing ? (
                   <>
@@ -590,6 +611,7 @@ export const CategoryBrowserWithDescription = () => {
                   setSelectedKeywords(new Set());
                   setIsAddingKeyword(false);
                   setNewKeyword("");
+                  setProfileName("");
                 }}
               >
                 Try Again

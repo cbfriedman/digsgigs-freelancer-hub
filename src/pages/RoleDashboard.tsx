@@ -200,16 +200,6 @@ export default function RoleDashboard() {
                     <Plus className="h-4 w-4 mr-2" />
                     Create a new profile
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => {
-                      handleSwitchRole('digger');
-                      navigate('/pricing');
-                    }}
-                  >
-                    Manage Keywords
-                  </Button>
                 </div>
               </>
             ) : (
