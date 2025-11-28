@@ -59,7 +59,7 @@ export default function MyProfiles() {
         async () => {
           const result = await supabase
             .from("digger_profiles")
-            .select("id, profile_name, business_name, profession, is_primary, average_rating, total_ratings, profile_image_url, subscription_tier, created_at")
+            .select("*")
             .eq("user_id", user.id)
             .order("is_primary", { ascending: false })
             .order("created_at", { ascending: true });
