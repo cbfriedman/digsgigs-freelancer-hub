@@ -148,7 +148,7 @@ export default function ProfileCreationDemo() {
 
                   {/* Keywords/Specialties */}
                   <div className="space-y-3">
-                    <Label>Specialties</Label>
+                    <Label>Specialties & Lead Types</Label>
                     
                     <div className="p-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5 space-y-2">
                       <p className="text-sm font-semibold text-foreground">
@@ -163,6 +163,30 @@ export default function ProfileCreationDemo() {
                       selectedIndustries={selectedIndustries}
                       onIndustriesChange={setSelectedIndustries}
                     />
+                    
+                    {selectedIndustries.length > 0 && (
+                      <div className="space-y-2 mt-4">
+                        <Label className="text-sm font-medium">Selected Keywords with Lead Types</Label>
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          {selectedIndustries.map((keyword) => (
+                            <div key={keyword} className="flex items-center justify-between p-2 rounded-lg border bg-card gap-3">
+                              <span className="text-sm font-medium flex-shrink-0">{keyword}</span>
+                              <div className="flex gap-2 flex-shrink-0">
+                                <button className="px-3 py-1 text-xs rounded-md border bg-background hover:bg-accent transition-colors">
+                                  Non-Exclusive
+                                </button>
+                                <button className="px-3 py-1 text-xs rounded-md border bg-background hover:bg-accent transition-colors">
+                                  Semi
+                                </button>
+                                <button className="px-3 py-1 text-xs rounded-md border bg-background hover:bg-accent transition-colors">
+                                  24hr Exclusive
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Free Estimates Option */}
