@@ -216,19 +216,25 @@ export default function ProfileCreationDemo() {
                             
                             return (
                               <div key={keyword} className="rounded-lg border bg-card overflow-x-auto">
-                                {/* Lead purchase format table - force rebuild */}
+                                {/* Lead purchase format table - updated layout */}
                                 <table className="w-full text-sm border-collapse min-w-[700px]">
                                   <tbody>
                                     <tr className="border-b bg-muted/50">
                                       <td className="p-3 font-bold">{keyword}</td>
-                                      <td className="p-3 font-semibold">CPC ${pricing.googleCPC.toFixed(2)}</td>
+                                      <td className="p-3 font-semibold">Google CPC</td>
+                                      <td className="p-3 font-semibold text-blue-600">${pricing.googleCPC.toFixed(2)}</td>
+                                      <td className="p-3"></td>
+                                      <td className="p-3"></td>
+                                      <td className="p-3"></td>
+                                    </tr>
+                                    <tr className="border-b bg-muted/30">
+                                      <td className="p-3"></td>
                                       <td className="text-center p-3 font-medium">Non Exclusive</td>
                                       <td className="text-center p-3 font-medium">Semi-Exclusive</td>
                                       <td className="text-center p-3 font-medium">Exclusive</td>
                                       <td className="p-3"></td>
                                     </tr>
                                     <tr className="border-b">
-                                      <td className="p-3"></td>
                                       <td className="p-3 font-medium">Cost per Lead</td>
                                       <td className="text-center p-3">${pricing.nonExclusive.toFixed(2)}</td>
                                       <td className="text-center p-3">${pricing.semiExclusive.toFixed(2)}</td>
@@ -236,7 +242,6 @@ export default function ProfileCreationDemo() {
                                       <td className="p-3"></td>
                                     </tr>
                                     <tr className="border-b">
-                                      <td className="p-3"></td>
                                       <td className="p-3 font-medium">No. of Leads</td>
                                       <td className="text-center p-3">
                                         <Input
@@ -268,7 +273,6 @@ export default function ProfileCreationDemo() {
                                       <td className="text-right p-3 font-semibold">Total</td>
                                     </tr>
                                     <tr>
-                                      <td className="p-3"></td>
                                       <td className="p-3 font-medium">Total</td>
                                       <td className="text-center p-3 font-semibold">${(nonExQty * pricing.nonExclusive).toFixed(2)}</td>
                                       <td className="text-center p-3 font-semibold">${(semiExQty * pricing.semiExclusive).toFixed(2)}</td>
