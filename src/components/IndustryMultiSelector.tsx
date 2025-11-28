@@ -525,11 +525,19 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
           </div>
 
           {/* Cost Calculator Display */}
-          {calculatedCost && (
+          {calculatedCost && (() => {
+            // Calculate tiered discounts
+            const subtotal = calculatedCost.totalCost;
+            const discount10 = Math.min(subtotal, 1000) * 0.10;
+            const discount20 = Math.max(0, subtotal - 1000) * 0.20;
+            const totalDiscount = discount10 + discount20;
+            const finalTotal = subtotal - totalDiscount;
+            
+            return (
               <Card className="p-4 bg-primary/5 border-primary/20">
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Selected Industries:</span>
+                    <span className="text-sm font-medium">Selected Specialties:</span>
                     <span className="text-sm">{selectedIndustries.length}</span>
                   </div>
                   
@@ -579,19 +587,65 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                   )}
                   
                   <div className="border-t pt-2 mt-2">
+                    {/* Subtotal */}
                     <div className="flex justify-between items-center">
+                      <span className="text-sm">Subtotal:</span>
+                      <span className="text-sm font-medium">
+                        ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    
+                    {/* Discount Breakdown */}
+                    {discount10 > 0 && (
+                      <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                        <span className="text-sm">10% Discount (first $1,000):</span>
+                        <span className="text-sm font-medium">
+                          -${discount10.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {discount20 > 0 && (
+                      <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                        <span className="text-sm">20% Discount (over $1,000):</span>
+                        <span className="text-sm font-medium">
+                          -${discount20.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {totalDiscount > 0 && (
+                      <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                        <span className="text-sm font-semibold">Total Discounts:</span>
+                        <span className="text-sm font-semibold">
+                          -${totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Final Total */}
+                    <div className="flex justify-between items-center mt-2 pt-2 border-t">
                       <span className="font-semibold">Total Monthly Cost:</span>
                       <span className="text-lg font-bold text-primary">
-                        ${calculatedCost.totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${finalTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       {calculatedCost.totalLeads} total leads per month
                     </p>
+                    
+                    {/* Credit Rollover Explanation */}
+                    <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded">
+                      <p className="text-xs text-blue-900 dark:text-blue-100">
+                        <span className="font-semibold">💡 Unused credits roll over automatically</span> to the following month. 
+                        Your net amount due next month will be this month's discounted cost minus the total amount charged for leads delivered this month.
+                      </p>
+                    </div>
                   </div>
                 </div>
-            </Card>
-          )}
+              </Card>
+            );
+          })()}
 
           {/* Multiple Categories Warning */}
           {hasMultipleCategories && (
