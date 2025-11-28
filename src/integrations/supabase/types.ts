@@ -931,6 +931,7 @@ export type Database = {
           confirmation_sent_at: string | null
           confirmation_status: string | null
           confirmed_at: string | null
+          consumer_email: string | null
           consumer_id: string
           consumer_phone: string | null
           contact_preferences: string | null
@@ -968,6 +969,7 @@ export type Database = {
           confirmation_sent_at?: string | null
           confirmation_status?: string | null
           confirmed_at?: string | null
+          consumer_email?: string | null
           consumer_id: string
           consumer_phone?: string | null
           contact_preferences?: string | null
@@ -1005,6 +1007,7 @@ export type Database = {
           confirmation_sent_at?: string | null
           confirmation_status?: string | null
           confirmed_at?: string | null
+          consumer_email?: string | null
           consumer_id?: string
           consumer_phone?: string | null
           contact_preferences?: string | null
