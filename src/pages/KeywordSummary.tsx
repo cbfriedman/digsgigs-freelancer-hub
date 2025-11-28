@@ -3,18 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ShoppingCart, Info, Trash2, Plus } from "lucide-react";
-import { getLeadCostForIndustry } from "@/config/pricing";
+import { getLeadCostForIndustry, calculateBulkDiscount, type BulkDiscountResult } from "@/config/pricing";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
 import { findMatchingIndustry } from "@/config/pricing";
@@ -124,12 +118,13 @@ export default function KeywordSummary() {
     return { cpc: Math.round(estimatedCPC * 100) / 100, isEstimated: true };
   };
 
-  const updateSelection = (keyword: string, field: 'exclusivity' | 'quantity', value: any) => {
+  const updateSelection = (keyword: string, value: any) => {
     setSelections(prev => {
       const newSelections = new Map(prev);
       const current = newSelections.get(keyword);
       if (current) {
-        newSelections.set(keyword, { ...current, [field]: value });
+        const quantity = parseInt(value) || 0;
+        newSelections.set(keyword, { ...current, quantity });
       }
       return newSelections;
     });
@@ -138,11 +133,13 @@ export default function KeywordSummary() {
   const calculateGrandTotal = () => {
     let total = 0;
     selections.forEach(selection => {
-      const pricePerLead = getLeadCostForIndustry(selection.industry, selection.exclusivity);
+      const pricePerLead = getLeadCostForIndustry(selection.industry, 'non-exclusive');
       total += pricePerLead * selection.quantity;
     });
     return total;
   };
+
+  const discountInfo: BulkDiscountResult = calculateBulkDiscount(calculateGrandTotal());
 
   const handleDeleteKeyword = (keywordToDelete: string) => {
     const updatedKeywords = keywords.filter(kw => kw.keyword !== keywordToDelete);
@@ -237,8 +234,9 @@ export default function KeywordSummary() {
       return;
     }
     
-    // Save lead purchase selections to sessionStorage
+    // Save lead purchase selections and discount info to sessionStorage
     sessionStorage.setItem('leadPurchaseSelections', JSON.stringify(leadPurchases));
+    sessionStorage.setItem('leadPurchaseDiscount', JSON.stringify(discountInfo));
     
     toast({
       title: "Proceeding to Checkout",
@@ -332,8 +330,7 @@ export default function KeywordSummary() {
                   if (!selection) return null;
 
                   const cpcData = lookupGoogleCPC(keyword, industry);
-                  const pricePerLead = getLeadCostForIndustry(industry, selection.exclusivity);
-                  const nonExclusivePrice = getLeadCostForIndustry(industry, 'non-exclusive');
+                  const pricePerLead = getLeadCostForIndustry(industry, 'non-exclusive'); // Always non-exclusive for credits
                   const subtotal = pricePerLead * selection.quantity;
 
                   return (
@@ -342,11 +339,12 @@ export default function KeywordSummary() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className="font-semibold text-lg">{keyword}</h3>
+                            <Badge variant="secondary">Non-Exclusive Only</Badge>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteKeyword(keyword)}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -360,7 +358,7 @@ export default function KeywordSummary() {
                               )}
                             </span>
                             <Badge variant="outline" className="ml-2">
-                              Non-Exclusive: ${nonExclusivePrice.toFixed(2)} (20% of CPC)
+                              ${pricePerLead.toFixed(2)}/credit (20% of CPC)
                             </Badge>
                           </div>
                           {cpcData.isEstimated && (
@@ -372,47 +370,23 @@ export default function KeywordSummary() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor={`exclusivity-${index}`}>Exclusivity Type</Label>
-                          <Select
-                            value={selection.exclusivity}
-                            onValueChange={(value: any) => updateSelection(keyword, 'exclusivity', value)}
-                          >
-                            <SelectTrigger id={`exclusivity-${index}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="non-exclusive">
-                                Non-Exclusive - ${getLeadCostForIndustry(industry, 'non-exclusive').toFixed(2)}/lead
-                              </SelectItem>
-                              <SelectItem value="semi-exclusive">
-                                Semi-Exclusive - ${getLeadCostForIndustry(industry, 'semi-exclusive').toFixed(2)}/lead
-                              </SelectItem>
-                              <SelectItem value="exclusive-24h">
-                                24hr Exclusive - ${getLeadCostForIndustry(industry, 'exclusive-24h').toFixed(2)}/lead
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label htmlFor={`quantity-${index}`}>Number of Leads</Label>
+                          <Label htmlFor={`quantity-${index}`}>Quantity (Credits)</Label>
                           <Input
                             id={`quantity-${index}`}
                             type="number"
                             min="0"
                             value={selection.quantity}
-                            onChange={(e) => updateSelection(keyword, 'quantity', parseInt(e.target.value) || 0)}
+                            onChange={(e) => updateSelection(keyword, e.target.value)}
+                            placeholder="0"
                           />
                         </div>
 
-                        <div className="flex items-end">
-                          <div className="w-full">
-                            <Label>Subtotal</Label>
-                            <div className="text-2xl font-bold text-primary">
-                              ${subtotal.toFixed(2)}
-                            </div>
+                        <div>
+                          <Label>Subtotal (before discount)</Label>
+                          <div className="text-2xl font-bold text-primary mt-2">
+                            ${subtotal.toFixed(2)}
                           </div>
                         </div>
                       </div>
@@ -425,14 +399,54 @@ export default function KeywordSummary() {
 
           <Card className="mb-8">
             <CardContent className="pt-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Grand Total</p>
-                  <p className="text-3xl font-bold text-primary">
-                    ${calculateGrandTotal().toFixed(2)}
-                  </p>
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">💰</span>
+                  <span className="font-semibold text-blue-900 dark:text-blue-100">Bulk Purchase Discount</span>
                 </div>
-                <Button onClick={handleProceedToCheckout} size="lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  10% off first $1,000 • 20% off amount above $1,000
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>Subtotal:</span>
+                  <span className="font-mono">${discountInfo.originalTotal.toFixed(2)}</span>
+                </div>
+
+                {discountInfo.discountOnFirstThousand > 0 && (
+                  <div className="flex items-center justify-between text-green-600 dark:text-green-400">
+                    <span>10% off first $1,000:</span>
+                    <span className="font-mono">-${discountInfo.discountOnFirstThousand.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {discountInfo.discountOnExcess > 0 && (
+                  <div className="flex items-center justify-between text-green-600 dark:text-green-400">
+                    <span>20% off remaining:</span>
+                    <span className="font-mono">-${discountInfo.discountOnExcess.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <Separator className="my-3" />
+
+                <div className="flex items-center justify-between pt-2 font-semibold text-lg">
+                  <span>Total After Discount:</span>
+                  <span className="text-3xl text-primary font-bold">
+                    ${discountInfo.finalTotal.toFixed(2)}
+                  </span>
+                </div>
+
+                {discountInfo.totalDiscount > 0 && (
+                  <div className="text-center py-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                    <span className="text-green-700 dark:text-green-300 font-semibold">
+                      You Save: ${discountInfo.totalDiscount.toFixed(2)} ({discountInfo.savingsPercentage.toFixed(1)}%)
+                    </span>
+                  </div>
+                )}
+
+                <Button onClick={handleProceedToCheckout} size="lg" className="w-full mt-4">
                   <ShoppingCart className="mr-2 h-5 w-5" />
                   Proceed to Checkout
                 </Button>

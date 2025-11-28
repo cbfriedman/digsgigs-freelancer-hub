@@ -1009,3 +1009,32 @@ export const getLeadTierDescription = (industries: string[]): string => {
   
   return tierArray.join('/');
 };
+
+// Bulk discount calculation for lead credit purchases
+export interface BulkDiscountResult {
+  originalTotal: number;
+  discountOnFirstThousand: number;  // 10% of min($1000, total)
+  discountOnExcess: number;         // 20% of max(0, total - $1000)
+  totalDiscount: number;
+  finalTotal: number;
+  savingsPercentage: number;
+}
+
+export function calculateBulkDiscount(subtotal: number): BulkDiscountResult {
+  const firstTier = Math.min(subtotal, 1000);
+  const secondTier = Math.max(0, subtotal - 1000);
+  
+  const discountOnFirstThousand = firstTier * 0.10;  // 10%
+  const discountOnExcess = secondTier * 0.20;        // 20%
+  const totalDiscount = discountOnFirstThousand + discountOnExcess;
+  const finalTotal = subtotal - totalDiscount;
+  
+  return {
+    originalTotal: subtotal,
+    discountOnFirstThousand,
+    discountOnExcess,
+    totalDiscount,
+    finalTotal,
+    savingsPercentage: subtotal > 0 ? (totalDiscount / subtotal) * 100 : 0
+  };
+}

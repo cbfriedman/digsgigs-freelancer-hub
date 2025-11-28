@@ -9,7 +9,7 @@ import { ArrowLeft, CreditCard, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { getLeadCostForIndustry } from "@/config/pricing";
+import { getLeadCostForIndustry, calculateBulkDiscount } from "@/config/pricing";
 
 interface LeadSelection {
   keyword: string;
@@ -47,12 +47,14 @@ export default function LeadCheckout() {
     }
   }, [navigate, toast]);
 
-  const calculateTotal = (): number => {
-    return selections.reduce((total, selection) => {
-      const price = getLeadCostForIndustry(selection.industry, selection.exclusivity);
-      return total + (price * selection.quantity);
+  const calculateSubtotal = () => {
+    return selections.reduce((sum, sel) => {
+      const cost = getLeadCostForIndustry(sel.industry, 'non-exclusive'); // Always non-exclusive for credits
+      return sum + (cost * sel.quantity);
     }, 0);
   };
+
+  const discountInfo = calculateBulkDiscount(calculateSubtotal());
 
   const handleCheckout = async () => {
     if (!user) {
@@ -68,14 +70,20 @@ export default function LeadCheckout() {
     setLoading(true);
     try {
       console.log("Starting checkout with selections:", selections);
-      console.log("Total amount:", calculateTotal());
+      console.log("Total amount:", discountInfo.finalTotal);
       
-      // Create checkout session for lead purchase
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
         body: {
           selections: selections,
-          totalAmount: calculateTotal(),
-          diggerProfileId: diggerProfileId
+          totalAmount: discountInfo.originalTotal,
+          diggerProfileId: diggerProfileId,
+          discountInfo: {
+            originalTotal: discountInfo.originalTotal,
+            discountOnFirstThousand: discountInfo.discountOnFirstThousand,
+            discountOnExcess: discountInfo.discountOnExcess,
+            totalDiscount: discountInfo.totalDiscount,
+            finalTotal: discountInfo.finalTotal
+          }
         }
       });
 
@@ -128,8 +136,6 @@ export default function LeadCheckout() {
     return null; // Will redirect in useEffect
   }
 
-  const totalAmount = calculateTotal();
-
   return (
     <>
       <Navigation />
@@ -163,31 +169,27 @@ export default function LeadCheckout() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {selections.map((selection, index) => {
-                    const price = getLeadCostForIndustry(selection.industry, selection.exclusivity);
-                    const subtotal = price * selection.quantity;
-
-                    return (
-                      <div key={index} className="border rounded-lg p-4 bg-muted/50">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h3 className="font-semibold text-lg">{selection.keyword}</h3>
-                            <Badge variant={getExclusivityVariant(selection.exclusivity)} className="mt-1">
-                              {getExclusivityLabel(selection.exclusivity)}
-                            </Badge>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-primary">
-                              ${subtotal.toFixed(2)}
-                            </div>
-                          </div>
+                  {selections.map((selection, index) => (
+                    <div key={index} className="border-b pb-4 last:border-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold">{selection.keyword}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {selection.industry}
+                          </p>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {selection.quantity} leads × ${price.toFixed(2)} per lead
-                        </div>
+                        <Badge variant="secondary">Non-Exclusive</Badge>
                       </div>
-                    );
-                  })}
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">
+                          {selection.quantity} Credit{selection.quantity !== 1 ? 's' : ''}
+                        </span>
+                        <span className="font-semibold">
+                          ${(getLeadCostForIndustry(selection.industry, 'non-exclusive') * selection.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </div>
@@ -199,19 +201,55 @@ export default function LeadCheckout() {
                   <CardTitle>Payment Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🎯</span>
+                      <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                        24-Hour Priority Access
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      You'll see matching leads before pay-per-lead buyers
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span>${totalAmount.toFixed(2)}</span>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Subtotal</span>
+                      <span className="font-mono">${discountInfo.originalTotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Processing Fee</span>
-                      <span>$0.00</span>
-                    </div>
+
+                    {discountInfo.discountOnFirstThousand > 0 && (
+                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                        <span>Discount (10% on first $1,000)</span>
+                        <span className="font-mono">-${discountInfo.discountOnFirstThousand.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {discountInfo.discountOnExcess > 0 && (
+                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                        <span>Discount (20% on remaining)</span>
+                        <span className="font-mono">-${discountInfo.discountOnExcess.toFixed(2)}</span>
+                      </div>
+                    )}
+
                     <Separator />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      <span className="text-primary">${totalAmount.toFixed(2)}</span>
+
+                    <div className="flex justify-between text-lg font-semibold pt-2">
+                      <span>Total After Discount</span>
+                      <span className="text-primary text-xl">${discountInfo.finalTotal.toFixed(2)}</span>
+                    </div>
+
+                    {discountInfo.totalDiscount > 0 && (
+                      <div className="text-center py-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                        <span className="text-sm text-green-700 dark:text-green-300 font-semibold">
+                          You Save: ${discountInfo.totalDiscount.toFixed(2)} ({discountInfo.savingsPercentage.toFixed(1)}%)
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted/50 rounded">
+                      ℹ️ Credits are for Non-Exclusive leads only • Never expire • 24hr return window
                     </div>
                   </div>
 
