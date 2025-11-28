@@ -605,6 +605,9 @@ export type Database = {
           profile_number: number | null
           registration_status: string | null
           response_time_hours: number | null
+          service_radius_center: string | null
+          service_radius_miles: number | null
+          service_zip_codes: string[] | null
           sic_code: string[] | null
           skills: string[] | null
           stripe_connect_account_id: string | null
@@ -667,6 +670,9 @@ export type Database = {
           profile_number?: number | null
           registration_status?: string | null
           response_time_hours?: number | null
+          service_radius_center?: string | null
+          service_radius_miles?: number | null
+          service_zip_codes?: string[] | null
           sic_code?: string[] | null
           skills?: string[] | null
           stripe_connect_account_id?: string | null
@@ -729,6 +735,9 @@ export type Database = {
           profile_number?: number | null
           registration_status?: string | null
           response_time_hours?: number | null
+          service_radius_center?: string | null
+          service_radius_miles?: number | null
+          service_zip_codes?: string[] | null
           sic_code?: string[] | null
           skills?: string[] | null
           stripe_connect_account_id?: string | null
