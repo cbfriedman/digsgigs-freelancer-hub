@@ -90,6 +90,7 @@ const DiggerDetail = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [hasViewAccess, setHasViewAccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const { isOnline } = useDiggerPresence(id);
 
   useEffect(() => {
@@ -102,18 +103,7 @@ const DiggerDetail = () => {
     const { data: { session } } = await supabase.auth.getSession();
     setCurrentUser(session?.user || null);
 
-    // Check if user has already paid to view this profile
-    if (session?.user) {
-      const { data: profileView } = await supabase
-        .from("profile_views")
-        .select("*")
-        .eq("consumer_id", session.user.id)
-        .eq("digger_id", id)
-        .single();
-      
-      setHasViewAccess(!!profileView);
-    }
-
+    // Fetch digger data first
     const { data: diggerData, error: diggerError } = await supabase
       .from("digger_profiles")
       .select(`
@@ -133,6 +123,19 @@ const DiggerDetail = () => {
     }
 
     setDigger(diggerData);
+    setIsOwnProfile(session?.user?.id === diggerData.user_id);
+
+    // Check if user has already paid to view this profile
+    if (session?.user) {
+      const { data: profileView } = await supabase
+        .from("profile_views")
+        .select("*")
+        .eq("consumer_id", session.user.id)
+        .eq("digger_id", id)
+        .single();
+      
+      setHasViewAccess(!!profileView);
+    }
 
     const { data: referencesData } = await supabase
       .from("references")
@@ -687,8 +690,31 @@ const DiggerDetail = () => {
               />
             )}
 
-            {/* Contact Info Unlock Section */}
-            {!hasViewAccess && currentUser && (
+            {/* Conditional Content Based on Profile Ownership */}
+            {isOwnProfile ? (
+              /* Lead Purchase Interface for Own Profile */
+              <Card className="p-6 bg-card border-primary/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Purchase Leads</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Select keywords, quantities, and exclusivity types to buy leads for this profile.
+                </p>
+                <Button 
+                  className="w-full"
+                  size="lg"
+                  onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Manage Keywords & Buy Leads
+                </Button>
+              </Card>
+            ) : (
+              /* Hiring Interface for Other Profiles */
+              <>
+                {/* Contact Info Unlock Section */}
+                {!hasViewAccess && currentUser && (
               <Card className="border-primary/50 bg-primary/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -759,6 +785,8 @@ const DiggerDetail = () => {
                 }}
               />
             )}
+              </>
+            )}
 
             {references.length > 0 && (
               <Card>
@@ -811,21 +839,23 @@ const DiggerDetail = () => {
 
           <div className="lg:col-span-1">
             <div className="space-y-6 sticky top-24">
-              <Card>
-                <CardContent className="p-6">
-                  <Button 
-                    className="w-full mb-4" 
-                    size="lg"
-                    onClick={handleSendMessage}
-                  >
-                    <MessageSquare className="mr-2 h-5 w-5" />
-                    Send Message
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Start a conversation to discuss your project with this digger
-                  </p>
-                </CardContent>
-              </Card>
+              {!isOwnProfile && (
+                <Card>
+                  <CardContent className="p-6">
+                    <Button 
+                      className="w-full mb-4" 
+                      size="lg"
+                      onClick={handleSendMessage}
+                    >
+                      <MessageSquare className="mr-2 h-5 w-5" />
+                      Send Message
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Start a conversation to discuss your project with this digger
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Google Search Preview */}
               {digger.total_ratings > 0 && (
