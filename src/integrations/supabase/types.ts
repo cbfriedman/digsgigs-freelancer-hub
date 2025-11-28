@@ -750,7 +750,7 @@ export type Database = {
           {
             foreignKeyName: "digger_profiles_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
