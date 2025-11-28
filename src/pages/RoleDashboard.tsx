@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Briefcase, Phone, TrendingUp, FileText, DollarSign } from "lucide-react";
+import { Wrench, Briefcase, Phone, TrendingUp, FileText, DollarSign, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 
@@ -188,6 +188,17 @@ export default function RoleDashboard() {
                     }}
                   >
                     My Profiles
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      handleSwitchRole('digger');
+                      navigate('/pricing');
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create a new profile
                   </Button>
                   <Button 
                     variant="outline" 
