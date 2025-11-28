@@ -49,6 +49,8 @@ const PostGig = () => {
     category_id: "",
     deadline: "",
     contact_preferences: "",
+    contact_phone: "",
+    contact_email: "",
     acceptTerms: false,
     requestEscrow: false,
   });
@@ -250,6 +252,8 @@ const PostGig = () => {
           category_id: validatedData.category_id,
           deadline: validatedData.deadline,
           contact_preferences: formData.contact_preferences || null,
+          consumer_phone: formData.contact_phone || null,
+          consumer_email: formData.contact_email || null,
           status: "open",
           documents: documentUrls.length > 0 ? documentUrls : null,
         })
@@ -552,6 +556,28 @@ const PostGig = () => {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="contact_phone">Contact Phone</Label>
+                <Input
+                  id="contact_phone"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  value={formData.contact_phone}
+                  onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contact_email">Contact Email</Label>
+                <Input
+                  id="contact_email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={formData.contact_email}
+                  onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                />
+              </div>
+
               {/* Escrow Protection Option */}
               <Card className="border-2 border-dashed border-muted-foreground/30 bg-accent/5">
                 <CardHeader className="pb-3">
@@ -779,6 +805,20 @@ const PostGig = () => {
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Contact Preferences</div>
                   <p>{formData.contact_preferences}</p>
+                </div>
+              )}
+
+              {formData.contact_phone && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Phone</div>
+                  <p>{formData.contact_phone}</p>
+                </div>
+              )}
+
+              {formData.contact_email && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Email</div>
+                  <p>{formData.contact_email}</p>
                 </div>
               )}
 
