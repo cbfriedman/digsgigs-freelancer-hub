@@ -40,8 +40,10 @@ export default function Checkout() {
 
     // Get lead purchase selections from sessionStorage
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
+    console.log("Checkout - savedSelections:", savedSelections);
     
     if (!savedSelections) {
+      console.log("Checkout - No data in sessionStorage, redirecting to pricing");
       toast.error("No checkout data found");
       navigate("/pricing");
       return;
@@ -49,6 +51,7 @@ export default function Checkout() {
 
     try {
       const parsedSelections = JSON.parse(savedSelections);
+      console.log("Checkout - Parsed selections:", parsedSelections);
       setSelections(parsedSelections);
       setLoading(false);
     } catch (error) {
@@ -56,7 +59,7 @@ export default function Checkout() {
       toast.error("Invalid checkout data");
       navigate("/pricing");
     }
-  }, [user, navigate, location]);
+  }, [user, navigate]);
 
   const handleCheckout = async () => {
     if (selections.length === 0 || !user) return;
