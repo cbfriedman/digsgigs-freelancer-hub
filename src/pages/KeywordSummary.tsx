@@ -77,18 +77,25 @@ export default function KeywordSummary() {
   }, [navigate]);
 
   // Function to lookup Google CPC for a keyword
-  const lookupGoogleCPC = (keyword: string, industry: string): number => {
+  const lookupGoogleCPC = (keyword: string, industry: string): { cpc: number; isEstimated: boolean } => {
     // Search through all industry categories in GOOGLE_CPC_KEYWORDS
     for (const industryData of GOOGLE_CPC_KEYWORDS) {
       const keywordData = industryData.keywords.find(
         kw => kw.keyword.toLowerCase() === keyword.toLowerCase()
       );
       if (keywordData) {
-        return keywordData.cpc;
+        return { cpc: keywordData.cpc, isEstimated: false };
       }
     }
-    // Default fallback CPC if not found
-    return 45; // Average CPC as fallback
+    
+    // Intelligent fallback CPC based on industry value tier
+    const leadCost = getLeadCostForIndustry(industry, 'non-exclusive');
+    
+    // Non-exclusive is ~20% of Google CPC, so reverse calculate
+    // Estimate Google CPC = Non-exclusive cost / 0.20
+    const estimatedCPC = leadCost / 0.20;
+    
+    return { cpc: Math.round(estimatedCPC * 100) / 100, isEstimated: true };
   };
 
   const updateSelection = (keyword: string, field: 'exclusivity' | 'quantity', value: any) => {
@@ -295,7 +302,7 @@ export default function KeywordSummary() {
                   const selection = selections.get(keyword);
                   if (!selection) return null;
 
-                  const googleCPC = lookupGoogleCPC(keyword, industry);
+                  const cpcData = lookupGoogleCPC(keyword, industry);
                   const pricePerLead = getLeadCostForIndustry(industry, selection.exclusivity);
                   const nonExclusivePrice = getLeadCostForIndustry(industry, 'non-exclusive');
                   const subtotal = pricePerLead * selection.quantity;
@@ -315,13 +322,24 @@ export default function KeywordSummary() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                             <Info className="h-4 w-4" />
-                            <span>Google CPC: <span className="font-semibold text-foreground">${googleCPC.toFixed(2)}</span></span>
+                            <span>
+                              Google CPC: <span className="font-semibold text-foreground">${cpcData.cpc.toFixed(2)}</span>
+                              {cpcData.isEstimated && (
+                                <span className="text-xs ml-1 text-amber-600 dark:text-amber-400">(estimated)</span>
+                              )}
+                            </span>
                             <Badge variant="outline" className="ml-2">
                               Non-Exclusive: ${nonExclusivePrice.toFixed(2)} (20% of CPC)
                             </Badge>
                           </div>
+                          {cpcData.isEstimated && (
+                            <div className="mt-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                              <Info className="h-3 w-3 inline mr-1" />
+                              Estimated CPC based on industry category. Actual Google CPC may vary.
+                            </div>
+                          )}
                         </div>
                       </div>
                       
