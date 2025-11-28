@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
 
   // Fetch user roles from user_app_roles table
-  const fetchUserRoles = async (userId: string) => {
+  const fetchUserRoles = async (userId: string): Promise<void> => {
     try {
       const { data, error } = await supabase
         .from('user_app_roles')
@@ -73,9 +73,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         // If user has digger role, check subscription
         if (roles.includes('digger')) {
-          checkSubscription().catch((error) => {
-            console.error('Error checking subscription:', error);
-          });
+          await checkSubscription();
         }
       }
     } catch (error) {
@@ -203,7 +201,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {  // CRITICAL: Remove async to prevent deadlock
         console.log('Auth state changed:', event, session);
 
         // Ignore SIGNED_OUT events to prevent re-authentication
@@ -216,44 +214,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
 
+        // Only synchronous state updates here
         setSession(session);
         setUser(session?.user ?? null);
 
+        // Defer all Supabase calls with setTimeout to prevent blocking auth flow
         if (session?.user) {
-          // Handle password recovery before other flows
-          if (event === 'PASSWORD_RECOVERY') {
-            // Don't redirect - user is already on the right page
-            // The URL already has mode=reset-password from the email link
-            console.log('Password recovery mode activated');
-            return;
-          }
+          setTimeout(async () => {
+            try {
+              // Handle password recovery before other flows
+              if (event === 'PASSWORD_RECOVERY') {
+                console.log('Password recovery mode activated');
+                return;
+              }
 
-          // Fetch user roles instead of checking user_type
-          await fetchUserRoles(session.user.id).catch((error) => {
-            console.error('Error fetching user roles:', error);
-          });
+              // Fetch user roles instead of checking user_type
+              try {
+                await fetchUserRoles(session.user.id);
+              } catch (error) {
+                console.error('Error fetching user roles:', error);
+              }
 
-          // Handle email confirmation callback
-          if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
-            // Clear the hash from URL
-            window.history.replaceState(null, '', window.location.pathname);
+              // Handle email confirmation callback
+              if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+                // Clear the hash from URL
+                window.history.replaceState(null, '', window.location.pathname);
 
-            // Check if user has completed registration by checking for roles
-            const { data: roles } = await supabase
-              .from('user_app_roles')
-              .select('app_role')
-              .eq('user_id', session.user.id);
+                // Check if user has completed registration by checking for roles
+                const { data: roles } = await supabase
+                  .from('user_app_roles')
+                  .select('app_role')
+                  .eq('user_id', session.user.id);
 
-            if (!roles || roles.length === 0) {
-              // User hasn't selected roles yet, redirect to registration
-              toast.success('Email verified! Please complete your registration.');
-              window.location.href = '/register';
-            } else {
-              // User has roles, redirect to dashboard
-              toast.success('Welcome back! Successfully signed in.');
-              window.location.href = '/role-dashboard';
+                if (!roles || roles.length === 0) {
+                  // User hasn't selected roles yet, redirect to registration
+                  toast.success('Email verified! Please complete your registration.');
+                  window.location.href = '/register';
+                } else {
+                  // User has roles, redirect to dashboard
+                  toast.success('Welcome back! Successfully signed in.');
+                  window.location.href = '/role-dashboard';
+                }
+              }
+            } catch (error) {
+              console.error('Error in auth state handler:', error);
             }
-          }
+          }, 0);
         } else {
           setUserRoles([]);
           setActiveRole(null);

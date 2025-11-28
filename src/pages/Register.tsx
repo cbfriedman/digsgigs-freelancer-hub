@@ -473,14 +473,12 @@ const Register = () => {
 
       if (signInError) {
         console.error("Sign in error:", signInError);
-        setLoading(false);
         toast.error(signInError.message || "Failed to sign in. Please check your credentials.");
         return;
       }
 
       if (!signInData.user) {
         console.error("No user data returned");
-        setLoading(false);
         toast.error("No user data returned from sign in");
         return;
       }
@@ -502,14 +500,12 @@ const Register = () => {
         });
 
         if (otpError) {
-          setLoading(false);
           toast.error(otpError.message);
           return;
         }
 
         toast.success("Verification code sent! Please check your email.");
         setStep(2);
-        setLoading(false);
         return;
       }
 
@@ -519,13 +515,14 @@ const Register = () => {
       // Prevent race condition with useProtectedRoute
       if (!isNavigatingRef.current) {
         isNavigatingRef.current = true;
-        setLoading(false); // Reset loading state BEFORE navigation
         toast.success("Welcome back!");
         navigate('/role-dashboard');
       }
     } catch (error: any) {
       console.error("Sign in error caught:", error);
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
+    } finally {
+      // ALWAYS reset loading state
       setLoading(false);
     }
   };
