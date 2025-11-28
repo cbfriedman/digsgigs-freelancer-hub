@@ -216,18 +216,16 @@ export default function ProfileCreationDemo() {
                             
                             return (
                               <div key={keyword} className="rounded-lg border bg-card overflow-hidden">
-                                <table className="w-full text-sm">
-                                  <thead>
-                                    <tr className="border-b bg-muted/50">
-                                      <th className="text-left p-3 font-bold">{keyword}</th>
-                                      <th className="text-left p-3 font-semibold">CPC ${pricing.googleCPC.toFixed(2)}</th>
-                                      <th className="text-center p-3">Non Exclusive</th>
-                                      <th className="text-center p-3">Semi-Exclusive</th>
-                                      <th className="text-center p-3">Exclusive</th>
-                                      <th className="text-right p-3"></th>
-                                    </tr>
-                                  </thead>
+                                <table className="w-full text-sm border-collapse">
                                   <tbody>
+                                    <tr className="border-b bg-muted/50">
+                                      <td className="p-3 font-bold">{keyword}</td>
+                                      <td className="p-3 font-semibold">CPC ${pricing.googleCPC.toFixed(2)}</td>
+                                      <td className="text-center p-3 font-medium">Non Exclusive</td>
+                                      <td className="text-center p-3 font-medium">Semi-Exclusive</td>
+                                      <td className="text-center p-3 font-medium">Exclusive</td>
+                                      <td className="p-3"></td>
+                                    </tr>
                                     <tr className="border-b">
                                       <td className="p-3"></td>
                                       <td className="p-3 font-medium">Cost per Lead</td>
