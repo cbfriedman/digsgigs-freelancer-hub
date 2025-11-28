@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
-import { getAllIndustries } from "@/config/pricing";
+import { findMatchingIndustry } from "@/config/pricing";
 import {
   Dialog,
   DialogContent,
@@ -60,13 +60,10 @@ export default function KeywordSummary() {
       return foundIndustry;
     }
     
-    // Check if the keyword itself matches any industry in INDUSTRY_PRICING
-    const allIndustries = getAllIndustries();
-    const matchingIndustry = allIndustries.find(
-      ind => ind.toLowerCase() === keyword.toLowerCase()
-    );
-    if (matchingIndustry) {
-      return matchingIndustry;
+    // Try fuzzy/partial matching with INDUSTRY_PRICING industries
+    const matchedIndustry = findMatchingIndustry(keyword);
+    if (matchedIndustry) {
+      return matchedIndustry;
     }
     
     // Fall back to the category name

@@ -939,6 +939,52 @@ export const getAllIndustries = (): string[] => {
 };
 
 /**
+ * Get all industries from INDUSTRY_PRICING (for matching keywords to industries)
+ */
+export const getAllPricingIndustries = (): string[] => {
+  return INDUSTRY_PRICING.flatMap(pricing => pricing.industries);
+};
+
+/**
+ * Find the best matching industry for a keyword using fuzzy/partial matching
+ */
+export const findMatchingIndustry = (keyword: string): string | null => {
+  const normalizedKeyword = keyword.toLowerCase().trim();
+  const allIndustries = getAllPricingIndustries();
+  
+  // 1. Try exact case-insensitive match
+  const exactMatch = allIndustries.find(
+    ind => ind.toLowerCase() === normalizedKeyword
+  );
+  if (exactMatch) return exactMatch;
+  
+  // 2. Try partial matching - check if keyword contains industry name or vice versa
+  const partialMatch = allIndustries.find(ind => {
+    const normalizedIndustry = ind.toLowerCase();
+    // Check if the keyword contains the industry name
+    // e.g., "tax attorney" contains "tax" → matches "Tax Law"
+    // e.g., "bookkeeping and payroll" contains "bookkeeping" → matches "Bookkeeping"
+    return normalizedKeyword.includes(normalizedIndustry) || 
+           normalizedIndustry.includes(normalizedKeyword);
+  });
+  if (partialMatch) return partialMatch;
+  
+  // 3. Try word-by-word matching
+  const keywordWords = normalizedKeyword.split(/\s+/);
+  const wordMatch = allIndustries.find(ind => {
+    const industryWords = ind.toLowerCase().split(/\s+/);
+    // Check if any significant word matches (excluding common words)
+    const commonWords = ['and', 'or', 'the', 'a', 'an', 'of', 'for', 'near', 'me', 'services'];
+    return keywordWords.some(kw => 
+      !commonWords.includes(kw) && kw.length > 2 &&
+      industryWords.some(iw => iw.includes(kw) || kw.includes(iw))
+    );
+  });
+  
+  return wordMatch || null;
+};
+
+/**
  * Determines the lead tier description based on selected industries
  * Returns "Low", "Medium", "High", or combinations like "Low/Medium"
  */
