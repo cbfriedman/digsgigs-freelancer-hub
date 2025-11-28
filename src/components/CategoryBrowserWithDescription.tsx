@@ -62,6 +62,7 @@ export const CategoryBrowserWithDescription = () => {
   const [serviceZipCodes, setServiceZipCodes] = useState("");
   const [serviceRadiusCenter, setServiceRadiusCenter] = useState("");
   const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
+  const [country, setCountry] = useState("United States");
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -517,6 +518,28 @@ export const CategoryBrowserWithDescription = () => {
                   </p>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="country_browser">Country</Label>
+                  <select
+                    id="country_browser"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  >
+                    <option value="United States">🇺🇸 United States</option>
+                    <option value="Canada">🇨🇦 Canada</option>
+                    <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                    <option value="Australia">🇦🇺 Australia</option>
+                    <option value="Germany">🇩🇪 Germany</option>
+                    <option value="France">🇫🇷 France</option>
+                    <option value="Spain">🇪🇸 Spain</option>
+                    <option value="Italy">🇮🇹 Italy</option>
+                    <option value="Mexico">🇲🇽 Mexico</option>
+                    <option value="Brazil">🇧🇷 Brazil</option>
+                    <option value="Other">🌍 Other</option>
+                  </select>
+                </div>
+
                 <RadioGroup
                   value={locationPreferenceType}
                   onValueChange={(value: "zip_codes" | "radius") => setLocationPreferenceType(value)}
@@ -656,6 +679,7 @@ export const CategoryBrowserWithDescription = () => {
                         service_zip_codes: zipCodesArray,
                         service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                         service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
+                        country: country,
                       })
                       .select()
                       .single();
