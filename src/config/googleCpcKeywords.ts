@@ -1409,6 +1409,25 @@ export const getTop20MostExpensiveKeywords = (): Array<{
  * TOP 20 MOST EXPENSIVE KEYWORDS ACROSS ALL INDUSTRIES
  * Updated: 2025
  */
+/**
+ * Helper function to find the actual industry for a given keyword
+ * This searches through GOOGLE_CPC_KEYWORDS to find which industry contains the keyword
+ */
+export const getIndustryForKeyword = (keyword: string): string | null => {
+  const normalizedKeyword = keyword.toLowerCase().trim();
+  
+  for (const industryData of GOOGLE_CPC_KEYWORDS) {
+    const hasKeyword = industryData.keywords.some(
+      kw => kw.keyword.toLowerCase() === normalizedKeyword
+    );
+    if (hasKeyword) {
+      return industryData.industry;
+    }
+  }
+  
+  return null;
+};
+
 export const TOP_20_MOST_EXPENSIVE_KEYWORDS = [
   { rank: 1, keyword: 'mesothelioma lawyer', cpc: 935, industry: 'Personal Injury Law', searchVolume: 8100 },
   { rank: 2, keyword: 'structured settlement', cpc: 875, industry: 'Personal Injury Law', searchVolume: 4400 },

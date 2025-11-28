@@ -16,7 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
+import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
+import { getAllIndustries } from "@/config/pricing";
 import {
   Dialog,
   DialogContent,
@@ -51,23 +52,51 @@ export default function KeywordSummary() {
   const searchParams = new URLSearchParams(window.location.search);
   const profileId = searchParams.get('profileId');
 
+  // Helper to determine the correct industry for a keyword
+  const determineKeywordIndustry = (keyword: string, fallbackCategory: string): string => {
+    // First try to find the keyword in GOOGLE_CPC_KEYWORDS
+    const foundIndustry = getIndustryForKeyword(keyword);
+    if (foundIndustry) {
+      return foundIndustry;
+    }
+    
+    // Check if the keyword itself matches any industry in INDUSTRY_PRICING
+    const allIndustries = getAllIndustries();
+    const matchingIndustry = allIndustries.find(
+      ind => ind.toLowerCase() === keyword.toLowerCase()
+    );
+    if (matchingIndustry) {
+      return matchingIndustry;
+    }
+    
+    // Fall back to the category name
+    return fallbackCategory || "General";
+  };
+
   useEffect(() => {
     const savedData = sessionStorage.getItem('selectedKeywords');
     if (savedData) {
       const data = JSON.parse(savedData);
       const loadedKeywords = data.keywords || [];
-      setKeywords(loadedKeywords);
+      
+      // Recalculate correct industry for each keyword
+      const correctedKeywords = loadedKeywords.map((kw: SelectedKeyword) => ({
+        keyword: kw.keyword,
+        industry: determineKeywordIndustry(kw.keyword, data.categoryName || "")
+      }));
+      
+      setKeywords(correctedKeywords);
       setCategoryName(data.categoryName || "");
       
-      // Initialize selections with default values
+      // Initialize selections with default values and corrected industries
       const initialSelections = new Map<string, LeadSelection>();
-      loadedKeywords.forEach((kw: SelectedKeyword) => {
-      initialSelections.set(kw.keyword, {
-        keyword: kw.keyword,
-        industry: kw.industry,
-        exclusivity: 'non-exclusive',
-        quantity: 0
-      });
+      correctedKeywords.forEach((kw: SelectedKeyword) => {
+        initialSelections.set(kw.keyword, {
+          keyword: kw.keyword,
+          industry: kw.industry,
+          exclusivity: 'non-exclusive',
+          quantity: 0
+        });
       });
       setSelections(initialSelections);
     } else {
@@ -161,9 +190,12 @@ export default function KeywordSummary() {
       return;
     }
 
+    // Determine the correct industry for the new keyword
+    const correctIndustry = determineKeywordIndustry(newKeyword.trim(), categoryName);
+
     const newKeywordObj: SelectedKeyword = {
       keyword: newKeyword.trim(),
-      industry: categoryName || "General"
+      industry: correctIndustry
     };
 
     const updatedKeywords = [...keywords, newKeywordObj];
