@@ -149,35 +149,49 @@ export const ProfileTitleTaglineEditor = ({
       </div>
 
       {/* AI Suggestions */}
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="p-4 border rounded-lg bg-accent/5 space-y-2">
-          <h4 className="text-sm font-medium flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+      {showSuggestions && (
+        <div className="p-4 border-2 border-primary rounded-lg bg-primary/5 space-y-3 shadow-md">
+          <h4 className="text-base font-semibold flex items-center gap-2 text-primary">
+            <Sparkles className="h-5 w-5" />
             AI Suggestions for {currentType === 'title' ? 'Title' : 'Tagline'}
           </h4>
-          <div className="space-y-2">
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
+          {generating ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Generating suggestions...</span>
+            </div>
+          ) : suggestions.length > 0 ? (
+            <>
+              <div className="space-y-2">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => applySuggestion(suggestion)}
+                    className="w-full text-left p-3 rounded-md hover:bg-primary/10 transition-colors border-2 border-border hover:border-primary bg-background"
+                  >
+                    <p className="text-sm font-medium">{suggestion}</p>
+                  </button>
+                ))}
+              </div>
+              <Button
                 type="button"
-                onClick={() => applySuggestion(suggestion)}
-                className="w-full text-left p-3 rounded-md hover:bg-accent transition-colors border"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowSuggestions(false);
+                  setSuggestions([]);
+                }}
+                className="w-full"
               >
-                <p className="text-sm">{suggestion}</p>
-              </button>
-            ))}
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setShowSuggestions(false);
-              setSuggestions([]);
-            }}
-          >
-            Close Suggestions
-          </Button>
+                Close Suggestions
+              </Button>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No suggestions generated. Please try again.
+            </p>
+          )}
         </div>
       )}
     </div>
