@@ -35,7 +35,7 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { selections, totalAmount, diggerProfileId } = await req.json();
+    const { selections, totalAmount, diggerProfileId, discountInfo } = await req.json();
     
     if (!selections || !Array.isArray(selections) || selections.length === 0) {
       throw new Error("No lead selections provided");
@@ -45,7 +45,7 @@ serve(async (req) => {
       throw new Error("Digger profile ID is required");
     }
 
-    logStep("Lead selections received", { count: selections.length, totalAmount, diggerProfileId });
+    logStep("Lead selections received", { count: selections.length, totalAmount, diggerProfileId, discountInfo });
 
     // Initialize Stripe for payment
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -60,15 +60,32 @@ serve(async (req) => {
       logStep("Existing Stripe customer found", { customerId });
     }
 
-    // Create line items for each lead selection
+    // Calculate discount
+    const originalTotal = selections.reduce((sum: number, s: any) => sum + s.subtotal, 0);
+    const firstTier = Math.min(originalTotal, 1000);
+    const secondTier = Math.max(0, originalTotal - 1000);
+    const discountOnFirstThousand = firstTier * 0.10;
+    const discountOnExcess = secondTier * 0.20;
+    const totalDiscount = discountOnFirstThousand + discountOnExcess;
+    const finalTotal = originalTotal - totalDiscount;
+
+    logStep("Discount calculation", { 
+      originalTotal, 
+      discountOnFirstThousand, 
+      discountOnExcess, 
+      totalDiscount, 
+      finalTotal 
+    });
+
+    // Create line items for each lead selection (using discounted prices)
     const lineItems = selections.map((selection: any) => ({
       price_data: {
         currency: 'usd',
         product_data: {
-          name: `${selection.keyword} Lead`,
-          description: `${selection.exclusivity === 'non-exclusive' ? 'Non-Exclusive' : selection.exclusivity === 'semi-exclusive' ? 'Semi-Exclusive (4 max)' : '24hr Exclusive'} - ${selection.quantity} lead${selection.quantity !== 1 ? 's' : ''}`,
+          name: `${selection.keyword} Lead Credits`,
+          description: `Non-Exclusive - ${selection.quantity} credit${selection.quantity !== 1 ? 's' : ''} (includes bulk discount)`,
         },
-        unit_amount: Math.round((totalAmount / selections.reduce((sum: number, s: any) => sum + s.quantity, 0)) * 100), // Average price per lead in cents
+        unit_amount: Math.round((finalTotal / selections.reduce((sum: number, s: any) => sum + s.quantity, 0)) * 100), // Discounted average price per lead in cents
       },
       quantity: selection.quantity,
     }));
@@ -86,7 +103,11 @@ serve(async (req) => {
         digger_profile_id: diggerProfileId,
         purchase_type: "keyword_bulk",
         lead_selections: JSON.stringify(selections),
-        total_amount: totalAmount.toString(),
+        original_amount: originalTotal.toString(),
+        discount_amount: totalDiscount.toString(),
+        final_amount: finalTotal.toString(),
+        discount_on_first_thousand: discountOnFirstThousand.toString(),
+        discount_on_excess: discountOnExcess.toString(),
       },
     });
 

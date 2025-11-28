@@ -75,14 +75,23 @@ serve(async (req) => {
     const userId = metadata.user_id;
     const diggerProfileId = metadata.digger_profile_id;
     const leadSelectionsJson = metadata.lead_selections;
-    const totalAmount = parseFloat(metadata.total_amount);
+    const originalAmount = parseFloat(metadata.original_amount);
+    const discountAmount = parseFloat(metadata.discount_amount);
+    const finalAmount = parseFloat(metadata.final_amount);
 
     if (!userId || !diggerProfileId || !leadSelectionsJson) {
       throw new Error("Missing required metadata");
     }
 
     const leadSelections = JSON.parse(leadSelectionsJson);
-    logStep("Parsed lead selections", { count: leadSelections.length });
+    logStep("Parsed lead selections", { count: leadSelections.length, originalAmount, discountAmount, finalAmount });
+
+    // Validate all selections are non-exclusive
+    const nonExclusiveOnly = leadSelections.every((s: any) => s.exclusivity === 'non-exclusive');
+    if (!nonExclusiveOnly) {
+      logStep("ERROR: Non non-exclusive leads detected in bulk purchase", { leadSelections });
+      throw new Error("Lead credits can only be purchased for non-exclusive leads");
+    }
 
     // Initialize Supabase with service role key
     const supabaseAdmin = createClient(
@@ -90,19 +99,22 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Create lead credits for each selection
+    // Calculate discounted price per lead
+    const totalQuantity = leadSelections.reduce((sum: number, s: any) => sum + s.quantity, 0);
+    const discountedPricePerLead = finalAmount / totalQuantity;
+
+    // Create lead credits for each selection with discounted pricing
     const leadCredits = leadSelections.map((selection: any) => {
-      const pricePerLead = selection.subtotal / selection.quantity;
       return {
         user_id: userId,
         digger_profile_id: diggerProfileId,
         keyword: selection.keyword,
         industry: selection.industry,
-        exclusivity_type: selection.exclusivity,
+        exclusivity_type: 'non-exclusive', // Always non-exclusive for credits
         quantity_purchased: selection.quantity,
         quantity_remaining: selection.quantity,
-        price_per_lead: pricePerLead,
-        total_paid: selection.subtotal,
+        price_per_lead: discountedPricePerLead, // Discounted price
+        total_paid: discountedPricePerLead * selection.quantity,
         stripe_payment_id: session.payment_intent,
         stripe_session_id: session.id,
       };
