@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
-import { GigCategorySelector } from "@/components/GigCategorySelector";
+import { GigCategoryBrowser } from "@/components/GigCategoryBrowser";
 import { geocodeAddress } from "@/utils/geocoding";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
@@ -32,6 +32,8 @@ const PostGig = () => {
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [autoDetecting, setAutoDetecting] = useState(false);
+  const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -247,6 +249,42 @@ const PostGig = () => {
     setShowPreview(false);
   };
 
+  const handleAutoDetect = async () => {
+    if (!formData.title || !formData.description) {
+      toast.error("Please enter a title and description first");
+      return;
+    }
+
+    setAutoDetecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("auto-categorize-gig", {
+        body: {
+          title: formData.title,
+          description: formData.description,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.category_id) {
+        setSuggestedCategory(data.category_id);
+        setFormData({ ...formData, category_id: data.category_id });
+        toast.success(
+          <div className="space-y-1">
+            <div className="font-semibold">Category detected!</div>
+            <div className="text-sm">{data.parent_category} → {data.category_name}</div>
+            <div className="text-xs text-muted-foreground">{data.reasoning}</div>
+          </div>
+        );
+      }
+    } catch (error: any) {
+      console.error("Auto-detect error:", error);
+      toast.error(error.message || "Failed to auto-detect category");
+    } finally {
+      setAutoDetecting(false);
+    }
+  };
+
   const formatBudget = () => {
     if (formData.budget_min && formData.budget_max) {
       return `$${formData.budget_min} - $${formData.budget_max}`;
@@ -341,9 +379,15 @@ const PostGig = () => {
                 />
               </div>
 
-              <GigCategorySelector
+              <GigCategoryBrowser
                 value={formData.category_id}
-                onChange={(categoryId) => setFormData({ ...formData, category_id: categoryId })}
+                onChange={(categoryId) => {
+                  setFormData({ ...formData, category_id: categoryId });
+                  setSuggestedCategory(null);
+                }}
+                onAutoDetect={handleAutoDetect}
+                autoDetecting={autoDetecting}
+                suggestedCategory={suggestedCategory}
               />
 
               <div className="grid grid-cols-2 gap-4">
