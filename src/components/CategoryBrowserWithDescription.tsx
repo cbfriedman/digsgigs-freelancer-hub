@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Plus, Loader2 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Target, Plus, Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +58,10 @@ export const CategoryBrowserWithDescription = () => {
   const [showSpecialtyRequest, setShowSpecialtyRequest] = useState(false);
   const [industrySpecialties, setIndustrySpecialties] = useState<string[]>([]);
   const [profileName, setProfileName] = useState("");
+  const [locationPreferenceType, setLocationPreferenceType] = useState<"zip_codes" | "radius">("zip_codes");
+  const [serviceZipCodes, setServiceZipCodes] = useState("");
+  const [serviceRadiusCenter, setServiceRadiusCenter] = useState("");
+  const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -499,6 +504,96 @@ export const CategoryBrowserWithDescription = () => {
               </p>
             </div>
 
+            {/* Location Preferences Section */}
+            <Card className="p-4 border-2 border-primary/20 bg-primary/5 mt-4">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Service Area Preferences
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Define where you want to receive gig notifications
+                  </p>
+                </div>
+
+                <RadioGroup
+                  value={locationPreferenceType}
+                  onValueChange={(value: "zip_codes" | "radius") => setLocationPreferenceType(value)}
+                  className="space-y-3"
+                >
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="radio" 
+                      value="zip_codes" 
+                      id="zip_codes_browser" 
+                      checked={locationPreferenceType === "zip_codes"}
+                      onChange={() => setLocationPreferenceType("zip_codes")}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="zip_codes_browser" className="cursor-pointer font-normal">
+                      Specific Zip Codes
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="radio" 
+                      value="radius" 
+                      id="radius_browser" 
+                      checked={locationPreferenceType === "radius"}
+                      onChange={() => setLocationPreferenceType("radius")}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="radius_browser" className="cursor-pointer font-normal">
+                      Radius from Zip Code
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {locationPreferenceType === "zip_codes" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="serviceZipCodes">Enter Zip Codes (comma-separated)</Label>
+                    <Textarea
+                      id="serviceZipCodes"
+                      value={serviceZipCodes}
+                      onChange={(e) => setServiceZipCodes(e.target.value)}
+                      placeholder="e.g., 10001, 10002, 10003"
+                      rows={3}
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter multiple zip codes separated by commas
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceRadiusCenter">Center Zip Code</Label>
+                      <Input
+                        id="serviceRadiusCenter"
+                        value={serviceRadiusCenter}
+                        onChange={(e) => setServiceRadiusCenter(e.target.value)}
+                        placeholder="e.g., 10001"
+                        maxLength={5}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceRadiusMiles">Radius (miles)</Label>
+                      <Input
+                        id="serviceRadiusMiles"
+                        type="number"
+                        min="1"
+                        max="500"
+                        value={serviceRadiusMiles}
+                        onChange={(e) => setServiceRadiusMiles(parseInt(e.target.value) || 25)}
+                        placeholder="25"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+
             <div className="flex gap-2">
               <Button 
                 className="flex-1" 
@@ -544,6 +639,10 @@ export const CategoryBrowserWithDescription = () => {
                     }
 
                     // 2. Always create a new profile (never update existing)
+                    const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
+                      ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
+                      : null;
+
                     const { data: newProfile, error: createError } = await supabase
                       .from('digger_profiles')
                       .insert({
@@ -553,7 +652,10 @@ export const CategoryBrowserWithDescription = () => {
                         profession: selectedSpecialty,
                         keywords: selected,
                         location: 'Not specified',
-                        phone: 'Not specified'
+                        phone: 'Not specified',
+                        service_zip_codes: zipCodesArray,
+                        service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
+                        service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                       })
                       .select()
                       .single();

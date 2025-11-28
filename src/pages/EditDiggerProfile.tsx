@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
-import { Loader2, Tag } from "lucide-react";
+import { Loader2, Tag, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
@@ -56,6 +56,10 @@ const EditDiggerProfile = () => {
   const [photoUrl, setPhotoUrl] = useState("");
   const [title, setTitle] = useState("");
   const [tagline, setTagline] = useState("");
+  const [locationPreferenceType, setLocationPreferenceType] = useState<"zip_codes" | "radius">("zip_codes");
+  const [serviceZipCodes, setServiceZipCodes] = useState("");
+  const [serviceRadiusCenter, setServiceRadiusCenter] = useState("");
+  const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -145,6 +149,16 @@ const EditDiggerProfile = () => {
         setPhone(profile.phone || "");
         setBio(profile.bio || "");
         
+        // Load location preferences
+        if (profile.service_zip_codes && profile.service_zip_codes.length > 0) {
+          setLocationPreferenceType("zip_codes");
+          setServiceZipCodes(profile.service_zip_codes.join(", "));
+        } else if (profile.service_radius_center) {
+          setLocationPreferenceType("radius");
+          setServiceRadiusCenter(profile.service_radius_center || "");
+          setServiceRadiusMiles(profile.service_radius_miles || 25);
+        }
+        
         // Check for keywords from sessionStorage first (from category browser)
         const savedKeywordsData = sessionStorage.getItem('selectedKeywords');
         if (savedKeywordsData) {
@@ -206,6 +220,11 @@ const EditDiggerProfile = () => {
       // Calculate lead tier description based on selected categories
       const leadTierDescription = getLeadTierDescription(categoryNames);
 
+      // Parse location preferences
+      const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
+        ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
+        : null;
+
       const { error } = await supabase
         .from("digger_profiles")
         .update({
@@ -226,6 +245,9 @@ const EditDiggerProfile = () => {
           profile_image_url: photoUrl || null,
           custom_occupation_title: title || null,
           tagline: tagline || null,
+          service_zip_codes: zipCodesArray,
+          service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
+          service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
         })
         .eq("id", profileId);
 
@@ -434,6 +456,82 @@ const EditDiggerProfile = () => {
                 required
               />
             </div>
+
+            {/* Location Preferences Section */}
+            <Card className="p-4 border-2 border-primary/20 bg-primary/5">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Service Area Preferences
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Define where you want to receive gig notifications
+                  </p>
+                </div>
+
+                <RadioGroup
+                  value={locationPreferenceType}
+                  onValueChange={(value: "zip_codes" | "radius") => setLocationPreferenceType(value)}
+                  className="space-y-3"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="zip_codes" id="zip_codes" />
+                    <Label htmlFor="zip_codes" className="cursor-pointer font-normal">
+                      Specific Zip Codes
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="radius" id="radius" />
+                    <Label htmlFor="radius" className="cursor-pointer font-normal">
+                      Radius from Zip Code
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {locationPreferenceType === "zip_codes" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="serviceZipCodes">Enter Zip Codes (comma-separated)</Label>
+                    <Textarea
+                      id="serviceZipCodes"
+                      value={serviceZipCodes}
+                      onChange={(e) => setServiceZipCodes(e.target.value)}
+                      placeholder="e.g., 10001, 10002, 10003"
+                      rows={3}
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter multiple zip codes separated by commas
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceRadiusCenter">Center Zip Code</Label>
+                      <Input
+                        id="serviceRadiusCenter"
+                        value={serviceRadiusCenter}
+                        onChange={(e) => setServiceRadiusCenter(e.target.value)}
+                        placeholder="e.g., 10001"
+                        maxLength={5}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceRadiusMiles">Radius (miles)</Label>
+                      <Input
+                        id="serviceRadiusMiles"
+                        type="number"
+                        min="1"
+                        max="500"
+                        value={serviceRadiusMiles}
+                        onChange={(e) => setServiceRadiusMiles(parseInt(e.target.value) || 25)}
+                        placeholder="25"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
 
             <div className="space-y-2">
               <Label htmlFor="phone">Phone *</Label>
