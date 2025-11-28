@@ -456,14 +456,20 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                             <X className="h-3 w-3" />
                           </Button>
                         </td>
-                        <td className="p-3 font-semibold whitespace-nowrap">CPC ${googleCPC.toFixed(2)}</td>
+                        <td className="p-3 font-semibold whitespace-nowrap">Google CPC</td>
+                        <td className="p-3 font-semibold text-blue-600 whitespace-nowrap">${googleCPC.toFixed(2)}</td>
+                        <td className="p-3"></td>
+                        <td className="p-3"></td>
+                        <td className="p-3"></td>
+                      </tr>
+                      <tr className="border-b bg-muted/30">
+                        <td className="p-3"></td>
                         <td className="text-center p-3 font-medium">Non Exclusive</td>
                         <td className="text-center p-3 font-medium">Semi-Exclusive</td>
                         <td className="text-center p-3 font-medium">Exclusive</td>
                         <td className="p-3"></td>
                       </tr>
                       <tr className="border-b">
-                        <td className="p-3"></td>
                         <td className="p-3 font-medium">Cost per Lead</td>
                         <td className="text-center p-3">${nonExclusiveCost.toFixed(2)}</td>
                         <td className="text-center p-3">${semiExclusiveCost.toFixed(2)}</td>
@@ -471,7 +477,6 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                         <td className="p-3"></td>
                       </tr>
                       <tr className="border-b">
-                        <td className="p-3"></td>
                         <td className="p-3 font-medium">No. of Leads</td>
                         <td className="text-center p-3">
                           <Input
@@ -506,7 +511,6 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                         <td className="text-right p-3 font-semibold">Total</td>
                       </tr>
                       <tr>
-                        <td className="p-3"></td>
                         <td className="p-3 font-medium">Total</td>
                         <td className="text-center p-3 font-semibold">${((quantities.nonExclusive || 0) * nonExclusiveCost).toFixed(2)}</td>
                         <td className="text-center p-3 font-semibold">${((quantities.semiExclusive || 0) * semiExclusiveCost).toFixed(2)}</td>
