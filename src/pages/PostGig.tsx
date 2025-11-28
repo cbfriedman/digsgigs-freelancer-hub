@@ -36,6 +36,9 @@ const PostGig = () => {
   const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
   const [documents, setDocuments] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [keywordInput, setKeywordInput] = useState("");
+  const [categoryName, setCategoryName] = useState<string>("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -108,6 +111,21 @@ const PostGig = () => {
         toast.error("Minimum budget cannot be greater than maximum budget");
         setLoading(false);
         return;
+      }
+
+      // Fetch category name if we have a category_id
+      if (validatedData.category_id && !categoryName) {
+        const { data: categoryData } = await supabase
+          .from("categories")
+          .select("name, parent_category_id, categories!parent_category_id(name)")
+          .eq("id", validatedData.category_id)
+          .single();
+        
+        if (categoryData) {
+          const parentName = (categoryData as any).categories?.name || "";
+          const fullName = parentName ? `${parentName} → ${categoryData.name}` : categoryData.name;
+          setCategoryName(fullName);
+        }
       }
 
       // Show preview instead of submitting directly
@@ -316,6 +334,18 @@ const PostGig = () => {
     setShowPreview(false);
   };
 
+  const handleAddKeyword = () => {
+    const trimmed = keywordInput.trim();
+    if (trimmed && !keywords.includes(trimmed)) {
+      setKeywords([...keywords, trimmed]);
+      setKeywordInput("");
+    }
+  };
+
+  const handleRemoveKeyword = (keyword: string) => {
+    setKeywords(keywords.filter(k => k !== keyword));
+  };
+
   const handleAutoDetect = async () => {
     if (!formData.title || !formData.description) {
       return;
@@ -335,6 +365,7 @@ const PostGig = () => {
       if (data.category_id) {
         setSuggestedCategory(data.category_id);
         setFormData((prev) => ({ ...prev, category_id: data.category_id }));
+        setCategoryName(`${data.parent_category} → ${data.category_name}`);
         toast.success(
           <div className="space-y-1">
             <div className="font-semibold">Category detected!</div>
@@ -681,87 +712,154 @@ const PostGig = () => {
         </Card>
       </div>
 
-      {/* Preview Dialog */}
+      {/* Confirmation Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Preview Your Gig Post</DialogTitle>
+            <DialogTitle className="text-2xl">Review & Confirm Your Gig</DialogTitle>
+            <p className="text-muted-foreground">Please review all details before posting</p>
           </DialogHeader>
           
-          <div className="space-y-6">
-            <Alert>
-              <AlertDescription>
-                This is how your gig will appear to Diggers. Review it carefully before posting.
-              </AlertDescription>
-            </Alert>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <Badge variant="outline">{formData.category_id || "Uncategorized"}</Badge>
+          <div className="space-y-6 py-4">
+            {/* AI-Detected Category */}
+            {categoryName && (
+              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary">AI Detected</Badge>
+                  <span className="text-sm font-medium">Category</span>
                 </div>
-                <CardTitle className="text-2xl">{formData.title}</CardTitle>
-                <CardDescription className="text-base mt-2">
-                  {formData.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">{formData.location}</span>
+                <p className="text-lg font-semibold">{categoryName}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This category was automatically selected based on your gig description
+                </p>
+              </div>
+            )}
+
+            {/* Gig Details */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-lg mb-1">{formData.title}</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{formData.description}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <MapPin className="h-4 w-4" />
+                    <span className="font-medium">Location</span>
+                  </div>
+                  <p>{formData.location}</p>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-accent" />
-                    <span className="font-semibold">{formatBudget()}</span>
+                <div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Clock className="h-4 w-4" />
+                    <span className="font-medium">Timeline</span>
                   </div>
-                  {formData.timeline && (
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">{formData.timeline}</span>
-                    </div>
-                  )}
+                  <p>{formData.timeline}</p>
                 </div>
+              </div>
+              
+              <div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <DollarSign className="h-4 w-4" />
+                  <span className="font-medium">Budget</span>
+                </div>
+                <p>{formatBudget()}</p>
+              </div>
+              
+              {formData.deadline && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Deadline</div>
+                  <p>{new Date(formData.deadline).toLocaleDateString()}</p>
+                </div>
+              )}
+              
+              {formData.contact_preferences && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Contact Preferences</div>
+                  <p>{formData.contact_preferences}</p>
+                </div>
+              )}
 
-                {formData.deadline && (
-                  <div className="text-sm">
-                    <span className="font-semibold">Deadline:</span> {new Date(formData.deadline).toLocaleDateString()}
+              {documents.length > 0 && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-2">Documents ({documents.length})</div>
+                  <div className="space-y-1">
+                    {documents.map((doc, idx) => (
+                      <div key={idx} className="text-sm p-2 bg-muted/50 rounded flex items-center gap-2">
+                        <span className="text-xs">📄</span>
+                        {doc.name}
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {formData.contact_preferences && (
-                  <div className="text-sm">
-                    <span className="font-semibold">Contact Preferences:</span>
-                    <p className="mt-1 text-muted-foreground">{formData.contact_preferences}</p>
-                  </div>
-                )}
-
-                {formData.requestEscrow && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span className="font-semibold text-sm">Escrow Protection Requested</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Payment will be held securely and released as milestones are completed (9% escrow fee applies to digger)
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={handleCancelPreview}>
-                Cancel
-              </Button>
-              <Button variant="outline" onClick={handleEdit}>
-                Edit Post
-              </Button>
-              <Button onClick={handleApproveAndPost} disabled={loading}>
-                {loading ? "Posting..." : "Approve & Post"}
-              </Button>
+                </div>
+              )}
+              
+              {formData.requestEscrow && (
+                <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <span className="text-sm">Escrow Protection Requested</span>
+                </div>
+              )}
             </div>
+
+            {/* Keywords Section */}
+            <div className="p-4 bg-muted/30 rounded-lg border">
+              <div className="mb-3">
+                <Label className="text-base font-semibold">Keywords (Optional)</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Add relevant keywords to help professionals find your gig
+                </p>
+              </div>
+              
+              <div className="flex gap-2 mb-3">
+                <Input
+                  placeholder="e.g., urgent, commercial, licensed"
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                />
+                <Button type="button" onClick={handleAddKeyword} variant="secondary">
+                  Add
+                </Button>
+              </div>
+
+              {keywords.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {keywords.map((keyword) => (
+                    <Badge 
+                      key={keyword} 
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => handleRemoveKeyword(keyword)}
+                    >
+                      {keyword} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Confirmation Message */}
+            <Alert>
+              <AlertDescription>
+                By posting this gig, you confirm that all information is accurate and you agree to our Terms of Service. 
+                Your gig will be matched with relevant professionals using AI.
+              </AlertDescription>
+            </Alert>
+          </div>
+          
+          <div className="flex gap-3 justify-end pt-4 border-t">
+            <Button variant="outline" onClick={handleCancelPreview}>
+              Cancel
+            </Button>
+            <Button variant="outline" onClick={handleEdit}>
+              Edit Details
+            </Button>
+            <Button onClick={handleApproveAndPost} disabled={loading || geocoding || uploading}>
+              {loading || geocoding || uploading ? "Posting..." : "Confirm & Post Gig"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
