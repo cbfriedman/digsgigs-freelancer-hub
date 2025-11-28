@@ -60,6 +60,7 @@ const EditDiggerProfile = () => {
   const [serviceZipCodes, setServiceZipCodes] = useState("");
   const [serviceRadiusCenter, setServiceRadiusCenter] = useState("");
   const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
+  const [country, setCountry] = useState("United States");
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -158,6 +159,7 @@ const EditDiggerProfile = () => {
           setServiceRadiusCenter(profile.service_radius_center || "");
           setServiceRadiusMiles(profile.service_radius_miles || 25);
         }
+        setCountry(profile.country || "United States");
         
         // Check for keywords from sessionStorage first (from category browser)
         const savedKeywordsData = sessionStorage.getItem('selectedKeywords');
@@ -248,6 +250,7 @@ const EditDiggerProfile = () => {
           service_zip_codes: zipCodesArray,
           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
+          country: country,
         })
         .eq("id", profileId);
 
@@ -468,6 +471,28 @@ const EditDiggerProfile = () => {
                   <p className="text-sm text-muted-foreground mt-1">
                     Define where you want to receive gig notifications
                   </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <select
+                    id="country"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  >
+                    <option value="United States">🇺🇸 United States</option>
+                    <option value="Canada">🇨🇦 Canada</option>
+                    <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                    <option value="Australia">🇦🇺 Australia</option>
+                    <option value="Germany">🇩🇪 Germany</option>
+                    <option value="France">🇫🇷 France</option>
+                    <option value="Spain">🇪🇸 Spain</option>
+                    <option value="Italy">🇮🇹 Italy</option>
+                    <option value="Mexico">🇲🇽 Mexico</option>
+                    <option value="Brazil">🇧🇷 Brazil</option>
+                    <option value="Other">🌍 Other</option>
+                  </select>
                 </div>
 
                 <RadioGroup
