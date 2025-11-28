@@ -55,6 +55,7 @@ export default function MyProfiles() {
     if (!user) return;
 
     try {
+      console.log("Loading profiles for user:", user.id);
       const { data: profilesData, error } = await retryWithBackoff(
         async () => {
           const result = await supabase
@@ -72,6 +73,7 @@ export default function MyProfiles() {
 
       if (error) throw error;
 
+      console.log("Profiles loaded:", profilesData);
       if (profilesData) {
         // Fetch stats for each profile with retry logic
         const profilesWithStats = await Promise.all(
@@ -110,11 +112,12 @@ export default function MyProfiles() {
           })
         );
 
+        console.log("Profiles with stats:", profilesWithStats);
         setProfiles(profilesWithStats);
       }
     } catch (error) {
       console.error("Error loading profiles:", error);
-      toast.error("Connection issue - retrying failed. Please check your internet connection.");
+      toast.error("Failed to load profiles. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -183,7 +186,10 @@ export default function MyProfiles() {
   };
 
   const getProfileDisplayName = (profile: ProfileWithStats) => {
-    return profile.profile_name || profile.business_name;
+    if (profile.profile_name) return profile.profile_name;
+    if (profile.business_name) return profile.business_name;
+    if (profile.profession) return profile.profession;
+    return "Unnamed Profile";
   };
 
   const getTierBadgeVariant = (tier: string | null) => {
@@ -264,7 +270,13 @@ export default function MyProfiles() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <>
+            <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Found {profiles.length} profile{profiles.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {profiles.map((profile) => (
               <Card 
                 key={profile.id} 
@@ -347,7 +359,8 @@ export default function MyProfiles() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
 
