@@ -36,6 +36,10 @@ export default function KeywordSummary() {
   const [keywords, setKeywords] = useState<SelectedKeyword[]>([]);
   const [categoryName, setCategoryName] = useState("");
   const [selections, setSelections] = useState<Map<string, LeadSelection>>(new Map());
+  
+  // Get profileId from URL params if available
+  const searchParams = new URLSearchParams(window.location.search);
+  const profileId = searchParams.get('profileId');
 
   useEffect(() => {
     const savedData = sessionStorage.getItem('selectedKeywords');
@@ -132,7 +136,7 @@ export default function KeywordSummary() {
           <div className="mb-8">
             <Button
               variant="ghost"
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate(profileId ? `/digger/${profileId}` : '/pricing')}
               className="mb-4"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -249,7 +253,7 @@ export default function KeywordSummary() {
           <div className="flex justify-start">
             <Button
               variant="outline"
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate(profileId ? `/digger/${profileId}` : '/pricing')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Keyword Selection
