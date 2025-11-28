@@ -441,8 +441,8 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
               );
               
               return (
-                <div key={industry} className="rounded-lg border bg-card overflow-hidden">
-                  <table className="w-full text-sm border-collapse">
+                <div key={industry} className="rounded-lg border bg-card overflow-x-auto">
+                  <table className="w-full text-sm border-collapse min-w-[700px]">
                     <tbody>
                       <tr className="border-b bg-muted/50">
                         <td className="p-3 font-bold flex items-center justify-between">
