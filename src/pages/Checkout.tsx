@@ -32,13 +32,9 @@ export default function Checkout() {
   const profileId = searchParams.get('profileId');
 
   useEffect(() => {
-    if (!user) {
-      toast.error("Please log in to continue with checkout");
-      navigate("/register");
-      return;
-    }
-
-    // Get lead purchase selections from sessionStorage
+    console.log("Checkout useEffect running, user:", user);
+    
+    // Get lead purchase selections from sessionStorage immediately
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
     console.log("Checkout - savedSelections:", savedSelections);
     
@@ -52,17 +48,32 @@ export default function Checkout() {
     try {
       const parsedSelections = JSON.parse(savedSelections);
       console.log("Checkout - Parsed selections:", parsedSelections);
+      
+      if (!parsedSelections || parsedSelections.length === 0) {
+        console.log("Checkout - Empty selections array");
+        toast.error("No items selected");
+        navigate("/pricing");
+        return;
+      }
+      
       setSelections(parsedSelections);
       setLoading(false);
+      console.log("Checkout - Loading set to false, selections set");
     } catch (error) {
       console.error("Error parsing checkout data:", error);
       toast.error("Invalid checkout data");
       navigate("/pricing");
     }
-  }, [user, navigate]);
+  }, [navigate]);
 
   const handleCheckout = async () => {
-    if (selections.length === 0 || !user) return;
+    if (!user) {
+      toast.error("Please log in to continue");
+      navigate("/register");
+      return;
+    }
+    
+    if (selections.length === 0) return;
 
     setProcessing(true);
     try {
