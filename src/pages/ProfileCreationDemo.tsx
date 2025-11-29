@@ -3,11 +3,12 @@ import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
-import { Briefcase, Loader2 } from "lucide-react";
+import { Briefcase, Loader2, ShoppingCart, Save } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Navigation } from "@/components/Navigation";
@@ -15,10 +16,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lookupCPC } from "@/utils/cpcLookup";
 import { INDUSTRY_PRICING } from "@/config/pricing";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export default function ProfileCreationDemo() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [photoUrl, setPhotoUrl] = useState("");
   const [companyName, setCompanyName] = useState("Elite Home Services");
   const [title, setTitle] = useState("");
@@ -102,6 +107,99 @@ export default function ProfileCreationDemo() {
   // Get quantity for a keyword and type
   const getQuantity = (keyword: string, type: 'nonExclusive' | 'semiExclusive' | 'exclusive24h') => {
     return keywordQuantities[keyword]?.[type] || 0;
+  };
+
+  // Save profile configuration to cart
+  const handleAddToCart = () => {
+    if (!companyName || selectedIndustries.length === 0) {
+      toast.error("Please fill in company name and select at least one specialty");
+      return;
+    }
+
+    const cartItem = {
+      id: Date.now().toString(),
+      fullName: user?.user_metadata?.full_name || "Anonymous",
+      companyName,
+      email: user?.email || "",
+      phone: user?.user_metadata?.phone || "",
+      industries: selectedIndustries,
+      leadTierDescription: profession,
+      timestamp: new Date().toISOString()
+    };
+
+    const existingCart = JSON.parse(localStorage.getItem("profileCart") || "[]");
+    existingCart.push(cartItem);
+    localStorage.setItem("profileCart", JSON.stringify(existingCart));
+    window.dispatchEvent(new Event('storage'));
+    
+    toast.success("Profile configuration added to cart");
+  };
+
+  // Save profile
+  const handleSaveProfile = async () => {
+    if (!user) {
+      toast.error("Please log in to save your profile");
+      return;
+    }
+
+    if (!companyName || selectedIndustries.length === 0) {
+      toast.error("Please fill in company name and select at least one specialty");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Check if profile exists
+      const { data: existingProfiles } = await supabase
+        .from("digger_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      const profileData = {
+        user_id: user.id,
+        business_name: companyName,
+        custom_occupation_title: title,
+        tagline: tagline,
+        location: location,
+        keywords: selectedIndustries,
+        profession: profession,
+        offers_free_estimates: offersFreEstimates,
+        profile_image_url: photoUrl,
+        phone: user.user_metadata?.phone || "",
+        updated_at: new Date().toISOString()
+      };
+
+      if (existingProfiles && existingProfiles.length > 0) {
+        // Update existing profile
+        const { error } = await supabase
+          .from("digger_profiles")
+          .update(profileData)
+          .eq("id", existingProfiles[0].id);
+        
+        if (error) throw error;
+      } else {
+        // Insert new profile
+        const { error } = await supabase
+          .from("digger_profiles")
+          .insert(profileData);
+        
+        if (error) throw error;
+      }
+
+      toast.success("Profile saved successfully!");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Proceed to checkout
+  const handleCheckout = () => {
+    handleAddToCart();
+    navigate("/checkout");
   };
 
   return (
@@ -202,91 +300,6 @@ export default function ProfileCreationDemo() {
                       selectedIndustries={selectedIndustries}
                       onIndustriesChange={setSelectedIndustries}
                     />
-                    
-                    {selectedIndustries.length > 0 && (
-                      <div className="space-y-3 mt-4">
-                        <Label className="text-sm font-medium">Selected Keywords with Lead Types</Label>
-                        <div className="space-y-4 max-h-[500px] overflow-y-auto">
-                          {selectedIndustries.map((keyword) => {
-                            const pricing = calculatePricing(keyword);
-                            const nonExQty = getQuantity(keyword, 'nonExclusive');
-                            const semiExQty = getQuantity(keyword, 'semiExclusive');
-                            const ex24Qty = getQuantity(keyword, 'exclusive24h');
-                            const grandTotal = (nonExQty * pricing.nonExclusive) + (semiExQty * pricing.semiExclusive) + (ex24Qty * pricing.exclusive24h);
-                            
-                            return (
-                              <div key={keyword} className="rounded-lg border bg-card overflow-x-auto">
-                                {/* Lead purchase format table - updated layout */}
-                                <table className="w-full text-sm border-collapse min-w-[700px]">
-                                  <tbody>
-                                    <tr className="border-b bg-muted/50">
-                                      <td className="p-3 font-bold">{keyword}</td>
-                                      <td className="p-3 font-semibold">Google CPC</td>
-                                      <td className="p-3 font-semibold text-blue-600">${pricing.googleCPC.toFixed(2)}</td>
-                                      <td className="p-3"></td>
-                                      <td className="p-3"></td>
-                                      <td className="p-3"></td>
-                                    </tr>
-                                    <tr className="border-b bg-muted/30">
-                                      <td className="p-3"></td>
-                                      <td className="text-center p-3 font-medium">Non Exclusive</td>
-                                      <td className="text-center p-3 font-medium">Semi-Exclusive</td>
-                                      <td className="text-center p-3 font-medium">Exclusive</td>
-                                      <td className="p-3"></td>
-                                    </tr>
-                                    <tr className="border-b">
-                                      <td className="p-3 font-medium">Cost per Lead</td>
-                                      <td className="text-center p-3">${pricing.nonExclusive.toFixed(2)}</td>
-                                      <td className="text-center p-3">${pricing.semiExclusive.toFixed(2)}</td>
-                                      <td className="text-center p-3">${pricing.exclusive24h.toFixed(2)}</td>
-                                      <td className="p-3"></td>
-                                    </tr>
-                                    <tr className="border-b">
-                                      <td className="p-3 font-medium">No. of Leads</td>
-                                      <td className="text-center p-3">
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={nonExQty}
-                                          onChange={(e) => updateQuantity(keyword, 'nonExclusive', parseInt(e.target.value) || 0)}
-                                          className="w-20 h-9 text-center mx-auto"
-                                        />
-                                      </td>
-                                      <td className="text-center p-3">
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={semiExQty}
-                                          onChange={(e) => updateQuantity(keyword, 'semiExclusive', parseInt(e.target.value) || 0)}
-                                          className="w-20 h-9 text-center mx-auto"
-                                        />
-                                      </td>
-                                      <td className="text-center p-3">
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={ex24Qty}
-                                          onChange={(e) => updateQuantity(keyword, 'exclusive24h', parseInt(e.target.value) || 0)}
-                                          className="w-20 h-9 text-center mx-auto"
-                                        />
-                                      </td>
-                                      <td className="text-right p-3 font-semibold">Total</td>
-                                    </tr>
-                                    <tr>
-                                      <td className="p-3 font-medium">Total</td>
-                                      <td className="text-center p-3 font-semibold">${(nonExQty * pricing.nonExclusive).toFixed(2)}</td>
-                                      <td className="text-center p-3 font-semibold">${(semiExQty * pricing.semiExclusive).toFixed(2)}</td>
-                                      <td className="text-center p-3 font-semibold">${(ex24Qty * pricing.exclusive24h).toFixed(2)}</td>
-                                      <td className="text-right p-3 font-bold text-primary">${grandTotal.toFixed(2)}</td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Free Estimates Option */}
@@ -338,6 +351,49 @@ export default function ProfileCreationDemo() {
                     profession={profession}
                     keywords={selectedIndustries}
                   />
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <Card className="border-2 border-primary/30 bg-primary/5">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleSaveProfile}
+                      disabled={saving}
+                      className="flex-1"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Profile
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleAddToCart}
+                      className="flex-1"
+                    >
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Add to Cart
+                    </Button>
+                    <Button 
+                      onClick={handleCheckout}
+                      className="flex-1 bg-primary hover:bg-primary/90"
+                    >
+                      Proceed to Checkout
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-3">
+                    Save your profile or add to cart to continue with multiple configurations
+                  </p>
                 </CardContent>
               </Card>
             </div>
