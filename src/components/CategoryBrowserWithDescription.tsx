@@ -10,7 +10,7 @@ import { Target, Plus, Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { generateKeywordSuggestions } from "@/utils/keywordSuggestions";
 import { getIndustrySpecialties, hasIndustrySpecialties } from "@/utils/industrySpecialties";
 import { SpecialtyRequestForm } from "./SpecialtyRequestForm";
@@ -43,6 +43,8 @@ interface CustomCategory {
 export const CategoryBrowserWithDescription = () => {
   const { user, refreshRoles } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const existingProfileId = searchParams.get('profileId');
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -641,55 +643,84 @@ export const CategoryBrowserWithDescription = () => {
                   setIsProcessing(true);
 
                   try {
-                    // 1. Check if user has digger role, if not, assign it
-                    const { data: existingRoles } = await supabase
-                      .from('user_app_roles')
-                      .select('app_role')
-                      .eq('user_id', user.id);
+                    // Check if we're editing an existing profile or creating new
+                    if (existingProfileId) {
+                      // UPDATE existing profile
+                      const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
+                        ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
+                        : null;
 
-                    const hasDiggerRole = existingRoles?.some(r => r.app_role === 'digger');
+                      const { error: updateError } = await supabase
+                        .from('digger_profiles')
+                        .update({
+                          keywords: selected,
+                          profession: selectedSpecialty,
+                          service_zip_codes: zipCodesArray,
+                          service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
+                          service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
+                          country: country,
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq('id', existingProfileId);
 
-                    if (!hasDiggerRole) {
-                      const { error: roleError } = await supabase
+                      if (updateError) throw updateError;
+                      
+                      toast.success(`Profile updated with ${selected.length} keywords!`);
+
+                      // Navigate back to the profile detail page
+                      navigate(`/digger/${existingProfileId}`, { replace: true });
+                    } else {
+                      // CREATE new profile
+                      // 1. Check if user has digger role, if not, assign it
+                      const { data: existingRoles } = await supabase
                         .from('user_app_roles')
+                        .select('app_role')
+                        .eq('user_id', user.id);
+
+                      const hasDiggerRole = existingRoles?.some(r => r.app_role === 'digger');
+
+                      if (!hasDiggerRole) {
+                        const { error: roleError } = await supabase
+                          .from('user_app_roles')
+                          .insert({
+                            user_id: user.id,
+                            app_role: 'digger'
+                          });
+
+                        if (roleError) throw roleError;
+                        toast.success("Registered as Digger!");
+                      }
+
+                      // 2. Create a new profile
+                      const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
+                        ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
+                        : null;
+
+                      const { data: newProfile, error: createError } = await supabase
+                        .from('digger_profiles')
                         .insert({
                           user_id: user.id,
-                          app_role: 'digger'
-                        });
+                          business_name: profileName.trim(),
+                          profile_name: profileName.trim(),
+                          profession: selectedSpecialty,
+                          keywords: selected,
+                          location: 'Not specified',
+                          phone: 'Not specified',
+                          service_zip_codes: zipCodesArray,
+                          service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
+                          service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
+                          country: country,
+                        })
+                        .select()
+                        .single();
 
-                      if (roleError) throw roleError;
-                      toast.success("Registered as Digger!");
+                      if (createError) throw createError;
+                      
+                      toast.success(`Profile "${profileName.trim()}" created with ${selected.length} keywords!`);
+
+                      // Navigate to My Profiles page
+                      navigate('/my-profiles', { replace: true });
                     }
-
-                    // 2. Always create a new profile (never update existing)
-                    const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
-                      ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
-                      : null;
-
-                    const { data: newProfile, error: createError } = await supabase
-                      .from('digger_profiles')
-                      .insert({
-                        user_id: user.id,
-                        business_name: profileName.trim(),
-                        profile_name: profileName.trim(),
-                        profession: selectedSpecialty,
-                        keywords: selected,
-                        location: 'Not specified',
-                        phone: 'Not specified',
-                        service_zip_codes: zipCodesArray,
-                        service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
-                        service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
-                        country: country,
-                      })
-                      .select()
-                      .single();
-
-                    if (createError) throw createError;
-                    
-                    toast.success(`Profile "${profileName.trim()}" created with ${selected.length} keywords!`);
-
-                    // Navigate to My Profiles page immediately
-                    navigate('/my-profiles', { replace: true });
                   } catch (error: any) {
                     console.error("Error saving Digger profile:", error);
                     toast.error(error.message || "Failed to save profile");
