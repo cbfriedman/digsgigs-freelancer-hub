@@ -26,6 +26,7 @@ const PostGig = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [escrowRequested, setEscrowRequested] = useState(false);
   
   // Step 1 data
   const [professionDescription, setProfessionDescription] = useState("");
@@ -110,6 +111,7 @@ const PostGig = () => {
       const { data, error } = await supabase.functions.invoke("suggest-keywords-from-description", {
         body: {
           description: detailedDescription,
+          location: zipcode,
         },
       });
 
@@ -232,6 +234,7 @@ const PostGig = () => {
           confirmation_sent_at: new Date().toISOString(),
           is_confirmed_lead: false,
           status: "pending_confirmation",
+          escrow_requested_by_consumer: escrowRequested,
         })
         .select()
         .single();
@@ -664,6 +667,32 @@ const PostGig = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Escrow Protection */}
+                <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="escrow"
+                      checked={escrowRequested}
+                      onChange={(e) => setEscrowRequested(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-gray-300"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label htmlFor="escrow" className="cursor-pointer font-medium">
+                        Request Escrow Protection
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Secure your payment with escrow. Note: This may result in bids that are approximately 8% higher to cover the escrow fee.
+                      </p>
+                    </div>
+                  </div>
+                  {escrowRequested && (
+                    <div className="text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/20 p-3 rounded border border-amber-200 dark:border-amber-800">
+                      ⚠️ Diggers typically increase their bid amounts to cover the 8% escrow fee. Expect bids to be approximately 8% higher than without escrow.
+                    </div>
+                  )}
+                </div>
 
                 {/* Terms and Conditions */}
                 <div className="border-t pt-6 mt-6">
