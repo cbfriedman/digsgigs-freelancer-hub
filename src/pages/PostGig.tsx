@@ -25,6 +25,7 @@ const PostGig = () => {
   const [enhancingDescription, setEnhancingDescription] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   
   // Step 1 data
   const [professionDescription, setProfessionDescription] = useState("");
@@ -173,6 +174,14 @@ const PostGig = () => {
 
   const handleRemoveKeyword = (keyword: string) => {
     setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
+  };
+
+  const handleShowPreview = () => {
+    if (!termsAccepted) {
+      toast.error("Please accept the Terms and Conditions to continue");
+      return;
+    }
+    setShowPreview(true);
   };
 
 
@@ -753,12 +762,135 @@ const PostGig = () => {
                     Back
                   </Button>
                   <Button
+                    onClick={handleShowPreview}
+                    disabled={loading}
+                    className="flex-1"
+                    size="lg"
+                  >
+                    Preview Gig
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* PREVIEW: Review before submission */}
+            {showPreview && (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold mb-2">Review Your Gig</h2>
+                  <p className="text-muted-foreground">Please review all details before submitting for confirmation</p>
+                </div>
+
+                <Card className="border-2">
+                  <CardContent className="p-6 space-y-5">
+                    {detectedCategory && (
+                      <div className="pb-4 border-b">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            AI Detected Category
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-medium">
+                          {detectedCategory.parentName} → {detectedCategory.name}
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Project Title</h3>
+                      <p className="text-lg font-medium">{projectTitle}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">AI-Enhanced Description</h3>
+                      <p className="whitespace-pre-wrap text-sm">{detailedDescription}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Location</h3>
+                        <p className="text-sm">{zipcode}</p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Timeline</h3>
+                        <p className="text-sm">{serviceStart} - {duration}</p>
+                      </div>
+                    </div>
+
+                    {(budgetMin || budgetMax) && (
+                      <div>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Budget Range</h3>
+                        <p className="text-sm">
+                          ${budgetMin || '0'} - ${budgetMax || '0'}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Contact Email</h3>
+                        <p className="text-sm">{email}</p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Contact Phone</h3>
+                        <p className="text-sm">{phone}</p>
+                      </div>
+                    </div>
+
+                    {selectedKeywords.length > 0 && (
+                      <div className="pt-2">
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-2">Selected Keywords ({selectedKeywords.length})</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedKeywords.map((keyword, idx) => (
+                            <Badge key={idx} variant="secondary">{keyword}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {hourlyBasis && (
+                      <div>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Hourly Basis</h3>
+                        <p className="text-sm capitalize">{hourlyBasis}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                  <p className="text-sm">
+                    <strong>Next Step:</strong> A confirmation email will be sent to <strong>{email}</strong>. 
+                    Please click the confirmation link in the email to activate your gig and start receiving inquiries from qualified professionals.
+                  </p>
+                </div>
+
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowPreview(false)}
+                    className="flex-1"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Edit
+                  </Button>
+                  <Button
+                    type="button"
                     onClick={handleFinalSubmit}
                     disabled={loading}
                     className="flex-1"
                     size="lg"
                   >
-                    {loading ? "Posting..." : "Post Gig"}
+                    {loading ? (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit for Confirmation"
+                    )}
                   </Button>
                 </div>
               </div>
