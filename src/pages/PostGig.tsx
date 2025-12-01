@@ -349,10 +349,10 @@ const PostGig = () => {
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="profession">What type of professional are you looking for? *</Label>
+                  <Label htmlFor="profession">Describe your gig in detail *</Label>
                   <Textarea
                     id="profession"
-                    placeholder="Describe the type of professional you need (e.g., 'I need someone to refinance my mortgage', 'Looking for an electrician to rewire my kitchen')"
+                    placeholder="Describe your project or service need in detail (e.g., 'I need help refinancing my mortgage to get a better rate', 'Looking for an electrician to rewire my kitchen and install new outlets')"
                     value={professionDescription}
                     onChange={(e) => setProfessionDescription(e.target.value)}
                     rows={4}
