@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { description } = await req.json();
+    const { description, location } = await req.json();
 
     if (!description || typeof description !== 'string') {
       return new Response(
@@ -26,6 +26,7 @@ serve(async (req) => {
     }
 
     console.log("Analyzing description:", description);
+    console.log("Location/Zipcode:", location);
 
     const systemPrompt = `You are a professional services keyword analyzer. Based on the user's description of their business or specialty, suggest 5-10 relevant professional service keywords from common industries like:
 - Legal services (lawyer, attorney specialties)
@@ -39,7 +40,13 @@ serve(async (req) => {
 - Fitness/wellness
 - Beauty/personal care
 
-Return specific, searchable keywords that potential customers would use to find this service. Be specific - for example, instead of just "lawyer", suggest "personal injury lawyer" or "DUI lawyer".`;
+Return specific, searchable keywords that potential customers would use to find this service. Be specific - for example, instead of just "lawyer", suggest "personal injury lawyer" or "DUI lawyer".
+
+IMPORTANT: If a location or zipcode is provided, ensure the suggested keywords are geographically relevant to that location. For example, if the zipcode is in Northern California, do NOT suggest keywords specific to Southern California (e.g., "Los Angeles lawyer" when zipcode is in San Francisco area). Use location-agnostic keywords or keywords specific to the provided location area.`;
+
+    const userPrompt = location 
+      ? `Based on this description and location (${location}), suggest relevant professional service keywords that are geographically appropriate: "${description}"`
+      : `Based on this description, suggest relevant professional service keywords: "${description}"`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -51,7 +58,7 @@ Return specific, searchable keywords that potential customers would use to find 
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Based on this description, suggest relevant professional service keywords: "${description}"` }
+          { role: "user", content: userPrompt }
         ],
         tools: [
           {
