@@ -165,7 +165,7 @@ const PostGig = () => {
         }
       }
 
-      // Create gig
+      // Create gig with pending confirmation status
       const { data: gigData, error: gigError } = await supabase
         .from("gigs")
         .insert({
@@ -181,7 +181,10 @@ const PostGig = () => {
           category_id: detectedCategory?.id,
           consumer_phone: phone,
           consumer_email: email,
-          status: "open",
+          confirmation_status: "pending",
+          confirmation_sent_at: new Date().toISOString(),
+          is_confirmed_lead: false,
+          status: "pending_confirmation",
         })
         .select()
         .single();
@@ -209,37 +212,28 @@ const PostGig = () => {
         }
       }
 
-      // Match diggers
-      toast.info("Matching with professionals...");
-      try {
-        const { data: matchData } = await supabase.functions.invoke("match-diggers-semantic", {
-          body: {
-            gig_title: projectTitle,
-            gig_description: detailedDescription,
-            gig_category: detectedCategory?.name || "",
-          },
-        });
+      // Send confirmation email
+      toast.info("Sending confirmation email...");
+      const { error: emailError } = await supabase.functions.invoke("send-gig-confirmation", {
+        body: {
+          gigId: gigData.id,
+          email: email,
+          gigTitle: projectTitle,
+          gigDescription: detailedDescription,
+          location: zipcode,
+          budgetMin: budgetMin ? parseFloat(budgetMin.replace(/[^0-9.]/g, '')) : undefined,
+          budgetMax: budgetMax ? parseFloat(budgetMax.replace(/[^0-9.]/g, '')) : undefined,
+          keywords: selectedKeywords,
+        },
+      });
 
-        if (matchData?.matches && matchData.matches.length > 0) {
-          for (const match of matchData.matches) {
-            await supabase.rpc('create_notification', {
-              p_user_id: match.user_id,
-              p_title: 'New Gig Match',
-              p_message: `${match.business_name}, we found a gig that matches your expertise! "${projectTitle}"`,
-              p_type: 'new_gig',
-              p_link: `/gig/${gigData.id}`,
-              p_metadata: {
-                gig_id: gigData.id,
-                confidence: match.confidence,
-              }
-            });
-          }
-        }
-      } catch (matchError) {
-        console.error("Error matching diggers:", matchError);
+      if (emailError) {
+        console.error("Error sending confirmation email:", emailError);
+        toast.error("Failed to send confirmation email. Please try again.");
+        return;
       }
 
-      toast.success("Gig posted successfully!");
+      toast.success("Confirmation email sent! Please check your inbox to confirm your gig.");
       navigate("/");
     } catch (error: any) {
       console.error("Error posting gig:", error);
