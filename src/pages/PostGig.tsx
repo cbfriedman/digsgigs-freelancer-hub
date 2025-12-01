@@ -17,6 +17,7 @@ import { z } from "zod";
 import { geocodeAddress } from "@/utils/geocoding";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
+import { DynamicIntakeForm } from "@/components/DynamicIntakeForm";
 
 const gigSchema = z.object({
   title: z.string().trim().min(10, "Title must be at least 10 characters").max(100, "Title must be less than 100 characters"),
@@ -39,6 +40,7 @@ const PostGig = () => {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
   const [categoryName, setCategoryName] = useState<string>("");
+  const [intakeResponses, setIntakeResponses] = useState<Record<string, any>>({});
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -262,6 +264,45 @@ const PostGig = () => {
 
       if (error) throw error;
 
+      // Save intake form responses if any
+      if (Object.keys(intakeResponses).length > 0 && categoryName) {
+        try {
+          const industryName = categoryName.split(' → ')[1] || categoryName;
+          
+          // Get template to verify questions belong to it
+          const { data: template } = await supabase
+            .from('intake_form_templates')
+            .select('id')
+            .eq('industry_name', industryName)
+            .eq('is_active', true)
+            .single();
+
+          if (template) {
+            // Insert each response
+            const responseInserts = Object.entries(intakeResponses).map(([questionId, answer]) => ({
+              gig_id: gigData.id,
+              question_id: questionId,
+              answer_text: typeof answer === 'string' ? answer : null,
+              answer_options: typeof answer === 'object' ? answer : null,
+            }));
+
+            const { error: responseError } = await supabase
+              .from('intake_form_responses')
+              .insert(responseInserts);
+
+            if (responseError) {
+              console.error('Error saving intake responses:', responseError);
+              // Don't fail the gig posting if response saving fails
+            } else {
+              console.log('Successfully saved intake form responses');
+            }
+          }
+        } catch (intakeError) {
+          console.error('Error processing intake responses:', intakeError);
+          // Don't fail the gig posting if intake processing fails
+        }
+      }
+
       // Match diggers using AI semantic matching
       toast.info("Analyzing gig and matching with relevant professionals...");
       
@@ -466,6 +507,20 @@ const PostGig = () => {
                   {formData.description.length}/2000 characters
                 </p>
               </div>
+
+              {/* Dynamic Intake Form - shows after category is detected */}
+              {categoryName && (
+                <div className="space-y-2 p-6 border rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Badge variant="secondary">Industry-Specific Questions</Badge>
+                  </div>
+                  <DynamicIntakeForm
+                    industryName={categoryName.split(' → ')[1] || categoryName}
+                    onResponsesChange={setIntakeResponses}
+                    initialResponses={intakeResponses}
+                  />
+                </div>
+              )}
 
                 <div className="space-y-2">
                   <Label htmlFor="location" className="flex items-center gap-2">
