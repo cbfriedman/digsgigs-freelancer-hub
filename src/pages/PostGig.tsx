@@ -22,6 +22,9 @@ const PostGig = () => {
   const [loading, setLoading] = useState(false);
   const [detectingCategory, setDetectingCategory] = useState(false);
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
+  const [enhancingDescription, setEnhancingDescription] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   
   // Step 1 data
   const [professionDescription, setProfessionDescription] = useState("");
@@ -129,6 +132,36 @@ const PostGig = () => {
     }
   };
 
+  const handleEnhanceDescription = async () => {
+    if (!detailedDescription.trim()) {
+      toast.error("Please enter a description first");
+      return;
+    }
+
+    setEnhancingDescription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enhance-gig-description", {
+        body: {
+          description: detailedDescription,
+          title: projectTitle,
+          category: detectedCategory?.name || "",
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.enhancedDescription) {
+        setDetailedDescription(data.enhancedDescription);
+        toast.success("Description enhanced successfully!");
+      }
+    } catch (error: any) {
+      console.error("Description enhancement error:", error);
+      toast.error("Failed to enhance description. Please try again.");
+    } finally {
+      setEnhancingDescription(false);
+    }
+  };
+
   const handleAddCustomKeyword = () => {
     const trimmed = customKeyword.trim();
     if (trimmed && !selectedKeywords.includes(trimmed)) {
@@ -144,6 +177,11 @@ const PostGig = () => {
 
 
   const handleFinalSubmit = async () => {
+    if (!termsAccepted) {
+      toast.error("Please accept the Terms and Conditions to proceed");
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -418,6 +456,29 @@ const PostGig = () => {
                     rows={6}
                     required
                   />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEnhanceDescription}
+                    disabled={enhancingDescription || !detailedDescription.trim()}
+                    className="w-full sm:w-auto"
+                  >
+                    {enhancingDescription ? (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
+                        Enhancing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        AI Enhance Description
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Let AI make your description more comprehensive and professional
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -594,6 +655,93 @@ const PostGig = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Terms and Conditions */}
+                <div className="border-t pt-6 mt-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="terms"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-gray-300"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="terms" className="text-sm font-normal cursor-pointer">
+                          I agree to the{" "}
+                          <button
+                            type="button"
+                            onClick={() => setShowTerms(!showTerms)}
+                            className="text-primary underline hover:text-primary/80"
+                          >
+                            Terms and Conditions
+                          </button>
+                        </Label>
+                      </div>
+                    </div>
+
+                    {showTerms && (
+                      <div className="bg-muted/50 rounded-lg p-4 max-h-64 overflow-y-auto text-sm space-y-3">
+                        <h4 className="font-semibold text-base">Digs and Gigs - Terms and Conditions for Gig Posting</h4>
+                        
+                        <div>
+                          <p className="font-medium">1. Gig Information Accuracy</p>
+                          <p className="text-muted-foreground">You confirm that all information provided in your gig posting is accurate, complete, and truthful. Misrepresentation of project details, budget, location, or requirements may result in account suspension.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">2. Lead Purchase and Contact</p>
+                          <p className="text-muted-foreground">By posting this gig, you agree that qualified professionals (Diggers) may purchase your lead at our standard rates. You will be contacted by professionals who have paid to access your project details.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">3. Payment Obligation</p>
+                          <p className="text-muted-foreground">There is no charge to post a gig. However, you are responsible for payment to any professional you choose to hire for services rendered. Digs and Gigs is a lead generation marketplace and does not handle project payments directly.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">4. Communication Responsibility</p>
+                          <p className="text-muted-foreground">You agree to respond to legitimate inquiries from professionals in a timely manner. Failure to communicate or respond may impact your account standing and future gig visibility.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">5. Professional Vetting</p>
+                          <p className="text-muted-foreground">While Digs and Gigs matches you with professionals based on expertise and location, you are responsible for conducting your own due diligence, including verifying licenses, insurance, references, and qualifications before hiring.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">6. Dispute Resolution</p>
+                          <p className="text-muted-foreground">Any disputes between you and a professional must be resolved directly. Digs and Gigs is not liable for project outcomes, quality of work, or financial disputes between parties.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">7. Gig Modification and Cancellation</p>
+                          <p className="text-muted-foreground">Once confirmed and live, your gig can be edited or cancelled at any time. However, professionals who have already purchased your lead will retain access to your contact information.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">8. Prohibited Content</p>
+                          <p className="text-muted-foreground">Gigs must not contain illegal activities, discriminatory language, fraudulent offers, or content that violates our community guidelines. Violation may result in immediate removal and account termination.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">9. Data Usage</p>
+                          <p className="text-muted-foreground">Your gig information will be used to match you with qualified professionals. By posting, you consent to your contact information being shared with professionals who purchase your lead.</p>
+                        </div>
+
+                        <div>
+                          <p className="font-medium">10. Limitation of Liability</p>
+                          <p className="text-muted-foreground">Digs and Gigs provides a marketplace platform only. We are not liable for project outcomes, professional conduct, safety issues, property damage, or any other matters arising from work performed.</p>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground pt-3 border-t">
+                          By checking the box above, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. Last updated: December 2025.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 <div className="flex gap-4">
                   <Button
