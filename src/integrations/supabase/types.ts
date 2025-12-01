@@ -1107,6 +1107,130 @@ export type Database = {
         }
         Relationships: []
       }
+      intake_form_questions: {
+        Row: {
+          conditional_logic: Json | null
+          created_at: string | null
+          display_order: number
+          id: string
+          is_required: boolean | null
+          options: Json | null
+          question_text: string
+          question_type: string
+          template_id: string
+        }
+        Insert: {
+          conditional_logic?: Json | null
+          created_at?: string | null
+          display_order: number
+          id?: string
+          is_required?: boolean | null
+          options?: Json | null
+          question_text: string
+          question_type: string
+          template_id: string
+        }
+        Update: {
+          conditional_logic?: Json | null
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_required?: boolean | null
+          options?: Json | null
+          question_text?: string
+          question_type?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_form_questions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "intake_form_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_form_responses: {
+        Row: {
+          answer_options: Json | null
+          answer_text: string | null
+          created_at: string | null
+          gig_id: string
+          id: string
+          question_id: string
+        }
+        Insert: {
+          answer_options?: Json | null
+          answer_text?: string | null
+          created_at?: string | null
+          gig_id: string
+          id?: string
+          question_id: string
+        }
+        Update: {
+          answer_options?: Json | null
+          answer_text?: string | null
+          created_at?: string | null
+          gig_id?: string
+          id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_form_responses_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_form_responses_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "intake_form_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_form_templates: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          industry_name: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          industry_name: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          industry_name?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_form_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keyword_analytics: {
         Row: {
           category_name: string | null
