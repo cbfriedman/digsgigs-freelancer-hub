@@ -142,10 +142,6 @@ const PostGig = () => {
     setSelectedKeywords(selectedKeywords.filter(k => k !== keyword));
   };
 
-  const handleCalculate = () => {
-    toast.info(`Calculating costs for ${selectedKeywords.length} keywords...`);
-    // Future: Add cost calculation logic
-  };
 
   const handleFinalSubmit = async () => {
     setLoading(true);
@@ -432,7 +428,7 @@ const PostGig = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="budgetMin">Min Budget ($)</Label>
+                    <Label htmlFor="budgetMin">Min Budget ($) <span className="text-muted-foreground text-sm">(Optional)</span></Label>
                     <Input
                       id="budgetMin"
                       placeholder="5,000"
@@ -441,7 +437,7 @@ const PostGig = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="budgetMax">Max Budget ($)</Label>
+                    <Label htmlFor="budgetMax">Max Budget ($) <span className="text-muted-foreground text-sm">(Optional)</span></Label>
                     <Input
                       id="budgetMax"
                       placeholder="10,000"
@@ -604,15 +600,6 @@ const PostGig = () => {
                     </div>
                   </div>
                 )}
-
-                <Button
-                  variant="outline"
-                  onClick={handleCalculate}
-                  className="w-full"
-                  disabled={selectedKeywords.length === 0}
-                >
-                  Calculate Costs
-                </Button>
 
                 <div className="flex gap-4">
                   <Button
