@@ -28,6 +28,7 @@ interface SelectedKeyword {
 }
 
 interface LeadSelection {
+  id: string; // Unique ID for each selection entry
   keyword: string;
   industry: string;
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
@@ -35,13 +36,16 @@ interface LeadSelection {
   isConfirmed: boolean;
 }
 
+// Generate a unique ID for selection entries
+const generateSelectionId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
 export default function KeywordSummary() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [keywords, setKeywords] = useState<SelectedKeyword[]>([]);
   const [categoryName, setCategoryName] = useState("");
-  const [selections, setSelections] = useState<Map<string, LeadSelection>>(new Map());
+  const [selections, setSelections] = useState<LeadSelection[]>([]);
   const [isAddingKeyword, setIsAddingKeyword] = useState(false);
   const [newKeyword, setNewKeyword] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -67,18 +71,16 @@ export default function KeywordSummary() {
     return fallbackCategory || "General";
   };
 
-  // Initialize keywords from selections
+  // Initialize selections from keywords (one default entry per keyword)
   const initializeSelectionsFromKeywords = (loadedKeywords: SelectedKeyword[]) => {
-    const initialSelections = new Map<string, LeadSelection>();
-    loadedKeywords.forEach((kw: SelectedKeyword) => {
-      initialSelections.set(kw.keyword, {
-        keyword: kw.keyword,
-        industry: kw.industry,
-        exclusivity: 'exclusive-24h',
-        quantity: 0,
-        isConfirmed: false
-      });
-    });
+    const initialSelections: LeadSelection[] = loadedKeywords.map((kw) => ({
+      id: generateSelectionId(),
+      keyword: kw.keyword,
+      industry: kw.industry,
+      exclusivity: 'exclusive-24h',
+      quantity: 0,
+      isConfirmed: false
+    }));
     setSelections(initialSelections);
   };
 
@@ -165,29 +167,91 @@ export default function KeywordSummary() {
     return { cpc: Math.round(estimatedCPC * 100) / 100, isEstimated: true };
   };
 
-  const updateSelection = (keyword: string, field: 'quantity' | 'exclusivity' | 'isConfirmed', value: any) => {
-    setSelections(prev => {
-      const newSelections = new Map(prev);
-      const current = newSelections.get(keyword);
-      if (current) {
-        if (field === 'quantity') {
-          const quantity = parseInt(value) || 0;
-          newSelections.set(keyword, { ...current, quantity });
-        } else if (field === 'exclusivity') {
-          newSelections.set(keyword, { ...current, exclusivity: value });
-        } else if (field === 'isConfirmed') {
-          newSelections.set(keyword, { ...current, isConfirmed: value });
-        }
+  const updateSelection = (selectionId: string, field: 'quantity' | 'exclusivity' | 'isConfirmed', value: any) => {
+    setSelections(prev => prev.map(selection => {
+      if (selection.id !== selectionId) return selection;
+      
+      if (field === 'quantity') {
+        return { ...selection, quantity: parseInt(value) || 0 };
+      } else if (field === 'exclusivity') {
+        return { ...selection, exclusivity: value };
+      } else if (field === 'isConfirmed') {
+        return { ...selection, isConfirmed: value };
       }
-      return newSelections;
+      return selection;
+    }));
+  };
+
+  // Add another lead type entry for a keyword
+  const addLeadTypeForKeyword = (keyword: string, industry: string) => {
+    // Get existing selections for this keyword to determine what lead types are already added
+    const existingForKeyword = selections.filter(s => s.keyword === keyword);
+    
+    // Determine which lead type to add (pick the first one not already selected)
+    const leadTypes: Array<{exclusivity: LeadSelection['exclusivity'], isConfirmed: boolean}> = [
+      { exclusivity: 'exclusive-24h', isConfirmed: false },
+      { exclusivity: 'semi-exclusive', isConfirmed: false },
+      { exclusivity: 'non-exclusive', isConfirmed: true },
+      { exclusivity: 'non-exclusive', isConfirmed: false },
+    ];
+    
+    const availableType = leadTypes.find(type => 
+      !existingForKeyword.some(s => 
+        s.exclusivity === type.exclusivity && s.isConfirmed === type.isConfirmed
+      )
+    );
+    
+    if (!availableType) {
+      toast({
+        title: "All Lead Types Added",
+        description: "You've already added all available lead types for this keyword",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newSelection: LeadSelection = {
+      id: generateSelectionId(),
+      keyword,
+      industry,
+      exclusivity: availableType.exclusivity,
+      quantity: 0,
+      isConfirmed: availableType.isConfirmed
+    };
+    
+    setSelections(prev => [...prev, newSelection]);
+    
+    toast({
+      title: "Lead Type Added",
+      description: `Added another lead type for "${keyword}"`,
     });
+  };
+
+  // Delete a specific selection entry
+  const deleteSelectionEntry = (selectionId: string) => {
+    const selection = selections.find(s => s.id === selectionId);
+    if (!selection) return;
+    
+    // Check if this is the last selection for this keyword
+    const selectionsForKeyword = selections.filter(s => s.keyword === selection.keyword);
+    
+    if (selectionsForKeyword.length === 1) {
+      // This is the last one, remove the keyword entirely
+      handleDeleteKeyword(selection.keyword);
+    } else {
+      // Just remove this selection entry
+      setSelections(prev => prev.filter(s => s.id !== selectionId));
+      toast({
+        title: "Lead Type Removed",
+        description: `Removed lead type for "${selection.keyword}"`,
+      });
+    }
   };
 
   const calculateGrandTotal = () => {
     let total = 0;
     selections.forEach(selection => {
       const cpcData = lookupGoogleCPC(selection.keyword, selection.industry);
-      // Use keyword for category lookup first, fall back to industry
       const category = getIndustryCategory(selection.keyword, selection.industry);
       const pricePerLead = getLeadCostFromCPC(cpcData.cpc, selection.exclusivity, selection.isConfirmed, category);
       total += pricePerLead * selection.quantity;
@@ -201,10 +265,8 @@ export default function KeywordSummary() {
     const updatedKeywords = keywords.filter(kw => kw.keyword !== keywordToDelete);
     setKeywords(updatedKeywords);
     
-    // Remove from selections
-    const newSelections = new Map(selections);
-    newSelections.delete(keywordToDelete);
-    setSelections(newSelections);
+    // Remove all selections for this keyword
+    setSelections(prev => prev.filter(s => s.keyword !== keywordToDelete));
     
     // Update sessionStorage
     const savedData = sessionStorage.getItem('selectedKeywords');
@@ -251,16 +313,16 @@ export default function KeywordSummary() {
     const updatedKeywords = [...keywords, newKeywordObj];
     setKeywords(updatedKeywords);
 
-    // Add to selections with default values
-    const newSelections = new Map(selections);
-    newSelections.set(newKeywordObj.keyword, {
+    // Add a default selection entry
+    const newSelection: LeadSelection = {
+      id: generateSelectionId(),
       keyword: newKeywordObj.keyword,
       industry: newKeywordObj.industry,
       exclusivity: 'exclusive-24h',
       quantity: 0,
       isConfirmed: false
-    });
-    setSelections(newSelections);
+    };
+    setSelections(prev => [...prev, newSelection]);
 
     // Update sessionStorage
     const savedData = sessionStorage.getItem('selectedKeywords');
@@ -280,7 +342,7 @@ export default function KeywordSummary() {
   };
 
   const handleProceedToCheckout = () => {
-    const leadPurchases = Array.from(selections.values()).filter(s => s.quantity > 0);
+    const leadPurchases = selections.filter(s => s.quantity > 0);
     
     if (leadPurchases.length === 0) {
       toast({
@@ -305,6 +367,22 @@ export default function KeywordSummary() {
     navigate(checkoutUrl);
   };
 
+  // Get label for a lead type combination
+  const getLeadTypeLabel = (exclusivity: string, isConfirmed: boolean): string => {
+    if (exclusivity === 'exclusive-24h') return '24-Hr. Exclusive';
+    if (exclusivity === 'semi-exclusive') return 'Semi Exclusive';
+    if (exclusivity === 'non-exclusive' && isConfirmed) return 'Confirmed';
+    return 'Unconfirmed';
+  };
+
+  // Get the combined value for the dropdown
+  const getLeadTypeValue = (exclusivity: string, isConfirmed: boolean): string => {
+    if (exclusivity === 'exclusive-24h') return 'exclusive-24h';
+    if (exclusivity === 'semi-exclusive') return 'semi-exclusive';
+    if (isConfirmed) return 'non-exclusive-confirmed';
+    return 'non-exclusive-unconfirmed';
+  };
+
   if (isLoading) {
     return (
       <>
@@ -319,6 +397,12 @@ export default function KeywordSummary() {
   if (keywords.length === 0) {
     return null; // Will redirect in useEffect
   }
+
+  // Group selections by keyword for display
+  const selectionsByKeyword = keywords.map(kw => ({
+    ...kw,
+    selections: selections.filter(s => s.keyword === kw.keyword)
+  }));
 
   return (
     <>
@@ -393,18 +477,16 @@ export default function KeywordSummary() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {keywords.map(({ keyword, industry }, index) => {
-                  const selection = selections.get(keyword);
-                  if (!selection) return null;
-
+                {selectionsByKeyword.map(({ keyword, industry, selections: keywordSelections }, keywordIndex) => {
                   const cpcData = lookupGoogleCPC(keyword, industry);
-                  // Use keyword for category lookup first, fall back to industry
                   const category = getIndustryCategory(keyword, industry);
-                  const pricePerLead = getLeadCostFromCPC(cpcData.cpc, selection.exclusivity, selection.isConfirmed, category);
-                  const subtotal = pricePerLead * selection.quantity;
+                  
+                  // Check if all lead types are already added
+                  const allLeadTypesAdded = keywordSelections.length >= 4;
 
                   return (
-                    <div key={index} className="border rounded-lg p-4 bg-card">
+                    <div key={keywordIndex} className="border rounded-lg p-4 bg-card">
+                      {/* Keyword Header */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -414,6 +496,7 @@ export default function KeywordSummary() {
                               size="sm"
                               onClick={() => handleDeleteKeyword(keyword)}
                               className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
+                              title="Remove keyword entirely"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -436,61 +519,98 @@ export default function KeywordSummary() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <Label htmlFor={`lead-type-${index}`}>Lead Type</Label>
-                          <select
-                            id={`lead-type-${index}`}
-                            value={`${selection.exclusivity}-${selection.isConfirmed ? 'confirmed' : 'unconfirmed'}`}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === 'non-exclusive-unconfirmed') {
-                                updateSelection(keyword, 'exclusivity', 'non-exclusive');
-                                updateSelection(keyword, 'isConfirmed', false);
-                              } else if (val === 'non-exclusive-confirmed') {
-                                updateSelection(keyword, 'exclusivity', 'non-exclusive');
-                                updateSelection(keyword, 'isConfirmed', true);
-                              } else if (val === 'semi-exclusive') {
-                                updateSelection(keyword, 'exclusivity', 'semi-exclusive');
-                                updateSelection(keyword, 'isConfirmed', false);
-                              } else if (val === 'exclusive-24h') {
-                                updateSelection(keyword, 'exclusivity', 'exclusive-24h');
-                                updateSelection(keyword, 'isConfirmed', false);
-                              }
-                            }}
-                            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                          >
-                            <option value="exclusive-24h">24-Hr. Exclusive - ${getLeadCostFromCPC(cpcData.cpc, 'exclusive-24h', false, category).toFixed(2)}/lead</option>
-                            <option value="semi-exclusive">Semi Exclusive - ${getLeadCostFromCPC(cpcData.cpc, 'semi-exclusive', false, category).toFixed(2)}/lead</option>
-                            <option value="non-exclusive-confirmed">Confirmed - ${getLeadCostFromCPC(cpcData.cpc, 'non-exclusive', true, category).toFixed(2)}/lead</option>
-                            <option value="non-exclusive-unconfirmed">Unconfirmed - ${getLeadCostFromCPC(cpcData.cpc, 'non-exclusive', false, category).toFixed(2)}/lead</option>
-                          </select>
-                        </div>
+                      {/* Lead Type Entries */}
+                      <div className="space-y-4">
+                        {keywordSelections.map((selection, selectionIndex) => {
+                          const pricePerLead = getLeadCostFromCPC(cpcData.cpc, selection.exclusivity, selection.isConfirmed, category);
+                          const subtotal = pricePerLead * selection.quantity;
 
-                        <div>
-                          <Label htmlFor={`quantity-${index}`}>Quantity</Label>
-                          <Input
-                            id={`quantity-${index}`}
-                            type="number"
-                            min="0"
-                            value={selection.quantity}
-                            onChange={(e) => updateSelection(keyword, 'quantity', e.target.value)}
-                            placeholder="0"
-                          />
-                        </div>
+                          return (
+                            <div key={selection.id} className={`grid grid-cols-1 md:grid-cols-4 gap-4 items-end ${selectionIndex > 0 ? 'pt-4 border-t border-border/50' : ''}`}>
+                              <div>
+                                <Label htmlFor={`lead-type-${selection.id}`}>Lead Type</Label>
+                                <select
+                                  id={`lead-type-${selection.id}`}
+                                  value={getLeadTypeValue(selection.exclusivity, selection.isConfirmed)}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'non-exclusive-unconfirmed') {
+                                      updateSelection(selection.id, 'exclusivity', 'non-exclusive');
+                                      updateSelection(selection.id, 'isConfirmed', false);
+                                    } else if (val === 'non-exclusive-confirmed') {
+                                      updateSelection(selection.id, 'exclusivity', 'non-exclusive');
+                                      updateSelection(selection.id, 'isConfirmed', true);
+                                    } else if (val === 'semi-exclusive') {
+                                      updateSelection(selection.id, 'exclusivity', 'semi-exclusive');
+                                      updateSelection(selection.id, 'isConfirmed', false);
+                                    } else if (val === 'exclusive-24h') {
+                                      updateSelection(selection.id, 'exclusivity', 'exclusive-24h');
+                                      updateSelection(selection.id, 'isConfirmed', false);
+                                    }
+                                  }}
+                                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                                >
+                                  <option value="exclusive-24h">24-Hr. Exclusive - ${getLeadCostFromCPC(cpcData.cpc, 'exclusive-24h', false, category).toFixed(2)}/lead</option>
+                                  <option value="semi-exclusive">Semi Exclusive - ${getLeadCostFromCPC(cpcData.cpc, 'semi-exclusive', false, category).toFixed(2)}/lead</option>
+                                  <option value="non-exclusive-confirmed">Confirmed - ${getLeadCostFromCPC(cpcData.cpc, 'non-exclusive', true, category).toFixed(2)}/lead</option>
+                                  <option value="non-exclusive-unconfirmed">Unconfirmed - ${getLeadCostFromCPC(cpcData.cpc, 'non-exclusive', false, category).toFixed(2)}/lead</option>
+                                </select>
+                              </div>
 
-                        <div>
-                          <Label>Per Lead / Subtotal</Label>
-                          <div className="mt-1">
-                            <Badge variant="outline" className="mb-1">
-                              ${pricePerLead.toFixed(2)}/lead
-                            </Badge>
-                            <div className="text-xl font-bold text-primary">
-                              ${subtotal.toFixed(2)}
+                              <div>
+                                <Label htmlFor={`quantity-${selection.id}`}>Quantity</Label>
+                                <Input
+                                  id={`quantity-${selection.id}`}
+                                  type="number"
+                                  min="0"
+                                  value={selection.quantity}
+                                  onChange={(e) => updateSelection(selection.id, 'quantity', e.target.value)}
+                                  placeholder="0"
+                                />
+                              </div>
+
+                              <div>
+                                <Label>Per Lead / Subtotal</Label>
+                                <div className="mt-1">
+                                  <Badge variant="outline" className="mb-1">
+                                    ${pricePerLead.toFixed(2)}/lead
+                                  </Badge>
+                                  <div className="text-xl font-bold text-primary">
+                                    ${subtotal.toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex justify-end">
+                                {keywordSelections.length > 1 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteSelectionEntry(selection.id)}
+                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                    title="Remove this lead type"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </div>
+                          );
+                        })}
                       </div>
+
+                      {/* Add Another Lead Type Button */}
+                      {!allLeadTypesAdded && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addLeadTypeForKeyword(keyword, industry)}
+                          className="mt-4"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Another Lead Type
+                        </Button>
+                      )}
                     </div>
                   );
                 })}
