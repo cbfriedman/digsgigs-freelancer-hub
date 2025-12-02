@@ -16,6 +16,7 @@ import { generateKeywordSuggestions } from "@/utils/keywordSuggestions";
 import { getIndustrySpecialties, hasIndustrySpecialties } from "@/utils/industrySpecialties";
 import { SpecialtyRequestForm } from "./SpecialtyRequestForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
 
 const DEFAULT_CATEGORIES = [
   "Legal Services",
@@ -65,7 +66,14 @@ export const CategoryBrowserWithDescription = () => {
   const [serviceZipCodes, setServiceZipCodes] = useState("");
   const [serviceRadiusCenter, setServiceRadiusCenter] = useState("");
   const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
-  const [country, setCountry] = useState("United States");
+  const [country, setCountry] = useState("");
+  const [state, setState] = useState("");
+  const [city, setCity] = useState("");
+
+  // Reset state when country changes
+  useEffect(() => {
+    setState("");
+  }, [country]);
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -560,14 +568,16 @@ export const CategoryBrowserWithDescription = () => {
                   </p>
                 </div>
 
+                {/* Country - Required */}
                 <div className="space-y-2">
-                  <Label htmlFor="country_browser">Country</Label>
+                  <Label htmlFor="country_browser">Country <span className="text-destructive">*</span></Label>
                   <select
                     id="country_browser"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
+                    <option value="">Select a country...</option>
                     <option value="United States">🇺🇸 United States</option>
                     <option value="Canada">🇨🇦 Canada</option>
                     <option value="United Kingdom">🇬🇧 United Kingdom</option>
@@ -582,78 +592,119 @@ export const CategoryBrowserWithDescription = () => {
                   </select>
                 </div>
 
-                <RadioGroup
-                  value={locationPreferenceType}
-                  onValueChange={(value: "zip_codes" | "radius") => setLocationPreferenceType(value)}
-                  className="space-y-3"
-                >
-                  <div className="flex items-center space-x-2">
-                    <input 
-                      type="radio" 
-                      value="zip_codes" 
-                      id="zip_codes_browser" 
-                      checked={locationPreferenceType === "zip_codes"}
-                      onChange={() => setLocationPreferenceType("zip_codes")}
-                      className="h-4 w-4"
-                    />
-                    <Label htmlFor="zip_codes_browser" className="cursor-pointer font-normal">
-                      Specific Zip Codes
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input 
-                      type="radio" 
-                      value="radius" 
-                      id="radius_browser" 
-                      checked={locationPreferenceType === "radius"}
-                      onChange={() => setLocationPreferenceType("radius")}
-                      className="h-4 w-4"
-                    />
-                    <Label htmlFor="radius_browser" className="cursor-pointer font-normal">
-                      Radius from Zip Code
-                    </Label>
-                  </div>
-                </RadioGroup>
-
-                {locationPreferenceType === "zip_codes" ? (
+                {/* State/Province - Required (when country has regions) */}
+                {country && getRegionsForCountry(country).length > 0 && (
                   <div className="space-y-2">
-                    <Label htmlFor="serviceZipCodes">Enter Zip Codes (comma-separated)</Label>
-                    <Textarea
-                      id="serviceZipCodes"
-                      value={serviceZipCodes}
-                      onChange={(e) => setServiceZipCodes(e.target.value)}
-                      placeholder="e.g., 10001, 10002, 10003"
-                      rows={3}
-                      className="resize-none"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Enter multiple zip codes separated by commas
-                    </p>
+                    <Label htmlFor="state_browser">{getRegionLabel(country)} <span className="text-destructive">*</span></Label>
+                    <select
+                      id="state_browser"
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    >
+                      <option value="">Select {getRegionLabel(country).toLowerCase()}...</option>
+                      {getRegionsForCountry(country).map((region) => (
+                        <option key={region} value={region}>{region}</option>
+                      ))}
+                    </select>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="serviceRadiusCenter">Center Zip Code</Label>
-                      <Input
-                        id="serviceRadiusCenter"
-                        value={serviceRadiusCenter}
-                        onChange={(e) => setServiceRadiusCenter(e.target.value)}
-                        placeholder="e.g., 10001"
-                        maxLength={5}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="serviceRadiusMiles">Radius (miles)</Label>
-                      <Input
-                        id="serviceRadiusMiles"
-                        type="number"
-                        min="1"
-                        max="500"
-                        value={serviceRadiusMiles}
-                        onChange={(e) => setServiceRadiusMiles(parseInt(e.target.value) || 25)}
-                        placeholder="25"
-                      />
-                    </div>
+                )}
+
+                {/* City - Optional */}
+                {country && (
+                  <div className="space-y-2">
+                    <Label htmlFor="city_browser">City <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Input
+                      id="city_browser"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="e.g., Los Angeles"
+                      className="bg-background"
+                    />
+                  </div>
+                )}
+
+                {/* Separator */}
+                {country && (
+                  <div className="border-t border-border pt-4 mt-4">
+                    <Label className="text-sm font-medium text-muted-foreground mb-3 block">
+                      Zip Code Options <span className="text-xs">(optional)</span>
+                    </Label>
+                    
+                    <RadioGroup
+                      value={locationPreferenceType}
+                      onValueChange={(value: "zip_codes" | "radius") => setLocationPreferenceType(value)}
+                      className="space-y-3"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <input 
+                          type="radio" 
+                          value="zip_codes" 
+                          id="zip_codes_browser" 
+                          checked={locationPreferenceType === "zip_codes"}
+                          onChange={() => setLocationPreferenceType("zip_codes")}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="zip_codes_browser" className="cursor-pointer font-normal">
+                          Specific Zip Codes
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input 
+                          type="radio" 
+                          value="radius" 
+                          id="radius_browser" 
+                          checked={locationPreferenceType === "radius"}
+                          onChange={() => setLocationPreferenceType("radius")}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="radius_browser" className="cursor-pointer font-normal">
+                          Radius from Zip Code
+                        </Label>
+                      </div>
+                    </RadioGroup>
+
+                    {locationPreferenceType === "zip_codes" ? (
+                      <div className="space-y-2 mt-3">
+                        <Label htmlFor="serviceZipCodes">Enter Zip Codes (comma-separated)</Label>
+                        <Textarea
+                          id="serviceZipCodes"
+                          value={serviceZipCodes}
+                          onChange={(e) => setServiceZipCodes(e.target.value)}
+                          placeholder="e.g., 10001, 10002, 10003"
+                          rows={3}
+                          className="resize-none"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter multiple zip codes separated by commas
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 mt-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="serviceRadiusCenter">Center Zip Code</Label>
+                          <Input
+                            id="serviceRadiusCenter"
+                            value={serviceRadiusCenter}
+                            onChange={(e) => setServiceRadiusCenter(e.target.value)}
+                            placeholder="e.g., 10001"
+                            maxLength={10}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="serviceRadiusMiles">Radius (miles)</Label>
+                          <Input
+                            id="serviceRadiusMiles"
+                            type="number"
+                            min="1"
+                            max="500"
+                            value={serviceRadiusMiles}
+                            onChange={(e) => setServiceRadiusMiles(parseInt(e.target.value) || 25)}
+                            placeholder="25"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -679,6 +730,18 @@ export const CategoryBrowserWithDescription = () => {
                     return;
                   }
 
+                  // Validate country and state
+                  if (!country) {
+                    toast.error("Please select a country");
+                    return;
+                  }
+
+                  const regions = getRegionsForCountry(country);
+                  if (regions.length > 0 && !state) {
+                    toast.error(`Please select a ${getRegionLabel(country).toLowerCase()}`);
+                    return;
+                  }
+
                   const selected = Array.from(selectedKeywords);
                   setIsProcessing(true);
 
@@ -699,6 +762,8 @@ export const CategoryBrowserWithDescription = () => {
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
+                          state: state || null,
+                          city: city.trim() || null,
                           updated_at: new Date().toISOString(),
                         })
                         .eq('id', existingProfileId);
@@ -750,6 +815,8 @@ export const CategoryBrowserWithDescription = () => {
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
+                          state: state || null,
+                          city: city.trim() || null,
                         })
                         .select()
                         .single();
@@ -768,7 +835,7 @@ export const CategoryBrowserWithDescription = () => {
                     setIsProcessing(false);
                   }
                 }}
-                disabled={selectedKeywords.size === 0 || isProcessing || selectedSpecialties.length === 0 || !profileName.trim()}
+                disabled={selectedKeywords.size === 0 || isProcessing || selectedSpecialties.length === 0 || !profileName.trim() || !country || (getRegionsForCountry(country).length > 0 && !state)}
               >
                 {isProcessing ? (
                   <>
@@ -788,6 +855,9 @@ export const CategoryBrowserWithDescription = () => {
                   setIsAddingKeyword(false);
                   setNewKeyword("");
                   setProfileName("");
+                  setCountry("");
+                  setState("");
+                  setCity("");
                 }}
               >
                 Try Again

@@ -566,6 +566,7 @@ export type Database = {
           bio: string | null
           business_name: string
           certifications: string[] | null
+          city: string | null
           company_name: string | null
           completion_rate: number | null
           country: string | null
@@ -610,6 +611,7 @@ export type Database = {
           service_zip_codes: string[] | null
           sic_code: string[] | null
           skills: string[] | null
+          state: string | null
           stripe_connect_account_id: string | null
           stripe_connect_charges_enabled: boolean | null
           stripe_connect_onboarded: boolean | null
@@ -631,6 +633,7 @@ export type Database = {
           bio?: string | null
           business_name: string
           certifications?: string[] | null
+          city?: string | null
           company_name?: string | null
           completion_rate?: number | null
           country?: string | null
@@ -675,6 +678,7 @@ export type Database = {
           service_zip_codes?: string[] | null
           sic_code?: string[] | null
           skills?: string[] | null
+          state?: string | null
           stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_onboarded?: boolean | null
@@ -696,6 +700,7 @@ export type Database = {
           bio?: string | null
           business_name?: string
           certifications?: string[] | null
+          city?: string | null
           company_name?: string | null
           completion_rate?: number | null
           country?: string | null
@@ -740,6 +745,7 @@ export type Database = {
           service_zip_codes?: string[] | null
           sic_code?: string[] | null
           skills?: string[] | null
+          state?: string | null
           stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_onboarded?: boolean | null
