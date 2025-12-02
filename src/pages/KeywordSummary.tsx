@@ -32,6 +32,7 @@ interface LeadSelection {
   industry: string;
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
   quantity: number;
+  isConfirmed: boolean;
 }
 
 export default function KeywordSummary() {
@@ -74,7 +75,8 @@ export default function KeywordSummary() {
         keyword: kw.keyword,
         industry: kw.industry,
         exclusivity: 'non-exclusive',
-        quantity: 0
+        quantity: 0,
+        isConfirmed: false
       });
     });
     setSelections(initialSelections);
@@ -163,13 +165,19 @@ export default function KeywordSummary() {
     return { cpc: Math.round(estimatedCPC * 100) / 100, isEstimated: true };
   };
 
-  const updateSelection = (keyword: string, value: any) => {
+  const updateSelection = (keyword: string, field: 'quantity' | 'exclusivity' | 'isConfirmed', value: any) => {
     setSelections(prev => {
       const newSelections = new Map(prev);
       const current = newSelections.get(keyword);
       if (current) {
-        const quantity = parseInt(value) || 0;
-        newSelections.set(keyword, { ...current, quantity });
+        if (field === 'quantity') {
+          const quantity = parseInt(value) || 0;
+          newSelections.set(keyword, { ...current, quantity });
+        } else if (field === 'exclusivity') {
+          newSelections.set(keyword, { ...current, exclusivity: value });
+        } else if (field === 'isConfirmed') {
+          newSelections.set(keyword, { ...current, isConfirmed: value });
+        }
       }
       return newSelections;
     });
@@ -178,7 +186,7 @@ export default function KeywordSummary() {
   const calculateGrandTotal = () => {
     let total = 0;
     selections.forEach(selection => {
-      const pricePerLead = getLeadCostForIndustry(selection.industry, 'non-exclusive');
+      const pricePerLead = getLeadCostForIndustry(selection.industry, selection.exclusivity, selection.isConfirmed);
       total += pricePerLead * selection.quantity;
     });
     return total;
@@ -246,7 +254,8 @@ export default function KeywordSummary() {
       keyword: newKeywordObj.keyword,
       industry: newKeywordObj.industry,
       exclusivity: 'non-exclusive',
-      quantity: 0
+      quantity: 0,
+      isConfirmed: false
     });
     setSelections(newSelections);
 
@@ -386,7 +395,7 @@ export default function KeywordSummary() {
                   if (!selection) return null;
 
                   const cpcData = lookupGoogleCPC(keyword, industry);
-                  const pricePerLead = getLeadCostForIndustry(industry, 'non-exclusive'); // Always non-exclusive for credits
+                  const pricePerLead = getLeadCostForIndustry(industry, selection.exclusivity, selection.isConfirmed);
                   const subtotal = pricePerLead * selection.quantity;
 
                   return (
@@ -395,7 +404,6 @@ export default function KeywordSummary() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className="font-semibold text-lg">{keyword}</h3>
-                            <Badge variant="secondary">Non-Exclusive Only</Badge>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -413,9 +421,6 @@ export default function KeywordSummary() {
                                 <span className="text-xs ml-1 text-amber-600 dark:text-amber-400">(estimated)</span>
                               )}
                             </span>
-                            <Badge variant="outline" className="ml-2">
-                              ${pricePerLead.toFixed(2)}/credit (20% of CPC)
-                            </Badge>
                           </div>
                           {cpcData.isEstimated && (
                             <div className="mt-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
@@ -426,23 +431,55 @@ export default function KeywordSummary() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
-                          <Label htmlFor={`quantity-${index}`}>Quantity (Credits)</Label>
+                          <Label htmlFor={`exclusivity-${index}`}>Exclusivity Type</Label>
+                          <select
+                            id={`exclusivity-${index}`}
+                            value={selection.exclusivity}
+                            onChange={(e) => updateSelection(keyword, 'exclusivity', e.target.value)}
+                            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                          >
+                            <option value="non-exclusive">Non-Exclusive (20% CPC)</option>
+                            <option value="semi-exclusive">Semi-Exclusive (100% CPC)</option>
+                            <option value="exclusive-24h">24hr Exclusive (200% CPC)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor={`confirmed-${index}`}>Lead Type</Label>
+                          <select
+                            id={`confirmed-${index}`}
+                            value={selection.isConfirmed ? 'confirmed' : 'unconfirmed'}
+                            onChange={(e) => updateSelection(keyword, 'isConfirmed', e.target.value === 'confirmed')}
+                            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                          >
+                            <option value="unconfirmed">Standard Lead</option>
+                            <option value="confirmed">Confirmed Lead (+20%)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor={`quantity-${index}`}>Quantity</Label>
                           <Input
                             id={`quantity-${index}`}
                             type="number"
                             min="0"
                             value={selection.quantity}
-                            onChange={(e) => updateSelection(keyword, e.target.value)}
+                            onChange={(e) => updateSelection(keyword, 'quantity', e.target.value)}
                             placeholder="0"
                           />
                         </div>
 
                         <div>
-                          <Label>Subtotal (before discount)</Label>
-                          <div className="text-2xl font-bold text-primary mt-2">
-                            ${subtotal.toFixed(2)}
+                          <Label>Per Lead / Subtotal</Label>
+                          <div className="mt-1">
+                            <Badge variant="outline" className="mb-1">
+                              ${pricePerLead.toFixed(2)}/lead
+                            </Badge>
+                            <div className="text-xl font-bold text-primary">
+                              ${subtotal.toFixed(2)}
+                            </div>
                           </div>
                         </div>
                       </div>
