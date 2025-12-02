@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ShoppingCart, CreditCard, CheckCircle2 } from "lucide-react";
+import { Loader2, ShoppingCart, CreditCard, CheckCircle2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { getLeadCostForIndustry } from "@/config/pricing";
 import SEOHead from "@/components/SEOHead";
@@ -218,6 +218,7 @@ export default function Checkout() {
             }}
             className="mb-4"
           >
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Summary
           </Button>
 
