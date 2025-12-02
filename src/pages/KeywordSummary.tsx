@@ -187,7 +187,8 @@ export default function KeywordSummary() {
     let total = 0;
     selections.forEach(selection => {
       const cpcData = lookupGoogleCPC(selection.keyword, selection.industry);
-      const category = getIndustryCategory(selection.industry);
+      // Use keyword for category lookup first, fall back to industry
+      const category = getIndustryCategory(selection.keyword, selection.industry);
       const pricePerLead = getLeadCostFromCPC(cpcData.cpc, selection.exclusivity, selection.isConfirmed, category);
       total += pricePerLead * selection.quantity;
     });
@@ -397,7 +398,8 @@ export default function KeywordSummary() {
                   if (!selection) return null;
 
                   const cpcData = lookupGoogleCPC(keyword, industry);
-                  const category = getIndustryCategory(industry);
+                  // Use keyword for category lookup first, fall back to industry
+                  const category = getIndustryCategory(keyword, industry);
                   const pricePerLead = getLeadCostFromCPC(cpcData.cpc, selection.exclusivity, selection.isConfirmed, category);
                   const subtotal = pricePerLead * selection.quantity;
 
