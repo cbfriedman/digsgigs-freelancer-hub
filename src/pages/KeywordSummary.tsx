@@ -88,14 +88,27 @@ export default function KeywordSummary() {
     const loadKeywords = async () => {
       setIsLoading(true);
       
-      // First, check if we have saved selections from a previous checkout navigation
+      // Check for saved profileId to detect if we're returning from checkout vs. fresh load
+      const savedProfileId = sessionStorage.getItem('leadPurchaseProfileId');
       const savedSelections = sessionStorage.getItem('allLeadSelections');
       const savedCategory = sessionStorage.getItem('leadPurchaseCategoryName');
       
-      if (savedSelections) {
+      // If profileId changed or doesn't match saved, clear stale data and load fresh
+      const isReturningFromCheckout = savedProfileId === profileId && savedSelections;
+      
+      console.log('[KeywordSummary] Loading:', { 
+        profileId, 
+        savedProfileId, 
+        isReturningFromCheckout,
+        hasSavedSelections: !!savedSelections 
+      });
+      
+      // If returning from checkout with same profile, restore saved selections
+      if (isReturningFromCheckout && savedSelections) {
         try {
           const restoredSelections: LeadSelection[] = JSON.parse(savedSelections);
           if (restoredSelections.length > 0) {
+            console.log('[KeywordSummary] Restoring saved selections:', restoredSelections);
             // Extract unique keywords from saved selections
             const uniqueKeywords = Array.from(
               new Map(restoredSelections.map(s => [s.keyword, { keyword: s.keyword, industry: s.industry }])).values()
@@ -110,6 +123,13 @@ export default function KeywordSummary() {
           console.error("Error restoring saved selections:", error);
         }
       }
+      
+      // Clear any stale sessionStorage data since we're loading fresh
+      sessionStorage.removeItem('allLeadSelections');
+      sessionStorage.removeItem('leadPurchaseSelections');
+      sessionStorage.removeItem('leadPurchaseDiscount');
+      sessionStorage.removeItem('leadPurchaseCategoryName');
+      sessionStorage.removeItem('leadPurchaseProfileId');
       
       // If profileId is provided, load keywords from database
       if (profileId) {
@@ -132,6 +152,7 @@ export default function KeywordSummary() {
               industry: determineKeywordIndustry(kw, category)
             }));
             
+            console.log('[KeywordSummary] Loaded from profile:', loadedKeywords);
             setKeywords(loadedKeywords);
             initializeSelectionsFromKeywords(loadedKeywords);
             setIsLoading(false);
@@ -389,9 +410,16 @@ export default function KeywordSummary() {
       };
     });
     
+    console.log('[KeywordSummary] Saving to sessionStorage:', {
+      purchasesWithPricing,
+      discountInfo,
+      profileId
+    });
+    
     // Save ALL selections (including quantity=0) so we can restore state when navigating back
     sessionStorage.setItem('allLeadSelections', JSON.stringify(selections));
     sessionStorage.setItem('leadPurchaseCategoryName', categoryName);
+    sessionStorage.setItem('leadPurchaseProfileId', profileId || '');
     
     // Save lead purchase selections and discount info to sessionStorage
     sessionStorage.setItem('leadPurchaseSelections', JSON.stringify(purchasesWithPricing));
