@@ -22,12 +22,10 @@ export default function CompetitorCostComparison() {
   const industryCategory = getIndustryCategory(selectedIndustry);
   const getCompetitorLeadCost = (platform: string): number => {
     // Industry-specific pricing for competitors
-    if (industryCategory === 'low-value') {
-      return platform === 'HomeAdvisor' ? 30 : platform === 'Thumbtack' ? 25 : 22;
-    } else if (industryCategory === 'high-value') {
-      return platform === 'HomeAdvisor' ? 150 : platform === 'Thumbtack' ? 125 : 110;
-    } else { // mid-value
-      return platform === 'HomeAdvisor' ? 60 : platform === 'Thumbtack' ? 50 : 45;
+    if (industryCategory === 'mid-value') {
+      return platform === 'HomeAdvisor' ? 60 : platform === 'Angi' ? 55 : 50;
+    } else { // high-value
+      return platform === 'HomeAdvisor' ? 150 : platform === 'Angi' ? 140 : 125;
     }
   };
 
@@ -38,7 +36,7 @@ export default function CompetitorCostComparison() {
       bgColor: "bg-primary/10",
       borderColor: "border-primary/30",
       cost: calculateDigsAndGigsCost(leadVolume),
-      description: `${exclusivity === 'non-exclusive' ? 'Non-Exclusive (Bark - $0.50)' : '24-Hour Exclusive (CPC × 2.5)'}`,
+      description: `${exclusivity === 'non-exclusive' ? 'Non-Exclusive' : '24-Hour Exclusive'}`,
       badge: "Our Platform",
       badgeColor: "bg-primary text-white"
     },
@@ -53,24 +51,14 @@ export default function CompetitorCostComparison() {
       badgeColor: "bg-orange-500 text-white"
     },
     {
-      name: "Thumbtack",
+      name: "Angi (Angie's List)",
       color: "text-blue-600",
       bgColor: "bg-blue-50 dark:bg-blue-950/20",
       borderColor: "border-blue-200 dark:border-blue-800",
-      cost: leadVolume * getCompetitorLeadCost('Thumbtack'),
+      cost: leadVolume * getCompetitorLeadCost('Angi'),
       description: "Pay per introduction",
       badge: "Competitor",
       badgeColor: "bg-blue-500 text-white"
-    },
-    {
-      name: "Bark",
-      color: "text-purple-600",
-      bgColor: "bg-purple-50 dark:bg-purple-950/20",
-      borderColor: "border-purple-200 dark:border-purple-800",
-      cost: leadVolume * getCompetitorLeadCost('Bark'),
-      description: "Credit-based system",
-      badge: "Competitor",
-      badgeColor: "bg-purple-500 text-white"
     }
   ];
 
@@ -295,7 +283,7 @@ export default function CompetitorCostComparison() {
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p><strong>Transparent Pricing:</strong> Every lead is priced clearly based on Bark or Google CPC rates</p>
+                  <p><strong>Transparent Pricing:</strong> Every lead is priced clearly and competitively</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />

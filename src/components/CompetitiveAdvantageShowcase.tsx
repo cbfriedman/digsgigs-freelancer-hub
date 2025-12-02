@@ -15,21 +15,14 @@ export default function CompetitiveAdvantageShowcase() {
   // Get industry-specific competitor pricing
   const industryCategory = getIndustryCategory(selectedIndustry);
   const getCompetitorLeadCost = (platform: string): number => {
-    if (industryCategory === 'low-value') {
-      return platform === 'HomeAdvisor' ? 30 : 
-             platform === 'Thumbtack' ? 25 : 
-             platform === 'Google AdWords' ? 80 :
-             platform === 'Bark' ? 15 : 22;
-    } else if (industryCategory === 'high-value') {
-      return platform === 'HomeAdvisor' ? 150 : 
-             platform === 'Thumbtack' ? 125 : 
-             platform === 'Google AdWords' ? 400 :
-             platform === 'Bark' ? 180 : 110;
-    } else { // mid-value
+    if (industryCategory === 'mid-value') {
       return platform === 'HomeAdvisor' ? 60 : 
-             platform === 'Thumbtack' ? 50 : 
-             platform === 'Google AdWords' ? 160 :
-             platform === 'Bark' ? 45 : 45;
+             platform === 'Angi' ? 55 : 
+             platform === 'Google AdWords' ? 160 : 50;
+    } else { // high-value
+      return platform === 'HomeAdvisor' ? 150 : 
+             platform === 'Angi' ? 140 : 
+             platform === 'Google AdWords' ? 400 : 125;
     }
   };
 
@@ -45,17 +38,17 @@ export default function CompetitiveAdvantageShowcase() {
       disadvantages: ["No volume discounts", "Shared leads mean high competition", "Pay for bad leads", "No escrow protection"]
     },
     {
-      name: "Thumbtack",
+      name: "Angi (Angie's List)",
       monthlyFee: "$0",
-      leadCost: `$${getCompetitorLeadCost('Thumbtack')}`,
+      leadCost: `$${getCompetitorLeadCost('Angi')}`,
       volumeDiscount: "None",
-      escrow: "Limited",
+      escrow: "Not available",
       leadQuality: "Shared",
-      advantages: ["Direct messaging"],
-      disadvantages: ["Flat pricing regardless of exclusivity", "Pay to quote (no guarantee of work)", "High competition", "No meaningful exclusivity benefits"]
+      advantages: ["Trusted reviews"],
+      disadvantages: ["Lead sharing reduces conversion", "No exclusivity options", "Pay for all leads regardless of quality"]
     },
     {
-      name: "Google AdWords",
+      name: "Google Ads (PPC)",
       monthlyFee: "$0",
       leadCost: `$${getCompetitorLeadCost('Google AdWords')} effective*`,
       volumeDiscount: "None",
@@ -63,16 +56,6 @@ export default function CompetitiveAdvantageShowcase() {
       leadQuality: "Unvetted clicks",
       advantages: ["Full control", "Direct reach"],
       disadvantages: ["25% click-to-lead rate = 4x cost", "No quality guarantees", "Requires expertise", "Time-intensive management"]
-    },
-    {
-      name: "Bark",
-      monthlyFee: "$0",
-      leadCost: `$${getCompetitorLeadCost('Bark')}`,
-      volumeDiscount: "None",
-      escrow: "Limited",
-      leadQuality: "Shared",
-      advantages: ["Simple credit system"],
-      disadvantages: ["No volume discounts", "Varies widely by project value", "Credits expire", "Lead sharing", "Flat pricing"]
     },
     {
       name: "Yelp",
@@ -90,7 +73,7 @@ export default function CompetitiveAdvantageShowcase() {
     {
       icon: <TrendingDown className="h-5 w-5 text-green-600" />,
       title: "Choose Your Exclusivity",
-      description: "Pay based on your exclusivity preference. Non-exclusive at Bark - $0.50, or 24-hour exclusive at Google CPC × 2.5. You choose what works for your business.",
+      description: "Pay based on your exclusivity preference. Non-exclusive leads start lower than HomeAdvisor, or get 24-hour exclusive access. You choose what works for your business.",
       value: `$${nonExclusiveCost} or $${exclusiveCost} per lead (${selectedIndustry})`
     },
     {
@@ -279,8 +262,8 @@ export default function CompetitiveAdvantageShowcase() {
           <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
             <p className="text-sm font-semibold text-primary mb-2">💡 Key Insight:</p>
             <p className="text-sm text-muted-foreground">
-              DigsandGigs is the <strong>only platform</strong> that lets you choose between non-exclusive (Bark - $0.50) 
-              and 24-hour exclusive leads (Google CPC × 2.5). Competitors offer no such flexibility—you're stuck with their one-size-fits-all approach.
+              DigsandGigs is the <strong>only platform</strong> that lets you choose between non-exclusive leads (lower than HomeAdvisor) 
+              and 24-hour exclusive leads. Competitors like HomeAdvisor and Angi's offer no such flexibility—you're stuck with their one-size-fits-all approach.
             </p>
           </div>
         </CardContent>
