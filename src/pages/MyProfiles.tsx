@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Star, Edit, Trash2, Eye, LayoutDashboard } from "lucide-react";
+import { Plus, Star, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/utils/retryWithBackoff";
 
@@ -298,7 +298,8 @@ const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: str
             {profiles.map((profile) => (
               <Card 
                 key={profile.id} 
-                className="relative overflow-hidden hover:shadow-lg transition-shadow"
+                className="relative overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate(`/digger/${profile.id}`)}
               >
                 {profile.is_primary && (
                   <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 rounded-bl-lg">
@@ -343,18 +344,7 @@ const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: str
                     </div>
                   </div>
 
-                  {/* Primary Action Button */}
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={() => navigate(`/my-profiles/${profile.id}/dashboard`)} 
-                    className="w-full mb-3 gap-2"
-                  >
-                    <LayoutDashboard className="h-4 w-4" />
-                    My Dashboard
-                  </Button>
-
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -363,15 +353,6 @@ const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: str
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => navigate(`/digger/${profile.id}`)} 
-                      className="flex-1"
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Public
                     </Button>
                     {!profile.is_primary && (
                       <Button variant="outline" size="sm" onClick={() => handleSetPrimary(profile.id)} title="Set as primary">
