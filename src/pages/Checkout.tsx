@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ShoppingCart, CreditCard, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, ShoppingCart, CreditCard, CheckCircle2, ArrowLeft, Plus, Minus, Trash2, Info } from "lucide-react";
 import { toast } from "sonner";
-import { getLeadCostForIndustry } from "@/config/pricing";
+import { getLeadCostFromCPC, getIndustryCategory, calculateBulkDiscount, INDUSTRY_PRICING } from "@/config/pricing";
+import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
 import SEOHead from "@/components/SEOHead";
 
 interface LeadSelection {
@@ -25,11 +28,22 @@ interface LeadSelection {
 
 interface DiscountInfo {
   subtotal: number;
+  originalTotal?: number;
   discountOnFirstThousand: number;
   discountOnExcess: number;
   totalDiscount: number;
   finalTotal: number;
+  savingsPercentage?: number;
 }
+
+type LeadType = 'exclusive-24h' | 'semi-exclusive' | 'confirmed' | 'unconfirmed';
+
+const LEAD_TYPE_OPTIONS: { value: LeadType; label: string }[] = [
+  { value: 'exclusive-24h', label: '24-Hr Exclusive' },
+  { value: 'semi-exclusive', label: 'Semi Exclusive' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'unconfirmed', label: 'Unconfirmed' },
+];
 
 export default function Checkout() {
   const { user } = useAuth();
@@ -44,117 +58,308 @@ export default function Checkout() {
   const searchParams = new URLSearchParams(location.search);
   const profileId = searchParams.get('profileId');
 
+  // Helper to look up Google CPC for a keyword
+  const lookupGoogleCPC = useCallback((keyword: string, industry: string): { cpc: number; isEstimated: boolean } => {
+    const keywordLower = keyword.toLowerCase();
+    
+    // Search through all industry keyword arrays
+    for (const industryData of GOOGLE_CPC_KEYWORDS) {
+      // Check for exact keyword match
+      const exactMatch = industryData.keywords.find(
+        k => k.keyword.toLowerCase() === keywordLower
+      );
+      if (exactMatch) {
+        return { cpc: exactMatch.cpc, isEstimated: false };
+      }
+    }
+    
+    // Try partial match across all industries
+    for (const industryData of GOOGLE_CPC_KEYWORDS) {
+      const partialMatch = industryData.keywords.find(
+        k => k.keyword.toLowerCase().includes(keywordLower) || keywordLower.includes(k.keyword.toLowerCase())
+      );
+      if (partialMatch) {
+        return { cpc: partialMatch.cpc, isEstimated: true };
+      }
+    }
+    
+    // Fallback: estimate based on industry tier
+    const industryCategory = getIndustryCategory(industry);
+    let estimatedCPC = 50; // default
+    
+    if (industryCategory === 'high-value') {
+      estimatedCPC = 120;
+    } else if (industryCategory === 'mid-value') {
+      estimatedCPC = 60;
+    }
+    
+    return { cpc: estimatedCPC, isEstimated: true };
+  }, []);
+
+  // Calculate price per lead based on CPC and lead type
+  const calculatePricePerLead = useCallback((keyword: string, industry: string, exclusivity: string, isConfirmed: boolean): number => {
+    const { cpc } = lookupGoogleCPC(keyword, industry);
+    
+    // Map exclusivity + confirmed to the right pricing
+    if (exclusivity === 'exclusive-24h') {
+      return getLeadCostFromCPC(cpc, 'exclusive-24h');
+    } else if (exclusivity === 'semi-exclusive') {
+      return getLeadCostFromCPC(cpc, 'semi-exclusive');
+    } else {
+      // non-exclusive - check if confirmed
+      const basePrice = getLeadCostFromCPC(cpc, 'non-exclusive');
+      if (isConfirmed) {
+        // 20% premium for confirmed leads
+        return Math.round((basePrice * 1.2) * 2) / 2; // Round to nearest $0.50
+      }
+      return basePrice;
+    }
+  }, [lookupGoogleCPC]);
+
+  // Recalculate discount info based on current selections
+  const recalculateDiscounts = useCallback((currentSelections: LeadSelection[]): DiscountInfo => {
+    const subtotal = currentSelections.reduce((sum, sel) => {
+      if (sel.quantity <= 0) return sum;
+      const price = calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+      return sum + (price * sel.quantity);
+    }, 0);
+    
+    const result = calculateBulkDiscount(subtotal);
+    return {
+      subtotal: result.originalTotal,
+      originalTotal: result.originalTotal,
+      discountOnFirstThousand: result.discountOnFirstThousand,
+      discountOnExcess: result.discountOnExcess,
+      totalDiscount: result.totalDiscount,
+      finalTotal: result.finalTotal,
+      savingsPercentage: result.savingsPercentage,
+    };
+  }, [calculatePricePerLead]);
+
+  // Update selections and recalculate
+  const updateSelectionsAndRecalculate = useCallback((newSelections: LeadSelection[]) => {
+    setSelections(newSelections);
+    const newDiscount = recalculateDiscounts(newSelections);
+    setDiscountInfo(newDiscount);
+    
+    // Sync to sessionStorage
+    const purchasesWithPricing = newSelections
+      .filter(sel => sel.quantity > 0)
+      .map(sel => ({
+        ...sel,
+        pricePerLead: calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed),
+        subtotal: calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed) * sel.quantity,
+      }));
+    
+    sessionStorage.setItem('leadPurchaseSelections', JSON.stringify(purchasesWithPricing));
+    sessionStorage.setItem('leadPurchaseDiscount', JSON.stringify(newDiscount));
+    sessionStorage.setItem('allLeadSelections', JSON.stringify(newSelections));
+  }, [recalculateDiscounts, calculatePricePerLead]);
+
+  // Handler: Update quantity for a selection
+  const updateQuantity = useCallback((selectionId: string, newQuantity: number) => {
+    if (newQuantity < 0) return;
+    const updated = selections.map(sel => 
+      sel.id === selectionId ? { ...sel, quantity: newQuantity } : sel
+    );
+    updateSelectionsAndRecalculate(updated);
+  }, [selections, updateSelectionsAndRecalculate]);
+
+  // Handler: Update lead type for a selection
+  const updateLeadType = useCallback((selectionId: string, newLeadType: LeadType) => {
+    const updated = selections.map(sel => {
+      if (sel.id !== selectionId) return sel;
+      
+      // Map lead type to exclusivity and isConfirmed
+      let exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive';
+      let isConfirmed = false;
+      
+      switch (newLeadType) {
+        case 'exclusive-24h':
+          exclusivity = 'exclusive-24h';
+          break;
+        case 'semi-exclusive':
+          exclusivity = 'semi-exclusive';
+          break;
+        case 'confirmed':
+          exclusivity = 'non-exclusive';
+          isConfirmed = true;
+          break;
+        case 'unconfirmed':
+          exclusivity = 'non-exclusive';
+          isConfirmed = false;
+          break;
+      }
+      
+      return { ...sel, exclusivity, isConfirmed };
+    });
+    updateSelectionsAndRecalculate(updated);
+  }, [selections, updateSelectionsAndRecalculate]);
+
+  // Handler: Delete a selection
+  const deleteSelection = useCallback((selectionId: string) => {
+    const updated = selections.filter(sel => sel.id !== selectionId);
+    updateSelectionsAndRecalculate(updated);
+    
+    if (updated.length === 0) {
+      toast.info("All items removed. Redirecting...");
+      setTimeout(() => navigate(profileId ? `/digger/${profileId}` : '/pricing'), 1500);
+    }
+  }, [selections, updateSelectionsAndRecalculate, navigate, profileId]);
+
+  // Handler: Add new lead type for a keyword
+  const addLeadTypeForKeyword = useCallback((keyword: string, industry: string) => {
+    // Find existing lead types for this keyword
+    const existingTypes = selections
+      .filter(sel => sel.keyword === keyword)
+      .map(sel => {
+        if (sel.exclusivity === 'exclusive-24h') return 'exclusive-24h';
+        if (sel.exclusivity === 'semi-exclusive') return 'semi-exclusive';
+        return sel.isConfirmed ? 'confirmed' : 'unconfirmed';
+      });
+    
+    // Find first available lead type
+    const availableType = LEAD_TYPE_OPTIONS.find(opt => !existingTypes.includes(opt.value));
+    
+    if (!availableType) {
+      toast.info("All lead types already added for this keyword");
+      return;
+    }
+    
+    // Create new selection
+    let exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive';
+    let isConfirmed = false;
+    
+    switch (availableType.value) {
+      case 'exclusive-24h':
+        exclusivity = 'exclusive-24h';
+        break;
+      case 'semi-exclusive':
+        exclusivity = 'semi-exclusive';
+        break;
+      case 'confirmed':
+        isConfirmed = true;
+        break;
+    }
+    
+    const newSelection: LeadSelection = {
+      id: `${keyword}-${availableType.value}-${Date.now()}`,
+      keyword,
+      industry,
+      exclusivity,
+      quantity: 1,
+      isConfirmed,
+    };
+    
+    updateSelectionsAndRecalculate([...selections, newSelection]);
+  }, [selections, updateSelectionsAndRecalculate]);
+
+  // Get current lead type from selection
+  const getLeadTypeFromSelection = (sel: LeadSelection): LeadType => {
+    if (sel.exclusivity === 'exclusive-24h') return 'exclusive-24h';
+    if (sel.exclusivity === 'semi-exclusive') return 'semi-exclusive';
+    return sel.isConfirmed ? 'confirmed' : 'unconfirmed';
+  };
+
+  // Get lead type badge styling
+  const getLeadTypeBadge = (leadType: LeadType) => {
+    switch (leadType) {
+      case 'exclusive-24h':
+        return { variant: 'destructive' as const, label: '24-Hr Exclusive' };
+      case 'semi-exclusive':
+        return { variant: 'default' as const, label: 'Semi Exclusive' };
+      case 'confirmed':
+        return { variant: 'secondary' as const, label: 'Confirmed' };
+      case 'unconfirmed':
+        return { variant: 'outline' as const, label: 'Unconfirmed' };
+    }
+  };
+
   useEffect(() => {
-    console.log("Checkout useEffect running, user:", user);
-    
-    // Get lead purchase selections from sessionStorage immediately
+    // Get lead purchase selections from sessionStorage
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
+    const savedAllSelections = sessionStorage.getItem('allLeadSelections');
     const savedDiscount = sessionStorage.getItem('leadPurchaseDiscount');
-    console.log("Checkout - savedSelections:", savedSelections);
-    console.log("Checkout - savedDiscount:", savedDiscount);
     
-    if (!savedSelections) {
-      console.log("Checkout - No data in sessionStorage, redirecting to pricing");
+    // Prefer allLeadSelections (includes zero-qty items) over leadPurchaseSelections
+    const selectionsToUse = savedAllSelections || savedSelections;
+    
+    if (!selectionsToUse) {
       toast.error("No checkout data found");
       navigate("/pricing");
       return;
     }
 
     try {
-      const parsedSelections = JSON.parse(savedSelections);
-      console.log("Checkout - Parsed selections:", parsedSelections);
+      const parsedSelections = JSON.parse(selectionsToUse);
       
       if (!parsedSelections || parsedSelections.length === 0) {
-        console.log("Checkout - Empty selections array");
         toast.error("No items selected");
         navigate("/pricing");
         return;
       }
       
-      setSelections(parsedSelections);
+      // Filter to only show items with quantity > 0
+      const activeSelections = parsedSelections.filter((sel: LeadSelection) => sel.quantity > 0);
       
-      // Load discount info if available
-      if (savedDiscount) {
-        const parsedDiscount = JSON.parse(savedDiscount);
-        setDiscountInfo(parsedDiscount);
-        console.log("Checkout - Discount info loaded:", parsedDiscount);
+      if (activeSelections.length === 0) {
+        toast.error("No items with quantity selected");
+        navigate("/pricing");
+        return;
       }
       
+      setSelections(activeSelections);
+      
+      // Recalculate discount info
+      const newDiscount = recalculateDiscounts(activeSelections);
+      setDiscountInfo(newDiscount);
+      
       setLoading(false);
-      console.log("Checkout - Loading set to false, selections set");
     } catch (error) {
       console.error("Error parsing checkout data:", error);
       toast.error("Invalid checkout data");
       navigate("/pricing");
     }
-  }, [navigate]);
+  }, [navigate, recalculateDiscounts]);
 
   const handleCheckout = async () => {
-    console.log("=== CHECKOUT STARTED ===");
-    console.log("User:", user);
-    console.log("Selections:", selections);
-    console.log("ProfileId:", profileId);
-    
     if (!user) {
-      console.error("No user found");
       toast.error("Please log in to continue");
       navigate("/register");
       return;
     }
     
-    if (selections.length === 0) {
-      console.error("No selections");
+    const activeSelections = selections.filter(sel => sel.quantity > 0);
+    
+    if (activeSelections.length === 0) {
+      toast.error("Please add at least one item to checkout");
       return;
     }
 
     setProcessing(true);
     try {
-      // Use discount info if available, otherwise calculate raw total
-      const totalAmount = discountInfo ? discountInfo.finalTotal : selections.reduce((sum, sel) => {
-        const pricePerLead = getLeadCostForIndustry(sel.industry, sel.exclusivity);
-        return sum + (pricePerLead * sel.quantity);
-      }, 0);
-
-      console.log("Calculated total amount:", totalAmount);
-      console.log("Discount info:", discountInfo);
-      console.log("Calling edge function...");
+      // Prepare selections with pricing
+      const selectionsWithPricing = activeSelections.map(sel => ({
+        ...sel,
+        pricePerLead: calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed),
+        subtotal: calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed) * sel.quantity,
+      }));
 
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
         body: {
-          selections: selections,
-          totalAmount: totalAmount,
+          selections: selectionsWithPricing,
+          totalAmount: discountInfo?.finalTotal || 0,
           diggerProfileId: profileId,
           discountInfo: discountInfo,
         },
       });
 
-      console.log("Edge function response:", { data, error });
+      if (error) throw error;
+      if (!data?.url) throw new Error("No checkout URL received");
 
-      if (error) {
-        console.error("Edge function error:", error);
-        throw error;
-      }
-
-      if (!data) {
-        console.error("No data received from edge function");
-        throw new Error("No response data received");
-      }
-
-      console.log("Checkout URL:", data.url);
-
-      if (data.url) {
-        console.log("Redirecting to Stripe checkout...");
-        // Redirect to Stripe checkout in same window
-        window.location.href = data.url;
-      } else {
-        console.error("No URL in response data:", data);
-        throw new Error("No checkout URL received");
-      }
+      window.location.href = data.url;
     } catch (error: any) {
-      console.error("=== CHECKOUT ERROR ===");
-      console.error("Error object:", error);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      console.error("Checkout error:", error);
       toast.error(error.message || "Failed to process checkout");
       setProcessing(false);
     }
@@ -168,35 +373,20 @@ export default function Checkout() {
     );
   }
 
-  if (!selections || selections.length === 0) {
-    return null;
-  }
-
-  const calculateTotalCost = () => {
-    return selections.reduce((sum, sel) => {
-      // Use saved subtotal if available, otherwise calculate
-      if (sel.subtotal !== undefined) {
-        return sum + sel.subtotal;
-      }
-      const pricePerLead = getLeadCostForIndustry(sel.industry, sel.exclusivity);
-      return sum + (pricePerLead * sel.quantity);
-    }, 0);
-  };
-
-  const getExclusivityBadge = (exclusivity: string) => {
-    switch (exclusivity) {
-      case 'non-exclusive':
-        return { variant: 'secondary' as const, label: 'Non-Exclusive' };
-      case 'semi-exclusive':
-        return { variant: 'default' as const, label: 'Semi-Exclusive (4 max)' };
-      case 'exclusive-24h':
-        return { variant: 'destructive' as const, label: '24hr Exclusive' };
-      default:
-        return { variant: 'outline' as const, label: exclusivity };
+  // Group selections by keyword
+  const groupedSelections = selections.reduce((acc, sel) => {
+    if (!acc[sel.keyword]) {
+      acc[sel.keyword] = {
+        keyword: sel.keyword,
+        industry: sel.industry,
+        selections: [],
+      };
     }
-  };
+    acc[sel.keyword].selections.push(sel);
+    return acc;
+  }, {} as Record<string, { keyword: string; industry: string; selections: LeadSelection[] }>);
 
-  const totalCost = calculateTotalCost();
+  const keywordGroups = Object.values(groupedSelections);
 
   return (
     <>
@@ -225,7 +415,7 @@ export default function Checkout() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Checkout</h1>
             <p className="text-muted-foreground">
-              Review and complete your lead purchase
+              Review and edit your lead purchase before payment
             </p>
           </div>
 
@@ -238,37 +428,136 @@ export default function Checkout() {
                   <h2 className="text-xl font-semibold">Order Details</h2>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    {selections.map((selection, idx) => {
-                      // Use saved pricing data, fallback to recalculation if not available
-                      const pricePerLead = selection.pricePerLead ?? getLeadCostForIndustry(selection.industry, selection.exclusivity);
-                      const lineTotal = selection.subtotal ?? (pricePerLead * selection.quantity);
-                      const badge = getExclusivityBadge(selection.exclusivity);
-                      
-                      return (
-                        <div key={idx} className="flex items-start justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium">{selection.keyword}</span>
-                              <Badge variant={badge.variant}>
-                                {badge.label}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {selection.quantity} leads × ${pricePerLead.toFixed(2)} per lead
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Industry: {selection.industry}
+                <div className="space-y-6">
+                  {keywordGroups.map((group) => {
+                    const { cpc, isEstimated } = lookupGoogleCPC(group.keyword, group.industry);
+                    const existingLeadTypes = group.selections.map(getLeadTypeFromSelection);
+                    const canAddMore = existingLeadTypes.length < 4;
+                    
+                    // Calculate keyword subtotal
+                    const keywordSubtotal = group.selections.reduce((sum, sel) => {
+                      if (sel.quantity <= 0) return sum;
+                      const price = calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+                      return sum + (price * sel.quantity);
+                    }, 0);
+                    
+                    return (
+                      <div key={group.keyword} className="border rounded-lg overflow-hidden">
+                        {/* Keyword Header */}
+                        <div className="bg-muted/50 px-4 py-3 flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-lg">{group.keyword}</h3>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>Google CPC: ${cpc.toFixed(2)}</span>
+                              {isEstimated && (
+                                <Badge variant="outline" className="text-xs">Est.</Badge>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="font-semibold text-lg">${lineTotal.toFixed(2)}</div>
-                          </div>
+                          {canAddMore && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addLeadTypeForKeyword(group.keyword, group.industry)}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add Lead Type
+                            </Button>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
+                        
+                        {/* Lead Type Entries */}
+                        <div className="divide-y">
+                          {group.selections.map((sel) => {
+                            const leadType = getLeadTypeFromSelection(sel);
+                            const pricePerLead = calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+                            const lineTotal = pricePerLead * sel.quantity;
+                            
+                            return (
+                              <div key={sel.id} className="px-4 py-3 flex items-center gap-4 flex-wrap">
+                                {/* Lead Type Selector */}
+                                <div className="w-40">
+                                  <Select
+                                    value={leadType}
+                                    onValueChange={(val) => updateLeadType(sel.id, val as LeadType)}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {LEAD_TYPE_OPTIONS.map(opt => (
+                                        <SelectItem 
+                                          key={opt.value} 
+                                          value={opt.value}
+                                          disabled={opt.value !== leadType && existingLeadTypes.includes(opt.value)}
+                                        >
+                                          {opt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                {/* Quantity Controls */}
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => updateQuantity(sel.id, sel.quantity - 1)}
+                                    disabled={sel.quantity <= 0}
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={sel.quantity}
+                                    onChange={(e) => updateQuantity(sel.id, parseInt(e.target.value) || 0)}
+                                    className="w-16 h-8 text-center"
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => updateQuantity(sel.id, sel.quantity + 1)}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                
+                                {/* Price Per Lead */}
+                                <div className="text-sm text-muted-foreground whitespace-nowrap">
+                                  × ${pricePerLead.toFixed(2)}/lead
+                                </div>
+                                
+                                {/* Line Total */}
+                                <div className="font-semibold ml-auto whitespace-nowrap">
+                                  ${lineTotal.toFixed(2)}
+                                </div>
+                                
+                                {/* Delete Button */}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => deleteSelection(sel.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Keyword Subtotal */}
+                        <div className="bg-muted/30 px-4 py-2 flex justify-between text-sm">
+                          <span className="text-muted-foreground">Keyword Subtotal</span>
+                          <span className="font-medium">${keywordSubtotal.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </Card>
 
@@ -303,7 +592,7 @@ export default function Checkout() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${discountInfo ? discountInfo.subtotal.toFixed(2) : totalCost.toFixed(2)}</span>
+                    <span>${discountInfo?.subtotal.toFixed(2) || '0.00'}</span>
                   </div>
                   
                   {discountInfo && discountInfo.totalDiscount > 0 && (
@@ -325,7 +614,7 @@ export default function Checkout() {
                   
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span>${discountInfo ? discountInfo.finalTotal.toFixed(2) : totalCost.toFixed(2)}</span>
+                    <span>${discountInfo?.finalTotal.toFixed(2) || '0.00'}</span>
                   </div>
                   
                   {discountInfo && discountInfo.totalDiscount > 0 && (
@@ -339,7 +628,7 @@ export default function Checkout() {
 
                 <Button
                   onClick={handleCheckout}
-                  disabled={processing}
+                  disabled={processing || selections.filter(s => s.quantity > 0).length === 0}
                   className="w-full"
                   size="lg"
                 >
@@ -361,6 +650,22 @@ export default function Checkout() {
                 </p>
               </Card>
             </div>
+          </div>
+
+          {/* Back to Keyword Selection Button */}
+          <div className="mt-8 flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const backUrl = profileId 
+                  ? `/digger/${profileId}`
+                  : '/pricing';
+                navigate(backUrl);
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Keyword Selection
+            </Button>
           </div>
         </main>
       </div>
