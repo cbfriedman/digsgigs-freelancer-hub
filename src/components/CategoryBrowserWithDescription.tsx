@@ -570,12 +570,15 @@ export const CategoryBrowserWithDescription = () => {
 
                 {/* Country - Required */}
                 <div className="space-y-2">
-                  <Label htmlFor="country_browser">Country <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="country_browser" className="flex items-center gap-1">
+                    Country <span className="text-destructive font-semibold">*</span>
+                    <span className="text-xs text-destructive">(required)</span>
+                  </Label>
                   <select
                     id="country_browser"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background ${!country ? 'border-destructive/50' : 'border-input'}`}
                   >
                     <option value="">Select a country...</option>
                     <option value="United States">🇺🇸 United States</option>
@@ -595,12 +598,15 @@ export const CategoryBrowserWithDescription = () => {
                 {/* State/Province - Required (when country has regions) */}
                 {country && getRegionsForCountry(country).length > 0 && (
                   <div className="space-y-2">
-                    <Label htmlFor="state_browser">{getRegionLabel(country)} <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="state_browser" className="flex items-center gap-1">
+                      {getRegionLabel(country)} <span className="text-destructive font-semibold">*</span>
+                      <span className="text-xs text-destructive">(required)</span>
+                    </Label>
                     <select
                       id="state_browser"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background ${!state ? 'border-destructive/50' : 'border-input'}`}
                     >
                       <option value="">Select {getRegionLabel(country).toLowerCase()}...</option>
                       {getRegionsForCountry(country).map((region) => (
