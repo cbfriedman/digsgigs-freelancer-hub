@@ -396,6 +396,18 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Accounting',
       'Tax Preparation',
       'CPA Services',
+      'Tax Services',
+      'tax services',
+      'Small Business Tax Services',
+      'small business tax services',
+      'Tax Accountant',
+      'tax accountant',
+      'Business Lawyer',
+      'business lawyer',
+      'Real Estate Attorney',
+      'real estate attorney',
+      'Tax Law Attorney',
+      'tax law attorney',
       
       // Real Estate
       'Real Estate',
