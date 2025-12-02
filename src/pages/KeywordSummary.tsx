@@ -721,7 +721,7 @@ export default function KeywordSummary() {
               onClick={() => navigate(profileId ? `/digger/${profileId}` : '/pricing')}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Keyword Selection
+              {profileId ? 'Back to Profile' : 'Back to Keyword Selection'}
             </Button>
           </div>
         </div>

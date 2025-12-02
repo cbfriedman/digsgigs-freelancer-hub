@@ -77,18 +77,36 @@ serve(async (req) => {
       finalTotal 
     });
 
-    // Create line items for each lead selection (using discounted prices)
-    const lineItems = selections.map((selection: any) => ({
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: `${selection.keyword} Lead Credits`,
-          description: `Non-Exclusive - ${selection.quantity} credit${selection.quantity !== 1 ? 's' : ''} (includes bulk discount)`,
+    // Helper to get exclusivity label
+    const getExclusivityLabel = (exclusivity: string, isConfirmed: boolean): string => {
+      if (exclusivity === 'exclusive-24h') return '24-Hr Exclusive';
+      if (exclusivity === 'semi-exclusive') return 'Semi-Exclusive';
+      if (isConfirmed) return 'Confirmed';
+      return 'Non-Exclusive';
+    };
+
+    // Calculate total quantity for proportional discount distribution
+    const totalQuantity = selections.reduce((sum: number, s: any) => sum + s.quantity, 0);
+    const discountRatio = finalTotal / originalTotal;
+
+    // Create line items for each lead selection with actual per-lead prices
+    const lineItems = selections.map((selection: any) => {
+      // Use the pre-calculated pricePerLead, apply discount ratio
+      const discountedPricePerLead = Math.round(selection.pricePerLead * discountRatio * 100); // in cents
+      const exclusivityLabel = getExclusivityLabel(selection.exclusivity, selection.isConfirmed);
+      
+      return {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `${selection.keyword} Lead Credits`,
+            description: `${exclusivityLabel} - ${selection.quantity} credit${selection.quantity !== 1 ? 's' : ''} @ $${selection.pricePerLead.toFixed(2)}/lead`,
+          },
+          unit_amount: discountedPricePerLead,
         },
-        unit_amount: Math.round((finalTotal / selections.reduce((sum: number, s: any) => sum + s.quantity, 0)) * 100), // Discounted average price per lead in cents
-      },
-      quantity: selection.quantity,
-    }));
+        quantity: selection.quantity,
+      };
+    });
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
