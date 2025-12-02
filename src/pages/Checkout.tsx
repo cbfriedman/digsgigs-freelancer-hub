@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, ShoppingCart, CreditCard, CheckCircle2, ArrowLeft, Plus, Minus, Trash2, Info } from "lucide-react";
 import { toast } from "sonner";
-import { getLeadCostFromCPC, getIndustryCategory, calculateBulkDiscount, INDUSTRY_PRICING } from "@/config/pricing";
+import { getLeadCostFromCPC, getIndustryCategory, calculateBulkDiscount, INDUSTRY_PRICING, getLeadCostForIndustry } from "@/config/pricing";
 import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
 import SEOHead from "@/components/SEOHead";
 
@@ -83,17 +83,11 @@ export default function Checkout() {
       }
     }
     
-    // Fallback: estimate based on industry tier
-    const industryCategory = getIndustryCategory(industry);
-    let estimatedCPC = 50; // default
+    // Fallback: estimate CPC based on lead cost (same logic as KeywordSummary)
+    const leadCost = getLeadCostForIndustry(industry, 'non-exclusive');
+    const estimatedCPC = leadCost / 0.20;
     
-    if (industryCategory === 'high-value') {
-      estimatedCPC = 120;
-    } else if (industryCategory === 'mid-value') {
-      estimatedCPC = 60;
-    }
-    
-    return { cpc: estimatedCPC, isEstimated: true };
+    return { cpc: Math.round(estimatedCPC * 100) / 100, isEstimated: true };
   }, []);
 
   // Calculate price per lead based on CPC and lead type
