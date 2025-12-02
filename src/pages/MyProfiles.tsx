@@ -38,12 +38,30 @@ export default function MyProfiles() {
     open: false,
     profileId: null,
   });
-  const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: string | null; currentName: string }>({
+const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: string | null; currentName: string }>({
     open: false,
     profileId: null,
     currentName: '',
   });
   const [newProfileName, setNewProfileName] = useState('');
+  const [createProfileDialog, setCreateProfileDialog] = useState(false);
+  const [newProfileNameForCreate, setNewProfileNameForCreate] = useState('');
+
+  const handleCreateNewProfile = () => {
+    setNewProfileNameForCreate('');
+    setCreateProfileDialog(true);
+  };
+
+  const handleConfirmCreateProfile = () => {
+    if (!newProfileNameForCreate.trim()) {
+      toast.error("Please enter a profile name");
+      return;
+    }
+    // Store the profile name in sessionStorage for the category browser to use
+    sessionStorage.setItem('newProfileName', newProfileNameForCreate.trim());
+    setCreateProfileDialog(false);
+    navigate("/pricing");
+  };
 
   useEffect(() => {
     if (user) {
@@ -223,7 +241,7 @@ export default function MyProfiles() {
             <h1 className="text-4xl font-bold mb-2">My Profiles</h1>
             <p className="text-muted-foreground">Manage your digger profiles and view statistics</p>
           </div>
-          <Button onClick={() => navigate("/digger-registration")} className="gap-2">
+          <Button onClick={handleCreateNewProfile} className="gap-2">
             <Plus className="h-4 w-4" />
             Create New Profile
           </Button>
@@ -263,7 +281,7 @@ export default function MyProfiles() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <p className="text-muted-foreground mb-4">You don't have any profiles yet</p>
-              <Button onClick={() => navigate("/digger-registration")}>
+              <Button onClick={handleCreateNewProfile}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Profile
               </Button>
@@ -402,6 +420,43 @@ export default function MyProfiles() {
             </Button>
             <Button onClick={handleRename} disabled={!newProfileName.trim()}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create New Profile Dialog */}
+      <Dialog open={createProfileDialog} onOpenChange={setCreateProfileDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Profile</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new profile. This helps you identify different service offerings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-profile-name">
+                Profile Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="new-profile-name"
+                value={newProfileNameForCreate}
+                onChange={(e) => setNewProfileNameForCreate(e.target.value)}
+                placeholder="e.g., Plumbing Services, Legal Consulting"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                Examples: "Commercial Electrical", "Residential Plumbing", "Tax Services"
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateProfileDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmCreateProfile} disabled={!newProfileNameForCreate.trim()}>
+              Continue to Browse Categories
             </Button>
           </DialogFooter>
         </DialogContent>

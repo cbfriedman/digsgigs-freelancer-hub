@@ -12,8 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Plus, ChevronDown, User, Edit, Star, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface DiggerProfile {
   id: string;
@@ -28,6 +32,8 @@ export const DiggerProfileSelector = () => {
   const [profiles, setProfiles] = useState<DiggerProfile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<DiggerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [createProfileDialog, setCreateProfileDialog] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -62,7 +68,19 @@ export const DiggerProfileSelector = () => {
   };
 
   const handleCreateProfile = () => {
-    navigate("/digger-registration");
+    setNewProfileName('');
+    setCreateProfileDialog(true);
+  };
+
+  const handleConfirmCreateProfile = () => {
+    if (!newProfileName.trim()) {
+      toast.error("Please enter a profile name");
+      return;
+    }
+    // Store the profile name in sessionStorage for the category browser to use
+    sessionStorage.setItem('newProfileName', newProfileName.trim());
+    setCreateProfileDialog(false);
+    navigate("/pricing");
   };
 
   const handleEditProfile = (profileId: string) => {
@@ -158,6 +176,43 @@ export const DiggerProfileSelector = () => {
           Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>
+
+      {/* Create New Profile Dialog */}
+      <Dialog open={createProfileDialog} onOpenChange={setCreateProfileDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Profile</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new profile. This helps you identify different service offerings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="selector-new-profile-name">
+                Profile Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="selector-new-profile-name"
+                value={newProfileName}
+                onChange={(e) => setNewProfileName(e.target.value)}
+                placeholder="e.g., Plumbing Services, Legal Consulting"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                Examples: "Commercial Electrical", "Residential Plumbing", "Tax Services"
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateProfileDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmCreateProfile} disabled={!newProfileName.trim()}>
+              Continue to Browse Categories
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DropdownMenu>
   );
 };
