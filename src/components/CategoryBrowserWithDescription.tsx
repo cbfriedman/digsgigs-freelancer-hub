@@ -885,8 +885,8 @@ export const CategoryBrowserWithDescription = () => {
                       
                       toast.success(`Profile "${profileName.trim()}" created with ${selected.length} keywords!`);
 
-                      // Navigate to My Profiles page
-                      navigate('/my-profiles', { replace: true });
+                      // Navigate to the new profile's detail page for lead purchasing
+                      navigate(`/digger/${newProfile.id}`, { replace: true });
                     }
                   } catch (error: any) {
                     console.error("Error saving Digger profile:", error);
