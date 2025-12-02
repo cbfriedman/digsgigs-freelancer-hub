@@ -74,7 +74,7 @@ export default function KeywordSummary() {
       initialSelections.set(kw.keyword, {
         keyword: kw.keyword,
         industry: kw.industry,
-        exclusivity: 'non-exclusive',
+        exclusivity: 'exclusive-24h',
         quantity: 0,
         isConfirmed: false
       });
@@ -253,7 +253,7 @@ export default function KeywordSummary() {
     newSelections.set(newKeywordObj.keyword, {
       keyword: newKeywordObj.keyword,
       industry: newKeywordObj.industry,
-      exclusivity: 'non-exclusive',
+      exclusivity: 'exclusive-24h',
       quantity: 0,
       isConfirmed: false
     });
@@ -455,10 +455,10 @@ export default function KeywordSummary() {
                             }}
                             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                           >
-                            <option value="non-exclusive-unconfirmed">Unconfirmed - ${getLeadCostForIndustry(industry, 'non-exclusive', false).toFixed(2)}/lead</option>
-                            <option value="non-exclusive-confirmed">Confirmed - ${getLeadCostForIndustry(industry, 'non-exclusive', true).toFixed(2)}/lead</option>
+                            <option value="exclusive-24h">24-Hr. Exclusive - ${getLeadCostForIndustry(industry, 'exclusive-24h', false).toFixed(2)}/lead</option>
                             <option value="semi-exclusive">Semi Exclusive - ${getLeadCostForIndustry(industry, 'semi-exclusive', false).toFixed(2)}/lead</option>
-                            <option value="exclusive-24h">Exclusive - ${getLeadCostForIndustry(industry, 'exclusive-24h', false).toFixed(2)}/lead</option>
+                            <option value="non-exclusive-confirmed">Confirmed - ${getLeadCostForIndustry(industry, 'non-exclusive', true).toFixed(2)}/lead</option>
+                            <option value="non-exclusive-unconfirmed">Unconfirmed - ${getLeadCostForIndustry(industry, 'non-exclusive', false).toFixed(2)}/lead</option>
                           </select>
                         </div>
 
