@@ -67,12 +67,12 @@ export const CategoryBrowserWithDescription = () => {
   const [serviceRadiusCenter, setServiceRadiusCenter] = useState("");
   const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
   const [country, setCountry] = useState("");
-  const [state, setState] = useState("");
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [city, setCity] = useState("");
 
   // Reset state when country changes
   useEffect(() => {
-    setState("");
+    setSelectedStates([]);
   }, [country]);
 
   // Load profile name from sessionStorage for new profiles
@@ -613,21 +613,57 @@ export const CategoryBrowserWithDescription = () => {
                 {/* State/Province - Required (when country has regions) */}
                 {country && getRegionsForCountry(country).length > 0 && (
                   <div className="space-y-2">
-                    <Label htmlFor="state_browser" className="flex items-center gap-1">
+                    <Label className="flex items-center gap-1">
                       {getRegionLabel(country)} <span className="text-destructive font-semibold">*</span>
                       <span className="text-xs text-destructive">(required)</span>
                     </Label>
-                    <select
-                      id="state_browser"
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background ${!state ? 'border-destructive/50' : 'border-input'}`}
-                    >
-                      <option value="">Select {getRegionLabel(country).toLowerCase()}...</option>
-                      {getRegionsForCountry(country).map((region) => (
-                        <option key={region} value={region}>{region}</option>
-                      ))}
-                    </select>
+                    <div className={`rounded-md border p-3 max-h-48 overflow-y-auto ${selectedStates.length === 0 ? 'border-destructive/50' : 'border-input'}`}>
+                      {/* All option */}
+                      <div className="flex items-center space-x-2 pb-2 border-b border-border mb-2">
+                        <Checkbox
+                          id="state_all"
+                          checked={selectedStates.length === getRegionsForCountry(country).length}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedStates(getRegionsForCountry(country));
+                            } else {
+                              setSelectedStates([]);
+                            }
+                          }}
+                        />
+                        <Label htmlFor="state_all" className="cursor-pointer font-medium">
+                          All {getRegionLabel(country)}s
+                        </Label>
+                      </div>
+                      {/* Individual state options */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {getRegionsForCountry(country).map((region) => (
+                          <div key={region} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`state_${region}`}
+                              checked={selectedStates.includes(region)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedStates(prev => [...prev, region]);
+                                } else {
+                                  setSelectedStates(prev => prev.filter(s => s !== region));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`state_${region}`} className="cursor-pointer text-sm font-normal">
+                              {region}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedStates.length === 0 
+                        ? 'Select at least one state/province' 
+                        : selectedStates.length === getRegionsForCountry(country).length 
+                          ? 'All states selected' 
+                          : `${selectedStates.length} selected`}
+                    </p>
                   </div>
                 )}
 
@@ -758,8 +794,8 @@ export const CategoryBrowserWithDescription = () => {
                   }
 
                   const regions = getRegionsForCountry(country);
-                  if (regions.length > 0 && !state) {
-                    toast.error(`Please select a ${getRegionLabel(country).toLowerCase()}`);
+                  if (regions.length > 0 && selectedStates.length === 0) {
+                    toast.error(`Please select at least one ${getRegionLabel(country).toLowerCase()}`);
                     return;
                   }
 
@@ -783,7 +819,7 @@ export const CategoryBrowserWithDescription = () => {
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
-                          state: state || null,
+                          state: selectedStates.length > 0 ? selectedStates.join(', ') : null,
                           city: city.trim() || null,
                           updated_at: new Date().toISOString(),
                         })
@@ -836,7 +872,7 @@ export const CategoryBrowserWithDescription = () => {
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
-                          state: state || null,
+                          state: selectedStates.length > 0 ? selectedStates.join(', ') : null,
                           city: city.trim() || null,
                         })
                         .select()
@@ -859,7 +895,7 @@ export const CategoryBrowserWithDescription = () => {
                     setIsProcessing(false);
                   }
                 }}
-                disabled={selectedKeywords.size === 0 || isProcessing || selectedSpecialties.length === 0 || !profileName.trim() || !country || (getRegionsForCountry(country).length > 0 && !state)}
+                disabled={selectedKeywords.size === 0 || isProcessing || selectedSpecialties.length === 0 || !profileName.trim() || !country || (getRegionsForCountry(country).length > 0 && selectedStates.length === 0)}
               >
                 {isProcessing ? (
                   <>
@@ -880,7 +916,7 @@ export const CategoryBrowserWithDescription = () => {
                   setNewKeyword("");
                   setProfileName("");
                   setCountry("");
-                  setState("");
+                  setSelectedStates([]);
                   setCity("");
                 }}
               >
