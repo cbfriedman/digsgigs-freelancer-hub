@@ -30,10 +30,28 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Validate environment variables
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("CRITICAL: Supabase environment variables not configured");
+      return new Response(
+        JSON.stringify({ 
+          error: "Database service is not configured",
+          details: "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing"
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Create Supabase client with service role key for admin operations
     const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      supabaseUrl,
+      supabaseServiceKey,
       {
         auth: {
           autoRefreshToken: false,

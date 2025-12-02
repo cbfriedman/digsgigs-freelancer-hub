@@ -261,20 +261,35 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Verify the OTP code matches what we sent
+      // Validate code format
       if (!verificationCode || verificationCode.length !== 6) {
         toast.error("Please enter the 6-digit verification code.");
         setLoading(false);
         return;
       }
 
-      if (verificationCode !== sentOtpCode) {
-        toast.error("Invalid verification code. Please try again.");
+      // Verify OTP code using edge function (checks database)
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
+        body: {
+          email,
+          code: verificationCode,
+        },
+      });
+
+      if (verifyError) {
+        console.error("OTP verification error:", verifyError);
+        toast.error(verifyError.message || "Invalid or expired verification code. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      if (!verifyData || !verifyData.success) {
+        toast.error("Invalid or expired verification code. Please try again.");
         setLoading(false);
         return;
       }
       
-      // Code is correct! Now create the Supabase account
+      // Code is verified! Now create the Supabase account
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -324,9 +339,8 @@ const Register = () => {
     try {
       // Generate new 6-digit OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtpCode(otpCode); // Store the new code
       
-      // Send OTP via Resend edge function
+      // Send OTP via Resend edge function (now stores code in database)
       const { data, error } = await supabase.functions.invoke('send-otp-email', {
         body: {
           email,
@@ -336,9 +350,19 @@ const Register = () => {
       });
 
       if (error) {
-        throw error;
+        console.error("Resend OTP error:", error);
+        // Check if it's a configuration error
+        if (error.message?.includes('RESEND_API_KEY') || error.message?.includes('not configured')) {
+          toast.error("Email service is not configured. Please contact support.");
+        } else {
+          toast.error(error.message || "Failed to resend verification code");
+        }
+        setLoading(false);
+        return;
       }
 
+      // Clear old verification code input
+      setVerificationCode("");
       toast.success("Verification code resent! Please check your email.");
     } catch (error: any) {
       console.error("Resend error:", error);
