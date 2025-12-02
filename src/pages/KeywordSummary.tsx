@@ -191,13 +191,25 @@ export default function KeywordSummary() {
 
   // Function to lookup Google CPC for a keyword
   const lookupGoogleCPC = (keyword: string, industry: string): { cpc: number; isEstimated: boolean } => {
+    const normalizedKeyword = keyword.trim().toLowerCase();
+    
+    // Create variations of the keyword (attorney <-> lawyer)
+    const variations = [normalizedKeyword];
+    if (normalizedKeyword.includes('attorney')) {
+      variations.push(normalizedKeyword.replace('attorney', 'lawyer'));
+    } else if (normalizedKeyword.includes('lawyer')) {
+      variations.push(normalizedKeyword.replace('lawyer', 'attorney'));
+    }
+    
     // Search through all industry categories in GOOGLE_CPC_KEYWORDS
     for (const industryData of GOOGLE_CPC_KEYWORDS) {
-      const keywordData = industryData.keywords.find(
-        kw => kw.keyword.toLowerCase() === keyword.toLowerCase()
-      );
-      if (keywordData) {
-        return { cpc: keywordData.cpc, isEstimated: false };
+      for (const variant of variations) {
+        const keywordData = industryData.keywords.find(
+          kw => kw.keyword.trim().toLowerCase() === variant
+        );
+        if (keywordData) {
+          return { cpc: keywordData.cpc, isEstimated: false };
+        }
       }
     }
     
@@ -594,8 +606,8 @@ export default function KeywordSummary() {
                           const subtotal = pricePerLead * selection.quantity;
 
                           return (
-                            <div key={selection.id} className={`grid grid-cols-1 md:grid-cols-4 gap-4 items-end ${selectionIndex > 0 ? 'pt-4 border-t border-border/50' : ''}`}>
-                              <div>
+                            <div key={selection.id} className={`grid grid-cols-1 md:grid-cols-5 gap-4 items-end ${selectionIndex > 0 ? 'pt-4 border-t border-border/50' : ''}`}>
+                              <div className="md:col-span-2">
                                 <Label htmlFor={`lead-type-${selection.id}`}>Lead Type</Label>
                                 <select
                                   id={`lead-type-${selection.id}`}
