@@ -60,7 +60,13 @@ export const DiggerProfileSelector = () => {
   }, [location.pathname, profiles]);
 
   const loadProfiles = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("DiggerProfileSelector: No user, skipping load");
+      setLoading(false);
+      return;
+    }
+
+    console.log("DiggerProfileSelector: Loading profiles for user:", user.id);
 
     try {
       const { data, error } = await supabase
@@ -70,27 +76,39 @@ export const DiggerProfileSelector = () => {
         .order("is_primary", { ascending: false })
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("DiggerProfileSelector: Error loading profiles:", error);
+        throw error;
+      }
+
+      console.log("DiggerProfileSelector: Loaded profiles:", data);
 
       if (data && data.length > 0) {
         setProfiles(data);
         
         // Check if we're on a specific profile page first
         const urlProfileId = getProfileIdFromUrl();
+        console.log("DiggerProfileSelector: URL profile ID:", urlProfileId);
+        
         if (urlProfileId) {
           const matchingProfile = data.find(p => p.id === urlProfileId);
           if (matchingProfile) {
+            console.log("DiggerProfileSelector: Setting current profile from URL:", matchingProfile);
             setCurrentProfile(matchingProfile);
           } else {
             // Fallback to primary or first
             const primary = data.find(p => p.is_primary) || data[0];
+            console.log("DiggerProfileSelector: URL profile not found, using primary:", primary);
             setCurrentProfile(primary);
           }
         } else {
           // Set current profile to primary or first one
           const primary = data.find(p => p.is_primary) || data[0];
+          console.log("DiggerProfileSelector: No URL profile, using primary:", primary);
           setCurrentProfile(primary);
         }
+      } else {
+        console.log("DiggerProfileSelector: No profiles found for user");
       }
     } catch (error) {
       console.error("Error loading profiles:", error);
