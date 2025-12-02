@@ -13,10 +13,20 @@ import { getLeadCostForIndustry } from "@/config/pricing";
 import SEOHead from "@/components/SEOHead";
 
 interface LeadSelection {
+  id: string;
   keyword: string;
   industry: string;
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
   quantity: number;
+  isConfirmed: boolean;
+}
+
+interface DiscountInfo {
+  subtotal: number;
+  discountOnFirstThousand: number;
+  discountOnExcess: number;
+  totalDiscount: number;
+  finalTotal: number;
 }
 
 export default function Checkout() {
@@ -24,6 +34,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [selections, setSelections] = useState<LeadSelection[]>([]);
+  const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
@@ -36,7 +47,9 @@ export default function Checkout() {
     
     // Get lead purchase selections from sessionStorage immediately
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
+    const savedDiscount = sessionStorage.getItem('leadPurchaseDiscount');
     console.log("Checkout - savedSelections:", savedSelections);
+    console.log("Checkout - savedDiscount:", savedDiscount);
     
     if (!savedSelections) {
       console.log("Checkout - No data in sessionStorage, redirecting to pricing");
@@ -57,6 +70,14 @@ export default function Checkout() {
       }
       
       setSelections(parsedSelections);
+      
+      // Load discount info if available
+      if (savedDiscount) {
+        const parsedDiscount = JSON.parse(savedDiscount);
+        setDiscountInfo(parsedDiscount);
+        console.log("Checkout - Discount info loaded:", parsedDiscount);
+      }
+      
       setLoading(false);
       console.log("Checkout - Loading set to false, selections set");
     } catch (error) {
@@ -86,12 +107,14 @@ export default function Checkout() {
 
     setProcessing(true);
     try {
-      const totalAmount = selections.reduce((sum, sel) => {
+      // Use discount info if available, otherwise calculate raw total
+      const totalAmount = discountInfo ? discountInfo.finalTotal : selections.reduce((sum, sel) => {
         const pricePerLead = getLeadCostForIndustry(sel.industry, sel.exclusivity);
         return sum + (pricePerLead * sel.quantity);
       }, 0);
 
       console.log("Calculated total amount:", totalAmount);
+      console.log("Discount info:", discountInfo);
       console.log("Calling edge function...");
 
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
@@ -99,6 +122,7 @@ export default function Checkout() {
           selections: selections,
           totalAmount: totalAmount,
           diggerProfileId: profileId,
+          discountInfo: discountInfo,
         },
       });
 
@@ -271,19 +295,38 @@ export default function Checkout() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${totalCost.toFixed(2)}</span>
+                    <span>${discountInfo ? discountInfo.subtotal.toFixed(2) : totalCost.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Processing Fee</span>
-                    <span>$0.00</span>
-                  </div>
+                  
+                  {discountInfo && discountInfo.totalDiscount > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Discount (10% on first $1,000)</span>
+                        <span>-${discountInfo.discountOnFirstThousand.toFixed(2)}</span>
+                      </div>
+                      {discountInfo.discountOnExcess > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Discount (20% on excess)</span>
+                          <span>-${discountInfo.discountOnExcess.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
                   
                   <Separator />
                   
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span>${totalCost.toFixed(2)}</span>
+                    <span>${discountInfo ? discountInfo.finalTotal.toFixed(2) : totalCost.toFixed(2)}</span>
                   </div>
+                  
+                  {discountInfo && discountInfo.totalDiscount > 0 && (
+                    <div className="bg-green-50 dark:bg-green-950 rounded-md p-2 text-center">
+                      <span className="text-sm text-green-600 font-medium">
+                        You Save: ${discountInfo.totalDiscount.toFixed(2)} ({((discountInfo.totalDiscount / discountInfo.subtotal) * 100).toFixed(1)}%)
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <Button
