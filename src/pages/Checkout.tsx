@@ -101,7 +101,8 @@ export default function Checkout() {
   const recalculateDiscounts = useCallback((currentSelections: LeadSelection[]): DiscountInfo => {
     const subtotal = currentSelections.reduce((sum, sel) => {
       if (sel.quantity <= 0) return sum;
-      const price = calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+      // Use pre-calculated pricePerLead when available
+      const price = sel.pricePerLead ?? calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
       return sum + (price * sel.quantity);
     }, 0);
     
@@ -258,12 +259,19 @@ export default function Checkout() {
 
   useEffect(() => {
     // Get lead purchase selections from sessionStorage
+    // IMPORTANT: leadPurchaseSelections has pre-calculated pricing, allLeadSelections does not
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
     const savedAllSelections = sessionStorage.getItem('allLeadSelections');
     const savedDiscount = sessionStorage.getItem('leadPurchaseDiscount');
     
-    // Prefer allLeadSelections (includes zero-qty items) over leadPurchaseSelections
-    const selectionsToUse = savedAllSelections || savedSelections;
+    console.log('[Checkout] Loading data:', {
+      hasLeadPurchaseSelections: !!savedSelections,
+      hasAllLeadSelections: !!savedAllSelections,
+      hasSavedDiscount: !!savedDiscount
+    });
+    
+    // CRITICAL: Prefer leadPurchaseSelections (has correct prices) over allLeadSelections (no prices)
+    const selectionsToUse = savedSelections || savedAllSelections;
     
     if (!selectionsToUse) {
       toast.error("No checkout data found");
@@ -273,6 +281,8 @@ export default function Checkout() {
 
     try {
       const parsedSelections = JSON.parse(selectionsToUse);
+      
+      console.log('[Checkout] Parsed selections:', parsedSelections);
       
       if (!parsedSelections || parsedSelections.length === 0) {
         toast.error("No items selected");
@@ -289,11 +299,26 @@ export default function Checkout() {
         return;
       }
       
+      console.log('[Checkout] Active selections with pricing:', activeSelections);
+      
       setSelections(activeSelections);
       
-      // Recalculate discount info
-      const newDiscount = recalculateDiscounts(activeSelections);
-      setDiscountInfo(newDiscount);
+      // Use saved discount if available AND we loaded from leadPurchaseSelections
+      if (savedSelections && savedDiscount) {
+        try {
+          const parsedDiscount = JSON.parse(savedDiscount);
+          console.log('[Checkout] Using saved discount:', parsedDiscount);
+          setDiscountInfo(parsedDiscount);
+        } catch {
+          // Recalculate if parsing fails
+          const newDiscount = recalculateDiscounts(activeSelections);
+          setDiscountInfo(newDiscount);
+        }
+      } else {
+        // Recalculate discount info if no saved discount
+        const newDiscount = recalculateDiscounts(activeSelections);
+        setDiscountInfo(newDiscount);
+      }
       
       setLoading(false);
     } catch (error) {
@@ -415,10 +440,10 @@ export default function Checkout() {
                     const existingLeadTypes = group.selections.map(getLeadTypeFromSelection);
                     const canAddMore = existingLeadTypes.length < 4;
                     
-                    // Calculate keyword subtotal
+                    // Calculate keyword subtotal - use pre-calculated prices when available
                     const keywordSubtotal = group.selections.reduce((sum, sel) => {
                       if (sel.quantity <= 0) return sum;
-                      const price = calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+                      const price = sel.pricePerLead ?? calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
                       return sum + (price * sel.quantity);
                     }, 0);
                     
@@ -451,7 +476,8 @@ export default function Checkout() {
                         <div className="divide-y">
                           {group.selections.map((sel) => {
                             const leadType = getLeadTypeFromSelection(sel);
-                            const pricePerLead = calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+                            // Use pre-calculated pricePerLead when available, otherwise calculate
+                            const pricePerLead = sel.pricePerLead ?? calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
                             const lineTotal = pricePerLead * sel.quantity;
                             
                             return (
