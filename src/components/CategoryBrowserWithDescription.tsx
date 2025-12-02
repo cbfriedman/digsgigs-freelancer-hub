@@ -75,6 +75,14 @@ export const CategoryBrowserWithDescription = () => {
     setState("");
   }, [country]);
 
+  // Load profile name from sessionStorage for new profiles
+  useEffect(() => {
+    const storedProfileName = sessionStorage.getItem('newProfileName');
+    if (storedProfileName && !existingProfileId) {
+      setProfileName(storedProfileName);
+    }
+  }, [existingProfileId]);
+
   // Fetch user's custom categories
   useEffect(() => {
     if (user?.id) {
@@ -216,6 +224,13 @@ export const CategoryBrowserWithDescription = () => {
           <Target className="h-6 w-6 text-primary" />
           <CardTitle>Browse Categories</CardTitle>
         </div>
+        {profileName && !existingProfileId && (
+          <div className="mt-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm font-medium text-primary">
+              Creating Profile: <span className="font-bold">{profileName}</span>
+            </p>
+          </div>
+        )}
         <CardDescription>
           Select your industry category and describe your specialties
         </CardDescription>
@@ -828,6 +843,9 @@ export const CategoryBrowserWithDescription = () => {
                         .single();
 
                       if (createError) throw createError;
+                      
+                      // Clear sessionStorage after successful profile creation
+                      sessionStorage.removeItem('newProfileName');
                       
                       toast.success(`Profile "${profileName.trim()}" created with ${selected.length} keywords!`);
 
