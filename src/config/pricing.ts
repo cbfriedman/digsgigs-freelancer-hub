@@ -577,38 +577,69 @@ export const PRICING_TIERS: Record<'non-exclusive' | 'semi-exclusive' | 'exclusi
   },
 };
 
+// Helper function to get the dominant value tier of a category from INDUSTRY_GROUPS
+// This is defined early but references INDUSTRY_GROUPS which is defined below
+// We use a function that will be called after INDUSTRY_GROUPS is defined
+export const getCategoryValueTier = (categoryName: string): IndustryCategory => {
+  // INDUSTRY_GROUPS is defined below, but this function is only called at runtime
+  const group = (INDUSTRY_GROUPS as IndustryGroup[]).find(g => 
+    g.categoryName.toLowerCase() === categoryName.toLowerCase()
+  );
+  
+  if (!group) return 'mid-value';
+  
+  // Count industries by tier
+  const counts: Record<IndustryCategory, number> = { 'low-value': 0, 'mid-value': 0, 'high-value': 0 };
+  group.industries.forEach(ind => counts[ind.value]++);
+  
+  // Return dominant tier (highest count wins, high-value wins ties)
+  if (counts['high-value'] >= counts['mid-value'] && counts['high-value'] >= counts['low-value']) {
+    return 'high-value';
+  }
+  if (counts['mid-value'] >= counts['low-value']) {
+    return 'mid-value';
+  }
+  return 'low-value';
+};
+
+// Helper function to get pricing data for a category tier
+const getPricingForTier = (tier: IndustryCategory): IndustryPricing => {
+  return INDUSTRY_PRICING.find(p => p.category === tier) || INDUSTRY_PRICING[1]; // Default to mid-value
+};
+
 // Helper function to get lead cost for a specific industry and exclusivity type
+// Now accepts optional parentCategory for category-aware fallback pricing
 export const getLeadCostForIndustry = (
   industry: string,
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
-  isConfirmed: boolean = false
+  isConfirmed: boolean = false,
+  parentCategory?: string
 ): number => {
   const normalizedIndustry = industry.toLowerCase().trim();
   const industryData = INDUSTRY_PRICING.find(pricing =>
     pricing.industries.some(ind => ind.toLowerCase().trim() === normalizedIndustry)
   );
   
+  let pricingData: IndustryPricing;
+  
   if (!industryData) {
-    // Default to mid-value if industry not found
-    const basePrice = exclusivity === 'non-exclusive' 
-      ? INDUSTRY_PRICING[1].nonExclusive 
-      : exclusivity === 'semi-exclusive'
-      ? INDUSTRY_PRICING[1].semiExclusive
-      : INDUSTRY_PRICING[1].exclusive24h;
-    
-    // Add 20% confirmation premium for non-exclusive confirmed leads
-    if (exclusivity === 'non-exclusive' && isConfirmed) {
-      return Math.round(basePrice * 1.20 * 2) / 2; // Round to nearest $0.50
+    // If specialty not found, try to inherit from parent category
+    if (parentCategory) {
+      const categoryTier = getCategoryValueTier(parentCategory);
+      pricingData = getPricingForTier(categoryTier);
+    } else {
+      // Default to mid-value if no category context
+      pricingData = INDUSTRY_PRICING[1];
     }
-    
-    return basePrice;
+  } else {
+    pricingData = industryData;
   }
   
   const basePrice = exclusivity === 'non-exclusive' 
-    ? industryData.nonExclusive 
+    ? pricingData.nonExclusive 
     : exclusivity === 'semi-exclusive'
-    ? industryData.semiExclusive
-    : industryData.exclusive24h;
+    ? pricingData.semiExclusive
+    : pricingData.exclusive24h;
   
   // Add 20% confirmation premium for non-exclusive confirmed leads
   if (exclusivity === 'non-exclusive' && isConfirmed) {
@@ -619,13 +650,23 @@ export const getLeadCostForIndustry = (
 };
 
 // Helper function to get industry category
-export const getIndustryCategory = (industry: string): IndustryCategory => {
+// Now accepts optional parentCategory for category-aware fallback
+export const getIndustryCategory = (industry: string, parentCategory?: string): IndustryCategory => {
   const normalizedIndustry = industry.toLowerCase().trim();
   const industryData = INDUSTRY_PRICING.find(pricing =>
     pricing.industries.some(ind => ind.toLowerCase().trim() === normalizedIndustry)
   );
   
-  return industryData?.category || 'mid-value';
+  if (industryData) {
+    return industryData.category;
+  }
+  
+  // If specialty not found, inherit from parent category
+  if (parentCategory) {
+    return getCategoryValueTier(parentCategory);
+  }
+  
+  return 'mid-value';
 };
 
 export const getPricingTier = (
