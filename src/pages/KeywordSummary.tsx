@@ -88,6 +88,29 @@ export default function KeywordSummary() {
     const loadKeywords = async () => {
       setIsLoading(true);
       
+      // First, check if we have saved selections from a previous checkout navigation
+      const savedSelections = sessionStorage.getItem('allLeadSelections');
+      const savedCategory = sessionStorage.getItem('leadPurchaseCategoryName');
+      
+      if (savedSelections) {
+        try {
+          const restoredSelections: LeadSelection[] = JSON.parse(savedSelections);
+          if (restoredSelections.length > 0) {
+            // Extract unique keywords from saved selections
+            const uniqueKeywords = Array.from(
+              new Map(restoredSelections.map(s => [s.keyword, { keyword: s.keyword, industry: s.industry }])).values()
+            );
+            setKeywords(uniqueKeywords);
+            setSelections(restoredSelections);
+            setCategoryName(savedCategory || "");
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Error restoring saved selections:", error);
+        }
+      }
+      
       // If profileId is provided, load keywords from database
       if (profileId) {
         try {
@@ -365,6 +388,10 @@ export default function KeywordSummary() {
         subtotal,
       };
     });
+    
+    // Save ALL selections (including quantity=0) so we can restore state when navigating back
+    sessionStorage.setItem('allLeadSelections', JSON.stringify(selections));
+    sessionStorage.setItem('leadPurchaseCategoryName', categoryName);
     
     // Save lead purchase selections and discount info to sessionStorage
     sessionStorage.setItem('leadPurchaseSelections', JSON.stringify(purchasesWithPricing));
