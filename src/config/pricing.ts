@@ -622,12 +622,21 @@ const getPricingForTier = (tier: IndustryCategory): IndustryPricing => {
 };
 
 /**
+ * Round up to the nearest $0.50 or whole number
+ */
+const roundUpToHalf = (value: number): number => {
+  return Math.ceil(value * 2) / 2;
+};
+
+/**
  * Calculate lead cost dynamically from actual CPC
- * High-Value formula:
- * - Non-exclusive: 20% of CPC
- * - Semi-exclusive: 50% of CPC
- * - Exclusive: CPC x 0.9, rounded up to whole number
+ * Pricing formula:
+ * - 24-Hr Exclusive: 90% of CPC
+ * - Semi-Exclusive: 50% of CPC
+ * - Non-exclusive Confirmed: 25% of CPC
+ * - Non-exclusive Unconfirmed: 20% of CPC
  * 
+ * All values rounded up to nearest $0.50 or whole number
  * Mid/Low-Value uses fixed tier pricing
  */
 export const getLeadCostFromCPC = (
@@ -639,21 +648,23 @@ export const getLeadCostFromCPC = (
   // For high-value, calculate dynamically from CPC
   if (category === 'high-value') {
     let price: number;
-    if (exclusivity === 'non-exclusive') {
-      price = cpc * 0.20;
+    
+    if (exclusivity === 'exclusive-24h') {
+      // 24-Hr Exclusive: 90% of CPC
+      price = cpc * 0.90;
     } else if (exclusivity === 'semi-exclusive') {
+      // Semi-Exclusive: 50% of CPC
       price = cpc * 0.50;
+    } else if (exclusivity === 'non-exclusive' && isConfirmed) {
+      // Non-exclusive Confirmed: 25% of CPC
+      price = cpc * 0.25;
     } else {
-      // exclusive-24h: CPC x 0.9, rounded up to whole number
-      price = Math.ceil(cpc * 0.90);
+      // Non-exclusive Unconfirmed: 20% of CPC
+      price = cpc * 0.20;
     }
     
-    // Add 20% confirmation premium for non-exclusive confirmed leads
-    if (exclusivity === 'non-exclusive' && isConfirmed) {
-      return Math.round(price * 1.20 * 2) / 2;
-    }
-    
-    return Math.round(price * 100) / 100;
+    // Round up to nearest $0.50 or whole number
+    return roundUpToHalf(price);
   }
   
   // For mid/low-value, use fixed tier pricing
@@ -665,9 +676,9 @@ export const getLeadCostFromCPC = (
     ? pricingData.semiExclusive
     : pricingData.exclusive24h;
   
-  // Add 20% confirmation premium for non-exclusive confirmed leads
+  // Add confirmation premium for non-exclusive confirmed leads (25% vs 20% = 25% more)
   if (exclusivity === 'non-exclusive' && isConfirmed) {
-    return Math.round(basePrice * 1.20 * 2) / 2;
+    return roundUpToHalf(basePrice * 1.25);
   }
   
   return basePrice;
