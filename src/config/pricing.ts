@@ -614,7 +614,7 @@ const getPricingForTier = (tier: IndustryCategory): IndustryPricing => {
  * High-Value formula:
  * - Non-exclusive: 20% of CPC
  * - Semi-exclusive: 50% of CPC
- * - Exclusive: CPC × 0.9, rounded up to whole number
+ * - Exclusive: CPC x 0.9, rounded up to whole number
  * 
  * Mid/Low-Value uses fixed tier pricing
  */
@@ -632,16 +632,16 @@ export const getLeadCostFromCPC = (
     } else if (exclusivity === 'semi-exclusive') {
       price = cpc * 0.50;
     } else {
-      // exclusive-24h: CPC × 0.9, rounded up to whole number
+      // exclusive-24h: CPC x 0.9, rounded up to whole number
       price = Math.ceil(cpc * 0.90);
     }
     
     // Add 20% confirmation premium for non-exclusive confirmed leads
     if (exclusivity === 'non-exclusive' && isConfirmed) {
-      return Math.round(price * 1.20 * 2) / 2; // Round to nearest $0.50
+      return Math.round(price * 1.20 * 2) / 2;
     }
     
-    return Math.round(price * 100) / 100; // Round to 2 decimal places
+    return Math.round(price * 100) / 100;
   }
   
   // For mid/low-value, use fixed tier pricing
@@ -655,7 +655,7 @@ export const getLeadCostFromCPC = (
   
   // Add 20% confirmation premium for non-exclusive confirmed leads
   if (exclusivity === 'non-exclusive' && isConfirmed) {
-    return Math.round(basePrice * 1.20 * 2) / 2; // Round to nearest $0.50
+    return Math.round(basePrice * 1.20 * 2) / 2;
   }
   
   return basePrice;
