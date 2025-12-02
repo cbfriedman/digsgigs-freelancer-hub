@@ -99,21 +99,8 @@ export default function Checkout() {
   // Calculate price per lead based on CPC and lead type
   const calculatePricePerLead = useCallback((keyword: string, industry: string, exclusivity: string, isConfirmed: boolean): number => {
     const { cpc } = lookupGoogleCPC(keyword, industry);
-    
-    // Map exclusivity + confirmed to the right pricing
-    if (exclusivity === 'exclusive-24h') {
-      return getLeadCostFromCPC(cpc, 'exclusive-24h');
-    } else if (exclusivity === 'semi-exclusive') {
-      return getLeadCostFromCPC(cpc, 'semi-exclusive');
-    } else {
-      // non-exclusive - check if confirmed
-      const basePrice = getLeadCostFromCPC(cpc, 'non-exclusive');
-      if (isConfirmed) {
-        // 20% premium for confirmed leads
-        return Math.round((basePrice * 1.2) * 2) / 2; // Round to nearest $0.50
-      }
-      return basePrice;
-    }
+    const category = getIndustryCategory(keyword, industry);
+    return getLeadCostFromCPC(cpc, exclusivity as 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h', isConfirmed, category);
   }, [lookupGoogleCPC]);
 
   // Recalculate discount info based on current selections
@@ -409,7 +396,7 @@ export default function Checkout() {
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Summary
+            Back to Leads Selection
           </Button>
 
           <div className="mb-8">
