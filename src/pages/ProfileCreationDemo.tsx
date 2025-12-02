@@ -31,7 +31,7 @@ export default function ProfileCreationDemo() {
   const [location, setLocation] = useState("Los Angeles, CA");
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(["Kitchen Remodeling", "Bathroom Renovation", "Custom Cabinets"]);
   const [profession, setProfession] = useState("Home Remodeling Contractor");
-  const [offersFreEstimates, setOffersFreEstimates] = useState(false);
+  
   const [keywordQuantities, setKeywordQuantities] = useState<Record<string, { nonExclusive: number; semiExclusive: number; exclusive24h: number }>>({});
 
   // Load user's actual profile data if logged in
@@ -61,7 +61,7 @@ export default function ProfileCreationDemo() {
           setLocation(profile.location || "Los Angeles, CA");
           setSelectedIndustries(profile.keywords || ["Kitchen Remodeling", "Bathroom Renovation", "Custom Cabinets"]);
           setProfession(profile.profession || "Home Remodeling Contractor");
-          setOffersFreEstimates(profile.offers_free_estimates || false);
+          
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -164,7 +164,7 @@ export default function ProfileCreationDemo() {
         location: location,
         keywords: selectedIndustries,
         profession: profession,
-        offers_free_estimates: offersFreEstimates,
+        
         profile_image_url: photoUrl,
         phone: user.user_metadata?.phone || "",
         updated_at: new Date().toISOString()
@@ -302,35 +302,6 @@ export default function ProfileCreationDemo() {
                     />
                   </div>
 
-                  {/* Free Estimates Option */}
-                  <div className="flex items-start space-x-3 p-4 rounded-lg border-2 border-primary/30 bg-primary/5">
-                    <Checkbox 
-                      id="free_estimates" 
-                      checked={offersFreEstimates}
-                      onCheckedChange={(checked) => setOffersFreEstimates(checked === true)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="free_estimates" className="font-semibold cursor-pointer flex items-center gap-2">
-                        Offer Free Estimates
-                        <Badge variant="secondary" className="text-xs">Priority Placement</Badge>
-                      </Label>
-                      <div className="space-y-2 mt-2">
-                        <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                          ⚠️ $50 charge per free estimate request (both exclusive & non-exclusive leads)
-                        </p>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p className="font-semibold text-foreground">Benefits:</p>
-                          <ul className="list-disc list-inside space-y-1 ml-2">
-                            <li>Priority placement in exclusive lead rotations</li>
-                            <li>Higher conversion rates with clients</li>
-                            <li>Build trust and credibility</li>
-                            <li>Competitive advantage</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
 
@@ -408,7 +379,6 @@ export default function ProfileCreationDemo() {
                 location={location}
                 keywords={selectedIndustries}
                 profession={profession}
-                offersFreEstimates={offersFreEstimates}
               />
             </div>
           </div>
