@@ -522,8 +522,8 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'immigration lawyer',
     ],
     nonExclusive: 24.50,   // 20% of Google CPC (~$122.50)
-    semiExclusive: 122.50, // = Google CPC (non-exclusive / 0.20)
-    exclusive24h: 245.00   // = 2x Google CPC (2x semi-exclusive)
+    semiExclusive: 61.25,  // = 50% of Google CPC
+    exclusive24h: 111.00   // = CPC × 0.9, rounded up to whole number
   }
 ];
 
