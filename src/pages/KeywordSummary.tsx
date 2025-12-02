@@ -454,7 +454,7 @@ export default function KeywordSummary() {
                             onChange={(e) => updateSelection(keyword, 'isConfirmed', e.target.value === 'confirmed')}
                             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                           >
-                            <option value="unconfirmed">Standard Lead</option>
+                            <option value="unconfirmed">Unconfirmed Lead</option>
                             <option value="confirmed">Confirmed Lead (+20%)</option>
                           </select>
                         </div>
