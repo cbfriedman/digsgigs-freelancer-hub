@@ -49,7 +49,7 @@ const EditDiggerProfile = () => {
   const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
   const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
   const [pricingModel, setPricingModel] = useState<string>("commission");
-  const [offersFreEstimates, setOffersFreEstimates] = useState(false);
+  
   const [profileData, setProfileData] = useState<any>(null);
   const [expectedLeadVolume, setExpectedLeadVolume] = useState<number | null>(null);
   const [expectedLeadPeriod, setExpectedLeadPeriod] = useState<string>('monthly');
@@ -133,14 +133,26 @@ const EditDiggerProfile = () => {
   const loadProfile = async () => {
     if (!user) return;
 
+    // Get profileId from URL params or query params
+    const profileIdFromUrl = profileIdParam || searchParams.get('profileId');
+
     try {
-      const { data: profile, error } = await supabase
+      let query = supabase
         .from("digger_profiles")
         .select("*, digger_categories(category_id)")
-        .eq("user_id", user.id)
-        .single();
+        .eq("user_id", user.id);
+      
+      // If a specific profileId is provided, load that profile
+      if (profileIdFromUrl) {
+        query = query.eq("id", profileIdFromUrl);
+      }
+      
+      const { data: profiles, error } = await query;
 
       if (error) throw error;
+
+      // Get the specific profile or the first one
+      const profile = profiles && profiles.length > 0 ? profiles[0] : null;
 
       if (profile) {
         setProfileId(profile.id);
@@ -183,7 +195,7 @@ const EditDiggerProfile = () => {
         setHourlyRateMin(profile.hourly_rate_min);
         setHourlyRateMax(profile.hourly_rate_max);
         setPricingModel(profile.pricing_model || "commission");
-        setOffersFreEstimates(profile.offers_free_estimates || false);
+        
         setExpectedLeadVolume(profile.expected_lead_volume);
         setExpectedLeadPeriod(profile.expected_lead_period || 'monthly');
         setPhotoUrl(profile.profile_image_url || "");
@@ -211,8 +223,8 @@ const EditDiggerProfile = () => {
       return;
     }
 
-    if (!pricingModel && !offersFreEstimates) {
-      toast.error("Please select at least one pricing option (Fixed Price, Hourly, Both Models, or Free Estimates)");
+    if (!pricingModel) {
+      toast.error("Please select a pricing option (Fixed Price, Hourly, or Both Models)");
       return;
     }
 
@@ -240,7 +252,7 @@ const EditDiggerProfile = () => {
           bio: bio || null,
           keywords: keywords.length > 0 ? keywords : null,
           pricing_model: pricingModel,
-          offers_free_estimates: offersFreEstimates,
+          
           expected_lead_volume: expectedLeadVolume,
           expected_lead_period: expectedLeadPeriod,
           lead_tier_description: leadTierDescription || null,
@@ -394,7 +406,7 @@ const EditDiggerProfile = () => {
                 location={location}
                 keywords={keywords}
                 profession={profession}
-                offersFreEstimates={offersFreEstimates}
+                
               />
 
               <form onSubmit={handleSubmit} className="space-y-6" id="profile-form">
@@ -701,34 +713,6 @@ const EditDiggerProfile = () => {
                 </div>
               </RadioGroup>
 
-              <div className="flex items-start space-x-3 p-4 mt-4 rounded-lg border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors">
-                <Checkbox 
-                  id="free_estimates_edit" 
-                  checked={offersFreEstimates}
-                  onCheckedChange={(checked) => setOffersFreEstimates(checked === true)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <Label htmlFor="free_estimates_edit" className="font-semibold cursor-pointer flex items-center gap-2">
-                    Offer Free Estimates
-                    <Badge variant="secondary" className="text-xs">Priority Placement</Badge>
-                  </Label>
-                  <div className="space-y-2 mt-2">
-                    <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                      ⚠️ $50 charge per free estimate request (both exclusive & non-exclusive leads)
-                    </p>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p className="font-semibold text-foreground">Benefits of offering free estimates:</p>
-                      <ul className="list-disc list-inside space-y-1 ml-2">
-                        <li><strong>Priority placement</strong> in exclusive lead rotations</li>
-                        <li><strong>Higher conversion rates</strong> - clients are more likely to hire after seeing your estimate</li>
-                        <li><strong>Build trust</strong> - demonstrate your professionalism upfront</li>
-                        <li><strong>Competitive edge</strong> - stand out from diggers who don't offer estimates</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className="space-y-2" id="keywords">
