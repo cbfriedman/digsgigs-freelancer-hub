@@ -120,6 +120,11 @@ export const DiggerProfileSelector = () => {
   };
 
   const handleViewProfile = (profileId: string) => {
+    // Immediately update current profile before navigating
+    const selectedProfile = profiles.find(p => p.id === profileId);
+    if (selectedProfile) {
+      setCurrentProfile(selectedProfile);
+    }
     navigate(`/digger/${profileId}`);
   };
 
