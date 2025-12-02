@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2 } from "lucide-react";
+import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -18,6 +18,7 @@ import { OptimizedImage } from "@/components/OptimizedImage";
 import { DiggerPricingSelector } from "@/components/DiggerPricingSelector";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
+import { LeadReturnDialog } from "@/components/LeadReturnDialog";
 
 interface Reference {
   id: string;
@@ -31,6 +32,27 @@ interface Reference {
 interface ReferenceRequest {
   id: string;
   status: string;
+}
+
+interface LeadPurchase {
+  id: string;
+  gig_id: string;
+  purchase_price: number;
+  amount_paid: number;
+  exclusivity_type: string | null;
+  status: string | null;
+  purchased_at: string;
+  gig: {
+    title: string;
+    description: string;
+    is_confirmed_lead: boolean | null;
+  } | null;
+}
+
+interface LeadBalance {
+  balance: number;
+  total_deposited: number;
+  total_spent: number;
 }
 
 interface Digger {
@@ -92,6 +114,11 @@ const DiggerDetail = () => {
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const { isOnline } = useDiggerPresence(id);
+  
+  // Owner dashboard states
+  const [leadPurchases, setLeadPurchases] = useState<LeadPurchase[]>([]);
+  const [leadBalance, setLeadBalance] = useState<LeadBalance | null>(null);
+  const [totalLeadsSold, setTotalLeadsSold] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -158,6 +185,44 @@ const DiggerDetail = () => {
           requestsMap[req.reference_id] = { id: req.id, status: req.status };
         });
         setReferenceRequests(requestsMap);
+      }
+    }
+
+    // Load owner-specific data if viewing own profile
+    if (session?.user?.id === diggerData.user_id) {
+      // Fetch lead purchases
+      const { data: purchasesData } = await supabase
+        .from("lead_purchases")
+        .select(`
+          id,
+          gig_id,
+          purchase_price,
+          amount_paid,
+          exclusivity_type,
+          status,
+          purchased_at,
+          gig:gigs(title, description, is_confirmed_lead)
+        `)
+        .eq("digger_id", id)
+        .order("purchased_at", { ascending: false });
+
+      if (purchasesData) {
+        setLeadPurchases(purchasesData.map(p => ({
+          ...p,
+          gig: Array.isArray(p.gig) ? p.gig[0] : p.gig
+        })));
+        setTotalLeadsSold(purchasesData.filter(p => p.status === "completed").length);
+      }
+
+      // Fetch lead balance
+      const { data: balanceData } = await supabase
+        .from("digger_lead_balance")
+        .select("balance, total_deposited, total_spent")
+        .eq("digger_id", id)
+        .single();
+
+      if (balanceData) {
+        setLeadBalance(balanceData);
       }
     }
   };
@@ -692,24 +757,278 @@ const DiggerDetail = () => {
 
             {/* Conditional Content Based on Profile Ownership */}
             {isOwnProfile ? (
-              /* Lead Purchase Interface for Own Profile */
-              <Card className="p-6 bg-card border-primary/20">
-                <div className="flex items-center gap-2 mb-4">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Purchase Leads</h3>
+              /* Owner Dashboard */
+              <div className="space-y-6">
+                {/* Stats Summary - Clickable */}
+                <Card className="bg-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      📊 Profile Stats
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div 
+                        className="bg-primary/10 rounded-lg p-4 text-center cursor-pointer hover:bg-primary/20 transition-colors"
+                        onClick={() => {
+                          const el = document.getElementById('purchased-leads-section');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                      >
+                        <div className="text-3xl font-bold text-primary">{totalLeadsSold}</div>
+                        <div className="text-sm text-muted-foreground">Leads Purchased</div>
+                      </div>
+                      <div className="bg-green-500/10 rounded-lg p-4 text-center">
+                        <div className="text-3xl font-bold text-green-600">
+                          ${leadBalance?.balance?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Account Balance</div>
+                      </div>
+                      <div 
+                        className="bg-yellow-500/10 rounded-lg p-4 text-center cursor-pointer hover:bg-yellow-500/20 transition-colors"
+                        onClick={() => {
+                          const el = document.getElementById('pending-purchases-section');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                      >
+                        <div className="text-3xl font-bold text-yellow-600">
+                          {leadPurchases.filter(p => p.status === 'pending').length}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Pending</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Account Balance Card */}
+                <Card className="bg-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5" />
+                      Account Balance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <div className="text-3xl font-bold text-primary">
+                          ${leadBalance?.balance?.toFixed(2) || '0.00'}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Available for lead purchases</p>
+                      </div>
+                      <Button onClick={() => navigate('/checkout')} variant="outline">
+                        Add Funds
+                      </Button>
+                    </div>
+                    {leadBalance && (
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                        <div>
+                          <div className="text-lg font-semibold text-green-600">
+                            ${leadBalance.total_deposited.toFixed(2)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">Total Deposited</div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-semibold text-red-600">
+                            ${leadBalance.total_spent.toFixed(2)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">Total Spent</div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Quick Actions */}
+                <Card className="bg-card border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                      Quick Actions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button 
+                      className="w-full"
+                      size="lg"
+                      onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Manage Keywords & Buy Leads
+                    </Button>
+                    <Button 
+                      className="w-full"
+                      variant="outline"
+                      onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Pending Purchases */}
+                <div id="pending-purchases-section">
+                  <Card className="bg-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-yellow-500" />
+                        Pending Purchases ({leadPurchases.filter(p => p.status === 'pending').length})
+                      </CardTitle>
+                      <CardDescription>
+                        Complete these purchases or modify your selection
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {leadPurchases.filter(p => p.status === 'pending').length > 0 ? (
+                        <div className="space-y-4">
+                          {leadPurchases.filter(p => p.status === 'pending').map((purchase) => (
+                            <div key={purchase.id} className="border rounded-lg p-4 bg-yellow-500/5">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Clock className="h-4 w-4 text-yellow-500" />
+                                    <h5 className="font-semibold truncate">
+                                      {purchase.gig?.title || "Lead"}
+                                    </h5>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                    {purchase.gig?.description || "No description"}
+                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline">{purchase.exclusivity_type || "Standard"}</Badge>
+                                    <span className="text-sm font-semibold">${purchase.amount_paid.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  <Button size="sm" onClick={() => navigate(`/checkout?leadId=${purchase.id}`)}>
+                                    Complete
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => navigate(`/gig/${purchase.gig_id}`)}>
+                                    View
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-muted-foreground py-4">No pending purchases</p>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Select keywords, quantities, and exclusivity types to buy leads for this profile.
-                </p>
-                <Button 
-                  className="w-full"
-                  size="lg"
-                  onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
-                >
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Manage Keywords & Buy Leads
-                </Button>
-              </Card>
+
+                {/* Purchased Leads with Return Option */}
+                <div id="purchased-leads-section">
+                  <Card className="bg-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        Purchased Leads ({totalLeadsSold})
+                      </CardTitle>
+                      <CardDescription>
+                        View your purchased leads and request credit for bad leads
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {leadPurchases.filter(p => p.status === 'completed').length > 0 ? (
+                        <div className="space-y-4">
+                          {leadPurchases.filter(p => p.status === 'completed').slice(0, 5).map((purchase) => {
+                            const canReturn = purchase.exclusivity_type?.toLowerCase().includes('exclusive') || 
+                                            purchase.exclusivity_type?.toLowerCase().includes('semi') ||
+                                            purchase.gig?.is_confirmed_lead;
+                            
+                            return (
+                              <div key={purchase.id} className="border rounded-lg p-4">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                      <h5 className="font-semibold truncate">
+                                        {purchase.gig?.title || "Lead"}
+                                      </h5>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                      {purchase.gig?.description || "No description"}
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Badge variant={
+                                        purchase.exclusivity_type?.toLowerCase().includes('24') ? 'default' :
+                                        purchase.exclusivity_type?.toLowerCase().includes('semi') ? 'secondary' : 'outline'
+                                      }>
+                                        {purchase.exclusivity_type || "Standard"}
+                                      </Badge>
+                                      {purchase.gig?.is_confirmed_lead && (
+                                        <Badge variant="default" className="bg-green-600">Confirmed</Badge>
+                                      )}
+                                      <span className="text-sm">${purchase.amount_paid.toFixed(2)}</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {new Date(purchase.purchased_at).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    <Button size="sm" variant="outline" onClick={() => navigate(`/gig/${purchase.gig_id}`)}>
+                                      Details
+                                    </Button>
+                                    {canReturn && (
+                                      <LeadReturnDialog
+                                        leadPurchaseId={purchase.id}
+                                        gigTitle={purchase.gig?.title || "Lead"}
+                                        onSuccess={loadData}
+                                        buttonClassName="text-xs"
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {totalLeadsSold > 5 && (
+                            <Button 
+                              variant="link" 
+                              className="w-full" 
+                              onClick={() => navigate(`/my-leads?profileId=${id}`)}
+                            >
+                              View all {totalLeadsSold} leads →
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                          <p className="text-muted-foreground">No leads purchased yet</p>
+                          <Button 
+                            variant="link" 
+                            onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
+                          >
+                            Browse leads to purchase
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Bad Lead Alert */}
+                <Card className="bg-yellow-500/5 border-yellow-500/20">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold text-yellow-800 dark:text-yellow-400">
+                          Received a Bad Lead?
+                        </h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          You can request credit within 24 hours for confirmed, semi-exclusive, or exclusive leads 
+                          that don't match your service area or specialty. Click "Request Credit" on any eligible lead above.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             ) : (
               /* Hiring Interface for Other Profiles */
               <>
