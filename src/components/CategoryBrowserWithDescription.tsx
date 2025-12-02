@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Target, Plus, Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -46,7 +47,7 @@ export const CategoryBrowserWithDescription = () => {
   const [searchParams] = useSearchParams();
   const existingProfileId = searchParams.get('profileId');
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [description, setDescription] = useState<string>("");
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -128,7 +129,7 @@ export const CategoryBrowserWithDescription = () => {
 
   const handleContinue = async () => {
     // Description is optional - if empty, generate keywords from category/specialty
-    const descriptionText = description.trim() || `${selectedCategory} ${selectedSpecialty}`.trim();
+    const descriptionText = description.trim() || `${selectedCategory} ${selectedSpecialties.join(', ')}`.trim();
 
     setIsProcessing(true);
 
@@ -188,10 +189,10 @@ export const CategoryBrowserWithDescription = () => {
     if (selectedCategory) {
       const specialties = getIndustrySpecialties(selectedCategory);
       setIndustrySpecialties(specialties);
-      setSelectedSpecialty(""); // Reset specialty when category changes
+      setSelectedSpecialties([]); // Reset specialties when category changes
     } else {
       setIndustrySpecialties([]);
-      setSelectedSpecialty("");
+      setSelectedSpecialties([]);
     }
   }, [selectedCategory]);
 
@@ -284,25 +285,64 @@ export const CategoryBrowserWithDescription = () => {
           </div>
         )}
 
-        {/* Specialty Selection */}
+        {/* Specialty Selection - Multi-select with checkboxes */}
         {selectedCategory && hasIndustrySpecialties(selectedCategory) && (
-          <div className="space-y-2">
-            <Label htmlFor="specialty">Select Specialty</Label>
-            <Select value={selectedSpecialty} onValueChange={(value) => setSelectedSpecialty(value === "__clear__" ? "" : value)}>
-              <SelectTrigger id="specialty" className="bg-background">
-                <SelectValue placeholder="Choose a specialty..." />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50 max-h-[300px] overflow-y-auto">
-                <SelectItem key="clear" value="__clear__">
-                  — Clear Selection —
-                </SelectItem>
-                {industrySpecialties.map((specialty) => (
-                  <SelectItem key={specialty} value={specialty}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Select Specialties</Label>
+              {selectedSpecialties.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {selectedSpecialties.length} selected
+                </span>
+              )}
+            </div>
+            
+            {/* Select All / Clear All buttons */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedSpecialties([...industrySpecialties])}
+                disabled={selectedSpecialties.length === industrySpecialties.length}
+              >
+                Select All
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedSpecialties([])}
+                disabled={selectedSpecialties.length === 0}
+              >
+                Clear All
+              </Button>
+            </div>
+            
+            {/* Checkbox list */}
+            <div className="border rounded-lg p-3 max-h-[250px] overflow-y-auto bg-background space-y-2">
+              {industrySpecialties.map((specialty) => (
+                <div key={specialty} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`specialty-${specialty}`}
+                    checked={selectedSpecialties.includes(specialty)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedSpecialties([...selectedSpecialties, specialty]);
+                      } else {
+                        setSelectedSpecialties(selectedSpecialties.filter(s => s !== specialty));
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`specialty-${specialty}`}
+                    className="text-sm cursor-pointer flex-1 py-1"
+                  >
                     {specialty}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </label>
+                </div>
+              ))}
+            </div>
             
             {/* Request Custom Specialty */}
             <Dialog open={showSpecialtyRequest} onOpenChange={setShowSpecialtyRequest}>
@@ -341,14 +381,14 @@ export const CategoryBrowserWithDescription = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={
-                selectedSpecialty
-                  ? `Describe your expertise in ${selectedSpecialty}...`
+                selectedSpecialties.length > 0
+                  ? `Describe your expertise in ${selectedSpecialties.join(', ')}...`
                   : "Describe what you do within this category, your specific services, expertise, and specializations..."
               }
               className="min-h-[150px] bg-background"
             />
             <p className="text-sm text-muted-foreground">
-              Be specific about your services and expertise within {selectedSpecialty || selectedCategory}
+              Be specific about your services and expertise within {selectedSpecialties.length > 0 ? selectedSpecialties.join(', ') : selectedCategory}
             </p>
           </div>
         )}
@@ -629,8 +669,8 @@ export const CategoryBrowserWithDescription = () => {
                     return;
                   }
 
-                  if (!selectedSpecialty?.trim()) {
-                    toast.error("Please select or describe a specialty before continuing");
+                  if (selectedSpecialties.length === 0) {
+                    toast.error("Please select at least one specialty before continuing");
                     return;
                   }
 
@@ -654,7 +694,7 @@ export const CategoryBrowserWithDescription = () => {
                         .from('digger_profiles')
                         .update({
                           keywords: selected,
-                          profession: selectedSpecialty,
+                          profession: selectedSpecialties.join(', '),
                           service_zip_codes: zipCodesArray,
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
@@ -702,7 +742,7 @@ export const CategoryBrowserWithDescription = () => {
                           user_id: user.id,
                           business_name: profileName.trim(),
                           profile_name: profileName.trim(),
-                          profession: selectedSpecialty,
+                          profession: selectedSpecialties.join(', '),
                           keywords: selected,
                           location: 'Not specified',
                           phone: 'Not specified',
@@ -728,7 +768,7 @@ export const CategoryBrowserWithDescription = () => {
                     setIsProcessing(false);
                   }
                 }}
-                disabled={selectedKeywords.size === 0 || isProcessing || !selectedSpecialty?.trim() || !profileName.trim()}
+                disabled={selectedKeywords.size === 0 || isProcessing || selectedSpecialties.length === 0 || !profileName.trim()}
               >
                 {isProcessing ? (
                   <>
