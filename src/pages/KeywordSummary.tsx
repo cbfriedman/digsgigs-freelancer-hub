@@ -431,31 +431,34 @@ export default function KeywordSummary() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <Label htmlFor={`exclusivity-${index}`}>Exclusivity Type</Label>
+                          <Label htmlFor={`lead-type-${index}`}>Lead Type</Label>
                           <select
-                            id={`exclusivity-${index}`}
-                            value={selection.exclusivity}
-                            onChange={(e) => updateSelection(keyword, 'exclusivity', e.target.value)}
+                            id={`lead-type-${index}`}
+                            value={`${selection.exclusivity}-${selection.isConfirmed ? 'confirmed' : 'unconfirmed'}`}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === 'non-exclusive-unconfirmed') {
+                                updateSelection(keyword, 'exclusivity', 'non-exclusive');
+                                updateSelection(keyword, 'isConfirmed', false);
+                              } else if (val === 'non-exclusive-confirmed') {
+                                updateSelection(keyword, 'exclusivity', 'non-exclusive');
+                                updateSelection(keyword, 'isConfirmed', true);
+                              } else if (val === 'semi-exclusive') {
+                                updateSelection(keyword, 'exclusivity', 'semi-exclusive');
+                                updateSelection(keyword, 'isConfirmed', false);
+                              } else if (val === 'exclusive-24h') {
+                                updateSelection(keyword, 'exclusivity', 'exclusive-24h');
+                                updateSelection(keyword, 'isConfirmed', false);
+                              }
+                            }}
                             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                           >
-                            <option value="non-exclusive">Non-Exclusive (20% CPC)</option>
-                            <option value="semi-exclusive">Semi-Exclusive (100% CPC)</option>
-                            <option value="exclusive-24h">24hr Exclusive (200% CPC)</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <Label htmlFor={`confirmed-${index}`}>Lead Type</Label>
-                          <select
-                            id={`confirmed-${index}`}
-                            value={selection.isConfirmed ? 'confirmed' : 'unconfirmed'}
-                            onChange={(e) => updateSelection(keyword, 'isConfirmed', e.target.value === 'confirmed')}
-                            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                          >
-                            <option value="unconfirmed">Unconfirmed Lead</option>
-                            <option value="confirmed">Confirmed Lead (+20%)</option>
+                            <option value="non-exclusive-unconfirmed">Unconfirmed - ${getLeadCostForIndustry(industry, 'non-exclusive', false).toFixed(2)}/lead</option>
+                            <option value="non-exclusive-confirmed">Confirmed - ${getLeadCostForIndustry(industry, 'non-exclusive', true).toFixed(2)}/lead</option>
+                            <option value="semi-exclusive">Semi Exclusive - ${getLeadCostForIndustry(industry, 'semi-exclusive', false).toFixed(2)}/lead</option>
+                            <option value="exclusive-24h">Exclusive - ${getLeadCostForIndustry(industry, 'exclusive-24h', false).toFixed(2)}/lead</option>
                           </select>
                         </div>
 
