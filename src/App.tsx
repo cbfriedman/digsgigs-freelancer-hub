@@ -53,6 +53,7 @@ import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
 import PreDemoRegistration from "./pages/PreDemoRegistration";
 import MyProfiles from "./pages/MyProfiles";
+import ProfileDashboard from "./pages/ProfileDashboard";
 import Checkout from "./pages/Checkout";
 import LeadCheckout from "./pages/LeadCheckout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -133,6 +134,10 @@ const router = createBrowserRouter([
   {
     path: "/my-profiles",
     element: <ProtectedRoute><MyProfiles /></ProtectedRoute>,
+  },
+  {
+    path: "/my-profiles/:profileId/dashboard",
+    element: <ProtectedRoute><ProfileDashboard /></ProtectedRoute>,
   },
   {
     path: "/edit-digger-profile/:id",
