@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
 import { findMatchingIndustry } from "@/config/pricing";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -35,15 +36,16 @@ interface LeadSelection {
 
 export default function KeywordSummary() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [keywords, setKeywords] = useState<SelectedKeyword[]>([]);
   const [categoryName, setCategoryName] = useState("");
   const [selections, setSelections] = useState<Map<string, LeadSelection>>(new Map());
   const [isAddingKeyword, setIsAddingKeyword] = useState(false);
   const [newKeyword, setNewKeyword] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   
   // Get profileId from URL params if available
-  const searchParams = new URLSearchParams(window.location.search);
   const profileId = searchParams.get('profileId');
 
   // Helper to determine the correct industry for a keyword
@@ -64,37 +66,80 @@ export default function KeywordSummary() {
     return fallbackCategory || "General";
   };
 
-  useEffect(() => {
-    const savedData = sessionStorage.getItem('selectedKeywords');
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      const loadedKeywords = data.keywords || [];
-      
-      // Recalculate correct industry for each keyword
-      const correctedKeywords = loadedKeywords.map((kw: SelectedKeyword) => ({
+  // Initialize keywords from selections
+  const initializeSelectionsFromKeywords = (loadedKeywords: SelectedKeyword[]) => {
+    const initialSelections = new Map<string, LeadSelection>();
+    loadedKeywords.forEach((kw: SelectedKeyword) => {
+      initialSelections.set(kw.keyword, {
         keyword: kw.keyword,
-        industry: determineKeywordIndustry(kw.keyword, data.categoryName || "")
-      }));
-      
-      setKeywords(correctedKeywords);
-      setCategoryName(data.categoryName || "");
-      
-      // Initialize selections with default values and corrected industries
-      const initialSelections = new Map<string, LeadSelection>();
-      correctedKeywords.forEach((kw: SelectedKeyword) => {
-        initialSelections.set(kw.keyword, {
-          keyword: kw.keyword,
-          industry: kw.industry,
-          exclusivity: 'non-exclusive',
-          quantity: 0
-        });
+        industry: kw.industry,
+        exclusivity: 'non-exclusive',
+        quantity: 0
       });
-      setSelections(initialSelections);
-    } else {
-      // No keywords selected, redirect back
-      navigate('/pricing');
-    }
-  }, [navigate]);
+    });
+    setSelections(initialSelections);
+  };
+
+  useEffect(() => {
+    const loadKeywords = async () => {
+      setIsLoading(true);
+      
+      // If profileId is provided, load keywords from database
+      if (profileId) {
+        try {
+          const { data: profile, error } = await supabase
+            .from('digger_profiles')
+            .select('keywords, profession, profile_name, business_name')
+            .eq('id', profileId)
+            .single();
+          
+          if (error) throw error;
+          
+          if (profile && profile.keywords && profile.keywords.length > 0) {
+            const category = profile.profession || profile.profile_name || profile.business_name || "";
+            setCategoryName(category);
+            
+            // Convert keywords to SelectedKeyword format with correct industries
+            const loadedKeywords = profile.keywords.map((kw: string) => ({
+              keyword: kw,
+              industry: determineKeywordIndustry(kw, category)
+            }));
+            
+            setKeywords(loadedKeywords);
+            initializeSelectionsFromKeywords(loadedKeywords);
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Error loading profile keywords:", error);
+        }
+      }
+      
+      // Fall back to sessionStorage
+      const savedData = sessionStorage.getItem('selectedKeywords');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        const loadedKeywords = data.keywords || [];
+        
+        // Recalculate correct industry for each keyword
+        const correctedKeywords = loadedKeywords.map((kw: SelectedKeyword) => ({
+          keyword: kw.keyword,
+          industry: determineKeywordIndustry(kw.keyword, data.categoryName || "")
+        }));
+        
+        setKeywords(correctedKeywords);
+        setCategoryName(data.categoryName || "");
+        initializeSelectionsFromKeywords(correctedKeywords);
+      } else if (!profileId) {
+        // No keywords and no profile, redirect back
+        navigate('/pricing');
+      }
+      
+      setIsLoading(false);
+    };
+    
+    loadKeywords();
+  }, [navigate, profileId]);
 
   // Function to lookup Google CPC for a keyword
   const lookupGoogleCPC = (keyword: string, industry: string): { cpc: number; isEstimated: boolean } => {
@@ -247,6 +292,17 @@ export default function KeywordSummary() {
     const checkoutUrl = profileId ? `/checkout?profileId=${profileId}` : '/checkout';
     navigate(checkoutUrl);
   };
+
+  if (isLoading) {
+    return (
+      <>
+        <Navigation />
+        <div className="min-h-screen bg-background py-12 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading keywords...</p>
+        </div>
+      </>
+    );
+  }
 
   if (keywords.length === 0) {
     return null; // Will redirect in useEffect
