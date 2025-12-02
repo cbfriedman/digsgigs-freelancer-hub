@@ -60,34 +60,55 @@ export default function Checkout() {
 
   // Helper to look up Google CPC for a keyword
   const lookupGoogleCPC = useCallback((keyword: string, industry: string): { cpc: number; isEstimated: boolean } => {
-    const keywordLower = keyword.toLowerCase();
+    const normalizedKeyword = keyword.trim().toLowerCase();
     
-    // Search through all industry keyword arrays
+    // Create variations of the keyword (attorney <-> lawyer)
+    const variations = [normalizedKeyword];
+    if (normalizedKeyword.includes('attorney')) {
+      variations.push(normalizedKeyword.replace('attorney', 'lawyer'));
+    } else if (normalizedKeyword.includes('lawyer')) {
+      variations.push(normalizedKeyword.replace('lawyer', 'attorney'));
+    }
+    
+    // Search through all industry categories in GOOGLE_CPC_KEYWORDS
     for (const industryData of GOOGLE_CPC_KEYWORDS) {
-      // Check for exact keyword match
-      const exactMatch = industryData.keywords.find(
-        k => k.keyword.toLowerCase() === keywordLower
-      );
-      if (exactMatch) {
-        return { cpc: exactMatch.cpc, isEstimated: false };
+      for (const variant of variations) {
+        const keywordData = industryData.keywords.find(
+          kw => kw.keyword.trim().toLowerCase() === variant
+        );
+        if (keywordData) {
+          return { cpc: keywordData.cpc, isEstimated: false };
+        }
       }
     }
     
-    // Try partial match across all industries
+    // For unlisted keywords, use the HIGHEST CPC from their category
+    const normalizedIndustry = industry.trim().toLowerCase();
+    
+    let highestCpcInCategory = 0;
     for (const industryData of GOOGLE_CPC_KEYWORDS) {
-      const partialMatch = industryData.keywords.find(
-        k => k.keyword.toLowerCase().includes(keywordLower) || keywordLower.includes(k.keyword.toLowerCase())
-      );
-      if (partialMatch) {
-        return { cpc: partialMatch.cpc, isEstimated: true };
+      const industryName = industryData.industry.toLowerCase();
+      if (normalizedIndustry.includes(industryName.split(' ')[0]) || 
+          industryName.includes(normalizedIndustry.split(' ')[0]) ||
+          industryData.category === getIndustryCategory(keyword, industry)) {
+        const maxCpc = Math.max(...industryData.keywords.map(kw => kw.cpc));
+        if (maxCpc > highestCpcInCategory) {
+          highestCpcInCategory = maxCpc;
+        }
       }
     }
     
-    // Fallback: estimate CPC based on lead cost (same logic as KeywordSummary)
-    const leadCost = getLeadCostForIndustry(industry, 'non-exclusive');
-    const estimatedCPC = leadCost / 0.20;
+    if (highestCpcInCategory > 0) {
+      return { cpc: highestCpcInCategory, isEstimated: true };
+    }
     
-    return { cpc: Math.round(estimatedCPC * 100) / 100, isEstimated: true };
+    // Ultimate fallback: use highest CPC from mid-value category
+    const midValueCategories = GOOGLE_CPC_KEYWORDS.filter(ind => ind.category === 'mid-value');
+    const fallbackCpc = midValueCategories.length > 0 
+      ? Math.max(...midValueCategories.flatMap(ind => ind.keywords.map(kw => kw.cpc)))
+      : 200;
+    
+    return { cpc: fallbackCpc, isEstimated: true };
   }, []);
 
   // Calculate price per lead based on CPC and lead type

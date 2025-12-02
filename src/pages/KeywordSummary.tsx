@@ -213,14 +213,38 @@ export default function KeywordSummary() {
       }
     }
     
-    // Intelligent fallback CPC based on industry value tier
-    const leadCost = getLeadCostForIndustry(industry, 'non-exclusive');
+    // For unlisted keywords, use the HIGHEST CPC from their category
+    // First, try to find a matching category based on the industry name
+    const normalizedIndustry = industry.trim().toLowerCase();
     
-    // Non-exclusive is ~20% of Google CPC, so reverse calculate
-    // Estimate Google CPC = Non-exclusive cost / 0.20
-    const estimatedCPC = leadCost / 0.20;
+    // Find all categories that might match this industry
+    let highestCpcInCategory = 0;
+    for (const industryData of GOOGLE_CPC_KEYWORDS) {
+      const industryName = industryData.industry.toLowerCase();
+      // Check if this industry category matches (partial match)
+      if (normalizedIndustry.includes(industryName.split(' ')[0]) || 
+          industryName.includes(normalizedIndustry.split(' ')[0]) ||
+          industryData.category === getIndustryCategory(keyword, industry)) {
+        // Get the highest CPC keyword from this category
+        const maxCpc = Math.max(...industryData.keywords.map(kw => kw.cpc));
+        if (maxCpc > highestCpcInCategory) {
+          highestCpcInCategory = maxCpc;
+        }
+      }
+    }
     
-    return { cpc: Math.round(estimatedCPC * 100) / 100, isEstimated: true };
+    // If we found a matching category, use its highest CPC
+    if (highestCpcInCategory > 0) {
+      return { cpc: highestCpcInCategory, isEstimated: true };
+    }
+    
+    // Ultimate fallback: use highest CPC from mid-value category
+    const midValueCategories = GOOGLE_CPC_KEYWORDS.filter(ind => ind.category === 'mid-value');
+    const fallbackCpc = midValueCategories.length > 0 
+      ? Math.max(...midValueCategories.flatMap(ind => ind.keywords.map(kw => kw.cpc)))
+      : 200; // Default high value
+    
+    return { cpc: fallbackCpc, isEstimated: true };
   };
 
   const updateSelection = (selectionId: string, field: 'quantity' | 'exclusivity' | 'isConfirmed', value: any) => {
