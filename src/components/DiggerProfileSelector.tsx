@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut } from "lucide-react";
@@ -29,17 +29,35 @@ interface DiggerProfile {
 export const DiggerProfileSelector = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [profiles, setProfiles] = useState<DiggerProfile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<DiggerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [createProfileDialog, setCreateProfileDialog] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
 
+  // Extract profile ID from URL if on a digger detail page
+  const getProfileIdFromUrl = (): string | null => {
+    const match = location.pathname.match(/\/digger\/([^/]+)/);
+    return match ? match[1] : null;
+  };
+
   useEffect(() => {
     if (user) {
       loadProfiles();
     }
   }, [user]);
+
+  // Update current profile when URL changes
+  useEffect(() => {
+    const urlProfileId = getProfileIdFromUrl();
+    if (urlProfileId && profiles.length > 0) {
+      const matchingProfile = profiles.find(p => p.id === urlProfileId);
+      if (matchingProfile) {
+        setCurrentProfile(matchingProfile);
+      }
+    }
+  }, [location.pathname, profiles]);
 
   const loadProfiles = async () => {
     if (!user) return;
@@ -56,9 +74,23 @@ export const DiggerProfileSelector = () => {
 
       if (data && data.length > 0) {
         setProfiles(data);
-        // Set current profile to primary or first one
-        const primary = data.find(p => p.is_primary) || data[0];
-        setCurrentProfile(primary);
+        
+        // Check if we're on a specific profile page first
+        const urlProfileId = getProfileIdFromUrl();
+        if (urlProfileId) {
+          const matchingProfile = data.find(p => p.id === urlProfileId);
+          if (matchingProfile) {
+            setCurrentProfile(matchingProfile);
+          } else {
+            // Fallback to primary or first
+            const primary = data.find(p => p.is_primary) || data[0];
+            setCurrentProfile(primary);
+          }
+        } else {
+          // Set current profile to primary or first one
+          const primary = data.find(p => p.is_primary) || data[0];
+          setCurrentProfile(primary);
+        }
       }
     } catch (error) {
       console.error("Error loading profiles:", error);
