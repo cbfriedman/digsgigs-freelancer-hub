@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ShoppingCart, Info, Trash2, Plus } from "lucide-react";
-import { getLeadCostForIndustry, calculateBulkDiscount, type BulkDiscountResult } from "@/config/pricing";
+import { getLeadCostForIndustry, getLeadCostFromCPC, getIndustryCategory, calculateBulkDiscount, type BulkDiscountResult } from "@/config/pricing";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -186,7 +186,9 @@ export default function KeywordSummary() {
   const calculateGrandTotal = () => {
     let total = 0;
     selections.forEach(selection => {
-      const pricePerLead = getLeadCostForIndustry(selection.industry, selection.exclusivity, selection.isConfirmed);
+      const cpcData = lookupGoogleCPC(selection.keyword, selection.industry);
+      const category = getIndustryCategory(selection.industry);
+      const pricePerLead = getLeadCostFromCPC(cpcData.cpc, selection.exclusivity, selection.isConfirmed, category);
       total += pricePerLead * selection.quantity;
     });
     return total;
@@ -395,7 +397,8 @@ export default function KeywordSummary() {
                   if (!selection) return null;
 
                   const cpcData = lookupGoogleCPC(keyword, industry);
-                  const pricePerLead = getLeadCostForIndustry(industry, selection.exclusivity, selection.isConfirmed);
+                  const category = getIndustryCategory(industry);
+                  const pricePerLead = getLeadCostFromCPC(cpcData.cpc, selection.exclusivity, selection.isConfirmed, category);
                   const subtotal = pricePerLead * selection.quantity;
 
                   return (
@@ -455,10 +458,10 @@ export default function KeywordSummary() {
                             }}
                             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                           >
-                            <option value="exclusive-24h">24-Hr. Exclusive - ${getLeadCostForIndustry(industry, 'exclusive-24h', false).toFixed(2)}/lead</option>
-                            <option value="semi-exclusive">Semi Exclusive - ${getLeadCostForIndustry(industry, 'semi-exclusive', false).toFixed(2)}/lead</option>
-                            <option value="non-exclusive-confirmed">Confirmed - ${getLeadCostForIndustry(industry, 'non-exclusive', true).toFixed(2)}/lead</option>
-                            <option value="non-exclusive-unconfirmed">Unconfirmed - ${getLeadCostForIndustry(industry, 'non-exclusive', false).toFixed(2)}/lead</option>
+                            <option value="exclusive-24h">24-Hr. Exclusive - ${getLeadCostFromCPC(cpcData.cpc, 'exclusive-24h', false, category).toFixed(2)}/lead</option>
+                            <option value="semi-exclusive">Semi Exclusive - ${getLeadCostFromCPC(cpcData.cpc, 'semi-exclusive', false, category).toFixed(2)}/lead</option>
+                            <option value="non-exclusive-confirmed">Confirmed - ${getLeadCostFromCPC(cpcData.cpc, 'non-exclusive', true, category).toFixed(2)}/lead</option>
+                            <option value="non-exclusive-unconfirmed">Unconfirmed - ${getLeadCostFromCPC(cpcData.cpc, 'non-exclusive', false, category).toFixed(2)}/lead</option>
                           </select>
                         </div>
 
