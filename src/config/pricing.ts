@@ -609,6 +609,58 @@ const getPricingForTier = (tier: IndustryCategory): IndustryPricing => {
   return INDUSTRY_PRICING.find(p => p.category === tier) || INDUSTRY_PRICING[1]; // Default to mid-value
 };
 
+/**
+ * Calculate lead cost dynamically from actual CPC
+ * High-Value formula:
+ * - Non-exclusive: 20% of CPC
+ * - Semi-exclusive: 50% of CPC
+ * - Exclusive: CPC × 0.9, rounded up to whole number
+ * 
+ * Mid/Low-Value uses fixed tier pricing
+ */
+export const getLeadCostFromCPC = (
+  cpc: number,
+  exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
+  isConfirmed: boolean = false,
+  category: IndustryCategory = 'mid-value'
+): number => {
+  // For high-value, calculate dynamically from CPC
+  if (category === 'high-value') {
+    let price: number;
+    if (exclusivity === 'non-exclusive') {
+      price = cpc * 0.20;
+    } else if (exclusivity === 'semi-exclusive') {
+      price = cpc * 0.50;
+    } else {
+      // exclusive-24h: CPC × 0.9, rounded up to whole number
+      price = Math.ceil(cpc * 0.90);
+    }
+    
+    // Add 20% confirmation premium for non-exclusive confirmed leads
+    if (exclusivity === 'non-exclusive' && isConfirmed) {
+      return Math.round(price * 1.20 * 2) / 2; // Round to nearest $0.50
+    }
+    
+    return Math.round(price * 100) / 100; // Round to 2 decimal places
+  }
+  
+  // For mid/low-value, use fixed tier pricing
+  const pricingData = INDUSTRY_PRICING.find(p => p.category === category) || INDUSTRY_PRICING[1];
+  
+  const basePrice = exclusivity === 'non-exclusive' 
+    ? pricingData.nonExclusive 
+    : exclusivity === 'semi-exclusive'
+    ? pricingData.semiExclusive
+    : pricingData.exclusive24h;
+  
+  // Add 20% confirmation premium for non-exclusive confirmed leads
+  if (exclusivity === 'non-exclusive' && isConfirmed) {
+    return Math.round(basePrice * 1.20 * 2) / 2; // Round to nearest $0.50
+  }
+  
+  return basePrice;
+};
+
 // Helper function to get lead cost for a specific industry and exclusivity type
 // Now accepts optional parentCategory for category-aware fallback pricing
 export const getLeadCostForIndustry = (
