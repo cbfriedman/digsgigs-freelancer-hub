@@ -19,6 +19,8 @@ interface LeadSelection {
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
   quantity: number;
   isConfirmed: boolean;
+  pricePerLead?: number;
+  subtotal?: number;
 }
 
 interface DiscountInfo {
@@ -172,6 +174,10 @@ export default function Checkout() {
 
   const calculateTotalCost = () => {
     return selections.reduce((sum, sel) => {
+      // Use saved subtotal if available, otherwise calculate
+      if (sel.subtotal !== undefined) {
+        return sum + sel.subtotal;
+      }
       const pricePerLead = getLeadCostForIndustry(sel.industry, sel.exclusivity);
       return sum + (pricePerLead * sel.quantity);
     }, 0);
@@ -234,8 +240,9 @@ export default function Checkout() {
                 <div className="space-y-4">
                   <div className="space-y-3">
                     {selections.map((selection, idx) => {
-                      const pricePerLead = getLeadCostForIndustry(selection.industry, selection.exclusivity);
-                      const lineTotal = pricePerLead * selection.quantity;
+                      // Use saved pricing data, fallback to recalculation if not available
+                      const pricePerLead = selection.pricePerLead ?? getLeadCostForIndustry(selection.industry, selection.exclusivity);
+                      const lineTotal = selection.subtotal ?? (pricePerLead * selection.quantity);
                       const badge = getExclusivityBadge(selection.exclusivity);
                       
                       return (

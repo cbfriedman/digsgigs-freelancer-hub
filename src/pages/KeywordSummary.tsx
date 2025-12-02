@@ -353,8 +353,21 @@ export default function KeywordSummary() {
       return;
     }
     
+    // Calculate and include price per lead and subtotal for each selection
+    const purchasesWithPricing = leadPurchases.map(selection => {
+      const cpcData = lookupGoogleCPC(selection.keyword, selection.industry);
+      const category = getIndustryCategory(selection.keyword, selection.industry);
+      const pricePerLead = getLeadCostFromCPC(cpcData.cpc, selection.exclusivity, selection.isConfirmed, category);
+      const subtotal = pricePerLead * selection.quantity;
+      return {
+        ...selection,
+        pricePerLead,
+        subtotal,
+      };
+    });
+    
     // Save lead purchase selections and discount info to sessionStorage
-    sessionStorage.setItem('leadPurchaseSelections', JSON.stringify(leadPurchases));
+    sessionStorage.setItem('leadPurchaseSelections', JSON.stringify(purchasesWithPricing));
     sessionStorage.setItem('leadPurchaseDiscount', JSON.stringify(discountInfo));
     
     toast({
