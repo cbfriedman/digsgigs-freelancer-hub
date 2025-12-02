@@ -36,10 +36,15 @@ export const DiggerProfileSelector = () => {
   const [createProfileDialog, setCreateProfileDialog] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
 
-  // Extract profile ID from URL if on a digger detail page
+  // Extract profile ID from URL path or query params
   const getProfileIdFromUrl = (): string | null => {
+    // First check path (e.g., /digger/:id)
     const match = location.pathname.match(/\/digger\/([^/]+)/);
-    return match ? match[1] : null;
+    if (match) return match[1];
+    
+    // Then check query params (e.g., ?profileId=xxx)
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('profileId');
   };
 
   useEffect(() => {
