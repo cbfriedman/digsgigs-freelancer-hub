@@ -391,6 +391,8 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Loan Brokers',
       'Mortgage Brokers',
       'Estate Planning',
+      'Estate Planning Lawyer',
+      'estate planning lawyer',
       'Accounting',
       'Tax Preparation',
       'CPA Services',
