@@ -159,6 +159,11 @@ const EditDiggerProfile = () => {
   const [country, setCountry] = useState("United States");
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
 
+  // Memoize regions for the selected country to avoid repeated lookups
+  const availableRegions = useMemo(() => {
+    return getRegionsForCountry(country);
+  }, [country]);
+
   // Parse keywords from input
   const keywords = keywordsInput
     .split(/[,;]/)
@@ -699,7 +704,7 @@ const EditDiggerProfile = () => {
                 </div>
 
                 {/* State/Province Multi-Select - Always visible for supported countries */}
-                {country && country !== "Other" && (
+                {country && country !== "Other" && availableRegions.length > 0 && (
                   <div className="space-y-2 border-l-4 border-primary pl-4 bg-primary/5 p-4 rounded-r-lg">
                     <Label className="text-base font-semibold flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-primary" />
@@ -713,10 +718,10 @@ const EditDiggerProfile = () => {
                         <label className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer border-b">
                           <input
                             type="checkbox"
-                            checked={selectedStates.length === getRegionsForCountry(country).length}
+                            checked={selectedStates.length === availableRegions.length && availableRegions.length > 0}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedStates(getRegionsForCountry(country));
+                                setSelectedStates([...availableRegions]);
                               } else {
                                 setSelectedStates([]);
                               }
@@ -725,7 +730,7 @@ const EditDiggerProfile = () => {
                           />
                           <span className="text-sm font-semibold">Select All</span>
                         </label>
-                        {getRegionsForCountry(country).map((state) => (
+                        {availableRegions.map((state) => (
                           <label
                             key={state}
                             className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer"
