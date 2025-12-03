@@ -582,6 +582,34 @@ const EditDiggerProfile = () => {
                 </div>
               )}
               
+              {/* Selected Keywords - shown right after professions */}
+              {keywords.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Selected Keywords ({keywords.length})</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {keywords.map((keyword, index) => {
+                      const leadCost = getLeadCostForIndustry(keyword, 'non-exclusive', false, profileCategory);
+                      return (
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                          <span>{keyword}</span>
+                          <span className="text-xs text-green-600 ml-1">${leadCost.toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newKeywords = keywords.filter((_, i) => i !== index);
+                              setKeywordsInput(newKeywords.join(', '));
+                            }}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
               {/* Keyword Suggestions - Budget Friendly & Premium Keywords */}
               {selectedProfessions.length > 0 && (
                 <KeywordSuggestions
@@ -1044,30 +1072,6 @@ const EditDiggerProfile = () => {
                 Add relevant keywords to improve matching with gigs. Use commas or semicolons to separate keywords.
               </p>
               
-              {keywords.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {keywords.map((keyword, index) => {
-                    const cpc = getKeywordCPC(keyword);
-                    const leadCost = getLeadCostForIndustry(keyword, 'non-exclusive', false, profileCategory);
-                    return (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
-                        <span>{keyword}</span>
-                        <span className="text-xs text-green-600 ml-1">${leadCost.toFixed(2)}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newKeywords = keywords.filter((_, i) => i !== index);
-                            setKeywordsInput(newKeywords.join(', '));
-                          }}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
             {/* Hourly Upcharge Display */}
