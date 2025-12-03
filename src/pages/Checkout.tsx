@@ -282,41 +282,54 @@ export default function Checkout() {
     // Get lead purchase selections from sessionStorage
     // IMPORTANT: leadPurchaseSelections has pre-calculated pricing, allLeadSelections does not
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
-    const savedAllSelections = sessionStorage.getItem('allLeadSelections');
-    const savedDiscount = sessionStorage.getItem('leadPurchaseDiscount');
+    const savedProfileId = sessionStorage.getItem('leadPurchaseProfileId');
     
     console.log('[Checkout] Loading data:', {
       hasLeadPurchaseSelections: !!savedSelections,
-      hasAllLeadSelections: !!savedAllSelections,
-      hasSavedDiscount: !!savedDiscount
+      savedProfileId,
+      urlProfileId: profileId,
     });
     
-    // CRITICAL: Prefer leadPurchaseSelections (has correct prices) over allLeadSelections (no prices)
-    const selectionsToUse = savedSelections || savedAllSelections;
+    // CRITICAL: Verify profileId matches to prevent stale data from other profiles
+    if (profileId && savedProfileId && savedProfileId !== profileId) {
+      console.log('[Checkout] Profile mismatch - clearing stale data and redirecting');
+      sessionStorage.removeItem('leadPurchaseSelections');
+      sessionStorage.removeItem('leadPurchaseDiscount');
+      sessionStorage.removeItem('allLeadSelections');
+      sessionStorage.removeItem('leadPurchaseCategoryName');
+      sessionStorage.removeItem('leadPurchaseProfileId');
+      toast.error("Session data was for a different profile. Please select leads again.");
+      navigate(`/keyword-summary?profileId=${profileId}`);
+      return;
+    }
     
-    if (!selectionsToUse) {
+    // Only use leadPurchaseSelections - it has correctly filtered items with quantity > 0
+    if (!savedSelections) {
       toast.error("No checkout data found");
-      navigate("/pricing");
+      const backUrl = profileId ? `/keyword-summary?profileId=${profileId}` : "/pricing";
+      navigate(backUrl);
       return;
     }
 
     try {
-      const parsedSelections = JSON.parse(selectionsToUse);
+      const parsedSelections = JSON.parse(savedSelections);
       
       console.log('[Checkout] Parsed selections:', parsedSelections);
       
       if (!parsedSelections || parsedSelections.length === 0) {
         toast.error("No items selected");
-        navigate("/pricing");
+        const backUrl = profileId ? `/keyword-summary?profileId=${profileId}` : "/pricing";
+        navigate(backUrl);
         return;
       }
       
-      // Filter to only show items with quantity > 0
+      // Double-check filter to only show items with quantity > 0
       const activeSelections = parsedSelections.filter((sel: LeadSelection) => sel.quantity > 0);
       
       if (activeSelections.length === 0) {
         toast.error("No items with quantity selected");
-        navigate("/pricing");
+        const backUrl = profileId ? `/keyword-summary?profileId=${profileId}` : "/pricing";
+        navigate(backUrl);
         return;
       }
       
@@ -325,7 +338,6 @@ export default function Checkout() {
       setSelections(activeSelections);
       
       // ALWAYS recalculate discount from loaded selections to ensure accuracy
-      // This prevents stale sessionStorage data from causing price mismatches
       const newDiscount = recalculateDiscounts(activeSelections);
       console.log('[Checkout] Recalculated discount:', newDiscount);
       setDiscountInfo(newDiscount);
@@ -334,9 +346,10 @@ export default function Checkout() {
     } catch (error) {
       console.error("Error parsing checkout data:", error);
       toast.error("Invalid checkout data");
-      navigate("/pricing");
+      const backUrl = profileId ? `/keyword-summary?profileId=${profileId}` : "/pricing";
+      navigate(backUrl);
     }
-  }, [navigate, recalculateDiscounts]);
+  }, [navigate, recalculateDiscounts, profileId]);
 
   const handleCheckout = async () => {
     if (!user) {
