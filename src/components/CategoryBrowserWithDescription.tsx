@@ -21,13 +21,67 @@ import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
 // Helper function to look up CPC and calculate lead cost for a keyword
 const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: number | null } => {
   const keywordLower = keyword.toLowerCase();
+  const keywordWords = keywordLower.split(' ');
   
+  // 1. Try exact match first
   for (const industry of GOOGLE_CPC_KEYWORDS) {
     for (const kw of industry.keywords) {
       if (kw.keyword.toLowerCase() === keywordLower) {
-        // Non-exclusive lead cost = 20% of CPC
-        const leadCost = Math.ceil((kw.cpc * 0.20) * 2) / 2; // Round to nearest $0.50
+        const leadCost = Math.ceil((kw.cpc * 0.20) * 2) / 2;
         return { cpc: kw.cpc, leadCost };
+      }
+    }
+  }
+  
+  // 2. Try partial match - keyword contains or is contained in database keyword
+  let bestMatch: { cpc: number; matchScore: number } | null = null;
+  
+  for (const industry of GOOGLE_CPC_KEYWORDS) {
+    for (const kw of industry.keywords) {
+      const dbKeywordLower = kw.keyword.toLowerCase();
+      const dbWords = dbKeywordLower.split(' ');
+      
+      // Check for word overlap
+      const matchingWords = keywordWords.filter(w => 
+        dbWords.some(dbw => dbw.includes(w) || w.includes(dbw))
+      );
+      
+      if (matchingWords.length > 0) {
+        const matchScore = matchingWords.length / Math.max(keywordWords.length, dbWords.length);
+        if (!bestMatch || matchScore > bestMatch.matchScore) {
+          bestMatch = { cpc: kw.cpc, matchScore };
+        }
+      }
+    }
+  }
+  
+  if (bestMatch && bestMatch.matchScore >= 0.3) {
+    const leadCost = Math.ceil((bestMatch.cpc * 0.20) * 2) / 2;
+    return { cpc: bestMatch.cpc, leadCost };
+  }
+  
+  // 3. Fall back to industry average based on common terms
+  const industryKeywords: Record<string, string[]> = {
+    'legal': ['law', 'lawyer', 'attorney', 'legal'],
+    'accounting': ['accounting', 'bookkeeping', 'tax', 'cpa', 'accountant'],
+    'business': ['business', 'consulting', 'services', 'strategy'],
+    'financial': ['financial', 'finance', 'investment', 'insurance'],
+    'medical': ['medical', 'health', 'doctor', 'therapy', 'therapist'],
+  };
+  
+  for (const [industryType, terms] of Object.entries(industryKeywords)) {
+    if (terms.some(term => keywordLower.includes(term))) {
+      // Find average CPC for this industry type
+      const matchingIndustries = GOOGLE_CPC_KEYWORDS.filter(ind => 
+        terms.some(term => ind.industry.toLowerCase().includes(term))
+      );
+      
+      if (matchingIndustries.length > 0) {
+        const avgCpc = Math.round(
+          matchingIndustries.reduce((sum, ind) => sum + ind.averageCpc, 0) / matchingIndustries.length
+        );
+        const leadCost = Math.ceil((avgCpc * 0.20) * 2) / 2;
+        return { cpc: avgCpc, leadCost };
       }
     }
   }
