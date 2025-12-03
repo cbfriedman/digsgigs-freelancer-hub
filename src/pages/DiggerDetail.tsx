@@ -539,7 +539,7 @@ const DiggerDetail = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl font-bold">
-                        @{digger.handle || digger.profiles?.email?.split('@')[0] || digger.profiles?.full_name || "user"}
+                        {digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business Name"}
                       </h1>
                       <div className="flex items-center gap-1.5 bg-background border border-border/50 px-3 py-1 rounded-full">
                         <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
