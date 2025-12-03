@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
+import { CpcDataUploader } from "@/components/CpcDataUploader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ReminderStats {
@@ -328,6 +329,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="reminders">Profile Reminders</TabsTrigger>
             <TabsTrigger value="keywords">Keyword Analytics</TabsTrigger>
             <TabsTrigger value="requests">Keyword Requests</TabsTrigger>
+            <TabsTrigger value="cpc-data" className="flex items-center gap-1">
+              <Database className="h-3 w-3" />
+              CPC Data
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="reminders" className="space-y-6">
@@ -640,6 +645,10 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="cpc-data">
+            <CpcDataUploader />
           </TabsContent>
         </Tabs>
       </div>
