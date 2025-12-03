@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
-import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
 
 export default function DiggerRegistrationDemo() {
   const [businessName, setBusinessName] = useState("");
@@ -20,16 +19,7 @@ export default function DiggerRegistrationDemo() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categoryNames, setCategoryNames] = useState<string[]>([]);
-  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (profession || categoryNames.length > 0) {
-      generateEnhancedKeywordSuggestions(profession, categoryNames).then(suggestions => {
-        setKeywordSuggestions(suggestions);
-      });
-    }
-  }, [profession, categoryNames]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,13 +164,13 @@ export default function DiggerRegistrationDemo() {
                   </div>
                 </div>
 
-                {keywordSuggestions.length > 0 && (
-            <KeywordSuggestions
-              suggestions={keywordSuggestions}
-              currentKeywords={keywords}
-              onAddKeyword={handleAddKeyword}
-              profession={profession}
-            />
+                {(profession || categoryNames.length > 0) && (
+                  <KeywordSuggestions
+                    currentKeywords={keywords}
+                    onAddKeyword={handleAddKeyword}
+                    profession={profession}
+                    specialty={categoryNames.length > 0 ? categoryNames[0] : undefined}
+                  />
                 )}
               </>
             )}
