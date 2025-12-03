@@ -15,7 +15,7 @@ import { Loader2, Tag, MapPin, Plus, Search, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+// Native radio inputs used instead of RadioGroup to avoid infinite loop bug
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
 import { getLeadTierDescription, INDUSTRY_PRICING } from "@/config/pricing";
@@ -554,24 +554,30 @@ const EditDiggerProfile = () => {
                   </select>
                 </div>
 
-                <RadioGroup
-                  value={locationPreferenceType}
-                  onValueChange={(value: "zip_codes" | "radius") => setLocationPreferenceType(value)}
-                  className="space-y-3"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="zip_codes" id="zip_codes" />
-                    <Label htmlFor="zip_codes" className="cursor-pointer font-normal">
-                      Specific Zip Codes
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="radius" id="radius" />
-                    <Label htmlFor="radius" className="cursor-pointer font-normal">
-                      Radius from Zip Code
-                    </Label>
-                  </div>
-                </RadioGroup>
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="locationPreference"
+                      value="zip_codes"
+                      checked={locationPreferenceType === "zip_codes"}
+                      onChange={(e) => setLocationPreferenceType(e.target.value as "zip_codes" | "radius")}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-normal">Specific Zip Codes</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="locationPreference"
+                      value="radius"
+                      checked={locationPreferenceType === "radius"}
+                      onChange={(e) => setLocationPreferenceType(e.target.value as "zip_codes" | "radius")}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-normal">Radius from Zip Code</span>
+                  </label>
+                </div>
 
                 {locationPreferenceType === "zip_codes" ? (
                   <div className="space-y-2">
@@ -722,43 +728,58 @@ const EditDiggerProfile = () => {
             <div id="pricing">
               <Label className="text-base font-semibold">Available for *</Label>
               <p className="text-sm text-muted-foreground mb-3">Select at least one pricing option</p>
-              <RadioGroup value={pricingModel} onValueChange={setPricingModel} className="space-y-4">
-                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                  <RadioGroupItem value="commission" id="commission" className="mt-1" />
+              <div className="space-y-4">
+                <label className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pricingModel"
+                    value="commission"
+                    checked={pricingModel === "commission"}
+                    onChange={(e) => setPricingModel(e.target.value)}
+                    className="h-4 w-4 mt-1 accent-primary"
+                  />
                   <div className="flex-1">
-                    <Label htmlFor="commission" className="font-semibold cursor-pointer">
-                      Fixed Price Contracts
-                    </Label>
+                    <span className="font-semibold">Fixed Price Contracts</span>
                     <p className="text-sm text-muted-foreground mt-1">
                       Volume-based lead pricing + 9%/5%/3% escrow processing fee (based on monthly lead volume)
                     </p>
                   </div>
-                </div>
+                </label>
 
-                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                  <RadioGroupItem value="hourly" id="hourly" className="mt-1" />
+                <label className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pricingModel"
+                    value="hourly"
+                    checked={pricingModel === "hourly"}
+                    onChange={(e) => setPricingModel(e.target.value)}
+                    className="h-4 w-4 mt-1 accent-primary"
+                  />
                   <div className="flex-1">
-                    <Label htmlFor="hourly" className="font-semibold cursor-pointer">
-                      Time and Materials (Hourly)
-                    </Label>
+                    <span className="font-semibold">Time and Materials (Hourly)</span>
                     <p className="text-sm text-muted-foreground mt-1">
                       Volume-based lead pricing + Award fee based on tier + 9%/5%/3% escrow processing fee
                     </p>
                   </div>
-                </div>
+                </label>
 
-                <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                  <RadioGroupItem value="both" id="both" className="mt-1" />
+                <label className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pricingModel"
+                    value="both"
+                    checked={pricingModel === "both"}
+                    onChange={(e) => setPricingModel(e.target.value)}
+                    className="h-4 w-4 mt-1 accent-primary"
+                  />
                   <div className="flex-1">
-                    <Label htmlFor="both" className="font-semibold cursor-pointer">
-                      Both Models
-                    </Label>
+                    <span className="font-semibold">Both Models</span>
                     <p className="text-sm text-muted-foreground mt-1">
                       Volume-based lead pricing + Award fee varies by model + 9%/5%/3% escrow processing fee
                     </p>
                   </div>
-                </div>
-              </RadioGroup>
+                </label>
+              </div>
 
             </div>
 
