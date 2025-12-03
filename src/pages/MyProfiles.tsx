@@ -7,9 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Plus, Star, Edit, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/utils/retryWithBackoff";
@@ -38,28 +35,11 @@ export default function MyProfiles() {
     open: false,
     profileId: null,
   });
-const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: string | null; currentName: string }>({
-    open: false,
-    profileId: null,
-    currentName: '',
-  });
-  const [newProfileName, setNewProfileName] = useState('');
-  const [createProfileDialog, setCreateProfileDialog] = useState(false);
-  const [newProfileNameForCreate, setNewProfileNameForCreate] = useState('');
 
   const handleCreateNewProfile = () => {
-    setNewProfileNameForCreate('');
-    setCreateProfileDialog(true);
-  };
-
-  const handleConfirmCreateProfile = () => {
-    if (!newProfileNameForCreate.trim()) {
-      toast.error("Please enter a profile name");
-      return;
-    }
-    // Store the profile name in sessionStorage for the category browser to use
-    sessionStorage.setItem('newProfileName', newProfileNameForCreate.trim());
-    setCreateProfileDialog(false);
+    // Navigate directly to category browser - naming is handled there
+    // Primary profiles auto-name from category
+    // Secondary profiles get name input after category selection
     navigate("/pricing");
   };
 
@@ -178,28 +158,6 @@ const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: str
     } catch (error) {
       console.error("Error deleting profile:", error);
       toast.error("Failed to delete profile - please check your connection");
-    }
-  };
-
-  const handleRename = async () => {
-    if (!renameDialog.profileId || !newProfileName.trim()) return;
-
-    try {
-      await retryWithBackoff(async () => {
-        const { error } = await supabase
-          .from("digger_profiles")
-          .update({ profile_name: newProfileName.trim() })
-          .eq("id", renameDialog.profileId);
-        if (error) throw error;
-      });
-
-      toast.success("Profile renamed successfully");
-      setRenameDialog({ open: false, profileId: null, currentName: '' });
-      setNewProfileName('');
-      loadProfiles();
-    } catch (error) {
-      console.error("Error renaming profile:", error);
-      toast.error("Failed to rename profile - please check your connection");
     }
   };
 
@@ -385,71 +343,6 @@ const [renameDialog, setRenameDialog] = useState<{ open: boolean; profileId: str
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={renameDialog.open} onOpenChange={(open) => setRenameDialog({ open, profileId: null, currentName: '' })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Profile</DialogTitle>
-            <DialogDescription>Enter a new name for this profile</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="profile-name">Profile Name</Label>
-              <Input
-                id="profile-name"
-                value={newProfileName}
-                onChange={(e) => setNewProfileName(e.target.value)}
-                placeholder="Enter profile name"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameDialog({ open: false, profileId: null, currentName: '' })}>
-              Cancel
-            </Button>
-            <Button onClick={handleRename} disabled={!newProfileName.trim()}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create New Profile Dialog */}
-      <Dialog open={createProfileDialog} onOpenChange={setCreateProfileDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Profile</DialogTitle>
-            <DialogDescription>
-              Enter a name for your new profile. This helps you identify different service offerings.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-profile-name">
-                Profile Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="new-profile-name"
-                value={newProfileNameForCreate}
-                onChange={(e) => setNewProfileNameForCreate(e.target.value)}
-                placeholder="e.g., Plumbing Services, Legal Consulting"
-                autoFocus
-              />
-              <p className="text-xs text-muted-foreground">
-                Examples: "Commercial Electrical", "Residential Plumbing", "Tax Services"
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateProfileDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmCreateProfile} disabled={!newProfileNameForCreate.trim()}>
-              Continue to Browse Categories
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
