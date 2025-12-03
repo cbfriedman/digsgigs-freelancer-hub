@@ -224,8 +224,8 @@ const Transactions = () => {
 
       // Calculate totals for diggers
       if (type === 'digger') {
-        const earnings = txData.reduce((sum: number, tx: any) => sum + (tx.digger_payout || 0), 0);
-        const commission = txData.reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
+        const earnings = (data || []).reduce((sum: number, tx: any) => sum + (tx.digger_payout || 0), 0);
+        const commission = (data || []).reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
         setTotalEarnings(earnings);
         setTotalCommission(commission);
       }
