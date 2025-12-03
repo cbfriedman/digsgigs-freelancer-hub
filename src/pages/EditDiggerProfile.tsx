@@ -937,6 +937,22 @@ const EditDiggerProfile = () => {
               )}
             </div>
 
+            {/* AI-Powered Bio Generator - Above About Your Services */}
+            <Card className="p-4 border-2 border-primary/30 bg-primary/5">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm">AI-Powered Bio Generator</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Let AI generate a professional bio based on your profession and keywords
+              </p>
+              <BioGenerator 
+                profession={selectedProfessions.join(', ')}
+                currentBio={bio}
+                onBioGenerated={setBio}
+              />
+            </Card>
+
             <div className="space-y-3" id="bio">
               <div className="flex items-center justify-between">
                 <Label htmlFor="bio">About Your Services</Label>
@@ -952,35 +968,6 @@ const EditDiggerProfile = () => {
                 placeholder="Tell us about your experience and expertise..."
                 rows={4}
               />
-              {keywords.length > 0 && bio && (
-                <Card className="p-3 mt-2 bg-accent/30">
-                  <p className="text-sm text-muted-foreground mb-2">Keyword matches in your bio:</p>
-                  <p className="text-sm">
-                    {highlightKeywords(bio).map((part, index) => (
-                      <span
-                        key={index}
-                        className={part.isKeyword ? "bg-primary/20 text-primary font-semibold px-1 rounded" : ""}
-                      >
-                        {part.text}
-                      </span>
-                    ))}
-                  </p>
-                </Card>
-              )}
-              <Card className="p-4 border-2 border-primary/30 bg-primary/5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-sm">AI-Powered Bio Generator</span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Let AI generate a professional bio based on your profession and keywords
-                </p>
-                <BioGenerator 
-                  profession={selectedProfessions.join(', ')}
-                  currentBio={bio}
-                  onBioGenerated={setBio}
-                />
-              </Card>
             </div>
 
             <div id="pricing">
