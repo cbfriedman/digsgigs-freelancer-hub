@@ -105,17 +105,17 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (!getUserError && users) {
-      const user = users.find(u => u.email === email);
-      
+    const user = users.find(u => u.email === email);
+    
       if (user) {
         // User exists - confirm their email
-        const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
-          user.id,
-          { email_confirm: true }
-        );
+    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
+      user.id,
+      { email_confirm: true }
+    );
 
-        if (confirmError) {
-          console.error("Error confirming user email:", confirmError);
+    if (confirmError) {
+      console.error("Error confirming user email:", confirmError);
           // Don't fail - code is still verified
         } else {
           console.log("Email verified and confirmed for existing user:", email);

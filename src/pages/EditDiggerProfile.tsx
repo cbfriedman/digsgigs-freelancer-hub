@@ -202,7 +202,7 @@ const EditDiggerProfile = () => {
     } catch (error) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
-        console.error('Error checking subscription:', error);
+      console.error('Error checking subscription:', error);
       }
     }
   };
@@ -307,7 +307,7 @@ const EditDiggerProfile = () => {
     } catch (error: any) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
-        console.error("Error loading profile:", error);
+      console.error("Error loading profile:", error);
       }
       toast.error("Failed to load profile");
     } finally {
@@ -391,11 +391,11 @@ const EditDiggerProfile = () => {
       toast.success("Profile updated! Redirecting to your dashboard...");
       
       // Navigate immediately without delay to prevent loop
-      navigate(`/digger/${profileId}`, { replace: true });
+        navigate(`/digger/${profileId}`, { replace: true });
     } catch (error: any) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
-        console.error("Error updating profile:", error);
+      console.error("Error updating profile:", error);
       }
       toast.error(error.message || "Failed to update profile");
       setIsUpdating(false); // Reset flag on error so user can try again
