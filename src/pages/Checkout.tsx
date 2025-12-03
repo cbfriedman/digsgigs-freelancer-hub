@@ -324,22 +324,11 @@ export default function Checkout() {
       
       setSelections(activeSelections);
       
-      // Use saved discount if available AND we loaded from leadPurchaseSelections
-      if (savedSelections && savedDiscount) {
-        try {
-          const parsedDiscount = JSON.parse(savedDiscount);
-          console.log('[Checkout] Using saved discount:', parsedDiscount);
-          setDiscountInfo(parsedDiscount);
-        } catch {
-          // Recalculate if parsing fails
-          const newDiscount = recalculateDiscounts(activeSelections);
-          setDiscountInfo(newDiscount);
-        }
-      } else {
-        // Recalculate discount info if no saved discount
-        const newDiscount = recalculateDiscounts(activeSelections);
-        setDiscountInfo(newDiscount);
-      }
+      // ALWAYS recalculate discount from loaded selections to ensure accuracy
+      // This prevents stale sessionStorage data from causing price mismatches
+      const newDiscount = recalculateDiscounts(activeSelections);
+      console.log('[Checkout] Recalculated discount:', newDiscount);
+      setDiscountInfo(newDiscount);
       
       setLoading(false);
     } catch (error) {
