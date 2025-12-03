@@ -354,19 +354,33 @@ export default function Checkout() {
 
     setProcessing(true);
     try {
-      // Prepare selections with pricing
-      const selectionsWithPricing = activeSelections.map(sel => ({
-        ...sel,
-        pricePerLead: calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed),
-        subtotal: calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed) * sel.quantity,
-      }));
+      // Prepare selections with pricing - use existing pricePerLead when available
+      // This ensures prices match what the user sees in the UI
+      const selectionsWithPricing = activeSelections.map(sel => {
+        const price = sel.pricePerLead ?? calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+        return {
+          ...sel,
+          pricePerLead: price,
+          subtotal: price * sel.quantity,
+        };
+      });
+      
+      // Recalculate discount based on selections being sent to ensure consistency
+      const totalFromSelections = selectionsWithPricing.reduce((sum, sel) => sum + sel.subtotal, 0);
+      const freshDiscount = calculateBulkDiscount(totalFromSelections);
 
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
         body: {
           selections: selectionsWithPricing,
-          totalAmount: discountInfo?.finalTotal || 0,
+          totalAmount: freshDiscount.finalTotal,
           diggerProfileId: profileId,
-          discountInfo: discountInfo,
+          discountInfo: {
+            originalTotal: freshDiscount.originalTotal,
+            discountOnFirstThousand: freshDiscount.discountOnFirstThousand,
+            discountOnExcess: freshDiscount.discountOnExcess,
+            totalDiscount: freshDiscount.totalDiscount,
+            finalTotal: freshDiscount.finalTotal,
+          },
         },
       });
 
