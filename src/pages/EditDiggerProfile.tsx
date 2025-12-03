@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
-import { Loader2, Tag, MapPin, Plus, Search, X } from "lucide-react";
+import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
@@ -19,12 +19,13 @@ import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
 import { getLeadTierDescription, INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, getIndustryCategory } from "@/config/pricing";
-import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
+import { GOOGLE_CPC_KEYWORDS, getKeywordCPC } from "@/config/googleCpcKeywords";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -156,6 +157,7 @@ const EditDiggerProfile = () => {
   const [serviceRadiusCenter, setServiceRadiusCenter] = useState("");
   const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
   const [country, setCountry] = useState("United States");
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -235,9 +237,13 @@ const EditDiggerProfile = () => {
           setServiceRadiusCenter(profile.service_radius_center || "");
           setServiceRadiusMiles(profile.service_radius_miles || 25);
         }
-        setCountry(profile.country || "United States");
-        
-        // Check for keywords from sessionStorage first (from category browser)
+                setCountry(profile.country || "United States");
+                // Load states if available
+                if (profile.state) {
+                  setSelectedStates(profile.state.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0));
+                }
+                
+                // Check for keywords from sessionStorage first (from category browser)
         const savedKeywordsData = sessionStorage.getItem('selectedKeywords');
         if (savedKeywordsData) {
           try {
@@ -340,6 +346,7 @@ const EditDiggerProfile = () => {
           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
           country: country,
+          state: selectedStates.length > 0 ? selectedStates.join(', ') : null,
         })
         .eq("id", profileId);
 
@@ -675,6 +682,66 @@ const EditDiggerProfile = () => {
                   </select>
                 </div>
 
+                {/* State/Province Multi-Select */}
+                {country !== "Other" && getRegionsForCountry(country).length > 0 && (
+                  <div className="space-y-2">
+                    <Label>{getRegionLabel(country)} (select service areas)</Label>
+                    <div className="border rounded-md max-h-[200px] overflow-y-auto bg-background">
+                      <div className="p-2 space-y-1">
+                        <label className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer border-b">
+                          <input
+                            type="checkbox"
+                            checked={selectedStates.length === getRegionsForCountry(country).length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStates(getRegionsForCountry(country));
+                              } else {
+                                setSelectedStates([]);
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm font-semibold">Select All</span>
+                        </label>
+                        {getRegionsForCountry(country).map((state) => (
+                          <label
+                            key={state}
+                            className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedStates.includes(state)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedStates(prev => [...prev, state]);
+                                } else {
+                                  setSelectedStates(prev => prev.filter(s => s !== state));
+                                }
+                              }}
+                              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                            />
+                            <span className="text-sm">{state}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    {selectedStates.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {selectedStates.slice(0, 5).map((state) => (
+                          <Badge key={state} variant="secondary" className="text-xs">
+                            {state}
+                          </Badge>
+                        ))}
+                        {selectedStates.length > 5 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{selectedStates.length - 5} more
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input
@@ -816,7 +883,13 @@ const EditDiggerProfile = () => {
             </div>
 
             <div className="space-y-3" id="bio">
-              <Label htmlFor="bio">About Your Services</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="bio">About Your Services</Label>
+                <Badge variant="outline" className="gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  AI Available
+                </Badge>
+              </div>
               <Textarea
                 id="bio"
                 value={bio}
@@ -839,11 +912,20 @@ const EditDiggerProfile = () => {
                   </p>
                 </Card>
               )}
-              <BioGenerator 
-                profession={selectedProfessions.join(', ')}
-                currentBio={bio}
-                onBioGenerated={setBio}
-              />
+              <Card className="p-4 border-2 border-primary/30 bg-primary/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-sm">AI-Powered Bio Generator</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Let AI generate a professional bio based on your profession and keywords
+                </p>
+                <BioGenerator 
+                  profession={selectedProfessions.join(', ')}
+                  currentBio={bio}
+                  onBioGenerated={setBio}
+                />
+              </Card>
             </div>
 
             <div id="pricing">
@@ -946,11 +1028,26 @@ const EditDiggerProfile = () => {
               
               {keywords.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {keywords.map((keyword, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {keyword}
-                    </Badge>
-                  ))}
+                  {keywords.map((keyword, index) => {
+                    const cpc = getKeywordCPC(keyword);
+                    const leadCost = getLeadCostForIndustry(keyword, 'non-exclusive', false, profileCategory);
+                    return (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                        <span>{keyword}</span>
+                        <span className="text-xs text-green-600 ml-1">${leadCost.toFixed(2)}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newKeywords = keywords.filter((_, i) => i !== index);
+                            setKeywordsInput(newKeywords.join(', '));
+                          }}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
                 </div>
               )}
             </div>
