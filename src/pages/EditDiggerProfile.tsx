@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
-import { Loader2, Tag, MapPin, Plus } from "lucide-react";
+import { Loader2, Tag, MapPin, Plus, Search, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
@@ -22,7 +22,7 @@ import { getLeadTierDescription, INDUSTRY_PRICING } from "@/config/pricing";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const EditDiggerProfile = () => {
@@ -33,9 +33,10 @@ const EditDiggerProfile = () => {
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [businessName, setBusinessName] = useState("");
-  const [profession, setProfession] = useState("");
+  const [selectedProfessions, setSelectedProfessions] = useState<string[]>([]);
   const [customProfession, setCustomProfession] = useState("");
   const [showAddProfessionDialog, setShowAddProfessionDialog] = useState(false);
+  const [professionSearch, setProfessionSearch] = useState("");
   const [location, setLocation] = useState("");
   
   // Generate unique profession list from INDUSTRY_PRICING
@@ -129,7 +130,11 @@ const EditDiggerProfile = () => {
       if (profile) {
         setProfileId(profile.id);
         setBusinessName(profile.business_name || "");
-        setProfession(profile.profession || "");
+        // Parse comma-separated professions into array
+        const professionsList = profile.profession 
+          ? profile.profession.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0)
+          : [];
+        setSelectedProfessions(professionsList);
         setLocation(profile.location || "");
         setPhone(profile.phone || "");
         setBio(profile.bio || "");
@@ -187,10 +192,12 @@ const EditDiggerProfile = () => {
     e.preventDefault();
     if (!user || !profileId) return;
 
-    if (!businessName || !profession || !location || !phone) {
+    if (!businessName || selectedProfessions.length === 0 || !location || !phone) {
       toast.error("Please fill in all required fields");
       return;
     }
+
+    const professionString = selectedProfessions.join(', ');
 
     if (!pricingModel) {
       toast.error("Please select a pricing option (Fixed Price, Hourly, or Both Models)");
@@ -200,8 +207,8 @@ const EditDiggerProfile = () => {
     setLoading(true);
 
     try {
-      // Calculate lead tier description based on profession
-      const leadTierDescription = getLeadTierDescription([profession]);
+      // Calculate lead tier description based on professions
+      const leadTierDescription = getLeadTierDescription(selectedProfessions);
 
       // Parse location preferences
       const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
@@ -213,7 +220,7 @@ const EditDiggerProfile = () => {
         .update({
           business_name: businessName,
           company_name: businessName,
-          profession,
+          profession: professionString,
           location,
           phone,
           bio: bio || null,
@@ -296,7 +303,7 @@ const EditDiggerProfile = () => {
       try {
         await supabase.rpc('track_keyword_usage', {
           p_keyword: keyword,
-          p_profession: profession || null,
+          p_profession: selectedProfessions.length > 0 ? selectedProfessions[0] : null,
           p_category_name: null
         });
       } catch (error) {
@@ -348,7 +355,7 @@ const EditDiggerProfile = () => {
                 companyName={businessName}
                 location={location}
                 keywords={keywords}
-                profession={profession}
+                profession={selectedProfessions.join(', ')}
                 
               />
 
@@ -371,42 +378,100 @@ const EditDiggerProfile = () => {
               onTitleChange={setTitle}
               onTaglineChange={setTagline}
               companyName={businessName}
-              profession={profession}
+              profession={selectedProfessions.join(', ')}
               keywords={keywords}
             />
 
             <div className="space-y-2">
-              <Label htmlFor="profession">Profession *</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={profession}
-                  onValueChange={(value) => {
-                    if (value === "__add_custom__") {
-                      setShowAddProfessionDialog(true);
-                    } else {
-                      setProfession(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select your profession" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px] bg-background z-50">
-                    {professionOptions.map((prof) => (
-                      <SelectItem key={prof} value={prof}>
-                        {prof}
-                      </SelectItem>
+              <Label>Professions * <span className="text-xs text-muted-foreground">({selectedProfessions.length} selected)</span></Label>
+              
+              {/* Selected Professions Display */}
+              {selectedProfessions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {selectedProfessions.map((prof) => (
+                    <Badge key={prof} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                      {prof}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProfessions(prev => prev.filter(p => p !== prof))}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search professions..."
+                  value={professionSearch}
+                  onChange={(e) => setProfessionSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              
+              {/* Professions Checkbox List */}
+              <div className="border rounded-md max-h-[200px] overflow-y-auto bg-background">
+                <div className="p-2 space-y-1">
+                  {professionOptions
+                    .filter(prof => prof.toLowerCase().includes(professionSearch.toLowerCase()))
+                    .map((prof) => (
+                      <div
+                        key={prof}
+                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer"
+                        onClick={() => {
+                          setSelectedProfessions(prev => 
+                            prev.includes(prof) 
+                              ? prev.filter(p => p !== prof)
+                              : [...prev, prof]
+                          );
+                        }}
+                      >
+                        <Checkbox
+                          id={`prof-${prof}`}
+                          checked={selectedProfessions.includes(prof)}
+                          onCheckedChange={(checked) => {
+                            setSelectedProfessions(prev => 
+                              checked 
+                                ? [...prev, prof]
+                                : prev.filter(p => p !== prof)
+                            );
+                          }}
+                        />
+                        <Label htmlFor={`prof-${prof}`} className="cursor-pointer text-sm font-normal flex-1">
+                          {prof}
+                        </Label>
+                      </div>
                     ))}
-                    <SelectItem value="__add_custom__" className="text-primary font-medium">
-                      <span className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" /> Add Custom Profession
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddProfessionDialog(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Custom
+                </Button>
+                {selectedProfessions.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedProfessions([])}
+                  >
+                    Clear All
+                  </Button>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Select your primary profession or add a custom one
+                Select one or more professions that match your services
               </p>
               
               {/* Add Custom Profession Dialog */}
@@ -428,7 +493,7 @@ const EditDiggerProfile = () => {
                     <Button 
                       onClick={() => {
                         if (customProfession.trim()) {
-                          setProfession(customProfession.trim());
+                          setSelectedProfessions(prev => [...prev, customProfession.trim()]);
                           setCustomProfession("");
                           setShowAddProfessionDialog(false);
                           toast.success(`Added "${customProfession.trim()}" as profession`);
@@ -648,7 +713,7 @@ const EditDiggerProfile = () => {
                 </Card>
               )}
               <BioGenerator 
-                profession={profession}
+                profession={selectedProfessions.join(', ')}
                 currentBio={bio}
                 onBioGenerated={setBio}
               />
@@ -729,11 +794,11 @@ const EditDiggerProfile = () => {
               </p>
               
               {/* Keyword Suggestions */}
-              {profession && (
+              {selectedProfessions.length > 0 && (
                 <KeywordSuggestions
                   currentKeywords={keywords}
                   onAddKeyword={handleAddKeyword}
-                  profession={profession}
+                  profession={selectedProfessions[0]}
                 />
               )}
               
