@@ -53,14 +53,17 @@ export default function LeadLimits() {
       if (error) throw error;
 
       if (diggerProfile) {
-        setDiggerId((diggerProfile as any).id);
-        setLeadLimitEnabled((diggerProfile as any).lead_limit_enabled || false);
-        setLeadLimit((diggerProfile as any).lead_limit?.toString() || '10');
-        setPeriod(((diggerProfile as any).lead_limit_period as 'daily' | 'weekly' | 'monthly') || 'monthly');
+        setDiggerId(diggerProfile.id);
+        setLeadLimitEnabled(diggerProfile.lead_limit_enabled || false);
+        setLeadLimit(diggerProfile.lead_limit?.toString() || '10');
+        setPeriod((diggerProfile.lead_limit_period as 'daily' | 'weekly' | 'monthly') || 'monthly');
       }
-    } catch (error) {
-      console.error('Error loading lead limits:', error);
-      toast.error('Failed to load lead limit settings');
+    } catch (error: any) {
+      // Error logging - consider using proper error tracking service in production
+      if (import.meta.env.DEV) {
+        console.error('Error loading lead limits:', error);
+      }
+      toast.error(error?.message || 'Failed to load lead limit settings');
     } finally {
       setLoading(false);
     }
@@ -74,21 +77,28 @@ export default function LeadLimits() {
 
     setSaving(true);
     try {
+      if (!diggerId) {
+        throw new Error('Digger profile ID not found');
+      }
+
       const { error } = await supabase
         .from('digger_profiles')
         .update({
           lead_limit_enabled: leadLimitEnabled,
           lead_limit: leadLimitEnabled ? parseInt(leadLimit) : null,
           lead_limit_period: period,
-        } as any)
+        })
         .eq('id', diggerId);
 
       if (error) throw error;
 
       toast.success('Lead limit settings saved successfully');
-    } catch (error) {
-      console.error('Error saving lead limits:', error);
-      toast.error('Failed to save lead limit settings');
+    } catch (error: any) {
+      // Error logging - consider using proper error tracking service in production
+      if (import.meta.env.DEV) {
+        console.error('Error saving lead limits:', error);
+      }
+      toast.error(error?.message || 'Failed to save lead limit settings');
     } finally {
       setSaving(false);
     }

@@ -239,32 +239,36 @@ const DiggerDetail = () => {
     try {
       // Check if conversation already exists with this digger
       const { data: existingConv } = await supabase
-        .from("conversations" as any)
+        .from("conversations")
         .select("id")
         .eq("digger_id", digger.id)
         .eq("consumer_id", currentUser.id)
         .maybeSingle();
 
-      if (existingConv) {
-        navigate(`/messages?conversation=${(existingConv as any).id}`);
+      if (existingConv && existingConv.id) {
+        navigate(`/messages?conversation=${existingConv.id}`);
         return;
       }
 
       // Create new conversation without a specific gig
       const { data: newConv, error } = await supabase
-        .from("conversations" as any)
+        .from("conversations")
         .insert({
           digger_id: digger.id,
           consumer_id: currentUser.id,
           gig_id: null,
-        } as any)
+        })
         .select()
         .single();
 
       if (error) throw error;
 
-      toast.success("Conversation started!");
-      navigate(`/messages?conversation=${(newConv as any).id}`);
+      if (newConv && newConv.id) {
+        toast.success("Conversation started!");
+        navigate(`/messages?conversation=${newConv.id}`);
+      } else {
+        throw new Error("Failed to create conversation");
+      }
     } catch (error: any) {
       toast.error("Error starting conversation: " + error.message);
     }
@@ -329,7 +333,10 @@ const DiggerDetail = () => {
         toast.info(`Total charge: $${data.totalCharge} ($${data.viewFee} view fee + $${data.leadCost} lead cost)`);
       }
     } catch (error: any) {
-      console.error("Error unlocking contact:", error);
+      // Error logging - consider using proper error tracking service in production
+      if (import.meta.env.DEV) {
+        console.error("Error unlocking contact:", error);
+      }
       toast.error(error.message || "Failed to unlock contact information");
     } finally {
       setIsUnlocking(false);
@@ -405,7 +412,7 @@ const DiggerDetail = () => {
 
   const getDisplayProfession = () => {
     // First priority: profile_name or business_name (user-defined profile names)
-    const profileName = (digger as any)?.profile_name || (digger as any)?.business_name;
+    const profileName = digger?.profile_name || digger?.business_name;
     if (profileName && profileName !== 'Not specified') {
       return profileName;
     }
@@ -532,7 +539,7 @@ const DiggerDetail = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl font-bold">
-                        @{digger.handle || (digger as any).profiles?.email?.split('@')[0] || (digger as any).profiles?.full_name || "user"}
+                        @{digger.handle || digger.profiles?.email?.split('@')[0] || digger.profiles?.full_name || "user"}
                       </h1>
                       <div className="flex items-center gap-1.5 bg-background border border-border/50 px-3 py-1 rounded-full">
                         <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
@@ -840,7 +847,7 @@ const DiggerDetail = () => {
                 </Card>
 
                 {/* Your Keywords Summary */}
-                {(digger as any)?.keywords && (digger as any).keywords.length > 0 && (
+                {digger.keywords && Array.isArray(digger.keywords) && digger.keywords.length > 0 && (
                   <Card className="bg-card">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -852,7 +859,7 @@ const DiggerDetail = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
-                        {((digger as any).keywords as string[]).map((keyword, idx) => (
+                        {(digger.keywords as string[]).map((keyword, idx) => (
                           <Badge key={idx} variant="secondary" className="px-3 py-1">
                             {keyword}
                           </Badge>

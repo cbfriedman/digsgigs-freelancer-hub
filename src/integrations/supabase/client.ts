@@ -9,9 +9,13 @@ const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_SUPABASE_PUBLISHABLE_KEY;
 
-// Warn if using fallback values (indicates platform bug)
+// Validate environment variables
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
-  console.warn('⚠️ Using hardcoded Supabase configuration fallback values due to missing environment variables. This indicates a Lovable Cloud platform issue.');
+  // Only warn in development - fallback values are for Lovable Cloud compatibility
+  if (import.meta.env.DEV) {
+    console.warn('⚠️ Using hardcoded Supabase configuration fallback values due to missing environment variables. This indicates a Lovable Cloud platform issue.');
+  }
+  // In production, this should be configured properly
 }
 
 // Import the supabase client like this:

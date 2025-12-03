@@ -156,26 +156,34 @@ const Transactions = () => {
 
       if (profile.user_type === 'digger') {
         // Get digger profile ID
-        const { data: diggerProfile } = await supabase
-          .from('digger_profiles' as any)
+        const { data: diggerProfile, error: diggerError } = await supabase
+          .from('digger_profiles')
           .select('id')
           .eq('user_id', session.user.id)
           .single();
 
-        if (diggerProfile) {
-          setDiggerId((diggerProfile as any).id);
-          await loadTransactions(session.user.id, 'digger', (diggerProfile as any).id);
+        if (diggerError) {
+          throw diggerError;
+        }
+
+        if (diggerProfile?.id) {
+          setDiggerId(diggerProfile.id);
+          await loadTransactions(session.user.id, 'digger', diggerProfile.id);
         }
       } else {
         await loadTransactions(session.user.id, 'consumer', null);
       }
-    } catch (error) {
-      console.error('Error checking auth:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load transactions",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      // Error already handled with toast in loadTransactions
+      // Only log if it's an auth error
+      if (error?.message?.includes('auth') || error?.message?.includes('session')) {
+        toast({
+          title: "Authentication Error",
+          description: "Please sign in again",
+          variant: "destructive",
+        });
+        navigate("/register");
+      }
     } finally {
       setLoading(false);
     }
@@ -184,7 +192,7 @@ const Transactions = () => {
   const loadTransactions = async (userId: string, type: 'digger' | 'consumer', diggerId: string | null) => {
     try {
       let query = supabase
-        .from('transactions' as any)
+        .from('transactions')
         .select(`
           *,
           gigs (
@@ -212,8 +220,7 @@ const Transactions = () => {
 
       if (error) throw error;
 
-      const txData = (data as any) || [];
-      setTransactions(txData);
+      setTransactions(data || []);
 
       // Calculate totals for diggers
       if (type === 'digger') {
@@ -222,11 +229,14 @@ const Transactions = () => {
         setTotalEarnings(earnings);
         setTotalCommission(commission);
       }
-    } catch (error) {
-      console.error('Error loading transactions:', error);
+    } catch (error: any) {
+      // Error logging - consider using proper error tracking service in production
+      if (import.meta.env.DEV) {
+        console.error('Error loading transactions:', error);
+      }
       toast({
         title: "Error",
-        description: "Failed to load transactions",
+        description: error?.message || "Failed to load transactions",
         variant: "destructive",
       });
     }

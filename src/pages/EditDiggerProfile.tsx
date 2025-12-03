@@ -15,7 +15,7 @@ import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
-// Native radio inputs used instead of RadioGroup to avoid infinite loop bug
+// Note: Using native radio inputs for pricing model selection to ensure stable controlled component behavior
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
 import { getLeadTierDescription, INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, getIndustryCategory } from "@/config/pricing";
@@ -188,7 +188,10 @@ const EditDiggerProfile = () => {
         setSubscriptionTier(data.tier);
       }
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      // Error logging - consider using proper error tracking service in production
+      if (import.meta.env.DEV) {
+        console.error('Error checking subscription:', error);
+      }
     }
   };
 
@@ -290,7 +293,10 @@ const EditDiggerProfile = () => {
         }
       }
     } catch (error: any) {
-      console.error("Error loading profile:", error);
+      // Error logging - consider using proper error tracking service in production
+      if (import.meta.env.DEV) {
+        console.error("Error loading profile:", error);
+      }
       toast.error("Failed to load profile");
     } finally {
       setLoadingProfile(false);
@@ -359,7 +365,10 @@ const EditDiggerProfile = () => {
         navigate(`/digger/${profileId}`, { replace: true });
       }, 100);
     } catch (error: any) {
-      console.error("Error updating profile:", error);
+      // Error logging - consider using proper error tracking service in production
+      if (import.meta.env.DEV) {
+        console.error("Error updating profile:", error);
+      }
       toast.error(error.message || "Failed to update profile");
     } finally {
       setLoading(false);
@@ -421,8 +430,11 @@ const EditDiggerProfile = () => {
           p_category_name: null
         });
       } catch (error) {
-        console.error('Error tracking keyword usage:', error);
+        // Error logging - consider using proper error tracking service in production
         // Don't show error to user, this is background analytics
+        if (import.meta.env.DEV) {
+          console.error('Error tracking keyword usage:', error);
+        }
       }
     }
   };

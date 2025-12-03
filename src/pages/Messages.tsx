@@ -53,7 +53,7 @@ export default function Messages() {
   );
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,18 +74,24 @@ export default function Messages() {
   }, [selectedConversation]);
 
   const loadUser = async () => {
-    // TEMPORARILY DISABLED FOR SCREENSHOTS - set mock user
-    setCurrentUser({ id: 'mock-user-id' });
-    return;
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUser(user);
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      setCurrentUser(user);
+    } catch (error: any) {
+      toast({
+        title: "Error loading user",
+        description: error.message || "Failed to load user session",
+        variant: "destructive",
+      });
+      navigate("/register");
+    }
   };
 
   const loadConversations = async () => {
     try {
       const { data, error } = await supabase
-        .from("conversations" as any)
+        .from("conversations")
         .select(`
           *,
           gigs(title),
@@ -94,7 +100,7 @@ export default function Messages() {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      setConversations(data as any || []);
+      setConversations((data as Conversation[]) || []);
     } catch (error: any) {
       toast({
         title: "Error loading conversations",
@@ -109,21 +115,23 @@ export default function Messages() {
   const loadMessages = async (conversationId: string) => {
     try {
       const { data, error } = await supabase
-        .from("messages" as any)
+        .from("messages")
         .select("*")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setMessages(data as any || []);
+      setMessages((data as Message[]) || []);
 
       // Mark messages as read
-      await supabase
-        .from("messages" as any)
-        .update({ read_at: new Date().toISOString() } as any)
-        .eq("conversation_id", conversationId)
-        .neq("sender_id", currentUser?.id)
-        .is("read_at", null);
+      if (currentUser?.id) {
+        await supabase
+          .from("messages")
+          .update({ read_at: new Date().toISOString() })
+          .eq("conversation_id", conversationId)
+          .neq("sender_id", currentUser.id)
+          .is("read_at", null);
+      }
     } catch (error: any) {
       toast({
         title: "Error loading messages",
@@ -164,11 +172,21 @@ export default function Messages() {
         content: newMessage,
       });
 
-      const { error } = await supabase.from("messages" as any).insert({
+      if (!currentUser?.id) {
+        toast({
+          title: "Error",
+          description: "User session not found. Please sign in again.",
+          variant: "destructive",
+        });
+        navigate("/register");
+        return;
+      }
+
+      const { error } = await supabase.from("messages").insert({
         conversation_id: selectedConversation,
-        sender_id: currentUser?.id,
+        sender_id: currentUser.id,
         content: validated.content,
-      } as any);
+      });
 
       if (error) throw error;
       setNewMessage("");

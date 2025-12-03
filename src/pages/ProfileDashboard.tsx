@@ -127,9 +127,12 @@ export default function ProfileDashboard() {
         ...p,
         gig: Array.isArray(p.gig) ? p.gig[0] : p.gig
       })) || []);
-    } catch (error) {
-      console.error("Error loading profile dashboard:", error);
-      toast.error("Failed to load profile data");
+    } catch (error: any) {
+      // Error logging - consider using proper error tracking service in production
+      if (import.meta.env.DEV) {
+        console.error("Error loading profile dashboard:", error);
+      }
+      toast.error(error?.message || "Failed to load profile data");
     } finally {
       setLoading(false);
     }
