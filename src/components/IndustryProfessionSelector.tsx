@@ -162,7 +162,7 @@ export const IndustryProfessionSelector = () => {
           <Select value={selectedIndustry} onValueChange={(value) => {
             setSelectedIndustry(value);
             setSelectedProfession("");
-            setSelectedSpecialty("");
+            setSelectedSpecialties([]);
           }}>
             <SelectTrigger className="bg-background">
               <SelectValue placeholder="Choose an industry category..." />
