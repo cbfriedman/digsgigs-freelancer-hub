@@ -1406,9 +1406,44 @@ export const getTop20MostExpensiveKeywords = (): Array<{
 };
 
 /**
- * TOP 20 MOST EXPENSIVE KEYWORDS ACROSS ALL INDUSTRIES
- * Updated: 2025
+ * Get the CPC value for a keyword or profession name
+ * First tries exact keyword match, then tries industry name match using averageCpc
  */
+export const getKeywordCPC = (searchTerm: string): number | null => {
+  const normalizedSearch = searchTerm.toLowerCase().trim();
+  
+  // First, try to find exact keyword match
+  for (const industryData of GOOGLE_CPC_KEYWORDS) {
+    const matchingKeyword = industryData.keywords.find(
+      kw => kw.keyword.toLowerCase() === normalizedSearch
+    );
+    if (matchingKeyword) {
+      return matchingKeyword.cpc;
+    }
+  }
+  
+  // Second, try to match industry name and return averageCpc
+  for (const industryData of GOOGLE_CPC_KEYWORDS) {
+    if (industryData.industry.toLowerCase().includes(normalizedSearch) ||
+        normalizedSearch.includes(industryData.industry.toLowerCase())) {
+      return industryData.averageCpc;
+    }
+  }
+  
+  // Third, try partial match in keywords
+  for (const industryData of GOOGLE_CPC_KEYWORDS) {
+    const partialMatch = industryData.keywords.find(
+      kw => kw.keyword.toLowerCase().includes(normalizedSearch) ||
+            normalizedSearch.includes(kw.keyword.toLowerCase())
+    );
+    if (partialMatch) {
+      return partialMatch.cpc;
+    }
+  }
+  
+  return null;
+};
+
 /**
  * Helper function to find the actual industry for a given keyword
  * This searches through GOOGLE_CPC_KEYWORDS to find which industry contains the keyword

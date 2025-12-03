@@ -2,17 +2,21 @@
  * Centralized Pricing Configuration
  * Single source of truth for all pricing across the platform
  * 
- * EXCLUSIVITY-BASED PRICING MODEL
- * Our pricing is based on lead exclusivity and Google CPC:
+ * EXCLUSIVITY-BASED PRICING MODEL (CPC-Based)
+ * All lead pricing is calculated from Google CPC using these percentages:
  * 
- * - Non-exclusive leads: 20% of Google CPC (most affordable)
- * - Semi-exclusive leads: Google CPC, sold to up to 4 people (balanced option)
- * - 24-hour exclusive leads: 2x Google CPC, premium exclusive access
+ * - Non-exclusive Unconfirmed: 20% of Google CPC
+ * - Non-exclusive Confirmed: 25% of Google CPC  
+ * - Semi-exclusive leads: 50% of Google CPC
+ * - 24-hour exclusive leads: 90% of Google CPC
  * 
+ * All prices rounded up to nearest $0.50 or whole number.
  * This model provides clear value differentiation tied to Google Ads pricing.
  * 
  * NOTE: Prices fluctuate daily and are subject to change based on market conditions.
  */
+
+import { getKeywordCPC } from '@/config/googleCpcKeywords';
 
 export type IndustryCategory = 'low-value' | 'mid-value' | 'high-value';
 export type ValueIndicator = 'LV' | 'MV' | 'HV';
@@ -637,7 +641,6 @@ const roundUpToHalf = (value: number): number => {
  * - Non-exclusive Unconfirmed: 20% of CPC
  * 
  * All values rounded up to nearest $0.50 or whole number
- * Mid/Low-Value uses fixed tier pricing
  */
 export const getLeadCostFromCPC = (
   cpc: number,
@@ -645,8 +648,42 @@ export const getLeadCostFromCPC = (
   isConfirmed: boolean = false,
   category: IndustryCategory = 'mid-value'
 ): number => {
-  // For high-value, calculate dynamically from CPC
-  if (category === 'high-value') {
+  // Use CPC-based dynamic pricing for all categories when CPC is provided
+  let price: number;
+  
+  if (exclusivity === 'exclusive-24h') {
+    // 24-Hr Exclusive: 90% of CPC
+    price = cpc * 0.90;
+  } else if (exclusivity === 'semi-exclusive') {
+    // Semi-Exclusive: 50% of CPC
+    price = cpc * 0.50;
+  } else if (isConfirmed) {
+    // Non-exclusive Confirmed: 25% of CPC
+    price = cpc * 0.25;
+  } else {
+    // Non-exclusive Unconfirmed: 20% of CPC
+    price = cpc * 0.20;
+  }
+  
+  // Round up to nearest $0.50 or whole number
+  return roundUpToHalf(price);
+};
+
+// Helper function to get lead cost for a specific industry and exclusivity type
+// Uses CPC-based dynamic pricing: 20% / 25% / 50% / 90%
+export const getLeadCostForIndustry = (
+  industry: string,
+  exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
+  isConfirmed: boolean = false,
+  parentCategory?: string
+): number => {
+  const normalizedIndustry = industry.toLowerCase().trim();
+  
+  // First, try to get CPC from keyword database
+  const cpc = getKeywordCPC(industry);
+  
+  if (cpc && cpc > 0) {
+    // Use CPC-based dynamic pricing: 20% / 25% / 50% / 90%
     let price: number;
     
     if (exclusivity === 'exclusive-24h') {
@@ -655,7 +692,7 @@ export const getLeadCostFromCPC = (
     } else if (exclusivity === 'semi-exclusive') {
       // Semi-Exclusive: 50% of CPC
       price = cpc * 0.50;
-    } else if (exclusivity === 'non-exclusive' && isConfirmed) {
+    } else if (isConfirmed) {
       // Non-exclusive Confirmed: 25% of CPC
       price = cpc * 0.25;
     } else {
@@ -667,32 +704,7 @@ export const getLeadCostFromCPC = (
     return roundUpToHalf(price);
   }
   
-  // For mid/low-value, use fixed tier pricing
-  const pricingData = INDUSTRY_PRICING.find(p => p.category === category) || INDUSTRY_PRICING[1];
-  
-  const basePrice = exclusivity === 'non-exclusive' 
-    ? pricingData.nonExclusive 
-    : exclusivity === 'semi-exclusive'
-    ? pricingData.semiExclusive
-    : pricingData.exclusive24h;
-  
-  // Add confirmation premium for non-exclusive confirmed leads (25% vs 20% = 25% more)
-  if (exclusivity === 'non-exclusive' && isConfirmed) {
-    return roundUpToHalf(basePrice * 1.25);
-  }
-  
-  return basePrice;
-};
-
-// Helper function to get lead cost for a specific industry and exclusivity type
-// Now accepts optional parentCategory for category-aware fallback pricing
-export const getLeadCostForIndustry = (
-  industry: string,
-  exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
-  isConfirmed: boolean = false,
-  parentCategory?: string
-): number => {
-  const normalizedIndustry = industry.toLowerCase().trim();
+  // Fallback: use static tier pricing when no CPC data available
   const industryData = INDUSTRY_PRICING.find(pricing =>
     pricing.industries.some(ind => ind.toLowerCase().trim() === normalizedIndustry)
   );
@@ -700,13 +712,11 @@ export const getLeadCostForIndustry = (
   let pricingData: IndustryPricing;
   
   if (!industryData) {
-    // If specialty not found, try to inherit from parent category
     if (parentCategory) {
       const categoryTier = getCategoryValueTier(parentCategory);
       pricingData = getPricingForTier(categoryTier);
     } else {
-      // Default to mid-value if no category context
-      pricingData = INDUSTRY_PRICING[1];
+      pricingData = INDUSTRY_PRICING[1]; // Default to mid-value
     }
   } else {
     pricingData = industryData;
@@ -718,9 +728,9 @@ export const getLeadCostForIndustry = (
     ? pricingData.semiExclusive
     : pricingData.exclusive24h;
   
-  // Add 20% confirmation premium for non-exclusive confirmed leads
+  // Add 25% confirmation premium (25% vs 20% = 25% more)
   if (exclusivity === 'non-exclusive' && isConfirmed) {
-    return Math.round(basePrice * 1.20 * 2) / 2; // Round to nearest $0.50
+    return roundUpToHalf(basePrice * 1.25);
   }
   
   return basePrice;
