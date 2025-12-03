@@ -403,19 +403,13 @@ export default function Checkout() {
       if (error) throw error;
       if (!data?.url) throw new Error("No checkout URL received");
 
-      // Redirect to Stripe checkout - use window.open as fallback if href fails
-      console.log('[Checkout] Redirecting to Stripe:', data.url);
+      // Open Stripe checkout in new tab (more reliable in iframe environments)
+      console.log('[Checkout] Opening Stripe checkout:', data.url);
+      window.open(data.url, '_blank');
       
-      // Try direct navigation first
-      window.location.href = data.url;
-      
-      // Fallback: if still on page after 2 seconds, try opening in new tab
-      setTimeout(() => {
-        if (document.visibilityState === 'visible') {
-          console.log('[Checkout] Redirect fallback triggered');
-          window.open(data.url, '_blank');
-        }
-      }, 2000);
+      // Reset processing state so page stays visible
+      setProcessing(false);
+      toast.success("Stripe checkout opened in a new tab");
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error(error.message || "Failed to process checkout");
