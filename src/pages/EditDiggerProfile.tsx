@@ -15,7 +15,6 @@ import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { Loader2, Tag, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
-import { generateEnhancedKeywordSuggestions } from "@/utils/enhancedKeywordSuggestions";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -44,7 +43,6 @@ const EditDiggerProfile = () => {
   const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [keywordsInput, setKeywordsInput] = useState("");
   const [profileId, setProfileId] = useState<string>("");
-  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
   const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
   const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
@@ -67,20 +65,6 @@ const EditDiggerProfile = () => {
     .split(/[,;]/)
     .map(k => k.trim())
     .filter(k => k.length > 0);
-
-  // Generate keyword suggestions based on profession and categories
-  useEffect(() => {
-    const loadSuggestions = async () => {
-      if (!profession && categoryNames.length === 0) {
-        setKeywordSuggestions([]);
-        return;
-      }
-      const suggestions = await generateEnhancedKeywordSuggestions(profession, categoryNames);
-      setKeywordSuggestions(suggestions);
-    };
-
-    loadSuggestions();
-  }, [profession, categoryNames]);
 
   // Fetch category names when selected categories change
   useEffect(() => {
@@ -749,9 +733,10 @@ const EditDiggerProfile = () => {
               {/* Keyword Suggestions */}
               {(profession || selectedCategories.length > 0) && (
                 <KeywordSuggestions
-                  suggestions={keywordSuggestions}
                   currentKeywords={keywords}
                   onAddKeyword={handleAddKeyword}
+                  profession={profession}
+                  specialty={categoryNames.length > 0 ? categoryNames[0] : undefined}
                 />
               )}
               

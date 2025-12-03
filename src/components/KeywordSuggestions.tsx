@@ -1,60 +1,109 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Lightbulb, Plus, Send } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useState } from "react";
+import { Lightbulb, Plus, TrendingDown, DollarSign } from "lucide-react";
+import { useState, useMemo } from "react";
+import { GOOGLE_CPC_KEYWORDS, KeywordData } from "@/config/googleCpcKeywords";
+
+interface KeywordWithCpc {
+  keyword: string;
+  cpc: number;
+  industry: string;
+  category: 'high-value' | 'mid-value' | 'low-value';
+}
 
 interface KeywordSuggestionsProps {
-  suggestions: string[];
+  suggestions?: string[];
   currentKeywords: string[];
   onAddKeyword: (keyword: string) => void;
   profession?: string;
+  specialty?: string;
 }
 
-export const KeywordSuggestions = ({
-  suggestions,
-  currentKeywords,
-  onAddKeyword,
-  profession
-}: KeywordSuggestionsProps) => {
-  const [isRequesting, setIsRequesting] = useState(false);
+// Find matching keywords from database based on profession/specialty
+const findMatchingKeywordsFromDatabase = (
+  profession?: string,
+  specialty?: string
+): KeywordWithCpc[] => {
+  const searchTerms = [
+    profession?.toLowerCase() || '',
+    specialty?.toLowerCase() || ''
+  ].filter(Boolean);
 
-  const handleRequestSuggestions = async () => {
-    if (!profession) {
-      toast.error("Please enter a profession first");
-      return;
-    }
+  if (searchTerms.length === 0) return [];
 
-    setIsRequesting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('request-keyword-suggestions', {
-        body: { profession }
+  const matchedKeywords: KeywordWithCpc[] = [];
+
+  for (const industryData of GOOGLE_CPC_KEYWORDS) {
+    const industryLower = industryData.industry.toLowerCase();
+    
+    // Check if industry matches any search term
+    const industryMatches = searchTerms.some(term => 
+      industryLower.includes(term) || term.includes(industryLower.split(' ')[0])
+    );
+
+    // Also check keywords within the industry
+    for (const keywordData of industryData.keywords) {
+      const keywordLower = keywordData.keyword.toLowerCase();
+      
+      const keywordMatches = searchTerms.some(term => {
+        // Direct match
+        if (keywordLower.includes(term) || term.includes(keywordLower.split(' ')[0])) {
+          return true;
+        }
+        // Check for common terms
+        const termWords = term.split(' ');
+        const keywordWords = keywordLower.split(' ');
+        return termWords.some(tw => keywordWords.some(kw => 
+          kw.includes(tw) || tw.includes(kw)
+        ));
       });
 
-      if (error) throw error;
-
-      if (data?.alreadyExists) {
-        toast.info("A request for this profession is already being processed");
-      } else {
-        toast.success("Request submitted! We'll add suggestions for this profession soon.");
+      if (industryMatches || keywordMatches) {
+        matchedKeywords.push({
+          keyword: keywordData.keyword,
+          cpc: keywordData.cpc,
+          industry: industryData.industry,
+          category: industryData.category
+        });
       }
-    } catch (error) {
-      console.error('Error requesting suggestions:', error);
-      toast.error("Failed to submit request. Please try again.");
-    } finally {
-      setIsRequesting(false);
     }
-  };
-  // Filter out keywords that are already added
-  const availableSuggestions = suggestions.filter(
-    suggestion => !currentKeywords.some(
-      kw => kw.toLowerCase() === suggestion.toLowerCase()
-    )
-  );
+  }
 
-  if (availableSuggestions.length === 0 && suggestions.length === 0) {
+  // Sort by CPC (lowest first for affordability)
+  return matchedKeywords.sort((a, b) => a.cpc - b.cpc);
+};
+
+export const KeywordSuggestions = ({
+  suggestions = [],
+  currentKeywords,
+  onAddKeyword,
+  profession,
+  specialty
+}: KeywordSuggestionsProps) => {
+  const [showAll, setShowAll] = useState(false);
+
+  // Get keywords from the database based on profession/specialty
+  const databaseKeywords = useMemo(() => {
+    return findMatchingKeywordsFromDatabase(profession, specialty);
+  }, [profession, specialty]);
+
+  // Filter out already selected keywords
+  const availableKeywords = useMemo(() => {
+    return databaseKeywords.filter(
+      kw => !currentKeywords.some(
+        current => current.toLowerCase() === kw.keyword.toLowerCase()
+      )
+    );
+  }, [databaseKeywords, currentKeywords]);
+
+  // Split into budget-friendly (lower CPC) and premium (higher CPC)
+  const budgetKeywords = availableKeywords.filter(kw => kw.cpc <= 150);
+  const premiumKeywords = availableKeywords.filter(kw => kw.cpc > 150);
+
+  const displayedBudget = showAll ? budgetKeywords : budgetKeywords.slice(0, 6);
+  const displayedPremium = showAll ? premiumKeywords : premiumKeywords.slice(0, 6);
+
+  if (availableKeywords.length === 0) {
     return (
       <Card className="p-4 bg-muted/50 border-muted">
         <div className="flex items-start gap-3">
@@ -63,65 +112,110 @@ export const KeywordSuggestions = ({
             <p className="text-sm font-medium text-foreground mb-1">
               No Keyword Suggestions Available
             </p>
-            <p className="text-xs text-muted-foreground mb-3">
-              We don't have pre-defined suggestions for this profession yet. Please add your own custom keywords that describe your services and expertise.
+            <p className="text-xs text-muted-foreground">
+              No matching keywords found in our database for "{profession || specialty}". 
+              Try selecting a different specialty or contact support to add keywords for your profession.
             </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleRequestSuggestions}
-              disabled={isRequesting}
-              className="h-8 text-xs"
-            >
-              <Send className="h-3 w-3 mr-1" />
-              {isRequesting ? "Submitting..." : "Request Keywords for This Profession"}
-            </Button>
           </div>
         </div>
       </Card>
     );
   }
 
-  if (availableSuggestions.length === 0) {
-    return null;
-  }
-
   return (
-    <Card className="p-4 bg-accent/20 border-primary/20">
-      <div className="flex items-start gap-2 mb-3">
-        <Lightbulb className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-foreground mb-1">
-            Suggested Keywords
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Click to add relevant keywords to your profile
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex flex-wrap gap-2">
-        {availableSuggestions.slice(0, 12).map((suggestion, index) => (
-          <Button
-            key={index}
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onAddKeyword(suggestion)}
-            className="h-7 text-xs hover:bg-primary/10 hover:text-primary hover:border-primary transition-colors"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            {suggestion}
-          </Button>
-        ))}
-      </div>
-      
-      {availableSuggestions.length > 12 && (
-        <p className="text-xs text-muted-foreground mt-2">
-          +{availableSuggestions.length - 12} more suggestions
-        </p>
+    <div className="space-y-4">
+      {/* Budget-Friendly Keywords */}
+      {displayedBudget.length > 0 && (
+        <Card className="p-4 bg-emerald-500/10 border-emerald-500/20">
+          <div className="flex items-start gap-2 mb-3">
+            <TrendingDown className="h-4 w-4 text-emerald-600 mt-1 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground mb-1">
+                Budget-Friendly Keywords
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Lower CPC keywords - great for maximizing lead volume
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            {displayedBudget.map((kw, index) => (
+              <Button
+                key={index}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onAddKeyword(kw.keyword)}
+                className="h-auto py-1.5 px-3 text-xs hover:bg-emerald-500/10 hover:text-emerald-700 hover:border-emerald-500 transition-colors"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                <span>{kw.keyword}</span>
+                <span className="ml-2 text-emerald-600 font-semibold">${kw.cpc}</span>
+              </Button>
+            ))}
+          </div>
+          
+          {budgetKeywords.length > 6 && !showAll && (
+            <p className="text-xs text-muted-foreground mt-2">
+              +{budgetKeywords.length - 6} more budget keywords
+            </p>
+          )}
+        </Card>
       )}
-    </Card>
+
+      {/* Premium Keywords */}
+      {displayedPremium.length > 0 && (
+        <Card className="p-4 bg-amber-500/10 border-amber-500/20">
+          <div className="flex items-start gap-2 mb-3">
+            <DollarSign className="h-4 w-4 text-amber-600 mt-1 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground mb-1">
+                Premium Keywords
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Higher CPC keywords - typically higher-value leads
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            {displayedPremium.map((kw, index) => (
+              <Button
+                key={index}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onAddKeyword(kw.keyword)}
+                className="h-auto py-1.5 px-3 text-xs hover:bg-amber-500/10 hover:text-amber-700 hover:border-amber-500 transition-colors"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                <span>{kw.keyword}</span>
+                <span className="ml-2 text-amber-600 font-semibold">${kw.cpc}</span>
+              </Button>
+            ))}
+          </div>
+          
+          {premiumKeywords.length > 6 && !showAll && (
+            <p className="text-xs text-muted-foreground mt-2">
+              +{premiumKeywords.length - 6} more premium keywords
+            </p>
+          )}
+        </Card>
+      )}
+
+      {/* Show All Button */}
+      {(budgetKeywords.length > 6 || premiumKeywords.length > 6) && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowAll(!showAll)}
+          className="w-full text-xs"
+        >
+          {showAll ? 'Show Less' : `Show All ${availableKeywords.length} Keywords`}
+        </Button>
+      )}
+    </div>
   );
 };
