@@ -847,7 +847,7 @@ const DiggerDetail = () => {
                 </Card>
 
                 {/* Your Keywords Summary */}
-                {digger.keywords && Array.isArray(digger.keywords) && digger.keywords.length > 0 && (
+                {(digger as any).keywords && Array.isArray((digger as any).keywords) && (digger as any).keywords.length > 0 && (
                   <Card className="bg-card">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -859,7 +859,7 @@ const DiggerDetail = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
-                        {(digger.keywords as string[]).map((keyword, idx) => (
+                        {((digger as any).keywords as string[]).map((keyword: string, idx: number) => (
                           <Badge key={idx} variant="secondary" className="px-3 py-1">
                             {keyword}
                           </Badge>
