@@ -353,8 +353,11 @@ const EditDiggerProfile = () => {
       if (error) throw error;
 
       toast.success("Profile updated! Redirecting to your dashboard...");
-      // Navigate to the profile dashboard view
-      navigate(`/digger/${profileId}`);
+      
+      // Force navigation with a slight delay to ensure state updates complete
+      setTimeout(() => {
+        navigate(`/digger/${profileId}`, { replace: true });
+      }, 100);
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast.error(error.message || "Failed to update profile");
@@ -995,11 +998,11 @@ const EditDiggerProfile = () => {
 
             <div className="space-y-2" id="keywords">
               <div className="flex items-center justify-between">
-                <Label htmlFor="keywords">Keywords / Specialties</Label>
+                <Label htmlFor="keywords" className="text-base font-semibold">Keywords / Specialties</Label>
                 <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-muted-foreground" />
-                  <Badge variant={keywords.length > 0 ? "default" : "secondary"}>
-                    {keywords.length} {keywords.length === 1 ? "keyword" : "keywords"}
+                  <Tag className="h-4 w-4 text-primary" />
+                  <Badge variant="default" className="bg-primary text-primary-foreground px-3 py-1">
+                    {keywords.length} Selected
                   </Badge>
                 </div>
               </div>
