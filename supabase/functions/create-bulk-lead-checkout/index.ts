@@ -22,6 +22,11 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   );
 
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
   try {
     logStep("Function started");
 
@@ -47,19 +52,6 @@ serve(async (req) => {
 
     logStep("Lead selections received", { count: selections.length, totalAmount, diggerProfileId, discountInfo });
 
-    // Initialize Stripe for payment
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
-
-    // Get or create Stripe customer
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-      logStep("Existing Stripe customer found", { customerId });
-    }
-
     // Calculate discount
     const originalTotal = selections.reduce((sum: number, s: any) => sum + s.subtotal, 0);
     const firstTier = Math.min(originalTotal, 1000);
@@ -77,6 +69,41 @@ serve(async (req) => {
       finalTotal 
     });
 
+    // Store selections in pending_lead_purchases table (bypasses Stripe 500-char metadata limit)
+    const { data: pendingPurchase, error: pendingError } = await supabaseAdmin
+      .from('pending_lead_purchases')
+      .insert({
+        user_id: user.id,
+        digger_profile_id: diggerProfileId,
+        selections: selections,
+        original_amount: originalTotal,
+        discount_amount: totalDiscount,
+        final_amount: finalTotal,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (pendingError) {
+      logStep("Error creating pending purchase", { error: pendingError });
+      throw new Error("Failed to create pending purchase record");
+    }
+
+    logStep("Pending purchase created", { pendingPurchaseId: pendingPurchase.id });
+
+    // Initialize Stripe for payment
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16",
+    });
+
+    // Get or create Stripe customer
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    let customerId;
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+      logStep("Existing Stripe customer found", { customerId });
+    }
+
     // Helper to get exclusivity label
     const getExclusivityLabel = (exclusivity: string, isConfirmed: boolean): string => {
       if (exclusivity === 'exclusive-24h') return '24-Hr Exclusive';
@@ -85,8 +112,7 @@ serve(async (req) => {
       return 'Non-Exclusive';
     };
 
-    // Calculate total quantity for proportional discount distribution
-    const totalQuantity = selections.reduce((sum: number, s: any) => sum + s.quantity, 0);
+    // Calculate discount ratio for proportional distribution
     const discountRatio = finalTotal / originalTotal;
 
     // Create line items for each lead selection with actual per-lead prices
@@ -108,8 +134,7 @@ serve(async (req) => {
       };
     });
 
-    // Create Stripe checkout session
-    // Note: Stripe metadata has a 500 character limit per value, so we store summary data only
+    // Create Stripe checkout session with pending_purchase_id reference
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -121,14 +146,17 @@ serve(async (req) => {
         user_id: user.id,
         digger_profile_id: diggerProfileId,
         purchase_type: "keyword_bulk",
-        selection_count: selections.length.toString(),
-        original_amount: originalTotal.toString(),
-        discount_amount: totalDiscount.toString(),
-        final_amount: finalTotal.toString(),
+        pending_purchase_id: pendingPurchase.id,
       },
     });
 
-    logStep("Checkout session created", { sessionId: session.id });
+    // Update pending purchase with stripe session ID
+    await supabaseAdmin
+      .from('pending_lead_purchases')
+      .update({ stripe_session_id: session.id })
+      .eq('id', pendingPurchase.id);
+
+    logStep("Checkout session created", { sessionId: session.id, pendingPurchaseId: pendingPurchase.id });
 
     return new Response(JSON.stringify({ 
       url: session.url,

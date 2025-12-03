@@ -1854,6 +1854,56 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_lead_purchases: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          digger_profile_id: string | null
+          discount_amount: number
+          final_amount: number
+          id: string
+          original_amount: number
+          selections: Json
+          status: string
+          stripe_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          digger_profile_id?: string | null
+          discount_amount?: number
+          final_amount: number
+          id?: string
+          original_amount: number
+          selections: Json
+          status?: string
+          stripe_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          digger_profile_id?: string | null
+          discount_amount?: number
+          final_amount?: number
+          id?: string
+          original_amount?: number
+          selections?: Json
+          status?: string
+          stripe_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_lead_purchases_digger_profile_id_fkey"
+            columns: ["digger_profile_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_completion_reminders: {
         Row: {
           created_at: string
