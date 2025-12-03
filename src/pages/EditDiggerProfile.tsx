@@ -315,12 +315,26 @@ const EditDiggerProfile = () => {
     }
   };
 
+  // Phone number validation helper
+  const isValidPhoneNumber = (phoneNumber: string): boolean => {
+    // Remove all non-digit characters for validation
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    // Valid phone numbers should have 10-15 digits (supports international)
+    return digitsOnly.length >= 10 && digitsOnly.length <= 15;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profileId) return;
 
     if (!businessName || selectedProfessions.length === 0 || !location || !phone) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate phone number format
+    if (!isValidPhoneNumber(phone)) {
+      toast.error("Please enter a valid phone number (10-15 digits)");
       return;
     }
 
@@ -390,8 +404,8 @@ const EditDiggerProfile = () => {
 
       toast.success("Profile saved successfully!");
       
-      // Navigate to My Profiles page
-      navigate(`/my-profiles`, { replace: true });
+      // Navigate to profile dashboard so user can proceed to order leads
+      navigate(`/digger/${profileId}`, { replace: true });
     } catch (error: any) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
@@ -822,10 +836,18 @@ const EditDiggerProfile = () => {
                 id="phone"
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  // Allow only digits, spaces, dashes, parentheses, and plus sign
+                  const sanitized = e.target.value.replace(/[^\d\s\-()+ ]/g, '');
+                  setPhone(sanitized);
+                }}
                 placeholder="(555) 123-4567"
                 required
+                pattern="[\d\s\-()+ ]{10,20}"
               />
+              {phone && !isValidPhoneNumber(phone) && (
+                <p className="text-sm text-destructive">Please enter a valid phone number (10-15 digits)</p>
+              )}
             </div>
 
             <div className="space-y-4 p-4 rounded-lg border bg-card">
