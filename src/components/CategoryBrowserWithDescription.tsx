@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Plus, Loader2, MapPin } from "lucide-react";
+import { Target, Plus, Loader2, MapPin, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -519,7 +519,7 @@ export const CategoryBrowserWithDescription = () => {
                   return (
                     <div
                       key={index}
-                      className={`group relative px-3 py-1.5 rounded-md text-sm cursor-pointer transition-all ${
+                      className={`group relative flex items-center gap-2 px-3 py-1.5 pr-8 rounded-md text-sm cursor-pointer transition-all ${
                         isSelected
                           ? 'bg-primary/10 border-2 border-primary text-primary font-medium'
                           : 'bg-background border-2 border-dashed border-border text-muted-foreground hover:border-primary/50'
@@ -534,20 +534,18 @@ export const CategoryBrowserWithDescription = () => {
                         setSelectedKeywords(newSelected);
                       }}
                     >
-                      <span className="flex items-center gap-2">
-                        {isSelected && <span>✓</span>}
-                        <span>{keyword}</span>
-                        {cpc !== null && (
-                          <span className="text-xs opacity-75">
-                            <span className="text-muted-foreground">CPC: ${cpc}</span>
-                            {leadCost !== null && (
-                              <span className="ml-1 text-emerald-600 dark:text-emerald-400">• Our cost: ${leadCost.toFixed(2)}</span>
-                            )}
-                          </span>
-                        )}
-                      </span>
+                      {isSelected && <span>✓</span>}
+                      <span>{keyword}</span>
+                      {cpc !== null && (
+                        <span className="text-xs opacity-75">
+                          <span className="text-muted-foreground">CPC: ${cpc}</span>
+                          {leadCost !== null && (
+                            <span className="ml-1 text-emerald-600 dark:text-emerald-400">• Our cost: ${leadCost.toFixed(2)}</span>
+                          )}
+                        </span>
+                      )}
                       <button
-                        className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           const newKeywords = suggestedKeywords.filter((k) => k !== keyword);
@@ -556,8 +554,9 @@ export const CategoryBrowserWithDescription = () => {
                           newSelected.delete(keyword);
                           setSelectedKeywords(newSelected);
                         }}
+                        title="Remove keyword"
                       >
-                        ×
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   );
