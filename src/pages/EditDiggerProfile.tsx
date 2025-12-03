@@ -65,6 +65,7 @@ const EditDiggerProfile = () => {
   };
 
   // Generate profession list filtered by profile's category AND only those with CPC data
+  // Also always include currently selected professions so they appear checked
   const professionOptions = useMemo(() => {
     let professions: string[] = [];
     
@@ -98,8 +99,13 @@ const EditDiggerProfile = () => {
     }
     
     // Filter to only professions with actual CPC data
-    return professions.filter(prof => hasCpcData(prof)).sort();
-  }, [profileCategory]);
+    const filteredProfessions = professions.filter(prof => hasCpcData(prof));
+    
+    // Always include selected professions so they appear in the list even if from another category
+    const allOptions = new Set([...filteredProfessions, ...selectedProfessions]);
+    
+    return Array.from(allOptions).sort();
+  }, [profileCategory, selectedProfessions]);
   
   // Helper to get CPC and lead cost for a profession
   const getProfessionPricing = (professionName: string) => {
