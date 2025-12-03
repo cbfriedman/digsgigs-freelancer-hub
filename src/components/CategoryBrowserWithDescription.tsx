@@ -69,19 +69,53 @@ export const CategoryBrowserWithDescription = () => {
   const [country, setCountry] = useState("");
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [city, setCity] = useState("");
+  const [hasPrimaryForCategory, setHasPrimaryForCategory] = useState(false);
+  const [isSecondaryProfile, setIsSecondaryProfile] = useState(false);
 
   // Reset state when country changes
   useEffect(() => {
     setSelectedStates([]);
   }, [country]);
 
-  // Load profile name from sessionStorage for new profiles
+  // Check if primary profile exists for selected category
+  useEffect(() => {
+    const checkPrimaryProfile = async () => {
+      if (!user?.id || !selectedCategory || existingProfileId) return;
+      
+      const { data, error } = await supabase
+        .from('digger_profiles')
+        .select('id, is_primary, profile_name')
+        .eq('user_id', user.id)
+        .eq('profile_name', selectedCategory)
+        .eq('is_primary', true)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error checking primary profile:", error);
+        return;
+      }
+      
+      const primaryExists = !!data;
+      setHasPrimaryForCategory(primaryExists);
+      
+      // If no primary exists for this category, auto-set profile name to category
+      if (!primaryExists && !existingProfileId) {
+        setProfileName(selectedCategory);
+        setIsSecondaryProfile(false);
+      }
+    };
+    
+    checkPrimaryProfile();
+  }, [selectedCategory, user?.id, existingProfileId]);
+
+  // Load profile name from sessionStorage only for secondary profiles
   useEffect(() => {
     const storedProfileName = sessionStorage.getItem('newProfileName');
-    if (storedProfileName && !existingProfileId) {
+    if (storedProfileName && !existingProfileId && hasPrimaryForCategory) {
       setProfileName(storedProfileName);
+      setIsSecondaryProfile(true);
     }
-  }, [existingProfileId]);
+  }, [existingProfileId, hasPrimaryForCategory]);
 
   // Fetch user's custom categories
   useEffect(() => {
@@ -224,11 +258,20 @@ export const CategoryBrowserWithDescription = () => {
           <Target className="h-6 w-6 text-primary" />
           <CardTitle>Browse Categories</CardTitle>
         </div>
-        {profileName && !existingProfileId && (
+        {selectedCategory && !existingProfileId && (
           <div className="mt-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
             <p className="text-sm font-medium text-primary">
-              Creating Profile: <span className="font-bold">{profileName}</span>
+              {hasPrimaryForCategory ? (
+                <>Creating Secondary Profile: <span className="font-bold">{profileName || '(enter name below)'}</span></>
+              ) : (
+                <>Creating Primary Profile: <span className="font-bold">{selectedCategory}</span></>
+              )}
             </p>
+            {!hasPrimaryForCategory && (
+              <p className="text-xs text-muted-foreground mt-1">
+                This will be your primary profile for {selectedCategory}
+              </p>
+            )}
           </div>
         )}
         <CardDescription>
@@ -554,21 +597,33 @@ export const CategoryBrowserWithDescription = () => {
               </div>
             </div>
             
-            {/* Profile Name Input */}
-            <div className="space-y-2 mt-4">
-              <Label htmlFor="profile-name">Profile Name <span className="text-destructive">*</span></Label>
-              <Input
-                id="profile-name"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder="e.g., Office Cleaning Services"
-                className="w-full"
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Required: Give your profile a memorable name to help you manage multiple profiles
-              </p>
-            </div>
+            {/* Profile Name Input - Only for secondary profiles */}
+            {hasPrimaryForCategory ? (
+              <div className="space-y-2 mt-4">
+                <Label htmlFor="profile-name">Secondary Profile Name <span className="text-destructive">*</span></Label>
+                <Input
+                  id="profile-name"
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  placeholder="e.g., Commercial Cleaning, Residential Services"
+                  className="w-full"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  You already have a primary profile for {selectedCategory}. Enter a unique name for this secondary profile.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <Label className="text-green-700 dark:text-green-400 font-medium">
+                  ✓ Primary Profile Name
+                </Label>
+                <p className="text-sm font-medium">{selectedCategory}</p>
+                <p className="text-xs text-muted-foreground">
+                  Primary profiles are automatically named after the category. Only one primary profile is allowed per category.
+                </p>
+              </div>
+            )}
 
             {/* Location Preferences Section */}
             <Card className="p-4 border-2 border-primary/20 bg-primary/5 mt-4">
@@ -858,16 +913,22 @@ export const CategoryBrowserWithDescription = () => {
                         ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
                         : null;
 
+                      // Primary profile = first profile for this category (named after category)
+                      // Secondary profiles have custom names
+                      const isPrimaryProfile = !hasPrimaryForCategory;
+                      const finalProfileName = isPrimaryProfile ? selectedCategory : profileName.trim();
+
                       const { data: newProfile, error: createError } = await supabase
                         .from('digger_profiles')
                         .insert({
                           user_id: user.id,
-                          business_name: profileName.trim(),
-                          profile_name: profileName.trim(),
+                          business_name: finalProfileName,
+                          profile_name: finalProfileName,
                           profession: selectedSpecialties.join(', '),
                           keywords: selected,
                           location: 'Not specified',
                           phone: 'Not specified',
+                          is_primary: isPrimaryProfile,
                           service_zip_codes: zipCodesArray,
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
@@ -883,7 +944,8 @@ export const CategoryBrowserWithDescription = () => {
                       // Clear sessionStorage after successful profile creation
                       sessionStorage.removeItem('newProfileName');
                       
-                      toast.success(`Profile "${profileName.trim()}" created with ${selected.length} keywords!`);
+                      const typeLabel = isPrimaryProfile ? 'Primary' : 'Secondary';
+                      toast.success(`${typeLabel} profile "${finalProfileName}" created with ${selected.length} keywords!`);
 
                       // Navigate to the new profile's detail page for lead purchasing
                       navigate(`/digger/${newProfile.id}`, { replace: true });
@@ -895,7 +957,7 @@ export const CategoryBrowserWithDescription = () => {
                     setIsProcessing(false);
                   }
                 }}
-                disabled={selectedKeywords.size === 0 || isProcessing || selectedSpecialties.length === 0 || !profileName.trim() || !country || (getRegionsForCountry(country).length > 0 && selectedStates.length === 0)}
+                disabled={selectedKeywords.size === 0 || isProcessing || selectedSpecialties.length === 0 || !selectedCategory || (hasPrimaryForCategory && !profileName.trim()) || !country || (getRegionsForCountry(country).length > 0 && selectedStates.length === 0)}
               >
                 {isProcessing ? (
                   <>
