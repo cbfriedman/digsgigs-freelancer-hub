@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ShoppingCart, CreditCard, CheckCircle2, ArrowLeft, Plus, Minus, Trash2, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, ShoppingCart, CreditCard, CheckCircle2, ArrowLeft, Plus, Minus, Trash2, Info, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { getLeadCostFromCPC, getIndustryCategory, calculateBulkDiscount, INDUSTRY_PRICING, getLeadCostForIndustry } from "@/config/pricing";
 import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
@@ -53,6 +54,8 @@ export default function Checkout() {
   const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [stripeCheckoutUrl, setStripeCheckoutUrl] = useState<string | null>(null);
+  const checkoutInitiatedRef = useRef(false);
 
   // Get profileId from URL params
   const searchParams = new URLSearchParams(location.search);
@@ -279,8 +282,8 @@ export default function Checkout() {
   };
 
   useEffect(() => {
-    // Don't reload data if we're in the middle of processing checkout
-    if (processing) return;
+    // Don't reload data if we're in the middle of processing checkout or already initiated
+    if (processing || checkoutInitiatedRef.current) return;
     
     // Get lead purchase selections from sessionStorage
     // IMPORTANT: leadPurchaseSelections has pre-calculated pricing, allLeadSelections does not
@@ -403,13 +406,13 @@ export default function Checkout() {
       if (error) throw error;
       if (!data?.url) throw new Error("No checkout URL received");
 
-      // Open Stripe checkout in new tab (more reliable in iframe environments)
-      console.log('[Checkout] Opening Stripe checkout:', data.url);
-      window.open(data.url, '_blank');
+      // Mark checkout as initiated to prevent useEffect from re-running
+      checkoutInitiatedRef.current = true;
       
-      // Reset processing state so page stays visible
+      // Store URL and show dialog for user to click
+      console.log('[Checkout] Stripe URL received:', data.url);
+      setStripeCheckoutUrl(data.url);
       setProcessing(false);
-      toast.success("Stripe checkout opened in a new tab");
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error(error.message || "Failed to process checkout");
@@ -424,6 +427,13 @@ export default function Checkout() {
       </div>
     );
   }
+
+  // Stripe checkout dialog - shows after URL is received
+  const handleOpenStripeCheckout = () => {
+    if (stripeCheckoutUrl) {
+      window.open(stripeCheckoutUrl, '_blank');
+    }
+  };
 
   // Group selections by keyword
   const groupedSelections = selections.reduce((acc, sel) => {
@@ -721,6 +731,30 @@ export default function Checkout() {
             </Button>
           </div>
         </main>
+
+        {/* Stripe Checkout Dialog */}
+        <Dialog open={!!stripeCheckoutUrl} onOpenChange={(open) => !open && setStripeCheckoutUrl(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                Ready to Complete Payment
+              </DialogTitle>
+              <DialogDescription>
+                Your checkout session is ready. Click the button below to open Stripe's secure payment page.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-4 mt-4">
+              <Button onClick={handleOpenStripeCheckout} className="w-full" size="lg">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open Stripe Checkout
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                A new tab will open with Stripe's secure payment page.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );
