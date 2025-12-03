@@ -317,6 +317,12 @@ const EditDiggerProfile = () => {
 
   // Phone number validation helper
   const isValidPhoneNumber = (phoneNumber: string): boolean => {
+    // Check for invalid prefixes like "not specified"
+    if (phoneNumber.toLowerCase().includes('not specified') || 
+        phoneNumber.toLowerCase().includes('n/a') ||
+        phoneNumber.toLowerCase().includes('none')) {
+      return false;
+    }
     // Remove all non-digit characters for validation
     const digitsOnly = phoneNumber.replace(/\D/g, '');
     // Valid phone numbers should have 10-15 digits (supports international)
