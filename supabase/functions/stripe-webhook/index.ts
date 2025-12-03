@@ -1,11 +1,13 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@14.25.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -31,7 +33,12 @@ serve(async (req) => {
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
-    // SECURITY: Make webhook secret mandatory
+    logStep('Environment check', { 
+      hasStripeKey: !!stripeSecretKey, 
+      hasWebhookSecret: !!webhookSecret,
+      webhookSecretPrefix: webhookSecret?.substring(0, 10) 
+    });
+
     if (!webhookSecret) {
       logStep('CRITICAL: STRIPE_WEBHOOK_SECRET is not configured');
       throw new Error('Webhook secret is not configured. Contact administrator.');
@@ -48,13 +55,22 @@ serve(async (req) => {
 
     const body = await req.text();
 
-    // SECURITY: Always validate webhook signatures
+    // Use constructEventAsync with crypto provider for Deno compatibility
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      logStep('Webhook signature validated successfully');
+      event = await stripe.webhooks.constructEventAsync(
+        body,
+        signature,
+        webhookSecret,
+        undefined,
+        cryptoProvider
+      );
+      logStep('Webhook signature validated successfully', { eventType: event.type });
     } catch (err) {
-      logStep('ERROR: Webhook signature verification failed', { error: err });
+      logStep('ERROR: Webhook signature verification failed', { 
+        error: err instanceof Error ? err.message : String(err),
+        signaturePrefix: signature?.substring(0, 20)
+      });
       return new Response(
         JSON.stringify({ error: 'Invalid signature' }),
         { status: 401, headers: corsHeaders }
