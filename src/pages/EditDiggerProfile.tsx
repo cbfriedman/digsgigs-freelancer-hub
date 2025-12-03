@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { Loader2, Tag, MapPin, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -24,7 +23,7 @@ import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -51,8 +50,6 @@ const EditDiggerProfile = () => {
   }, []);
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [keywordsInput, setKeywordsInput] = useState("");
   const [profileId, setProfileId] = useState<string>("");
   const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
@@ -77,27 +74,6 @@ const EditDiggerProfile = () => {
     .split(/[,;]/)
     .map(k => k.trim())
     .filter(k => k.length > 0);
-
-  // Fetch category names when selected categories change
-  useEffect(() => {
-    const fetchCategoryNames = async () => {
-      if (selectedCategories.length === 0) {
-        setCategoryNames([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("categories")
-        .select("name")
-        .in("id", selectedCategories);
-
-      if (!error && data) {
-        setCategoryNames(data.map(cat => cat.name));
-      }
-    };
-
-    fetchCategoryNames();
-  }, [selectedCategories]);
 
   useEffect(() => {
     if (!user) {
@@ -198,9 +174,6 @@ const EditDiggerProfile = () => {
         setTitle(profile.custom_occupation_title || "");
         setTagline(profile.tagline || "");
         setProfileData(profile);
-        
-        const categoryIds = profile.digger_categories?.map((dc: any) => dc.category_id) || [];
-        setSelectedCategories(categoryIds);
       }
     } catch (error: any) {
       console.error("Error loading profile:", error);
@@ -214,7 +187,7 @@ const EditDiggerProfile = () => {
     e.preventDefault();
     if (!user || !profileId) return;
 
-    if (!businessName || !profession || !location || !phone || selectedCategories.length === 0) {
+    if (!businessName || !profession || !location || !phone) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -227,8 +200,8 @@ const EditDiggerProfile = () => {
     setLoading(true);
 
     try {
-      // Calculate lead tier description based on selected categories
-      const leadTierDescription = getLeadTierDescription(categoryNames);
+      // Calculate lead tier description based on profession
+      const leadTierDescription = getLeadTierDescription([profession]);
 
       // Parse location preferences
       const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
@@ -261,18 +234,6 @@ const EditDiggerProfile = () => {
         .eq("id", profileId);
 
       if (error) throw error;
-
-      // Update categories
-      await supabase.from("digger_categories").delete().eq("digger_id", profileId);
-
-      if (selectedCategories.length > 0) {
-        const categoryInserts = selectedCategories.map((categoryId) => ({
-          digger_id: profileId,
-          category_id: categoryId,
-        }));
-
-        await supabase.from("digger_categories").insert(categoryInserts);
-      }
 
       toast.success("Profile updated successfully!");
       navigate(`/digger/${profileId}`);
@@ -336,7 +297,7 @@ const EditDiggerProfile = () => {
         await supabase.rpc('track_keyword_usage', {
           p_keyword: keyword,
           p_profession: profession || null,
-          p_category_name: categoryNames.length > 0 ? categoryNames[0] : null
+          p_category_name: null
         });
       } catch (error) {
         console.error('Error tracking keyword usage:', error);
@@ -414,11 +375,6 @@ const EditDiggerProfile = () => {
               keywords={keywords}
             />
 
-            <RegistrationCategorySelector
-              selectedCategories={selectedCategories}
-              onCategoriesChange={setSelectedCategories}
-            />
-
             <div className="space-y-2">
               <Label htmlFor="profession">Profession *</Label>
               <div className="flex gap-2">
@@ -433,24 +389,14 @@ const EditDiggerProfile = () => {
                   }}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder={categoryNames.length > 0 ? "Select profession from category" : "Select a category first"} />
+                    <SelectValue placeholder="Select your profession" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {professionOptions
-                      .filter(prof => {
-                        // If no categories selected, show all
-                        if (categoryNames.length === 0) return true;
-                        // Filter to professions matching selected category names
-                        return categoryNames.some(cat => 
-                          prof.toLowerCase().includes(cat.toLowerCase()) ||
-                          cat.toLowerCase().includes(prof.toLowerCase().split(' ')[0])
-                        );
-                      })
-                      .map((prof) => (
-                        <SelectItem key={prof} value={prof}>
-                          {prof}
-                        </SelectItem>
-                      ))}
+                  <SelectContent className="max-h-[300px] bg-background z-50">
+                    {professionOptions.map((prof) => (
+                      <SelectItem key={prof} value={prof}>
+                        {prof}
+                      </SelectItem>
+                    ))}
                     <SelectItem value="__add_custom__" className="text-primary font-medium">
                       <span className="flex items-center gap-2">
                         <Plus className="h-4 w-4" /> Add Custom Profession
@@ -460,9 +406,7 @@ const EditDiggerProfile = () => {
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                {categoryNames.length > 0 
-                  ? `Showing professions for: ${categoryNames.join(', ')}`
-                  : 'Select a category above to see relevant professions'}
+                Select your primary profession or add a custom one
               </p>
               
               {/* Add Custom Profession Dialog */}
@@ -785,12 +729,11 @@ const EditDiggerProfile = () => {
               </p>
               
               {/* Keyword Suggestions */}
-              {(profession || selectedCategories.length > 0) && (
+              {profession && (
                 <KeywordSuggestions
                   currentKeywords={keywords}
                   onAddKeyword={handleAddKeyword}
                   profession={profession}
-                  specialty={categoryNames.length > 0 ? categoryNames[0] : undefined}
                 />
               )}
               
