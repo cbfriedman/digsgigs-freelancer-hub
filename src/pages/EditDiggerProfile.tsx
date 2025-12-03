@@ -12,18 +12,19 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { RegistrationCategorySelector } from "@/components/RegistrationCategorySelector";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
-import { Loader2, Tag, MapPin } from "lucide-react";
+import { Loader2, Tag, MapPin, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
-import { getLeadTierDescription } from "@/config/pricing";
+import { getLeadTierDescription, INDUSTRY_PRICING } from "@/config/pricing";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -33,10 +34,21 @@ const EditDiggerProfile = () => {
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [businessName, setBusinessName] = useState("");
-  const [profileName, setProfileName] = useState("");
-  const [isPrimary, setIsPrimary] = useState(false);
   const [profession, setProfession] = useState("");
+  const [customProfession, setCustomProfession] = useState("");
+  const [showAddProfessionDialog, setShowAddProfessionDialog] = useState(false);
   const [location, setLocation] = useState("");
+  
+  // Generate unique profession list from INDUSTRY_PRICING
+  const professionOptions = useMemo(() => {
+    const allProfessions = new Set<string>();
+    INDUSTRY_PRICING.forEach(tier => {
+      tier.industries.forEach(industry => {
+        allProfessions.add(industry);
+      });
+    });
+    return Array.from(allProfessions).sort();
+  }, []);
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -228,8 +240,6 @@ const EditDiggerProfile = () => {
         .update({
           business_name: businessName,
           company_name: businessName,
-          profile_name: profileName || null,
-          is_primary: isPrimary,
           profession,
           location,
           phone,
@@ -406,38 +416,71 @@ const EditDiggerProfile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="profileName">Profile Name (Optional)</Label>
-              <Input
-                id="profileName"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder="E.g., 'Residential Services' or 'Commercial Division'"
-              />
-              <p className="text-xs text-muted-foreground">
-                Give this profile a name to distinguish it from your other profiles
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isPrimary"
-                checked={isPrimary}
-                onCheckedChange={(checked) => setIsPrimary(checked === true)}
-              />
-              <Label htmlFor="isPrimary" className="cursor-pointer">
-                Set as primary profile
-              </Label>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="profession">Profession *</Label>
-              <Input
-                id="profession"
-                value={profession}
-                onChange={(e) => setProfession(e.target.value)}
-                placeholder="e.g., Plumber, Electrician"
-                required
-              />
+              <div className="flex gap-2">
+                <Select
+                  value={profession}
+                  onValueChange={(value) => {
+                    if (value === "__add_custom__") {
+                      setShowAddProfessionDialog(true);
+                    } else {
+                      setProfession(value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select your profession" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {professionOptions.map((prof) => (
+                      <SelectItem key={prof} value={prof}>
+                        {prof}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__add_custom__" className="text-primary font-medium">
+                      <span className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" /> Add Custom Profession
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Select your primary profession or add a custom one
+              </p>
+              
+              {/* Add Custom Profession Dialog */}
+              <Dialog open={showAddProfessionDialog} onOpenChange={setShowAddProfessionDialog}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Custom Profession</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customProfession">Profession Name</Label>
+                      <Input
+                        id="customProfession"
+                        value={customProfession}
+                        onChange={(e) => setCustomProfession(e.target.value)}
+                        placeholder="Enter your profession"
+                      />
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        if (customProfession.trim()) {
+                          setProfession(customProfession.trim());
+                          setCustomProfession("");
+                          setShowAddProfessionDialog(false);
+                          toast.success(`Added "${customProfession.trim()}" as profession`);
+                        }
+                      }}
+                      disabled={!customProfession.trim()}
+                    >
+                      Add Profession
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             <RegistrationCategorySelector
