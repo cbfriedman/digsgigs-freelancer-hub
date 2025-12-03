@@ -7,6 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,7 +20,7 @@ serve(async (req) => {
   const signature = req.headers.get('stripe-signature');
   
   if (!signature) {
-    console.error('Webhook error: Missing stripe-signature header');
+    logStep('ERROR: Missing stripe-signature header');
     return new Response(
       JSON.stringify({ error: 'No signature' }),
       { status: 400, headers: corsHeaders }
@@ -28,12 +33,12 @@ serve(async (req) => {
 
     // SECURITY: Make webhook secret mandatory
     if (!webhookSecret) {
-      console.error('CRITICAL: STRIPE_WEBHOOK_SECRET is not configured');
+      logStep('CRITICAL: STRIPE_WEBHOOK_SECRET is not configured');
       throw new Error('Webhook secret is not configured. Contact administrator.');
     }
 
     if (!stripeSecretKey) {
-      console.error('CRITICAL: STRIPE_SECRET_KEY is not configured');
+      logStep('CRITICAL: STRIPE_SECRET_KEY is not configured');
       throw new Error('Stripe configuration error');
     }
 
@@ -47,29 +52,106 @@ serve(async (req) => {
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      console.log('Webhook signature validated successfully');
+      logStep('Webhook signature validated successfully');
     } catch (err) {
-      console.error('Webhook signature verification failed:', err);
+      logStep('ERROR: Webhook signature verification failed', { error: err });
       return new Response(
         JSON.stringify({ error: 'Invalid signature' }),
         { status: 401, headers: corsHeaders }
       );
     }
 
-    console.log('Webhook event type:', event.type);
+    logStep('Webhook event received', { type: event.type });
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
+      const metadata = session.metadata || {};
       
-      // Check if this is a withdrawal penalty payment
-      const { penalty_id, bid_id, digger_id } = session.metadata || {};
-      
-      if (penalty_id && bid_id && digger_id) {
-        // This is a withdrawal penalty payment
-        const supabaseClient = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
+      logStep('Processing checkout.session.completed', { sessionId: session.id, metadata });
+
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+
+      // Check purchase type
+      const { purchase_type, penalty_id, bid_id, digger_id, pending_purchase_id } = metadata;
+
+      if (purchase_type === 'keyword_bulk' && pending_purchase_id) {
+        // Handle bulk lead credit purchase
+        logStep('Processing keyword_bulk purchase', { pendingPurchaseId: pending_purchase_id });
+
+        // Fetch pending purchase with selections
+        const { data: pendingPurchase, error: fetchError } = await supabaseClient
+          .from('pending_lead_purchases')
+          .select('*')
+          .eq('id', pending_purchase_id)
+          .single();
+
+        if (fetchError || !pendingPurchase) {
+          logStep('ERROR: Pending purchase not found', { error: fetchError, pendingPurchaseId: pending_purchase_id });
+          throw new Error('Pending purchase not found');
+        }
+
+        logStep('Pending purchase found', { 
+          userId: pendingPurchase.user_id, 
+          selectionsCount: pendingPurchase.selections?.length,
+          finalAmount: pendingPurchase.final_amount
+        });
+
+        const selections = pendingPurchase.selections;
+        if (!selections || !Array.isArray(selections) || selections.length === 0) {
+          throw new Error('No selections found in pending purchase');
+        }
+
+        // Calculate discounted price per lead
+        const totalQuantity = selections.reduce((sum: number, s: any) => sum + s.quantity, 0);
+        const discountedPricePerLead = pendingPurchase.final_amount / totalQuantity;
+
+        // Create lead credits for each selection
+        const leadCredits = selections.map((selection: any) => ({
+          user_id: pendingPurchase.user_id,
+          digger_profile_id: pendingPurchase.digger_profile_id,
+          keyword: selection.keyword,
+          industry: selection.industry || null,
+          exclusivity_type: selection.exclusivity === 'exclusive-24h' ? 'exclusive' : 
+                           selection.exclusivity === 'semi-exclusive' ? 'semi-exclusive' : 'non-exclusive',
+          quantity_purchased: selection.quantity,
+          quantity_remaining: selection.quantity,
+          price_per_lead: discountedPricePerLead,
+          total_paid: discountedPricePerLead * selection.quantity,
+          stripe_payment_id: session.payment_intent as string,
+          stripe_session_id: session.id,
+        }));
+
+        logStep('Creating lead credits', { count: leadCredits.length });
+
+        const { data: insertedCredits, error: insertError } = await supabaseClient
+          .from('lead_credits')
+          .insert(leadCredits)
+          .select();
+
+        if (insertError) {
+          logStep('ERROR: Failed to insert lead credits', { error: insertError });
+          throw insertError;
+        }
+
+        logStep('Lead credits created successfully', { count: insertedCredits?.length });
+
+        // Update pending purchase status
+        await supabaseClient
+          .from('pending_lead_purchases')
+          .update({ 
+            status: 'completed',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', pending_purchase_id);
+
+        logStep('Pending purchase marked as completed');
+
+      } else if (penalty_id && bid_id && digger_id) {
+        // Handle withdrawal penalty payment
+        logStep('Processing withdrawal penalty payment', { penaltyId: penalty_id, bidId: bid_id });
 
         // Update penalty status
         const { error: updatePenaltyError } = await supabaseClient
@@ -82,7 +164,7 @@ serve(async (req) => {
           .eq('id', penalty_id);
 
         if (updatePenaltyError) {
-          console.error('Error updating penalty:', updatePenaltyError);
+          logStep('ERROR: Failed to update penalty', { error: updatePenaltyError });
           throw updatePenaltyError;
         }
 
@@ -104,7 +186,7 @@ serve(async (req) => {
           .eq('id', bid_id);
 
         if (updateBidError) {
-          console.error('Error updating bid:', updateBidError);
+          logStep('ERROR: Failed to update bid', { error: updateBidError });
           throw updateBidError;
         }
 
@@ -122,54 +204,52 @@ serve(async (req) => {
             .eq('id', bidData.gig_id);
         }
 
-        console.log('Withdrawal penalty processed successfully', { penalty_id, bid_id, digger_id });
+        logStep('Withdrawal penalty processed successfully');
+
       } else {
-        // This is a regular lead purchase
-        const { gigId, diggerId, amount, tier } = session.metadata || {};
+        // Regular lead purchase (legacy flow)
+        const { gigId, diggerId, amount, tier } = metadata;
 
-        if (!gigId || !diggerId || !amount) {
-          throw new Error('Missing metadata in session');
+        if (gigId && diggerId && amount) {
+          logStep('Processing regular lead purchase', { gigId, diggerId, amount });
+
+          // Get the consumer_id for this gig
+          const { data: gigData, error: gigError } = await supabaseClient
+            .from('gigs')
+            .select('consumer_id')
+            .eq('id', gigId)
+            .single();
+
+          if (gigError || !gigData) {
+            logStep('ERROR: Gig not found', { error: gigError });
+            throw new Error('Gig not found');
+          }
+
+          // Calculate purchase price based on tier
+          const purchasePrice = parseFloat(amount);
+
+          // Record the purchase
+          const { error: insertError } = await supabaseClient
+            .from('lead_purchases')
+            .insert({
+              gig_id: gigId,
+              digger_id: diggerId,
+              consumer_id: gigData.consumer_id,
+              amount_paid: purchasePrice,
+              purchase_price: purchasePrice,
+              stripe_payment_id: session.payment_intent as string,
+              status: 'completed',
+            });
+
+          if (insertError) {
+            logStep('ERROR: Failed to record lead purchase', { error: insertError });
+            throw insertError;
+          }
+
+          logStep('Lead purchase recorded successfully', { tier, amount: purchasePrice });
+        } else {
+          logStep('Unhandled checkout session - no matching purchase type', { metadata });
         }
-
-        const supabaseClient = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
-
-        // Get the consumer_id for this gig
-        const { data: gigData, error: gigError } = await supabaseClient
-          .from('gigs')
-          .select('consumer_id')
-          .eq('id', gigId)
-          .single();
-
-        if (gigError || !gigData) {
-          console.error('Error fetching gig:', gigError);
-          throw new Error('Gig not found');
-        }
-
-        // Calculate purchase price based on tier
-        const purchasePrice = parseFloat(amount);
-
-        // Record the purchase
-        const { error: insertError } = await supabaseClient
-          .from('lead_purchases')
-          .insert({
-            gig_id: gigId,
-            digger_id: diggerId,
-            consumer_id: gigData.consumer_id,
-            amount_paid: purchasePrice,
-            purchase_price: purchasePrice,
-            stripe_payment_id: session.payment_intent as string,
-            status: 'completed',
-          });
-
-        if (insertError) {
-          console.error('Error recording purchase:', insertError);
-          throw insertError;
-        }
-
-        console.log('Lead purchase recorded successfully', { tier, amount: purchasePrice, gigId, diggerId });
       }
     }
 
@@ -181,7 +261,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Webhook error:', error);
+    logStep('ERROR', { error: error instanceof Error ? error.message : error });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ error: errorMessage }),
