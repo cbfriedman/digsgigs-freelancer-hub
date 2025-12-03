@@ -546,7 +546,7 @@ const EditDiggerProfile = () => {
                 </p>
               )}
               
-              {/* Selected Professions Display */}
+            {/* Selected Professions Display */}
               {selectedProfessions.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
                   {selectedProfessions.map((prof) => {
@@ -568,60 +568,14 @@ const EditDiggerProfile = () => {
                 </div>
               )}
               
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search professions..."
-                  value={professionSearch}
-                  onChange={(e) => setProfessionSearch(e.target.value)}
-                  className="pl-9"
+              {/* Keyword Suggestions - Budget Friendly & Premium Keywords */}
+              {selectedProfessions.length > 0 && (
+                <KeywordSuggestions
+                  currentKeywords={keywords}
+                  onAddKeyword={handleAddKeyword}
+                  profession={selectedProfessions[0]}
                 />
-              </div>
-              
-              {/* Professions Checkbox List */}
-              <div className="border rounded-md max-h-[250px] overflow-y-auto bg-background">
-                <div className="p-2 space-y-1">
-                  {professionOptions
-                    .filter(prof => prof.toLowerCase().includes(professionSearch.toLowerCase()))
-                    .map((prof) => {
-                      const isSelected = selectedProfessions.includes(prof);
-                      const pricing = getProfessionPricing(prof);
-                      return (
-                        <label
-                          key={prof}
-                          htmlFor={`prof-${prof}`}
-                          className="flex items-center justify-between p-2 hover:bg-accent rounded cursor-pointer"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`prof-${prof}`}
-                              checked={isSelected}
-                              onChange={(e) => {
-                                setSelectedProfessions(prev => 
-                                  e.target.checked 
-                                    ? [...prev, prof]
-                                    : prev.filter(p => p !== prof)
-                                );
-                              }}
-                              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                            />
-                            <span className="cursor-pointer text-sm font-normal capitalize">
-                              {prof}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {pricing.cpc && (
-                              <span className="text-blue-600">CPC: ${pricing.cpc}</span>
-                            )}
-                            <span className="text-green-600 font-medium">Lead: ${pricing.leadCost.toFixed(2)}</span>
-                          </div>
-                        </label>
-                      );
-                    })}
-                </div>
-              </div>
+              )}
               
               <div className="flex gap-2">
                 <Button
@@ -644,7 +598,7 @@ const EditDiggerProfile = () => {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Select one or more professions that match your services
+                Add professions and keywords to improve matching with gigs
               </p>
               
               {/* Add Custom Profession Dialog */}
@@ -1067,15 +1021,6 @@ const EditDiggerProfile = () => {
               <p className="text-xs text-muted-foreground">
                 Add relevant keywords to improve matching with gigs. Use commas or semicolons to separate keywords.
               </p>
-              
-              {/* Keyword Suggestions */}
-              {selectedProfessions.length > 0 && (
-                <KeywordSuggestions
-                  currentKeywords={keywords}
-                  onAddKeyword={handleAddKeyword}
-                  profession={selectedProfessions[0]}
-                />
-              )}
               
               {keywords.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
