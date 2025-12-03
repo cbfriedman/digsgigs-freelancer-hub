@@ -42,8 +42,32 @@ const EditDiggerProfile = () => {
   
   const [profileCategory, setProfileCategory] = useState<string>("");
   
-  // Generate profession list filtered by profile's category
+  // Helper to check if profession has actual CPC data in database
+  const hasCpcData = (professionName: string): boolean => {
+    const normalizedName = professionName.toLowerCase().trim();
+    
+    for (const industryData of GOOGLE_CPC_KEYWORDS) {
+      // Check if the industry name matches
+      if (industryData.industry.toLowerCase().includes(normalizedName) ||
+          normalizedName.includes(industryData.industry.toLowerCase())) {
+        return true;
+      }
+      // Check individual keywords
+      const keywordMatch = industryData.keywords.find(
+        kw => kw.keyword.toLowerCase().includes(normalizedName) ||
+              normalizedName.includes(kw.keyword.toLowerCase())
+      );
+      if (keywordMatch) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Generate profession list filtered by profile's category AND only those with CPC data
   const professionOptions = useMemo(() => {
+    let professions: string[] = [];
+    
     if (!profileCategory) {
       // Fallback to all professions if no category
       const allProfessions = new Set<string>();
@@ -52,26 +76,29 @@ const EditDiggerProfile = () => {
           allProfessions.add(ind.name);
         });
       });
-      return Array.from(allProfessions).sort();
+      professions = Array.from(allProfessions);
+    } else {
+      // Find the category in INDUSTRY_GROUPS
+      const categoryGroup = INDUSTRY_GROUPS.find(
+        g => g.categoryName.toLowerCase() === profileCategory.toLowerCase()
+      );
+      
+      if (categoryGroup) {
+        professions = categoryGroup.industries.map(ind => ind.name);
+      } else {
+        // Fallback to all
+        const allProfessions = new Set<string>();
+        INDUSTRY_GROUPS.forEach(group => {
+          group.industries.forEach(ind => {
+            allProfessions.add(ind.name);
+          });
+        });
+        professions = Array.from(allProfessions);
+      }
     }
     
-    // Find the category in INDUSTRY_GROUPS
-    const categoryGroup = INDUSTRY_GROUPS.find(
-      g => g.categoryName.toLowerCase() === profileCategory.toLowerCase()
-    );
-    
-    if (categoryGroup) {
-      return categoryGroup.industries.map(ind => ind.name).sort();
-    }
-    
-    // Fallback to all
-    const allProfessions = new Set<string>();
-    INDUSTRY_GROUPS.forEach(group => {
-      group.industries.forEach(ind => {
-        allProfessions.add(ind.name);
-      });
-    });
-    return Array.from(allProfessions).sort();
+    // Filter to only professions with actual CPC data
+    return professions.filter(prof => hasCpcData(prof)).sort();
   }, [profileCategory]);
   
   // Helper to get CPC and lead cost for a profession
