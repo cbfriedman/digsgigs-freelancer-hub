@@ -839,6 +839,29 @@ const DiggerDetail = () => {
                   </CardContent>
                 </Card>
 
+                {/* Your Keywords Summary */}
+                {(digger as any)?.keywords && (digger as any).keywords.length > 0 && (
+                  <Card className="bg-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        🏷️ Your Keywords
+                      </CardTitle>
+                      <CardDescription>
+                        Keywords that match you to relevant leads
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {((digger as any).keywords as string[]).map((keyword, idx) => (
+                          <Badge key={idx} variant="secondary" className="px-3 py-1">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Quick Actions */}
                 <Card className="bg-card border-primary/20">
                   <CardHeader>
