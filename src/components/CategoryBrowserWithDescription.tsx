@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Target, Plus, Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +16,24 @@ import { getIndustrySpecialties, hasIndustrySpecialties } from "@/utils/industry
 import { SpecialtyRequestForm } from "./SpecialtyRequestForm";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
+import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
+
+// Helper function to look up CPC and calculate lead cost for a keyword
+const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: number | null } => {
+  const keywordLower = keyword.toLowerCase();
+  
+  for (const industry of GOOGLE_CPC_KEYWORDS) {
+    for (const kw of industry.keywords) {
+      if (kw.keyword.toLowerCase() === keywordLower) {
+        // Non-exclusive lead cost = 20% of CPC
+        const leadCost = Math.ceil((kw.cpc * 0.20) * 2) / 2; // Round to nearest $0.50
+        return { cpc: kw.cpc, leadCost };
+      }
+    }
+  }
+  
+  return { cpc: null, leadCost: null };
+};
 
 const DEFAULT_CATEGORIES = [
   "Legal Services",
@@ -498,6 +515,7 @@ export const CategoryBrowserWithDescription = () => {
               <div className="flex flex-wrap gap-2">
                 {suggestedKeywords.map((keyword, index) => {
                   const isSelected = selectedKeywords.has(keyword);
+                  const { cpc, leadCost } = getKeywordPricing(keyword);
                   return (
                     <div
                       key={index}
@@ -516,8 +534,18 @@ export const CategoryBrowserWithDescription = () => {
                         setSelectedKeywords(newSelected);
                       }}
                     >
-                      {isSelected && <span className="mr-1">✓</span>}
-                      {keyword}
+                      <span className="flex items-center gap-2">
+                        {isSelected && <span>✓</span>}
+                        <span>{keyword}</span>
+                        {cpc !== null && (
+                          <span className="text-xs opacity-75">
+                            <span className="text-muted-foreground">CPC: ${cpc}</span>
+                            {leadCost !== null && (
+                              <span className="ml-1 text-emerald-600 dark:text-emerald-400">• Our cost: ${leadCost.toFixed(2)}</span>
+                            )}
+                          </span>
+                        )}
+                      </span>
                       <button
                         className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={(e) => {
@@ -743,14 +771,11 @@ export const CategoryBrowserWithDescription = () => {
                       Zip Code Options <span className="text-xs">(optional)</span>
                     </Label>
                     
-                    <RadioGroup
-                      value={locationPreferenceType}
-                      onValueChange={(value: "zip_codes" | "radius") => setLocationPreferenceType(value)}
-                      className="space-y-3"
-                    >
+                    <div className="space-y-3">
                       <div className="flex items-center space-x-2">
                         <input 
                           type="radio" 
+                          name="locationPreferenceBrowser"
                           value="zip_codes" 
                           id="zip_codes_browser" 
                           checked={locationPreferenceType === "zip_codes"}
@@ -764,6 +789,7 @@ export const CategoryBrowserWithDescription = () => {
                       <div className="flex items-center space-x-2">
                         <input 
                           type="radio" 
+                          name="locationPreferenceBrowser"
                           value="radius" 
                           id="radius_browser" 
                           checked={locationPreferenceType === "radius"}
@@ -774,7 +800,7 @@ export const CategoryBrowserWithDescription = () => {
                           Radius from Zip Code
                         </Label>
                       </div>
-                    </RadioGroup>
+                    </div>
 
                     {locationPreferenceType === "zip_codes" ? (
                       <div className="space-y-2 mt-3">
