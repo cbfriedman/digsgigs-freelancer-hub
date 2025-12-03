@@ -100,51 +100,32 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get the user by email
+    // Try to find and confirm user if they exist (for existing users)
+    // If user doesn't exist, that's OK - they'll be created during registration
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
     
-    if (getUserError) {
-      console.error("Error fetching users:", getUserError);
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch user" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+    if (!getUserError && users) {
+      const user = users.find(u => u.email === email);
+      
+      if (user) {
+        // User exists - confirm their email
+        const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
+          user.id,
+          { email_confirm: true }
+        );
+
+        if (confirmError) {
+          console.error("Error confirming user email:", confirmError);
+          // Don't fail - code is still verified
+        } else {
+          console.log("Email verified and confirmed for existing user:", email);
         }
-      );
+      } else {
+        console.log("Code verified for new user (will be created during registration):", email);
+      }
     }
 
-    const user = users.find(u => u.email === email);
-    
-    if (!user) {
-      console.error("User not found for email:", email);
-      return new Response(
-        JSON.stringify({ error: "User not found" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Update user's email_confirmed_at using admin API
-    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
-      { email_confirm: true }
-    );
-
-    if (confirmError) {
-      console.error("Error confirming user email:", confirmError);
-      return new Response(
-        JSON.stringify({ error: "Failed to confirm email" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    console.log("Email verified successfully for:", email);
+    console.log("Verification code verified successfully for:", email);
 
     return new Response(
       JSON.stringify({ 

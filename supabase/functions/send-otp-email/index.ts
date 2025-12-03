@@ -87,19 +87,33 @@ const handler = async (req: Request): Promise<Response> => {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-    const { error: dbError } = await supabase
+    const { data: insertedCode, error: dbError } = await supabase
       .from("verification_codes")
       .insert({
         email,
         code,
         expires_at: expiresAt.toISOString(),
         verified: false,
-      });
+      })
+      .select()
+      .single();
 
     if (dbError) {
       console.error("Error storing verification code:", dbError);
-      // Continue anyway - email might still be sent
+      // Return error - we need the code in database for verification
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to store verification code",
+          details: dbError.message 
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
+
+    console.log("Verification code stored in database:", insertedCode?.id);
 
     // Send email via Resend
     const emailResponse = await fetch("https://api.resend.com/emails", {

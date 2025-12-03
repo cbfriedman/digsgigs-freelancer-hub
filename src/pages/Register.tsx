@@ -208,42 +208,38 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // With auto-confirm enabled, create account directly without OTP
-      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      // Check if email is already registered
+      const { data: existingUser } = await supabase.auth.admin?.listUsers() || { data: null };
+      // Note: We can't directly check, so we'll let signUp handle it
+
+      // Generate OTP code
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: formattedPhone,
-          },
-          emailRedirectTo: `${window.location.origin}/`,
+      // Send OTP via Resend edge function (stores code in database)
+      const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp-email', {
+        body: {
+          email,
+          code: otpCode,
+          name: fullName,
         },
       });
 
-      if (authError) {
-        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
-          toast.error("This email is already registered. Please sign in instead.");
+      if (otpError) {
+        console.error("OTP send error:", otpError);
+        // Check if it's a configuration error
+        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
+          toast.error("Email service is not configured. Please contact support.");
         } else {
-          toast.error(authError.message);
+          toast.error(otpError.message || "Failed to send verification code. Please try again.");
         }
         setLoading(false);
         return;
       }
 
-      if (!authData.user) {
-        toast.error("Failed to create account");
-        setLoading(false);
-        return;
-      }
-
-      // Store user ID for role creation
-      setUserId(authData.user.id);
-
-      toast.success("Account created successfully!");
-      setStep(3); // Skip verification, go directly to role selection
+      // OTP sent successfully - move to verification step
+      setOtpSent(true);
+      toast.success("Verification code sent! Please check your email.");
+      setStep(2); // Move to verification step
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -1441,3 +1437,6 @@ const Register = () => {
 };
 
 export default Register;
+
+
+
