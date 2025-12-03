@@ -18,7 +18,8 @@ import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 // Native radio inputs used instead of RadioGroup to avoid infinite loop bug
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
-import { getLeadTierDescription, INDUSTRY_PRICING } from "@/config/pricing";
+import { getLeadTierDescription, INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, getIndustryCategory } from "@/config/pricing";
+import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
@@ -39,16 +40,69 @@ const EditDiggerProfile = () => {
   const [professionSearch, setProfessionSearch] = useState("");
   const [location, setLocation] = useState("");
   
-  // Generate unique profession list from INDUSTRY_PRICING
+  const [profileCategory, setProfileCategory] = useState<string>("");
+  
+  // Generate profession list filtered by profile's category
   const professionOptions = useMemo(() => {
+    if (!profileCategory) {
+      // Fallback to all professions if no category
+      const allProfessions = new Set<string>();
+      INDUSTRY_GROUPS.forEach(group => {
+        group.industries.forEach(ind => {
+          allProfessions.add(ind.name);
+        });
+      });
+      return Array.from(allProfessions).sort();
+    }
+    
+    // Find the category in INDUSTRY_GROUPS
+    const categoryGroup = INDUSTRY_GROUPS.find(
+      g => g.categoryName.toLowerCase() === profileCategory.toLowerCase()
+    );
+    
+    if (categoryGroup) {
+      return categoryGroup.industries.map(ind => ind.name).sort();
+    }
+    
+    // Fallback to all
     const allProfessions = new Set<string>();
-    INDUSTRY_PRICING.forEach(tier => {
-      tier.industries.forEach(industry => {
-        allProfessions.add(industry);
+    INDUSTRY_GROUPS.forEach(group => {
+      group.industries.forEach(ind => {
+        allProfessions.add(ind.name);
       });
     });
     return Array.from(allProfessions).sort();
-  }, []);
+  }, [profileCategory]);
+  
+  // Helper to get CPC and lead cost for a profession
+  const getProfessionPricing = (professionName: string) => {
+    const normalizedName = professionName.toLowerCase().trim();
+    
+    // Search through GOOGLE_CPC_KEYWORDS industry data
+    let cpc: number | null = null;
+    for (const industryData of GOOGLE_CPC_KEYWORDS) {
+      // Check if the industry name matches
+      if (industryData.industry.toLowerCase().includes(normalizedName) ||
+          normalizedName.includes(industryData.industry.toLowerCase())) {
+        cpc = industryData.averageCpc;
+        break;
+      }
+      // Check individual keywords
+      const keywordMatch = industryData.keywords.find(
+        kw => kw.keyword.toLowerCase().includes(normalizedName) ||
+              normalizedName.includes(kw.keyword.toLowerCase())
+      );
+      if (keywordMatch) {
+        cpc = keywordMatch.cpc;
+        break;
+      }
+    }
+    
+    const leadCost = getLeadCostForIndustry(professionName, 'non-exclusive', false, profileCategory);
+    const category = getIndustryCategory(professionName, profileCategory);
+    
+    return { cpc, leadCost, category };
+  };
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [keywordsInput, setKeywordsInput] = useState("");
@@ -179,6 +233,22 @@ const EditDiggerProfile = () => {
         setTitle(profile.custom_occupation_title || "");
         setTagline(profile.tagline || "");
         setProfileData(profile);
+        
+        // Load category name from digger_categories
+        if (profile.digger_categories && profile.digger_categories.length > 0) {
+          const categoryId = profile.digger_categories[0].category_id;
+          if (categoryId) {
+            const { data: categoryData } = await supabase
+              .from('categories')
+              .select('name')
+              .eq('id', categoryId)
+              .single();
+            
+            if (categoryData?.name) {
+              setProfileCategory(categoryData.name);
+            }
+          }
+        }
       }
     } catch (error: any) {
       console.error("Error loading profile:", error);
@@ -385,21 +455,31 @@ const EditDiggerProfile = () => {
             <div className="space-y-2">
               <Label>Professions * <span className="text-xs text-muted-foreground">({selectedProfessions.length} selected)</span></Label>
               
+              {profileCategory && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  Showing professions for: <span className="font-medium text-foreground">{profileCategory}</span>
+                </p>
+              )}
+              
               {/* Selected Professions Display */}
               {selectedProfessions.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {selectedProfessions.map((prof) => (
-                    <Badge key={prof} variant="secondary" className="flex items-center gap-1 px-2 py-1">
-                      {prof}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProfessions(prev => prev.filter(p => p !== prof))}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                  {selectedProfessions.map((prof) => {
+                    const pricing = getProfessionPricing(prof);
+                    return (
+                      <Badge key={prof} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                        <span className="capitalize">{prof}</span>
+                        <span className="text-xs text-green-600 ml-1">${pricing.leadCost.toFixed(2)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProfessions(prev => prev.filter(p => p !== prof))}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
                 </div>
               )}
               
@@ -415,34 +495,43 @@ const EditDiggerProfile = () => {
               </div>
               
               {/* Professions Checkbox List */}
-              <div className="border rounded-md max-h-[200px] overflow-y-auto bg-background">
+              <div className="border rounded-md max-h-[250px] overflow-y-auto bg-background">
                 <div className="p-2 space-y-1">
                   {professionOptions
                     .filter(prof => prof.toLowerCase().includes(professionSearch.toLowerCase()))
                     .map((prof) => {
                       const isSelected = selectedProfessions.includes(prof);
+                      const pricing = getProfessionPricing(prof);
                       return (
                         <label
                           key={prof}
                           htmlFor={`prof-${prof}`}
-                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer"
+                          className="flex items-center justify-between p-2 hover:bg-accent rounded cursor-pointer"
                         >
-                          <input
-                            type="checkbox"
-                            id={`prof-${prof}`}
-                            checked={isSelected}
-                            onChange={(e) => {
-                              setSelectedProfessions(prev => 
-                                e.target.checked 
-                                  ? [...prev, prof]
-                                  : prev.filter(p => p !== prof)
-                              );
-                            }}
-                            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                          />
-                          <span className="cursor-pointer text-sm font-normal flex-1">
-                            {prof}
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`prof-${prof}`}
+                              checked={isSelected}
+                              onChange={(e) => {
+                                setSelectedProfessions(prev => 
+                                  e.target.checked 
+                                    ? [...prev, prof]
+                                    : prev.filter(p => p !== prof)
+                                );
+                              }}
+                              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                            />
+                            <span className="cursor-pointer text-sm font-normal capitalize">
+                              {prof}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {pricing.cpc && (
+                              <span className="text-blue-600">CPC: ${pricing.cpc}</span>
+                            )}
+                            <span className="text-green-600 font-medium">Lead: ${pricing.leadCost.toFixed(2)}</span>
+                          </div>
                         </label>
                       );
                     })}
