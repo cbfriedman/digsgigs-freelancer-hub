@@ -953,8 +953,8 @@ export const CategoryBrowserWithDescription = () => {
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
-                          state: selectedStates.length > 0 ? selectedStates.join(', ') : null,
-                          city: city.trim() || null,
+                          // Note: state and city fields removed - not in database schema. 
+                          // State/city info can be stored in location field if needed.
                           updated_at: new Date().toISOString(),
                         })
                         .eq('id', existingProfileId);
@@ -997,6 +997,16 @@ export const CategoryBrowserWithDescription = () => {
                       const isPrimaryProfile = !hasPrimaryForCategory;
                       const finalProfileName = isPrimaryProfile ? selectedCategory : profileName.trim();
 
+                      // Build location string from city, state, and country
+                      // Include state info in location since state column doesn't exist in database
+                      const locationParts: string[] = [];
+                      if (city.trim()) locationParts.push(city.trim());
+                      if (selectedStates.length > 0) locationParts.push(selectedStates.join(', '));
+                      if (country) locationParts.push(country);
+                      const locationString = locationParts.length > 0 
+                        ? locationParts.join(', ')
+                        : 'Not specified';
+
                       const { data: newProfile, error: createError } = await supabase
                         .from('digger_profiles')
                         .insert({
@@ -1005,15 +1015,15 @@ export const CategoryBrowserWithDescription = () => {
                           profile_name: finalProfileName,
                           profession: selectedSpecialties.join(', '),
                           keywords: selected,
-                          location: 'Not specified',
+                          location: locationString,
                           phone: 'Not specified',
                           is_primary: isPrimaryProfile,
                           service_zip_codes: zipCodesArray,
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
-                          state: selectedStates.length > 0 ? selectedStates.join(', ') : null,
-                          city: city.trim() || null,
+                          // Note: state and city fields removed - not in database schema. 
+                          // State/city info is included in location field.
                         })
                         .select()
                         .single();

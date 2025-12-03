@@ -158,6 +158,7 @@ const EditDiggerProfile = () => {
   const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
   const [country, setCountry] = useState("United States");
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false); // Flag to prevent reload after update
 
   // Memoize regions for the selected country to avoid repeated lookups
   const availableRegions = useMemo(() => {
@@ -171,20 +172,26 @@ const EditDiggerProfile = () => {
     .filter(k => k.length > 0);
 
   useEffect(() => {
+    // Don't reload if we're in the middle of updating
+    if (isUpdating) return;
+    
     if (!user) {
       navigate("/auth");
       return;
     }
     
     // Support both URL params (/edit-digger-profile/:profileId) and query params (?profileId=xxx)
-    const profileIdFromUrl = profileIdParam || searchParams.get('profileId');
+    // Read searchParams once per effect run to avoid dependency issues
+    const profileIdFromQuery = searchParams.get('profileId');
+    const profileIdFromUrl = profileIdParam || profileIdFromQuery;
     if (profileIdFromUrl) {
       setProfileId(profileIdFromUrl);
     }
     
     loadProfile();
     checkSubscription();
-  }, [user, navigate, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, navigate, profileIdParam]); // Removed searchParams from deps to prevent loop - read it inside effect instead
 
   const checkSubscription = async () => {
     try {
@@ -325,6 +332,7 @@ const EditDiggerProfile = () => {
     }
 
     setLoading(true);
+    setIsUpdating(true); // Set flag to prevent useEffect from reloading
 
     try {
       // Calculate lead tier description based on professions
@@ -335,13 +343,30 @@ const EditDiggerProfile = () => {
         ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
         : null;
 
+      // Include state info in location field since state column doesn't exist in database
+      // Only append states if they're not already in the location string
+      let finalLocation = location;
+      if (selectedStates.length > 0 && location && location !== 'Not specified') {
+        const statesString = selectedStates.join(', ');
+        // Check if state info is already in location
+        const hasStateInfo = selectedStates.some(state => 
+          location.toLowerCase().includes(state.toLowerCase())
+        );
+        if (!hasStateInfo) {
+          finalLocation = `${location}, ${statesString}`;
+        }
+      } else if (selectedStates.length > 0 && (!location || location === 'Not specified')) {
+        // If no location but states selected, use states as location
+        finalLocation = selectedStates.join(', ');
+      }
+
       const { error } = await supabase
         .from("digger_profiles")
         .update({
           business_name: businessName,
           company_name: businessName,
           profession: professionString,
-          location,
+          location: finalLocation,
           phone,
           bio: bio || null,
           keywords: keywords.length > 0 ? keywords : null,
@@ -357,7 +382,7 @@ const EditDiggerProfile = () => {
           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
           country: country,
-          state: selectedStates.length > 0 ? selectedStates.join(', ') : null,
+          // Note: state field removed - not in database schema. State info is included in location field.
         })
         .eq("id", profileId);
 
@@ -365,16 +390,15 @@ const EditDiggerProfile = () => {
 
       toast.success("Profile updated! Redirecting to your dashboard...");
       
-      // Force navigation with a slight delay to ensure state updates complete
-      setTimeout(() => {
-        navigate(`/digger/${profileId}`, { replace: true });
-      }, 100);
+      // Navigate immediately without delay to prevent loop
+      navigate(`/digger/${profileId}`, { replace: true });
     } catch (error: any) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
         console.error("Error updating profile:", error);
       }
       toast.error(error.message || "Failed to update profile");
+      setIsUpdating(false); // Reset flag on error so user can try again
     } finally {
       setLoading(false);
     }

@@ -2,9 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { GOOGLE_CPC_KEYWORDS, calculateExclusiveLeadPrice, calculateNonExclusiveLeadPrice } from "@/config/googleCpcKeywords";
 import { Target, TrendingUp } from "lucide-react";
 import { ProfessionRequestForm } from "./ProfessionRequestForm";
+import { Label } from "@/components/ui/label";
 
 // Reorganize data into hierarchical structure
 const organizeByIndustry = () => {
@@ -109,7 +112,7 @@ const organizeByIndustry = () => {
 export const IndustryProfessionSelector = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string>("");
   const [selectedProfession, setSelectedProfession] = useState<string>("");
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
 
   const industryData = organizeByIndustry();
   const industries = Object.keys(industryData)
@@ -119,7 +122,7 @@ export const IndustryProfessionSelector = () => {
   const professions = selectedIndustry ? industryData[selectedIndustry] : [];
   const selectedProfessionData = professions.find(p => p.industry === selectedProfession);
   const specialties = selectedProfessionData?.keywords || [];
-  const selectedSpecialtyData = specialties.find(s => s.keyword === selectedSpecialty);
+  const selectedSpecialtiesData = specialties.filter(s => selectedSpecialties.includes(s.keyword));
 
   const avgCpc = selectedProfessionData?.averageCpc || 0;
   const highestCpc = selectedProfessionData ? Math.max(...selectedProfessionData.keywords.map(k => k.cpc)) : 0;
@@ -180,7 +183,7 @@ export const IndustryProfessionSelector = () => {
             <label className="text-sm font-medium">Step 2: Select Profession</label>
             <Select value={selectedProfession} onValueChange={(value) => {
               setSelectedProfession(value);
-              setSelectedSpecialty("");
+              setSelectedSpecialties([]);
             }}>
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Choose a profession..." />
@@ -199,25 +202,67 @@ export const IndustryProfessionSelector = () => {
           </div>
         )}
 
-        {/* Specialty Selection */}
+        {/* Specialty Selection - Multi-select with checkboxes */}
         {selectedProfession && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Step 3: Select Specialty</label>
-            <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
-              <SelectTrigger className="bg-background">
-                <SelectValue placeholder="Choose a specialty..." />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50 max-h-[300px]">
-                {specialties.map((specialty) => (
-                  <SelectItem key={specialty.keyword} value={specialty.keyword}>
-                    {specialty.keyword}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Step 3: Select Specialties</Label>
+              {selectedSpecialties.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {selectedSpecialties.length} selected
+                </span>
+              )}
+            </div>
+            
+            {/* Select All / Clear All buttons */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedSpecialties(specialties.map(s => s.keyword))}
+                disabled={selectedSpecialties.length === specialties.length}
+              >
+                Select All
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedSpecialties([])}
+                disabled={selectedSpecialties.length === 0}
+              >
+                Clear All
+              </Button>
+            </div>
+            
+            {/* Checkbox list */}
+            <div className="border rounded-lg p-3 max-h-[300px] overflow-y-auto bg-background space-y-2">
+              {specialties.map((specialty) => (
+                <div key={specialty.keyword} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`specialty-${specialty.keyword}`}
+                    checked={selectedSpecialties.includes(specialty.keyword)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedSpecialties([...selectedSpecialties, specialty.keyword]);
+                      } else {
+                        setSelectedSpecialties(selectedSpecialties.filter(s => s !== specialty.keyword));
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`specialty-${specialty.keyword}`}
+                    className="text-sm cursor-pointer flex-1 py-1 flex items-center justify-between"
+                  >
+                    <span>{specialty.keyword}</span>
                     <Badge variant="outline" className="ml-2">
                       ${specialty.cpc} CPC
                     </Badge>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -245,32 +290,39 @@ export const IndustryProfessionSelector = () => {
           </div>
         )}
 
-        {/* Specialty Details */}
-        {selectedSpecialtyData && (
+        {/* Selected Specialties Summary */}
+        {selectedSpecialtiesData.length > 0 && (
           <div className="border rounded-lg p-4 bg-accent/5">
-            <h4 className="font-semibold mb-3">Specialty Details: {selectedSpecialtyData.keyword}</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Google CPC:</span>
-                <span className="font-semibold ml-2">${selectedSpecialtyData.cpc.toLocaleString()}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Monthly Searches:</span>
-                <span className="font-semibold ml-2">{selectedSpecialtyData.searchVolume.toLocaleString()}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Competition:</span>
-                <Badge 
-                  variant={
-                    selectedSpecialtyData.competitionLevel === 'high' ? 'destructive' :
-                    selectedSpecialtyData.competitionLevel === 'medium' ? 'default' : 
-                    'secondary'
-                  }
-                  className="ml-2"
-                >
-                  {selectedSpecialtyData.competitionLevel}
-                </Badge>
-              </div>
+            <h4 className="font-semibold mb-3">
+              Selected Specialties ({selectedSpecialtiesData.length})
+            </h4>
+            <div className="space-y-3">
+              {selectedSpecialtiesData.map((specialty) => (
+                <div key={specialty.keyword} className="border-b pb-3 last:border-b-0 last:pb-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium">{specialty.keyword}</span>
+                    <Badge 
+                      variant={
+                        specialty.competitionLevel === 'high' ? 'destructive' :
+                        specialty.competitionLevel === 'medium' ? 'default' : 
+                        'secondary'
+                      }
+                    >
+                      {specialty.competitionLevel}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                    <div>
+                      <span>Google CPC: </span>
+                      <span className="font-semibold text-foreground">${specialty.cpc.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span>Monthly Searches: </span>
+                      <span className="font-semibold text-foreground">{specialty.searchVolume.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
