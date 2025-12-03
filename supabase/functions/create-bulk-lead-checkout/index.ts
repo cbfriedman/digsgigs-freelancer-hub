@@ -109,6 +109,7 @@ serve(async (req) => {
     });
 
     // Create Stripe checkout session
+    // Note: Stripe metadata has a 500 character limit per value, so we store summary data only
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -120,12 +121,10 @@ serve(async (req) => {
         user_id: user.id,
         digger_profile_id: diggerProfileId,
         purchase_type: "keyword_bulk",
-        lead_selections: JSON.stringify(selections),
+        selection_count: selections.length.toString(),
         original_amount: originalTotal.toString(),
         discount_amount: totalDiscount.toString(),
         final_amount: finalTotal.toString(),
-        discount_on_first_thousand: discountOnFirstThousand.toString(),
-        discount_on_excess: discountOnExcess.toString(),
       },
     });
 

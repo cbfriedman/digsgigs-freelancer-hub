@@ -213,7 +213,9 @@ export const KeywordSuggestions = ({
           onClick={() => setShowAll(!showAll)}
           className="w-full text-xs"
         >
-          {showAll ? 'Show Less Suggestions' : `Show All ${availableKeywords.length} Suggestions`}
+          {showAll 
+            ? 'Show Less' 
+            : `Show All ${budgetKeywords.length + premiumKeywords.length} Available Suggestions`}
         </Button>
       )}
     </div>

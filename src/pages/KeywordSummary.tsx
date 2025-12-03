@@ -434,6 +434,7 @@ export default function KeywordSummary() {
     }
     
     // Calculate and include price per lead and subtotal for each selection
+    // IMPORTANT: Recalculate everything here to avoid stale closure issues
     const purchasesWithPricing = leadPurchases.map(selection => {
       const cpcData = lookupGoogleCPC(selection.keyword, selection.industry);
       const category = getIndustryCategory(selection.keyword, selection.industry);
@@ -446,9 +447,14 @@ export default function KeywordSummary() {
       };
     });
     
+    // Recalculate total and discount from purchasesWithPricing to ensure consistency
+    const calculatedTotal = purchasesWithPricing.reduce((sum, item) => sum + item.subtotal, 0);
+    const freshDiscountInfo = calculateBulkDiscount(calculatedTotal);
+    
     console.log('[KeywordSummary] Saving to sessionStorage:', {
       purchasesWithPricing,
-      discountInfo,
+      calculatedTotal,
+      freshDiscountInfo,
       profileId
     });
     
@@ -457,9 +463,9 @@ export default function KeywordSummary() {
     sessionStorage.setItem('leadPurchaseCategoryName', categoryName);
     sessionStorage.setItem('leadPurchaseProfileId', profileId || '');
     
-    // Save lead purchase selections and discount info to sessionStorage
+    // Save lead purchase selections and freshly calculated discount info
     sessionStorage.setItem('leadPurchaseSelections', JSON.stringify(purchasesWithPricing));
-    sessionStorage.setItem('leadPurchaseDiscount', JSON.stringify(discountInfo));
+    sessionStorage.setItem('leadPurchaseDiscount', JSON.stringify(freshDiscountInfo));
     
     toast({
       title: "Proceeding to Checkout",

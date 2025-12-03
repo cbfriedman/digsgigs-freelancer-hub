@@ -315,12 +315,32 @@ const EditDiggerProfile = () => {
     }
   };
 
+  // Phone number validation helper
+  const isValidPhoneNumber = (phoneNumber: string): boolean => {
+    // Check for invalid prefixes like "not specified"
+    if (phoneNumber.toLowerCase().includes('not specified') || 
+        phoneNumber.toLowerCase().includes('n/a') ||
+        phoneNumber.toLowerCase().includes('none')) {
+      return false;
+    }
+    // Remove all non-digit characters for validation
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    // Valid phone numbers should have 10-15 digits (supports international)
+    return digitsOnly.length >= 10 && digitsOnly.length <= 15;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profileId) return;
 
     if (!businessName || selectedProfessions.length === 0 || !location || !phone) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Validate phone number format
+    if (!isValidPhoneNumber(phone)) {
+      toast.error("Please enter a valid phone number (10-15 digits)");
       return;
     }
 
@@ -388,10 +408,10 @@ const EditDiggerProfile = () => {
 
       if (error) throw error;
 
-      toast.success("Profile updated! Redirecting to your dashboard...");
+      toast.success("Profile saved successfully!");
       
       // Navigate immediately without delay to prevent loop
-        navigate(`/digger/${profileId}`, { replace: true });
+      navigate(`/digger/${profileId}`, { replace: true });
     } catch (error: any) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
@@ -546,7 +566,7 @@ const EditDiggerProfile = () => {
                 </p>
               )}
               
-              {/* Selected Professions Display */}
+            {/* Selected Professions Display */}
               {selectedProfessions.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
                   {selectedProfessions.map((prof) => {
@@ -568,60 +588,42 @@ const EditDiggerProfile = () => {
                 </div>
               )}
               
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search professions..."
-                  value={professionSearch}
-                  onChange={(e) => setProfessionSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              
-              {/* Professions Checkbox List */}
-              <div className="border rounded-md max-h-[250px] overflow-y-auto bg-background">
-                <div className="p-2 space-y-1">
-                  {professionOptions
-                    .filter(prof => prof.toLowerCase().includes(professionSearch.toLowerCase()))
-                    .map((prof) => {
-                      const isSelected = selectedProfessions.includes(prof);
-                      const pricing = getProfessionPricing(prof);
+              {/* Selected Keywords - shown right after professions */}
+              {keywords.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Selected Keywords ({keywords.length})</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {keywords.map((keyword, index) => {
+                      const leadCost = getLeadCostForIndustry(keyword, 'non-exclusive', false, profileCategory);
                       return (
-                        <label
-                          key={prof}
-                          htmlFor={`prof-${prof}`}
-                          className="flex items-center justify-between p-2 hover:bg-accent rounded cursor-pointer"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`prof-${prof}`}
-                              checked={isSelected}
-                              onChange={(e) => {
-                                setSelectedProfessions(prev => 
-                                  e.target.checked 
-                                    ? [...prev, prof]
-                                    : prev.filter(p => p !== prof)
-                                );
-                              }}
-                              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                            />
-                            <span className="cursor-pointer text-sm font-normal capitalize">
-                              {prof}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {pricing.cpc && (
-                              <span className="text-blue-600">CPC: ${pricing.cpc}</span>
-                            )}
-                            <span className="text-green-600 font-medium">Lead: ${pricing.leadCost.toFixed(2)}</span>
-                          </div>
-                        </label>
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                          <span>{keyword}</span>
+                          <span className="text-xs text-green-600 ml-1">${leadCost.toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newKeywords = keywords.filter((_, i) => i !== index);
+                              setKeywordsInput(newKeywords.join(', '));
+                            }}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
                       );
                     })}
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {/* Keyword Suggestions - Budget Friendly & Premium Keywords */}
+              {selectedProfessions.length > 0 && (
+                <KeywordSuggestions
+                  currentKeywords={keywords}
+                  onAddKeyword={handleAddKeyword}
+                  profession={selectedProfessions[0]}
+                />
+              )}
               
               <div className="flex gap-2">
                 <Button
@@ -644,7 +646,7 @@ const EditDiggerProfile = () => {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Select one or more professions that match your services
+                Add professions and keywords to improve matching with gigs
               </p>
               
               {/* Add Custom Profession Dialog */}
@@ -868,10 +870,18 @@ const EditDiggerProfile = () => {
                 id="phone"
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  // Allow only digits, spaces, dashes, parentheses, and plus sign
+                  const sanitized = e.target.value.replace(/[^\d\s\-()+ ]/g, '');
+                  setPhone(sanitized);
+                }}
                 placeholder="(555) 123-4567"
                 required
+                pattern="[\d\s\-()+ ]{10,20}"
               />
+              {phone && !isValidPhoneNumber(phone) && (
+                <p className="text-sm text-destructive">Please enter a valid phone number (10-15 digits)</p>
+              )}
             </div>
 
             <div className="space-y-4 p-4 rounded-lg border bg-card">
@@ -933,6 +943,22 @@ const EditDiggerProfile = () => {
               )}
             </div>
 
+            {/* AI-Powered Bio Generator - Above About Your Services */}
+            <Card className="p-4 border-2 border-primary/30 bg-primary/5">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm">AI-Powered Bio Generator</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Let AI generate a professional bio based on your profession and keywords
+              </p>
+              <BioGenerator 
+                profession={selectedProfessions.join(', ')}
+                currentBio={bio}
+                onBioGenerated={setBio}
+              />
+            </Card>
+
             <div className="space-y-3" id="bio">
               <div className="flex items-center justify-between">
                 <Label htmlFor="bio">About Your Services</Label>
@@ -948,35 +974,6 @@ const EditDiggerProfile = () => {
                 placeholder="Tell us about your experience and expertise..."
                 rows={4}
               />
-              {keywords.length > 0 && bio && (
-                <Card className="p-3 mt-2 bg-accent/30">
-                  <p className="text-sm text-muted-foreground mb-2">Keyword matches in your bio:</p>
-                  <p className="text-sm">
-                    {highlightKeywords(bio).map((part, index) => (
-                      <span
-                        key={index}
-                        className={part.isKeyword ? "bg-primary/20 text-primary font-semibold px-1 rounded" : ""}
-                      >
-                        {part.text}
-                      </span>
-                    ))}
-                  </p>
-                </Card>
-              )}
-              <Card className="p-4 border-2 border-primary/30 bg-primary/5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-sm">AI-Powered Bio Generator</span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Let AI generate a professional bio based on your profession and keywords
-                </p>
-                <BioGenerator 
-                  profession={selectedProfessions.join(', ')}
-                  currentBio={bio}
-                  onBioGenerated={setBio}
-                />
-              </Card>
             </div>
 
             <div id="pricing">
@@ -1068,39 +1065,6 @@ const EditDiggerProfile = () => {
                 Add relevant keywords to improve matching with gigs. Use commas or semicolons to separate keywords.
               </p>
               
-              {/* Keyword Suggestions */}
-              {selectedProfessions.length > 0 && (
-                <KeywordSuggestions
-                  currentKeywords={keywords}
-                  onAddKeyword={handleAddKeyword}
-                  profession={selectedProfessions[0]}
-                />
-              )}
-              
-              {keywords.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {keywords.map((keyword, index) => {
-                    const cpc = getKeywordCPC(keyword);
-                    const leadCost = getLeadCostForIndustry(keyword, 'non-exclusive', false, profileCategory);
-                    return (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
-                        <span>{keyword}</span>
-                        <span className="text-xs text-green-600 ml-1">${leadCost.toFixed(2)}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newKeywords = keywords.filter((_, i) => i !== index);
-                            setKeywordsInput(newKeywords.join(', '));
-                          }}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
             {/* Hourly Upcharge Display */}
@@ -1119,10 +1083,10 @@ const EditDiggerProfile = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating Profile...
+                  Saving...
                 </>
               ) : (
-                "Update Profile"
+                "Save and continue"
               )}
             </Button>
           </form>

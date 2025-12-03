@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ShoppingCart, CreditCard, CheckCircle2, ArrowLeft, Plus, Minus, Trash2, Info } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, ShoppingCart, CreditCard, CheckCircle2, ArrowLeft, Plus, Minus, Trash2, Info, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { getLeadCostFromCPC, getIndustryCategory, calculateBulkDiscount, INDUSTRY_PRICING, getLeadCostForIndustry } from "@/config/pricing";
 import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
@@ -53,6 +54,8 @@ export default function Checkout() {
   const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [stripeCheckoutUrl, setStripeCheckoutUrl] = useState<string | null>(null);
+  const checkoutInitiatedRef = useRef(false);
 
   // Get profileId from URL params
   const searchParams = new URLSearchParams(location.search);
@@ -279,44 +282,60 @@ export default function Checkout() {
   };
 
   useEffect(() => {
+    // Don't reload data if we're in the middle of processing checkout or already initiated
+    if (processing || checkoutInitiatedRef.current) return;
+    
     // Get lead purchase selections from sessionStorage
     // IMPORTANT: leadPurchaseSelections has pre-calculated pricing, allLeadSelections does not
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
-    const savedAllSelections = sessionStorage.getItem('allLeadSelections');
-    const savedDiscount = sessionStorage.getItem('leadPurchaseDiscount');
+    const savedProfileId = sessionStorage.getItem('leadPurchaseProfileId');
     
     console.log('[Checkout] Loading data:', {
       hasLeadPurchaseSelections: !!savedSelections,
-      hasAllLeadSelections: !!savedAllSelections,
-      hasSavedDiscount: !!savedDiscount
+      savedProfileId,
+      urlProfileId: profileId,
     });
     
-    // CRITICAL: Prefer leadPurchaseSelections (has correct prices) over allLeadSelections (no prices)
-    const selectionsToUse = savedSelections || savedAllSelections;
+    // CRITICAL: Verify profileId matches to prevent stale data from other profiles
+    if (profileId && savedProfileId && savedProfileId !== profileId) {
+      console.log('[Checkout] Profile mismatch - clearing stale data and redirecting');
+      sessionStorage.removeItem('leadPurchaseSelections');
+      sessionStorage.removeItem('leadPurchaseDiscount');
+      sessionStorage.removeItem('allLeadSelections');
+      sessionStorage.removeItem('leadPurchaseCategoryName');
+      sessionStorage.removeItem('leadPurchaseProfileId');
+      toast.error("Session data was for a different profile. Please select leads again.");
+      navigate(`/keyword-summary?profileId=${profileId}`);
+      return;
+    }
     
-    if (!selectionsToUse) {
+    // Only use leadPurchaseSelections - it has correctly filtered items with quantity > 0
+    if (!savedSelections) {
       toast.error("No checkout data found");
-      navigate("/pricing");
+      const backUrl = profileId ? `/keyword-summary?profileId=${profileId}` : "/pricing";
+      navigate(backUrl);
       return;
     }
 
     try {
-      const parsedSelections = JSON.parse(selectionsToUse);
+      const parsedSelections = JSON.parse(savedSelections);
       
       console.log('[Checkout] Parsed selections:', parsedSelections);
       
       if (!parsedSelections || parsedSelections.length === 0) {
         toast.error("No items selected");
-        navigate("/pricing");
+        const backUrl = profileId ? `/keyword-summary?profileId=${profileId}` : "/pricing";
+        navigate(backUrl);
         return;
       }
       
-      // Filter to only show items with quantity > 0
+      // Double-check filter to only show items with quantity > 0
       const activeSelections = parsedSelections.filter((sel: LeadSelection) => sel.quantity > 0);
       
       if (activeSelections.length === 0) {
         toast.error("No items with quantity selected");
-        navigate("/pricing");
+        const backUrl = profileId ? `/keyword-summary?profileId=${profileId}` : "/pricing";
+        navigate(backUrl);
         return;
       }
       
@@ -324,30 +343,19 @@ export default function Checkout() {
       
       setSelections(activeSelections);
       
-      // Use saved discount if available AND we loaded from leadPurchaseSelections
-      if (savedSelections && savedDiscount) {
-        try {
-          const parsedDiscount = JSON.parse(savedDiscount);
-          console.log('[Checkout] Using saved discount:', parsedDiscount);
-          setDiscountInfo(parsedDiscount);
-        } catch {
-          // Recalculate if parsing fails
-          const newDiscount = recalculateDiscounts(activeSelections);
-          setDiscountInfo(newDiscount);
-        }
-      } else {
-        // Recalculate discount info if no saved discount
-        const newDiscount = recalculateDiscounts(activeSelections);
-        setDiscountInfo(newDiscount);
-      }
+      // ALWAYS recalculate discount from loaded selections to ensure accuracy
+      const newDiscount = recalculateDiscounts(activeSelections);
+      console.log('[Checkout] Recalculated discount:', newDiscount);
+      setDiscountInfo(newDiscount);
       
       setLoading(false);
     } catch (error) {
       console.error("Error parsing checkout data:", error);
       toast.error("Invalid checkout data");
-      navigate("/pricing");
+      const backUrl = profileId ? `/keyword-summary?profileId=${profileId}` : "/pricing";
+      navigate(backUrl);
     }
-  }, [navigate, recalculateDiscounts]);
+  }, [navigate, recalculateDiscounts, profileId]);
 
   const handleCheckout = async () => {
     if (!user) {
@@ -365,26 +373,46 @@ export default function Checkout() {
 
     setProcessing(true);
     try {
-      // Prepare selections with pricing
-      const selectionsWithPricing = activeSelections.map(sel => ({
-        ...sel,
-        pricePerLead: calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed),
-        subtotal: calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed) * sel.quantity,
-      }));
+      // Prepare selections with pricing - use existing pricePerLead when available
+      // This ensures prices match what the user sees in the UI
+      const selectionsWithPricing = activeSelections.map(sel => {
+        const price = sel.pricePerLead ?? calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+        return {
+          ...sel,
+          pricePerLead: price,
+          subtotal: price * sel.quantity,
+        };
+      });
+      
+      // Recalculate discount based on selections being sent to ensure consistency
+      const totalFromSelections = selectionsWithPricing.reduce((sum, sel) => sum + sel.subtotal, 0);
+      const freshDiscount = calculateBulkDiscount(totalFromSelections);
 
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
         body: {
           selections: selectionsWithPricing,
-          totalAmount: discountInfo?.finalTotal || 0,
+          totalAmount: freshDiscount.finalTotal,
           diggerProfileId: profileId,
-          discountInfo: discountInfo,
+          discountInfo: {
+            originalTotal: freshDiscount.originalTotal,
+            discountOnFirstThousand: freshDiscount.discountOnFirstThousand,
+            discountOnExcess: freshDiscount.discountOnExcess,
+            totalDiscount: freshDiscount.totalDiscount,
+            finalTotal: freshDiscount.finalTotal,
+          },
         },
       });
 
       if (error) throw error;
       if (!data?.url) throw new Error("No checkout URL received");
 
-      window.location.href = data.url;
+      // Mark checkout as initiated to prevent useEffect from re-running
+      checkoutInitiatedRef.current = true;
+      
+      // Store URL and show dialog for user to click
+      console.log('[Checkout] Stripe URL received:', data.url);
+      setStripeCheckoutUrl(data.url);
+      setProcessing(false);
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error(error.message || "Failed to process checkout");
@@ -399,6 +427,13 @@ export default function Checkout() {
       </div>
     );
   }
+
+  // Stripe checkout dialog - shows after URL is received
+  const handleOpenStripeCheckout = () => {
+    if (stripeCheckoutUrl) {
+      window.open(stripeCheckoutUrl, '_blank');
+    }
+  };
 
   // Group selections by keyword
   const groupedSelections = selections.reduce((acc, sel) => {
@@ -696,6 +731,30 @@ export default function Checkout() {
             </Button>
           </div>
         </main>
+
+        {/* Stripe Checkout Dialog */}
+        <Dialog open={!!stripeCheckoutUrl} onOpenChange={(open) => !open && setStripeCheckoutUrl(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                Ready to Complete Payment
+              </DialogTitle>
+              <DialogDescription>
+                Your checkout session is ready. Click the button below to open Stripe's secure payment page.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-4 mt-4">
+              <Button onClick={handleOpenStripeCheckout} className="w-full" size="lg">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open Stripe Checkout
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                A new tab will open with Stripe's secure payment page.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   );
