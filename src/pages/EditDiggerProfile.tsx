@@ -369,26 +369,14 @@ const EditDiggerProfile = () => {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Main Form */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Profile Photo, Title & Tagline Section */}
+              {/* Profile Photo Section */}
               <Card className="p-6">
-                <h2 className="text-xl font-bold mb-4">Profile Branding</h2>
-                <div className="space-y-6">
-                  <ProfilePhotoUpload
-                    currentPhotoUrl={photoUrl}
-                    onPhotoChange={setPhotoUrl}
-                    companyName={businessName}
-                  />
-                  
-                  <ProfileTitleTaglineEditor
-                    title={title}
-                    tagline={tagline}
-                    onTitleChange={setTitle}
-                    onTaglineChange={setTagline}
-                    companyName={businessName}
-                    profession={profession}
-                    keywords={keywords}
-                  />
-                </div>
+                <h2 className="text-xl font-bold mb-4">Profile Photo</h2>
+                <ProfilePhotoUpload
+                  currentPhotoUrl={photoUrl}
+                  onPhotoChange={setPhotoUrl}
+                  companyName={businessName}
+                />
               </Card>
 
               {/* Profile Preview */}
@@ -415,6 +403,22 @@ const EditDiggerProfile = () => {
               />
             </div>
 
+            {/* Optional Profile Title & Tagline */}
+            <ProfileTitleTaglineEditor
+              title={title}
+              tagline={tagline}
+              onTitleChange={setTitle}
+              onTaglineChange={setTagline}
+              companyName={businessName}
+              profession={profession}
+              keywords={keywords}
+            />
+
+            <RegistrationCategorySelector
+              selectedCategories={selectedCategories}
+              onCategoriesChange={setSelectedCategories}
+            />
+
             <div className="space-y-2">
               <Label htmlFor="profession">Profession *</Label>
               <div className="flex gap-2">
@@ -429,14 +433,24 @@ const EditDiggerProfile = () => {
                   }}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select your profession" />
+                    <SelectValue placeholder={categoryNames.length > 0 ? "Select profession from category" : "Select a category first"} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
-                    {professionOptions.map((prof) => (
-                      <SelectItem key={prof} value={prof}>
-                        {prof}
-                      </SelectItem>
-                    ))}
+                    {professionOptions
+                      .filter(prof => {
+                        // If no categories selected, show all
+                        if (categoryNames.length === 0) return true;
+                        // Filter to professions matching selected category names
+                        return categoryNames.some(cat => 
+                          prof.toLowerCase().includes(cat.toLowerCase()) ||
+                          cat.toLowerCase().includes(prof.toLowerCase().split(' ')[0])
+                        );
+                      })
+                      .map((prof) => (
+                        <SelectItem key={prof} value={prof}>
+                          {prof}
+                        </SelectItem>
+                      ))}
                     <SelectItem value="__add_custom__" className="text-primary font-medium">
                       <span className="flex items-center gap-2">
                         <Plus className="h-4 w-4" /> Add Custom Profession
@@ -446,7 +460,9 @@ const EditDiggerProfile = () => {
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Select your primary profession or add a custom one
+                {categoryNames.length > 0 
+                  ? `Showing professions for: ${categoryNames.join(', ')}`
+                  : 'Select a category above to see relevant professions'}
               </p>
               
               {/* Add Custom Profession Dialog */}
@@ -482,11 +498,6 @@ const EditDiggerProfile = () => {
                 </DialogContent>
               </Dialog>
             </div>
-
-            <RegistrationCategorySelector
-              selectedCategories={selectedCategories}
-              onCategoriesChange={setSelectedCategories}
-            />
 
             <div className="space-y-2">
               <Label htmlFor="location">Location *</Label>
