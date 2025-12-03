@@ -419,34 +419,33 @@ const EditDiggerProfile = () => {
                 <div className="p-2 space-y-1">
                   {professionOptions
                     .filter(prof => prof.toLowerCase().includes(professionSearch.toLowerCase()))
-                    .map((prof) => (
-                      <div
-                        key={prof}
-                        className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer"
-                        onClick={() => {
-                          setSelectedProfessions(prev => 
-                            prev.includes(prof) 
-                              ? prev.filter(p => p !== prof)
-                              : [...prev, prof]
-                          );
-                        }}
-                      >
-                        <Checkbox
-                          id={`prof-${prof}`}
-                          checked={selectedProfessions.includes(prof)}
-                          onCheckedChange={(checked) => {
-                            setSelectedProfessions(prev => 
-                              checked 
-                                ? [...prev, prof]
-                                : prev.filter(p => p !== prof)
-                            );
-                          }}
-                        />
-                        <Label htmlFor={`prof-${prof}`} className="cursor-pointer text-sm font-normal flex-1">
-                          {prof}
-                        </Label>
-                      </div>
-                    ))}
+                    .map((prof) => {
+                      const isSelected = selectedProfessions.includes(prof);
+                      return (
+                        <label
+                          key={prof}
+                          htmlFor={`prof-${prof}`}
+                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            id={`prof-${prof}`}
+                            checked={isSelected}
+                            onChange={(e) => {
+                              setSelectedProfessions(prev => 
+                                e.target.checked 
+                                  ? [...prev, prof]
+                                  : prev.filter(p => p !== prof)
+                              );
+                            }}
+                            className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                          />
+                          <span className="cursor-pointer text-sm font-normal flex-1">
+                            {prof}
+                          </span>
+                        </label>
+                      );
+                    })}
                 </div>
               </div>
               
