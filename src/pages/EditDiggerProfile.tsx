@@ -388,10 +388,10 @@ const EditDiggerProfile = () => {
 
       if (error) throw error;
 
-      toast.success("Profile updated! Redirecting to your dashboard...");
+      toast.success("Profile saved successfully!");
       
-      // Navigate immediately without delay to prevent loop
-      navigate(`/digger/${profileId}`, { replace: true });
+      // Navigate to My Profiles page
+      navigate(`/my-profiles`, { replace: true });
     } catch (error: any) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
@@ -1119,10 +1119,10 @@ const EditDiggerProfile = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating Profile...
+                  Saving...
                 </>
               ) : (
-                "Update Profile"
+                "Save and continue"
               )}
             </Button>
           </form>
