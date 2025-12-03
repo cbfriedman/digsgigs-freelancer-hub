@@ -216,7 +216,11 @@ export default function MyProfiles() {
                   Create multiple profiles to organize your services, target different locations, or market separate specializations. 
                   Each profile can include keywords from any value tier—you only pay based on the specific keywords you select.
                 </p>
-                <div className="flex gap-4 text-xs mt-2">
+                <div className="flex gap-4 text-xs mt-2 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-600">💼 Low-Value:</span>
+                    <span className="font-medium">$8-24/lead</span>
+                  </div>
                   <div className="flex items-center gap-1">
                     <span className="text-blue-600">🏗️ Mid-Value:</span>
                     <span className="font-medium">$40-120/lead</span>
