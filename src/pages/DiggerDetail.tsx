@@ -881,7 +881,7 @@ const DiggerDetail = () => {
                     <Button 
                       className="w-full"
                       size="lg"
-                      onClick={() => navigate(`/pricing?profileId=${id}`)}
+                      onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
                     >
                       <ShoppingCart className="h-4 w-4 mr-2" />
                       Manage Keywords & Buy Leads
