@@ -352,7 +352,8 @@ const EditDiggerProfile = () => {
 
       if (error) throw error;
 
-      toast.success("Profile updated successfully!");
+      toast.success("Profile updated! Redirecting to your dashboard...");
+      // Navigate to the profile dashboard view
       navigate(`/digger/${profileId}`);
     } catch (error: any) {
       console.error("Error updating profile:", error);
@@ -682,10 +683,16 @@ const EditDiggerProfile = () => {
                   </select>
                 </div>
 
-                {/* State/Province Multi-Select */}
-                {country !== "Other" && getRegionsForCountry(country).length > 0 && (
-                  <div className="space-y-2">
-                    <Label>{getRegionLabel(country)} (select service areas)</Label>
+                {/* State/Province Multi-Select - Always visible for supported countries */}
+                {country && country !== "Other" && (
+                  <div className="space-y-2 border-l-4 border-primary pl-4 bg-primary/5 p-4 rounded-r-lg">
+                    <Label className="text-base font-semibold flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      {getRegionLabel(country)} - Select Your Service Areas
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Select the states/regions where you provide services
+                    </p>
                     <div className="border rounded-md max-h-[200px] overflow-y-auto bg-background">
                       <div className="p-2 space-y-1">
                         <label className="flex items-center space-x-2 p-2 hover:bg-accent rounded cursor-pointer border-b">
