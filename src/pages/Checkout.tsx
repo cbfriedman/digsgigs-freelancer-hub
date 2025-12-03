@@ -279,6 +279,9 @@ export default function Checkout() {
   };
 
   useEffect(() => {
+    // Don't reload data if we're in the middle of processing checkout
+    if (processing) return;
+    
     // Get lead purchase selections from sessionStorage
     // IMPORTANT: leadPurchaseSelections has pre-calculated pricing, allLeadSelections does not
     const savedSelections = sessionStorage.getItem('leadPurchaseSelections');
@@ -400,7 +403,19 @@ export default function Checkout() {
       if (error) throw error;
       if (!data?.url) throw new Error("No checkout URL received");
 
+      // Redirect to Stripe checkout - use window.open as fallback if href fails
+      console.log('[Checkout] Redirecting to Stripe:', data.url);
+      
+      // Try direct navigation first
       window.location.href = data.url;
+      
+      // Fallback: if still on page after 2 seconds, try opening in new tab
+      setTimeout(() => {
+        if (document.visibilityState === 'visible') {
+          console.log('[Checkout] Redirect fallback triggered');
+          window.open(data.url, '_blank');
+        }
+      }, 2000);
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error(error.message || "Failed to process checkout");
