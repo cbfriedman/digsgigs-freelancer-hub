@@ -428,10 +428,54 @@ export default function Checkout() {
     );
   }
 
-  // Stripe checkout dialog - shows after URL is received
-  const handleOpenStripeCheckout = () => {
-    if (stripeCheckoutUrl) {
-      window.open(stripeCheckoutUrl, '_blank');
+  // Stripe checkout dialog - creates fresh session and opens it
+  const handleOpenStripeCheckout = async () => {
+    if (!user) {
+      toast.error("Please log in to continue");
+      return;
+    }
+    
+    setProcessing(true);
+    try {
+      const activeSelections = selections.filter(sel => sel.quantity > 0);
+      const selectionsWithPricing = activeSelections.map(sel => {
+        const price = sel.pricePerLead ?? calculatePricePerLead(sel.keyword, sel.industry, sel.exclusivity, sel.isConfirmed);
+        return {
+          ...sel,
+          pricePerLead: price,
+          subtotal: price * sel.quantity,
+        };
+      });
+      
+      const totalFromSelections = selectionsWithPricing.reduce((sum, sel) => sum + sel.subtotal, 0);
+      const freshDiscount = calculateBulkDiscount(totalFromSelections);
+
+      const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
+        body: {
+          selections: selectionsWithPricing,
+          totalAmount: freshDiscount.finalTotal,
+          diggerProfileId: profileId,
+          discountInfo: {
+            originalTotal: freshDiscount.originalTotal,
+            discountOnFirstThousand: freshDiscount.discountOnFirstThousand,
+            discountOnExcess: freshDiscount.discountOnExcess,
+            totalDiscount: freshDiscount.totalDiscount,
+            finalTotal: freshDiscount.finalTotal,
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error("No checkout URL received");
+
+      // Open fresh checkout URL immediately
+      window.open(data.url, '_blank');
+      setStripeCheckoutUrl(data.url);
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      toast.error(error.message || "Failed to create checkout session");
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -745,9 +789,18 @@ export default function Checkout() {
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4 mt-4">
-              <Button onClick={handleOpenStripeCheckout} className="w-full" size="lg">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Open Stripe Checkout
+              <Button onClick={handleOpenStripeCheckout} disabled={processing} className="w-full" size="lg">
+                {processing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating Session...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open Stripe Checkout
+                  </>
+                )}
               </Button>
               <p className="text-xs text-muted-foreground text-center">
                 A new tab will open with Stripe's secure payment page.
