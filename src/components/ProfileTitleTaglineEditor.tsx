@@ -75,10 +75,12 @@ export const ProfileTitleTaglineEditor = ({
 
   return (
     <div className="space-y-4">
-      {/* Profile Title */}
+      {/* Profile Title (Optional) */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="profile-title">Profile Title</Label>
+          <Label htmlFor="profile-title">
+            Profile Title <span className="text-muted-foreground text-xs">(optional)</span>
+          </Label>
           <Button
             type="button"
             variant="ghost"
@@ -107,14 +109,16 @@ export const ProfileTitleTaglineEditor = ({
           maxLength={60}
         />
         <p className="text-xs text-muted-foreground">
-          {title.length}/60 characters
+          A catchy headline for your profile. {title.length}/60 characters
         </p>
       </div>
 
-      {/* Tagline */}
+      {/* Tagline (Optional) */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="tagline">Tagline</Label>
+          <Label htmlFor="tagline">
+            Tagline <span className="text-muted-foreground text-xs">(optional)</span>
+          </Label>
           <Button
             type="button"
             variant="ghost"
@@ -144,7 +148,7 @@ export const ProfileTitleTaglineEditor = ({
           rows={2}
         />
         <p className="text-xs text-muted-foreground">
-          {tagline.length}/100 characters
+          A short slogan or motto. {tagline.length}/100 characters
         </p>
       </div>
 
