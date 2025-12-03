@@ -213,14 +213,10 @@ export default function MyProfiles() {
               <div className="space-y-2">
                 <h3 className="font-semibold">Why Multiple Profiles?</h3>
                 <p className="text-sm text-muted-foreground">
-                  If you offer services in different pricing categories (e.g., Legal Services + Cleaning), create separate profiles for each. 
-                  This ensures you only pay the appropriate lead cost for each industry rather than the highest rate across all your services.
+                  Create multiple profiles to organize your services, target different locations, or market separate specializations. 
+                  Each profile can include keywords from any value tier—you only pay based on the specific keywords you select.
                 </p>
                 <div className="flex gap-4 text-xs mt-2">
-                  <div className="flex items-center gap-1">
-                    <span className="text-green-600">💼 Low-Value:</span>
-                    <span className="font-medium">$8-24/lead</span>
-                  </div>
                   <div className="flex items-center gap-1">
                     <span className="text-blue-600">🏗️ Mid-Value:</span>
                     <span className="font-medium">$40-120/lead</span>
