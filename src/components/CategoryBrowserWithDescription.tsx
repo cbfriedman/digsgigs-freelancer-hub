@@ -922,7 +922,7 @@ export const CategoryBrowserWithDescription = () => {
                         .from('digger_profiles')
                         .insert({
                           user_id: user.id,
-                          business_name: finalProfileName,
+                          business_name: '', // Business name is separate - user sets it later
                           profile_name: finalProfileName,
                           profession: selectedSpecialties.join(', '),
                           keywords: selected,
