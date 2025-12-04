@@ -148,7 +148,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/post-gig",
-    element: <ProtectedRoute><PostGig /></ProtectedRoute>,
+    element: <PostGig />,  // No auth required - Craigslist model
   },
   {
     path: "/my-gigs",
