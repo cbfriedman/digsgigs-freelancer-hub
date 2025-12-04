@@ -958,6 +958,7 @@ export type Database = {
           id: string
           images: string[] | null
           is_confirmed_lead: boolean | null
+          lead_number: string | null
           lead_source: string | null
           location: string
           location_lat: number | null
@@ -996,6 +997,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_confirmed_lead?: boolean | null
+          lead_number?: string | null
           lead_source?: string | null
           location: string
           location_lat?: number | null
@@ -1034,6 +1036,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_confirmed_lead?: boolean | null
+          lead_number?: string | null
           lead_source?: string | null
           location?: string
           location_lat?: number | null
