@@ -6,11 +6,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, MessageSquare } from "lucide-react";
+import { ArrowLeft, Send, MessageSquare, Mail, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
 import { Navigation } from "@/components/Navigation";
+import { useProxyEmail } from "@/hooks/useProxyEmail";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // SECURITY: Input validation schema
 const messageSchema = z.object({
@@ -55,6 +58,11 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+  const [partnerProxyEmail, setPartnerProxyEmail] = useState<string | null>(null);
+
+  // Get current user's proxy email
+  const { proxyEmail: myProxyEmail } = useProxyEmail(currentUser?.id || null);
 
   useEffect(() => {
     loadUser();
@@ -70,8 +78,48 @@ export default function Messages() {
     if (selectedConversation) {
       loadMessages(selectedConversation);
       subscribeToMessages(selectedConversation);
+      loadPartnerProxyEmail(selectedConversation);
     }
   }, [selectedConversation]);
+
+  const loadPartnerProxyEmail = async (conversationId: string) => {
+    const conv = conversations.find(c => c.id === conversationId);
+    if (!conv || !currentUser) return;
+
+    // Get the other user's ID
+    const partnerId = currentUser.id === conv.consumer_id 
+      ? conv.digger_id // Partner is the digger - need to get user_id from digger_profiles
+      : conv.consumer_id;
+
+    if (!partnerId) return;
+
+    try {
+      // If current user is consumer, partner is digger - need to get digger's user_id
+      let partnerUserId = partnerId;
+      
+      if (currentUser.id === conv.consumer_id && conv.digger_id) {
+        const { data: diggerProfile } = await supabase
+          .from('digger_profiles')
+          .select('user_id')
+          .eq('id', conv.digger_id)
+          .single();
+        
+        if (diggerProfile) {
+          partnerUserId = diggerProfile.user_id;
+        }
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-proxy-email', {
+        body: { user_id: partnerUserId }
+      });
+
+      if (!error && data?.proxy_email) {
+        setPartnerProxyEmail(data.proxy_email);
+      }
+    } catch (err) {
+      console.error("Error loading partner proxy email:", err);
+    }
+  };
 
   const loadUser = async () => {
     try {
@@ -214,6 +262,24 @@ export default function Messages() {
     return "Client";
   };
 
+  const copyToClipboard = async (email: string) => {
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopiedEmail(email);
+      toast({
+        title: "Email copied",
+        description: "Proxy email address copied to clipboard",
+      });
+      setTimeout(() => setCopiedEmail(null), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please manually copy the email address",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -293,10 +359,73 @@ export default function Messages() {
           <Card className="lg:col-span-2">
             {selectedConversation ? (
               <CardContent className="p-0 flex flex-col h-full">
-                <div className="p-4 border-b border-border">
-                  <h3 className="font-semibold">
-                    {conversations.find((c) => c.id === selectedConversation)?.gigs?.title || "Conversation"}
-                  </h3>
+                <div className="p-4 border-b border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">
+                      {conversations.find((c) => c.id === selectedConversation)?.gigs?.title || "Conversation"}
+                    </h3>
+                    <Badge variant="outline" className="text-xs">
+                      <MessageSquare className="h-3 w-3 mr-1" />
+                      In-App + Email
+                    </Badge>
+                  </div>
+                  
+                  {/* Proxy Email Section */}
+                  <TooltipProvider>
+                    <div className="flex flex-col sm:flex-row gap-2 p-3 bg-muted/50 rounded-lg text-sm">
+                      {partnerProxyEmail && (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-muted-foreground">Contact via email:</span>
+                          <code className="bg-background px-2 py-0.5 rounded text-xs truncate max-w-[200px]">
+                            {partnerProxyEmail}
+                          </code>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6"
+                                onClick={() => copyToClipboard(partnerProxyEmail)}
+                              >
+                                {copiedEmail === partnerProxyEmail ? (
+                                  <Check className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy email</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      )}
+                      {myProxyEmail && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground border-t sm:border-t-0 sm:border-l border-border pt-2 sm:pt-0 sm:pl-2">
+                          <span>Your proxy:</span>
+                          <code className="bg-background px-2 py-0.5 rounded truncate max-w-[150px]">
+                            {myProxyEmail}
+                          </code>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6"
+                                onClick={() => copyToClipboard(myProxyEmail)}
+                              >
+                                {copiedEmail === myProxyEmail ? (
+                                  <Check className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy your proxy email</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      )}
+                    </div>
+                  </TooltipProvider>
                 </div>
                 <ScrollArea className="flex-1 p-4 h-[calc(100vh-400px)]">
                   {messages.map((msg) => (
