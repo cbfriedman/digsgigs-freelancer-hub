@@ -110,6 +110,8 @@ const Register = () => {
   const [sentOtpCode, setSentOtpCode] = useState(""); // OTP code we sent
   const [userId, setUserId] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false); // Track if OTP was sent to show input field
+  const [pendingDiggerVerification, setPendingDiggerVerification] = useState(false); // Track if we're verifying for Digger role
+  const [isDiggerLogin, setIsDiggerLogin] = useState(false); // Track if login is for Digger (requires OTP every time)
 
   // Step 2: Role Selection
   const [selectedRoles, setSelectedRoles] = useState<Set<UserAppRole>>(new Set());
@@ -324,8 +326,38 @@ const Register = () => {
         setLoading(false);
         return;
       }
+
+      // Handle Digger login OTP verification
+      if (isDiggerLogin) {
+        // Sign in the user after OTP verification
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          toast.error(signInError.message || "Failed to sign in after verification");
+          setLoading(false);
+          return;
+        }
+
+        setIsDiggerLogin(false);
+        toast.success("Verification successful! Welcome back!");
+        navigate('/role-dashboard');
+        return;
+      }
+
+      // Handle Digger registration verification (after role selection)
+      if (pendingDiggerVerification) {
+        setPendingDiggerVerification(false);
+        toast.success("Email verified! Continue with your Digger registration.");
+        setStep(4); // Go to role forms
+        setCurrentRoleIndex(0);
+        setLoading(false);
+        return;
+      }
       
-      // Code is verified! Now create the Supabase account
+      // Normal registration flow - Code is verified! Now create the Supabase account
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -408,9 +440,44 @@ const Register = () => {
     }
   };
 
-  const handleRoleSelection = () => {
+  const handleRoleSelection = async () => {
     if (selectedRoles.size === 0) {
       toast.error("Please select at least one role");
+      return;
+    }
+
+    // If Digger is selected, require email verification before proceeding
+    if (selectedRoles.has('digger') && !pendingDiggerVerification) {
+      setLoading(true);
+      try {
+        // Generate and send OTP for Digger verification
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        const { error: otpError } = await supabase.functions.invoke('send-otp-email', {
+          body: {
+            email,
+            code: otpCode,
+            name: fullName,
+          },
+        });
+
+        if (otpError) {
+          console.error("OTP send error:", otpError);
+          toast.error("Failed to send verification code. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        setPendingDiggerVerification(true);
+        setOtpSent(true);
+        toast.info("Digger registration requires email verification. Please check your email for the code.");
+        setStep(2); // Go to verification step
+      } catch (error: any) {
+        console.error("Error sending OTP:", error);
+        toast.error("Failed to send verification code");
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -545,7 +612,45 @@ const Register = () => {
 
       console.log("User authenticated:", signInData.user.email);
 
-      // Check if email is verified
+      // Check if user has Digger role - requires OTP on every login
+      const { data: userRoles } = await supabase
+        .from('user_app_roles')
+        .select('app_role')
+        .eq('user_id', signInData.user.id)
+        .eq('is_active', true);
+
+      const hasDiggerRole = userRoles?.some(r => r.app_role === 'digger');
+
+      if (hasDiggerRole) {
+        console.log("Digger role detected - requiring OTP verification");
+        // Sign out temporarily until OTP is verified
+        await supabase.auth.signOut();
+        
+        // Generate and send OTP
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        const { error: otpError } = await supabase.functions.invoke('send-otp-email', {
+          body: {
+            email,
+            code: otpCode,
+            name: signInData.user.user_metadata?.full_name || email,
+          },
+        });
+
+        if (otpError) {
+          console.error("OTP send error:", otpError);
+          toast.error("Failed to send verification code. Please try again.");
+          return;
+        }
+
+        setIsDiggerLogin(true);
+        setOtpSent(true);
+        toast.info("Digger accounts require email verification on each login. Please check your email.");
+        setStep(2); // Go to verification step
+        return;
+      }
+
+      // Non-Digger users - check if email is verified (for other roles)
       if (!signInData.user.email_confirmed_at) {
         console.log("Email not verified, sending OTP");
         await supabase.auth.signOut();
