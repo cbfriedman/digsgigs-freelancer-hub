@@ -41,7 +41,7 @@ const handler = async (req: Request): Promise<Response> => {
       : "Budget not specified";
 
     const emailResponse = await resend.emails.send({
-      from: "Digs and Gigs <onboarding@resend.dev>",
+      from: "Digs and Gigs <noreply@digsandgigs.net>",
       to: [email],
       subject: "Confirm Your Gig Posting - Digs and Gigs",
       html: `
