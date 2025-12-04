@@ -62,6 +62,7 @@ import Register from "./pages/Register";
 import RoleDashboard from "./pages/RoleDashboard";
 import Logout from "./pages/Logout";
 import KeywordSummary from "./pages/KeywordSummary";
+import GigConfirmed from "./pages/GigConfirmed";
 
 const queryClient = new QueryClient();
 
@@ -181,6 +182,10 @@ const router = createBrowserRouter([
   {
     path: "/digger/:id",
     element: <ProtectedRoute><DiggerDetail /></ProtectedRoute>,
+  },
+  {
+    path: "/gig-confirmed",
+    element: <GigConfirmed />,
   },
   {
     path: "/how-it-works",
