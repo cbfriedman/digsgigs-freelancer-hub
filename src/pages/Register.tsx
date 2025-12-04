@@ -67,10 +67,6 @@ interface RoleFormData {
   };
 }
 
-// TEMPORARY: Set to true to bypass OTP verification for testing
-// SET TO false BEFORE PRODUCTION DEPLOYMENT
-const SKIP_OTP_FOR_TESTING = true;
-
 const Register = () => {
   const navigate = useNavigate();
   const isNavigatingRef = useRef(false); // Prevent race conditions with useProtectedRoute
@@ -78,6 +74,9 @@ const Register = () => {
     redirectIfAuthenticated: true,
     requireVerified: false // Allow unverified users to complete registration
   });
+  
+  // Check if user is coming from gig posting flow (Craigslist model - no OTP required)
+  const isFromGigPosting = new URLSearchParams(window.location.search).get('returnTo') === '/post-gig';
   
   const [isSignInMode, setIsSignInMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -212,8 +211,8 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // TEMPORARY: Bypass OTP for testing - create account directly
-      if (SKIP_OTP_FOR_TESTING) {
+      // Skip OTP for gig posting flow (Craigslist model) - create account directly
+      if (isFromGigPosting) {
         const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
         
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -229,7 +228,7 @@ const Register = () => {
         });
         
         if (authError) {
-          console.error("Signup error (OTP bypass):", authError);
+          console.error("Signup error:", authError);
           if (authError.message?.includes('already registered')) {
             setExistingAccountError(true);
             toast.error("This email is already registered. Please sign in instead.");
@@ -242,7 +241,7 @@ const Register = () => {
         
         if (authData.user) {
           setUserId(authData.user.id);
-          toast.success("Account created! (OTP bypassed for testing)");
+          toast.success("Account created! You can now post your gig.");
           setStep(3); // Jump directly to role selection
         }
         setLoading(false);
