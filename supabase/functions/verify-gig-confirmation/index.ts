@@ -140,8 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
       {
         status: 200,
         headers: {
-          "Content-Type": "text/html",
-          ...corsHeaders,
+          "Content-Type": "text/html; charset=utf-8",
         },
       }
     );
