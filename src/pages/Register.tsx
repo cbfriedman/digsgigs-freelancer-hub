@@ -213,7 +213,7 @@ const Register = () => {
         phone: phone || "",
       });
 
-      // Skip OTP for gig posting flow (Craigslist model) - create account directly
+      // Skip OTP for gig posting flow (Craigslist model) - create account directly with Gigger role
       if (isFromGigPosting) {
         const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
         
@@ -243,8 +243,11 @@ const Register = () => {
         
         if (authData.user) {
           setUserId(authData.user.id);
-          toast.success("Account created! You can now post your gig.");
-          setStep(3); // Jump directly to role selection
+          // Auto-select Gigger role for gig posting flow
+          setSelectedRoles(new Set(['gigger']));
+          toast.success("Account created! Complete your Gigger profile to post your gig.");
+          setStep(4); // Jump directly to Gigger form (skip role selection)
+          setCurrentRoleIndex(0);
         }
         setLoading(false);
         return;
@@ -1383,37 +1386,44 @@ const Register = () => {
               <div className="space-y-6">
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Select one or more roles. You can always add more later.
+                    {isFromGigPosting 
+                      ? "You're registering as a Gigger to post your gig."
+                      : "Select one or more roles. You can always add more later."}
                   </p>
 
-                  {/* Digger Role */}
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      selectedRoles.has('digger')
-                        ? 'ring-2 ring-primary bg-primary/5'
-                        : 'hover:bg-accent'
-                    }`}
-                    onClick={() => toggleRole('digger')}
-                  >
-                    <CardContent className="flex items-start space-x-4 p-4">
-                      <Checkbox
-                        checked={selectedRoles.has('digger')}
-                        onCheckedChange={() => toggleRole('digger')}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">Find Work as a Professional (Digger)</h3>
-                          <Badge variant="secondary">🔧</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Get matched with gigs, purchase leads, bid on projects, and grow your business.
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Only show Gigger role when coming from gig posting, otherwise show all roles */}
+                  {!isFromGigPosting && (
+                    <>
+                      {/* Digger Role */}
+                      <Card
+                        className={`cursor-pointer transition-all ${
+                          selectedRoles.has('digger')
+                            ? 'ring-2 ring-primary bg-primary/5'
+                            : 'hover:bg-accent'
+                        }`}
+                        onClick={() => toggleRole('digger')}
+                      >
+                        <CardContent className="flex items-start space-x-4 p-4">
+                          <Checkbox
+                            checked={selectedRoles.has('digger')}
+                            onCheckedChange={() => toggleRole('digger')}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">Find Work as a Professional (Digger)</h3>
+                              <Badge variant="secondary">🔧</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Get matched with gigs, purchase leads, bid on projects, and grow your business.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
 
-                  {/* Gigger Role */}
+                  {/* Gigger Role - Always show */}
                   <Card
                     className={`cursor-pointer transition-all ${
                       selectedRoles.has('gigger')
@@ -1440,32 +1450,36 @@ const Register = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Telemarketer Role */}
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      selectedRoles.has('telemarketer')
-                        ? 'ring-2 ring-primary bg-primary/5'
-                        : 'hover:bg-accent'
-                    }`}
-                    onClick={() => toggleRole('telemarketer')}
-                  >
-                    <CardContent className="flex items-start space-x-4 p-4">
-                      <Checkbox
-                        checked={selectedRoles.has('telemarketer')}
-                        onCheckedChange={() => toggleRole('telemarketer')}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">Upload Leads & Earn Commissions (Telemarketer)</h3>
-                          <Badge variant="secondary">📞</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Upload verified leads and earn commission when they're awarded to professionals.
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {!isFromGigPosting && (
+                    <>
+                      {/* Telemarketer Role */}
+                      <Card
+                        className={`cursor-pointer transition-all ${
+                          selectedRoles.has('telemarketer')
+                            ? 'ring-2 ring-primary bg-primary/5'
+                            : 'hover:bg-accent'
+                        }`}
+                        onClick={() => toggleRole('telemarketer')}
+                      >
+                        <CardContent className="flex items-start space-x-4 p-4">
+                          <Checkbox
+                            checked={selectedRoles.has('telemarketer')}
+                            onCheckedChange={() => toggleRole('telemarketer')}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">Upload Leads & Earn Commissions (Telemarketer)</h3>
+                              <Badge variant="secondary">📞</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Upload verified leads and earn commission when they're awarded to professionals.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
