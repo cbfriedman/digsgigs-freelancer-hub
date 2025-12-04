@@ -8,21 +8,30 @@ const GigConfirmed = () => {
   const gigId = searchParams.get("gigId");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
-      <Card className="max-w-md w-full shadow-2xl bg-card">
+    <div 
+      style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #f3e8ff 0%, #ffffff 50%, #dbeafe 100%)',
+        padding: '16px'
+      }}
+    >
+      <Card className="max-w-md w-full shadow-2xl" style={{ background: 'white' }}>
         <CardContent className="pt-8 pb-8 text-center space-y-6">
           <div className="flex justify-center">
             <CheckCircle className="h-20 w-20 text-green-500" />
           </div>
           
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">Gig Confirmed!</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl font-bold" style={{ color: '#1f2937' }}>Gig Confirmed!</h1>
+            <p style={{ color: '#6b7280' }}>
               Your gig has been successfully confirmed and is now live. Qualified professionals in your area will be notified and can start sending you proposals.
             </p>
           </div>
 
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm" style={{ color: '#9ca3af' }}>
             You will receive notifications when professionals purchase your lead and reach out to you.
           </p>
 
