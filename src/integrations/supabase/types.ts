@@ -2001,6 +2001,36 @@ export type Database = {
         }
         Relationships: []
       }
+      proxy_emails: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          proxy_address: string
+          real_email: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          proxy_address: string
+          real_email: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          proxy_address?: string
+          real_email?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ratings: {
         Row: {
           consumer_id: string
@@ -2641,6 +2671,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_proxy_email: { Args: { p_user_id: string }; Returns: string }
       get_tier_for_lead_count: { Args: { lead_count: number }; Returns: string }
       get_user_app_roles: {
         Args: { _user_id: string }
