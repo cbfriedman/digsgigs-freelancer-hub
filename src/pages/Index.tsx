@@ -311,7 +311,7 @@ const Index = () => {
             ) : (
               <>
                 <Button variant="ghost" onClick={() => navigate("/register?mode=signin")}>Sign In</Button>
-                <Button variant="hero" onClick={() => navigate("/register")}>Get Started</Button>
+                <Button variant="hero" onClick={() => navigate("/post-gig")}>Get Started</Button>
               </>
             )}
           </div>
@@ -424,7 +424,7 @@ const Index = () => {
                     <Button 
                       variant="hero" 
                       onClick={() => {
-                        navigate("/register");
+                        navigate("/post-gig");
                         setMobileMenuOpen(false);
                       }}
                     >
@@ -491,7 +491,7 @@ const Index = () => {
                       variant="hero" 
                       size="lg" 
                       className="text-base w-full sm:w-[180px]"
-                      onClick={() => navigate("/register")}
+                      onClick={() => navigate("/post-gig")}
                     >
                       Post a Gig <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>

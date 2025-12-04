@@ -129,7 +129,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </Button>
                 <Button
                   variant="default"
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate("/post-gig")}
                 >
                   Get Started
                 </Button>
