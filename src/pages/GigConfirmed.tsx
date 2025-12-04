@@ -8,8 +8,8 @@ const GigConfirmed = () => {
   const gigId = searchParams.get("gigId");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
-      <Card className="max-w-md w-full shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <Card className="max-w-md w-full shadow-2xl bg-card">
         <CardContent className="pt-8 pb-8 text-center space-y-6">
           <div className="flex justify-center">
             <CheckCircle className="h-20 w-20 text-green-500" />
