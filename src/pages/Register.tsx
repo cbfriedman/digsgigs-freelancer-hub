@@ -193,11 +193,29 @@ const Register = () => {
   // Auto-advance verified users without roles to role selection, or redirect to post-gig if coming from gig posting
   useEffect(() => {
     if (!authLoading && !isSignInMode && !isPasswordResetMode && user && user.email_confirmed_at && step === 1) {
-      // If coming from gig posting flow and already logged in, redirect to post-gig
+      // If coming from gig posting flow and already logged in, ensure gigger role and redirect
       if (isFromGigPosting) {
-        toast.success("You're already logged in! Redirecting to post your gig...");
-        isNavigatingRef.current = true;
-        navigate('/post-gig');
+        const ensureGiggerRoleAndRedirect = async () => {
+          // Check if user already has gigger role
+          const { data: existingRoles } = await supabase
+            .from('user_app_roles')
+            .select('app_role')
+            .eq('user_id', user.id)
+            .eq('app_role', 'gigger');
+          
+          // If no gigger role, create one
+          if (!existingRoles || existingRoles.length === 0) {
+            await supabase
+              .from('user_app_roles')
+              .insert({ user_id: user.id, app_role: 'gigger' });
+          }
+          
+          toast.success("You're ready to post your gig!");
+          isNavigatingRef.current = true;
+          navigate('/post-gig');
+        };
+        
+        ensureGiggerRoleAndRedirect();
         return;
       }
       
