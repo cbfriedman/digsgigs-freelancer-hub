@@ -327,6 +327,23 @@ const PostGig = () => {
       }
 
       toast.success("Confirmation email sent! Please check your inbox to confirm your gig.");
+      
+      // Track gig submission as GA4 conversion event
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'gig_submitted', {
+          event_category: 'conversion',
+          event_label: detectedCategory?.name || 'unknown',
+          value: 1,
+          gig_id: gigData.id,
+          category: detectedCategory?.name,
+          parent_category: detectedCategory?.parentName,
+          zipcode: zipcode,
+          has_budget: !!estimatedBudget,
+          keyword_count: selectedKeywords.length,
+          escrow_requested: escrowRequested
+        });
+      }
+      
       navigate("/");
     } catch (error: any) {
       console.error("Error posting gig:", error);

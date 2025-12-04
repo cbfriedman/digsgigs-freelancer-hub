@@ -9,6 +9,7 @@ import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
+import { PageViewTracker } from "./components/PageViewTracker";
 // Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
@@ -72,11 +73,19 @@ const PresenceTracker = () => {
   return null;
 };
 
+// Layout wrapper that includes PageViewTracker for all routes
+const RootLayout = ({ children }: { children: React.ReactNode }) => (
+  <>
+    <PageViewTracker />
+    {children}
+  </>
+);
+
 // Create router with all routes - forcing fresh registration
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Index />,
+    element: <RootLayout><Index /></RootLayout>,
   },
   {
     path: "/register",
