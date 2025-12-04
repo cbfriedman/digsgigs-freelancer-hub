@@ -12,6 +12,62 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-LEAD-PURCHASE] ${step}${detailsStr}`);
 };
 
+/**
+ * Round up to nearest $0.50 or whole number
+ */
+const roundUpToHalf = (value: number): number => {
+  return Math.ceil(value * 2) / 2;
+};
+
+/**
+ * CPC-based pricing calculation
+ * Formula:
+ * - Non-Exclusive Unconfirmed: 25% of CPC
+ * - Non-Exclusive Confirmed: 30% of CPC
+ * - Semi-Exclusive: 50% of CPC
+ * - 24-Hour Exclusive: 90% of CPC
+ */
+const calculateLeadCost = (
+  cpc: number,
+  exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h',
+  isConfirmed: boolean = false
+): number => {
+  let price: number;
+  
+  if (exclusivityType === 'exclusive-24h') {
+    // 24-Hr Exclusive: 90% of CPC
+    price = cpc * 0.90;
+  } else if (exclusivityType === 'semi-exclusive') {
+    // Semi-Exclusive: 50% of CPC
+    price = cpc * 0.50;
+  } else if (isConfirmed) {
+    // Non-exclusive Confirmed: 30% of CPC
+    price = cpc * 0.30;
+  } else {
+    // Non-exclusive Unconfirmed: 25% of CPC
+    price = cpc * 0.25;
+  }
+  
+  return roundUpToHalf(price);
+};
+
+// Fallback static pricing when no CPC data available
+const FALLBACK_PRICING: Record<string, { nonExclusive: number; semiExclusive: number; exclusive24h: number }> = {
+  'low-value': { nonExclusive: 9.50, semiExclusive: 19.00, exclusive24h: 34.00 },
+  'mid-value': { nonExclusive: 18.50, semiExclusive: 37.00, exclusive24h: 67.00 },
+  'high-value': { nonExclusive: 31.00, semiExclusive: 62.00, exclusive24h: 112.00 },
+};
+
+// Industry category mapping for fallback
+const getIndustryCategory = (profession: string): 'low-value' | 'mid-value' | 'high-value' => {
+  const lowValue = ['Cleaning', 'Handyman', 'Pet Care', 'Tutoring', 'Moving', 'Event Planning', 'Catering', 'Beauty'];
+  const highValue = ['Legal', 'Insurance', 'Financial', 'Real Estate', 'Medical', 'Dental', 'Accounting', 'Consulting', 'Architecture', 'Engineering'];
+  
+  if (lowValue.some(cat => profession.includes(cat))) return 'low-value';
+  if (highValue.some(cat => profession.includes(cat))) return 'high-value';
+  return 'mid-value';
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -35,18 +91,18 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { diggerId, gigId, pricingModel } = await req.json();
+    const { diggerId, gigId, pricingModel, exclusivityType = 'non-exclusive', isConfirmed = false } = await req.json();
     
     if (!diggerId || !gigId || !pricingModel) {
       throw new Error("Missing required fields: diggerId, gigId, or pricingModel");
     }
 
-    logStep("Request data", { diggerId, gigId, pricingModel });
+    logStep("Request data", { diggerId, gigId, pricingModel, exclusivityType, isConfirmed });
 
-    // Get digger profile to determine current tier based on monthly lead count
+    // Get digger profile
     const { data: diggerProfile, error: diggerError } = await supabaseClient
       .from('digger_profiles')
-      .select('monthly_lead_count, user_id, profession')
+      .select('monthly_lead_count, user_id, profession, keywords')
       .eq('id', diggerId)
       .single();
 
@@ -59,23 +115,12 @@ serve(async (req) => {
       throw new Error("Unauthorized: You can only purchase leads for your own profile");
     }
 
-    // Determine current tier based on lead count (prospective pricing)
-    const leadCount = diggerProfile.monthly_lead_count || 0;
-    let tier: 'free' | 'pro' | 'premium';
-    if (leadCount < 10) {
-      tier = 'free';
-    } else if (leadCount < 50) {
-      tier = 'pro';
-    } else {
-      tier = 'premium';
-    }
+    logStep("Digger profile found", { profession: diggerProfile.profession });
 
-    logStep("Digger profile found", { leadCount, tier });
-
-    // Get gig details to get consumer_id
+    // Get gig details
     const { data: gig, error: gigError } = await supabaseClient
       .from('gigs')
-      .select('consumer_id, title')
+      .select('consumer_id, title, is_confirmed_lead')
       .eq('id', gigId)
       .single();
 
@@ -83,36 +128,30 @@ serve(async (req) => {
       throw new Error("Gig not found");
     }
 
-    logStep("Gig found", { consumerId: gig.consumer_id });
+    logStep("Gig found", { consumerId: gig.consumer_id, title: gig.title });
 
-    // Calculate lead cost based on tier and industry
-    // Pricing structure:
-    // Free tier (leads 1-10): 3x Google CPC
-    // Pro tier (leads 11-50): 2x Google CPC
-    // Premium tier (leads 51+): 1x Google CPC
+    // Calculate lead cost using CPC-based pricing
     const profession = diggerProfile.profession || 'General Contracting';
+    const confirmed = isConfirmed || gig.is_confirmed_lead || false;
     
-    // Industry-specific pricing (from pricing config)
-    const INDUSTRY_PRICING: Record<string, { free: number; pro: number; premium: number }> = {
-      'low-value': { free: 24, pro: 16, premium: 8 },
-      'mid-value': { free: 120, pro: 80, premium: 40 },
-      'high-value': { free: 750, pro: 500, premium: 250 }
-    };
-    
-    // Determine industry category (simplified - you may want to import from pricing config)
-    const getIndustryCategory = (prof: string): 'low-value' | 'mid-value' | 'high-value' => {
-      const lowValue = ['Cleaning', 'Handyman', 'Pet Care', 'Tutoring', 'Moving', 'Event Planning', 'Catering', 'Beauty'];
-      const highValue = ['Legal', 'Insurance', 'Financial', 'Real Estate', 'Medical', 'Dental', 'Accounting', 'Consulting', 'Architecture'];
-      
-      if (lowValue.some(cat => prof.includes(cat))) return 'low-value';
-      if (highValue.some(cat => prof.includes(cat))) return 'high-value';
-      return 'mid-value';
-    };
-    
+    // For now, use fallback pricing based on industry category
+    // In production, you would look up the CPC from your keyword database
     const industryCategory = getIndustryCategory(profession);
-    const leadCost = INDUSTRY_PRICING[industryCategory][tier];
+    const fallbackPricing = FALLBACK_PRICING[industryCategory];
+    
+    let leadCost: number;
+    if (exclusivityType === 'exclusive-24h') {
+      leadCost = fallbackPricing.exclusive24h;
+    } else if (exclusivityType === 'semi-exclusive') {
+      leadCost = fallbackPricing.semiExclusive;
+    } else {
+      // Non-exclusive: add 20% premium for confirmed leads (30% vs 25%)
+      leadCost = confirmed 
+        ? roundUpToHalf(fallbackPricing.nonExclusive * 1.20)
+        : fallbackPricing.nonExclusive;
+    }
 
-    logStep("Lead cost calculated", { leadCost, tier, pricingModel, profession, industryCategory });
+    logStep("Lead cost calculated", { leadCost, exclusivityType, confirmed, profession, industryCategory });
 
     // Create lead purchase record
     const { data: leadPurchase, error: purchaseError } = await supabaseClient
@@ -123,6 +162,7 @@ serve(async (req) => {
         consumer_id: gig.consumer_id,
         purchase_price: leadCost,
         amount_paid: leadCost,
+        exclusivity_type: exclusivityType,
         status: leadCost === 0 ? 'completed' : 'pending',
       })
       .select()
@@ -160,6 +200,13 @@ serve(async (req) => {
       logStep("Existing Stripe customer found", { customerId });
     }
 
+    // Build product description
+    const exclusivityLabel = exclusivityType === 'exclusive-24h' 
+      ? '24-Hour Exclusive' 
+      : exclusivityType === 'semi-exclusive'
+      ? 'Semi-Exclusive'
+      : confirmed ? 'Non-Exclusive Confirmed' : 'Non-Exclusive';
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -170,7 +217,7 @@ serve(async (req) => {
             currency: 'usd',
             product_data: {
               name: `Lead Purchase - ${gig.title}`,
-              description: `${pricingModel === 'fixed' ? 'Fixed Price' : pricingModel === 'hourly' ? 'Hourly Rate' : 'Free Estimate'} Lead`,
+              description: `${exclusivityLabel} Lead`,
             },
             unit_amount: Math.round(leadCost * 100), // Convert to cents
           },
@@ -185,6 +232,7 @@ serve(async (req) => {
         digger_id: diggerId,
         gig_id: gigId,
         pricing_model: pricingModel,
+        exclusivity_type: exclusivityType,
       },
     });
 

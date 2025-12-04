@@ -27,7 +27,7 @@ const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: num
   for (const industry of GOOGLE_CPC_KEYWORDS) {
     for (const kw of industry.keywords) {
       if (kw.keyword.toLowerCase() === keywordLower) {
-        const leadCost = Math.ceil((kw.cpc * 0.20) * 2) / 2;
+        const leadCost = Math.ceil((kw.cpc * 0.25) * 2) / 2;
         return { cpc: kw.cpc, leadCost };
       }
     }
@@ -56,7 +56,7 @@ const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: num
   }
   
   if (bestMatch && bestMatch.matchScore >= 0.3) {
-    const leadCost = Math.ceil((bestMatch.cpc * 0.20) * 2) / 2;
+    const leadCost = Math.ceil((bestMatch.cpc * 0.25) * 2) / 2;
     return { cpc: bestMatch.cpc, leadCost };
   }
   
@@ -80,7 +80,7 @@ const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: num
         const avgCpc = Math.round(
           matchingIndustries.reduce((sum, ind) => sum + ind.averageCpc, 0) / matchingIndustries.length
         );
-        const leadCost = Math.ceil((avgCpc * 0.20) * 2) / 2;
+        const leadCost = Math.ceil((avgCpc * 0.25) * 2) / 2;
         return { cpc: avgCpc, leadCost };
       }
     }

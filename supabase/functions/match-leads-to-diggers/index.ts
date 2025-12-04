@@ -11,11 +11,50 @@ const logStep = (step: string, details?: any) => {
   console.log(`[MATCH-LEADS] ${step}${detailsStr}`);
 };
 
-// Industry pricing mapping
-const INDUSTRY_PRICING: Record<string, { nonExclusive: number; semiExclusive: number; exclusive24h: number }> = {
-  'low-value': { nonExclusive: 7.50, semiExclusive: 30.00, exclusive24h: 60.00 },
-  'mid-value': { nonExclusive: 14.50, semiExclusive: 58.00, exclusive24h: 125.00 },
-  'high-value': { nonExclusive: 24.50, semiExclusive: 99.00, exclusive24h: 275.00 },
+/**
+ * Round up to nearest $0.50 or whole number
+ */
+const roundUpToHalf = (value: number): number => {
+  return Math.ceil(value * 2) / 2;
+};
+
+/**
+ * CPC-based pricing calculation
+ * Formula:
+ * - Non-Exclusive Unconfirmed: 25% of CPC
+ * - Non-Exclusive Confirmed: 30% of CPC
+ * - Semi-Exclusive: 50% of CPC
+ * - 24-Hour Exclusive: 90% of CPC
+ */
+const calculateLeadPriceFromCPC = (
+  cpc: number,
+  exclusivityType: 'exclusive' | 'semi-exclusive' | 'non-exclusive',
+  isConfirmed: boolean = false
+): number => {
+  let price: number;
+  
+  if (exclusivityType === 'exclusive') {
+    // 24-Hr Exclusive: 90% of CPC
+    price = cpc * 0.90;
+  } else if (exclusivityType === 'semi-exclusive') {
+    // Semi-Exclusive: 50% of CPC
+    price = cpc * 0.50;
+  } else if (isConfirmed) {
+    // Non-exclusive Confirmed: 30% of CPC
+    price = cpc * 0.30;
+  } else {
+    // Non-exclusive Unconfirmed: 25% of CPC
+    price = cpc * 0.25;
+  }
+  
+  return roundUpToHalf(price);
+};
+
+// Fallback static pricing when no CPC data available
+const FALLBACK_PRICING: Record<string, { nonExclusive: number; semiExclusive: number; exclusive24h: number }> = {
+  'low-value': { nonExclusive: 9.50, semiExclusive: 19.00, exclusive24h: 34.00 },   // Based on ~$38 avg CPC
+  'mid-value': { nonExclusive: 18.50, semiExclusive: 37.00, exclusive24h: 67.00 },  // Based on ~$74 avg CPC
+  'high-value': { nonExclusive: 31.00, semiExclusive: 62.00, exclusive24h: 112.00 }, // Based on ~$124 avg CPC
 };
 
 // Minimum exclusive pricing by lead source
@@ -27,9 +66,39 @@ const EXCLUSIVE_MINIMUMS = {
 const calculateLeadPricing = (
   leadSource: string = 'internet', 
   industryCategory: string = 'mid-value',
-  exclusivityType: 'exclusive' | 'semi-exclusive' = 'exclusive'
+  exclusivityType: 'exclusive' | 'semi-exclusive' = 'exclusive',
+  cpc?: number,
+  isConfirmed: boolean = false
 ) => {
-  const pricing = INDUSTRY_PRICING[industryCategory] || INDUSTRY_PRICING['mid-value'];
+  // If we have CPC data, use dynamic pricing
+  if (cpc && cpc > 0) {
+    const exclusivePrice = calculateLeadPriceFromCPC(cpc, 'exclusive', false);
+    const semiExclusivePrice = calculateLeadPriceFromCPC(cpc, 'semi-exclusive', false);
+    const nonExclusivePrice = calculateLeadPriceFromCPC(cpc, 'non-exclusive', isConfirmed);
+    
+    // Apply telemarketing discount (25% off)
+    const discount = leadSource === 'telemarketing' ? 0.75 : 1;
+    
+    let finalExclusive = exclusivePrice * discount;
+    let finalSemiExclusive = semiExclusivePrice * discount;
+    
+    // Apply minimum pricing for exclusive only
+    if (exclusivityType === 'exclusive') {
+      const minimum = leadSource === 'telemarketing' 
+        ? EXCLUSIVE_MINIMUMS.telemarketing 
+        : EXCLUSIVE_MINIMUMS.internet;
+      finalExclusive = Math.max(finalExclusive, minimum);
+    }
+    
+    return {
+      nonExclusive: nonExclusivePrice,
+      semiExclusive: roundUpToHalf(finalSemiExclusive),
+      exclusive24h: roundUpToHalf(finalExclusive)
+    };
+  }
+  
+  // Fallback to static pricing
+  const pricing = FALLBACK_PRICING[industryCategory] || FALLBACK_PRICING['mid-value'];
   
   let exclusivePrice = pricing.exclusive24h;
   let semiExclusivePrice = pricing.semiExclusive;
@@ -50,8 +119,8 @@ const calculateLeadPricing = (
   
   return {
     nonExclusive: pricing.nonExclusive,
-    semiExclusive: semiExclusivePrice,
-    exclusive24h: exclusivePrice
+    semiExclusive: roundUpToHalf(semiExclusivePrice),
+    exclusive24h: roundUpToHalf(exclusivePrice)
   };
 };
 
@@ -94,13 +163,15 @@ serve(async (req) => {
 
     // Determine lead source (default to internet if not specified)
     const leadSource = gig.lead_source || 'internet';
+    const isConfirmed = gig.is_confirmed_lead || false;
     
     // Calculate pricing (use mid-value as default if category not determined)
-    const pricing = calculateLeadPricing(leadSource, 'mid-value', exclusivityType);
+    const pricing = calculateLeadPricing(leadSource, 'mid-value', exclusivityType, undefined, isConfirmed);
     
     logStep("Lead pricing calculated", { 
       leadSource,
       exclusivityType,
+      isConfirmed,
       nonExclusive: pricing.nonExclusive,
       semiExclusive: pricing.semiExclusive,
       exclusive24h: pricing.exclusive24h

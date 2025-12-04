@@ -5,8 +5,8 @@
  * EXCLUSIVITY-BASED PRICING MODEL (CPC-Based)
  * All lead pricing is calculated from Google CPC using these percentages:
  * 
- * - Non-exclusive Unconfirmed: 20% of Google CPC
- * - Non-exclusive Confirmed: 25% of Google CPC  
+ * - Non-exclusive Unconfirmed: 25% of Google CPC
+ * - Non-exclusive Confirmed: 30% of Google CPC  
  * - Semi-exclusive leads: 50% of Google CPC
  * - 24-hour exclusive leads: 90% of Google CPC
  * 
@@ -56,9 +56,10 @@ export interface PricingTier {
 }
 
 // Exclusivity-based lead pricing by industry category
-// Non-exclusive: 20% of Google CPC (Bark price - $0.50)
-// Semi-exclusive: Google CPC (estimated as non-exclusive / 0.20)
-// Exclusive-24h: 2x Google CPC (2x semi-exclusive)
+// Non-exclusive Unconfirmed: 25% of Google CPC
+// Non-exclusive Confirmed: 30% of Google CPC
+// Semi-exclusive: 50% of Google CPC
+// Exclusive-24h: 90% of Google CPC
 export const INDUSTRY_PRICING: IndustryPricing[] = [
   {
     category: 'low-value',
@@ -547,15 +548,16 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
 
 // Volume-based tier thresholds (NO monthly fees, competitive pricing)
 // Exclusivity-based pricing tiers (NO monthly fees)
-// Non-exclusive: 20% of Google CPC
-// Semi-exclusive: Google CPC (estimated as non-exclusive / 0.20)
-// Exclusive-24h: 2x Google CPC (2x semi-exclusive)
+// Non-exclusive Unconfirmed: 25% of Google CPC
+// Non-exclusive Confirmed: 30% of Google CPC
+// Semi-exclusive: 50% of Google CPC
+// Exclusive-24h: 90% of Google CPC
 export const PRICING_TIERS: Record<'non-exclusive' | 'semi-exclusive' | 'exclusive-24h', PricingTier> = {
   'non-exclusive': {
     id: 'non-exclusive',
     name: 'Non-Exclusive',
     exclusivityPeriod: 'Shared immediately',
-    description: 'Most affordable option - 20% of Google CPC, lead shared with other diggers',
+    description: 'Most affordable option - 25% of Google CPC (30% if confirmed), lead shared with other diggers',
     escrowFee: 'Optional 8% (min $10)',
     escrowFeeValue: 0.08,
     escrowProcessingFee: '8%',
@@ -637,8 +639,8 @@ const roundUpToHalf = (value: number): number => {
  * Pricing formula:
  * - 24-Hr Exclusive: 90% of CPC
  * - Semi-Exclusive: 50% of CPC
- * - Non-exclusive Confirmed: 25% of CPC
- * - Non-exclusive Unconfirmed: 20% of CPC
+ * - Non-exclusive Confirmed: 30% of CPC
+ * - Non-exclusive Unconfirmed: 25% of CPC
  * 
  * All values rounded up to nearest $0.50 or whole number
  */
@@ -658,11 +660,11 @@ export const getLeadCostFromCPC = (
     // Semi-Exclusive: 50% of CPC
     price = cpc * 0.50;
   } else if (isConfirmed) {
-    // Non-exclusive Confirmed: 25% of CPC
-    price = cpc * 0.25;
+    // Non-exclusive Confirmed: 30% of CPC
+    price = cpc * 0.30;
   } else {
-    // Non-exclusive Unconfirmed: 20% of CPC
-    price = cpc * 0.20;
+    // Non-exclusive Unconfirmed: 25% of CPC
+    price = cpc * 0.25;
   }
   
   // Round up to nearest $0.50 or whole number
@@ -670,7 +672,7 @@ export const getLeadCostFromCPC = (
 };
 
 // Helper function to get lead cost for a specific industry and exclusivity type
-// Uses CPC-based dynamic pricing: 20% / 25% / 50% / 90%
+// Uses CPC-based dynamic pricing: 25% / 30% / 50% / 90%
 export const getLeadCostForIndustry = (
   industry: string,
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
@@ -683,7 +685,7 @@ export const getLeadCostForIndustry = (
   const cpc = getKeywordCPC(industry);
   
   if (cpc && cpc > 0) {
-    // Use CPC-based dynamic pricing: 20% / 25% / 50% / 90%
+    // Use CPC-based dynamic pricing: 25% / 30% / 50% / 90%
     let price: number;
     
     if (exclusivity === 'exclusive-24h') {
@@ -693,11 +695,11 @@ export const getLeadCostForIndustry = (
       // Semi-Exclusive: 50% of CPC
       price = cpc * 0.50;
     } else if (isConfirmed) {
-      // Non-exclusive Confirmed: 25% of CPC
-      price = cpc * 0.25;
+      // Non-exclusive Confirmed: 30% of CPC
+      price = cpc * 0.30;
     } else {
-      // Non-exclusive Unconfirmed: 20% of CPC
-      price = cpc * 0.20;
+      // Non-exclusive Unconfirmed: 25% of CPC
+      price = cpc * 0.25;
     }
     
     // Round up to nearest $0.50 or whole number
@@ -728,9 +730,9 @@ export const getLeadCostForIndustry = (
     ? pricingData.semiExclusive
     : pricingData.exclusive24h;
   
-  // Add 25% confirmation premium (25% vs 20% = 25% more)
+  // Add 20% confirmation premium (30% vs 25% = 20% more)
   if (exclusivity === 'non-exclusive' && isConfirmed) {
-    return roundUpToHalf(basePrice * 1.25);
+    return roundUpToHalf(basePrice * 1.20);
   }
   
   return basePrice;

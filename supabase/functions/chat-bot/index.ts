@@ -52,17 +52,15 @@ serve(async (req) => {
 - **Giggers** (Clients): Post projects, receive proposals from skilled professionals, and hire the best match
 - **Diggers** (Service Providers): Create professional profiles, purchase leads, submit proposals, and complete work
 
-**Lead Pricing Tiers:**
-Our marketplace categorizes services into three value tiers with three exclusivity options:
+**Lead Pricing Model:**
+Lead prices are calculated dynamically based on Google CPC (Cost Per Click) data for each industry/keyword:
 
-*Low-Value Industries* ($7.50 non-exclusive / $30 semi-exclusive / $60 24hr exclusive):
-Cleaning, Handyman, Pet Care, Tutoring, Moving, Event Planning, Personal Training, Landscaping
+- **Non-Exclusive Unconfirmed**: 25% of Google CPC
+- **Non-Exclusive Confirmed**: 30% of Google CPC  
+- **Semi-Exclusive**: 50% of Google CPC
+- **24-Hour Exclusive**: 90% of Google CPC
 
-*Mid-Value Industries* ($14.50 non-exclusive / $58 semi-exclusive / $125 24hr exclusive):
-HVAC, Plumbing, Electrical, Web Development, Photography, Marketing, Accounting, Auto Repair
-
-*High-Value Industries* ($24.50 non-exclusive / $99 semi-exclusive / $275 24hr exclusive):
-Legal Services, Insurance, Real Estate, Financial Planning, Medical/Dental, Business Consulting, Engineering
+All prices are rounded up to the nearest $0.50 or whole number.
 
 **Exclusivity Options Explained:**
 - **Non-Exclusive**: Most affordable option. Multiple diggers can purchase the same lead. Best for high-volume strategies.
@@ -85,7 +83,7 @@ Legal Services, Insurance, Real Estate, Financial Planning, Medical/Dental, Busi
 
 **Important Notes:**
 - Lead prices fluctuate daily and are subject to change based on market demand
-- Confirmed leads (verified by email/SMS) cost an additional 20% (rounded to nearest $0.50) above standard rates
+- Confirmed leads (verified by email/SMS) cost 30% of CPC vs 25% for unconfirmed
 - Escrow protection is available for secure transactions between giggers and diggers
 - Never disclose our internal pricing calculation methodology (this is proprietary)
 
