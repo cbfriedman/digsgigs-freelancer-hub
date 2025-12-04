@@ -40,11 +40,10 @@ const basicInfoSchema = z.object({
   confirmPassword: z.string(),
   phone: z.string()
     .trim()
+    .min(1, "Phone number is required")
     .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format. Use international format (e.g., +1234567890)")
     .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be less than 15 digits")
-    .optional()
-    .or(z.literal("")),
+    .max(15, "Phone number must be less than 15 digits"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -107,6 +106,9 @@ const Register = () => {
   const [sentOtpCode, setSentOtpCode] = useState(""); // OTP code we sent
   const [userId, setUserId] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false); // Track if OTP was sent to show input field
+  const [signInOtpSent, setSignInOtpSent] = useState(false); // Track if OTP was sent during sign-in
+  const [signInVerificationMethod, setSignInVerificationMethod] = useState<'email' | 'sms'>('email');
+  const [userPhone, setUserPhone] = useState<string | null>(null); // Store user's phone for sign-in
 
   // Step 2: Role Selection
   const [selectedRoles, setSelectedRoles] = useState<Set<UserAppRole>>(new Set());
@@ -152,6 +154,10 @@ const Register = () => {
       setSelectedRoles(new Set());
       setRoleFormData({});
       setCurrentRoleIndex(0);
+      setOtpSent(false);
+      setSignInOtpSent(false);
+      setSignInVerificationMethod('email');
+      setUserPhone(null);
     }
   }, [isSignInMode]);
 
@@ -215,20 +221,25 @@ const Register = () => {
       // Generate OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Send OTP via Resend edge function (stores code in database)
-      const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp-email', {
+      // Format phone number (ensure it starts with +)
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      
+      // Send OTP via unified edge function (supports both email and SMS)
+      const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp', {
         body: {
           email,
+          phone: formattedPhone,
           code: otpCode,
           name: fullName,
+          method: verificationMethod,
         },
       });
 
       if (otpError) {
         console.error("OTP send error:", otpError);
         // Check if it's a configuration error
-        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
-          toast.error("Email service is not configured. Please contact support.");
+        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('TWILIO') || otpError.message?.includes('not configured')) {
+          toast.error(`${verificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`);
         } else {
           toast.error(otpError.message || "Failed to send verification code. Please try again.");
         }
@@ -238,7 +249,8 @@ const Register = () => {
 
       // OTP sent successfully - move to verification step
       setOtpSent(true);
-      toast.success("Verification code sent! Please check your email.");
+      const methodText = verificationMethod === 'email' ? 'email' : 'phone';
+      toast.success(`Verification code sent! Please check your ${methodText}.`);
       setStep(2); // Move to verification step
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -264,29 +276,38 @@ const Register = () => {
         return;
       }
 
+      // Format phone number for verification
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      
       // Verify OTP code using edge function (checks database)
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
         body: {
-          email,
+          email: verificationMethod === 'email' ? email : undefined,
+          phone: verificationMethod === 'sms' ? formattedPhone : undefined,
           code: verificationCode,
         },
       });
 
       if (verifyError) {
         console.error("OTP verification error:", verifyError);
-        toast.error(verifyError.message || "Invalid or expired verification code. Please try again.");
+        const errorMessage = verifyError.message?.includes('expired') 
+          ? "Verification code has expired. Please request a new code."
+          : verifyError.message?.includes('Invalid') 
+          ? "Invalid verification code. Please check your code and try again."
+          : verifyError.message || "Invalid or expired verification code. Please try again.";
+        toast.error(errorMessage);
         setLoading(false);
         return;
       }
 
       if (!verifyData || !verifyData.success) {
-        toast.error("Invalid or expired verification code. Please try again.");
+        toast.error("Invalid or expired verification code. Please check your code and try again.");
         setLoading(false);
         return;
       }
       
       // Code is verified! Now create the Supabase account
-      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      // formattedPhone is already declared above (line 280)
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -319,7 +340,20 @@ const Register = () => {
       // Store user ID for role creation
       setUserId(authData.user.id);
 
-      toast.success("Email verified and account created successfully!");
+      // Update profiles table with phone number
+      if (formattedPhone) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ phone: formattedPhone })
+          .eq('id', authData.user.id);
+        
+        if (profileError) {
+          console.error("Error updating profile phone:", profileError);
+          // Don't fail registration if profile update fails
+        }
+      }
+
+      toast.success("Verification successful and account created!");
       setStep(3); // Go to role selection
     } catch (error: any) {
       console.error("Verification error:", error);
@@ -336,20 +370,25 @@ const Register = () => {
       // Generate new 6-digit OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Send OTP via Resend edge function (now stores code in database)
-      const { data, error } = await supabase.functions.invoke('send-otp-email', {
+      // Format phone number
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      
+      // Send OTP via unified edge function
+      const { data, error } = await supabase.functions.invoke('send-otp', {
         body: {
           email,
+          phone: formattedPhone,
           code: otpCode,
           name: fullName,
+          method: verificationMethod,
         },
       });
 
       if (error) {
         console.error("Resend OTP error:", error);
         // Check if it's a configuration error
-        if (error.message?.includes('RESEND_API_KEY') || error.message?.includes('not configured')) {
-          toast.error("Email service is not configured. Please contact support.");
+        if (error.message?.includes('RESEND_API_KEY') || error.message?.includes('TWILIO') || error.message?.includes('not configured')) {
+          toast.error(`${verificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`);
         } else {
           toast.error(error.message || "Failed to resend verification code");
         }
@@ -359,7 +398,8 @@ const Register = () => {
 
       // Clear old verification code input
       setVerificationCode("");
-      toast.success("Verification code resent! Please check your email.");
+      const methodText = verificationMethod === 'email' ? 'email' : 'phone';
+      toast.success(`Verification code resent! Please check your ${methodText}.`);
     } catch (error: any) {
       console.error("Resend error:", error);
       toast.error(error.message || "Failed to resend verification code");
@@ -477,6 +517,13 @@ const Register = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If OTP was already sent, verify the code instead
+    if (signInOtpSent) {
+      await handleSignInVerification(e);
+      return;
+    }
+
     console.log("Sign in started");
     setLoading(true);
 
@@ -494,55 +541,140 @@ const Register = () => {
       if (signInError) {
         console.error("Sign in error:", signInError);
         toast.error(signInError.message || "Failed to sign in. Please check your credentials.");
+        setLoading(false);
         return;
       }
 
       if (!signInData.user) {
         console.error("No user data returned");
         toast.error("No user data returned from sign in");
+        setLoading(false);
         return;
       }
 
       console.log("User authenticated:", signInData.user.email);
 
-      // Check if email is verified
-      if (!signInData.user.email_confirmed_at) {
-        console.log("Email not verified, sending OTP");
-        await supabase.auth.signOut();
-        toast.error("Please verify your email first. We'll send you a new code.");
-        
-        // Send OTP for verification
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false
-          }
-        });
+      // Get user's phone from profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('id', signInData.user.id)
+        .single();
 
-        if (otpError) {
-          toast.error(otpError.message);
-          return;
+      const userPhoneNumber = profileData?.phone || signInData.user.user_metadata?.phone || null;
+      setUserPhone(userPhoneNumber);
+
+      // Sign out temporarily - we'll complete login after OTP verification
+      await supabase.auth.signOut();
+
+      // Generate OTP code
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Send OTP via selected method
+      const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp', {
+        body: {
+          email: signInVerificationMethod === 'email' ? email : undefined,
+          phone: signInVerificationMethod === 'sms' && userPhoneNumber ? userPhoneNumber : undefined,
+          code: otpCode,
+          method: signInVerificationMethod,
+        },
+      });
+
+      if (otpError) {
+        console.error("OTP send error:", otpError);
+        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('TWILIO') || otpError.message?.includes('not configured')) {
+          toast.error(`${signInVerificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`);
+        } else if (signInVerificationMethod === 'sms' && !userPhoneNumber) {
+          toast.error("Phone number not found. Please use email verification or update your profile.");
+          setSignInVerificationMethod('email');
+        } else {
+          toast.error(otpError.message || "Failed to send verification code. Please try again.");
         }
-
-        toast.success("Verification code sent! Please check your email.");
-        setStep(2);
+        setLoading(false);
         return;
       }
 
-      // Email is verified - navigate directly to dashboard
-      console.log("Email verified, navigating to dashboard");
-      
-      // Prevent race condition with useProtectedRoute
+      // OTP sent successfully - show verification input
+      setSignInOtpSent(true);
+      const methodText = signInVerificationMethod === 'email' ? 'email' : 'phone';
+      toast.success(`Verification code sent! Please check your ${methodText}.`);
+    } catch (error: any) {
+      console.error("Sign in error caught:", error);
+      toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignInVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Validate code format
+      if (!verificationCode || verificationCode.length !== 6) {
+        toast.error("Please enter the 6-digit verification code.");
+        setLoading(false);
+        return;
+      }
+
+      // Verify OTP code
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
+        body: {
+          email: signInVerificationMethod === 'email' ? email : undefined,
+          phone: signInVerificationMethod === 'sms' && userPhone ? userPhone : undefined,
+          code: verificationCode,
+        },
+      });
+
+      if (verifyError) {
+        console.error("OTP verification error:", verifyError);
+        const errorMessage = verifyError.message?.includes('expired') 
+          ? "Verification code has expired. Please request a new code."
+          : verifyError.message?.includes('Invalid') 
+          ? "Invalid verification code. Please check your code and try again."
+          : verifyError.message || "Invalid or expired verification code. Please try again.";
+        toast.error(errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      if (!verifyData || !verifyData.success) {
+        toast.error("Invalid or expired verification code. Please check your code and try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Code verified! Now sign in again
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        toast.error(signInError.message || "Failed to complete sign in. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      if (!signInData.user) {
+        toast.error("Failed to complete sign in");
+        setLoading(false);
+        return;
+      }
+
+      // Successfully signed in
       if (!isNavigatingRef.current) {
         isNavigatingRef.current = true;
         toast.success("Welcome back!");
         navigate('/role-dashboard');
       }
     } catch (error: any) {
-      console.error("Sign in error caught:", error);
-      toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
+      console.error("Verification error:", error);
+      toast.error(error.message || "Invalid verification code");
+      setLoading(false);
     } finally {
-      // ALWAYS reset loading state
       setLoading(false);
     }
   };
@@ -818,54 +950,156 @@ const Register = () => {
             {/* Sign In Form */}
             {!isPasswordResetMode && isSignInMode && (
               <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email Address</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
+                {!signInOtpSent ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email Address</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="john@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="signin-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="pr-10"
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="signin-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="pr-10"
+                          disabled={loading}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Verification Method *</Label>
+                      <div className="flex gap-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="signin-verify-email"
+                            name="signInVerificationMethod"
+                            value="email"
+                            checked={signInVerificationMethod === 'email'}
+                            onChange={(e) => setSignInVerificationMethod(e.target.value as 'email' | 'sms')}
+                            className="h-4 w-4"
+                            disabled={loading}
+                          />
+                          <Label htmlFor="signin-verify-email" className="cursor-pointer flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            Email
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="signin-verify-sms"
+                            name="signInVerificationMethod"
+                            value="sms"
+                            checked={signInVerificationMethod === 'sms'}
+                            onChange={(e) => setSignInVerificationMethod(e.target.value as 'email' | 'sms')}
+                            className="h-4 w-4"
+                            disabled={loading}
+                          />
+                          <Label htmlFor="signin-verify-sms" className="cursor-pointer flex items-center gap-2">
+                            <Smartphone className="h-4 w-4" />
+                            SMS
+                          </Label>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Choose how you want to receive your verification code
+                      </p>
+                    </div>
+
                     <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
+                      type="submit"
+                      className="w-full"
+                      disabled={loading}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
+                      {loading ? "Sending Code..." : "Continue"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-4 p-4 border rounded-lg bg-accent/10">
+                      <div className="flex items-center gap-2">
+                        {signInVerificationMethod === 'email' ? (
+                          <Mail className="h-5 w-5 text-primary" />
+                        ) : (
+                          <Smartphone className="h-5 w-5 text-primary" />
+                        )}
+                        <div>
+                          <h4 className="font-medium">Verification Code Sent!</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Check your {signInVerificationMethod === 'email' ? 'email' : 'phone'} for the 6-digit code
+                          </p>
+                        </div>
+                      </div>
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? "Signing In..." : "Sign In"}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-verification-code">Enter Verification Code *</Label>
+                        <Input
+                          id="signin-verification-code"
+                          type="text"
+                          value={verificationCode}
+                          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="000000"
+                          maxLength={6}
+                          required
+                          className="text-center text-2xl tracking-widest font-mono"
+                          disabled={loading}
+                        />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={loading || verificationCode.length !== 6}
+                        className="w-full"
+                      >
+                        {loading ? "Verifying..." : "Verify & Sign In"}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setSignInOtpSent(false);
+                          setVerificationCode("");
+                        }}
+                        disabled={loading}
+                        className="w-full"
+                      >
+                        Back
+                      </Button>
+                    </div>
+                  </>
+                )}
 
                 <div className="text-center text-sm space-y-2">
                   <button
@@ -995,7 +1229,7 @@ const Register = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">
-                    Phone Number (Optional)
+                    Phone Number *
                   </Label>
                   <Input
                     id="phone"
@@ -1003,11 +1237,50 @@ const Register = () => {
                     placeholder="+1234567890"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    required={false}
+                    required
                     maxLength={15}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use international format (e.g., +1234567890)
+                    Use international format (e.g., +1234567890). Required for account verification.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Verification Method *</Label>
+                  <div className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="verify-email"
+                        name="verificationMethod"
+                        value="email"
+                        checked={verificationMethod === 'email'}
+                        onChange={(e) => setVerificationMethod(e.target.value as 'email' | 'sms')}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="verify-email" className="cursor-pointer flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Email
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="verify-sms"
+                        name="verificationMethod"
+                        value="sms"
+                        checked={verificationMethod === 'sms'}
+                        onChange={(e) => setVerificationMethod(e.target.value as 'email' | 'sms')}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="verify-sms" className="cursor-pointer flex items-center gap-2">
+                        <Smartphone className="h-4 w-4" />
+                        SMS
+                      </Label>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Choose how you want to receive your verification code
                   </p>
                 </div>
 

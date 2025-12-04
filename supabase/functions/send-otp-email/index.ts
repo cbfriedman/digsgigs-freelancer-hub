@@ -83,9 +83,9 @@ const handler = async (req: Request): Promise<Response> => {
       auth: { persistSession: false }
     });
 
-    // Store verification code in database (expires in 10 minutes)
+    // Store verification code in database (expires in 5 minutes)
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+    expiresAt.setMinutes(expiresAt.getMinutes() + 5);
 
     const { data: insertedCode, error: dbError } = await supabase
       .from("verification_codes")
@@ -135,7 +135,7 @@ const handler = async (req: Request): Promise<Response> => {
             <div style="background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0;">
               ${code}
             </div>
-            <p>This code will expire in 10 minutes.</p>
+            <p>This code will expire in 5 minutes.</p>
             <p>If you didn't request this code, you can safely ignore this email.</p>
             <p>Best regards,<br>The Digs and Gigs Team</p>
           </div>

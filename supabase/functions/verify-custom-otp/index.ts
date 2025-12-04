@@ -8,7 +8,8 @@ const corsHeaders = {
 };
 
 interface VerifyOTPRequest {
-  email: string;
+  email?: string;
+  phone?: string;
   code: string;
 }
 
@@ -18,11 +19,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, code }: VerifyOTPRequest = await req.json();
+    const { email, phone, code }: VerifyOTPRequest = await req.json();
 
-    if (!email || !code) {
+    if (!code) {
       return new Response(
-        JSON.stringify({ error: "Email and code are required" }),
+        JSON.stringify({ error: "Verification code is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (!email && !phone) {
+      return new Response(
+        JSON.stringify({ error: "Email or phone number is required" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -61,21 +72,30 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     // Check if verification code exists and is valid
-    const { data: verificationCode, error: fetchError } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("verification_codes")
       .select("*")
-      .eq("email", email)
       .eq("code", code)
       .eq("verified", false)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
+
+    if (email) {
+      query = query.eq("email", email);
+    } else if (phone) {
+      query = query.eq("phone", phone);
+    }
+
+    const { data: verificationCode, error: fetchError } = await query.single();
 
     if (fetchError || !verificationCode) {
       console.error("Verification code not found or expired:", fetchError);
+      const errorMessage = fetchError?.code === 'PGRST116' 
+        ? "Invalid or expired verification code. Please request a new code."
+        : "Invalid or expired verification code. Please check your code and try again.";
       return new Response(
-        JSON.stringify({ error: "Invalid or expired verification code" }),
+        JSON.stringify({ error: errorMessage }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -102,35 +122,38 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Try to find and confirm user if they exist (for existing users)
     // If user doesn't exist, that's OK - they'll be created during registration
-    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (!getUserError && users) {
-    const user = users.find(u => u.email === email);
-    
-      if (user) {
-        // User exists - confirm their email
-    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
-      { email_confirm: true }
-    );
+    if (email) {
+      const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (!getUserError && users) {
+        const user = users.find(u => u.email === email);
+        
+        if (user) {
+          // User exists - confirm their email
+          const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
+            user.id,
+            { email_confirm: true }
+          );
 
-    if (confirmError) {
-      console.error("Error confirming user email:", confirmError);
-          // Don't fail - code is still verified
+          if (confirmError) {
+            console.error("Error confirming user email:", confirmError);
+            // Don't fail - code is still verified
+          } else {
+            console.log("Email verified and confirmed for existing user:", email);
+          }
         } else {
-          console.log("Email verified and confirmed for existing user:", email);
+          console.log("Code verified for new user (will be created during registration):", email);
         }
-      } else {
-        console.log("Code verified for new user (will be created during registration):", email);
       }
     }
 
-    console.log("Verification code verified successfully for:", email);
+    const identifier = email || phone || 'unknown';
+    console.log("Verification code verified successfully for:", identifier);
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: "Email verified successfully" 
+        message: "Verification code verified successfully" 
       }),
       {
         status: 200,
