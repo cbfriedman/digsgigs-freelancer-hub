@@ -190,9 +190,17 @@ const Register = () => {
     }
   }, [isSignInMode]);
 
-  // Auto-advance verified users without roles to role selection
+  // Auto-advance verified users without roles to role selection, or redirect to post-gig if coming from gig posting
   useEffect(() => {
     if (!authLoading && !isSignInMode && !isPasswordResetMode && user && user.email_confirmed_at && step === 1) {
+      // If coming from gig posting flow and already logged in, redirect to post-gig
+      if (isFromGigPosting) {
+        toast.success("You're already logged in! Redirecting to post your gig...");
+        isNavigatingRef.current = true;
+        navigate('/post-gig');
+        return;
+      }
+      
       // Check if user has roles
       const checkUserRoles = async () => {
         const { data, error } = await supabase
@@ -213,7 +221,7 @@ const Register = () => {
       
       checkUserRoles();
     }
-  }, [authLoading, isSignInMode, isPasswordResetMode, user, step]);
+  }, [authLoading, isSignInMode, isPasswordResetMode, user, step, isFromGigPosting, navigate]);
 
 
   // Don't show loading spinner in password reset mode - show the form immediately
