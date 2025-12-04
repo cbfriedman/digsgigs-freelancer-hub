@@ -50,6 +50,32 @@ const basicInfoSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Schema for gig posting flow (no full name required)
+const gigPostingSchema = z.object({
+  email: z.string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Invalid email format")
+    .max(255, "Email must be less than 255 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(100, "Password must be less than 100 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string(),
+  phone: z.string()
+    .trim()
+    .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format. Use international format (e.g., +1234567890)")
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must be less than 15 digits")
+    .optional()
+    .or(z.literal("")),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
 type UserAppRole = 'digger' | 'gigger' | 'telemarketer';
 
 interface RoleFormData {
@@ -77,6 +103,10 @@ const Register = () => {
   
   // Check if user is coming from gig posting flow (Craigslist model - no OTP required)
   const isFromGigPosting = new URLSearchParams(window.location.search).get('returnTo') === '/post-gig';
+  
+  // Get gig title from sessionStorage for display
+  const pendingGigData = isFromGigPosting ? JSON.parse(sessionStorage.getItem('pendingGigData') || '{}') : {};
+  const gigTitle = pendingGigData.title || 'Your Gig';
   
   const [isSignInMode, setIsSignInMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -204,14 +234,23 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // SECURITY: Validate inputs before proceeding
-      basicInfoSchema.parse({
-        fullName,
-        email,
-        password,
-        confirmPassword,
-        phone: phone || "",
-      });
+      // SECURITY: Validate inputs before proceeding - use different schema for gig posting
+      if (isFromGigPosting) {
+        gigPostingSchema.parse({
+          email,
+          password,
+          confirmPassword,
+          phone: phone || "",
+        });
+      } else {
+        basicInfoSchema.parse({
+          fullName,
+          email,
+          password,
+          confirmPassword,
+          phone: phone || "",
+        });
+      }
 
       // Skip OTP for gig posting flow (Craigslist model) - create account directly with Gigger role
       if (isFromGigPosting) {
@@ -245,9 +284,20 @@ const Register = () => {
           setUserId(authData.user.id);
           // Auto-select Gigger role for gig posting flow
           setSelectedRoles(new Set(['gigger']));
-          toast.success("Account created! Complete your Gigger profile to post your gig.");
-          setStep(4); // Jump directly to Gigger form (skip role selection)
-          setCurrentRoleIndex(0);
+          
+          // Create the Gigger role immediately
+          const { error: roleError } = await supabase
+            .from('user_app_roles')
+            .insert({ user_id: authData.user.id, app_role: 'gigger' });
+          
+          if (roleError) {
+            console.error("Error creating Gigger role:", roleError);
+          }
+          
+          toast.success("Account created! Posting your gig...");
+          // Navigate directly to post-gig to complete posting (skip Gigger form)
+          isNavigatingRef.current = true;
+          navigate('/post-gig');
         }
         setLoading(false);
         return;
@@ -854,10 +904,10 @@ const Register = () => {
               )}
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : step === 1 ? "Create your Gigger Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
+              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : (step === 1 && isFromGigPosting) ? "Register your Gig" : step === 1 ? "Create your Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : (step === 1 && isFromGigPosting) ? "Create an account to post and manage your gig" : step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar - Only show during registration */}
@@ -1055,6 +1105,14 @@ const Register = () => {
             {/* Step 1: Basic Information */}
             {!isSignInMode && !isPasswordResetMode && step === 1 && (
               <form onSubmit={handleBasicInfoSubmit} className="space-y-4">
+                {/* Show Gig Title when coming from gig posting */}
+                {isFromGigPosting && (
+                  <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-muted-foreground mb-1">Posting:</p>
+                    <h3 className="font-semibold text-lg text-foreground">{gigTitle}</h3>
+                  </div>
+                )}
+
                 {existingAccountError && (
                   <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
                     <div className="flex items-start gap-2">
@@ -1110,18 +1168,21 @@ const Register = () => {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    maxLength={100}
-                  />
-                </div>
+                {/* Hide full name for gig posting flow - not needed */}
+                {!isFromGigPosting && (
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="John Doe"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      maxLength={100}
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address *</Label>
@@ -1143,7 +1204,7 @@ const Register = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">
-                    Phone Number (Optional)
+                    Phone Number {isFromGigPosting ? "(for Diggers to contact you)" : "(Optional)"}
                   </Label>
                   <Input
                     id="phone"
@@ -1163,9 +1224,9 @@ const Register = () => {
                   <div className="flex items-center gap-2 p-3 border rounded-lg bg-accent/50">
                     <Mail className="h-4 w-4 text-primary" />
                     <div>
-                      <div className="font-medium">Instant Account Creation</div>
+                      <div className="font-medium">{isFromGigPosting ? "Email Confirmation Required" : "Instant Account Creation"}</div>
                       <div className="text-xs text-muted-foreground">
-                        Your account will be created immediately
+                        {isFromGigPosting ? "You'll receive an email to confirm your gig posting" : "Your account will be created immediately"}
                       </div>
                     </div>
                   </div>
@@ -1284,7 +1345,7 @@ const Register = () => {
                     className="w-full" 
                     disabled={loading}
                   >
-                    {loading ? "Sending Code..." : "Verify my Email"} 
+                    {loading ? (isFromGigPosting ? "Creating Account..." : "Sending Code...") : (isFromGigPosting ? "Register & Post Gig" : "Verify my Email")} 
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
