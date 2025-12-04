@@ -38,8 +38,7 @@ const PostGig = () => {
   const [detectedCategory, setDetectedCategory] = useState<{id: string, name: string, parentName: string} | null>(null);
   const [projectTitle, setProjectTitle] = useState("");
   const [detailedDescription, setDetailedDescription] = useState("");
-  const [budgetMin, setBudgetMin] = useState("");
-  const [budgetMax, setBudgetMax] = useState("");
+  const [estimatedBudget, setEstimatedBudget] = useState("");
   const [serviceStart, setServiceStart] = useState("");
   const [duration, setDuration] = useState("");
   const [hourlyBasis, setHourlyBasis] = useState("");
@@ -63,8 +62,7 @@ const PostGig = () => {
         setPhone(gigData.phone || "");
         setProjectTitle(gigData.projectTitle || "");
         setDetailedDescription(gigData.detailedDescription || "");
-        setBudgetMin(gigData.budgetMin || "");
-        setBudgetMax(gigData.budgetMax || "");
+        setEstimatedBudget(gigData.estimatedBudget || "");
         setServiceStart(gigData.serviceStart || "");
         setDuration(gigData.duration || "");
         setHourlyBasis(gigData.hourlyBasis || "");
@@ -230,8 +228,7 @@ const PostGig = () => {
           phone,
           projectTitle,
           detailedDescription,
-          budgetMin,
-          budgetMax,
+          estimatedBudget,
           serviceStart,
           duration,
           hourlyBasis,
@@ -272,8 +269,8 @@ const PostGig = () => {
           location_lat: locationLat,
           location_lng: locationLng,
           timeline: `${serviceStart} - ${duration}`,
-          budget_min: budgetMin ? parseFloat(budgetMin.replace(/[^0-9.]/g, '')) : undefined,
-          budget_max: budgetMax ? parseFloat(budgetMax.replace(/[^0-9.]/g, '')) : undefined,
+          budget_min: estimatedBudget ? parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) : undefined,
+          budget_max: null,
           category_id: detectedCategory?.id,
           consumer_phone: phone,
           consumer_email: email,
@@ -318,8 +315,7 @@ const PostGig = () => {
           gigTitle: projectTitle,
           gigDescription: detailedDescription,
           location: zipcode,
-          budgetMin: budgetMin ? parseFloat(budgetMin.replace(/[^0-9.]/g, '')) : undefined,
-          budgetMax: budgetMax ? parseFloat(budgetMax.replace(/[^0-9.]/g, '')) : undefined,
+          estimatedBudget: estimatedBudget ? parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) : undefined,
           keywords: selectedKeywords,
         },
       });
@@ -351,10 +347,9 @@ const PostGig = () => {
     });
   };
 
-  const handleBudgetChange = (field: 'min' | 'max', value: string) => {
+  const handleBudgetChange = (value: string) => {
     const formatted = formatCurrency(value);
-    if (field === 'min') setBudgetMin(formatted);
-    else setBudgetMax(formatted);
+    setEstimatedBudget(formatted);
   };
 
   return (
@@ -540,25 +535,14 @@ const PostGig = () => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="budgetMin">Min Budget ($) <span className="text-muted-foreground text-sm">(Optional)</span></Label>
-                    <Input
-                      id="budgetMin"
-                      placeholder="5,000"
-                      value={budgetMin}
-                      onChange={(e) => handleBudgetChange('min', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="budgetMax">Max Budget ($) <span className="text-muted-foreground text-sm">(Optional)</span></Label>
-                    <Input
-                      id="budgetMax"
-                      placeholder="10,000"
-                      value={budgetMax}
-                      onChange={(e) => handleBudgetChange('max', e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedBudget">Estimated Budget ($) <span className="text-muted-foreground text-sm">(Optional)</span></Label>
+                  <Input
+                    id="estimatedBudget"
+                    placeholder="10,000"
+                    value={estimatedBudget}
+                    onChange={(e) => handleBudgetChange(e.target.value)}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -895,12 +879,10 @@ const PostGig = () => {
                       </div>
                     </div>
 
-                    {(budgetMin || budgetMax) && (
+                    {estimatedBudget && (
                       <div>
-                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Budget Range</h3>
-                        <p className="text-sm">
-                          ${budgetMin || '0'} - ${budgetMax || '0'}
-                        </p>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Estimated Budget</h3>
+                        <p className="text-sm">${estimatedBudget}</p>
                       </div>
                     )}
 
