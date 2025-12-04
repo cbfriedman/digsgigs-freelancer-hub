@@ -706,7 +706,7 @@ const Register = () => {
               )}
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
+              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : step === 1 ? "Create your Gigger Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
               {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
