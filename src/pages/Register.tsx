@@ -67,6 +67,10 @@ interface RoleFormData {
   };
 }
 
+// TEMPORARY: Set to true to bypass OTP verification for testing
+// SET TO false BEFORE PRODUCTION DEPLOYMENT
+const SKIP_OTP_FOR_TESTING = true;
+
 const Register = () => {
   const navigate = useNavigate();
   const isNavigatingRef = useRef(false); // Prevent race conditions with useProtectedRoute
@@ -207,6 +211,43 @@ const Register = () => {
         confirmPassword,
         phone: phone || "",
       });
+
+      // TEMPORARY: Bypass OTP for testing - create account directly
+      if (SKIP_OTP_FOR_TESTING) {
+        const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+        
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { 
+              full_name: fullName, 
+              phone: formattedPhone 
+            },
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        });
+        
+        if (authError) {
+          console.error("Signup error (OTP bypass):", authError);
+          if (authError.message?.includes('already registered')) {
+            setExistingAccountError(true);
+            toast.error("This email is already registered. Please sign in instead.");
+          } else {
+            toast.error(authError.message || "Failed to create account");
+          }
+          setLoading(false);
+          return;
+        }
+        
+        if (authData.user) {
+          setUserId(authData.user.id);
+          toast.success("Account created! (OTP bypassed for testing)");
+          setStep(3); // Jump directly to role selection
+        }
+        setLoading(false);
+        return;
+      }
 
       // Check if email is already registered
       const { data: existingUser } = await supabase.auth.admin?.listUsers() || { data: null };
