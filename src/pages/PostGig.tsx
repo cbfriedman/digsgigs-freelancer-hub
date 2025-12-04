@@ -50,19 +50,43 @@ const PostGig = () => {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [customKeyword, setCustomKeyword] = useState("");
 
+  // Check for pending gig data after returning from registration
   useEffect(() => {
-    checkAuth();
+    const checkPendingGig = async () => {
+      const pendingGig = sessionStorage.getItem('pendingGig');
+      if (pendingGig) {
+        const gigData = JSON.parse(pendingGig);
+        // Restore form state
+        setProfessionDescription(gigData.professionDescription || "");
+        setZipcode(gigData.zipcode || "");
+        setEmail(gigData.email || "");
+        setPhone(gigData.phone || "");
+        setProjectTitle(gigData.projectTitle || "");
+        setDetailedDescription(gigData.detailedDescription || "");
+        setBudgetMin(gigData.budgetMin || "");
+        setBudgetMax(gigData.budgetMax || "");
+        setServiceStart(gigData.serviceStart || "");
+        setDuration(gigData.duration || "");
+        setHourlyBasis(gigData.hourlyBasis || "");
+        setSelectedKeywords(gigData.selectedKeywords || []);
+        setSuggestedKeywords(gigData.suggestedKeywords || []);
+        setEscrowRequested(gigData.escrowRequested || false);
+        setTermsAccepted(gigData.termsAccepted || false);
+        if (gigData.detectedCategory) {
+          setDetectedCategory(gigData.detectedCategory);
+        }
+        setCurrentStep(gigData.currentStep || 3);
+        
+        // Check if user is now logged in and auto-submit
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          sessionStorage.removeItem('pendingGig');
+          toast.success("Welcome back! Your gig details have been restored. Click 'Post Gig' to submit.");
+        }
+      }
+    };
+    checkPendingGig();
   }, []);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      toast.error("Please sign in to post a gig");
-      navigate("/register");
-      return;
-    }
-  };
 
   const handleStep1Submit = async () => {
     if (!professionDescription.trim() || !zipcode.trim() || !email.trim() || !phone.trim()) {
@@ -196,9 +220,32 @@ const PostGig = () => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // If not logged in, save gig data and redirect to registration
       if (!session) {
-        toast.error("Session expired. Please sign in again.");
-        navigate("/register");
+        const pendingGigData = {
+          professionDescription,
+          zipcode,
+          email,
+          phone,
+          projectTitle,
+          detailedDescription,
+          budgetMin,
+          budgetMax,
+          serviceStart,
+          duration,
+          hourlyBasis,
+          selectedKeywords,
+          suggestedKeywords,
+          escrowRequested,
+          termsAccepted,
+          detectedCategory,
+          currentStep: 3,
+        };
+        sessionStorage.setItem('pendingGig', JSON.stringify(pendingGigData));
+        toast.info("Please create an account to post your gig. Your details have been saved.");
+        navigate("/register?returnTo=/post-gig");
+        setLoading(false);
         return;
       }
 
