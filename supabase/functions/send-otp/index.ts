@@ -267,8 +267,18 @@ const handler = async (req: Request): Promise<Response> => {
     }
   } catch (error: any) {
     console.error("Error sending OTP:", error);
+    console.error("Error stack:", error.stack);
+    console.error("Error details:", JSON.stringify(error, null, 2));
+    
+    // Return detailed error for debugging
+    const errorDetails = {
+      error: error.message || "Failed to send verification code",
+      details: error.stack || String(error),
+      type: error.constructor?.name || typeof error,
+    };
+    
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to send verification code" }),
+      JSON.stringify(errorDetails),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

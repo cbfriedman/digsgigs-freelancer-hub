@@ -335,9 +335,8 @@ const Register = () => {
         return;
       }
 
-      // Check if email is already registered
-      const { data: existingUser } = await supabase.auth.admin?.listUsers() || { data: null };
-      // Note: We can't directly check, so we'll let signUp handle it
+      // Note: We can't check if email exists from client side, so we'll let signUp handle it
+      // If email already exists, signUp will return an error which we'll handle
 
       // Generate OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -358,12 +357,19 @@ const Register = () => {
 
       if (otpError) {
         console.error("OTP send error:", otpError);
+        console.error("OTP error details:", JSON.stringify(otpError, null, 2));
+        
+        // Try to get more details from the error
+        let errorMessage = otpError.message || "Failed to send verification code. Please try again.";
+        
         // Check if it's a configuration error
         if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('TWILIO') || otpError.message?.includes('not configured')) {
-          toast.error(`${verificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`);
-        } else {
-          toast.error(otpError.message || "Failed to send verification code. Please try again.");
+          errorMessage = `${verificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`;
+        } else if (otpError.message?.includes('500') || otpError.message?.includes('Internal Server Error')) {
+          errorMessage = "Server error occurred. Please check that the send-otp function is properly configured with all required secrets (RESEND_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY).";
         }
+        
+        toast.error(errorMessage);
         setLoading(false);
         return;
       }
