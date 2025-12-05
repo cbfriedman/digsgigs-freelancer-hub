@@ -309,9 +309,11 @@ const router = createBrowserRouter([
     path: "/demo/gig-registration",
     element: <GigRegistrationDemo />,
   },
-  {
-    path: "*",
-    element: <NotFound />,
+      {
+        path: "*",
+        element: <NotFound />,
+      },
+    ],
   },
 ]);
 
