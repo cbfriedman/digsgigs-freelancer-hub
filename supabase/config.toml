@@ -156,3 +156,9 @@ verify_jwt = false
 [functions.auto-categorize-gig]
 verify_jwt = false
 
+[functions.handle-proxy-email]
+verify_jwt = false
+
+[functions.get-proxy-email]
+verify_jwt = true
+

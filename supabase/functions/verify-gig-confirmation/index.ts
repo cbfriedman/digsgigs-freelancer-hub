@@ -69,82 +69,18 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error matching diggers:", matchError);
     }
 
-    // Redirect to success page
-    const redirectUrl = `${supabaseUrl.replace('/functions/v1', '')}/gig-confirmed?gigId=${gigId}`;
+    // Redirect to frontend success page
+    const siteUrl = Deno.env.get("SITE_URL") || "https://preview--digsandgigs.lovable.app";
+    const redirectUrl = `${siteUrl}/gig-confirmed?gigId=${gigId}`;
     
-    return new Response(
-      `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Gig Confirmed - Digs and Gigs</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
-              margin: 0;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
-            .card {
-              background: white;
-              padding: 40px;
-              border-radius: 16px;
-              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-              text-align: center;
-              max-width: 500px;
-            }
-            .success-icon {
-              font-size: 64px;
-              margin-bottom: 20px;
-            }
-            h1 {
-              color: #667eea;
-              margin: 0 0 16px 0;
-            }
-            p {
-              color: #666;
-              line-height: 1.6;
-              margin: 0 0 24px 0;
-            }
-            .button {
-              display: inline-block;
-              background: #667eea;
-              color: white;
-              padding: 12px 32px;
-              text-decoration: none;
-              border-radius: 8px;
-              font-weight: bold;
-              margin-top: 8px;
-            }
-            .button:hover {
-              background: #764ba2;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="card">
-            <div class="success-icon">✓</div>
-            <h1>Gig Confirmed!</h1>
-            <p>Your gig has been successfully confirmed and is now live. Qualified professionals in your area will be notified and can start sending you proposals.</p>
-            <p>You will receive notifications when professionals purchase your lead and reach out to you.</p>
-            <a href="/" class="button">Return to Dashboard</a>
-          </div>
-        </body>
-      </html>
-      `,
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "text/html",
-          ...corsHeaders,
-        },
-      }
-    );
+    console.log("Redirecting to:", redirectUrl);
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        "Location": redirectUrl,
+      },
+    });
   } catch (error: any) {
     console.error("Error confirming gig:", error);
     return new Response(

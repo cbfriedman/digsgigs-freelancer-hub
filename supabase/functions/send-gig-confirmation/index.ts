@@ -14,8 +14,7 @@ interface GigConfirmationRequest {
   gigTitle: string;
   gigDescription: string;
   location: string;
-  budgetMin?: number;
-  budgetMax?: number;
+  estimatedBudget?: number;
   keywords: string[];
 }
 
@@ -31,21 +30,18 @@ const handler = async (req: Request): Promise<Response> => {
       gigTitle,
       gigDescription,
       location,
-      budgetMin,
-      budgetMax,
+      estimatedBudget,
       keywords,
     }: GigConfirmationRequest = await req.json();
 
     const confirmationUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/verify-gig-confirmation?gigId=${gigId}`;
     
-    const budgetText = budgetMin && budgetMax 
-      ? `$${budgetMin.toLocaleString()} - $${budgetMax.toLocaleString()}`
-      : budgetMin
-      ? `Starting at $${budgetMin.toLocaleString()}`
+    const budgetText = estimatedBudget 
+      ? `$${estimatedBudget.toLocaleString()}`
       : "Budget not specified";
 
     const emailResponse = await resend.emails.send({
-      from: "Digs and Gigs <onboarding@resend.dev>",
+      from: "Digs and Gigs <noreply@digsandgigs.net>",
       to: [email],
       subject: "Confirm Your Gig Posting - Digs and Gigs",
       html: `

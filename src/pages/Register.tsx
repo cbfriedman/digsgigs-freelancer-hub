@@ -49,6 +49,32 @@ const basicInfoSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Schema for gig posting flow (no full name required)
+const gigPostingSchema = z.object({
+  email: z.string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Invalid email format")
+    .max(255, "Email must be less than 255 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(100, "Password must be less than 100 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string(),
+  phone: z.string()
+    .trim()
+    .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format. Use international format (e.g., +1234567890)")
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must be less than 15 digits")
+    .optional()
+    .or(z.literal("")),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
 type UserAppRole = 'digger' | 'gigger' | 'telemarketer';
 
 interface RoleFormData {
@@ -73,6 +99,13 @@ const Register = () => {
     redirectIfAuthenticated: true,
     requireVerified: false // Allow unverified users to complete registration
   });
+  
+  // Check if user is coming from gig posting flow (Craigslist model - no OTP required)
+  const isFromGigPosting = new URLSearchParams(window.location.search).get('returnTo') === '/post-gig';
+  
+  // Get gig title from sessionStorage for display
+  const pendingGigData = isFromGigPosting ? JSON.parse(sessionStorage.getItem('pendingGigData') || '{}') : {};
+  const gigTitle = pendingGigData.title || 'Your Gig';
   
   const [isSignInMode, setIsSignInMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -109,6 +142,8 @@ const Register = () => {
   const [signInOtpSent, setSignInOtpSent] = useState(false); // Track if OTP was sent during sign-in
   const [signInVerificationMethod, setSignInVerificationMethod] = useState<'email' | 'sms'>('email');
   const [userPhone, setUserPhone] = useState<string | null>(null); // Store user's phone for sign-in
+  const [pendingDiggerVerification, setPendingDiggerVerification] = useState(false); // Track if we're verifying for Digger role
+  const [isDiggerLogin, setIsDiggerLogin] = useState(false); // Track if login is for Digger (requires OTP every time)
 
   // Step 2: Role Selection
   const [selectedRoles, setSelectedRoles] = useState<Set<UserAppRole>>(new Set());
@@ -161,9 +196,35 @@ const Register = () => {
     }
   }, [isSignInMode]);
 
-  // Auto-advance verified users without roles to role selection
+  // Auto-advance verified users without roles to role selection, or redirect to post-gig if coming from gig posting
   useEffect(() => {
     if (!authLoading && !isSignInMode && !isPasswordResetMode && user && user.email_confirmed_at && step === 1) {
+      // If coming from gig posting flow and already logged in, ensure gigger role and redirect
+      if (isFromGigPosting) {
+        const ensureGiggerRoleAndRedirect = async () => {
+          // Check if user already has gigger role
+          const { data: existingRoles } = await supabase
+            .from('user_app_roles')
+            .select('app_role')
+            .eq('user_id', user.id)
+            .eq('app_role', 'gigger');
+          
+          // If no gigger role, create one
+          if (!existingRoles || existingRoles.length === 0) {
+            await supabase
+              .from('user_app_roles')
+              .insert({ user_id: user.id, app_role: 'gigger' });
+          }
+          
+          toast.success("You're ready to post your gig!");
+          isNavigatingRef.current = true;
+          navigate('/post-gig');
+        };
+        
+        ensureGiggerRoleAndRedirect();
+        return;
+      }
+      
       // Check if user has roles
       const checkUserRoles = async () => {
         const { data, error } = await supabase
@@ -184,7 +245,7 @@ const Register = () => {
       
       checkUserRoles();
     }
-  }, [authLoading, isSignInMode, isPasswordResetMode, user, step]);
+  }, [authLoading, isSignInMode, isPasswordResetMode, user, step, isFromGigPosting, navigate]);
 
 
   // Don't show loading spinner in password reset mode - show the form immediately
@@ -205,14 +266,74 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // SECURITY: Validate inputs before proceeding
-      basicInfoSchema.parse({
-        fullName,
-        email,
-        password,
-        confirmPassword,
-        phone: phone || "",
-      });
+      // SECURITY: Validate inputs before proceeding - use different schema for gig posting
+      if (isFromGigPosting) {
+        gigPostingSchema.parse({
+          email,
+          password,
+          confirmPassword,
+          phone: phone || "",
+        });
+      } else {
+        basicInfoSchema.parse({
+          fullName,
+          email,
+          password,
+          confirmPassword,
+          phone: phone || "",
+        });
+      }
+
+      // Skip OTP for gig posting flow (Craigslist model) - create account directly with Gigger role
+      if (isFromGigPosting) {
+        const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+        
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { 
+              full_name: fullName, 
+              phone: formattedPhone 
+            },
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        });
+        
+        if (authError) {
+          console.error("Signup error:", authError);
+          if (authError.message?.includes('already registered')) {
+            setExistingAccountError(true);
+            toast.error("This email is already registered. Please sign in instead.");
+          } else {
+            toast.error(authError.message || "Failed to create account");
+          }
+          setLoading(false);
+          return;
+        }
+        
+        if (authData.user) {
+          setUserId(authData.user.id);
+          // Auto-select Gigger role for gig posting flow
+          setSelectedRoles(new Set(['gigger']));
+          
+          // Create the Gigger role immediately
+          const { error: roleError } = await supabase
+            .from('user_app_roles')
+            .insert({ user_id: authData.user.id, app_role: 'gigger' });
+          
+          if (roleError) {
+            console.error("Error creating Gigger role:", roleError);
+          }
+          
+          toast.success("Account created! Posting your gig...");
+          // Navigate directly to post-gig to complete posting (skip Gigger form)
+          isNavigatingRef.current = true;
+          navigate('/post-gig');
+        }
+        setLoading(false);
+        return;
+      }
 
       // Check if email is already registered
       const { data: existingUser } = await supabase.auth.admin?.listUsers() || { data: null };
@@ -305,9 +426,39 @@ const Register = () => {
         setLoading(false);
         return;
       }
+
+      // Handle Digger login OTP verification
+      if (isDiggerLogin) {
+        // Sign in the user after OTP verification
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          toast.error(signInError.message || "Failed to sign in after verification");
+          setLoading(false);
+          return;
+        }
+
+        setIsDiggerLogin(false);
+        toast.success("Verification successful! Welcome back!");
+        navigate('/role-dashboard');
+        return;
+      }
+
+      // Handle Digger registration verification (after role selection)
+      if (pendingDiggerVerification) {
+        setPendingDiggerVerification(false);
+        toast.success("Email verified! Continue with your Digger registration.");
+        setStep(4); // Go to role forms
+        setCurrentRoleIndex(0);
+        setLoading(false);
+        return;
+      }
       
-      // Code is verified! Now create the Supabase account
-      // formattedPhone is already declared above (line 280)
+      // Normal registration flow - Code is verified! Now create the Supabase account
+      // formattedPhone is already declared above (line 404)
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -408,9 +559,44 @@ const Register = () => {
     }
   };
 
-  const handleRoleSelection = () => {
+  const handleRoleSelection = async () => {
     if (selectedRoles.size === 0) {
       toast.error("Please select at least one role");
+      return;
+    }
+
+    // If Digger is selected, require email verification before proceeding
+    if (selectedRoles.has('digger') && !pendingDiggerVerification) {
+      setLoading(true);
+      try {
+        // Generate and send OTP for Digger verification
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        const { error: otpError } = await supabase.functions.invoke('send-otp-email', {
+          body: {
+            email,
+            code: otpCode,
+            name: fullName,
+          },
+        });
+
+        if (otpError) {
+          console.error("OTP send error:", otpError);
+          toast.error("Failed to send verification code. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        setPendingDiggerVerification(true);
+        setOtpSent(true);
+        toast.info("Digger registration requires email verification. Please check your email for the code.");
+        setStep(2); // Go to verification step
+      } catch (error: any) {
+        console.error("Error sending OTP:", error);
+        toast.error("Failed to send verification code");
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -554,7 +740,7 @@ const Register = () => {
 
       console.log("User authenticated:", signInData.user.email);
 
-      // Get user's phone from profile
+      // Get user's phone from profile for 2FA (required for all users on every login)
       const { data: profileData } = await supabase
         .from('profiles')
         .select('phone')
@@ -838,10 +1024,10 @@ const Register = () => {
               )}
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : step === 1 ? "Create Your Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
+              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : (step === 1 && isFromGigPosting) ? "Register your Gig" : step === 1 ? "Create your Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
             </CardTitle>
             <CardDescription>
-              {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : (step === 1 && isFromGigPosting) ? "Create an account to post and manage your gig" : step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
             </CardDescription>
 
             {/* Progress Bar - Only show during registration */}
@@ -1141,6 +1327,14 @@ const Register = () => {
             {/* Step 1: Basic Information */}
             {!isSignInMode && !isPasswordResetMode && step === 1 && (
               <form onSubmit={handleBasicInfoSubmit} className="space-y-4">
+                {/* Show Gig Title when coming from gig posting */}
+                {isFromGigPosting && (
+                  <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-muted-foreground mb-1">Posting:</p>
+                    <h3 className="font-semibold text-lg text-foreground">{gigTitle}</h3>
+                  </div>
+                )}
+
                 {existingAccountError && (
                   <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
                     <div className="flex items-start gap-2">
@@ -1196,18 +1390,21 @@ const Register = () => {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    maxLength={100}
-                  />
-                </div>
+                {/* Hide full name for gig posting flow - not needed */}
+                {!isFromGigPosting && (
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="John Doe"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      maxLength={100}
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address *</Label>
@@ -1229,7 +1426,7 @@ const Register = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">
-                    Phone Number *
+                    Phone Number * {isFromGigPosting ? "(for Diggers to contact you)" : ""}
                   </Label>
                   <Input
                     id="phone"
@@ -1288,9 +1485,9 @@ const Register = () => {
                   <div className="flex items-center gap-2 p-3 border rounded-lg bg-accent/50">
                     <Mail className="h-4 w-4 text-primary" />
                     <div>
-                      <div className="font-medium">Instant Account Creation</div>
+                      <div className="font-medium">{isFromGigPosting ? "Email Confirmation Required" : "Instant Account Creation"}</div>
                       <div className="text-xs text-muted-foreground">
-                        Your account will be created immediately
+                        {isFromGigPosting ? "You'll receive an email to confirm your gig posting" : "Your account will be created immediately"}
                       </div>
                     </div>
                   </div>
@@ -1409,7 +1606,7 @@ const Register = () => {
                     className="w-full" 
                     disabled={loading}
                   >
-                    {loading ? "Sending Code..." : "Verify my Email"} 
+                    {loading ? (isFromGigPosting ? "Creating Account..." : "Sending Code...") : (isFromGigPosting ? "Register & Post Gig" : "Verify my Email")} 
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
@@ -1511,37 +1708,44 @@ const Register = () => {
               <div className="space-y-6">
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Select one or more roles. You can always add more later.
+                    {isFromGigPosting 
+                      ? "You're registering as a Gigger to post your gig."
+                      : "Select one or more roles. You can always add more later."}
                   </p>
 
-                  {/* Digger Role */}
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      selectedRoles.has('digger')
-                        ? 'ring-2 ring-primary bg-primary/5'
-                        : 'hover:bg-accent'
-                    }`}
-                    onClick={() => toggleRole('digger')}
-                  >
-                    <CardContent className="flex items-start space-x-4 p-4">
-                      <Checkbox
-                        checked={selectedRoles.has('digger')}
-                        onCheckedChange={() => toggleRole('digger')}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">Find Work as a Professional (Digger)</h3>
-                          <Badge variant="secondary">🔧</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Get matched with gigs, purchase leads, bid on projects, and grow your business.
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Only show Gigger role when coming from gig posting, otherwise show all roles */}
+                  {!isFromGigPosting && (
+                    <>
+                      {/* Digger Role */}
+                      <Card
+                        className={`cursor-pointer transition-all ${
+                          selectedRoles.has('digger')
+                            ? 'ring-2 ring-primary bg-primary/5'
+                            : 'hover:bg-accent'
+                        }`}
+                        onClick={() => toggleRole('digger')}
+                      >
+                        <CardContent className="flex items-start space-x-4 p-4">
+                          <Checkbox
+                            checked={selectedRoles.has('digger')}
+                            onCheckedChange={() => toggleRole('digger')}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">Find Work as a Professional (Digger)</h3>
+                              <Badge variant="secondary">🔧</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Get matched with gigs, purchase leads, bid on projects, and grow your business.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
 
-                  {/* Gigger Role */}
+                  {/* Gigger Role - Always show */}
                   <Card
                     className={`cursor-pointer transition-all ${
                       selectedRoles.has('gigger')
@@ -1568,32 +1772,36 @@ const Register = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Telemarketer Role */}
-                  <Card
-                    className={`cursor-pointer transition-all ${
-                      selectedRoles.has('telemarketer')
-                        ? 'ring-2 ring-primary bg-primary/5'
-                        : 'hover:bg-accent'
-                    }`}
-                    onClick={() => toggleRole('telemarketer')}
-                  >
-                    <CardContent className="flex items-start space-x-4 p-4">
-                      <Checkbox
-                        checked={selectedRoles.has('telemarketer')}
-                        onCheckedChange={() => toggleRole('telemarketer')}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">Upload Leads & Earn Commissions (Telemarketer)</h3>
-                          <Badge variant="secondary">📞</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Upload verified leads and earn commission when they're awarded to professionals.
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {!isFromGigPosting && (
+                    <>
+                      {/* Telemarketer Role */}
+                      <Card
+                        className={`cursor-pointer transition-all ${
+                          selectedRoles.has('telemarketer')
+                            ? 'ring-2 ring-primary bg-primary/5'
+                            : 'hover:bg-accent'
+                        }`}
+                        onClick={() => toggleRole('telemarketer')}
+                      >
+                        <CardContent className="flex items-start space-x-4 p-4">
+                          <Checkbox
+                            checked={selectedRoles.has('telemarketer')}
+                            onCheckedChange={() => toggleRole('telemarketer')}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">Upload Leads & Earn Commissions (Telemarketer)</h3>
+                              <Badge variant="secondary">📞</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Upload verified leads and earn commission when they're awarded to professionals.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex gap-2">

@@ -9,6 +9,7 @@ import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
+import { PageViewTracker } from "./components/PageViewTracker";
 // Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
@@ -62,6 +63,7 @@ import Register from "./pages/Register";
 import RoleDashboard from "./pages/RoleDashboard";
 import Logout from "./pages/Logout";
 import KeywordSummary from "./pages/KeywordSummary";
+import GigConfirmed from "./pages/GigConfirmed";
 
 const queryClient = new QueryClient();
 
@@ -71,11 +73,19 @@ const PresenceTracker = () => {
   return null;
 };
 
+// Layout wrapper that includes PageViewTracker for all routes
+const RootLayout = ({ children }: { children: React.ReactNode }) => (
+  <>
+    <PageViewTracker />
+    {children}
+  </>
+);
+
 // Create router with all routes - forcing fresh registration
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Index />,
+    element: <RootLayout><Index /></RootLayout>,
   },
   {
     path: "/register",
@@ -148,7 +158,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/post-gig",
-    element: <ProtectedRoute><PostGig /></ProtectedRoute>,
+    element: <PostGig />,  // No auth required - Craigslist model
   },
   {
     path: "/my-gigs",
@@ -181,6 +191,10 @@ const router = createBrowserRouter([
   {
     path: "/digger/:id",
     element: <ProtectedRoute><DiggerDetail /></ProtectedRoute>,
+  },
+  {
+    path: "/gig-confirmed",
+    element: <GigConfirmed />,
   },
   {
     path: "/how-it-works",

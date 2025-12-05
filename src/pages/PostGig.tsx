@@ -38,8 +38,7 @@ const PostGig = () => {
   const [detectedCategory, setDetectedCategory] = useState<{id: string, name: string, parentName: string} | null>(null);
   const [projectTitle, setProjectTitle] = useState("");
   const [detailedDescription, setDetailedDescription] = useState("");
-  const [budgetMin, setBudgetMin] = useState("");
-  const [budgetMax, setBudgetMax] = useState("");
+  const [estimatedBudget, setEstimatedBudget] = useState("");
   const [serviceStart, setServiceStart] = useState("");
   const [duration, setDuration] = useState("");
   const [hourlyBasis, setHourlyBasis] = useState("");
@@ -50,19 +49,42 @@ const PostGig = () => {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [customKeyword, setCustomKeyword] = useState("");
 
+  // Check for pending gig data after returning from registration
   useEffect(() => {
-    checkAuth();
+    const checkPendingGig = async () => {
+      const pendingGig = sessionStorage.getItem('pendingGig');
+      if (pendingGig) {
+        const gigData = JSON.parse(pendingGig);
+        // Restore form state
+        setProfessionDescription(gigData.professionDescription || "");
+        setZipcode(gigData.zipcode || "");
+        setEmail(gigData.email || "");
+        setPhone(gigData.phone || "");
+        setProjectTitle(gigData.projectTitle || "");
+        setDetailedDescription(gigData.detailedDescription || "");
+        setEstimatedBudget(gigData.estimatedBudget || "");
+        setServiceStart(gigData.serviceStart || "");
+        setDuration(gigData.duration || "");
+        setHourlyBasis(gigData.hourlyBasis || "");
+        setSelectedKeywords(gigData.selectedKeywords || []);
+        setSuggestedKeywords(gigData.suggestedKeywords || []);
+        setEscrowRequested(gigData.escrowRequested || false);
+        setTermsAccepted(gigData.termsAccepted || false);
+        if (gigData.detectedCategory) {
+          setDetectedCategory(gigData.detectedCategory);
+        }
+        setCurrentStep(gigData.currentStep || 3);
+        
+        // Check if user is now logged in and auto-submit
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          sessionStorage.removeItem('pendingGig');
+          toast.success("Welcome back! Your gig details have been restored. Click 'Post Gig' to submit.");
+        }
+      }
+    };
+    checkPendingGig();
   }, []);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      toast.error("Please sign in to post a gig");
-      navigate("/register");
-      return;
-    }
-  };
 
   const handleStep1Submit = async () => {
     if (!professionDescription.trim() || !zipcode.trim() || !email.trim() || !phone.trim()) {
@@ -196,9 +218,31 @@ const PostGig = () => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // If not logged in, save gig data and redirect to registration
       if (!session) {
-        toast.error("Session expired. Please sign in again.");
-        navigate("/register");
+        const pendingGigData = {
+          professionDescription,
+          zipcode,
+          email,
+          phone,
+          projectTitle,
+          detailedDescription,
+          estimatedBudget,
+          serviceStart,
+          duration,
+          hourlyBasis,
+          selectedKeywords,
+          suggestedKeywords,
+          escrowRequested,
+          termsAccepted,
+          detectedCategory,
+          currentStep: 3,
+        };
+        sessionStorage.setItem('pendingGig', JSON.stringify(pendingGigData));
+        toast.info("Please create an account to post your gig. Your details have been saved.");
+        navigate("/register?returnTo=/post-gig");
+        setLoading(false);
         return;
       }
 
@@ -225,8 +269,8 @@ const PostGig = () => {
           location_lat: locationLat,
           location_lng: locationLng,
           timeline: `${serviceStart} - ${duration}`,
-          budget_min: budgetMin ? parseFloat(budgetMin.replace(/[^0-9.]/g, '')) : undefined,
-          budget_max: budgetMax ? parseFloat(budgetMax.replace(/[^0-9.]/g, '')) : undefined,
+          budget_min: estimatedBudget ? parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) : undefined,
+          budget_max: null,
           category_id: detectedCategory?.id,
           consumer_phone: phone,
           consumer_email: email,
@@ -271,8 +315,7 @@ const PostGig = () => {
           gigTitle: projectTitle,
           gigDescription: detailedDescription,
           location: zipcode,
-          budgetMin: budgetMin ? parseFloat(budgetMin.replace(/[^0-9.]/g, '')) : undefined,
-          budgetMax: budgetMax ? parseFloat(budgetMax.replace(/[^0-9.]/g, '')) : undefined,
+          estimatedBudget: estimatedBudget ? parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) : undefined,
           keywords: selectedKeywords,
         },
       });
@@ -284,6 +327,23 @@ const PostGig = () => {
       }
 
       toast.success("Confirmation email sent! Please check your inbox to confirm your gig.");
+      
+      // Track gig submission as GA4 conversion event
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'gig_submitted', {
+          event_category: 'conversion',
+          event_label: detectedCategory?.name || 'unknown',
+          value: 1,
+          gig_id: gigData.id,
+          category: detectedCategory?.name,
+          parent_category: detectedCategory?.parentName,
+          zipcode: zipcode,
+          has_budget: !!estimatedBudget,
+          keyword_count: selectedKeywords.length,
+          escrow_requested: escrowRequested
+        });
+      }
+      
       navigate("/");
     } catch (error: any) {
       console.error("Error posting gig:", error);
@@ -304,10 +364,9 @@ const PostGig = () => {
     });
   };
 
-  const handleBudgetChange = (field: 'min' | 'max', value: string) => {
+  const handleBudgetChange = (value: string) => {
     const formatted = formatCurrency(value);
-    if (field === 'min') setBudgetMin(formatted);
-    else setBudgetMax(formatted);
+    setEstimatedBudget(formatted);
   };
 
   return (
@@ -493,25 +552,14 @@ const PostGig = () => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="budgetMin">Min Budget ($) <span className="text-muted-foreground text-sm">(Optional)</span></Label>
-                    <Input
-                      id="budgetMin"
-                      placeholder="5,000"
-                      value={budgetMin}
-                      onChange={(e) => handleBudgetChange('min', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="budgetMax">Max Budget ($) <span className="text-muted-foreground text-sm">(Optional)</span></Label>
-                    <Input
-                      id="budgetMax"
-                      placeholder="10,000"
-                      value={budgetMax}
-                      onChange={(e) => handleBudgetChange('max', e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedBudget">Estimated Budget ($) <span className="text-muted-foreground text-sm">(Optional)</span></Label>
+                  <Input
+                    id="estimatedBudget"
+                    placeholder="10,000"
+                    value={estimatedBudget}
+                    onChange={(e) => handleBudgetChange(e.target.value)}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -848,12 +896,10 @@ const PostGig = () => {
                       </div>
                     </div>
 
-                    {(budgetMin || budgetMax) && (
+                    {estimatedBudget && (
                       <div>
-                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Budget Range</h3>
-                        <p className="text-sm">
-                          ${budgetMin || '0'} - ${budgetMax || '0'}
-                        </p>
+                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Estimated Budget</h3>
+                        <p className="text-sm">${estimatedBudget}</p>
                       </div>
                     )}
 
