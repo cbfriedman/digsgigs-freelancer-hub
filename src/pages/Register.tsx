@@ -359,14 +359,50 @@ const Register = () => {
         console.error("OTP send error:", otpError);
         console.error("OTP error details:", JSON.stringify(otpError, null, 2));
         
-        // Try to get more details from the error
-        let errorMessage = otpError.message || "Failed to send verification code. Please try again.";
+        // Try to extract error details from the response
+        let errorMessage = "Failed to send verification code. Please try again.";
+        let errorDetails = "";
+        
+        // Check if error has a message
+        if (otpError.message) {
+          errorMessage = otpError.message;
+        }
+        
+        // Try to parse error details from the response if available
+        if (otpError.context && typeof otpError.context === 'object') {
+          const context = otpError.context as any;
+          if (context.body) {
+            try {
+              const parsedBody = typeof context.body === 'string' ? JSON.parse(context.body) : context.body;
+              if (parsedBody.error) {
+                errorMessage = parsedBody.error;
+              }
+              if (parsedBody.details) {
+                errorDetails = parsedBody.details;
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
         
         // Check if it's a configuration error
-        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('TWILIO') || otpError.message?.includes('not configured')) {
+        if (errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('TWILIO') || errorMessage.includes('not configured')) {
           errorMessage = `${verificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`;
-        } else if (otpError.message?.includes('500') || otpError.message?.includes('Internal Server Error')) {
-          errorMessage = "Server error occurred. Please check that the send-otp function is properly configured with all required secrets (RESEND_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY).";
+          if (verificationMethod === 'sms') {
+            errorMessage += " Twilio credentials (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER) need to be set in Supabase secrets.";
+          }
+        } else if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) {
+          if (verificationMethod === 'sms') {
+            errorMessage = "SMS service error. Please ensure Twilio is configured in Supabase secrets, or use email verification instead.";
+          } else {
+            errorMessage = "Server error occurred. Please check that the send-otp function is properly configured with all required secrets.";
+          }
+        }
+        
+        // Show error with details if available
+        if (errorDetails && !errorMessage.includes(errorDetails)) {
+          console.error("Error details:", errorDetails);
         }
         
         toast.error(errorMessage);
@@ -1623,7 +1659,13 @@ const Register = () => {
                     className="w-full" 
                     disabled={loading}
                   >
-                    {loading ? (isFromGigPosting ? "Creating Account..." : "Sending Code...") : (isFromGigPosting ? "Register & Post Gig" : "Verify my Email")} 
+                    {loading 
+                      ? (isFromGigPosting ? "Creating Account..." : "Sending Code...") 
+                      : (isFromGigPosting 
+                          ? "Register & Post Gig" 
+                          : verificationMethod === 'email' 
+                            ? "Verify my Email" 
+                            : "Send SMS Code")} 
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}

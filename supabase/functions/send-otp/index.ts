@@ -231,6 +231,25 @@ const handler = async (req: Request): Promise<Response> => {
         },
       });
     } else if (method === 'sms') {
+      // Check if Twilio is configured before attempting to send
+      if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+        console.error("Twilio is not configured. Missing secrets:", {
+          hasAccountSid: !!TWILIO_ACCOUNT_SID,
+          hasAuthToken: !!TWILIO_AUTH_TOKEN,
+          hasPhoneNumber: !!TWILIO_PHONE_NUMBER,
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: "SMS service is not configured. Please use email verification or contact support.",
+            details: "Twilio credentials (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER) are not set in Supabase secrets."
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
       try {
         const smsMessage = `Digs and Gigs: Your verification code is ${code}. This code expires in 5 minutes.`;
         await sendTwilioSMS(phone!, smsMessage);
@@ -245,10 +264,11 @@ const handler = async (req: Request): Promise<Response> => {
         });
       } catch (smsError: any) {
         console.error("SMS sending error:", smsError);
+        const errorMessage = smsError.message || "Failed to send SMS";
         return new Response(
           JSON.stringify({ 
             error: "Failed to send SMS. Please check your phone number or try email verification.",
-            details: smsError.message
+            details: errorMessage
           }),
           {
             status: 500,
