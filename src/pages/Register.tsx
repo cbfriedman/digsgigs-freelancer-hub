@@ -1150,6 +1150,7 @@ const Register = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        autoComplete="username"
                         disabled={loading}
                       />
                     </div>
@@ -1404,6 +1405,7 @@ const Register = () => {
                       type="text"
                       placeholder="John Doe"
                       value={fullName}
+                      autoComplete="name"
                       onChange={(e) => setFullName(e.target.value)}
                       required
                       maxLength={100}
@@ -1425,6 +1427,7 @@ const Register = () => {
                       }
                     }}
                     required
+                    autoComplete="username"
                     maxLength={255}
                   />
                 </div>
@@ -1440,6 +1443,7 @@ const Register = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
+                    autoComplete="tel"
                     maxLength={15}
                   />
                   <p className="text-xs text-muted-foreground">
