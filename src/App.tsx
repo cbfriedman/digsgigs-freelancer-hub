@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
@@ -74,24 +74,29 @@ const PresenceTracker = () => {
 };
 
 // Layout wrapper that includes PageViewTracker for all routes
-const RootLayout = ({ children }: { children: React.ReactNode }) => (
-  <>
-    <PageViewTracker />
-    {children}
-  </>
-);
+const RootLayout = () => {
+  return (
+    <>
+      <PageViewTracker />
+      <Outlet />
+    </>
+  );
+};
 
 // Create router with all routes - forcing fresh registration
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <RootLayout><Index /></RootLayout>,
-  },
-  {
-    path: "/register",
-    element: <Register />,
-    errorElement: <div>Register route error</div>,
-  },
+    element: <RootLayout />,
+    children: [
+      {
+        path: "/",
+        element: <Index />,
+      },
+      {
+        path: "/register",
+        element: <Register />,
+        errorElement: <div>Register route error</div>,
+      },
   {
     path: "/logout",
     element: <Logout />,
