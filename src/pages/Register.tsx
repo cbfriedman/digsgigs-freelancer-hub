@@ -1056,6 +1056,7 @@ const Register = () => {
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
                       minLength={8}
+                      autoComplete="new-password"
                       className="pr-10"
                     />
                     <Button
@@ -1087,6 +1088,7 @@ const Register = () => {
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
                       required
+                      autoComplete="new-password"
                       className="pr-10"
                     />
                     <Button
@@ -1117,6 +1119,7 @@ const Register = () => {
                 <p className="text-center text-sm text-muted-foreground">
                   Remember your password?{" "}
                   <Button
+                    type="button"
                     variant="link"
                     className="p-0 h-auto"
                     onClick={() => {
@@ -1161,6 +1164,7 @@ const Register = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
+                          autoComplete="current-password"
                           className="pr-10"
                           disabled={loading}
                         />
@@ -1301,6 +1305,7 @@ const Register = () => {
                 <p className="text-center text-sm text-muted-foreground">
                   Don't have an account?{" "}
                   <Button
+                    type="button"
                     variant="link"
                     className="p-0 h-auto"
                     onClick={() => {
@@ -1503,6 +1508,7 @@ const Register = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      autoComplete="new-password"
                       maxLength={100}
                     />
                     <Button
@@ -1534,6 +1540,7 @@ const Register = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
+                      autoComplete="new-password"
                       maxLength={100}
                     />
                     <Button
