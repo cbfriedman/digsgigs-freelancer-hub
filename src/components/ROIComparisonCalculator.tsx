@@ -77,7 +77,7 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
 // Conversion rates by lead type (different from Google CPC 14%)
 const LEAD_TYPE_CONVERSION_RATES = {
   nonExclusiveUnconfirmed: 0.05,  // 5%
-  nonExclusiveConfirmed: 0.08,    // 8%
+  nonExclusiveConfirmed: 0.07,    // 7%
   semiExclusive: 0.15,            // 15%
   exclusive24h: 0.40,             // 40%
 };
@@ -328,7 +328,7 @@ export const ROIComparisonCalculator = () => {
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">Non-Exclusive Confirmed</p>
-                  <p className="text-[10px] text-primary">8% conv • ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-primary">7% conv • ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</p>
                 </div>
                 <p className="text-lg font-bold text-foreground text-center">
                   ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}
@@ -428,7 +428,7 @@ export const ROIComparisonCalculator = () => {
                   <p>Lead Cost ÷ Conversion Rate</p>
                   <ul className="mt-1 space-y-1">
                     <li className="text-primary">Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)} ÷ 5% = ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}</li>
-                    <li className="text-primary">Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)} ÷ 8% = ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}</li>
+                    <li className="text-primary">Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)} ÷ 7% = ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}</li>
                     <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)} ÷ 15% = ${platformCostPerDeal.semiExclusive.toFixed(0)}</li>
                     <li className="text-primary">24hr Exclusive: ${platformCosts.exclusive24h.toFixed(2)} ÷ 40% = ${platformCostPerDeal.exclusive24h.toFixed(0)}</li>
                   </ul>
