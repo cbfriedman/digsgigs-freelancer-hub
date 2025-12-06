@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, DollarSign, Target, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { GOOGLE_CPC_KEYWORDS, type IndustryCpcData } from "@/config/googleCpcKeywords";
+import { INDUSTRY_GROUPS, getLeadCostForIndustry } from "@/config/pricing";
+import { getKeywordCPC } from "@/config/googleCpcKeywords";
 
 interface CompetitorPlatform {
   name: string;
@@ -84,53 +85,42 @@ const LEAD_TYPE_CONVERSION_RATES = {
 // Default CPC for Construction (use $35 as standard)
 const DEFAULT_CONSTRUCTION_CPC = 35;
 
-// Group industries by category for the dropdown
-const getIndustryCategories = () => {
-  const categories: Record<string, IndustryCpcData[]> = {
-    'high-value': [],
-    'mid-value': [],
-    'low-value': [],
-  };
+// Calculate average CPC for a category based on its industries
+const getCategoryAverageCPC = (categoryName: string): number => {
+  const group = INDUSTRY_GROUPS.find(g => g.categoryName === categoryName);
+  if (!group) return DEFAULT_CONSTRUCTION_CPC;
   
-  GOOGLE_CPC_KEYWORDS.forEach(industry => {
-    categories[industry.category].push(industry);
+  let totalCpc = 0;
+  let count = 0;
+  
+  group.industries.forEach(industry => {
+    const cpc = getKeywordCPC(industry.name);
+    if (cpc && cpc > 0) {
+      totalCpc += cpc;
+      count++;
+    }
   });
   
-  return categories;
+  return count > 0 ? Math.round(totalCpc / count) : DEFAULT_CONSTRUCTION_CPC;
 };
 
 export const ROIComparisonCalculator = () => {
-  const [selectedIndustry, setSelectedIndustry] = useState<string>("HVAC");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Construction & Home Services");
   const [selectedCompetitor, setSelectedCompetitor] = useState<string>("Google AdWords");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const industryCategories = useMemo(() => getIndustryCategories(), []);
-  
-  const industry = useMemo(() => 
-    GOOGLE_CPC_KEYWORDS.find(i => i.industry === selectedIndustry) || GOOGLE_CPC_KEYWORDS[0],
-    [selectedIndustry]
-  );
+  // Filter categories based on search term
+  const filteredCategories = useMemo(() => {
+    if (!searchTerm.trim()) return INDUSTRY_GROUPS;
+    return INDUSTRY_GROUPS.filter(group =>
+      group.categoryName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
   
   const competitor = COMPETITOR_PLATFORMS.find(c => c.name === selectedCompetitor) || COMPETITOR_PLATFORMS[0];
 
-  // Filter industries based on search term
-  const filteredCategories = useMemo(() => {
-    const result: Record<string, IndustryCpcData[]> = {};
-    
-    Object.entries(industryCategories).forEach(([category, industries]) => {
-      const filtered = industries.filter(ind =>
-        ind.industry.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      if (filtered.length > 0) {
-        result[category] = filtered;
-      }
-    });
-    
-    return result;
-  }, [industryCategories, searchTerm]);
-
-  // Use the selected industry's actual CPC
-  const industryCPC = industry.averageCpc;
+  // Use the average CPC for the selected category
+  const industryCPC = useMemo(() => getCategoryAverageCPC(selectedCategory), [selectedCategory]);
   const clickToLeadRate = 0.07; // Standard 7% click-to-lead rate
   const googleConversionRate = 0.14; // Google CPC uses 14% conversion rate
 
@@ -197,11 +187,6 @@ export const ROIComparisonCalculator = () => {
     exclusive24h: (savings.exclusive24h / competitorCostPerDeal) * 100,
   };
 
-  const categoryLabels: Record<string, string> = {
-    'high-value': 'High-Value Industries',
-    'mid-value': 'Mid-Value Industries',
-    'low-value': 'Low-Value Industries',
-  };
 
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-background to-accent/5">
@@ -254,41 +239,36 @@ export const ROIComparisonCalculator = () => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger id="industry" className="w-full">
-              <SelectValue placeholder="Select industry">{selectedIndustry} (${industryCPC} CPC)</SelectValue>
+              <SelectValue placeholder="Select category">{selectedCategory}</SelectValue>
             </SelectTrigger>
             <SelectContent className="max-h-[300px] bg-popover">
               <div className="p-2 sticky top-0 bg-popover border-b">
                 <Input
                   type="text"
-                  placeholder="Search industries..."
+                  placeholder="Search categories..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="h-8"
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
-              {Object.keys(filteredCategories).length > 0 ? (
-                Object.entries(filteredCategories).map(([category, industries]) => (
-                  <SelectGroup key={category}>
-                    <SelectLabel className="text-xs font-bold text-primary">{categoryLabels[category] || category}</SelectLabel>
-                    {industries.map((ind) => (
-                      <SelectItem key={ind.industry} value={ind.industry}>
-                        {ind.industry} (${ind.averageCpc} CPC)
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+              {filteredCategories.length > 0 ? (
+                filteredCategories.map((group) => (
+                  <SelectItem key={group.categoryName} value={group.categoryName}>
+                    {group.categoryName}
+                  </SelectItem>
                 ))
               ) : (
                 <div className="p-2 text-sm text-muted-foreground text-center">
-                  No industries found
+                  No categories found
                 </div>
               )}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            {selectedIndustry} CPC: <span className="font-semibold text-primary">${industryCPC}</span> avg. Google CPC
+            Avg CPC: <span className="font-semibold text-primary">${industryCPC}</span> (based on professions in this category)
           </p>
         </div>
 
