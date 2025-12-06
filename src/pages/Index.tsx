@@ -562,9 +562,9 @@ const Index = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                     <TrendingUp className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="text-3xl font-bold text-primary">25%+</div>
+                  <div className="text-3xl font-bold text-primary">40%</div>
                 </div>
-                <div className="text-sm text-muted-foreground">Average conversion rate</div>
+                <div className="text-sm text-muted-foreground">Average conversion rate of exclusive lead</div>
                 <div className="text-xs text-muted-foreground mt-1">vs. 7% PPC average</div>
               </div>
 
@@ -584,14 +584,14 @@ const Index = () => {
             <div className="bg-background/90 backdrop-blur-sm rounded-xl p-6 border border-accent/30 max-w-2xl mx-auto mb-8">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
-                  <div className="text-sm text-muted-foreground mb-1">Real Example: HVAC Lead</div>
-                  <div className="text-2xl font-bold text-primary">$14.50</div>
+                  <div className="text-sm text-muted-foreground mb-1">Real Example: Construction Lead</div>
+                  <div className="text-2xl font-bold text-primary">$29</div>
                   <div className="text-xs text-muted-foreground">on digsandgigs</div>
                 </div>
                 <div className="text-muted-foreground text-2xl font-light">vs.</div>
                 <div className="flex-1 min-w-[200px]">
                   <div className="text-sm text-muted-foreground mb-1">Google Ads CPC</div>
-                  <div className="text-2xl font-bold text-destructive line-through">$228</div>
+                  <div className="text-2xl font-bold text-destructive line-through">$1,643</div>
                   <div className="text-xs text-muted-foreground">average per conversion</div>
                 </div>
               </div>
