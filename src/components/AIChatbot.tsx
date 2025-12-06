@@ -134,7 +134,7 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
       // Use session token for authenticated requests, fallback to anon key for public access
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-bot`;
+      const CHAT_URL = `https://ibyhvkfrbdwrnxutnkdy.supabase.co/functions/v1/chat-bot`;
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
