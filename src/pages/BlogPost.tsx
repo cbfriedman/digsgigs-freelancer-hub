@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -296,10 +297,10 @@ export default function BlogPost() {
               </div>
             )}
 
-            {/* Article Content */}
+            {/* Article Content - sanitized for XSS protection */}
             <div
               className="prose prose-lg max-w-none"
-              dangerouslySetInnerHTML={{ __html: post.content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
             />
 
             {/* Tags */}
