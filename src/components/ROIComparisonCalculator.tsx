@@ -122,7 +122,7 @@ export const ROIComparisonCalculator = () => {
   // Use the average CPC for the selected category
   const industryCPC = useMemo(() => getCategoryAverageCPC(selectedCategory), [selectedCategory]);
   const clickToLeadRate = 0.07; // Standard 7% click-to-lead rate
-  const googleConversionRate = 0.14; // Google CPC uses 14% conversion rate
+  const googleConversionRate = 0.07; // Google CPC uses 7% lead-to-deal conversion rate
 
   // Calculate competitor cost per closed deal based on their model
   let competitorCostPerLead: number;
