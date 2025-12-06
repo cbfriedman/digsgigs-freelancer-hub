@@ -3,6 +3,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
+// Rate limiting configuration
+const MAX_REQUESTS_PER_EMAIL = 3;
+const RATE_LIMIT_WINDOW_MINUTES = 5;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -61,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create Supabase client to store verification code
+    // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
@@ -83,6 +87,40 @@ const handler = async (req: Request): Promise<Response> => {
       auth: { persistSession: false }
     });
 
+    // === RATE LIMITING ===
+    // Check how many OTP requests this email has made in the rate limit window
+    const windowStart = new Date();
+    windowStart.setMinutes(windowStart.getMinutes() - RATE_LIMIT_WINDOW_MINUTES);
+
+    const { count, error: countError } = await supabase
+      .from("verification_codes")
+      .select("*", { count: "exact", head: true })
+      .eq("email", email.toLowerCase())
+      .gte("created_at", windowStart.toISOString());
+
+    if (countError) {
+      console.error("Error checking rate limit:", countError);
+      // Continue anyway - don't block legitimate requests due to rate limit check failure
+    } else if (count !== null && count >= MAX_REQUESTS_PER_EMAIL) {
+      console.warn(`Rate limit exceeded for email: ${email}. Count: ${count}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many verification requests. Please try again in a few minutes.",
+          retryAfter: RATE_LIMIT_WINDOW_MINUTES * 60
+        }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json",
+            "Retry-After": String(RATE_LIMIT_WINDOW_MINUTES * 60),
+            ...corsHeaders 
+          },
+        }
+      );
+    }
+
+    console.log(`Rate limit check passed for ${email}. Current count: ${count || 0}/${MAX_REQUESTS_PER_EMAIL}`);
+
     // Store verification code in database (expires in 5 minutes)
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 5);
@@ -90,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: insertedCode, error: dbError } = await supabase
       .from("verification_codes")
       .insert({
-        email,
+        email: email.toLowerCase(),
         code,
         expires_at: expiresAt.toISOString(),
         verified: false,
@@ -100,7 +138,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (dbError) {
       console.error("Error storing verification code:", dbError);
-      // Return error - we need the code in database for verification
       return new Response(
         JSON.stringify({ 
           error: "Failed to store verification code",
