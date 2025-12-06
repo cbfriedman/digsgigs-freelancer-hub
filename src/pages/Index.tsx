@@ -210,39 +210,6 @@ const Index = () => {
     }
   ];
 
-  const pricingTiers = [
-    { 
-      name: "Free Tier (1-10 leads/mo)", 
-      subtitle: "Expected: 1-10 leads per month",
-      tagline: "Standard Rate",
-      description: "Full Retail price",
-      leadCost: "$120",
-      leadLabel: "Lead Cost (HVAC):",
-      savingsPercent: 0,
-      features: ["Pay per lead", "Escrow Fees: Optional", "8% per payment (min $10)", "Only if gig poster requests escrow"]
-    },
-    { 
-      name: "Pro Tier (11-50 leads/mo)", 
-      subtitle: "Expected: 11-50 leads per month",
-      tagline: "Save 25%",
-      description: "Bulk Pricing - Lock in 25% savings vs Bark",
-      leadCost: "$100",
-      leadLabel: "Lead Cost (HVAC):",
-      savingsPercent: 17,
-      popular: true,
-      features: ["Lower lead cost", "Escrow Fees: Optional", "8% per payment (min $10)", "Only if gig poster requests escrow"]
-    },
-    { 
-      name: "Premium Tier (51+ leads/mo)", 
-      subtitle: "Expected: 51+ leads per month",
-      tagline: "Save 52%",
-      description: "Best Market Price - Beat Bark by $0.50/lead",
-      leadCost: "$80",
-      leadLabel: "Lead Cost (HVAC):",
-      savingsPercent: 33,
-      features: ["Lowest lead cost", "Escrow Fees: Optional", "8% per payment (min $10)", "Only if gig poster requests escrow"]
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -845,80 +812,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="py-20 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">Pricing</Badge>
-            <h3 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h3>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Pay per lead to view contact info, plus commission only when you complete work.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {pricingTiers.map((tier, i) => (
-              <div 
-                key={i} 
-                className={`p-8 rounded-xl border transition-all duration-300 hover:shadow-[var(--shadow-hover)] ${
-                  tier.popular ? 'border-primary bg-primary/5 scale-105' : 'border-border/50'
-                }`}
-              >
-                {tier.popular && (
-                  <Badge className="mb-4 bg-primary text-primary-foreground">Most Popular</Badge>
-                )}
-                {!tier.popular && tier.savingsPercent === 0 && (
-                  <Badge variant="outline" className="mb-4">Active</Badge>
-                )}
-                {!tier.popular && tier.savingsPercent > 0 && (
-                  <Badge className="mb-4 bg-green-500 text-white">{tier.tagline}</Badge>
-                )}
-                <div className="text-center mb-6">
-                  <h4 className="font-bold text-2xl mb-2">{tier.name}</h4>
-                  <div className="text-sm text-muted-foreground mb-2">{tier.subtitle}</div>
-                  {tier.savingsPercent === 0 ? (
-                    <>
-                      <div className="text-lg font-semibold text-foreground mb-2">{tier.tagline}</div>
-                      <div className="text-sm text-primary mb-4">{tier.description}</div>
-                    </>
-                  ) : (
-                    <div className="text-sm text-primary mb-4">{tier.description}</div>
-                  )}
-                  <div className="space-y-2 text-sm mt-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">{tier.leadLabel}</span>
-                      <span className="font-bold text-2xl text-primary">{tier.leadCost}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2 pt-4 border-t border-border/50">
-                  {tier.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-muted-foreground">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button 
-              size="lg"
-              onClick={() => navigate("/pricing")}
-              className="gap-2"
-            >
-              View Full Pricing Details
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <p className="text-center text-sm text-muted-foreground mt-8 max-w-2xl mx-auto">
-            * Clients post gigs for free. Diggers pay per lead to access contact info, then pay commission only on completed work.
-          </p>
-        </div>
-      </section>
 
       {/* ROI Comparison Calculator */}
       <section className="py-20 bg-secondary/30">
