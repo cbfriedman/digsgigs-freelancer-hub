@@ -414,29 +414,36 @@ export const ROIComparisonCalculator = () => {
     competitorCostPerDeal = competitorCostPerLead / industry.leadToCustomerRate;
   }
 
-  // Calculate platform costs per closed deal
+  // Calculate platform costs per lead based on exclusivity (using industry CPC)
+  // Pricing: Non-Exclusive Unconfirmed 25%, Non-Exclusive Confirmed 30%, Semi-Exclusive 50%, 24hr Exclusive 90%
+  const roundToNearestHalf = (value: number) => Math.ceil(value * 2) / 2;
+  
   const platformCosts = {
-    free: { click: 125, lead: 20, total: 145 },
-    pro: { click: 100, lead: 10, total: 110 },
-    premium: { click: 75, lead: 5, total: 80 },
+    nonExclusiveUnconfirmed: roundToNearestHalf(industry.avgCPC * 0.25),
+    nonExclusiveConfirmed: roundToNearestHalf(industry.avgCPC * 0.30),
+    semiExclusive: roundToNearestHalf(industry.avgCPC * 0.50),
+    exclusive24h: roundToNearestHalf(industry.avgCPC * 0.90),
   };
 
   const platformCostPerDeal = {
-    free: platformCosts.free.total / platformConversionRate,
-    pro: platformCosts.pro.total / platformConversionRate,
-    premium: platformCosts.premium.total / platformConversionRate,
+    nonExclusiveUnconfirmed: platformCosts.nonExclusiveUnconfirmed / platformConversionRate,
+    nonExclusiveConfirmed: platformCosts.nonExclusiveConfirmed / platformConversionRate,
+    semiExclusive: platformCosts.semiExclusive / platformConversionRate,
+    exclusive24h: platformCosts.exclusive24h / platformConversionRate,
   };
 
   const savings = {
-    free: competitorCostPerDeal - platformCostPerDeal.free,
-    pro: competitorCostPerDeal - platformCostPerDeal.pro,
-    premium: competitorCostPerDeal - platformCostPerDeal.premium,
+    nonExclusiveUnconfirmed: competitorCostPerDeal - platformCostPerDeal.nonExclusiveUnconfirmed,
+    nonExclusiveConfirmed: competitorCostPerDeal - platformCostPerDeal.nonExclusiveConfirmed,
+    semiExclusive: competitorCostPerDeal - platformCostPerDeal.semiExclusive,
+    exclusive24h: competitorCostPerDeal - platformCostPerDeal.exclusive24h,
   };
 
   const savingsPercent = {
-    free: (savings.free / competitorCostPerDeal) * 100,
-    pro: (savings.pro / competitorCostPerDeal) * 100,
-    premium: (savings.premium / competitorCostPerDeal) * 100,
+    nonExclusiveUnconfirmed: (savings.nonExclusiveUnconfirmed / competitorCostPerDeal) * 100,
+    nonExclusiveConfirmed: (savings.nonExclusiveConfirmed / competitorCostPerDeal) * 100,
+    semiExclusive: (savings.semiExclusive / competitorCostPerDeal) * 100,
+    exclusive24h: (savings.exclusive24h / competitorCostPerDeal) * 100,
   };
 
   return (
@@ -601,25 +608,32 @@ export const ROIComparisonCalculator = () => {
             </div>
             <div className="space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Premium Tier</p>
+                <p className="text-xs text-muted-foreground mb-1">Non-Exclusive Unconfirmed <span className="text-primary">(25% of CPC)</span></p>
                 <p className="text-2xl font-bold text-primary">
-                  ${platformCostPerDeal.premium.toFixed(0)}
+                  ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}
                 </p>
-                <p className="text-xs text-muted-foreground">per closed deal</p>
+                <p className="text-xs text-muted-foreground">per closed deal • ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}/lead</p>
               </div>
               <div className="pt-2 border-t border-primary/20">
-                <p className="text-xs text-muted-foreground mb-1">Pro Tier</p>
+                <p className="text-xs text-muted-foreground mb-1">Non-Exclusive Confirmed <span className="text-primary">(30% of CPC)</span></p>
                 <p className="text-xl font-bold text-foreground">
-                  ${platformCostPerDeal.pro.toFixed(0)}
+                  ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}
                 </p>
-                <p className="text-xs text-muted-foreground">per closed deal</p>
+                <p className="text-xs text-muted-foreground">per closed deal • ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</p>
               </div>
               <div className="pt-2 border-t border-primary/20">
-                <p className="text-xs text-muted-foreground mb-1">Free Tier</p>
+                <p className="text-xs text-muted-foreground mb-1">Semi-Exclusive <span className="text-primary">(50% of CPC)</span></p>
                 <p className="text-lg font-semibold text-foreground">
-                  ${platformCostPerDeal.free.toFixed(0)}
+                  ${platformCostPerDeal.semiExclusive.toFixed(0)}
                 </p>
-                <p className="text-xs text-muted-foreground">per closed deal</p>
+                <p className="text-xs text-muted-foreground">per closed deal • ${platformCosts.semiExclusive.toFixed(2)}/lead</p>
+              </div>
+              <div className="pt-2 border-t border-primary/20">
+                <p className="text-xs text-muted-foreground mb-1">24hr Exclusive <span className="text-primary">(90% of CPC)</span></p>
+                <p className="text-lg font-semibold text-foreground">
+                  ${platformCostPerDeal.exclusive24h.toFixed(0)}
+                </p>
+                <p className="text-xs text-muted-foreground">per closed deal • ${platformCosts.exclusive24h.toFixed(2)}/lead</p>
               </div>
             </div>
           </div>
@@ -679,14 +693,19 @@ export const ROIComparisonCalculator = () => {
               <h5 className="font-semibold text-sm mb-2">Digsandgigs Platform Calculation</h5>
               <div className="space-y-2 text-xs text-muted-foreground">
                 <div>
-                  <p className="font-semibold text-foreground">True Cost Per Lead (Premium):</p>
-                  <p>Click Cost + Lead Cost</p>
-                  <p className="text-primary">${platformCosts.premium.click} + ${platformCosts.premium.lead} = ${platformCosts.premium.total}</p>
+                  <p className="font-semibold text-foreground">Lead Cost by Exclusivity:</p>
+                  <p>Based on industry CPC (${industry.avgCPC})</p>
+                  <ul className="mt-1 space-y-1">
+                    <li className="text-primary">Non-Exclusive Unconfirmed: 25% = ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}</li>
+                    <li className="text-primary">Non-Exclusive Confirmed: 30% = ${platformCosts.nonExclusiveConfirmed.toFixed(2)}</li>
+                    <li className="text-primary">Semi-Exclusive: 50% = ${platformCosts.semiExclusive.toFixed(2)}</li>
+                    <li className="text-primary">24hr Exclusive: 90% = ${platformCosts.exclusive24h.toFixed(2)}</li>
+                  </ul>
                 </div>
                 <div className="pt-2 border-t">
-                  <p className="font-semibold text-foreground">Cost Per Closed Deal (Premium):</p>
-                  <p>True Cost Per Lead ÷ Lead-to-Award Rate</p>
-                  <p className="text-primary">${platformCosts.premium.total} ÷ {(platformConversionRate * 100).toFixed(0)}% = ${platformCostPerDeal.premium.toFixed(0)}</p>
+                  <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
+                  <p>Lead Cost ÷ Lead-to-Award Rate</p>
+                  <p className="text-primary">${platformCosts.nonExclusiveUnconfirmed.toFixed(2)} ÷ {(platformConversionRate * 100).toFixed(0)}% = ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)} (Unconfirmed)</p>
                 </div>
               </div>
             </div>
@@ -698,52 +717,69 @@ export const ROIComparisonCalculator = () => {
             Your Savings with Digsandgigs
           </h4>
           
-          {savings.premium > 0 ? (
+          {savings.nonExclusiveUnconfirmed > 0 ? (
             <>
               <div className="flex items-center justify-between p-4 rounded-lg border bg-green-500/10">
                 <div>
-                  <p className="font-semibold text-green-700 dark:text-green-400">Premium Plan</p>
-                  <p className="text-xs text-muted-foreground">Best value - highest savings</p>
+                  <p className="font-semibold text-green-700 dark:text-green-400">Non-Exclusive Unconfirmed</p>
+                  <p className="text-xs text-muted-foreground">Lowest cost - shared leads</p>
                 </div>
                 <div className="text-right">
                   <Badge className="text-lg px-4 py-2 bg-green-600 hover:bg-green-700">
-                    ${savings.premium.toFixed(0)} saved
+                    ${savings.nonExclusiveUnconfirmed.toFixed(0)} saved
                   </Badge>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {savingsPercent.premium.toFixed(0)}% cheaper
+                    {savingsPercent.nonExclusiveUnconfirmed.toFixed(0)}% cheaper
                   </p>
                 </div>
               </div>
 
-              {savings.pro > 0 && (
+              {savings.nonExclusiveConfirmed > 0 && (
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-accent/5">
                   <div>
-                    <p className="font-semibold">Pro Plan</p>
-                    <p className="text-xs text-muted-foreground">Great savings for growing businesses</p>
+                    <p className="font-semibold">Non-Exclusive Confirmed</p>
+                    <p className="text-xs text-muted-foreground">Verified leads - shared access</p>
                   </div>
                   <div className="text-right">
                     <Badge variant="secondary" className="text-lg px-4 py-2">
-                      ${savings.pro.toFixed(0)} saved
+                      ${savings.nonExclusiveConfirmed.toFixed(0)} saved
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {savingsPercent.pro.toFixed(0)}% cheaper
+                      {savingsPercent.nonExclusiveConfirmed.toFixed(0)}% cheaper
                     </p>
                   </div>
                 </div>
               )}
 
-              {savings.free > 0 && (
+              {savings.semiExclusive > 0 && (
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-primary/5">
                   <div>
-                    <p className="font-semibold">Free Plan</p>
-                    <p className="text-xs text-muted-foreground">Still cheaper than AdWords</p>
+                    <p className="font-semibold">Semi-Exclusive</p>
+                    <p className="text-xs text-muted-foreground">Limited to 3 service providers</p>
                   </div>
                   <div className="text-right">
                     <Badge variant="default" className="text-lg px-4 py-2">
-                      ${savings.free.toFixed(0)} saved
+                      ${savings.semiExclusive.toFixed(0)} saved
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {savingsPercent.free.toFixed(0)}% cheaper
+                      {savingsPercent.semiExclusive.toFixed(0)}% cheaper
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {savings.exclusive24h > 0 && (
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-amber-500/10">
+                  <div>
+                    <p className="font-semibold text-amber-700 dark:text-amber-400">24hr Exclusive</p>
+                    <p className="text-xs text-muted-foreground">You only - 24 hour head start</p>
+                  </div>
+                  <div className="text-right">
+                    <Badge className="text-lg px-4 py-2 bg-amber-600 hover:bg-amber-700">
+                      ${savings.exclusive24h.toFixed(0)} saved
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {savingsPercent.exclusive24h.toFixed(0)}% cheaper
                     </p>
                   </div>
                 </div>
