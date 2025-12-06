@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,35 +6,13 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, DollarSign, Target, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { GOOGLE_CPC_KEYWORDS, type IndustryCpcData } from "@/config/googleCpcKeywords";
 
 interface CompetitorPlatform {
   name: string;
   costModel: "cpc" | "cpl" | "percentage" | "subscription";
-  avgCost: number; // CPC, CPL, or percentage
-  clickToLeadRate?: number; // for CPC models
-  description: string;
-}
-
-interface IndustryData {
-  name: string;
-  avgCPC: number;
-  clickToLeadRate: number;
-  leadToCustomerRate: number;
-  cplPricing?: {
-    [platform: string]: number; // Industry-specific cost per lead for CPL platforms
-  };
-}
-
-interface IndustryCategory {
-  category: string;
-  industries: IndustryData[];
-}
-
-interface CompetitorPlatform {
-  name: string;
-  costModel: "cpc" | "cpl" | "percentage" | "subscription";
-  avgCost: number; // CPC, CPL, or percentage
-  clickToLeadRate?: number; // for CPC models
+  avgCost: number;
+  clickToLeadRate?: number;
   description: string;
 }
 
@@ -42,7 +20,7 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
   {
     name: "Google AdWords",
     costModel: "cpc",
-    avgCost: 16, // will be overridden by industry-specific data
+    avgCost: 16,
     clickToLeadRate: 0.07,
     description: "Pay-per-click advertising with industry-specific costs"
   },
@@ -57,12 +35,6 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
     costModel: "cpl",
     avgCost: 35,
     description: "Cost per qualified lead from Yelp advertising"
-  },
-  {
-    name: "TaskRabbit",
-    costModel: "percentage",
-    avgCost: 20,
-    description: "20% commission on completed jobs"
   },
   {
     name: "Angi (Angie's List)",
@@ -83,36 +55,6 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
     description: "Variable cost per lead based on service type"
   },
   {
-    name: "Mortgage Lead Platforms",
-    costModel: "cpl",
-    avgCost: 75,
-    description: "Average cost per qualified mortgage lead"
-  },
-  {
-    name: "Insurance Lead Platforms",
-    costModel: "cpl",
-    avgCost: 85,
-    description: "Average cost per qualified insurance lead"
-  },
-  {
-    name: "Freelancer",
-    costModel: "percentage",
-    avgCost: 10,
-    description: "10% commission on completed projects"
-  },
-  {
-    name: "Fiverr",
-    costModel: "percentage",
-    avgCost: 20,
-    description: "20% commission on completed gigs"
-  },
-  {
-    name: "Upwork",
-    costModel: "percentage",
-    avgCost: 15,
-    description: "10-20% sliding commission (15% average) on completed projects"
-  },
-  {
     name: "Bark",
     costModel: "cpl",
     avgCost: 20,
@@ -130,299 +72,104 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
     avgCost: 45,
     description: "Lead generation for home improvement and design professionals"
   },
-  {
-    name: "Guru",
-    costModel: "percentage",
-    avgCost: 9,
-    description: "8.95% commission for basic membership"
-  },
-  {
-    name: "99designs",
-    costModel: "percentage",
-    avgCost: 15,
-    description: "15% platform fee on design projects"
-  }
 ];
 
-const INDUSTRY_CATEGORIES: IndustryCategory[] = [
-  {
-    category: "Construction & Trades",
-    industries: [
-      { 
-        name: "Construction", 
-        avgCPC: 16, 
-        clickToLeadRate: 0.07, 
-        leadToCustomerRate: 0.14,
-        cplPricing: {
-          "Bark": 35,
-          "Porch": 65,
-          "Houzz": 60,
-          "Thumbtack": 40,
-          "Home Advisor": 75,
-          "Angi (Angie's List)": 70
-        }
-      },
-      { 
-        name: "Automotive Services", 
-        avgCPC: 9, 
-        clickToLeadRate: 0.11, 
-        leadToCustomerRate: 0.23,
-        cplPricing: {
-          "Bark": 25,
-          "Porch": 45,
-          "Houzz": 40,
-          "Thumbtack": 30,
-          "Home Advisor": 50,
-          "Angi (Angie's List)": 48
-        }
-      },
-    ]
-  },
-  {
-    category: "Professional Services",
-    industries: [
-      { 
-        name: "Architects", 
-        avgCPC: 20, 
-        clickToLeadRate: 0.05, 
-        leadToCustomerRate: 0.10,
-        cplPricing: {
-          "Bark": 80,
-          "Porch": 120,
-          "Houzz": 110,
-          "Thumbtack": 90,
-          "Home Advisor": 130,
-          "Angi (Angie's List)": 125
-        }
-      },
-      { 
-        name: "Engineers", 
-        avgCPC: 17, 
-        clickToLeadRate: 0.06, 
-        leadToCustomerRate: 0.12,
-        cplPricing: {
-          "Bark": 65,
-          "Porch": 95,
-          "Houzz": 90,
-          "Thumbtack": 70,
-          "Home Advisor": 105,
-          "Angi (Angie's List)": 100
-        }
-      },
-      { 
-        name: "Legal Services", 
-        avgCPC: 35, 
-        clickToLeadRate: 0.04, 
-        leadToCustomerRate: 0.08,
-        cplPricing: {
-          "Bark": 120,
-          "Porch": 180,
-          "Houzz": 160,
-          "Thumbtack": 140,
-          "Home Advisor": 200,
-          "Angi (Angie's List)": 190
-        }
-      },
-      { 
-        name: "Financial Services", 
-        avgCPC: 23, 
-        clickToLeadRate: 0.05, 
-        leadToCustomerRate: 0.10,
-        cplPricing: {
-          "Bark": 90,
-          "Porch": 130,
-          "Houzz": 115,
-          "Thumbtack": 100,
-          "Home Advisor": 145,
-          "Angi (Angie's List)": 140
-        }
-      },
-      { 
-        name: "Design Services", 
-        avgCPC: 14, 
-        clickToLeadRate: 0.08, 
-        leadToCustomerRate: 0.16,
-        cplPricing: {
-          "Bark": 30,
-          "Porch": 55,
-          "Houzz": 65,
-          "Thumbtack": 35,
-          "Home Advisor": 60,
-          "Angi (Angie's List)": 58
-        }
-      },
-    ]
-  },
-  {
-    category: "Health & Wellness",
-    industries: [
-      { 
-        name: "Therapists and Counseling", 
-        avgCPC: 12, 
-        clickToLeadRate: 0.08, 
-        leadToCustomerRate: 0.17,
-        cplPricing: {
-          "Bark": 40,
-          "Porch": 65,
-          "Houzz": 55,
-          "Thumbtack": 45,
-          "Home Advisor": 70,
-          "Angi (Angie's List)": 68
-        }
-      },
-      { 
-        name: "Fitness and Nutrition", 
-        avgCPC: 8, 
-        clickToLeadRate: 0.13, 
-        leadToCustomerRate: 0.30,
-        cplPricing: {
-          "Bark": 22,
-          "Porch": 38,
-          "Houzz": 35,
-          "Thumbtack": 25,
-          "Home Advisor": 42,
-          "Angi (Angie's List)": 40
-        }
-      },
-    ]
-  },
-  {
-    category: "Education & Events",
-    industries: [
-      { 
-        name: "Education and Tutoring", 
-        avgCPC: 11, 
-        clickToLeadRate: 0.11, 
-        leadToCustomerRate: 0.22,
-        cplPricing: {
-          "Bark": 28,
-          "Porch": 45,
-          "Houzz": 40,
-          "Thumbtack": 30,
-          "Home Advisor": 50,
-          "Angi (Angie's List)": 48
-        }
-      },
-      { 
-        name: "Event Planning", 
-        avgCPC: 13, 
-        clickToLeadRate: 0.09, 
-        leadToCustomerRate: 0.20,
-        cplPricing: {
-          "Bark": 35,
-          "Porch": 55,
-          "Houzz": 50,
-          "Thumbtack": 38,
-          "Home Advisor": 60,
-          "Angi (Angie's List)": 58
-        }
-      },
-    ]
-  },
-  {
-    category: "Technology & Creative",
-    industries: [
-      { 
-        name: "Hi Tech and Digital Media", 
-        avgCPC: 17, 
-        clickToLeadRate: 0.07, 
-        leadToCustomerRate: 0.14,
-        cplPricing: {
-          "Bark": 45,
-          "Porch": 70,
-          "Houzz": 65,
-          "Thumbtack": 50,
-          "Home Advisor": 75,
-          "Angi (Angie's List)": 72
-        }
-      },
-    ]
-  },
-  {
-    category: "Other Services",
-    industries: [
-      { 
-        name: "Pet Services", 
-        avgCPC: 9, 
-        clickToLeadRate: 0.12, 
-        leadToCustomerRate: 0.25,
-        cplPricing: {
-          "Bark": 18,
-          "Porch": 32,
-          "Houzz": 28,
-          "Thumbtack": 20,
-          "Home Advisor": 35,
-          "Angi (Angie's List)": 33
-        }
-      },
-    ]
-  }
-];
+// Default conversion rates by category
+const DEFAULT_CONVERSION_RATES: Record<string, number> = {
+  'high-value': 0.12,
+  'mid-value': 0.18,
+  'low-value': 0.25,
+};
 
-// Flatten for easy lookup
-const ALL_INDUSTRIES = INDUSTRY_CATEGORIES.flatMap(cat => cat.industries);
+// Group industries by category for the dropdown
+const getIndustryCategories = () => {
+  const categories: Record<string, IndustryCpcData[]> = {
+    'high-value': [],
+    'mid-value': [],
+    'low-value': [],
+  };
+  
+  GOOGLE_CPC_KEYWORDS.forEach(industry => {
+    categories[industry.category].push(industry);
+  });
+  
+  return categories;
+};
 
 export const ROIComparisonCalculator = () => {
-  const [selectedIndustry, setSelectedIndustry] = useState<string>("Construction");
+  const [selectedIndustry, setSelectedIndustry] = useState<string>("HVAC");
   const [selectedCompetitor, setSelectedCompetitor] = useState<string>("Google AdWords");
-  const [conversionRate, setConversionRate] = useState<string>("25");
+  const [conversionRate, setConversionRate] = useState<string>("18");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const industry = ALL_INDUSTRIES.find(i => i.name === selectedIndustry) || ALL_INDUSTRIES[0];
+  const industryCategories = useMemo(() => getIndustryCategories(), []);
+  
+  const industry = useMemo(() => 
+    GOOGLE_CPC_KEYWORDS.find(i => i.industry === selectedIndustry) || GOOGLE_CPC_KEYWORDS[0],
+    [selectedIndustry]
+  );
+  
   const competitor = COMPETITOR_PLATFORMS.find(c => c.name === selectedCompetitor) || COMPETITOR_PLATFORMS[0];
-  const platformConversionRate = parseFloat(conversionRate) / 100 || 0.25;
+  const platformConversionRate = parseFloat(conversionRate) / 100 || 0.18;
 
-  // Update conversion rate to match industry's lead-to-customer rate
+  // Update conversion rate based on industry category
   useEffect(() => {
-    setConversionRate((industry.leadToCustomerRate * 100).toFixed(0));
-  }, [industry]);
+    const defaultRate = DEFAULT_CONVERSION_RATES[industry.category] || 0.18;
+    setConversionRate((defaultRate * 100).toFixed(0));
+  }, [industry.category]);
 
-  // Filter categories based on search term
-  const filteredCategories = INDUSTRY_CATEGORIES.map(category => ({
-    ...category,
-    industries: category.industries.filter(ind =>
-      ind.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  })).filter(category => category.industries.length > 0);
+  // Filter industries based on search term
+  const filteredCategories = useMemo(() => {
+    const result: Record<string, IndustryCpcData[]> = {};
+    
+    Object.entries(industryCategories).forEach(([category, industries]) => {
+      const filtered = industries.filter(ind =>
+        ind.industry.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      if (filtered.length > 0) {
+        result[category] = filtered;
+      }
+    });
+    
+    return result;
+  }, [industryCategories, searchTerm]);
+
+  // Use industry's averageCpc from GOOGLE_CPC_KEYWORDS
+  const industryCPC = industry.averageCpc;
+  const clickToLeadRate = 0.07; // Standard 7% click-to-lead rate
+  const leadToCustomerRate = platformConversionRate;
 
   // Calculate competitor cost per closed deal based on their model
   let competitorCostPerLead: number;
   let competitorCostPerDeal: number;
   
   if (competitor.costModel === "cpc") {
-    // For CPC models like Google AdWords
-    const clicksPerLead = 1 / industry.clickToLeadRate;
-    const leadsPerCustomer = 1 / industry.leadToCustomerRate;
-    const totalClicks = clicksPerLead * leadsPerCustomer;
-    competitorCostPerDeal = totalClicks * industry.avgCPC;
-    competitorCostPerLead = industry.avgCPC / industry.clickToLeadRate;
+    // For CPC models like Google AdWords - use actual industry CPC
+    const clicksPerLead = 1 / clickToLeadRate;
+    competitorCostPerLead = industryCPC * clicksPerLead;
+    competitorCostPerDeal = competitorCostPerLead / leadToCustomerRate;
   } else if (competitor.costModel === "cpl") {
-    // For CPL models (most competitors)
-    // Use industry-specific pricing if available, otherwise fall back to platform average
-    competitorCostPerLead = industry.cplPricing?.[competitor.name] || competitor.avgCost;
-    competitorCostPerDeal = competitorCostPerLead / industry.leadToCustomerRate;
-  } else if (competitor.costModel === "percentage") {
-    // For percentage-based models like TaskRabbit
-    // Assuming average job value needs to be calculated differently
-    // Using a typical job value range for service industries
-    const avgJobValue = 1000; // placeholder - would vary by industry
-    competitorCostPerLead = avgJobValue * (competitor.avgCost / 100);
-    competitorCostPerDeal = competitorCostPerLead / industry.leadToCustomerRate;
-  } else {
-    // subscription model - simplified
+    // For CPL models - use competitor's average cost
     competitorCostPerLead = competitor.avgCost;
-    competitorCostPerDeal = competitorCostPerLead / industry.leadToCustomerRate;
+    competitorCostPerDeal = competitorCostPerLead / leadToCustomerRate;
+  } else if (competitor.costModel === "percentage") {
+    const avgJobValue = 1000;
+    competitorCostPerLead = avgJobValue * (competitor.avgCost / 100);
+    competitorCostPerDeal = competitorCostPerLead / leadToCustomerRate;
+  } else {
+    competitorCostPerLead = competitor.avgCost;
+    competitorCostPerDeal = competitorCostPerLead / leadToCustomerRate;
   }
 
-  // Calculate platform costs per lead based on exclusivity (using industry CPC)
+  // Calculate platform costs per lead based on exclusivity (using actual industry CPC)
   // Pricing: Non-Exclusive Unconfirmed 25%, Non-Exclusive Confirmed 30%, Semi-Exclusive 50%, 24hr Exclusive 90%
   const roundToNearestHalf = (value: number) => Math.ceil(value * 2) / 2;
   
   const platformCosts = {
-    nonExclusiveUnconfirmed: roundToNearestHalf(industry.avgCPC * 0.25),
-    nonExclusiveConfirmed: roundToNearestHalf(industry.avgCPC * 0.30),
-    semiExclusive: roundToNearestHalf(industry.avgCPC * 0.50),
-    exclusive24h: roundToNearestHalf(industry.avgCPC * 0.90),
+    nonExclusiveUnconfirmed: roundToNearestHalf(industryCPC * 0.25),
+    nonExclusiveConfirmed: roundToNearestHalf(industryCPC * 0.30),
+    semiExclusive: roundToNearestHalf(industryCPC * 0.50),
+    exclusive24h: roundToNearestHalf(industryCPC * 0.90),
   };
 
   const platformCostPerDeal = {
@@ -444,6 +191,12 @@ export const ROIComparisonCalculator = () => {
     nonExclusiveConfirmed: (savings.nonExclusiveConfirmed / competitorCostPerDeal) * 100,
     semiExclusive: (savings.semiExclusive / competitorCostPerDeal) * 100,
     exclusive24h: (savings.exclusive24h / competitorCostPerDeal) * 100,
+  };
+
+  const categoryLabels: Record<string, string> = {
+    'high-value': 'High-Value Industries',
+    'mid-value': 'Mid-Value Industries',
+    'low-value': 'Low-Value Industries',
   };
 
   return (
@@ -493,7 +246,7 @@ export const ROIComparisonCalculator = () => {
                       <li>The calculator shows your cost per closed deal on DigsandGigs vs the competitor</li>
                     </ul>
                     <p className="text-sm mt-2 pt-2 border-t">
-                      <strong>Lead-to-Award Rate:</strong> The percentage of contacted leads that become paying customers. For example, 25% means 1 out of every 4 leads converts to a sale.
+                      <strong>CPC values are from real Google Ads data</strong> for each industry.
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -510,14 +263,14 @@ export const ROIComparisonCalculator = () => {
               <SelectTrigger id="industry">
                 <SelectValue placeholder="Select industry" />
               </SelectTrigger>
-              <SelectContent>
-                {filteredCategories.length > 0 ? (
-                  filteredCategories.map((category) => (
-                    <SelectGroup key={category.category}>
-                      <SelectLabel>{category.category}</SelectLabel>
-                      {category.industries.map((ind) => (
-                        <SelectItem key={ind.name} value={ind.name}>
-                          {ind.name}
+              <SelectContent className="max-h-[300px]">
+                {Object.keys(filteredCategories).length > 0 ? (
+                  Object.entries(filteredCategories).map(([category, industries]) => (
+                    <SelectGroup key={category}>
+                      <SelectLabel>{categoryLabels[category] || category}</SelectLabel>
+                      {industries.map((ind) => (
+                        <SelectItem key={ind.industry} value={ind.industry}>
+                          {ind.industry} (${ind.averageCpc} CPC)
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -529,6 +282,9 @@ export const ROIComparisonCalculator = () => {
                 )}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Selected: <span className="font-semibold text-primary">${industryCPC}</span> avg. Google CPC
+            </p>
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -547,7 +303,7 @@ export const ROIComparisonCalculator = () => {
                       <strong>Example:</strong> If you contact 100 leads and win 25 jobs, your rate is 25%.
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Industry average ranges from 15-30% depending on your service, pricing, and follow-up process.
+                      Industry average ranges from 12-25% depending on your service, pricing, and follow-up process.
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -560,7 +316,7 @@ export const ROIComparisonCalculator = () => {
               max="100"
               value={conversionRate}
               onChange={(e) => setConversionRate(e.target.value)}
-              placeholder="25"
+              placeholder="18"
               className="text-lg"
             />
           </div>
@@ -575,23 +331,18 @@ export const ROIComparisonCalculator = () => {
             <div className="space-y-1 text-xs text-muted-foreground">
               {competitor.costModel === "cpc" ? (
                 <>
-                  <p>Avg CPC: ${industry.avgCPC}</p>
-                  <p>Click-to-Lead: {(industry.clickToLeadRate * 100).toFixed(0)}%</p>
+                  <p>Avg CPC: <span className="font-semibold text-foreground">${industryCPC}</span></p>
+                  <p>Click-to-Lead: {(clickToLeadRate * 100).toFixed(0)}%</p>
                   <p className="font-semibold text-foreground">True Cost Per Lead: ${competitorCostPerLead.toFixed(0)}</p>
                 </>
               ) : competitor.costModel === "cpl" ? (
                 <>
                   <p>Cost Per Lead: ${competitor.avgCost}</p>
                 </>
-              ) : competitor.costModel === "percentage" ? (
-                <>
-                  <p>Commission: {competitor.avgCost}%</p>
-                  <p className="font-semibold text-foreground">Effective Cost Per Lead: ${competitorCostPerLead.toFixed(0)}</p>
-                </>
               ) : (
-                <p>Subscription: ${competitor.avgCost}/mo</p>
+                <p>Commission: {competitor.avgCost}%</p>
               )}
-              <p>Lead-to-Customer: {(industry.leadToCustomerRate * 100).toFixed(0)}%</p>
+              <p>Lead-to-Customer: {(leadToCustomerRate * 100).toFixed(0)}%</p>
             </div>
             <div className="mt-3 pt-3 border-t border-border/50">
               <p className="text-2xl font-bold text-destructive">
@@ -653,12 +404,12 @@ export const ROIComparisonCalculator = () => {
                     <div>
                       <p className="font-semibold text-foreground">True Cost Per Lead:</p>
                       <p>CPC ÷ Click-to-Lead Rate</p>
-                      <p className="text-primary">${industry.avgCPC} ÷ {(industry.clickToLeadRate * 100).toFixed(0)}% = ${competitorCostPerLead.toFixed(0)}</p>
+                      <p className="text-primary">${industryCPC} ÷ {(clickToLeadRate * 100).toFixed(0)}% = ${competitorCostPerLead.toFixed(0)}</p>
                     </div>
                     <div className="pt-2 border-t">
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
                       <p>True Cost Per Lead ÷ Lead-to-Customer Rate</p>
-                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(industry.leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 ) : competitor.costModel === "cpl" ? (
@@ -670,7 +421,7 @@ export const ROIComparisonCalculator = () => {
                     <div className="pt-2 border-t">
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
                       <p>Cost Per Lead ÷ Lead-to-Customer Rate</p>
-                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(industry.leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 ) : (
@@ -682,7 +433,7 @@ export const ROIComparisonCalculator = () => {
                     <div className="pt-2 border-t">
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
                       <p>Effective Cost ÷ Lead-to-Customer Rate</p>
-                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(industry.leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(leadToCustomerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 )}
@@ -694,7 +445,7 @@ export const ROIComparisonCalculator = () => {
               <div className="space-y-2 text-xs text-muted-foreground">
                 <div>
                   <p className="font-semibold text-foreground">Lead Cost by Exclusivity:</p>
-                  <p>Based on industry CPC (${industry.avgCPC})</p>
+                  <p>Based on industry CPC (${industryCPC})</p>
                   <ul className="mt-1 space-y-1">
                     <li className="text-primary">Non-Exclusive Unconfirmed: 25% = ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}</li>
                     <li className="text-primary">Non-Exclusive Confirmed: 30% = ${platformCosts.nonExclusiveConfirmed.toFixed(2)}</li>
@@ -796,8 +547,7 @@ export const ROIComparisonCalculator = () => {
 
         <div className="text-center pt-4">
           <p className="text-xs text-muted-foreground">
-            * All cost values and conversion rates are industry averages and may vary significantly based on location, competition, seasonality, and individual business factors. 
-            Competitor costs based on 2024 industry benchmarks. Individual results may vary based on market conditions and campaign optimization.
+            * CPC values from real Google Ads data (2024-2025). Conversion rates vary by industry, location, and business factors.
           </p>
         </div>
       </CardContent>
