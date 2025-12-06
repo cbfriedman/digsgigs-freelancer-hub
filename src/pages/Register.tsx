@@ -96,6 +96,7 @@ const Register = () => {
   const navigate = useNavigate();
   const isNavigatingRef = useRef(false); // Prevent race conditions with useProtectedRoute
   const isInSignInOtpFlowRef = useRef(false); // Prevent redirect during sign-in OTP flow
+  const hasInitializedSignInModeRef = useRef(false); // Track if we've initialized sign-in mode
   const { user, loading: authLoading } = useProtectedRoute({ 
     redirectIfAuthenticated: true,
     requireVerified: false // Allow unverified users to complete registration
@@ -129,7 +130,16 @@ const Register = () => {
 
   // Step 1: Basic Info
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  
+  // Initialize email from sessionStorage if in OTP flow
+  const [email, setEmail] = useState(() => {
+    if (isSignInMode) {
+      const savedEmail = sessionStorage.getItem('signInEmail');
+      return savedEmail || "";
+    }
+    return "";
+  });
+  
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
@@ -138,10 +148,34 @@ const Register = () => {
   // Step 1.5: Verification
   const [verificationCode, setVerificationCode] = useState(""); // User-entered code
   const [sentOtpCode, setSentOtpCode] = useState(""); // OTP code we sent
-  const [userId, setUserId] = useState<string | null>(null);
+  
+  // Initialize userId from sessionStorage if in OTP flow
+  const [userId, setUserId] = useState<string | null>(() => {
+    if (isSignInMode) {
+      return sessionStorage.getItem('signInUserId');
+    }
+    return null;
+  });
+  
   const [otpSent, setOtpSent] = useState(false); // Track if OTP was sent to show input field
-  const [signInOtpSent, setSignInOtpSent] = useState(false); // Track if OTP was sent during sign-in
-  const [signInVerificationMethod, setSignInVerificationMethod] = useState<'email' | 'sms'>('email');
+  
+  // Initialize signInOtpSent from sessionStorage if in OTP flow
+  const [signInOtpSent, setSignInOtpSent] = useState(() => {
+    if (isSignInMode) {
+      return sessionStorage.getItem('signInOtpFlow') === 'true';
+    }
+    return false;
+  });
+  
+  // Initialize signInVerificationMethod from sessionStorage if in OTP flow
+  const [signInVerificationMethod, setSignInVerificationMethod] = useState<'email' | 'sms'>(() => {
+    if (isSignInMode) {
+      const savedMethod = sessionStorage.getItem('signInVerificationMethod') as 'email' | 'sms' | null;
+      return savedMethod || 'email';
+    }
+    return 'email';
+  });
+  
   const [userPhone, setUserPhone] = useState<string | null>(null); // Store user's phone for sign-in
   const [pendingDiggerVerification, setPendingDiggerVerification] = useState(false); // Track if we're verifying for Digger role
   const [isDiggerLogin, setIsDiggerLogin] = useState(false); // Track if login is for Digger (requires OTP every time)
@@ -177,27 +211,44 @@ const Register = () => {
     }
   }, [isPasswordResetMode, navigate]);
 
-  // Reset registration state when switching to sign-in mode
+  // Restore OTP flow state from sessionStorage on mount (runs immediately)
   useEffect(() => {
-    if (isSignInMode) {
-      // Check if we're in the middle of an OTP flow (restore from sessionStorage)
-      const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
-      if (isInOtpFlow) {
-        const savedUserId = sessionStorage.getItem('signInUserId');
-        const savedEmail = sessionStorage.getItem('signInEmail');
-        const savedMethod = sessionStorage.getItem('signInVerificationMethod') as 'email' | 'sms' | null;
-        
-        if (savedUserId && savedEmail) {
-          setUserId(savedUserId);
-          setEmail(savedEmail);
-          setSignInOtpSent(true);
-          setSignInVerificationMethod(savedMethod || 'email');
-          isInSignInOtpFlowRef.current = true;
-          return; // Don't reset state if we're restoring OTP flow
-        }
-      }
+    // Check if we're in the middle of an OTP flow (restore from sessionStorage)
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    if (isInOtpFlow && isSignInMode) {
+      const savedUserId = sessionStorage.getItem('signInUserId');
+      const savedEmail = sessionStorage.getItem('signInEmail');
+      const savedMethod = sessionStorage.getItem('signInVerificationMethod') as 'email' | 'sms' | null;
       
-      // Normal reset
+      if (savedUserId && savedEmail) {
+        // State is already initialized from useState, but ensure flags are set
+        isInSignInOtpFlowRef.current = true;
+        hasInitializedSignInModeRef.current = true;
+        // Ensure state is set (in case useState didn't pick it up)
+        setUserId(savedUserId);
+        setEmail(savedEmail);
+        setSignInOtpSent(true);
+        setSignInVerificationMethod(savedMethod || 'email');
+        console.log('Restored OTP flow state from sessionStorage:', { savedUserId, savedEmail, savedMethod });
+      }
+    }
+  }, []); // Run only on mount
+
+  // Reset registration state when switching TO sign-in mode (not when already in sign-in mode)
+  useEffect(() => {
+    // Check if we're restoring OTP flow FIRST - if so, don't reset
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    if (isInOtpFlow && isSignInMode) {
+      // We're in OTP flow, don't reset
+      hasInitializedSignInModeRef.current = true;
+      return;
+    }
+    
+    // Only reset if we're switching TO sign-in mode, not if we're already in it
+    if (isSignInMode && !hasInitializedSignInModeRef.current) {
+      hasInitializedSignInModeRef.current = true;
+      
+      // Normal reset only when first switching to sign-in mode
       setStep(1);
       setFullName("");
       setConfirmPassword("");
@@ -212,6 +263,9 @@ const Register = () => {
       setSignInOtpSent(false);
       setSignInVerificationMethod('email');
       setUserPhone(null);
+    } else if (!isSignInMode) {
+      // Reset flag when switching away from sign-in mode
+      hasInitializedSignInModeRef.current = false;
     }
   }, [isSignInMode]);
 
@@ -821,16 +875,21 @@ const Register = () => {
 
       // Set flag BEFORE any async operations to prevent redirects
       isInSignInOtpFlowRef.current = true;
+      hasInitializedSignInModeRef.current = true; // Prevent reset useEffect from running
       
-      // Set state BEFORE async operations to ensure UI updates immediately
-      setUserId(tempUserId);
-      setSignInOtpSent(true); // Set this IMMEDIATELY so UI updates before signOut
-      
-      // Also persist to sessionStorage to survive redirects
+      // Also persist to sessionStorage FIRST to survive redirects
       sessionStorage.setItem('signInOtpFlow', 'true');
       sessionStorage.setItem('signInUserId', tempUserId);
       sessionStorage.setItem('signInEmail', email);
       sessionStorage.setItem('signInVerificationMethod', signInVerificationMethod);
+      
+      // Set state IMMEDIATELY and synchronously so UI updates before signOut
+      setUserId(tempUserId);
+      setSignInOtpSent(true);
+      setSignInVerificationMethod(signInVerificationMethod);
+      
+      // Force a re-render by updating a dummy state if needed
+      // The state updates above should trigger a re-render, but we ensure it happens
 
       // Generate OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
