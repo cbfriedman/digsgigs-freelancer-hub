@@ -64,6 +64,7 @@ const Index = () => {
   const [profileCompletion, setProfileCompletion] = useState<number>(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showROICalculator, setShowROICalculator] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -603,14 +604,21 @@ const Index = () => {
                 variant="hero" 
                 size="lg" 
                 className="text-lg px-8"
-                onClick={() => navigate("/pricing")}
+                onClick={() => setShowROICalculator(!showROICalculator)}
               >
-                See Full Pricing Comparison <ArrowRight className="ml-2 w-5 h-5" />
+                {showROICalculator ? "Hide Pricing Comparison" : "See Full Pricing Comparison"} <ArrowRight className={`ml-2 w-5 h-5 transition-transform ${showROICalculator ? "rotate-90" : ""}`} />
               </Button>
               <p className="text-sm text-muted-foreground mt-3">
                 Join 10,000+ service professionals who switched from PPC
               </p>
             </div>
+
+            {/* ROI Calculator - Expandable */}
+            {showROICalculator && (
+              <div className="mt-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                <ROIComparisonCalculator />
+              </div>
+            )}
           </div>
         </div>
       </section>
