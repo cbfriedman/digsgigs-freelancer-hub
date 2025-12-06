@@ -121,29 +121,27 @@ export const ROIComparisonCalculator = () => {
 
   // Use the average CPC for the selected category
   const industryCPC = useMemo(() => getCategoryAverageCPC(selectedCategory), [selectedCategory]);
-  const clickToLeadRate = 0.07; // Standard 7% click-to-lead rate
-  const googleConversionRate = 0.07; // Google CPC uses 7% lead-to-deal conversion rate
+  const clickToConsumerRate = 0.07; // 7% of clicks convert to closed deals
 
   // Calculate competitor cost per closed deal based on their model
   let competitorCostPerLead: number;
   let competitorCostPerDeal: number;
   
   if (competitor.costModel === "cpc") {
-    // For CPC models like Google AdWords - use actual industry CPC with 14% conversion
-    const clicksPerLead = 1 / clickToLeadRate;
-    competitorCostPerLead = industryCPC * clicksPerLead;
-    competitorCostPerDeal = competitorCostPerLead / googleConversionRate;
+    // For CPC models like Google AdWords - CPC / 7% click-to-consumer rate
+    competitorCostPerLead = industryCPC; // CPC is the cost per click
+    competitorCostPerDeal = industryCPC / clickToConsumerRate;
   } else if (competitor.costModel === "cpl") {
-    // For CPL models - use competitor's average cost with 14% conversion
+    // For CPL models - use competitor's average cost per lead with 7% conversion
     competitorCostPerLead = competitor.avgCost;
-    competitorCostPerDeal = competitorCostPerLead / googleConversionRate;
+    competitorCostPerDeal = competitorCostPerLead / clickToConsumerRate;
   } else if (competitor.costModel === "percentage") {
     const avgJobValue = 1000;
     competitorCostPerLead = avgJobValue * (competitor.avgCost / 100);
-    competitorCostPerDeal = competitorCostPerLead / googleConversionRate;
+    competitorCostPerDeal = competitorCostPerLead / clickToConsumerRate;
   } else {
     competitorCostPerLead = competitor.avgCost;
-    competitorCostPerDeal = competitorCostPerLead / googleConversionRate;
+    competitorCostPerDeal = competitorCostPerLead / clickToConsumerRate;
   }
 
   // Calculate platform costs per lead based on exclusivity (using actual industry CPC)
@@ -282,17 +280,19 @@ export const ROIComparisonCalculator = () => {
               {competitor.costModel === "cpc" ? (
                 <>
                   <p>Avg CPC: <span className="font-semibold text-foreground">${industryCPC}</span></p>
-                  <p>Click-to-Lead: {(clickToLeadRate * 100).toFixed(0)}%</p>
-                  <p className="font-semibold text-foreground">True Cost Per Lead: ${competitorCostPerLead.toFixed(0)}</p>
+                  <p>Click-to-Consumer: {(clickToConsumerRate * 100).toFixed(0)}%</p>
                 </>
               ) : competitor.costModel === "cpl" ? (
                 <>
                   <p>Cost Per Lead: ${competitor.avgCost}</p>
+                  <p>Lead-to-Consumer: {(clickToConsumerRate * 100).toFixed(0)}%</p>
                 </>
               ) : (
-                <p>Commission: {competitor.avgCost}%</p>
+                <>
+                  <p>Commission: {competitor.avgCost}%</p>
+                  <p>Lead-to-Consumer: {(clickToConsumerRate * 100).toFixed(0)}%</p>
+                </>
               )}
-              <p>Lead-to-Customer: {(googleConversionRate * 100).toFixed(0)}%</p>
             </div>
             <div className="mt-3 pt-3 border-t border-border/50">
               <p className="text-2xl font-bold text-destructive">
@@ -377,14 +377,9 @@ export const ROIComparisonCalculator = () => {
                 {competitor.costModel === "cpc" ? (
                   <>
                     <div>
-                      <p className="font-semibold text-foreground">True Cost Per Lead:</p>
-                      <p>CPC ÷ Click-to-Lead Rate</p>
-                      <p className="text-primary">${industryCPC} ÷ {(clickToLeadRate * 100).toFixed(0)}% = ${competitorCostPerLead.toFixed(0)}</p>
-                    </div>
-                    <div className="pt-2 border-t">
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
-                      <p>True Cost Per Lead ÷ Lead-to-Customer Rate</p>
-                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(googleConversionRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p>CPC ÷ Click-to-Consumer Rate</p>
+                      <p className="text-destructive">${industryCPC} ÷ {(clickToConsumerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 ) : competitor.costModel === "cpl" ? (
@@ -395,8 +390,8 @@ export const ROIComparisonCalculator = () => {
                     </div>
                     <div className="pt-2 border-t">
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
-                      <p>Cost Per Lead ÷ Lead-to-Customer Rate</p>
-                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(googleConversionRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p>Cost Per Lead ÷ Lead-to-Consumer Rate</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(clickToConsumerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 ) : (
@@ -407,8 +402,8 @@ export const ROIComparisonCalculator = () => {
                     </div>
                     <div className="pt-2 border-t">
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
-                      <p>Effective Cost ÷ Lead-to-Customer Rate</p>
-                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(googleConversionRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p>Effective Cost ÷ Lead-to-Consumer Rate</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(clickToConsumerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 )}
