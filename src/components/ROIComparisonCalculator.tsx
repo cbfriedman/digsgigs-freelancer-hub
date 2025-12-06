@@ -77,7 +77,7 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
 const LEAD_TYPE_CONVERSION_RATES = {
   nonExclusiveUnconfirmed: 0.05,  // 5%
   nonExclusiveConfirmed: 0.14,    // 14% (same as CPC)
-  semiExclusive: 0.30,            // 30%
+  semiExclusive: 0.20,            // 20%
   exclusive24h: 0.50,             // 50%
 };
 
@@ -113,14 +113,6 @@ export const ROIComparisonCalculator = () => {
   
   const competitor = COMPETITOR_PLATFORMS.find(c => c.name === selectedCompetitor) || COMPETITOR_PLATFORMS[0];
 
-  // Calculate average CPC from all industries in the selected category
-  const categoryAverageCpc = useMemo(() => {
-    const categoryIndustries = industryCategories[industry.category] || [];
-    if (categoryIndustries.length === 0) return DEFAULT_CONSTRUCTION_CPC;
-    const totalCpc = categoryIndustries.reduce((sum, ind) => sum + ind.averageCpc, 0);
-    return Math.round(totalCpc / categoryIndustries.length);
-  }, [industry.category, industryCategories]);
-
   // Filter industries based on search term
   const filteredCategories = useMemo(() => {
     const result: Record<string, IndustryCpcData[]> = {};
@@ -137,8 +129,8 @@ export const ROIComparisonCalculator = () => {
     return result;
   }, [industryCategories, searchTerm]);
 
-  // Use average CPC from all industries in the selected category
-  const industryCPC = categoryAverageCpc;
+  // Use the selected industry's actual CPC
+  const industryCPC = industry.averageCpc;
   const clickToLeadRate = 0.07; // Standard 7% click-to-lead rate
   const googleConversionRate = 0.14; // Google CPC uses 14% conversion rate
 
@@ -293,7 +285,7 @@ export const ROIComparisonCalculator = () => {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Category Average: <span className="font-semibold text-primary">${industryCPC}</span> avg. Google CPC
+            {selectedIndustry} CPC: <span className="font-semibold text-primary">${industryCPC}</span> avg. Google CPC
           </p>
         </div>
 
@@ -365,7 +357,7 @@ export const ROIComparisonCalculator = () => {
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">Semi-Exclusive</p>
-                  <p className="text-[10px] text-primary">30% conv • ${platformCosts.semiExclusive.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-primary">20% conv • ${platformCosts.semiExclusive.toFixed(2)}/lead</p>
                 </div>
                 <p className="text-lg font-semibold text-foreground text-center">
                   ${platformCostPerDeal.semiExclusive.toFixed(0)}
@@ -459,7 +451,7 @@ export const ROIComparisonCalculator = () => {
                   <ul className="mt-1 space-y-1">
                     <li className="text-primary">Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)} ÷ 5% = ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}</li>
                     <li className="text-primary">Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)} ÷ 14% = ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}</li>
-                    <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)} ÷ 30% = ${platformCostPerDeal.semiExclusive.toFixed(0)}</li>
+                    <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)} ÷ 20% = ${platformCostPerDeal.semiExclusive.toFixed(0)}</li>
                     <li className="text-primary">24hr Exclusive: ${platformCosts.exclusive24h.toFixed(2)} ÷ 50% = ${platformCostPerDeal.exclusive24h.toFixed(0)}</li>
                   </ul>
                 </div>
