@@ -95,6 +95,7 @@ interface RoleFormData {
 const Register = () => {
   const navigate = useNavigate();
   const isNavigatingRef = useRef(false); // Prevent race conditions with useProtectedRoute
+  const isInSignInOtpFlowRef = useRef(false); // Prevent redirect during sign-in OTP flow
   const { user, loading: authLoading } = useProtectedRoute({ 
     redirectIfAuthenticated: true,
     requireVerified: false // Allow unverified users to complete registration
@@ -198,6 +199,11 @@ const Register = () => {
 
   // Auto-advance verified users without roles to role selection, or redirect to post-gig if coming from gig posting
   useEffect(() => {
+    // Don't run redirect logic if we're in the middle of sign-in OTP flow
+    if (isInSignInOtpFlowRef.current) {
+      return;
+    }
+    
     if (!authLoading && !isSignInMode && !isPasswordResetMode && user && user.email_confirmed_at && step === 1) {
       // If coming from gig posting flow and already logged in, ensure gigger role and redirect
       if (isFromGigPosting) {
@@ -792,8 +798,11 @@ const Register = () => {
       const userPhoneNumber = profileData?.phone || signInData.user.user_metadata?.phone || null;
       setUserPhone(userPhoneNumber);
 
-      // Sign out temporarily - we'll complete login after OTP verification
-      await supabase.auth.signOut();
+      // Store user ID temporarily for verification (don't sign out yet to prevent redirect)
+      const tempUserId = signInData.user.id;
+
+      // Set flag BEFORE any async operations to prevent redirects
+      isInSignInOtpFlowRef.current = true;
 
       // Generate OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -810,6 +819,10 @@ const Register = () => {
 
       if (otpError) {
         console.error("OTP send error:", otpError);
+        // Clear flag on error
+        isInSignInOtpFlowRef.current = false;
+        // Sign out on error since we didn't complete verification
+        await supabase.auth.signOut();
         if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('TWILIO') || otpError.message?.includes('not configured')) {
           toast.error(`${signInVerificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`);
         } else if (signInVerificationMethod === 'sms' && !userPhoneNumber) {
@@ -822,7 +835,14 @@ const Register = () => {
         return;
       }
 
-      // OTP sent successfully - show verification input
+      // OTP sent successfully - sign out now and show verification input
+      // We sign out after OTP is sent to prevent premature access
+      await supabase.auth.signOut();
+      
+      // Store user ID for verification step
+      setUserId(tempUserId);
+      
+      // Show verification input
       setSignInOtpSent(true);
       const methodText = signInVerificationMethod === 'email' ? 'email' : 'phone';
       toast.success(`Verification code sent! Please check your ${methodText}.`);
@@ -893,6 +913,7 @@ const Register = () => {
       }
 
       // Successfully signed in
+      isInSignInOtpFlowRef.current = false; // Clear flag
       if (!isNavigatingRef.current) {
         isNavigatingRef.current = true;
         toast.success("Welcome back!");
@@ -1322,6 +1343,7 @@ const Register = () => {
                         type="button"
                         variant="ghost"
                         onClick={() => {
+                          isInSignInOtpFlowRef.current = false; // Clear flag when going back
                           setSignInOtpSent(false);
                           setVerificationCode("");
                         }}
