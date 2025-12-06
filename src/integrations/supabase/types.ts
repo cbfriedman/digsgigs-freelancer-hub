@@ -290,6 +290,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "blog_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "blog_posts_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -769,6 +776,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "digger_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       digger_specialties: {
@@ -915,6 +929,13 @@ export type Database = {
             columns: ["consumer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_contracts_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1078,6 +1099,13 @@ export type Database = {
             columns: ["consumer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2077,6 +2105,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ratings_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ratings_digger_id_fkey"
             columns: ["digger_id"]
             isOneToOne: false
@@ -2488,6 +2523,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_digger_id_fkey"
             columns: ["digger_id"]
             isOneToOne: false
@@ -2645,12 +2687,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      safe_public_profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string | null
+          user_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          user_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          user_type?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_lead_price: {
         Args: { gig_budget_max: number; gig_budget_min: number }
         Returns: number
+      }
+      can_access_conversation: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
       }
       check_rate_limit: {
         Args: {
