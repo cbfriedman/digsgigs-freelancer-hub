@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,20 +73,12 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
     description: "Lead generation for home improvement and design professionals"
   },
 ];
-
-// Default conversion rates by category (for initial selection only)
-const DEFAULT_CONVERSION_RATES: Record<string, number> = {
-  'high-value': 0.12,
-  'mid-value': 0.18,
-  'low-value': 0.25,
-};
-
 // Conversion rates by lead type (different from Google CPC 14%)
 const LEAD_TYPE_CONVERSION_RATES = {
   nonExclusiveUnconfirmed: 0.05,  // 5%
   nonExclusiveConfirmed: 0.14,    // 14% (same as CPC)
-  semiExclusive: 0.25,            // 25%
-  exclusive24h: 0.40,             // 40%
+  semiExclusive: 0.30,            // 30%
+  exclusive24h: 0.50,             // 50%
 };
 
 // Default CPC for Construction (use $35 as standard)
@@ -110,7 +102,6 @@ const getIndustryCategories = () => {
 export const ROIComparisonCalculator = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string>("HVAC");
   const [selectedCompetitor, setSelectedCompetitor] = useState<string>("Google AdWords");
-  const [conversionRate, setConversionRate] = useState<string>("18");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   const industryCategories = useMemo(() => getIndustryCategories(), []);
@@ -121,13 +112,14 @@ export const ROIComparisonCalculator = () => {
   );
   
   const competitor = COMPETITOR_PLATFORMS.find(c => c.name === selectedCompetitor) || COMPETITOR_PLATFORMS[0];
-  const platformConversionRate = parseFloat(conversionRate) / 100 || 0.18;
 
-  // Update conversion rate based on industry category
-  useEffect(() => {
-    const defaultRate = DEFAULT_CONVERSION_RATES[industry.category] || 0.18;
-    setConversionRate((defaultRate * 100).toFixed(0));
-  }, [industry.category]);
+  // Calculate average CPC from all industries in the selected category
+  const categoryAverageCpc = useMemo(() => {
+    const categoryIndustries = industryCategories[industry.category] || [];
+    if (categoryIndustries.length === 0) return DEFAULT_CONSTRUCTION_CPC;
+    const totalCpc = categoryIndustries.reduce((sum, ind) => sum + ind.averageCpc, 0);
+    return Math.round(totalCpc / categoryIndustries.length);
+  }, [industry.category, industryCategories]);
 
   // Filter industries based on search term
   const filteredCategories = useMemo(() => {
@@ -145,8 +137,8 @@ export const ROIComparisonCalculator = () => {
     return result;
   }, [industryCategories, searchTerm]);
 
-  // Use industry's averageCpc from GOOGLE_CPC_KEYWORDS, default to $35 for Construction
-  const industryCPC = selectedIndustry === "Construction" ? DEFAULT_CONSTRUCTION_CPC : industry.averageCpc;
+  // Use average CPC from all industries in the selected category
+  const industryCPC = categoryAverageCpc;
   const clickToLeadRate = 0.07; // Standard 7% click-to-lead rate
   const googleConversionRate = 0.14; // Google CPC uses 14% conversion rate
 
@@ -248,98 +240,61 @@ export const ROIComparisonCalculator = () => {
           <p className="text-xs text-muted-foreground">{competitor.description}</p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="industry">Your Industry</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="font-semibold mb-2">How to use this calculator:</p>
-                    <ul className="text-sm space-y-1 list-disc pl-4">
-                      <li>Select a competitor platform to compare</li>
-                      <li>Select your industry from the dropdown</li>
-                      <li>Adjust your Lead-to-Award Rate (what % of leads you typically close)</li>
-                      <li>The calculator shows your cost per closed deal on DigsandGigs vs the competitor</li>
-                    </ul>
-                    <p className="text-sm mt-2 pt-2 border-t">
-                      <strong>CPC values are from real Google Ads data</strong> for each industry.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Input
-              type="text"
-              placeholder="Search industries..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="mb-2"
-            />
-            <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-              <SelectTrigger id="industry">
-                <SelectValue placeholder="Select industry" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {Object.keys(filteredCategories).length > 0 ? (
-                  Object.entries(filteredCategories).map(([category, industries]) => (
-                    <SelectGroup key={category}>
-                      <SelectLabel>{categoryLabels[category] || category}</SelectLabel>
-                      {industries.map((ind) => (
-                        <SelectItem key={ind.industry} value={ind.industry}>
-                          {ind.industry} (${ind.averageCpc} CPC)
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ))
-                ) : (
-                  <SelectItem value="no-results" disabled>
-                    No industries found
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Selected: <span className="font-semibold text-primary">${industryCPC}</span> avg. Google CPC
-            </p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="industry">Your Industry</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-2">How to use this calculator:</p>
+                  <ul className="text-sm space-y-1 list-disc pl-4">
+                    <li>Select a competitor platform to compare</li>
+                    <li>Select your industry from the dropdown</li>
+                    <li>The calculator shows your cost per closed deal on DigsandGigs vs the competitor</li>
+                  </ul>
+                  <p className="text-sm mt-2 pt-2 border-t">
+                    <strong>CPC values are from real Google Ads data</strong> for each industry.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="conversion">Your Lead-to-Award Rate (%)</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="font-semibold mb-2">What is Lead-to-Award Rate?</p>
-                    <p className="text-sm mb-2">
-                      This is the percentage of leads you contact that result in closed deals and paid work.
-                    </p>
-                    <p className="text-sm mb-2">
-                      <strong>Example:</strong> If you contact 100 leads and win 25 jobs, your rate is 25%.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Industry average ranges from 12-25% depending on your service, pricing, and follow-up process.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Input
-              id="conversion"
-              type="number"
-              min="0"
-              max="100"
-              value={conversionRate}
-              onChange={(e) => setConversionRate(e.target.value)}
-              placeholder="18"
-              className="text-lg"
-            />
-          </div>
+          <Input
+            type="text"
+            placeholder="Search industries..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mb-2"
+          />
+          <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+            <SelectTrigger id="industry">
+              <SelectValue placeholder="Select industry" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              {Object.keys(filteredCategories).length > 0 ? (
+                Object.entries(filteredCategories).map(([category, industries]) => (
+                  <SelectGroup key={category}>
+                    <SelectLabel>{categoryLabels[category] || category}</SelectLabel>
+                    {industries.map((ind) => (
+                      <SelectItem key={ind.industry} value={ind.industry}>
+                        {ind.industry} (${ind.averageCpc} CPC)
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))
+              ) : (
+                <SelectItem value="no-results" disabled>
+                  No industries found
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Category Average: <span className="font-semibold text-primary">${industryCPC}</span> avg. Google CPC
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
@@ -410,7 +365,7 @@ export const ROIComparisonCalculator = () => {
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">Semi-Exclusive</p>
-                  <p className="text-[10px] text-primary">25% conv • ${platformCosts.semiExclusive.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-primary">30% conv • ${platformCosts.semiExclusive.toFixed(2)}/lead</p>
                 </div>
                 <p className="text-lg font-semibold text-foreground text-center">
                   ${platformCostPerDeal.semiExclusive.toFixed(0)}
@@ -422,7 +377,7 @@ export const ROIComparisonCalculator = () => {
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">24hr Exclusive</p>
-                  <p className="text-[10px] text-primary">40% conv • ${platformCosts.exclusive24h.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-primary">50% conv • ${platformCosts.exclusive24h.toFixed(2)}/lead</p>
                 </div>
                 <p className="text-lg font-semibold text-foreground text-center">
                   ${platformCostPerDeal.exclusive24h.toFixed(0)}
@@ -500,8 +455,13 @@ export const ROIComparisonCalculator = () => {
                 </div>
                 <div className="pt-2 border-t">
                   <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
-                  <p>Lead Cost ÷ Lead-to-Award Rate</p>
-                  <p className="text-primary">${platformCosts.nonExclusiveUnconfirmed.toFixed(2)} ÷ {(platformConversionRate * 100).toFixed(0)}% = ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)} (Unconfirmed)</p>
+                  <p>Lead Cost ÷ Conversion Rate</p>
+                  <ul className="mt-1 space-y-1">
+                    <li className="text-primary">Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)} ÷ 5% = ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}</li>
+                    <li className="text-primary">Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)} ÷ 14% = ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}</li>
+                    <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)} ÷ 30% = ${platformCostPerDeal.semiExclusive.toFixed(0)}</li>
+                    <li className="text-primary">24hr Exclusive: ${platformCosts.exclusive24h.toFixed(2)} ÷ 50% = ${platformCostPerDeal.exclusive24h.toFixed(0)}</li>
+                  </ul>
                 </div>
               </div>
             </div>
