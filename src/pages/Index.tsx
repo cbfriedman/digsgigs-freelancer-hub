@@ -39,7 +39,8 @@ import {
   DollarSign,
   Bell,
   Bookmark,
-  Menu
+  Menu,
+  MessageCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -867,6 +868,17 @@ const Index = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Floating Feedback Button */}
+      <Button
+        variant="default"
+        size="sm"
+        className="fixed bottom-6 right-6 z-50 shadow-lg hover:shadow-xl transition-all flex items-center gap-2 rounded-full px-4 py-2"
+        onClick={() => navigate("/contact")}
+      >
+        <MessageCircle className="w-4 h-4" />
+        Help Us Improve
+      </Button>
     </div>
   );
 };
