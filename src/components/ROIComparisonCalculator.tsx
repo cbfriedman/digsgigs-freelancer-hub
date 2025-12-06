@@ -322,7 +322,7 @@ export const ROIComparisonCalculator = () => {
                   ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}
                 </p>
                 <p className="text-lg font-bold text-green-600 text-right">
-                  ${savingsPerLead.nonExclusiveUnconfirmed.toFixed(0)}
+                  ${savings.nonExclusiveUnconfirmed.toFixed(0)}
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
@@ -334,7 +334,7 @@ export const ROIComparisonCalculator = () => {
                   ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}
                 </p>
                 <p className="text-lg font-bold text-green-600 text-right">
-                  ${savingsPerLead.nonExclusiveConfirmed.toFixed(0)}
+                  ${savings.nonExclusiveConfirmed.toFixed(0)}
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
@@ -346,7 +346,7 @@ export const ROIComparisonCalculator = () => {
                   ${platformCostPerDeal.semiExclusive.toFixed(0)}
                 </p>
                 <p className="text-lg font-bold text-green-600 text-right">
-                  ${savingsPerLead.semiExclusive.toFixed(0)}
+                  ${savings.semiExclusive.toFixed(0)}
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
@@ -358,7 +358,7 @@ export const ROIComparisonCalculator = () => {
                   ${platformCostPerDeal.exclusive24h.toFixed(0)}
                 </p>
                 <p className="text-lg font-bold text-green-600 text-right">
-                  ${savingsPerLead.exclusive24h.toFixed(0)}
+                  ${savings.exclusive24h.toFixed(0)}
                 </p>
               </div>
             </div>
