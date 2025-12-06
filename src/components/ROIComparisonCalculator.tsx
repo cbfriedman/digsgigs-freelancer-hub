@@ -254,22 +254,25 @@ export const ROIComparisonCalculator = () => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <Input
-            type="text"
-            placeholder="Search industries..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-2"
-          />
           <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-            <SelectTrigger id="industry">
-              <SelectValue placeholder="Select industry" />
+            <SelectTrigger id="industry" className="w-full">
+              <SelectValue placeholder="Select industry">{selectedIndustry} (${industryCPC} CPC)</SelectValue>
             </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
+            <SelectContent className="max-h-[300px] bg-popover">
+              <div className="p-2 sticky top-0 bg-popover border-b">
+                <Input
+                  type="text"
+                  placeholder="Search industries..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-8"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
               {Object.keys(filteredCategories).length > 0 ? (
                 Object.entries(filteredCategories).map(([category, industries]) => (
                   <SelectGroup key={category}>
-                    <SelectLabel>{categoryLabels[category] || category}</SelectLabel>
+                    <SelectLabel className="text-xs font-bold text-primary">{categoryLabels[category] || category}</SelectLabel>
                     {industries.map((ind) => (
                       <SelectItem key={ind.industry} value={ind.industry}>
                         {ind.industry} (${ind.averageCpc} CPC)
@@ -278,9 +281,9 @@ export const ROIComparisonCalculator = () => {
                   </SelectGroup>
                 ))
               ) : (
-                <SelectItem value="no-results" disabled>
+                <div className="p-2 text-sm text-muted-foreground text-center">
                   No industries found
-                </SelectItem>
+                </div>
               )}
             </SelectContent>
           </Select>
