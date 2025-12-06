@@ -180,6 +180,24 @@ const Register = () => {
   // Reset registration state when switching to sign-in mode
   useEffect(() => {
     if (isSignInMode) {
+      // Check if we're in the middle of an OTP flow (restore from sessionStorage)
+      const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+      if (isInOtpFlow) {
+        const savedUserId = sessionStorage.getItem('signInUserId');
+        const savedEmail = sessionStorage.getItem('signInEmail');
+        const savedMethod = sessionStorage.getItem('signInVerificationMethod') as 'email' | 'sms' | null;
+        
+        if (savedUserId && savedEmail) {
+          setUserId(savedUserId);
+          setEmail(savedEmail);
+          setSignInOtpSent(true);
+          setSignInVerificationMethod(savedMethod || 'email');
+          isInSignInOtpFlowRef.current = true;
+          return; // Don't reset state if we're restoring OTP flow
+        }
+      }
+      
+      // Normal reset
       setStep(1);
       setFullName("");
       setConfirmPassword("");
@@ -803,6 +821,16 @@ const Register = () => {
 
       // Set flag BEFORE any async operations to prevent redirects
       isInSignInOtpFlowRef.current = true;
+      
+      // Set state BEFORE async operations to ensure UI updates immediately
+      setUserId(tempUserId);
+      setSignInOtpSent(true); // Set this IMMEDIATELY so UI updates before signOut
+      
+      // Also persist to sessionStorage to survive redirects
+      sessionStorage.setItem('signInOtpFlow', 'true');
+      sessionStorage.setItem('signInUserId', tempUserId);
+      sessionStorage.setItem('signInEmail', email);
+      sessionStorage.setItem('signInVerificationMethod', signInVerificationMethod);
 
       // Generate OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -819,8 +847,17 @@ const Register = () => {
 
       if (otpError) {
         console.error("OTP send error:", otpError);
-        // Clear flag on error
+        // Clear flag and state on error
         isInSignInOtpFlowRef.current = false;
+        setSignInOtpSent(false);
+        setUserId(null);
+        
+        // Clear sessionStorage on error
+        sessionStorage.removeItem('signInOtpFlow');
+        sessionStorage.removeItem('signInUserId');
+        sessionStorage.removeItem('signInEmail');
+        sessionStorage.removeItem('signInVerificationMethod');
+        
         // Sign out on error since we didn't complete verification
         await supabase.auth.signOut();
         if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('TWILIO') || otpError.message?.includes('not configured')) {
@@ -835,17 +872,13 @@ const Register = () => {
         return;
       }
 
-      // OTP sent successfully - sign out now and show verification input
+      // OTP sent successfully - sign out now (state already set above)
       // We sign out after OTP is sent to prevent premature access
       await supabase.auth.signOut();
       
-      // Store user ID for verification step
-      setUserId(tempUserId);
-      
-      // Show verification input
-      setSignInOtpSent(true);
       const methodText = signInVerificationMethod === 'email' ? 'email' : 'phone';
       toast.success(`Verification code sent! Please check your ${methodText}.`);
+      setLoading(false);
     } catch (error: any) {
       console.error("Sign in error caught:", error);
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
@@ -912,12 +945,30 @@ const Register = () => {
         return;
       }
 
-      // Successfully signed in
+      // Refresh the session to get updated user data (including email_confirmed_at)
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.warn("Failed to refresh session, but continuing with sign-in:", refreshError);
+      }
+
+      // Successfully signed in - wait a moment for auth state to update
       isInSignInOtpFlowRef.current = false; // Clear flag
+      
+      // Clear sessionStorage
+      sessionStorage.removeItem('signInOtpFlow');
+      sessionStorage.removeItem('signInUserId');
+      sessionStorage.removeItem('signInEmail');
+      sessionStorage.removeItem('signInVerificationMethod');
+      
       if (!isNavigatingRef.current) {
         isNavigatingRef.current = true;
         toast.success("Welcome back!");
-        navigate('/role-dashboard');
+        
+        // Small delay to ensure auth state is updated before navigation
+        setTimeout(() => {
+          navigate('/role-dashboard');
+        }, 100);
       }
     } catch (error: any) {
       console.error("Verification error:", error);
@@ -1346,6 +1397,12 @@ const Register = () => {
                           isInSignInOtpFlowRef.current = false; // Clear flag when going back
                           setSignInOtpSent(false);
                           setVerificationCode("");
+                          
+                          // Clear sessionStorage when going back
+                          sessionStorage.removeItem('signInOtpFlow');
+                          sessionStorage.removeItem('signInUserId');
+                          sessionStorage.removeItem('signInEmail');
+                          sessionStorage.removeItem('signInVerificationMethod');
                         }}
                         disabled={loading}
                         className="w-full"

@@ -34,20 +34,26 @@ const roleConfig = {
 };
 
 export default function RoleDashboard() {
-  const { user, userRoles, activeRole, switchRole } = useAuth();
+  const { user, userRoles, activeRole, switchRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [stats, setStats] = useState<RoleStats>({});
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
+    // Wait for auth to finish loading before checking user
+    if (authLoading) {
+      return;
+    }
+
+    // If no user after loading completes, redirect to register
     if (!user) {
       navigate("/register");
       return;
     }
 
     fetchStats();
-  }, [user, navigate, userRoles, refreshKey]);
+  }, [user, navigate, userRoles, refreshKey, authLoading]);
 
   const fetchStats = async () => {
     if (!user || userRoles.length === 0) return;
