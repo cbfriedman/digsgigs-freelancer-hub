@@ -40,7 +40,8 @@ import {
   Bell,
   Bookmark,
   Menu,
-  MessageCircle
+  MessageCircle,
+  MessageSquare
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -54,6 +55,7 @@ import heroImage from "@/assets/hero-image.jpg";
 import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
 import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
 import { ROIComparisonCalculator } from "@/components/ROIComparisonCalculator";
+import AIChatbot from "@/components/AIChatbot";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -66,6 +68,7 @@ const Index = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showROICalculator, setShowROICalculator] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -869,16 +872,33 @@ const Index = () => {
       {/* Footer */}
       <Footer />
 
-      {/* Floating Feedback Button */}
-      <Button
-        variant="default"
-        size="sm"
-        className="fixed bottom-6 right-6 z-50 shadow-lg hover:shadow-xl transition-all flex items-center gap-2 rounded-full px-4 py-2"
-        onClick={() => navigate("/contact")}
-      >
-        <MessageCircle className="w-4 h-4" />
-        Help Us Improve
-      </Button>
+      {/* Floating Buttons */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {/* Chat with us button */}
+        <Button
+          variant="secondary"
+          size="sm"
+          className="shadow-lg hover:shadow-xl transition-all flex items-center gap-2 rounded-full px-4 py-2"
+          onClick={() => setIsChatOpen(true)}
+        >
+          <MessageSquare className="w-4 h-4" />
+          Chat with us
+        </Button>
+        
+        {/* Feedback button */}
+        <Button
+          variant="default"
+          size="sm"
+          className="shadow-lg hover:shadow-xl transition-all flex items-center gap-2 rounded-full px-4 py-2"
+          onClick={() => navigate("/contact")}
+        >
+          <MessageCircle className="w-4 h-4" />
+          Help Us Improve
+        </Button>
+      </div>
+
+      {/* AI Chatbot */}
+      <AIChatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 };
