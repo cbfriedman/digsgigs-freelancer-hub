@@ -27,10 +27,10 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const { diggerId, totalAmount } = await req.json();
-
-    if (!diggerId || !totalAmount) {
-      throw new Error('Missing required parameters: diggerId and totalAmount');
+    // Extract and verify JWT
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header required');
     }
 
     const supabaseClient = createClient(
@@ -38,15 +38,49 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get digger's subscription tier
+    // Get the authenticated user from the JWT
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      logStep("Auth error", { error: authError?.message });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    logStep("User authenticated", { userId: user.id });
+
+    const { diggerId, totalAmount } = await req.json();
+
+    if (!diggerId || !totalAmount) {
+      throw new Error('Missing required parameters: diggerId and totalAmount');
+    }
+
+    // Get digger profile and verify ownership
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from('digger_profiles')
-      .select('subscription_tier')
+      .select('subscription_tier, user_id')
       .eq('id', diggerId)
       .single();
 
     if (profileError || !diggerProfile) {
       throw new Error('Digger profile not found');
+    }
+
+    // Authorization check: user must own the digger profile or be admin
+    const { data: isAdmin } = await supabaseClient.rpc('has_role', { 
+      _user_id: user.id, 
+      _role: 'admin' 
+    });
+
+    if (diggerProfile.user_id !== user.id && !isAdmin) {
+      logStep("Authorization failed", { userId: user.id, profileUserId: diggerProfile.user_id });
+      return new Response(JSON.stringify({ error: 'Not authorized to access this profile' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403,
+      });
     }
 
     const tier = diggerProfile.subscription_tier || 'free';
