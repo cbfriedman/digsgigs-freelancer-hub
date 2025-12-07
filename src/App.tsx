@@ -40,6 +40,7 @@ import ProfileCompletion from "./pages/ProfileCompletion";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminNotificationPreferences from "./pages/AdminNotificationPreferences";
 import AdminUserManagement from "./pages/AdminUserManagement";
+import AdminLeadDistributionTest from "./pages/AdminLeadDistributionTest";
 import Notifications from "./pages/Notifications";
 import TestAIMatching from "./pages/TestAIMatching";
 import E2ETestSuite from "./pages/E2ETestSuite";
@@ -288,6 +289,10 @@ const router = createBrowserRouter([
   {
     path: "/admin/notifications",
     element: <ProtectedRoute><AdminNotificationPreferences /></ProtectedRoute>,
+  },
+  {
+    path: "/admin/lead-distribution-test",
+    element: <ProtectedRoute><AdminLeadDistributionTest /></ProtectedRoute>,
   },
   {
     path: "/test/ai-matching",

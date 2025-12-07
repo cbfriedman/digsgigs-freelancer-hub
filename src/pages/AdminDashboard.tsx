@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -320,6 +320,13 @@ const AdminDashboard = () => {
             >
               <Settings className="mr-2 h-4 w-4" />
               Notification Settings
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => navigate("/admin/lead-distribution-test")}
+            >
+              <FlaskConical className="mr-2 h-4 w-4" />
+              Lead Distribution Test
             </Button>
           </div>
         </div>

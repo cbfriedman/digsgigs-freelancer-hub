@@ -254,6 +254,33 @@ export default function KeywordSummary() {
       if (field === 'quantity') {
         return { ...selection, quantity: parseInt(value) || 0 };
       } else if (field === 'exclusivity') {
+        // Check for exclusivity conflicts before updating
+        const existingForKeyword = prev.filter(s => s.keyword === selection.keyword && s.id !== selectionId);
+        
+        if (value === 'exclusive-24h') {
+          const hasSemiExclusive = existingForKeyword.some(s => s.exclusivity === 'semi-exclusive');
+          if (hasSemiExclusive) {
+            toast({
+              title: "Conflicting Exclusivity",
+              description: "Cannot select 24-Hr Exclusive when Semi-Exclusive is already selected for this keyword",
+              variant: "destructive"
+            });
+            return selection; // Don't update
+          }
+        }
+        
+        if (value === 'semi-exclusive') {
+          const hasExclusive = existingForKeyword.some(s => s.exclusivity === 'exclusive-24h');
+          if (hasExclusive) {
+            toast({
+              title: "Conflicting Exclusivity",
+              description: "Cannot select Semi-Exclusive when 24-Hr Exclusive is already selected for this keyword",
+              variant: "destructive"
+            });
+            return selection; // Don't update
+          }
+        }
+        
         return { ...selection, exclusivity: value };
       } else if (field === 'isConfirmed') {
         return { ...selection, isConfirmed: value };
@@ -262,12 +289,35 @@ export default function KeywordSummary() {
     }));
   };
 
+  // Check for conflicting exclusivity types (exclusive vs semi-exclusive)
+  const hasConflictingExclusivity = (keyword: string, newExclusivity: string): { hasConflict: boolean; conflictType: string } => {
+    const existingForKeyword = selections.filter(s => s.keyword === keyword);
+    
+    // Check if adding exclusive when semi-exclusive exists or vice versa
+    if (newExclusivity === 'exclusive-24h') {
+      const hasSemiExclusive = existingForKeyword.some(s => s.exclusivity === 'semi-exclusive');
+      if (hasSemiExclusive) {
+        return { hasConflict: true, conflictType: 'Semi-Exclusive' };
+      }
+    }
+    
+    if (newExclusivity === 'semi-exclusive') {
+      const hasExclusive = existingForKeyword.some(s => s.exclusivity === 'exclusive-24h');
+      if (hasExclusive) {
+        return { hasConflict: true, conflictType: '24-Hr Exclusive' };
+      }
+    }
+    
+    return { hasConflict: false, conflictType: '' };
+  };
+
   // Add another lead type entry for a keyword
   const addLeadTypeForKeyword = (keyword: string, industry: string) => {
     // Get existing selections for this keyword to determine what lead types are already added
     const existingForKeyword = selections.filter(s => s.keyword === keyword);
     
     // Determine which lead type to add (pick the first one not already selected)
+    // IMPORTANT: Skip conflicting types (can't have both exclusive and semi-exclusive)
     const leadTypes: Array<{exclusivity: LeadSelection['exclusivity'], isConfirmed: boolean}> = [
       { exclusivity: 'exclusive-24h', isConfirmed: false },
       { exclusivity: 'semi-exclusive', isConfirmed: false },
@@ -275,16 +325,24 @@ export default function KeywordSummary() {
       { exclusivity: 'non-exclusive', isConfirmed: false },
     ];
     
-    const availableType = leadTypes.find(type => 
-      !existingForKeyword.some(s => 
+    const availableType = leadTypes.find(type => {
+      // Check if this type is already added
+      const alreadyAdded = existingForKeyword.some(s => 
         s.exclusivity === type.exclusivity && s.isConfirmed === type.isConfirmed
-      )
-    );
+      );
+      if (alreadyAdded) return false;
+      
+      // Check for exclusivity conflicts
+      const { hasConflict } = hasConflictingExclusivity(keyword, type.exclusivity);
+      if (hasConflict) return false;
+      
+      return true;
+    });
     
     if (!availableType) {
       toast({
         title: "All Lead Types Added",
-        description: "You've already added all available lead types for this keyword",
+        description: "You've already added all available lead types for this keyword (Note: Cannot mix Exclusive and Semi-Exclusive)",
         variant: "destructive"
       });
       return;
