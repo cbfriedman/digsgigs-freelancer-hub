@@ -75,7 +75,7 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
   try {
@@ -129,6 +129,80 @@ serve(async (req) => {
     }
 
     logStep("Gig found", { consumerId: gig.consumer_id, title: gig.title });
+
+    // ============ EXCLUSIVITY ENFORCEMENT ============
+    
+    // Check if this is an exclusive lead purchase
+    if (exclusivityType === 'exclusive-24h') {
+      // Check if another digger already has an active exclusive purchase for this gig
+      const { data: existingExclusive, error: exclusiveCheckError } = await supabaseClient
+        .from('lead_purchases')
+        .select('id, digger_id')
+        .eq('gig_id', gigId)
+        .eq('exclusivity_type', 'exclusive-24h')
+        .eq('status', 'completed')
+        .neq('digger_id', diggerId)
+        .limit(1);
+      
+      if (exclusiveCheckError) {
+        logStep("Error checking exclusive purchases", { error: exclusiveCheckError });
+      }
+      
+      if (existingExclusive && existingExclusive.length > 0) {
+        logStep("Exclusive lead already purchased by another digger", { existingPurchase: existingExclusive[0] });
+        throw new Error("This lead has already been purchased exclusively by another service provider. Please choose a different lead or exclusivity type.");
+      }
+      
+      // Also check lead_exclusivity_queue for active exclusive entries
+      const { data: existingQueueExclusive, error: queueCheckError } = await supabaseClient
+        .from('lead_exclusivity_queue')
+        .select('id, digger_id, status')
+        .eq('gig_id', gigId)
+        .eq('exclusivity_type', 'exclusive')
+        .in('status', ['active', 'pending'])
+        .neq('digger_id', diggerId)
+        .limit(1);
+      
+      if (queueCheckError) {
+        logStep("Error checking exclusivity queue", { error: queueCheckError });
+      }
+      
+      if (existingQueueExclusive && existingQueueExclusive.length > 0) {
+        logStep("Exclusive queue entry exists for another digger", { existingQueue: existingQueueExclusive[0] });
+        throw new Error("This lead is currently under exclusive access by another service provider. Please try again later or choose a different exclusivity type.");
+      }
+    }
+    
+    // Check semi-exclusive 4-digger limit
+    if (exclusivityType === 'semi-exclusive') {
+      const { data: existingSemiExclusive, error: semiCheckError } = await supabaseClient
+        .from('lead_purchases')
+        .select('id, digger_id')
+        .eq('gig_id', gigId)
+        .eq('exclusivity_type', 'semi-exclusive')
+        .eq('status', 'completed');
+      
+      if (semiCheckError) {
+        logStep("Error checking semi-exclusive purchases", { error: semiCheckError });
+      }
+      
+      const semiExclusiveCount = existingSemiExclusive?.length || 0;
+      const MAX_SEMI_EXCLUSIVE = 4;
+      
+      if (semiExclusiveCount >= MAX_SEMI_EXCLUSIVE) {
+        logStep("Semi-exclusive limit reached", { count: semiExclusiveCount, max: MAX_SEMI_EXCLUSIVE });
+        throw new Error(`This lead has reached the maximum of ${MAX_SEMI_EXCLUSIVE} semi-exclusive purchases. Please choose Non-Exclusive instead.`);
+      }
+      
+      // Check if this digger already has a semi-exclusive purchase for this gig
+      const alreadyHasSemiExclusive = existingSemiExclusive?.some(p => p.digger_id === diggerId);
+      if (alreadyHasSemiExclusive) {
+        logStep("Digger already has semi-exclusive for this gig");
+        throw new Error("You already have a semi-exclusive purchase for this lead.");
+      }
+    }
+    
+    // ============ END EXCLUSIVITY ENFORCEMENT ============
 
     // Calculate lead cost using CPC-based pricing
     const profession = diggerProfile.profession || 'General Contracting';

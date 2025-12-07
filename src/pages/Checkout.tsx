@@ -173,10 +173,36 @@ export default function Checkout() {
 
   // Handler: Update lead type for a selection
   const updateLeadType = useCallback((selectionId: string, newLeadType: LeadType) => {
+    const selection = selections.find(sel => sel.id === selectionId);
+    if (!selection) return;
+    
+    // Map lead type to exclusivity
+    let newExclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive';
+    if (newLeadType === 'exclusive-24h') newExclusivity = 'exclusive-24h';
+    else if (newLeadType === 'semi-exclusive') newExclusivity = 'semi-exclusive';
+    
+    // Check for exclusivity conflicts
+    const existingForKeyword = selections.filter(s => s.keyword === selection.keyword && s.id !== selectionId);
+    
+    if (newExclusivity === 'exclusive-24h') {
+      const hasSemiExclusive = existingForKeyword.some(s => s.exclusivity === 'semi-exclusive');
+      if (hasSemiExclusive) {
+        toast.error("Cannot select 24-Hr Exclusive when Semi-Exclusive is already selected for this keyword");
+        return;
+      }
+    }
+    
+    if (newExclusivity === 'semi-exclusive') {
+      const hasExclusive = existingForKeyword.some(s => s.exclusivity === 'exclusive-24h');
+      if (hasExclusive) {
+        toast.error("Cannot select Semi-Exclusive when 24-Hr Exclusive is already selected for this keyword");
+        return;
+      }
+    }
+    
     const updated = selections.map(sel => {
       if (sel.id !== selectionId) return sel;
       
-      // Map lead type to exclusivity and isConfirmed
       let exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive';
       let isConfirmed = false;
       
@@ -216,19 +242,31 @@ export default function Checkout() {
   // Handler: Add new lead type for a keyword
   const addLeadTypeForKeyword = useCallback((keyword: string, industry: string) => {
     // Find existing lead types for this keyword
-    const existingTypes = selections
-      .filter(sel => sel.keyword === keyword)
-      .map(sel => {
-        if (sel.exclusivity === 'exclusive-24h') return 'exclusive-24h';
-        if (sel.exclusivity === 'semi-exclusive') return 'semi-exclusive';
-        return sel.isConfirmed ? 'confirmed' : 'unconfirmed';
-      });
+    const existingForKeyword = selections.filter(sel => sel.keyword === keyword);
+    const existingTypes = existingForKeyword.map(sel => {
+      if (sel.exclusivity === 'exclusive-24h') return 'exclusive-24h';
+      if (sel.exclusivity === 'semi-exclusive') return 'semi-exclusive';
+      return sel.isConfirmed ? 'confirmed' : 'unconfirmed';
+    });
     
-    // Find first available lead type
-    const availableType = LEAD_TYPE_OPTIONS.find(opt => !existingTypes.includes(opt.value));
+    // Check for exclusivity conflicts when finding available types
+    const hasExclusive = existingForKeyword.some(s => s.exclusivity === 'exclusive-24h');
+    const hasSemiExclusive = existingForKeyword.some(s => s.exclusivity === 'semi-exclusive');
+    
+    // Find first available lead type that doesn't conflict
+    const availableType = LEAD_TYPE_OPTIONS.find(opt => {
+      // Skip if already added
+      if (existingTypes.includes(opt.value)) return false;
+      
+      // Skip if would create exclusivity conflict
+      if (opt.value === 'exclusive-24h' && hasSemiExclusive) return false;
+      if (opt.value === 'semi-exclusive' && hasExclusive) return false;
+      
+      return true;
+    });
     
     if (!availableType) {
-      toast.info("All lead types already added for this keyword");
+      toast.info("All available lead types added for this keyword (Note: Cannot mix Exclusive and Semi-Exclusive)");
       return;
     }
     
