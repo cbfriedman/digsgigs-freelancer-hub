@@ -418,22 +418,22 @@ export const ROIComparisonCalculator = () => {
               <div className="space-y-2 text-xs text-muted-foreground">
                 <div>
                   <p className="font-semibold text-foreground">Lead Cost by Exclusivity:</p>
-                  <p>Based on industry CPC (${industryCPC})</p>
+                  <p>Based on industry lead costs</p>
                   <ul className="mt-1 space-y-1">
-                    <li className="text-primary">Non-Exclusive Unconfirmed: 25% = ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}</li>
-                    <li className="text-primary">Non-Exclusive Confirmed: 30% = ${platformCosts.nonExclusiveConfirmed.toFixed(2)}</li>
-                    <li className="text-primary">Semi-Exclusive: 50% = ${platformCosts.semiExclusive.toFixed(2)}</li>
-                    <li className="text-primary">24hr Exclusive: 90% = ${platformCosts.exclusive24h.toFixed(2)}</li>
+                    <li className="text-primary">Non-Exclusive Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}/lead</li>
+                    <li className="text-primary">Non-Exclusive Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</li>
+                    <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)}/lead</li>
+                    <li className="text-primary">24hr Exclusive: ${platformCosts.exclusive24h.toFixed(2)}/lead</li>
                   </ul>
                 </div>
                 <div className="pt-2 border-t">
                   <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
                   <p>Lead Cost ÷ Conversion Rate</p>
                   <ul className="mt-1 space-y-1">
-                    <li className="text-primary">Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)} ÷ 5% = ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}</li>
-                    <li className="text-primary">Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)} ÷ 7% = ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}</li>
-                    <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)} ÷ 15% = ${platformCostPerDeal.semiExclusive.toFixed(0)}</li>
-                    <li className="text-primary">24hr Exclusive: ${platformCosts.exclusive24h.toFixed(2)} ÷ 40% = ${platformCostPerDeal.exclusive24h.toFixed(0)}</li>
+                    <li className="text-primary">Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)} ÷ {(LEAD_CONVERSION_RATES.nonExclusiveUnconfirmed * 100).toFixed(0)}% = ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}</li>
+                    <li className="text-primary">Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)} ÷ {(LEAD_CONVERSION_RATES.nonExclusiveConfirmed * 100).toFixed(0)}% = ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}</li>
+                    <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)} ÷ {(LEAD_CONVERSION_RATES.semiExclusive * 100).toFixed(0)}% = ${platformCostPerDeal.semiExclusive.toFixed(0)}</li>
+                    <li className="text-primary">24hr Exclusive: ${platformCosts.exclusive24h.toFixed(2)} ÷ {(LEAD_CONVERSION_RATES.exclusive24h * 100).toFixed(0)}% = ${platformCostPerDeal.exclusive24h.toFixed(0)}</li>
                   </ul>
                 </div>
               </div>
