@@ -173,10 +173,10 @@ serve(async (req) => {
 
     logStep("Starting lead matching", { gigId });
 
-    // Get the gig details
+    // Get the gig details (SECURITY: Do not expose email addresses)
     const { data: gig, error: gigError } = await supabaseClient
       .from("gigs")
-      .select("*, profiles!gigs_consumer_id_fkey(id, email, full_name)")
+      .select("*, profiles!gigs_consumer_id_fkey(id, full_name)")
       .eq("id", gigId)
       .single();
 

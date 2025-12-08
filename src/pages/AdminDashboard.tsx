@@ -69,12 +69,13 @@ const AdminDashboard = () => {
         return;
       }
 
-      // Check if user is admin
+      // Check if user is admin (using correct table: user_app_roles)
       const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
+        .from("user_app_roles")
+        .select("app_role")
         .eq("user_id", user.id)
-        .eq("role", "admin")
+        .eq("app_role", "admin")
+        .eq("is_active", true)
         .maybeSingle();
 
       if (rolesError) {

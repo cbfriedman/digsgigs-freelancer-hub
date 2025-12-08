@@ -238,7 +238,7 @@ export const IndustryProfessionSelector = () => {
             
             {/* Checkbox list */}
             <div className="border rounded-lg p-3 max-h-[300px] overflow-y-auto bg-background space-y-2">
-              {specialties.map((specialty) => (
+                {specialties.map((specialty) => (
                 <div key={specialty.keyword} className="flex items-center space-x-2">
                   <Checkbox
                     id={`specialty-${specialty.keyword}`}
@@ -261,7 +261,7 @@ export const IndustryProfessionSelector = () => {
                     </Badge>
                   </label>
                 </div>
-              ))}
+                ))}
             </div>
           </div>
         )}
@@ -301,16 +301,16 @@ export const IndustryProfessionSelector = () => {
                 <div key={specialty.keyword} className="border-b pb-3 last:border-b-0 last:pb-0">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{specialty.keyword}</span>
-                    <Badge 
-                      variant={
+                <Badge 
+                  variant={
                         specialty.competitionLevel === 'high' ? 'destructive' :
                         specialty.competitionLevel === 'medium' ? 'default' : 
-                        'secondary'
-                      }
-                    >
+                    'secondary'
+                  }
+                >
                       {specialty.competitionLevel}
-                    </Badge>
-                  </div>
+                </Badge>
+              </div>
                   <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                     <div>
                       <span>Google CPC: </span>

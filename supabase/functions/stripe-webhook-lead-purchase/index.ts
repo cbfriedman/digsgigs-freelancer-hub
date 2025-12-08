@@ -76,12 +76,42 @@ serve(async (req) => {
 
       logStep("Lead purchase metadata extracted", { leadPurchaseId, diggerId, gigId, pricingModel });
 
+      // SECURITY: Get lead purchase record and verify payment amount matches expected price
+      const { data: leadPurchase, error: purchaseFetchError } = await supabaseClient
+        .from('lead_purchases')
+        .select('purchase_price, amount_paid, status')
+        .eq('id', leadPurchaseId)
+        .single();
+
+      if (purchaseFetchError || !leadPurchase) {
+        logStep("Error fetching lead purchase for verification", { error: purchaseFetchError });
+        throw new Error("Lead purchase record not found");
+      }
+
+      // Verify payment amount matches expected price (allow 1 cent tolerance for rounding)
+      const paymentAmount = session.amount_total ? session.amount_total / 100 : 0; // Convert from cents
+      const expectedPrice = leadPurchase.purchase_price || 0;
+      const priceDifference = Math.abs(paymentAmount - expectedPrice);
+
+      if (priceDifference > 0.01) {
+        logStep("CRITICAL: Price mismatch detected", { 
+          expected: expectedPrice, 
+          received: paymentAmount,
+          difference: priceDifference,
+          sessionId: session.id
+        });
+        throw new Error(`Payment amount mismatch: expected $${expectedPrice}, received $${paymentAmount}`);
+      }
+
+      logStep("Price verification passed", { expected: expectedPrice, received: paymentAmount });
+
       // Update lead purchase status to completed
       const { error: updateError } = await supabaseClient
         .from('lead_purchases')
         .update({
           status: 'completed',
           stripe_payment_id: session.payment_intent as string,
+          amount_paid: paymentAmount, // Store actual amount paid
         })
         .eq('id', leadPurchaseId);
 

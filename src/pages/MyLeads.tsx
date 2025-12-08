@@ -101,8 +101,7 @@ export default function MyLeads() {
             lead_source,
             awarded_at,
             profiles!gigs_consumer_id_fkey (
-              full_name,
-              email
+              full_name
             )
           ),
           digger_profiles!lead_purchases_digger_id_fkey (
