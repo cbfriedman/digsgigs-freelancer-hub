@@ -311,28 +311,35 @@ export const ROIComparisonCalculator = () => {
               <h4 className="font-semibold text-sm text-primary">Digsandgigs Platform</h4>
             </div>
             <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-muted-foreground border-b pb-2">
+              <div className="grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground border-b pb-2">
                 <span>Lead Type</span>
+                <span className="text-center text-primary">Per Lead</span>
                 <span className="text-center">Cost/Deal</span>
                 <span className="text-right text-green-600">You Save</span>
               </div>
-              <div className="grid grid-cols-3 gap-2 items-center">
+              <div className="grid grid-cols-4 gap-2 items-center">
                 <div>
                   <p className="text-xs text-muted-foreground">Non-Exclusive Unconfirmed</p>
-                  <p className="text-[10px] text-primary">{(LEAD_CONVERSION_RATES.nonExclusiveUnconfirmed * 100).toFixed(0)}% conv • ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-muted-foreground">{(LEAD_CONVERSION_RATES.nonExclusiveUnconfirmed * 100).toFixed(0)}% conversion</p>
                 </div>
-                <p className="text-xl font-bold text-primary text-center">
+                <p className="text-lg font-bold text-primary text-center">
+                  ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}
+                </p>
+                <p className="text-lg font-bold text-foreground text-center">
                   ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}
                 </p>
                 <p className="text-lg font-bold text-green-600 text-right">
                   ${savings.nonExclusiveUnconfirmed.toFixed(0)}
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
+              <div className="grid grid-cols-4 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">Non-Exclusive Confirmed</p>
-                  <p className="text-[10px] text-primary">{(LEAD_CONVERSION_RATES.nonExclusiveConfirmed * 100).toFixed(0)}% conv • ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-muted-foreground">{(LEAD_CONVERSION_RATES.nonExclusiveConfirmed * 100).toFixed(0)}% conversion</p>
                 </div>
+                <p className="text-lg font-bold text-primary text-center">
+                  ${platformCosts.nonExclusiveConfirmed.toFixed(2)}
+                </p>
                 <p className="text-lg font-bold text-foreground text-center">
                   ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}
                 </p>
@@ -340,11 +347,14 @@ export const ROIComparisonCalculator = () => {
                   ${savings.nonExclusiveConfirmed.toFixed(0)}
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
+              <div className="grid grid-cols-4 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">Semi-Exclusive</p>
-                  <p className="text-[10px] text-primary">{(LEAD_CONVERSION_RATES.semiExclusive * 100).toFixed(0)}% conv • ${platformCosts.semiExclusive.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-muted-foreground">{(LEAD_CONVERSION_RATES.semiExclusive * 100).toFixed(0)}% conversion</p>
                 </div>
+                <p className="text-lg font-bold text-primary text-center">
+                  ${platformCosts.semiExclusive.toFixed(2)}
+                </p>
                 <p className="text-lg font-semibold text-foreground text-center">
                   ${platformCostPerDeal.semiExclusive.toFixed(0)}
                 </p>
@@ -352,11 +362,14 @@ export const ROIComparisonCalculator = () => {
                   ${savings.semiExclusive.toFixed(0)}
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
+              <div className="grid grid-cols-4 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">24hr Exclusive</p>
-                  <p className="text-[10px] text-primary">{(LEAD_CONVERSION_RATES.exclusive24h * 100).toFixed(0)}% conv • ${platformCosts.exclusive24h.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-muted-foreground">{(LEAD_CONVERSION_RATES.exclusive24h * 100).toFixed(0)}% conversion</p>
                 </div>
+                <p className="text-lg font-bold text-primary text-center">
+                  ${platformCosts.exclusive24h.toFixed(2)}
+                </p>
                 <p className="text-lg font-semibold text-foreground text-center">
                   ${platformCostPerDeal.exclusive24h.toFixed(0)}
                 </p>
