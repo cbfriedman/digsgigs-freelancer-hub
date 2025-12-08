@@ -20,42 +20,67 @@ const roundUpToHalf = (value: number): number => {
 };
 
 /**
- * CPC-based pricing calculation
+ * Bark-based pricing multipliers
  * Formula:
- * - Non-Exclusive Unconfirmed: 25% of CPC
- * - Non-Exclusive Confirmed: 30% of CPC
- * - Semi-Exclusive: 50% of CPC
- * - 24-Hour Exclusive: 90% of CPC
+ * - Non-Exclusive Unconfirmed: Bark × 0.90 (5% conversion)
+ * - Non-Exclusive Confirmed: Bark × 1.25 (10% conversion)
+ * - Semi-Exclusive: Bark × 2.00 (20% conversion)
+ * - 24-Hour Exclusive: Bark × 4.00 (50% conversion)
+ */
+const BARK_PRICING_MULTIPLIERS = {
+  nonExclusiveUnconfirmed: 0.90,
+  nonExclusiveConfirmed: 1.25,
+  semiExclusive: 2.00,
+  exclusive24h: 4.00,
+};
+
+/**
+ * Calculate lead cost from Bark base price
  */
 const calculateLeadCost = (
-  cpc: number,
+  barkPrice: number,
   exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h',
   isConfirmed: boolean = false
 ): number => {
   let price: number;
   
   if (exclusivityType === 'exclusive-24h') {
-    // 24-Hr Exclusive: 90% of CPC
-    price = cpc * 0.90;
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.exclusive24h;
   } else if (exclusivityType === 'semi-exclusive') {
-    // Semi-Exclusive: 50% of CPC
-    price = cpc * 0.50;
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.semiExclusive;
   } else if (isConfirmed) {
-    // Non-exclusive Confirmed: 30% of CPC
-    price = cpc * 0.30;
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.nonExclusiveConfirmed;
   } else {
-    // Non-exclusive Unconfirmed: 25% of CPC
-    price = cpc * 0.25;
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed;
   }
   
   return roundUpToHalf(price);
 };
 
-// Fallback static pricing when no CPC data available
+// Fallback Bark prices by industry category
+const FALLBACK_BARK_PRICES: Record<string, number> = {
+  'low-value': 8.00,
+  'mid-value': 15.00,
+  'high-value': 25.00,
+};
+
+// Fallback static pricing calculated from Bark base prices
 const FALLBACK_PRICING: Record<string, { nonExclusive: number; semiExclusive: number; exclusive24h: number }> = {
-  'low-value': { nonExclusive: 9.50, semiExclusive: 19.00, exclusive24h: 34.00 },
-  'mid-value': { nonExclusive: 18.50, semiExclusive: 37.00, exclusive24h: 67.00 },
-  'high-value': { nonExclusive: 31.00, semiExclusive: 62.00, exclusive24h: 112.00 },
+  'low-value': { 
+    nonExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['low-value'] * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed),
+    semiExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['low-value'] * BARK_PRICING_MULTIPLIERS.semiExclusive),
+    exclusive24h: roundUpToHalf(FALLBACK_BARK_PRICES['low-value'] * BARK_PRICING_MULTIPLIERS.exclusive24h)
+  },
+  'mid-value': { 
+    nonExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['mid-value'] * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed),
+    semiExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['mid-value'] * BARK_PRICING_MULTIPLIERS.semiExclusive),
+    exclusive24h: roundUpToHalf(FALLBACK_BARK_PRICES['mid-value'] * BARK_PRICING_MULTIPLIERS.exclusive24h)
+  },
+  'high-value': { 
+    nonExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['high-value'] * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed),
+    semiExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['high-value'] * BARK_PRICING_MULTIPLIERS.semiExclusive),
+    exclusive24h: roundUpToHalf(FALLBACK_BARK_PRICES['high-value'] * BARK_PRICING_MULTIPLIERS.exclusive24h)
+  },
 };
 
 // Industry category mapping for fallback

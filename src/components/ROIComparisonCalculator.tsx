@@ -6,8 +6,14 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, DollarSign, Target, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { INDUSTRY_GROUPS, getLeadCostForIndustry } from "@/config/pricing";
+import { INDUSTRY_GROUPS } from "@/config/pricing";
 import { getKeywordCPC } from "@/config/googleCpcKeywords";
+import { 
+  getAverageBarkPriceForCategory, 
+  calculateLeadCostFromBark,
+  LEAD_CONVERSION_RATES,
+  BARK_PRICING_MULTIPLIERS
+} from "@/utils/barkPricingLookup";
 
 interface CompetitorPlatform {
   name: string;
@@ -56,12 +62,6 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
     description: "Variable cost per lead based on service type"
   },
   {
-    name: "Bark",
-    costModel: "cpl",
-    avgCost: 20,
-    description: "Pay-per-lead for service professionals"
-  },
-  {
     name: "Porch",
     costModel: "cpl",
     avgCost: 50,
@@ -74,21 +74,28 @@ const COMPETITOR_PLATFORMS: CompetitorPlatform[] = [
     description: "Lead generation for home improvement and design professionals"
   },
 ];
-// Conversion rates by lead type (different from Google CPC 14%)
-const LEAD_TYPE_CONVERSION_RATES = {
-  nonExclusiveUnconfirmed: 0.05,  // 5%
-  nonExclusiveConfirmed: 0.07,    // 7%
-  semiExclusive: 0.15,            // 15%
-  exclusive24h: 0.40,             // 40%
+
+// Default category Bark price when no data
+const DEFAULT_BARK_PRICE = 15;
+
+// Calculate average Bark price for a category
+const getCategoryAverageBarkPrice = (categoryName: string): number => {
+  const avgPrice = getAverageBarkPriceForCategory(categoryName);
+  if (avgPrice > 0) return Math.round(avgPrice * 100) / 100;
+  
+  // Fallback based on category type
+  const lowValueCategories = ['Home & Local Services', 'Personal Services', 'Childcare & Family'];
+  const highValueCategories = ['Legal Services', 'Financial Services', 'Real Estate', 'Architecture & Engineering'];
+  
+  if (lowValueCategories.some(cat => categoryName.includes(cat))) return 8;
+  if (highValueCategories.some(cat => categoryName.includes(cat))) return 25;
+  return DEFAULT_BARK_PRICE;
 };
 
-// Default CPC for Construction (use $35 as standard)
-const DEFAULT_CONSTRUCTION_CPC = 35;
-
-// Calculate average CPC for a category based on its industries
+// Calculate average CPC for a category (for Google Ads comparison)
 const getCategoryAverageCPC = (categoryName: string): number => {
   const group = INDUSTRY_GROUPS.find(g => g.categoryName === categoryName);
-  if (!group) return DEFAULT_CONSTRUCTION_CPC;
+  if (!group) return 35;
   
   let totalCpc = 0;
   let count = 0;
@@ -101,7 +108,7 @@ const getCategoryAverageCPC = (categoryName: string): number => {
     }
   });
   
-  return count > 0 ? Math.round(totalCpc / count) : DEFAULT_CONSTRUCTION_CPC;
+  return count > 0 ? Math.round(totalCpc / count) : 35;
 };
 
 export const ROIComparisonCalculator = () => {
@@ -119,9 +126,14 @@ export const ROIComparisonCalculator = () => {
   
   const competitor = COMPETITOR_PLATFORMS.find(c => c.name === selectedCompetitor) || COMPETITOR_PLATFORMS[0];
 
-  // Use the average CPC for the selected category
+  // Get Bark average price for the category (used for D&G pricing)
+  const categoryBarkPrice = useMemo(() => getCategoryAverageBarkPrice(selectedCategory), [selectedCategory]);
+  
+  // Get Google CPC for comparison
   const industryCPC = useMemo(() => getCategoryAverageCPC(selectedCategory), [selectedCategory]);
-  const clickToConsumerRate = 0.07; // 7% of clicks convert to closed deals
+  
+  // Google Ads conversion rate (7% click-to-consumer)
+  const googleConversionRate = LEAD_CONVERSION_RATES.googleCPC; // 0.07
 
   // Calculate competitor cost per closed deal based on their model
   let competitorCostPerLead: number;
@@ -129,48 +141,39 @@ export const ROIComparisonCalculator = () => {
   
   if (competitor.costModel === "cpc") {
     // For CPC models like Google AdWords - CPC / 7% click-to-consumer rate
-    competitorCostPerLead = industryCPC; // CPC is the cost per click
-    competitorCostPerDeal = industryCPC / clickToConsumerRate;
+    competitorCostPerLead = industryCPC;
+    competitorCostPerDeal = industryCPC / googleConversionRate;
   } else if (competitor.costModel === "cpl") {
     // For CPL models - use competitor's average cost per lead with 7% conversion
     competitorCostPerLead = competitor.avgCost;
-    competitorCostPerDeal = competitorCostPerLead / clickToConsumerRate;
+    competitorCostPerDeal = competitorCostPerLead / googleConversionRate;
   } else if (competitor.costModel === "percentage") {
     const avgJobValue = 1000;
     competitorCostPerLead = avgJobValue * (competitor.avgCost / 100);
-    competitorCostPerDeal = competitorCostPerLead / clickToConsumerRate;
+    competitorCostPerDeal = competitorCostPerLead / googleConversionRate;
   } else {
     competitorCostPerLead = competitor.avgCost;
-    competitorCostPerDeal = competitorCostPerLead / clickToConsumerRate;
+    competitorCostPerDeal = competitorCostPerLead / googleConversionRate;
   }
 
-  // Calculate platform costs per lead based on exclusivity (using actual industry CPC)
-  // Pricing: Non-Exclusive Unconfirmed 25%, Non-Exclusive Confirmed 30%, Semi-Exclusive 50%, 24hr Exclusive 90%
-  const roundToNearestHalf = (value: number) => Math.ceil(value * 2) / 2;
-  
+  // Calculate platform costs using Bark-based pricing
+  // Formula: Bark × 0.90, Bark × 1.25, Bark × 2.00, Bark × 4.00
   const platformCosts = {
-    nonExclusiveUnconfirmed: roundToNearestHalf(industryCPC * 0.25),
-    nonExclusiveConfirmed: roundToNearestHalf(industryCPC * 0.30),
-    semiExclusive: roundToNearestHalf(industryCPC * 0.50),
-    exclusive24h: roundToNearestHalf(industryCPC * 0.90),
+    nonExclusiveUnconfirmed: calculateLeadCostFromBark(categoryBarkPrice, 'non-exclusive', false),
+    nonExclusiveConfirmed: calculateLeadCostFromBark(categoryBarkPrice, 'non-exclusive', true),
+    semiExclusive: calculateLeadCostFromBark(categoryBarkPrice, 'semi-exclusive', false),
+    exclusive24h: calculateLeadCostFromBark(categoryBarkPrice, 'exclusive-24h', false),
   };
 
-  // Cost per deal uses different conversion rates per lead type
+  // Cost per deal uses our improved conversion rates
   const platformCostPerDeal = {
-    nonExclusiveUnconfirmed: platformCosts.nonExclusiveUnconfirmed / LEAD_TYPE_CONVERSION_RATES.nonExclusiveUnconfirmed,
-    nonExclusiveConfirmed: platformCosts.nonExclusiveConfirmed / LEAD_TYPE_CONVERSION_RATES.nonExclusiveConfirmed,
-    semiExclusive: platformCosts.semiExclusive / LEAD_TYPE_CONVERSION_RATES.semiExclusive,
-    exclusive24h: platformCosts.exclusive24h / LEAD_TYPE_CONVERSION_RATES.exclusive24h,
+    nonExclusiveUnconfirmed: platformCosts.nonExclusiveUnconfirmed / LEAD_CONVERSION_RATES.nonExclusiveUnconfirmed, // 5%
+    nonExclusiveConfirmed: platformCosts.nonExclusiveConfirmed / LEAD_CONVERSION_RATES.nonExclusiveConfirmed, // 10%
+    semiExclusive: platformCosts.semiExclusive / LEAD_CONVERSION_RATES.semiExclusive, // 20%
+    exclusive24h: platformCosts.exclusive24h / LEAD_CONVERSION_RATES.exclusive24h, // 50%
   };
 
-  // Savings per lead (not per deal)
-  const savingsPerLead = {
-    nonExclusiveUnconfirmed: competitorCostPerLead - platformCosts.nonExclusiveUnconfirmed,
-    nonExclusiveConfirmed: competitorCostPerLead - platformCosts.nonExclusiveConfirmed,
-    semiExclusive: competitorCostPerLead - platformCosts.semiExclusive,
-    exclusive24h: competitorCostPerLead - platformCosts.exclusive24h,
-  };
-
+  // Savings per deal (vs competitor)
   const savings = {
     nonExclusiveUnconfirmed: competitorCostPerDeal - platformCostPerDeal.nonExclusiveUnconfirmed,
     nonExclusiveConfirmed: competitorCostPerDeal - platformCostPerDeal.nonExclusiveConfirmed,
@@ -280,17 +283,17 @@ export const ROIComparisonCalculator = () => {
               {competitor.costModel === "cpc" ? (
                 <>
                   <p>Avg CPC: <span className="font-semibold text-foreground">${industryCPC}</span></p>
-                  <p>Click-to-Consumer: {(clickToConsumerRate * 100).toFixed(0)}%</p>
+                  <p>Click-to-Consumer: {(googleConversionRate * 100).toFixed(0)}%</p>
                 </>
               ) : competitor.costModel === "cpl" ? (
                 <>
                   <p>Cost Per Lead: ${competitor.avgCost}</p>
-                  <p>Lead-to-Consumer: {(clickToConsumerRate * 100).toFixed(0)}%</p>
+                  <p>Lead-to-Consumer: {(googleConversionRate * 100).toFixed(0)}%</p>
                 </>
               ) : (
                 <>
                   <p>Commission: {competitor.avgCost}%</p>
-                  <p>Lead-to-Consumer: {(clickToConsumerRate * 100).toFixed(0)}%</p>
+                  <p>Lead-to-Consumer: {(googleConversionRate * 100).toFixed(0)}%</p>
                 </>
               )}
             </div>
@@ -316,7 +319,7 @@ export const ROIComparisonCalculator = () => {
               <div className="grid grid-cols-3 gap-2 items-center">
                 <div>
                   <p className="text-xs text-muted-foreground">Non-Exclusive Unconfirmed</p>
-                  <p className="text-[10px] text-primary">5% conv • ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-primary">{(LEAD_CONVERSION_RATES.nonExclusiveUnconfirmed * 100).toFixed(0)}% conv • ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}/lead</p>
                 </div>
                 <p className="text-xl font-bold text-primary text-center">
                   ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}
@@ -328,7 +331,7 @@ export const ROIComparisonCalculator = () => {
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">Non-Exclusive Confirmed</p>
-                  <p className="text-[10px] text-primary">7% conv • ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-primary">{(LEAD_CONVERSION_RATES.nonExclusiveConfirmed * 100).toFixed(0)}% conv • ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</p>
                 </div>
                 <p className="text-lg font-bold text-foreground text-center">
                   ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}
@@ -340,7 +343,7 @@ export const ROIComparisonCalculator = () => {
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">Semi-Exclusive</p>
-                  <p className="text-[10px] text-primary">15% conv • ${platformCosts.semiExclusive.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-primary">{(LEAD_CONVERSION_RATES.semiExclusive * 100).toFixed(0)}% conv • ${platformCosts.semiExclusive.toFixed(2)}/lead</p>
                 </div>
                 <p className="text-lg font-semibold text-foreground text-center">
                   ${platformCostPerDeal.semiExclusive.toFixed(0)}
@@ -352,7 +355,7 @@ export const ROIComparisonCalculator = () => {
               <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
                   <p className="text-xs text-muted-foreground">24hr Exclusive</p>
-                  <p className="text-[10px] text-primary">40% conv • ${platformCosts.exclusive24h.toFixed(2)}/lead</p>
+                  <p className="text-[10px] text-primary">{(LEAD_CONVERSION_RATES.exclusive24h * 100).toFixed(0)}% conv • ${platformCosts.exclusive24h.toFixed(2)}/lead</p>
                 </div>
                 <p className="text-lg font-semibold text-foreground text-center">
                   ${platformCostPerDeal.exclusive24h.toFixed(0)}
@@ -379,7 +382,7 @@ export const ROIComparisonCalculator = () => {
                     <div>
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
                       <p>CPC ÷ Click-to-Consumer Rate</p>
-                      <p className="text-destructive">${industryCPC} ÷ {(clickToConsumerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p className="text-destructive">${industryCPC} ÷ {(googleConversionRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 ) : competitor.costModel === "cpl" ? (
@@ -391,7 +394,7 @@ export const ROIComparisonCalculator = () => {
                     <div className="pt-2 border-t">
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
                       <p>Cost Per Lead ÷ Lead-to-Consumer Rate</p>
-                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(clickToConsumerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(googleConversionRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 ) : (
@@ -403,7 +406,7 @@ export const ROIComparisonCalculator = () => {
                     <div className="pt-2 border-t">
                       <p className="font-semibold text-foreground">Cost Per Closed Deal:</p>
                       <p>Effective Cost ÷ Lead-to-Consumer Rate</p>
-                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(clickToConsumerRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
+                      <p className="text-destructive">${competitorCostPerLead.toFixed(0)} ÷ {(googleConversionRate * 100).toFixed(0)}% = ${competitorCostPerDeal.toFixed(0)}</p>
                     </div>
                   </>
                 )}
