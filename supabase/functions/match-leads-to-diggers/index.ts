@@ -19,42 +19,67 @@ const roundUpToHalf = (value: number): number => {
 };
 
 /**
- * CPC-based pricing calculation
+ * Bark-based pricing multipliers
  * Formula:
- * - Non-Exclusive Unconfirmed: 25% of CPC
- * - Non-Exclusive Confirmed: 30% of CPC
- * - Semi-Exclusive: 50% of CPC
- * - 24-Hour Exclusive: 90% of CPC
+ * - Non-Exclusive Unconfirmed: Bark × 0.90 (5% conversion)
+ * - Non-Exclusive Confirmed: Bark × 1.25 (10% conversion)
+ * - Semi-Exclusive: Bark × 2.00 (20% conversion)
+ * - 24-Hour Exclusive: Bark × 4.00 (50% conversion)
  */
-const calculateLeadPriceFromCPC = (
-  cpc: number,
+const BARK_PRICING_MULTIPLIERS = {
+  nonExclusiveUnconfirmed: 0.90,
+  nonExclusiveConfirmed: 1.25,
+  semiExclusive: 2.00,
+  exclusive24h: 4.00,
+};
+
+/**
+ * Calculate lead price from Bark base price
+ */
+const calculateLeadPriceFromBark = (
+  barkPrice: number,
   exclusivityType: 'exclusive' | 'semi-exclusive' | 'non-exclusive',
   isConfirmed: boolean = false
 ): number => {
   let price: number;
   
   if (exclusivityType === 'exclusive') {
-    // 24-Hr Exclusive: 90% of CPC
-    price = cpc * 0.90;
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.exclusive24h;
   } else if (exclusivityType === 'semi-exclusive') {
-    // Semi-Exclusive: 50% of CPC
-    price = cpc * 0.50;
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.semiExclusive;
   } else if (isConfirmed) {
-    // Non-exclusive Confirmed: 30% of CPC
-    price = cpc * 0.30;
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.nonExclusiveConfirmed;
   } else {
-    // Non-exclusive Unconfirmed: 25% of CPC
-    price = cpc * 0.25;
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed;
   }
   
   return roundUpToHalf(price);
 };
 
-// Fallback static pricing when no CPC data available
+// Fallback Bark prices by industry category when no specific data available
+const FALLBACK_BARK_PRICES: Record<string, number> = {
+  'low-value': 8.00,    // Average low-value Bark lead
+  'mid-value': 15.00,   // Average mid-value Bark lead
+  'high-value': 25.00,  // Average high-value Bark lead
+};
+
+// Calculate fallback pricing from Bark base prices
 const FALLBACK_PRICING: Record<string, { nonExclusive: number; semiExclusive: number; exclusive24h: number }> = {
-  'low-value': { nonExclusive: 9.50, semiExclusive: 19.00, exclusive24h: 34.00 },   // Based on ~$38 avg CPC
-  'mid-value': { nonExclusive: 18.50, semiExclusive: 37.00, exclusive24h: 67.00 },  // Based on ~$74 avg CPC
-  'high-value': { nonExclusive: 31.00, semiExclusive: 62.00, exclusive24h: 112.00 }, // Based on ~$124 avg CPC
+  'low-value': { 
+    nonExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['low-value'] * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed),
+    semiExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['low-value'] * BARK_PRICING_MULTIPLIERS.semiExclusive),
+    exclusive24h: roundUpToHalf(FALLBACK_BARK_PRICES['low-value'] * BARK_PRICING_MULTIPLIERS.exclusive24h)
+  },
+  'mid-value': { 
+    nonExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['mid-value'] * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed),
+    semiExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['mid-value'] * BARK_PRICING_MULTIPLIERS.semiExclusive),
+    exclusive24h: roundUpToHalf(FALLBACK_BARK_PRICES['mid-value'] * BARK_PRICING_MULTIPLIERS.exclusive24h)
+  },
+  'high-value': { 
+    nonExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['high-value'] * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed),
+    semiExclusive: roundUpToHalf(FALLBACK_BARK_PRICES['high-value'] * BARK_PRICING_MULTIPLIERS.semiExclusive),
+    exclusive24h: roundUpToHalf(FALLBACK_BARK_PRICES['high-value'] * BARK_PRICING_MULTIPLIERS.exclusive24h)
+  },
 };
 
 // Minimum exclusive pricing by lead source
@@ -67,14 +92,14 @@ const calculateLeadPricing = (
   leadSource: string = 'internet', 
   industryCategory: string = 'mid-value',
   exclusivityType: 'exclusive' | 'semi-exclusive' = 'exclusive',
-  cpc?: number,
+  barkPrice?: number,
   isConfirmed: boolean = false
 ) => {
-  // If we have CPC data, use dynamic pricing
-  if (cpc && cpc > 0) {
-    const exclusivePrice = calculateLeadPriceFromCPC(cpc, 'exclusive', false);
-    const semiExclusivePrice = calculateLeadPriceFromCPC(cpc, 'semi-exclusive', false);
-    const nonExclusivePrice = calculateLeadPriceFromCPC(cpc, 'non-exclusive', isConfirmed);
+  // If we have Bark price data, use dynamic pricing
+  if (barkPrice && barkPrice > 0) {
+    const exclusivePrice = calculateLeadPriceFromBark(barkPrice, 'exclusive', false);
+    const semiExclusivePrice = calculateLeadPriceFromBark(barkPrice, 'semi-exclusive', false);
+    const nonExclusivePrice = calculateLeadPriceFromBark(barkPrice, 'non-exclusive', isConfirmed);
     
     // Apply telemarketing discount (25% off)
     const discount = leadSource === 'telemarketing' ? 0.75 : 1;

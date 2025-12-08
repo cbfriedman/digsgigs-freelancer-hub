@@ -4,15 +4,37 @@
  * This utility provides Bark.com lead pricing data for different professions/keywords.
  * Bark uses a credit system where 1 credit = $2.20 USD.
  * 
- * DigsandGigs pricing strategy based on Bark:
- * - Premium tier (51+ leads/month): Bark price - $0.50
- * - Pro tier (11-50 leads/month): Bark price + 50% (1.5x)
- * - Standard tier (1-10 leads/month): Bark price + 100% (2x)
+ * DigsandGigs Bark-Based Pricing Strategy:
+ * - Non-Exclusive Unconfirmed: Bark × 0.90 (5% conversion rate)
+ * - Non-Exclusive Confirmed: Bark × 1.25 (10% conversion rate)
+ * - Semi-Exclusive: Bark × 2.00 (20% conversion rate)
+ * - 24-Hour Exclusive: Bark × 4.00 (50% conversion rate)
+ * 
+ * All prices rounded up to nearest $0.50 or whole number.
+ * Bark leads are unconfirmed, so our confirmed leads provide more value.
  * 
  * These values should be updated quarterly based on competitive market analysis.
  */
 
-interface BarkPricingData {
+// Conversion rates by lead type
+export const LEAD_CONVERSION_RATES = {
+  nonExclusiveUnconfirmed: 0.05,  // 5% - same as Bark
+  nonExclusiveConfirmed: 0.10,    // 10% - verified leads
+  semiExclusive: 0.20,            // 20% - limited competition
+  exclusive24h: 0.50,             // 50% - exclusive access
+  barkComparison: 0.05,           // 5% - Bark's unconfirmed leads
+  googleCPC: 0.07,                // 7% - Google Ads click-to-consumer
+};
+
+// Bark pricing multipliers
+export const BARK_PRICING_MULTIPLIERS = {
+  nonExclusiveUnconfirmed: 0.90,  // 90% of Bark
+  nonExclusiveConfirmed: 1.25,    // 125% of Bark
+  semiExclusive: 2.00,            // 2x Bark
+  exclusive24h: 4.00,             // 4x Bark
+};
+
+export interface BarkPricingData {
   keyword: string;
   barkCredits: number; // Bark's credit cost (1 credit = $2.20)
   barkPrice: number; // in dollars (credits * $2.20)
@@ -406,6 +428,13 @@ export const BARK_PRICING_DATABASE: BarkPricingData[] = [
 ];
 
 /**
+ * Round up to nearest $0.50 or whole number
+ */
+const roundUpToHalf = (value: number): number => {
+  return Math.ceil(value * 2) / 2;
+};
+
+/**
  * Lookup Bark pricing for a specific keyword
  * Returns null if not found in database
  */
@@ -417,21 +446,79 @@ export function lookupBarkPrice(keyword: string): BarkPricingData | null {
 }
 
 /**
- * Calculate DigsandGigs CPL from Bark pricing
- * - Premium (51+ leads): Bark - $0.50
- * - Pro (11-50 leads): Bark * 1.5
- * - Standard (1-10 leads): Bark * 2
+ * Calculate DigsandGigs lead cost from Bark pricing
+ * Formula (all rounded up to nearest $0.50):
+ * - Non-Exclusive Unconfirmed: Bark × 0.90
+ * - Non-Exclusive Confirmed: Bark × 1.25
+ * - Semi-Exclusive: Bark × 2.00
+ * - 24-Hour Exclusive: Bark × 4.00
  */
-export function calculateCPLFromBark(barkPrice: number, tier: 'free' | 'pro' | 'premium'): number {
-  switch (tier) {
-    case 'premium':
-      return Math.max(1, barkPrice - 0.50); // Minimum $1
-    case 'pro':
-      return barkPrice * 1.5;
-    case 'free':
-    default:
-      return barkPrice * 2;
+export function calculateLeadCostFromBark(
+  barkPrice: number, 
+  exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h',
+  isConfirmed: boolean = false
+): number {
+  let price: number;
+  
+  if (exclusivityType === 'exclusive-24h') {
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.exclusive24h;
+  } else if (exclusivityType === 'semi-exclusive') {
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.semiExclusive;
+  } else if (isConfirmed) {
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.nonExclusiveConfirmed;
+  } else {
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed;
   }
+  
+  return roundUpToHalf(price);
+}
+
+/**
+ * Get all lead costs for a keyword from Bark database
+ * Returns null if keyword not found
+ */
+export function getBarkLeadCosts(keyword: string): {
+  barkPrice: number;
+  nonExclusiveUnconfirmed: number;
+  nonExclusiveConfirmed: number;
+  semiExclusive: number;
+  exclusive24h: number;
+  valueIndicator: 'low-value' | 'mid-value' | 'high-value';
+} | null {
+  const barkData = lookupBarkPrice(keyword);
+  if (!barkData) return null;
+  
+  return {
+    barkPrice: barkData.barkPrice,
+    nonExclusiveUnconfirmed: calculateLeadCostFromBark(barkData.barkPrice, 'non-exclusive', false),
+    nonExclusiveConfirmed: calculateLeadCostFromBark(barkData.barkPrice, 'non-exclusive', true),
+    semiExclusive: calculateLeadCostFromBark(barkData.barkPrice, 'semi-exclusive', false),
+    exclusive24h: calculateLeadCostFromBark(barkData.barkPrice, 'exclusive-24h', false),
+    valueIndicator: barkData.valueIndicator,
+  };
+}
+
+/**
+ * Get category average Bark price and calculate lead costs
+ * Used when specific keyword not found
+ */
+export function getCategoryBarkLeadCosts(category: string): {
+  avgBarkPrice: number;
+  nonExclusiveUnconfirmed: number;
+  nonExclusiveConfirmed: number;
+  semiExclusive: number;
+  exclusive24h: number;
+} {
+  const avgBarkPrice = getAverageBarkPriceForCategory(category);
+  const effectivePrice = avgBarkPrice > 0 ? avgBarkPrice : 15; // Default to $15 if no data
+  
+  return {
+    avgBarkPrice: effectivePrice,
+    nonExclusiveUnconfirmed: calculateLeadCostFromBark(effectivePrice, 'non-exclusive', false),
+    nonExclusiveConfirmed: calculateLeadCostFromBark(effectivePrice, 'non-exclusive', true),
+    semiExclusive: calculateLeadCostFromBark(effectivePrice, 'semi-exclusive', false),
+    exclusive24h: calculateLeadCostFromBark(effectivePrice, 'exclusive-24h', false),
+  };
 }
 
 /**
@@ -469,4 +556,21 @@ export function determineValueTierFromBarkPrice(barkPrice: number): 'low-value' 
   if (barkPrice <= 11) return 'low-value';
   if (barkPrice <= 20) return 'mid-value';
   return 'high-value';
+}
+
+// Legacy function for backward compatibility
+export function calculateCPLFromBark(barkPrice: number, tier: 'free' | 'pro' | 'premium'): number {
+  // Map old tier system to new exclusivity-based pricing
+  // free = non-exclusive unconfirmed
+  // pro = semi-exclusive
+  // premium = exclusive-24h
+  switch (tier) {
+    case 'premium':
+      return calculateLeadCostFromBark(barkPrice, 'exclusive-24h', false);
+    case 'pro':
+      return calculateLeadCostFromBark(barkPrice, 'semi-exclusive', false);
+    case 'free':
+    default:
+      return calculateLeadCostFromBark(barkPrice, 'non-exclusive', false);
+  }
 }

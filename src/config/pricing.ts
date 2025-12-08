@@ -2,21 +2,34 @@
  * Centralized Pricing Configuration
  * Single source of truth for all pricing across the platform
  * 
- * EXCLUSIVITY-BASED PRICING MODEL (CPC-Based)
- * All lead pricing is calculated from Google CPC using these percentages:
+ * BARK-BASED PRICING MODEL
+ * All lead pricing is calculated from Bark.com lead costs using these multipliers:
  * 
- * - Non-exclusive Unconfirmed: 25% of Google CPC
- * - Non-exclusive Confirmed: 30% of Google CPC  
- * - Semi-exclusive leads: 50% of Google CPC
- * - 24-hour exclusive leads: 90% of Google CPC
+ * - Non-exclusive Unconfirmed: Bark × 0.90 (5% conversion rate)
+ * - Non-exclusive Confirmed: Bark × 1.25 (10% conversion rate)
+ * - Semi-exclusive leads: Bark × 2.00 (20% conversion rate)
+ * - 24-hour exclusive leads: Bark × 4.00 (50% conversion rate)
  * 
  * All prices rounded up to nearest $0.50 or whole number.
- * This model provides clear value differentiation tied to Google Ads pricing.
+ * Bark's leads are unconfirmed, so our confirmed leads provide premium value.
+ * This model provides clear value differentiation with competitive pricing.
  * 
- * NOTE: Prices fluctuate daily and are subject to change based on market conditions.
+ * Conversion Rate Comparison:
+ * - Bark unconfirmed leads: 5% conversion
+ * - Google Ads click-to-consumer: 7% conversion
+ * - Our confirmed leads: 10-50% conversion depending on exclusivity
+ * 
+ * NOTE: Prices are based on Bark.com lead costs and may fluctuate based on market conditions.
  */
 
 import { getKeywordCPC } from '@/config/googleCpcKeywords';
+import { 
+  lookupBarkPrice, 
+  calculateLeadCostFromBark, 
+  getAverageBarkPriceForCategory,
+  BARK_PRICING_MULTIPLIERS,
+  LEAD_CONVERSION_RATES 
+} from '@/utils/barkPricingLookup';
 
 export type IndustryCategory = 'low-value' | 'mid-value' | 'high-value';
 export type ValueIndicator = 'LV' | 'MV' | 'HV';
@@ -635,14 +648,36 @@ const roundUpToHalf = (value: number): number => {
 };
 
 /**
- * Calculate lead cost dynamically from actual CPC
- * Pricing formula:
- * - 24-Hr Exclusive: 90% of CPC
- * - Semi-Exclusive: 50% of CPC
- * - Non-exclusive Confirmed: 30% of CPC
- * - Non-exclusive Unconfirmed: 25% of CPC
- * 
- * All values rounded up to nearest $0.50 or whole number
+ * Calculate lead cost from Bark pricing (PRIMARY PRICING METHOD)
+ * Pricing formula (all rounded up to nearest $0.50):
+ * - Non-Exclusive Unconfirmed: Bark × 0.90 (5% conversion)
+ * - Non-Exclusive Confirmed: Bark × 1.25 (10% conversion)
+ * - Semi-Exclusive: Bark × 2.00 (20% conversion)
+ * - 24-Hour Exclusive: Bark × 4.00 (50% conversion)
+ */
+export const getLeadCostFromBarkPrice = (
+  barkPrice: number,
+  exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
+  isConfirmed: boolean = false
+): number => {
+  let price: number;
+  
+  if (exclusivity === 'exclusive-24h') {
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.exclusive24h;  // 4.00
+  } else if (exclusivity === 'semi-exclusive') {
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.semiExclusive; // 2.00
+  } else if (isConfirmed) {
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.nonExclusiveConfirmed; // 1.25
+  } else {
+    price = barkPrice * BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed; // 0.90
+  }
+  
+  return roundUpToHalf(price);
+};
+
+/**
+ * LEGACY: Calculate lead cost from CPC (kept for backward compatibility)
+ * @deprecated Use getLeadCostFromBarkPrice instead
  */
 export const getLeadCostFromCPC = (
   cpc: number,
@@ -650,29 +685,13 @@ export const getLeadCostFromCPC = (
   isConfirmed: boolean = false,
   category: IndustryCategory = 'mid-value'
 ): number => {
-  // Use CPC-based dynamic pricing for all categories when CPC is provided
-  let price: number;
-  
-  if (exclusivity === 'exclusive-24h') {
-    // 24-Hr Exclusive: 90% of CPC
-    price = cpc * 0.90;
-  } else if (exclusivity === 'semi-exclusive') {
-    // Semi-Exclusive: 50% of CPC
-    price = cpc * 0.50;
-  } else if (isConfirmed) {
-    // Non-exclusive Confirmed: 30% of CPC
-    price = cpc * 0.30;
-  } else {
-    // Non-exclusive Unconfirmed: 25% of CPC
-    price = cpc * 0.25;
-  }
-  
-  // Round up to nearest $0.50 or whole number
-  return roundUpToHalf(price);
+  // Convert CPC to estimated Bark price (CPC / 3 is rough estimate)
+  const estimatedBarkPrice = cpc / 3;
+  return getLeadCostFromBarkPrice(estimatedBarkPrice, exclusivity, isConfirmed);
 };
 
 // Helper function to get lead cost for a specific industry and exclusivity type
-// Uses CPC-based dynamic pricing: 25% / 30% / 50% / 90%
+// Uses Bark-based dynamic pricing: 0.90X / 1.25X / 2.00X / 4.00X
 export const getLeadCostForIndustry = (
   industry: string,
   exclusivity: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h' = 'non-exclusive',
@@ -681,32 +700,23 @@ export const getLeadCostForIndustry = (
 ): number => {
   const normalizedIndustry = industry.toLowerCase().trim();
   
-  // First, try to get CPC from keyword database
-  const cpc = getKeywordCPC(industry);
+  // First, try to get Bark price from database
+  const barkData = lookupBarkPrice(industry);
   
-  if (cpc && cpc > 0) {
-    // Use CPC-based dynamic pricing: 25% / 30% / 50% / 90%
-    let price: number;
-    
-    if (exclusivity === 'exclusive-24h') {
-      // 24-Hr Exclusive: 90% of CPC
-      price = cpc * 0.90;
-    } else if (exclusivity === 'semi-exclusive') {
-      // Semi-Exclusive: 50% of CPC
-      price = cpc * 0.50;
-    } else if (isConfirmed) {
-      // Non-exclusive Confirmed: 30% of CPC
-      price = cpc * 0.30;
-    } else {
-      // Non-exclusive Unconfirmed: 25% of CPC
-      price = cpc * 0.25;
-    }
-    
-    // Round up to nearest $0.50 or whole number
-    return roundUpToHalf(price);
+  if (barkData) {
+    // Use Bark-based dynamic pricing
+    return calculateLeadCostFromBark(barkData.barkPrice, exclusivity, isConfirmed);
   }
   
-  // Fallback: use static tier pricing when no CPC data available
+  // Fallback: try category average Bark price
+  if (parentCategory) {
+    const avgBarkPrice = getAverageBarkPriceForCategory(parentCategory);
+    if (avgBarkPrice > 0) {
+      return getLeadCostFromBarkPrice(avgBarkPrice, exclusivity, isConfirmed);
+    }
+  }
+  
+  // Final fallback: use static tier pricing
   const industryData = INDUSTRY_PRICING.find(pricing =>
     pricing.industries.some(ind => ind.toLowerCase().trim() === normalizedIndustry)
   );
@@ -730,9 +740,9 @@ export const getLeadCostForIndustry = (
     ? pricingData.semiExclusive
     : pricingData.exclusive24h;
   
-  // Add 20% confirmation premium (30% vs 25% = 20% more)
+  // Add confirmation premium (1.25X / 0.90X = ~1.39 ratio for confirmed vs unconfirmed)
   if (exclusivity === 'non-exclusive' && isConfirmed) {
-    return roundUpToHalf(basePrice * 1.20);
+    return roundUpToHalf(basePrice * (BARK_PRICING_MULTIPLIERS.nonExclusiveConfirmed / BARK_PRICING_MULTIPLIERS.nonExclusiveUnconfirmed));
   }
   
   return basePrice;
