@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
+// NOTE: Webhooks must allow all origins because Stripe sends from their own origin
+// This is safe because webhook signature verification ensures authenticity
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",

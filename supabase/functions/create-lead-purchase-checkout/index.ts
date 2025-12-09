@@ -2,9 +2,33 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.25.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// CORS configuration - restrict to allowed origins
+const ALLOWED_ORIGINS = [
+  "https://digsgigs-freelancer-hub.vercel.app",
+  "https://digsandgigs.com",
+  "https://www.digsandgigs.com",
+  "http://localhost:8080",
+  "http://localhost:5173",
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  };
+}
+
+// Validation helpers
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidUUID = (value: any): value is string => {
+  return typeof value === 'string' && UUID_REGEX.test(value);
+};
+const isValidEnum = <T extends string>(value: any, allowedValues: readonly T[]): value is T => {
+  return typeof value === 'string' && allowedValues.includes(value as T);
 };
 
 const logStep = (step: string, details?: any) => {
@@ -94,6 +118,9 @@ const getIndustryCategory = (profession: string): 'low-value' | 'mid-value' | 'h
 };
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -116,13 +143,56 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { diggerId, gigId, pricingModel, exclusivityType = 'non-exclusive', isConfirmed = false } = await req.json();
+    const requestBody = await req.json();
+    const { diggerId, gigId, pricingModel, exclusivityType = 'non-exclusive', isConfirmed = false } = requestBody;
     
+    // SECURITY: Input validation
     if (!diggerId || !gigId || !pricingModel) {
       throw new Error("Missing required fields: diggerId, gigId, or pricingModel");
     }
 
-    logStep("Request data", { diggerId, gigId, pricingModel, exclusivityType, isConfirmed });
+    // Validate UUIDs
+    if (!isValidUUID(diggerId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid diggerId format. Must be a valid UUID." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isValidUUID(gigId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid gigId format. Must be a valid UUID." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate exclusivity type
+    const validExclusivityTypes = ['non-exclusive', 'semi-exclusive', 'exclusive-24h'] as const;
+    if (!isValidEnum(exclusivityType, validExclusivityTypes)) {
+      return new Response(
+        JSON.stringify({ error: `Invalid exclusivityType. Must be one of: ${validExclusivityTypes.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate pricing model
+    const validPricingModels = ['fixed', 'hourly', 'both', 'free_estimate'] as const;
+    if (!isValidEnum(pricingModel, validPricingModels)) {
+      return new Response(
+        JSON.stringify({ error: `Invalid pricingModel. Must be one of: ${validPricingModels.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate isConfirmed is boolean
+    if (typeof isConfirmed !== 'boolean') {
+      return new Response(
+        JSON.stringify({ error: "Invalid isConfirmed. Must be a boolean." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Request data validated", { diggerId, gigId, pricingModel, exclusivityType, isConfirmed });
 
     // Get digger profile
     const { data: diggerProfile, error: diggerError } = await supabaseClient

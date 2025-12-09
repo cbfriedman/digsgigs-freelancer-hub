@@ -1,9 +1,33 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// CORS configuration - restrict to allowed origins
+const ALLOWED_ORIGINS = [
+  "https://digsgigs-freelancer-hub.vercel.app",
+  "https://digsandgigs.com",
+  "https://www.digsandgigs.com",
+  "http://localhost:8080",
+  "http://localhost:5173",
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  };
+}
+
+// Validation helpers
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidUUID = (value: any): value is string => {
+  return typeof value === 'string' && UUID_REGEX.test(value);
+};
+const isValidEnum = <T extends string>(value: any, allowedValues: readonly T[]): value is T => {
+  return typeof value === 'string' && allowedValues.includes(value as T);
 };
 
 const logStep = (step: string, details?: any) => {
@@ -14,6 +38,9 @@ const logStep = (step: string, details?: any) => {
 const POST_AWARD_WINDOW_HOURS = 48;
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -39,16 +66,44 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const { gigId, diggerId, awardMethod, bidId } = await req.json();
+    const requestBody = await req.json();
+    const { gigId, diggerId, awardMethod, bidId } = requestBody;
     
+    // SECURITY: Input validation
     if (!gigId || !diggerId || !awardMethod) {
       throw new Error("gigId, diggerId, and awardMethod are required");
     }
 
+    // Validate UUIDs
+    if (!isValidUUID(gigId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid gigId format. Must be a valid UUID." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isValidUUID(diggerId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid diggerId format. Must be a valid UUID." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate bidId if provided
+    if (bidId && !isValidUUID(bidId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid bidId format. Must be a valid UUID." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Validate award method
-    const validMethods = ['consumer_hire', 'bid_acceptance', 'escrow_payment'];
-    if (!validMethods.includes(awardMethod)) {
-      throw new Error(`Invalid award method. Must be one of: ${validMethods.join(', ')}`);
+    const validMethods = ['consumer_hire', 'bid_acceptance', 'escrow_payment'] as const;
+    if (!isValidEnum(awardMethod, validMethods)) {
+      return new Response(
+        JSON.stringify({ error: `Invalid award method. Must be one of: ${validMethods.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     logStep("Processing lead award", { 

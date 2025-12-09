@@ -1,11 +1,25 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// CORS configuration - restrict to allowed origins
+const ALLOWED_ORIGINS = [
+  "https://digsgigs-freelancer-hub.vercel.app",
+  "https://digsandgigs.com",
+  "https://www.digsandgigs.com",
+  "http://localhost:8080",
+  "http://localhost:5173",
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  };
+}
 
 interface VerifyOTPRequest {
   email?: string;
@@ -14,16 +28,32 @@ interface VerifyOTPRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, phone, code }: VerifyOTPRequest = await req.json();
+    const requestBody = await req.json();
+    const { email, phone, code }: VerifyOTPRequest = requestBody;
 
+    // SECURITY: Input validation
     if (!code) {
       return new Response(
         JSON.stringify({ error: "Verification code is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Validate code format (6 digits)
+    if (typeof code !== 'string' || !/^\d{6}$/.test(code)) {
+      return new Response(
+        JSON.stringify({ error: "Verification code must be exactly 6 digits" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -39,6 +69,34 @@ const handler = async (req: Request): Promise<Response> => {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
+    }
+
+    // Validate email format if provided
+    if (email && typeof email === 'string') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid email format" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+    }
+
+    // Validate phone format if provided (E.164: +1234567890)
+    if (phone && typeof phone === 'string') {
+      const phoneRegex = /^\+[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phone)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid phone format. Must be in E.164 format (e.g., +1234567890)" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
     }
 
     // Validate environment variables
@@ -71,6 +129,33 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
+    // SECURITY: Check rate limiting before verifying code
+    const { data: rateLimitCheck, error: rateLimitError } = await supabaseAdmin.rpc(
+      'check_otp_attempt_limit',
+      { _email: email || null, _phone: phone || null }
+    );
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+      // Continue anyway - don't block if rate limiting fails
+    } else if (rateLimitCheck && !rateLimitCheck.allowed) {
+      const lockMessage = rateLimitCheck.locked 
+        ? rateLimitCheck.message || "Too many failed attempts. Account locked. Please try again later."
+        : "Too many failed attempts. Please try again later.";
+      
+      return new Response(
+        JSON.stringify({ 
+          error: lockMessage,
+          locked: rateLimitCheck.locked || false,
+          locked_until: rateLimitCheck.locked_until || null
+        }),
+        {
+          status: 429, // Too Many Requests
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Check if verification code exists and is valid
     let query = supabaseAdmin
       .from("verification_codes")
@@ -91,6 +176,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (fetchError || !verificationCode) {
       console.error("Verification code not found or expired:", fetchError);
+      
+      // SECURITY: Record failed attempt
+      try {
+        await supabaseAdmin.rpc('record_otp_failed_attempt', {
+          _email: email || null,
+          _phone: phone || null
+        });
+      } catch (recordError) {
+        console.error("Error recording failed attempt:", recordError);
+        // Continue anyway - don't block if recording fails
+      }
+      
       const errorMessage = fetchError?.code === 'PGRST116' 
         ? "Invalid or expired verification code. Please request a new code."
         : "Invalid or expired verification code. Please check your code and try again.";
@@ -145,6 +242,17 @@ const handler = async (req: Request): Promise<Response> => {
           console.log("Code verified for new user (will be created during registration):", email);
         }
       }
+    }
+
+    // SECURITY: Reset attempt counter on successful verification
+    try {
+      await supabaseAdmin.rpc('reset_otp_attempts', {
+        _email: email || null,
+        _phone: phone || null
+      });
+    } catch (resetError) {
+      console.error("Error resetting OTP attempts:", resetError);
+      // Continue anyway - verification was successful
     }
 
     const identifier = email || phone || 'unknown';
