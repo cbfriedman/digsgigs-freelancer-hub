@@ -21,6 +21,7 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
   const navigate = useNavigate();
   const [hasCheckedRoles, setHasCheckedRoles] = useState(false);
   const [userHasRoles, setUserHasRoles] = useState(false);
+  const [hasCheckedDatabaseRoles, setHasCheckedDatabaseRoles] = useState(false);
 
   // Check if user has roles (for register page logic)
   useEffect(() => {
@@ -78,11 +79,58 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
         // User has roles, so they're verified - allow access
         return;
       }
-      toast.error('Please verify your email to access this page. Check your inbox for the confirmation link.');
-      navigate('/register');
+      
+      // If userRoles is empty, it might be because roles haven't loaded yet
+      // Check database directly to avoid false redirects
+      // Only do this check once to avoid infinite loops
+      if (!hasCheckedDatabaseRoles) {
+        setHasCheckedDatabaseRoles(true);
+        
+        const checkRolesOnce = async () => {
+          try {
+            const { data: roles } = await supabase
+              .from('user_app_roles')
+              .select('app_role')
+              .eq('user_id', user.id)
+              .eq('is_active', true)
+              .limit(1);
+            
+            if (roles && roles.length > 0) {
+              // User has roles, so they're verified - allow access
+              // Don't redirect, just return (component will re-render with updated state)
+              return;
+            }
+            
+            // No roles found - user needs to complete registration
+            // Only redirect if we're not already on the register page
+            if (window.location.pathname !== '/register') {
+              toast.error('Please verify your email to access this page. Check your inbox for the confirmation link.');
+              navigate('/register');
+            }
+          } catch (error) {
+            console.error('Error checking roles in database:', error);
+            // On error, allow access (better than blocking)
+          }
+        };
+        
+        // Wait a bit for roles to load, then check database
+        setTimeout(() => {
+          checkRolesOnce();
+        }, 1000);
+        
+        // Don't redirect immediately - wait for database check
+        return;
+      }
+      
+      // Already checked database and no roles found - redirect to register
+      // Only redirect if we're not already on the register page
+      if (window.location.pathname !== '/register') {
+        toast.error('Please verify your email to access this page. Check your inbox for the confirmation link.');
+        navigate('/register');
+      }
       return;
     }
-  }, [user, loading, navigate, requireVerified, redirectTo, redirectIfAuthenticated, hasCheckedRoles, userHasRoles, userRoles]);
+  }, [user, loading, navigate, requireVerified, redirectTo, redirectIfAuthenticated, hasCheckedRoles, userHasRoles, userRoles, hasCheckedDatabaseRoles]);
 
   return { user, loading, isVerified: !!user?.email_confirmed_at };
 };

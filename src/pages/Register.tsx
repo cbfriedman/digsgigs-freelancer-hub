@@ -1026,12 +1026,12 @@ const Register = () => {
         isNavigatingRef.current = true;
         toast.success("Welcome back!");
         
-        // Wait for roles to be fetched before navigating
-        // Check if user has roles to determine if registration is complete
+        // Wait for roles to be fetched and session to update before navigating
+        // Use full page refresh to ensure AuthContext picks up updated session and roles
         const checkRolesAndNavigate = async () => {
           try {
-            // Wait a bit for auth state to update
-            await new Promise(resolve => setTimeout(resolve, 200));
+            // Wait longer for auth state and roles to update
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             // Check if user has roles
             const { data: roles, error: rolesError } = await supabase
@@ -1044,18 +1044,19 @@ const Register = () => {
               console.error("Error checking roles:", rolesError);
             }
             
-            // Navigate to appropriate page based on whether roles exist
+            // Use full page refresh to ensure AuthContext picks up updated session and roles
+            // This prevents redirect loops caused by stale auth state
             if (roles && roles.length > 0) {
               // User has roles - registration complete, go to dashboard
-              navigate('/role-dashboard');
+              window.location.href = '/role-dashboard';
             } else {
               // User has no roles - registration incomplete, go to role selection
-              navigate('/register');
+              window.location.href = '/register';
             }
           } catch (error) {
             console.error("Error checking roles:", error);
-            // Default to dashboard on error
-            navigate('/role-dashboard');
+            // Default to dashboard on error (use full page refresh)
+            window.location.href = '/role-dashboard';
           }
         };
         
