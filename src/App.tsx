@@ -65,6 +65,7 @@ import RoleDashboard from "./pages/RoleDashboard";
 import Logout from "./pages/Logout";
 import KeywordSummary from "./pages/KeywordSummary";
 import GigConfirmed from "./pages/GigConfirmed";
+import LogoGeneratorPage from "./pages/LogoGeneratorPage";
 
 const queryClient = new QueryClient();
 
@@ -313,6 +314,10 @@ const router = createBrowserRouter([
   {
     path: "/demo/gig-registration",
     element: <GigRegistrationDemo />,
+  },
+  {
+    path: "/logo-generator",
+    element: <LogoGeneratorPage />,
   },
       {
         path: "*",
