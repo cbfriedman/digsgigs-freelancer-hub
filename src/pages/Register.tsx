@@ -809,9 +809,11 @@ const Register = () => {
 
       toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
       
-      // Redirect to role dashboard
-      setTimeout(() => {
-        navigate('/role-dashboard');
+      // Wait a moment for roles to be created, then refresh auth context and navigate
+      setTimeout(async () => {
+        // Refresh the page to ensure auth context picks up the new roles
+        // This is more reliable than trying to manually refresh the context
+        window.location.href = '/role-dashboard';
       }, 1500);
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -1011,7 +1013,7 @@ const Register = () => {
         console.warn("Failed to refresh session, but continuing with sign-in:", refreshError);
       }
 
-      // Successfully signed in - wait a moment for auth state to update
+      // Successfully signed in - wait for roles to be fetched before navigation
       isInSignInOtpFlowRef.current = false; // Clear flag
       
       // Clear sessionStorage
@@ -1024,10 +1026,40 @@ const Register = () => {
         isNavigatingRef.current = true;
         toast.success("Welcome back!");
         
-        // Small delay to ensure auth state is updated before navigation
-        setTimeout(() => {
-          navigate('/role-dashboard');
-        }, 100);
+        // Wait for roles to be fetched before navigating
+        // Check if user has roles to determine if registration is complete
+        const checkRolesAndNavigate = async () => {
+          try {
+            // Wait a bit for auth state to update
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Check if user has roles
+            const { data: roles, error: rolesError } = await supabase
+              .from('user_app_roles')
+              .select('app_role')
+              .eq('user_id', signInData.user.id)
+              .eq('is_active', true);
+            
+            if (rolesError) {
+              console.error("Error checking roles:", rolesError);
+            }
+            
+            // Navigate to appropriate page based on whether roles exist
+            if (roles && roles.length > 0) {
+              // User has roles - registration complete, go to dashboard
+              navigate('/role-dashboard');
+            } else {
+              // User has no roles - registration incomplete, go to role selection
+              navigate('/register');
+            }
+          } catch (error) {
+            console.error("Error checking roles:", error);
+            // Default to dashboard on error
+            navigate('/role-dashboard');
+          }
+        };
+        
+        checkRolesAndNavigate();
       }
     } catch (error: any) {
       console.error("Verification error:", error);

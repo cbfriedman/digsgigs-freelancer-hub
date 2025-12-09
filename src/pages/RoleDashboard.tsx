@@ -52,6 +52,31 @@ export default function RoleDashboard() {
       return;
     }
 
+    // If user has no roles, they need to complete registration
+    // But wait a bit for roles to load (they might be loading)
+    if (userRoles.length === 0) {
+      // Give it a moment for roles to load, then check again
+      const checkRolesTimeout = setTimeout(async () => {
+        const { data: roles } = await supabase
+          .from('user_app_roles')
+          .select('app_role')
+          .eq('user_id', user.id)
+          .eq('is_active', true);
+        
+        if (!roles || roles.length === 0) {
+          // Still no roles - redirect to registration
+          toast({
+            title: "Complete Registration",
+            description: "Please select your role(s) to continue.",
+          });
+          navigate("/register");
+        }
+      }, 1000);
+      
+      return () => clearTimeout(checkRolesTimeout);
+    }
+
+    // User has roles - fetch stats
     fetchStats();
   }, [user, navigate, userRoles, refreshKey, authLoading]);
 
@@ -286,7 +311,44 @@ export default function RoleDashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Register as a Gigger to post projects</p>
-                <Button onClick={() => navigate('/gig-registration-demo')}>
+                <Button onClick={async () => {
+                  if (!user) return;
+                  
+                  // Check if user already has gigger role
+                  const { data: existingRoles } = await supabase
+                    .from('user_app_roles')
+                    .select('app_role')
+                    .eq('user_id', user.id)
+                    .eq('app_role', 'gigger');
+                  
+                  if (existingRoles && existingRoles.length > 0) {
+                    // User already has gigger role, just switch to it
+                    await switchRole('gigger');
+                    navigate('/post-gig');
+                  } else {
+                    // User doesn't have gigger role, add it
+                    const { error: roleError } = await supabase
+                      .from('user_app_roles')
+                      .insert({ user_id: user.id, app_role: 'gigger', is_active: true });
+                    
+                    if (roleError) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to add Gigger role. Please try again.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    // Switch to gigger role and navigate
+                    await switchRole('gigger');
+                    toast({
+                      title: "Success",
+                      description: "Gigger role added! You can now post gigs.",
+                    });
+                    navigate('/post-gig');
+                  }
+                }}>
                   Register as Gigger
                 </Button>
               </div>
