@@ -43,6 +43,14 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
   useEffect(() => {
     if (loading) return;
 
+    // CRITICAL: Check if we're in sign-in OTP flow - if so, don't redirect
+    // This prevents redirecting authenticated users who are in the middle of OTP verification
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    if (isInOtpFlow && redirectIfAuthenticated) {
+      // User is in OTP flow - don't redirect, let them complete verification
+      return;
+    }
+
     // For register page: only redirect verified users who ALREADY have roles
     if (redirectIfAuthenticated && user && user.email_confirmed_at && hasCheckedRoles) {
       if (userHasRoles) {

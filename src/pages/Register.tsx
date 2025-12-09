@@ -835,6 +835,11 @@ const Register = () => {
     console.log("Sign in started");
     setLoading(true);
 
+    // CRITICAL: Set flag BEFORE authentication to prevent redirect
+    // This prevents useProtectedRoute from redirecting authenticated users
+    isInSignInOtpFlowRef.current = true;
+    hasInitializedSignInModeRef.current = true;
+
     try {
       console.log("Attempting sign in with email:", email);
       
@@ -848,6 +853,10 @@ const Register = () => {
 
       if (signInError) {
         console.error("Sign in error:", signInError);
+        // Clear flags on error
+        isInSignInOtpFlowRef.current = false;
+        hasInitializedSignInModeRef.current = false;
+        sessionStorage.removeItem('signInOtpFlow');
         toast.error(signInError.message || "Failed to sign in. Please check your credentials.");
         setLoading(false);
         return;
@@ -855,6 +864,10 @@ const Register = () => {
 
       if (!signInData.user) {
         console.error("No user data returned");
+        // Clear flags on error
+        isInSignInOtpFlowRef.current = false;
+        hasInitializedSignInModeRef.current = false;
+        sessionStorage.removeItem('signInOtpFlow');
         toast.error("No user data returned from sign in");
         setLoading(false);
         return;
@@ -875,10 +888,7 @@ const Register = () => {
       // Store user ID temporarily for verification (don't sign out yet to prevent redirect)
       const tempUserId = signInData.user.id;
 
-      // Set flag BEFORE any async operations to prevent redirects
-      isInSignInOtpFlowRef.current = true;
-      hasInitializedSignInModeRef.current = true; // Prevent reset useEffect from running
-      
+      // Flags already set above, but ensure they're still set
       // Also persist to sessionStorage FIRST to survive redirects
       sessionStorage.setItem('signInOtpFlow', 'true');
       sessionStorage.setItem('signInUserId', tempUserId);
@@ -942,6 +952,13 @@ const Register = () => {
       setLoading(false);
     } catch (error: any) {
       console.error("Sign in error caught:", error);
+      // Clear flags on error
+      isInSignInOtpFlowRef.current = false;
+      hasInitializedSignInModeRef.current = false;
+      sessionStorage.removeItem('signInOtpFlow');
+      sessionStorage.removeItem('signInUserId');
+      sessionStorage.removeItem('signInEmail');
+      sessionStorage.removeItem('signInVerificationMethod');
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
       setLoading(false);
     } finally {
