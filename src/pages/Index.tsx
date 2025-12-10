@@ -235,12 +235,14 @@ const Index = () => {
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div 
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
             <img src={logo} alt="Digs and Gigs" className="h-10 w-10" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Digs and Gigs
+            <h1 className="text-2xl font-bold flex items-center gap-1">
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Digs</span>
+              <span className="text-primary">⛏️</span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Gigs</span>
             </h1>
           </div>
           
