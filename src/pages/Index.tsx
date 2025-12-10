@@ -41,7 +41,8 @@ import {
   Bookmark,
   Menu,
   MessageCircle,
-  MessageSquare
+  MessageSquare,
+  Shovel
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -238,10 +239,12 @@ const Index = () => {
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            <img src={logo} alt="Digs and Gigs" className="h-10 w-10" />
             <h1 className="text-2xl font-bold flex items-center gap-1">
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Digs</span>
-              <span className="text-primary">⛏️</span>
+              <span className="relative inline-flex items-center justify-center w-6 h-6">
+                <span className="text-primary font-bold text-lg">&</span>
+                <Shovel className="absolute h-4 w-4 text-accent -rotate-45 opacity-80" />
+              </span>
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Gigs</span>
             </h1>
           </div>
