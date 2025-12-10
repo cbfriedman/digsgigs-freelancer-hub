@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/digsandgigs-logo.png";
 import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";
@@ -80,12 +81,15 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
     <>
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+          <div 
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            Digs and Gigs
-          </h1>
+            <img src={logo} alt="Digs and Gigs" className="h-8 w-8" />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Digs and Gigs
+            </h1>
+          </div>
           <div className="flex items-center gap-4">
             {/* Home Button */}
             <Button
