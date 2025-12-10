@@ -52,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import heroImage from "@/assets/hero-image.jpg";
+import logo from "@/assets/digsandgigs-logo.png";
 import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
 import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
 import { ROIComparisonCalculator } from "@/components/ROIComparisonCalculator";
@@ -233,12 +234,15 @@ const Index = () => {
       {/* Navigation */}
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+          <div 
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            Digs and Gigs
-          </h1>
+            <img src={logo} alt="Digs and Gigs" className="h-8 w-8" />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Digs and Gigs
+            </h1>
+          </div>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">
