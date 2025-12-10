@@ -240,7 +240,7 @@ const Index = () => {
             onClick={() => navigate("/")}
           >
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Digs & Gigs
+              Digs&Gigs
             </h1>
           </div>
           
