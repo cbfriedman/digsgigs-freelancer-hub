@@ -10,12 +10,11 @@ export const LogoGenerator = () => {
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   const logoPrompt = `Create a modern, professional logo icon on a pure white background. 
-The design features a stylized construction shovel blade seamlessly integrated with an industrial gear/cog. 
-Use a bold gradient from purple-violet (#6d28d9) to vibrant orange (#f97316), flowing from left to right across the icon. 
-The shovel should be recognizable but abstracted into a clean, geometric form. 
-The gear should wrap around or merge with the shovel blade, symbolizing the connection between skilled tradespeople and a technology platform. 
+The design features an abstract monogram combining the letters "D" and "G" interlocking elegantly. 
+Use a bold gradient from purple-violet (#6d28d9) to vibrant orange (#f97316), flowing diagonally across the letters. 
+The letters should be stylized, geometric, and seamlessly connected - the "D" flowing into the "G" as one unified mark. 
 Style: Flat design, minimalist, suitable for web and app use. 
-No text, just the icon mark. Vector-style with clean edges.
+No additional text or words, just the D+G monogram icon. Vector-style with clean edges.
 Ultra high resolution. 1:1 aspect ratio.`;
 
   const generateLogo = async () => {
