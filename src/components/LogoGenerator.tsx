@@ -11,7 +11,7 @@ export const LogoGenerator = () => {
 
   const logoPrompt = `Create a modern, professional logo icon on a pure white background. 
 The design features a stylized construction shovel blade seamlessly integrated with an industrial gear/cog. 
-Use deep blue color (#1e3a8a) for the entire icon. 
+Use a bold gradient from purple-violet (#6d28d9) to vibrant orange (#f97316), flowing from left to right across the icon. 
 The shovel should be recognizable but abstracted into a clean, geometric form. 
 The gear should wrap around or merge with the shovel blade, symbolizing the connection between skilled tradespeople and a technology platform. 
 Style: Flat design, minimalist, suitable for web and app use. 
