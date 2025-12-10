@@ -39,6 +39,11 @@ export const Footer = () => {
                   Blog
                 </button>
               </li>
+              <li>
+                <button onClick={() => navigate("/brand")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  Brand Assets
+                </button>
+              </li>
             </ul>
           </div>
 
