@@ -168,3 +168,6 @@ verify_jwt = true
 [functions.handle-semi-exclusive-expiration]
 verify_jwt = false
 
+[functions.generate-step-image]
+verify_jwt = false
+
