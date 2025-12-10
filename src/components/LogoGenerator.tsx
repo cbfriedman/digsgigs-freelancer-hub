@@ -21,25 +21,33 @@ Ultra high resolution. 1:1 aspect ratio.`;
   const generateLogo = async () => {
     setIsGenerating(true);
     try {
+      console.log("Calling generate-step-image function...");
       const { data, error } = await supabase.functions.invoke("generate-step-image", {
         body: { prompt: logoPrompt },
       });
 
+      console.log("Response data:", data);
+      console.log("Response error:", error);
+
       if (error) {
         console.error("Error generating logo:", error);
-        toast.error("Failed to generate logo. Please try again.");
+        toast.error(`Failed to generate logo: ${error.message || 'Unknown error'}`);
         return;
       }
 
       if (data?.imageUrl) {
         setGeneratedImageUrl(data.imageUrl);
         toast.success("Logo generated successfully!");
+      } else if (data?.error) {
+        console.error("API error:", data.error);
+        toast.error(`API error: ${data.error}`);
       } else {
+        console.error("No imageUrl in response:", data);
         toast.error("No image was generated. Please try again.");
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error("An error occurred while generating the logo.");
+      toast.error(`An error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
     }
