@@ -20,13 +20,9 @@ Ultra high resolution. 1:1 aspect ratio.`;
   const generateLogo = async () => {
     setIsGenerating(true);
     try {
-      console.log("Calling generate-step-image function...");
       const { data, error } = await supabase.functions.invoke("generate-step-image", {
         body: { prompt: logoPrompt },
       });
-
-      console.log("Response data:", data);
-      console.log("Response error:", error);
 
       if (error) {
         console.error("Error generating logo:", error);

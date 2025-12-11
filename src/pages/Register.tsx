@@ -229,7 +229,7 @@ const Register = () => {
         setEmail(savedEmail);
         setSignInOtpSent(true);
         setSignInVerificationMethod(savedMethod || 'email');
-        console.log('Restored OTP flow state from sessionStorage:', { savedUserId, savedEmail, savedMethod });
+        // OTP flow state restored from sessionStorage
       }
     }
   }, []); // Run only on mount
@@ -849,8 +849,6 @@ const Register = () => {
         password,
       });
 
-      console.log("Sign in response received");
-
       if (signInError) {
         console.error("Sign in error:", signInError);
         // Clear flags on error
@@ -873,7 +871,7 @@ const Register = () => {
         return;
       }
 
-      console.log("User authenticated:", signInData.user.email);
+      // User authenticated successfully
 
       // Get user's phone from profile for 2FA (required for all users on every login)
       const { data: profileData } = await supabase
@@ -1133,11 +1131,8 @@ const Register = () => {
     }, 15000); // 15 second timeout
 
     try {
-      console.log('Attempting to update password...');
-      
       // Ensure we have a valid session from the reset token
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Current session:', session ? 'Valid' : 'None');
       
       if (!session) {
         clearTimeout(timeoutId);
@@ -1156,7 +1151,7 @@ const Register = () => {
       });
 
       clearTimeout(timeoutId);
-      console.log('Update password response:', { data, error });
+      // Password update response received
 
       if (error) {
         console.error('Password update error:', error);
