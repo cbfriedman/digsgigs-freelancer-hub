@@ -66,6 +66,7 @@ import Logout from "./pages/Logout";
 import KeywordSummary from "./pages/KeywordSummary";
 import GigConfirmed from "./pages/GigConfirmed";
 import LogoGeneratorPage from "./pages/LogoGeneratorPage";
+import BrandAssets from "./pages/BrandAssets";
 
 const queryClient = new QueryClient();
 
@@ -250,6 +251,10 @@ const router = createBrowserRouter([
   {
     path: "/privacy",
     element: <PrivacyPolicy />,
+  },
+  {
+    path: "/brand",
+    element: <BrandAssets />,
   },
   {
     path: "/sitemap",
