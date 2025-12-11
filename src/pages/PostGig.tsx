@@ -101,15 +101,26 @@ const PostGig = () => {
         },
       });
 
+      // Handle Supabase function errors
       if (error) {
-        // If the function returned an error response, extract the message
+        console.error("Function error:", error);
+        // Try to extract error message from various possible formats
+        let errorMessage = "Failed to analyze profession. Please try again.";
+        
         if (error.message) {
-          throw new Error(error.message);
+          errorMessage = error.message;
+        } else if (error.error) {
+          errorMessage = error.error;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (data?.error) {
+          errorMessage = data.error;
         }
-        throw error;
+        
+        throw new Error(errorMessage);
       }
 
-      // Check if the response contains an error
+      // Check if the response contains an error (even with 200 status)
       if (data?.error) {
         throw new Error(data.error);
       }
@@ -127,8 +138,26 @@ const PostGig = () => {
       }
     } catch (error: any) {
       console.error("Category detection error:", error);
-      // Show the actual error message from the function if available
-      const errorMessage = error?.message || error?.error || "Failed to analyze profession. Please try again.";
+      
+      // Try to extract error message from various possible formats
+      let errorMessage = "Failed to analyze profession. Please try again.";
+      
+      // Check different error formats
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      } else if (error?.context?.message) {
+        errorMessage = error.context.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.toString && error.toString() !== '[object Object]') {
+        errorMessage = error.toString();
+      }
+      
+      // Log full error for debugging
+      console.error("Full error object:", JSON.stringify(error, null, 2));
+      
       toast.error(errorMessage);
     } finally {
       setDetectingCategory(false);

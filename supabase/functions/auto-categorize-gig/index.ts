@@ -10,10 +10,31 @@ serve(async (req) => {
   }
 
   try {
-    const { title, description } = await req.json();
+    // Parse request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error("Failed to parse request body:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Invalid request body. Please provide title and description." }),
+        {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { title, description } = requestBody;
 
     if (!title || !description) {
-      throw new Error("Title and description are required");
+      return new Response(
+        JSON.stringify({ error: "Title and description are required" }),
+        {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Initialize Supabase client
