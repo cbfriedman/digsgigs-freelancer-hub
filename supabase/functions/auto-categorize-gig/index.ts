@@ -1,14 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleOptionsRequest } from "../_shared/cors.ts";
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleOptionsRequest(origin);
   }
 
   try {
@@ -54,7 +52,8 @@ serve(async (req) => {
     // Use Lovable AI to match the gig to a category
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
+      console.error("LOVABLE_API_KEY not configured in Edge Function secrets");
+      throw new Error("AI categorization service is not configured. Please contact support.");
     }
 
     const systemPrompt = `You are a category matching assistant for a gig marketplace. Given a gig title and description, you must select the SINGLE most appropriate subcategory from the available categories.
@@ -165,18 +164,24 @@ Which subcategory is the best match?`;
         reasoning: matchResult.reasoning,
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
       }
     );
   } catch (error) {
     console.error("Error in auto-categorize-gig:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error details:", {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
       }
     );
   }
