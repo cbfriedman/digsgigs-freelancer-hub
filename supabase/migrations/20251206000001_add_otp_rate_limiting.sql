@@ -32,6 +32,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_otp_attempts_phone_unique ON public.otp_ve
 -- Enable RLS
 ALTER TABLE public.otp_verification_attempts ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policy if it exists (for idempotency)
+DROP POLICY IF EXISTS "Service role can manage OTP attempts" ON public.otp_verification_attempts;
+
 -- Policy: Only service role can access this table (for edge functions)
 CREATE POLICY "Service role can manage OTP attempts"
   ON public.otp_verification_attempts

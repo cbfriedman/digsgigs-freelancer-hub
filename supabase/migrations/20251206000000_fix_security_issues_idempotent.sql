@@ -1,12 +1,12 @@
 -- Security Fixes: Prevent Role Escalation and Secure user_app_roles
 -- This migration addresses critical security vulnerabilities
+-- IDEMPOTENT VERSION: Safe to run multiple times
 
 -- ============================================
 -- FIX 1: Prevent users from modifying their own roles
 -- ============================================
 
--- Drop existing permissive policies that allow users to modify their own roles
--- Also drop any existing security policies to ensure clean state
+-- Drop ALL existing policies that might conflict
 DROP POLICY IF EXISTS "Users can insert own app roles" ON public.user_app_roles;
 DROP POLICY IF EXISTS "Users can update own app roles" ON public.user_app_roles;
 DROP POLICY IF EXISTS "System can insert app roles" ON public.user_app_roles;
@@ -16,7 +16,7 @@ DROP POLICY IF EXISTS "System can delete app roles" ON public.user_app_roles;
 -- Create restrictive policies: Users can only VIEW their own roles, not modify them
 -- Role modifications must be done through admin functions or service role
 
--- Users can view their own roles (keep this)
+-- Users can view their own roles (keep this - don't drop if it exists)
 -- Policy already exists: "Users can view own app roles"
 
 -- Users CANNOT insert their own roles
