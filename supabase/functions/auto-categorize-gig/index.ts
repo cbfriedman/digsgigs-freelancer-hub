@@ -17,8 +17,17 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase configuration:", {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+      });
+      throw new Error("Server configuration error. Please contact support.");
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch all categories from database
@@ -29,11 +38,20 @@ serve(async (req) => {
 
     if (categoriesError) {
       console.error("Error fetching categories:", categoriesError);
-      throw new Error("Failed to fetch categories");
+      throw new Error(`Failed to fetch categories: ${categoriesError.message}`);
+    }
+
+    if (!categories || categories.length === 0) {
+      throw new Error("No categories found in database. Please contact support.");
     }
 
     // Build category hierarchy for AI
     const parents = categories.filter((cat: any) => !cat.parent_category_id);
+    
+    if (parents.length === 0) {
+      throw new Error("No parent categories found. Please contact support.");
+    }
+
     const categoryInfo = parents.map((parent: any) => {
       const subcategories = categories.filter(
         (cat: any) => cat.parent_category_id === parent.id
@@ -48,6 +66,12 @@ serve(async (req) => {
         })),
       };
     });
+
+    // Check if we have any subcategories
+    const totalSubcategories = categoryInfo.reduce((sum, cat) => sum + cat.subcategories.length, 0);
+    if (totalSubcategories === 0) {
+      throw new Error("No subcategories found. Please contact support.");
+    }
 
     // Use Lovable AI to match the gig to a category
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -119,27 +143,52 @@ Which subcategory is the best match?`;
     });
 
     if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error("AI gateway error:", {
+        status: aiResponse.status,
+        statusText: aiResponse.statusText,
+        error: errorText,
+      });
+      
+      if (aiResponse.status === 401 || aiResponse.status === 403) {
+        throw new Error("AI service authentication failed. Please contact support.");
+      }
       if (aiResponse.status === 429) {
         throw new Error("Rate limit exceeded. Please try again in a moment.");
       }
       if (aiResponse.status === 402) {
         throw new Error("AI service requires payment. Please contact support.");
       }
-      const errorText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errorText);
-      throw new Error("AI categorization failed");
+      if (aiResponse.status >= 500) {
+        throw new Error("AI service is temporarily unavailable. Please try again later.");
+      }
+      
+      throw new Error(`AI categorization failed: ${aiResponse.status} ${aiResponse.statusText}`);
     }
 
     const aiData = await aiResponse.json();
     console.log("AI response:", JSON.stringify(aiData, null, 2));
 
-    // Extract the tool call result
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
-      throw new Error("No category match found");
+    // Check if we have a valid response
+    if (!aiData.choices || aiData.choices.length === 0) {
+      console.error("No choices in AI response:", aiData);
+      throw new Error("AI service returned an invalid response. Please try again.");
     }
 
-    const matchResult = JSON.parse(toolCall.function.arguments);
+    // Extract the tool call result
+    const toolCall = aiData.choices[0]?.message?.tool_calls?.[0];
+    if (!toolCall) {
+      console.error("No tool call in AI response:", aiData);
+      throw new Error("AI could not determine a category match. Please try describing your gig differently.");
+    }
+
+    let matchResult;
+    try {
+      matchResult = JSON.parse(toolCall.function.arguments);
+    } catch (parseError) {
+      console.error("Failed to parse AI response:", parseError, toolCall.function.arguments);
+      throw new Error("AI returned invalid data. Please try again.");
+    }
 
     // Verify the category exists
     const matchedCategory = categories.find(

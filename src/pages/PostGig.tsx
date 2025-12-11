@@ -101,9 +101,20 @@ const PostGig = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // If the function returned an error response, extract the message
+        if (error.message) {
+          throw new Error(error.message);
+        }
+        throw error;
+      }
 
-      if (data.category_id) {
+      // Check if the response contains an error
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (data?.category_id) {
         setDetectedCategory({
           id: data.category_id,
           name: data.category_name,
@@ -116,7 +127,9 @@ const PostGig = () => {
       }
     } catch (error: any) {
       console.error("Category detection error:", error);
-      toast.error("Failed to analyze profession. Please try again.");
+      // Show the actual error message from the function if available
+      const errorMessage = error?.message || error?.error || "Failed to analyze profession. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setDetectingCategory(false);
     }
