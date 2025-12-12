@@ -8,6 +8,8 @@ const ALLOWED_ORIGINS = [
   "https://digsgigs-freelancer-hub.vercel.app",
   "https://digsandgigs.com",
   "https://www.digsandgigs.com",
+  "https://digsandgigs.net",
+  "https://www.digsandgigs.net",
   // Development origins
   "http://localhost:8080",
   "http://localhost:5173",
