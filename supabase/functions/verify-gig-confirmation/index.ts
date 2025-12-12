@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Redirect to frontend success page
-    const siteUrl = Deno.env.get("SITE_URL") || "https://preview--digsandgigs.lovable.app";
+    const siteUrl = Deno.env.get("SITE_URL") || "https://www.digsandgigs.net";
     const redirectUrl = `${siteUrl}/gig-confirmed?gigId=${gigId}`;
     
     console.log("Redirecting to:", redirectUrl);
