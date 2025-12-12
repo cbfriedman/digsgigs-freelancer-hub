@@ -94,11 +94,22 @@ serve(async (req) => {
       throw new Error("No subcategories found. Please contact support.");
     }
 
-    // Use Lovable AI to match the gig to a category
+    // Use Lovable AI to match the gig to a category (optional)
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured in Edge Function secrets");
-      throw new Error("AI categorization service is not configured. Please contact support.");
+      console.warn("LOVABLE_API_KEY not configured - AI categorization disabled");
+      // Return a response indicating manual selection is needed
+      return new Response(
+        JSON.stringify({ 
+          requires_manual_selection: true,
+          message: "AI categorization is not available. Please select a category manually.",
+          categories: categoryInfo
+        }),
+        {
+          status: 200,
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+        }
+      );
     }
 
     const systemPrompt = `You are a category matching assistant for a gig marketplace. Given a gig title and description, you must select the SINGLE most appropriate subcategory from the available categories.

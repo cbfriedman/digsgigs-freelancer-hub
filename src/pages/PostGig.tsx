@@ -15,6 +15,7 @@ import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { DynamicIntakeForm } from "@/components/DynamicIntakeForm";
 import { geocodeAddress } from "@/utils/geocoding";
+import { GigCategorySelector } from "@/components/GigCategorySelector";
 
 const PostGig = () => {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ const PostGig = () => {
   
   // Step 2 data
   const [detectedCategory, setDetectedCategory] = useState<{id: string, name: string, parentName: string} | null>(null);
+  const [manualCategoryId, setManualCategoryId] = useState<string>("");
+  const [requiresManualSelection, setRequiresManualSelection] = useState(false);
   const [projectTitle, setProjectTitle] = useState("");
   const [detailedDescription, setDetailedDescription] = useState("");
   const [estimatedBudget, setEstimatedBudget] = useState("");
@@ -72,6 +75,10 @@ const PostGig = () => {
         setTermsAccepted(gigData.termsAccepted || false);
         if (gigData.detectedCategory) {
           setDetectedCategory(gigData.detectedCategory);
+        }
+        if (gigData.manualCategoryId) {
+          setManualCategoryId(gigData.manualCategoryId);
+          setRequiresManualSelection(gigData.requiresManualSelection || false);
         }
         setCurrentStep(gigData.currentStep || 3);
         
@@ -125,6 +132,14 @@ const PostGig = () => {
         throw new Error(data.error);
       }
 
+      // Check if manual selection is required (AI not configured)
+      if (data?.requires_manual_selection) {
+        setRequiresManualSelection(true);
+        toast.info("Please select a category manually");
+        setCurrentStep(2);
+        return;
+      }
+
       if (data?.category_id) {
         setDetectedCategory({
           id: data.category_id,
@@ -134,7 +149,10 @@ const PostGig = () => {
         toast.success(`Detected: ${data.parent_category} → ${data.category_name}`);
         setCurrentStep(2);
       } else {
-        toast.error("Could not detect profession category. Please try describing it differently.");
+        // If AI didn't detect, allow manual selection
+        setRequiresManualSelection(true);
+        toast.info("Could not auto-detect category. Please select one manually.");
+        setCurrentStep(2);
       }
     } catch (error: any) {
       console.error("Category detection error:", error);
@@ -167,6 +185,13 @@ const PostGig = () => {
   const handleStep2Submit = async () => {
     if (!projectTitle.trim() || !detailedDescription.trim()) {
       toast.error("Please fill in project title and description");
+      return;
+    }
+
+    // Ensure a category is selected (either AI-detected or manually)
+    const selectedCategoryId = detectedCategory?.id || manualCategoryId;
+    if (!selectedCategoryId) {
+      toast.error("Please select a category");
       return;
     }
 
@@ -278,7 +303,9 @@ const PostGig = () => {
           suggestedKeywords,
           escrowRequested,
           termsAccepted,
-          detectedCategory,
+          detectedCategory: detectedCategory || (manualCategoryId ? { id: manualCategoryId, name: "", parentName: "" } : null),
+          manualCategoryId,
+          requiresManualSelection,
           currentStep: 3,
         };
         sessionStorage.setItem('pendingGig', JSON.stringify(pendingGigData));
@@ -313,7 +340,7 @@ const PostGig = () => {
           timeline: `${serviceStart} - ${duration}`,
           budget_min: estimatedBudget ? parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) : undefined,
           budget_max: null,
-          category_id: detectedCategory?.id,
+          category_id: detectedCategory?.id || manualCategoryId,
           consumer_phone: phone,
           consumer_email: email,
           confirmation_status: "pending",
@@ -534,6 +561,41 @@ const PostGig = () => {
                         {detectedCategory.parentName} → {detectedCategory.name}
                       </span>
                     </div>
+                  </div>
+                )}
+
+                {requiresManualSelection && !detectedCategory && (
+                  <div className="space-y-2">
+                    <GigCategorySelector
+                      value={manualCategoryId}
+                      onChange={async (categoryId) => {
+                        setManualCategoryId(categoryId);
+                        // Find category name for display
+                        const { data: category } = await supabase
+                          .from("categories")
+                          .select("id, name, parent_category_id")
+                          .eq("id", categoryId)
+                          .single();
+                        
+                        if (category) {
+                          let parentName = "Unknown";
+                          if (category.parent_category_id) {
+                            const { data: parent } = await supabase
+                              .from("categories")
+                              .select("name")
+                              .eq("id", category.parent_category_id)
+                              .single();
+                            parentName = parent?.name || "Unknown";
+                          }
+                          
+                          setDetectedCategory({
+                            id: category.id,
+                            name: category.name,
+                            parentName: parentName
+                          });
+                        }
+                      }}
+                    />
                   </div>
                 )}
 
