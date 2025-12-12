@@ -55,6 +55,12 @@ FOR DELETE
 TO authenticated
 USING (consumer_id = auth.uid());
 
+-- Fix status check constraint to allow 'pending_confirmation' status
+-- This is needed because the code inserts gigs with status 'pending_confirmation'
+ALTER TABLE public.gigs DROP CONSTRAINT IF EXISTS gigs_status_check;
+ALTER TABLE public.gigs ADD CONSTRAINT gigs_status_check 
+  CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled', 'pending_confirmation'));
+
 -- Note: Contact info visibility is handled at the application level or via column-level security
 -- We don't need separate policies for contact info as it would require querying lead_purchases
 -- which might cause recursion if lead_purchases policies query gigs
