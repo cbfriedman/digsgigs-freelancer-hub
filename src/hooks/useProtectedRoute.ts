@@ -46,8 +46,9 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     // CRITICAL: Check if we're in sign-in OTP flow - if so, don't redirect
     // This prevents redirecting authenticated users who are in the middle of OTP verification
     const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
-    if (isInOtpFlow && redirectIfAuthenticated) {
+    if (isInOtpFlow) {
       // User is in OTP flow - don't redirect, let them complete verification
+      // This applies to both redirectIfAuthenticated and requireVerified checks
       return;
     }
 

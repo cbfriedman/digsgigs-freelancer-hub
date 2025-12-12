@@ -111,7 +111,9 @@ const Register = () => {
   
   const [isSignInMode, setIsSignInMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('mode') === 'signin';
+    // If we're in OTP flow, ensure we're in sign-in mode
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    return params.get('mode') === 'signin' || isInOtpFlow;
   });
   const [isPasswordResetMode, setIsPasswordResetMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -133,7 +135,9 @@ const Register = () => {
   
   // Initialize email from sessionStorage if in OTP flow
   const [email, setEmail] = useState(() => {
-    if (isSignInMode) {
+    // Check sessionStorage first for OTP flow
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    if (isInOtpFlow || isSignInMode) {
       const savedEmail = sessionStorage.getItem('signInEmail');
       return savedEmail || "";
     }
@@ -161,8 +165,11 @@ const Register = () => {
   
   // Initialize signInOtpSent from sessionStorage if in OTP flow
   const [signInOtpSent, setSignInOtpSent] = useState(() => {
-    if (isSignInMode) {
-      return sessionStorage.getItem('signInOtpFlow') === 'true';
+    // Check sessionStorage first, regardless of isSignInMode (which might not be set yet)
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    if (isInOtpFlow) {
+      // If in OTP flow, ensure we're in sign-in mode
+      return true;
     }
     return false;
   });
@@ -215,7 +222,7 @@ const Register = () => {
   useEffect(() => {
     // Check if we're in the middle of an OTP flow (restore from sessionStorage)
     const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
-    if (isInOtpFlow && isSignInMode) {
+    if (isInOtpFlow) {
       const savedUserId = sessionStorage.getItem('signInUserId');
       const savedEmail = sessionStorage.getItem('signInEmail');
       const savedMethod = sessionStorage.getItem('signInVerificationMethod') as 'email' | 'sms' | null;
@@ -224,6 +231,8 @@ const Register = () => {
         // State is already initialized from useState, but ensure flags are set
         isInSignInOtpFlowRef.current = true;
         hasInitializedSignInModeRef.current = true;
+        // Ensure we're in sign-in mode
+        setIsSignInMode(true);
         // Ensure state is set (in case useState didn't pick it up)
         setUserId(savedUserId);
         setEmail(savedEmail);
