@@ -7,6 +7,54 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
+// Cache to track if intake form tables exist (to avoid repeated 404 queries)
+let intakeTablesExist: boolean | null = null;
+let tableCheckPromise: Promise<boolean> | null = null;
+
+const checkIntakeTablesExist = async (): Promise<boolean> => {
+  // Return cached result if available
+  if (intakeTablesExist !== null) {
+    return intakeTablesExist;
+  }
+
+  // If check is already in progress, return that promise
+  if (tableCheckPromise) {
+    return tableCheckPromise;
+  }
+
+  // Start new check
+  tableCheckPromise = (async () => {
+    try {
+      // Try a simple query to check if table exists
+      const { error } = await supabase
+        .from('intake_form_templates')
+        .select('id')
+        .limit(1);
+
+      // If no error or error is not "table not found", table exists
+      if (!error || (error.code !== 'PGRST205' && 
+                     error.code !== '42P01' && 
+                     !error.message?.includes('Could not find the table') &&
+                     !error.message?.includes('does not exist'))) {
+        intakeTablesExist = true;
+        return true;
+      }
+
+      // Table doesn't exist
+      intakeTablesExist = false;
+      return false;
+    } catch {
+      // On any error, assume table doesn't exist
+      intakeTablesExist = false;
+      return false;
+    } finally {
+      tableCheckPromise = null;
+    }
+  })();
+
+  return tableCheckPromise;
+};
+
 interface Question {
   id: string;
   question_text: string;
@@ -26,6 +74,54 @@ interface DynamicIntakeFormProps {
   initialResponses?: Record<string, any>;
 }
 
+// Cache to track if intake form tables exist (to avoid repeated 404 queries)
+let intakeTablesExist: boolean | null = null;
+let tableCheckPromise: Promise<boolean> | null = null;
+
+const checkIntakeTablesExist = async (): Promise<boolean> => {
+  // Return cached result if available
+  if (intakeTablesExist !== null) {
+    return intakeTablesExist;
+  }
+
+  // If check is already in progress, return that promise
+  if (tableCheckPromise) {
+    return tableCheckPromise;
+  }
+
+  // Start new check
+  tableCheckPromise = (async () => {
+    try {
+      // Try a simple query to check if table exists
+      const { error } = await supabase
+        .from('intake_form_templates')
+        .select('id')
+        .limit(1);
+
+      // If no error or error is not "table not found", table exists
+      if (!error || (error.code !== 'PGRST205' && 
+                     error.code !== '42P01' && 
+                     !error.message?.includes('Could not find the table') &&
+                     !error.message?.includes('does not exist'))) {
+        intakeTablesExist = true;
+        return true;
+      }
+
+      // Table doesn't exist
+      intakeTablesExist = false;
+      return false;
+    } catch {
+      // On any error, assume table doesn't exist
+      intakeTablesExist = false;
+      return false;
+    } finally {
+      tableCheckPromise = null;
+    }
+  })();
+
+  return tableCheckPromise;
+};
+
 export const DynamicIntakeForm = ({ 
   industryName, 
   onResponsesChange,
@@ -43,6 +139,23 @@ export const DynamicIntakeForm = ({
     try {
       setLoading(true);
       
+      // Skip if no industry name provided
+      if (!industryName || !industryName.trim()) {
+        setQuestions([]);
+        setLoading(false);
+        return;
+      }
+
+      // Check if intake form tables exist before making query
+      // This prevents 404 errors in console
+      const tablesExist = await checkIntakeTablesExist();
+      if (!tablesExist) {
+        // Tables don't exist - skip query entirely (no 404 error!)
+        setQuestions([]);
+        setLoading(false);
+        return;
+      }
+
       // Get template ID for industry
       const { data: template, error: templateError } = await supabase
         .from('intake_form_templates')
