@@ -21,7 +21,8 @@ $functions = @(
     "create-lead-purchase-checkout",
     "award-lead",
     "match-leads-to-diggers",
-    "stripe-webhook-lead-purchase"
+    "stripe-webhook-lead-purchase",
+    "send-gig-confirmation"
 )
 
 foreach ($func in $functions) {
