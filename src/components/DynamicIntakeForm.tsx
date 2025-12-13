@@ -84,17 +84,22 @@ export const DynamicIntakeForm = ({
       if (questionsError) {
         // Handle table not found error gracefully
         // These errors are expected if the table hasn't been created yet
+        // PGRST205 = table not found in schema cache
+        // 42P01 = PostgreSQL relation does not exist
         if (questionsError.code === 'PGRST205' || 
             questionsError.code === '42P01' || 
             questionsError.message?.includes('Could not find the table') || 
             questionsError.message?.includes('does not exist') ||
-            questionsError.message?.includes('404')) {
+            questionsError.message?.includes('404') ||
+            questionsError.message?.includes('schema cache')) {
           // Silently skip - table doesn't exist, which is OK
+          // Note: Browser console will still show 404 (this is expected browser behavior)
           setQuestions([]);
           setLoading(false);
           return;
         }
-        console.warn('Error loading intake form questions:', questionsError);
+        // For other unexpected errors, log but don't throw
+        console.warn('Unexpected error loading intake form questions:', questionsError);
         setQuestions([]);
         setLoading(false);
         return;
@@ -113,12 +118,18 @@ export const DynamicIntakeForm = ({
 
       setQuestions(transformedQuestions);
     } catch (error: any) {
-      // Handle table not found errors gracefully
-      if (error?.code === 'PGRST205' || error?.message?.includes('Could not find the table') || error?.message?.includes('404')) {
-        console.log('Intake form tables not found - skipping intake form');
+      // Handle table not found errors gracefully - silently skip
+      // PGRST205 = table not found, 42P01 = relation does not exist
+      if (error?.code === 'PGRST205' || 
+          error?.code === '42P01' || 
+          error?.message?.includes('Could not find the table') || 
+          error?.message?.includes('does not exist') ||
+          error?.message?.includes('404')) {
+        // Silently skip - table doesn't exist, which is OK
         setQuestions([]);
       } else {
-        console.error('Error loading intake form:', error);
+        // Only log non-table-not-found errors
+        console.warn('Error loading intake form:', error);
         // Don't show error toast for missing tables - it's OK if they don't exist
         if (!error?.message?.includes('404') && !error?.message?.includes('Could not find the table')) {
           toast.error('Failed to load intake form');
