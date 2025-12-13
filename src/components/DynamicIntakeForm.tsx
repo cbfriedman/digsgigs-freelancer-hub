@@ -83,8 +83,13 @@ export const DynamicIntakeForm = ({
 
       if (questionsError) {
         // Handle table not found error gracefully
-        if (questionsError.code === 'PGRST205' || questionsError.message?.includes('Could not find the table') || questionsError.message?.includes('404')) {
-          console.log('Intake form questions table not found - skipping intake form');
+        // These errors are expected if the table hasn't been created yet
+        if (questionsError.code === 'PGRST205' || 
+            questionsError.code === '42P01' || 
+            questionsError.message?.includes('Could not find the table') || 
+            questionsError.message?.includes('does not exist') ||
+            questionsError.message?.includes('404')) {
+          // Silently skip - table doesn't exist, which is OK
           setQuestions([]);
           setLoading(false);
           return;
