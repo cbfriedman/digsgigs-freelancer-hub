@@ -86,6 +86,23 @@ export const DiggerProfileSelector = () => {
     console.log("DiggerProfileSelector: Loading profiles for user:", user.id);
 
     try {
+      // First check if user has digger role - if not, skip query entirely
+      const { data: roles } = await supabase
+        .from('user_app_roles')
+        .select('app_role')
+        .eq('user_id', user.id)
+        .eq('app_role', 'digger')
+        .eq('is_active', true)
+        .limit(1);
+
+      if (!roles || roles.length === 0) {
+        // User doesn't have digger role, no need to query profiles
+        console.log("DiggerProfileSelector: User doesn't have digger role, skipping profile load");
+        setProfiles([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("digger_profiles")
         .select("id, profile_name, business_name, is_primary")
@@ -95,14 +112,17 @@ export const DiggerProfileSelector = () => {
 
       if (error) {
         // Handle 406 error gracefully - might be RLS policy issue
-        if (error.code === 'PGRST116' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+        if (error.code === 'PGRST116' || error.code === 'PGRST301' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
           console.warn("DiggerProfileSelector: Query blocked by RLS or header issue, user may not have digger profile yet:", error);
           setProfiles([]);
           setLoading(false);
           return;
         }
         console.error("DiggerProfileSelector: Error loading profiles:", error);
-        throw error;
+        // Don't throw - just set empty profiles
+        setProfiles([]);
+        setLoading(false);
+        return;
       }
 
       console.log("DiggerProfileSelector: Loaded profiles:", data);

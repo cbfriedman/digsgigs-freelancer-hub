@@ -204,7 +204,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               </DropdownMenu>
             )}
 
-            {user && !hideDiggerSelector && window.location.pathname !== '/register' && <DiggerProfileSelector />}
+            {user && !hideDiggerSelector && window.location.pathname !== '/register' && userRoles.includes('digger') && <DiggerProfileSelector />}
             
             {/* Cart Icon */}
             <Button

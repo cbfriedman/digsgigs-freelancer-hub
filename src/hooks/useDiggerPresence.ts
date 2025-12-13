@@ -93,15 +93,30 @@ export const useTrackDiggerPresence = () => {
 
     const setupPresence = async () => {
       try {
+        // First check if user has digger role - if not, skip query entirely
+        const { data: roles } = await supabase
+          .from('user_app_roles')
+          .select('app_role')
+          .eq('user_id', user.id)
+          .eq('app_role', 'digger')
+          .eq('is_active', true)
+          .limit(1);
+
+        if (!roles || roles.length === 0) {
+          // User doesn't have digger role, no need to query profiles
+          return;
+        }
+
         const { data: diggerProfile, error } = await supabase
           .from('digger_profiles')
           .select('id')
           .eq('user_id', user.id)
-          .single();
+          .limit(1)
+          .maybeSingle();
 
         // Handle 406 or other errors gracefully - user might not have digger profile
         if (error) {
-          if (error.code === 'PGRST116' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+          if (error.code === 'PGRST116' || error.code === 'PGRST301' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
             // User doesn't have digger profile or query blocked - this is OK
             return;
           }
