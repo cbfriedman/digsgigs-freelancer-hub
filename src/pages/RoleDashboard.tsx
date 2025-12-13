@@ -86,28 +86,82 @@ export default function RoleDashboard() {
     try {
       // Fetch Digger stats
       if (userRoles.includes('digger')) {
-        const { count: profilesCount } = await supabase
-          .from('digger_profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+        // Query digger_profiles with error handling
+        let profilesCount = 0;
+        try {
+          const { count, error: profilesError } = await supabase
+            .from('digger_profiles')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id);
 
-        const { count: leadsCount } = await supabase
-          .from('lead_purchases')
-          .select('id', { count: 'exact', head: true })
-          .eq('digger_id', user.id);
+          // Handle 406 or other errors gracefully
+          if (profilesError) {
+            if (profilesError.code === 'PGRST116' || profilesError.message?.includes('406') || profilesError.message?.includes('Not Acceptable')) {
+              // User might not have digger profile yet or RLS blocking - this is OK
+              console.warn('Could not fetch digger profiles count (user may not have profile yet):', profilesError);
+            } else {
+              console.error('Error fetching digger profiles count:', profilesError);
+            }
+          } else {
+            profilesCount = count || 0;
+          }
+        } catch (err) {
+          console.warn('Error fetching digger profiles count:', err);
+        }
 
-        const { count: activeLeadsCount } = await supabase
-          .from('lead_purchases')
-          .select('id', { count: 'exact', head: true })
-          .eq('digger_id', user.id)
-          .eq('status', 'active');
+        // Query lead_purchases - need digger profile ID first, so skip if no profile
+        let leadsCount = 0;
+        let activeLeadsCount = 0;
+        
+        if (profilesCount > 0) {
+          try {
+            // Get digger profile ID to query leads (use maybeSingle to handle no profile case)
+            const { data: diggerProfiles, error: profileError } = await supabase
+              .from('digger_profiles')
+              .select('id')
+              .eq('user_id', user.id)
+              .limit(1);
+
+            // Handle 406 or other errors gracefully
+            if (profileError) {
+              if (profileError.code === 'PGRST116' || profileError.message?.includes('406') || profileError.message?.includes('Not Acceptable')) {
+                console.warn('Could not fetch digger profile for lead counts:', profileError);
+              } else {
+                console.error('Error fetching digger profile for lead counts:', profileError);
+              }
+            } else if (diggerProfiles && diggerProfiles.length > 0) {
+              const diggerProfileId = diggerProfiles[0].id;
+
+              const { count: leadsCountResult, error: leadsError } = await supabase
+                .from('lead_purchases')
+                .select('id', { count: 'exact', head: true })
+                .eq('digger_id', diggerProfileId);
+
+              if (!leadsError) {
+                leadsCount = leadsCountResult || 0;
+              }
+
+              const { count: activeLeadsCountResult, error: activeLeadsError } = await supabase
+                .from('lead_purchases')
+                .select('id', { count: 'exact', head: true })
+                .eq('digger_id', diggerProfileId)
+                .eq('status', 'active');
+
+              if (!activeLeadsError) {
+                activeLeadsCount = activeLeadsCountResult || 0;
+              }
+            }
+          } catch (err) {
+            console.warn('Error fetching lead counts:', err);
+          }
+        }
 
         setStats(prev => ({
           ...prev,
           digger: {
-            profilesCount: profilesCount || 0,
-            leadsCount: leadsCount || 0,
-            activeLeadsCount: activeLeadsCount || 0,
+            profilesCount,
+            leadsCount,
+            activeLeadsCount,
           }
         }));
       }
