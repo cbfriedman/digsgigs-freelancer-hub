@@ -48,8 +48,12 @@ export const DiggerProfileSelector = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    // Only load profiles if user is authenticated and not in sign-in OTP flow
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    if (user && !isInOtpFlow) {
       loadProfiles();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -71,6 +75,14 @@ export const DiggerProfileSelector = () => {
       return;
     }
 
+    // Don't load if in sign-in OTP flow
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    if (isInOtpFlow) {
+      console.log("DiggerProfileSelector: In OTP flow, skipping load");
+      setLoading(false);
+      return;
+    }
+
     console.log("DiggerProfileSelector: Loading profiles for user:", user.id);
 
     try {
@@ -82,6 +94,13 @@ export const DiggerProfileSelector = () => {
         .order("created_at", { ascending: true });
 
       if (error) {
+        // Handle 406 error gracefully - might be RLS policy issue
+        if (error.code === 'PGRST116' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+          console.warn("DiggerProfileSelector: Query blocked by RLS or header issue, user may not have digger profile yet:", error);
+          setProfiles([]);
+          setLoading(false);
+          return;
+        }
         console.error("DiggerProfileSelector: Error loading profiles:", error);
         throw error;
       }
