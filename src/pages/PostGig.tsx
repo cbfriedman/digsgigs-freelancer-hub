@@ -354,24 +354,48 @@ const PostGig = () => {
 
       if (gigError) throw gigError;
 
-      // Save intake responses
+      // Save intake responses (only if tables exist and we have responses)
       if (Object.keys(intakeResponses).length > 0 && detectedCategory) {
-        const { data: template } = await supabase
-          .from('intake_form_templates')
-          .select('id')
-          .eq('industry_name', detectedCategory.name)
-          .eq('is_active', true)
-          .single();
+        try {
+          const { data: template, error: templateError } = await supabase
+            .from('intake_form_templates')
+            .select('id')
+            .eq('industry_name', detectedCategory.name)
+            .eq('is_active', true)
+            .maybeSingle();
 
-        if (template) {
-          const responseInserts = Object.entries(intakeResponses).map(([questionId, answer]) => ({
-            gig_id: gigData.id,
-            question_id: questionId,
-            answer_text: typeof answer === 'string' ? answer : null,
-            answer_options: typeof answer === 'object' ? answer : null,
-          }));
+          // Handle table not found error gracefully
+          if (templateError) {
+            if (templateError.code === 'PGRST205' || templateError.message?.includes('Could not find the table') || templateError.message?.includes('404')) {
+              console.log('Intake form templates table not found - skipping intake form responses');
+            } else {
+              console.warn('Error loading intake form template:', templateError);
+            }
+          } else if (template) {
+            const responseInserts = Object.entries(intakeResponses).map(([questionId, answer]) => ({
+              gig_id: gigData.id,
+              question_id: questionId,
+              answer_text: typeof answer === 'string' ? answer : null,
+              answer_options: typeof answer === 'object' ? answer : null,
+            }));
 
-          await supabase.from('intake_form_responses').insert(responseInserts);
+            const { error: insertError } = await supabase.from('intake_form_responses').insert(responseInserts);
+            if (insertError) {
+              // Handle table not found error gracefully
+              if (insertError.code === 'PGRST205' || insertError.message?.includes('Could not find the table') || insertError.message?.includes('404')) {
+                console.log('Intake form responses table not found - skipping intake form responses');
+              } else {
+                console.warn('Error saving intake form responses:', insertError);
+              }
+            }
+          }
+        } catch (error: any) {
+          // Silently handle errors - intake form is optional
+          if (error?.code === 'PGRST205' || error?.message?.includes('Could not find the table') || error?.message?.includes('404')) {
+            console.log('Intake form tables not found - skipping intake form responses');
+          } else {
+            console.warn('Error saving intake form responses:', error);
+          }
         }
       }
 

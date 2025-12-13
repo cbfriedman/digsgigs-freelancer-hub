@@ -49,12 +49,28 @@ export const DynamicIntakeForm = ({
         .select('id')
         .eq('industry_name', industryName)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (templateError) throw templateError;
+      // Handle table not found error (404) gracefully
+      if (templateError) {
+        // Check if table doesn't exist (PGRST205) or 404 error
+        if (templateError.code === 'PGRST205' || templateError.message?.includes('Could not find the table') || templateError.message?.includes('404')) {
+          console.log('Intake form templates table not found - skipping intake form');
+          setQuestions([]);
+          setLoading(false);
+          return;
+        }
+        // For other errors, log but don't throw
+        console.warn('Error loading intake form template:', templateError);
+        setQuestions([]);
+        setLoading(false);
+        return;
+      }
+
       if (!template) {
         console.log(`No template found for industry: ${industryName}`);
         setQuestions([]);
+        setLoading(false);
         return;
       }
 
@@ -65,7 +81,19 @@ export const DynamicIntakeForm = ({
         .eq('template_id', template.id)
         .order('display_order');
 
-      if (questionsError) throw questionsError;
+      if (questionsError) {
+        // Handle table not found error gracefully
+        if (questionsError.code === 'PGRST205' || questionsError.message?.includes('Could not find the table') || questionsError.message?.includes('404')) {
+          console.log('Intake form questions table not found - skipping intake form');
+          setQuestions([]);
+          setLoading(false);
+          return;
+        }
+        console.warn('Error loading intake form questions:', questionsError);
+        setQuestions([]);
+        setLoading(false);
+        return;
+      }
 
       // Transform database data to match Question interface
       const transformedQuestions = (questionsData || []).map(q => ({
@@ -80,8 +108,17 @@ export const DynamicIntakeForm = ({
 
       setQuestions(transformedQuestions);
     } catch (error: any) {
-      console.error('Error loading intake form:', error);
-      toast.error('Failed to load intake form');
+      // Handle table not found errors gracefully
+      if (error?.code === 'PGRST205' || error?.message?.includes('Could not find the table') || error?.message?.includes('404')) {
+        console.log('Intake form tables not found - skipping intake form');
+        setQuestions([]);
+      } else {
+        console.error('Error loading intake form:', error);
+        // Don't show error toast for missing tables - it's OK if they don't exist
+        if (!error?.message?.includes('404') && !error?.message?.includes('Could not find the table')) {
+          toast.error('Failed to load intake form');
+        }
+      }
     } finally {
       setLoading(false);
     }
