@@ -49,20 +49,13 @@ const basicInfoSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Schema for gig posting flow (no full name required)
+// Schema for gig posting flow - EMAIL ONLY, no password required (hybrid passwordless)
 const gigPostingSchema = z.object({
   email: z.string()
     .trim()
     .min(1, "Email is required")
     .email("Invalid email format")
     .max(255, "Email must be less than 255 characters"),
-  password: z.string()
-    .min(8, "Password must be at least 8 characters")
-    .max(100, "Password must be less than 100 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
-  confirmPassword: z.string(),
   phone: z.string()
     .trim()
     .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format. Use international format (e.g., +1234567890)")
@@ -70,9 +63,6 @@ const gigPostingSchema = z.object({
     .max(15, "Phone number must be less than 15 digits")
     .optional()
     .or(z.literal("")),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
 });
 
 type UserAppRole = 'digger' | 'gigger' | 'telemarketer';
@@ -357,8 +347,6 @@ const Register = () => {
       if (isFromGigPosting) {
         gigPostingSchema.parse({
           email,
-          password,
-          confirmPassword,
           phone: phone || "",
         });
       } else {
@@ -371,53 +359,40 @@ const Register = () => {
         });
       }
 
-      // Skip OTP for gig posting flow (Craigslist model) - create account directly with Gigger role
+      // Hybrid passwordless flow for gig posting - send OTP, no account creation
       if (isFromGigPosting) {
         const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
         
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { 
-              full_name: fullName, 
-              phone: formattedPhone 
-            },
-            emailRedirectTo: `${window.location.origin}/`,
+        // Generate OTP code
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Send OTP via unified edge function
+        const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp', {
+          body: {
+            email,
+            phone: formattedPhone,
+            code: otpCode,
+            name: 'Guest User',
+            method: verificationMethod,
           },
         });
-        
-        if (authError) {
-          console.error("Signup error:", authError);
-          if (authError.message?.includes('already registered')) {
-            setExistingAccountError(true);
-            toast.error("This email is already registered. Please sign in instead.");
-          } else {
-            toast.error(authError.message || "Failed to create account");
+
+        if (otpError) {
+          console.error("OTP send error:", otpError);
+          let errorMessage = "Failed to send verification code. Please try again.";
+          if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
+            errorMessage = "Email service is not configured. Please contact support.";
           }
+          toast.error(errorMessage);
           setLoading(false);
           return;
         }
-        
-        if (authData.user) {
-          setUserId(authData.user.id);
-          // Auto-select Gigger role for gig posting flow
-          setSelectedRoles(new Set(['gigger']));
-          
-          // Create the Gigger role immediately
-          const { error: roleError } = await supabase
-            .from('user_app_roles')
-            .insert({ user_id: authData.user.id, app_role: 'gigger' });
-          
-          if (roleError) {
-            console.error("Error creating Gigger role:", roleError);
-          }
-          
-          toast.success("Account created! Posting your gig...");
-          // Navigate directly to post-gig to complete posting (skip Gigger form)
-          isNavigatingRef.current = true;
-          navigate('/post-gig');
-        }
+
+        // OTP sent successfully - move to verification step
+        setOtpSent(true);
+        const methodText = verificationMethod === 'email' ? 'email' : 'phone';
+        toast.success(`Verification code sent! Please check your ${methodText}.`);
+        setStep(2); // Move to verification step
         setLoading(false);
         return;
       }
@@ -553,6 +528,20 @@ const Register = () => {
       if (!verifyData || !verifyData.success) {
         toast.error("Invalid or expired verification code. Please check your code and try again.");
         setLoading(false);
+        return;
+      }
+
+      // HYBRID PASSWORDLESS: For gig posting flow, store verified email and redirect
+      if (isFromGigPosting) {
+        // Store verified email/phone in sessionStorage for guest gig posting
+        sessionStorage.setItem('verifiedGiggerEmail', email);
+        if (formattedPhone) {
+          sessionStorage.setItem('verifiedGiggerPhone', formattedPhone);
+        }
+        
+        toast.success("Email verified! Completing your gig posting...");
+        isNavigatingRef.current = true;
+        navigate('/post-gig');
         return;
       }
 
@@ -1728,74 +1717,79 @@ const Register = () => {
                   <div className="flex items-center gap-2 p-3 border rounded-lg bg-accent/50">
                     <Mail className="h-4 w-4 text-primary" />
                     <div>
-                      <div className="font-medium">{isFromGigPosting ? "Email Confirmation Required" : "Instant Account Creation"}</div>
+                      <div className="font-medium">{isFromGigPosting ? "Quick Email Verification" : "Instant Account Creation"}</div>
                       <div className="text-xs text-muted-foreground">
-                        {isFromGigPosting ? "You'll receive an email to confirm your gig posting" : "Your account will be created immediately"}
+                        {isFromGigPosting ? "Verify your email to post your gig - no password needed!" : "Your account will be created immediately"}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password *</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      autoComplete="new-password"
-                      maxLength={100}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Must be 8+ characters with uppercase, lowercase, and number
-                  </p>
-                </div>
+                {/* Hide password fields for gig posting flow (hybrid passwordless) */}
+                {!isFromGigPosting && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          autoComplete="new-password"
+                          maxLength={100}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Must be 8+ characters with uppercase, lowercase, and number
+                      </p>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      autoComplete="new-password"
-                      maxLength={100}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          autoComplete="new-password"
+                          maxLength={100}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Show verification code input after OTP is sent */}
                 {otpSent && (
@@ -1828,7 +1822,9 @@ const Register = () => {
                       className="w-full"
                       type="button"
                     >
-                      {loading ? "Creating Account..." : "Create Account"}
+                      {loading 
+                        ? (isFromGigPosting ? "Verifying..." : "Creating Account...") 
+                        : (isFromGigPosting ? "Verify & Post Gig" : "Create Account")}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
 
@@ -1852,13 +1848,12 @@ const Register = () => {
                     disabled={loading}
                   >
                     {loading 
-                      ? (isFromGigPosting ? "Creating Account..." : "Sending Code...") 
+                      ? "Sending Code..." 
                       : (isFromGigPosting 
-                          ? "Register & Post Gig" 
+                          ? "Verify Email & Post Gig" 
                           : verificationMethod === 'email' 
                             ? "Verify my Email" 
                             : "Send SMS Code")} 
-                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
 
