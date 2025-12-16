@@ -1,9 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleOptionsRequest } from "../_shared/cors.ts";
 
 interface EnhanceDescriptionRequest {
   description: string;
@@ -12,26 +8,38 @@ interface EnhanceDescriptionRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  const origin = req.headers.get("origin");
+  
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleOptionsRequest(origin);
   }
 
   try {
     const { description, title, category }: EnhanceDescriptionRequest = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      console.warn("OPENAI_API_KEY not configured - AI enhancement disabled");
+      return new Response(
+        JSON.stringify({ 
+          error: "AI enhancement is not available. OPENAI_API_KEY is not configured. Please configure it in Supabase Dashboard → Settings → Edge Functions → Secrets to enable AI features.",
+          requiresApiKey: true
+        }),
+        {
+          status: 503,
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+        }
+      );
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -88,17 +96,17 @@ Return ONLY the enhanced description text, no additional commentary.`,
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          ...corsHeaders,
+          ...getCorsHeaders(origin),
         },
       }
     );
   } catch (error: any) {
     console.error("Error enhancing description:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || "Failed to enhance description. Please try again." }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
       }
     );
   }

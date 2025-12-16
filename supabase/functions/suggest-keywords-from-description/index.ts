@@ -20,25 +20,25 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     console.log("Analyzing description:", description);
     console.log("Location/Zipcode:", location);
 
     const systemPrompt = `You are a professional services keyword analyzer. Based on the user's description of their business or specialty, suggest 5-10 relevant professional service keywords from common industries like:
-- Legal services (lawyer, attorney specialties)
-- Home services (HVAC, plumbing, electrical, roofing, remodeling)
-- Medical/Healthcare (treatments, procedures)
-- Financial services (insurance, loans, accounting)
-- Business services (marketing, consulting)
-- Automotive services
-- Pet care
-- Education/tutoring
-- Fitness/wellness
-- Beauty/personal care
+    - Legal services (lawyer, attorney specialties)
+    - Home services (HVAC, plumbing, electrical, roofing, remodeling)
+    - Medical/Healthcare (treatments, procedures)
+    - Financial services (insurance, loans, accounting)
+    - Business services (marketing, consulting)
+    - Automotive services
+    - Pet care
+    - Education/tutoring
+    - Fitness/wellness
+    - Beauty/personal care
 
 Return specific, searchable keywords that potential customers would use to find this service. Be specific - for example, instead of just "lawyer", suggest "personal injury lawyer" or "DUI lawyer".
 
@@ -48,14 +48,14 @@ IMPORTANT: If a location or zipcode is provided, ensure the suggested keywords a
       ? `Based on this description and location (${location}), suggest relevant professional service keywords that are geographically appropriate: "${description}"`
       : `Based on this description, suggest relevant professional service keywords: "${description}"`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }

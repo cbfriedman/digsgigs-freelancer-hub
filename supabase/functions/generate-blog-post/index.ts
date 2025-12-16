@@ -23,9 +23,9 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY not configured");
     }
 
     // Get request body or use defaults for cron
@@ -61,7 +61,7 @@ serve(async (req) => {
 
     logStep("Generating blog post for topic", { topic: finalTopic });
 
-    // Generate blog content with Lovable AI
+    // Generate blog content with OpenAI
     const systemPrompt = `You are an expert blog writer for a service marketplace platform called digsandgigs. 
 Write SEO-optimized, engaging blog posts that provide value to readers.
 Format your response as a JSON object with these fields:
@@ -73,14 +73,14 @@ Format your response as a JSON object with these fields:
 - meta_keywords: Comma-separated keywords (5-10 keywords)
 - slug: URL-friendly slug`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Write a blog post about: ${finalTopic}` }
@@ -157,27 +157,24 @@ Format your response as a JSON object with these fields:
     if (settings?.include_images !== false) {
       try {
         logStep("Generating featured image");
-        const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image",
-            messages: [
-              {
-                role: "user",
-                content: `Create a professional, high-quality featured image for a blog post titled: ${blogData.title}. Make it visually appealing and relevant to the topic.`
-              }
-            ],
-            modalities: ["image", "text"]
+            model: "dall-e-3",
+            prompt: `Create a professional, high-quality featured image for a blog post titled: ${blogData.title}. Make it visually appealing and relevant to the topic.`,
+            n: 1,
+            size: "1024x1024"
           }),
         });
 
         if (imageResponse.ok) {
           const imageData = await imageResponse.json();
-          featuredImage = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          // OpenAI DALL-E returns images in data[0].url format
+          featuredImage = imageData.data?.[0]?.url;
           logStep("Featured image generated successfully");
         }
       } catch (imageError) {

@@ -242,13 +242,27 @@ const PostGig = () => {
 
       if (error) throw error;
 
+      // Check if API key is missing
+      if (data?.requiresApiKey || data?.error?.includes("OPENAI_API_KEY") || data?.error?.includes("LOVABLE_API_KEY")) {
+        toast.error("AI enhancement is not available. Please configure OPENAI_API_KEY in Supabase to enable this feature.");
+        return;
+      }
+
       if (data.enhancedDescription) {
         setDetailedDescription(data.enhancedDescription);
         toast.success("Description enhanced successfully!");
+      } else if (data?.error) {
+        toast.error(data.error || "Failed to enhance description. Please try again.");
       }
     } catch (error: any) {
       console.error("Description enhancement error:", error);
-      toast.error("Failed to enhance description. Please try again.");
+      const errorMessage = error?.message || error?.error || "Failed to enhance description. Please try again.";
+      
+      if (errorMessage.includes("OPENAI_API_KEY") || errorMessage.includes("LOVABLE_API_KEY") || errorMessage.includes("not configured")) {
+        toast.error("AI enhancement is not available. Please configure OPENAI_API_KEY in Supabase to enable this feature.");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setEnhancingDescription(false);
     }
