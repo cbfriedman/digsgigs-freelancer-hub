@@ -1004,14 +1004,36 @@ export const INDUSTRY_GROUPS: IndustryGroup[] = [
     ]
   },
   {
-    categoryName: "Financial Services",
+    categoryName: "Insurance",
     industries: [
-      { name: "personal injury lawyer", value: "high-value", indicator: "HV" },
       { name: "life insurance", value: "high-value", indicator: "HV" },
       { name: "auto insurance", value: "high-value", indicator: "HV" },
       { name: "health insurance", value: "high-value", indicator: "HV" },
       { name: "home insurance", value: "high-value", indicator: "HV" },
+      { name: "business insurance", value: "high-value", indicator: "HV" },
+      { name: "renters insurance", value: "mid-value", indicator: "MV" },
+      { name: "umbrella insurance", value: "high-value", indicator: "HV" },
+      { name: "disability insurance", value: "high-value", indicator: "HV" },
+      { name: "long-term care insurance", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "Mortgage & Financing",
+    industries: [
       { name: "mortgage broker", value: "high-value", indicator: "HV" },
+      { name: "loan officer", value: "high-value", indicator: "HV" },
+      { name: "refinancing specialist", value: "high-value", indicator: "HV" },
+      { name: "hard money lender", value: "high-value", indicator: "HV" },
+      { name: "business loan broker", value: "high-value", indicator: "HV" },
+      { name: "consumer loan broker", value: "high-value", indicator: "HV" },
+      { name: "construction loan specialist", value: "high-value", indicator: "HV" },
+      { name: "home equity specialist", value: "high-value", indicator: "HV" },
+      { name: "commercial lender", value: "high-value", indicator: "HV" },
+    ]
+  },
+  {
+    categoryName: "Financial Services & Accounting",
+    industries: [
       { name: "financial advisor", value: "high-value", indicator: "HV" },
       { name: "investment advisor", value: "high-value", indicator: "HV" },
       { name: "wealth management", value: "high-value", indicator: "HV" },
@@ -1055,6 +1077,7 @@ export const INDUSTRY_GROUPS: IndustryGroup[] = [
   {
     categoryName: "Legal Services",
     industries: [
+      { name: "personal injury lawyer", value: "high-value", indicator: "HV" },
       { name: "criminal defense attorney", value: "high-value", indicator: "HV" },
       { name: "dui attorney", value: "high-value", indicator: "HV" },
       { name: "bankruptcy lawyer", value: "high-value", indicator: "HV" },
