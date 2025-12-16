@@ -91,7 +91,9 @@ const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: num
 
 const DEFAULT_CATEGORIES = [
   "Legal Services",
-  "Insurance & Financial Services",
+  "Insurance",
+  "Mortgage & Financing",
+  "Financial Services & Accounting",
   "Investors",
   "Construction & Home Services",
   "Medical & Healthcare",

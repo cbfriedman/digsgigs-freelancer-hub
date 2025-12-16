@@ -13,7 +13,9 @@ import { Label } from "@/components/ui/label";
 const organizeByIndustry = () => {
   const industryMap: Record<string, typeof GOOGLE_CPC_KEYWORDS> = {
     "Legal Services": [],
-    "Insurance & Financial Services": [],
+    "Insurance": [],
+    "Mortgage & Financing": [],
+    "Financial Services & Accounting": [],
     "Construction & Home Services": [],
     "Medical & Healthcare": [],
     "Technology Services": [],
@@ -37,11 +39,16 @@ const organizeByIndustry = () => {
         industry.includes("employment") || industry.includes("estate planning") || industry.includes("real estate law")) {
       industryMap["Legal Services"].push(item);
     } 
-    // Insurance & Financial
-    else if (industry.includes("insurance") || industry.includes("loan") || industry.includes("mortgage") || 
-             industry.includes("refinancing") || industry.includes("trading") || industry.includes("business loan")) {
-      industryMap["Insurance & Financial Services"].push(item);
+    // Insurance
+    else if (industry.includes("insurance")) {
+      industryMap["Insurance"].push(item);
     } 
+    // Mortgage & Financing
+    else if (industry.includes("loan") || industry.includes("mortgage") || 
+             industry.includes("refinancing") || industry.includes("lender") || industry.includes("lending")) {
+      industryMap["Mortgage & Financing"].push(item);
+    } 
+    // Financial Services & Accounting (will catch the rest below in Business Services)
     // Construction & Home Services
     else if (industry.includes("plumb") || industry.includes("hvac") || industry.includes("roof") || 
              industry.includes("electrical") || industry.includes("contractor") || industry.includes("kitchen") ||
@@ -59,10 +66,11 @@ const organizeByIndustry = () => {
              industry.includes("marketing") || industry.includes("development")) {
       industryMap["Technology Services"].push(item);
     }
-    // Business Services
+    // Financial Services & Accounting
     else if (industry.includes("accounting") || industry.includes("cpa") || industry.includes("tax") ||
-             industry.includes("bookkeeping") || industry.includes("payroll")) {
-      industryMap["Business Services"].push(item);
+             industry.includes("bookkeeping") || industry.includes("payroll") || industry.includes("financial") ||
+             industry.includes("investment") || industry.includes("wealth") || industry.includes("trading")) {
+      industryMap["Financial Services & Accounting"].push(item);
     }
     // Automotive Services
     else if (industry.includes("auto") || industry.includes("car") || industry.includes("vehicle") ||

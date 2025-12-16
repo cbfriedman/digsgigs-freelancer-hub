@@ -34,6 +34,17 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
     "Home Equity Loans",
     "Commercial Lending"
   ],
+  "Financial Services & Accounting": [
+    "Financial Planning",
+    "Investment Advisory",
+    "Tax Preparation",
+    "Retirement Planning",
+    "Wealth Management",
+    "CPA Services",
+    "Bookkeeping",
+    "Tax Attorney",
+    "Accounting Services"
+  ],
   "Investors": [
     "Angel Investor",
     "Venture Capital",

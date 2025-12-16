@@ -12,7 +12,9 @@ import { Badge } from "@/components/ui/badge";
 
 const existingIndustries = [
   "Legal Services",
-  "Insurance & Financial Services",
+  "Insurance",
+  "Mortgage & Financing",
+  "Financial Services & Accounting",
   "Construction & Home Services",
   "Medical & Healthcare",
   "Technology Services",
