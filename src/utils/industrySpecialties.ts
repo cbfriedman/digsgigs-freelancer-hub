@@ -12,17 +12,27 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
     "Employment Law",
     "Intellectual Property"
   ],
-  "Insurance & Financial Services": [
+  "Insurance": [
     "Life Insurance",
     "Health Insurance",
     "Auto Insurance",
     "Home Insurance",
-    "Financial Planning",
-    "Investment Advisory",
-    "Tax Preparation",
-    "Retirement Planning",
-    "Wealth Management",
-    "Business Insurance"
+    "Business Insurance",
+    "Renters Insurance",
+    "Umbrella Insurance",
+    "Disability Insurance",
+    "Long-Term Care Insurance"
+  ],
+  "Mortgage & Financing": [
+    "Mortgage Brokers",
+    "Loan Officers",
+    "Refinancing Services",
+    "Hard Money Lenders",
+    "Business Loan Brokers",
+    "Consumer Loan Brokers",
+    "Construction Loans",
+    "Home Equity Loans",
+    "Commercial Lending"
   ],
   "Investors": [
     "Angel Investor",
