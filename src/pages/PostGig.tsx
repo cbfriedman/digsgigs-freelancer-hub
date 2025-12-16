@@ -300,8 +300,12 @@ const PostGig = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      // If not logged in, save gig data and redirect to registration
-      if (!session) {
+      // Check for verified guest email (hybrid passwordless flow)
+      const verifiedGiggerEmail = sessionStorage.getItem('verifiedGiggerEmail');
+      const verifiedGiggerPhone = sessionStorage.getItem('verifiedGiggerPhone');
+      
+      // If not logged in AND no verified guest email, redirect to registration
+      if (!session && !verifiedGiggerEmail) {
         const pendingGigData = {
           professionDescription,
           zipcode,
@@ -323,11 +327,17 @@ const PostGig = () => {
           currentStep: 3,
         };
         sessionStorage.setItem('pendingGig', JSON.stringify(pendingGigData));
-        toast.info("Please create an account to post your gig. Your details have been saved.");
+        toast.info("Please verify your email to post your gig.");
         navigate("/register?returnTo=/post-gig");
         setLoading(false);
         return;
       }
+      
+      // Determine consumer_id - null for guest posting
+      const consumerId = session?.user?.id || null;
+      // Use verified guest email/phone if available, otherwise use form values or session email
+      const finalEmail = verifiedGiggerEmail || email || session?.user?.email;
+      const finalPhone = verifiedGiggerPhone || phone;
 
       // Geocode location
       let locationLat: number | undefined;
@@ -341,11 +351,11 @@ const PostGig = () => {
         }
       }
 
-      // Create gig with pending confirmation status
+      // Create gig with pending confirmation status (consumer_id can be null for guest posting)
       const { data: gigData, error: gigError } = await supabase
         .from("gigs")
         .insert({
-          consumer_id: session.user.id,
+          consumer_id: consumerId,
           title: projectTitle,
           description: detailedDescription,
           location: zipcode,
@@ -355,8 +365,8 @@ const PostGig = () => {
           budget_min: estimatedBudget ? parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) : undefined,
           budget_max: null,
           category_id: detectedCategory?.id || manualCategoryId,
-          consumer_phone: phone,
-          consumer_email: email,
+          consumer_phone: finalPhone,
+          consumer_email: finalEmail,
           confirmation_status: "pending",
           confirmation_sent_at: new Date().toISOString(),
           is_confirmed_lead: false,
@@ -418,7 +428,7 @@ const PostGig = () => {
       const { error: emailError } = await supabase.functions.invoke("send-gig-confirmation", {
         body: {
           gigId: gigData.id,
-          email: email,
+          email: finalEmail,
           gigTitle: projectTitle,
           gigDescription: detailedDescription,
           location: zipcode,
@@ -450,8 +460,13 @@ const PostGig = () => {
           escrow_requested: escrowRequested
         });
       }
+      // Clear guest verification data
+      sessionStorage.removeItem('verifiedGiggerEmail');
+      sessionStorage.removeItem('verifiedGiggerPhone');
+      sessionStorage.removeItem('pendingGig');
       
-      navigate("/");
+      // Navigate to gig confirmed page with the gig ID
+      navigate(`/gig-confirmed?gigId=${gigData.id}`);
     } catch (error: any) {
       console.error("Error posting gig:", error);
       toast.error("Failed to post gig. Please try again.");
