@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Briefcase, ArrowRight, ArrowLeft, Sparkles, Check } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, Check, Clock } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { DynamicIntakeForm } from "@/components/DynamicIntakeForm";
 import { geocodeAddress } from "@/utils/geocoding";
 import { GigCategorySelector } from "@/components/GigCategorySelector";
+import PostGigTrustBanner from "@/components/PostGigTrustBanner";
+import PostGigProgressDots from "@/components/PostGigProgressDots";
 
 const PostGig = () => {
   const navigate = useNavigate();
@@ -29,13 +31,15 @@ const PostGig = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [escrowRequested, setEscrowRequested] = useState(false);
   
-  // Step 1 data
+  // Step 1 data - Project basics only
   const [professionDescription, setProfessionDescription] = useState("");
   const [zipcode, setZipcode] = useState("");
+  
+  // Step 2 data - Contact info (moved from Step 1)
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   
-  // Step 2 data
+  // Step 3 data - Project details
   const [detectedCategory, setDetectedCategory] = useState<{id: string, name: string, parentName: string} | null>(null);
   const [manualCategoryId, setManualCategoryId] = useState<string>("");
   const [requiresManualSelection, setRequiresManualSelection] = useState(false);
@@ -47,7 +51,7 @@ const PostGig = () => {
   const [hourlyBasis, setHourlyBasis] = useState("");
   const [intakeResponses, setIntakeResponses] = useState<Record<string, any>>({});
   
-  // Step 3 data
+  // Step 4 data - Keywords
   const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [customKeyword, setCustomKeyword] = useState("");
@@ -80,7 +84,7 @@ const PostGig = () => {
           setManualCategoryId(gigData.manualCategoryId);
           setRequiresManualSelection(gigData.requiresManualSelection || false);
         }
-        setCurrentStep(gigData.currentStep || 3);
+        setCurrentStep(gigData.currentStep || 4);
         
         // Check if user is now logged in and auto-submit
         const { data: { session } } = await supabase.auth.getSession();
@@ -93,9 +97,10 @@ const PostGig = () => {
     checkPendingGig();
   }, []);
 
+  // Step 1: Validate project basics and detect category
   const handleStep1Submit = async () => {
-    if (!professionDescription.trim() || !zipcode.trim() || !email.trim() || !phone.trim()) {
-      toast.error("Please fill in all required fields");
+    if (!professionDescription.trim() || !zipcode.trim()) {
+      toast.error("Please describe your project and enter your zipcode");
       return;
     }
 
@@ -108,31 +113,16 @@ const PostGig = () => {
         },
       });
 
-      // Handle Supabase function errors
       if (error) {
         console.error("Function error:", error);
-        // Try to extract error message from various possible formats
         let errorMessage = "Failed to analyze profession. Please try again.";
-        
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.error) {
-          errorMessage = error.error;
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        } else if (data?.error) {
-          errorMessage = data.error;
-        }
-        
+        if (error.message) errorMessage = error.message;
+        else if (data?.error) errorMessage = data.error;
         throw new Error(errorMessage);
       }
 
-      // Check if the response contains an error (even with 200 status)
-      if (data?.error) {
-        throw new Error(data.error);
-      }
+      if (data?.error) throw new Error(data.error);
 
-      // Check if manual selection is required (AI not configured)
       if (data?.requires_manual_selection) {
         setRequiresManualSelection(true);
         toast.info("Please select a category manually");
@@ -149,46 +139,37 @@ const PostGig = () => {
         toast.success(`Detected: ${data.parent_category} → ${data.category_name}`);
         setCurrentStep(2);
       } else {
-        // If AI didn't detect, allow manual selection
         setRequiresManualSelection(true);
         toast.info("Could not auto-detect category. Please select one manually.");
         setCurrentStep(2);
       }
     } catch (error: any) {
       console.error("Category detection error:", error);
-      
-      // Try to extract error message from various possible formats
       let errorMessage = "Failed to analyze profession. Please try again.";
-      
-      // Check different error formats
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.error) {
-        errorMessage = error.error;
-      } else if (error?.context?.message) {
-        errorMessage = error.context.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.toString && error.toString() !== '[object Object]') {
-        errorMessage = error.toString();
-      }
-      
-      // Log full error for debugging
-      console.error("Full error object:", JSON.stringify(error, null, 2));
-      
+      if (error?.message) errorMessage = error.message;
       toast.error(errorMessage);
     } finally {
       setDetectingCategory(false);
     }
   };
 
-  const handleStep2Submit = async () => {
+  // Step 2: Validate contact info and proceed
+  const handleStep2Submit = () => {
+    if (!email.trim()) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    // Phone is optional
+    setCurrentStep(3);
+  };
+
+  // Step 3: Validate project details and generate keywords
+  const handleStep3Submit = async () => {
     if (!projectTitle.trim() || !detailedDescription.trim()) {
       toast.error("Please fill in project title and description");
       return;
     }
 
-    // Ensure a category is selected (either AI-detected or manually)
     const selectedCategoryId = detectedCategory?.id || manualCategoryId;
     if (!selectedCategoryId) {
       toast.error("Please select a category");
@@ -208,17 +189,17 @@ const PostGig = () => {
 
       if (data.keywords && data.keywords.length > 0) {
         setSuggestedKeywords(data.keywords);
-        setSelectedKeywords(data.keywords); // Auto-select all suggested keywords
+        setSelectedKeywords(data.keywords);
         toast.success(`Generated ${data.keywords.length} keyword suggestions`);
-        setCurrentStep(3);
+        setCurrentStep(4);
       } else {
         toast.info("No keyword suggestions. You can add custom keywords.");
-        setCurrentStep(3);
+        setCurrentStep(4);
       }
     } catch (error: any) {
       console.error("Keyword generation error:", error);
       toast.error("Failed to generate keywords. You can add them manually.");
-      setCurrentStep(3);
+      setCurrentStep(4);
     } finally {
       setGeneratingKeywords(false);
     }
@@ -242,7 +223,6 @@ const PostGig = () => {
 
       if (error) throw error;
 
-      // Check if API key is missing
       if (data?.requiresApiKey || data?.error?.includes("OPENAI_API_KEY") || data?.error?.includes("LOVABLE_API_KEY")) {
         toast.error("AI enhancement is not available. Please configure OPENAI_API_KEY in Supabase to enable this feature.");
         return;
@@ -289,7 +269,6 @@ const PostGig = () => {
     setShowPreview(true);
   };
 
-
   const handleFinalSubmit = async () => {
     if (!termsAccepted) {
       toast.error("Please accept the Terms and Conditions to proceed");
@@ -300,11 +279,9 @@ const PostGig = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Check for verified guest email (hybrid passwordless flow)
       const verifiedGiggerEmail = sessionStorage.getItem('verifiedGiggerEmail');
       const verifiedGiggerPhone = sessionStorage.getItem('verifiedGiggerPhone');
       
-      // If not logged in AND no verified guest email, redirect to registration
       if (!session && !verifiedGiggerEmail) {
         const pendingGigData = {
           professionDescription,
@@ -324,7 +301,7 @@ const PostGig = () => {
           detectedCategory: detectedCategory || (manualCategoryId ? { id: manualCategoryId, name: "", parentName: "" } : null),
           manualCategoryId,
           requiresManualSelection,
-          currentStep: 3,
+          currentStep: 4,
         };
         sessionStorage.setItem('pendingGig', JSON.stringify(pendingGigData));
         toast.info("Please verify your email to post your gig.");
@@ -333,13 +310,10 @@ const PostGig = () => {
         return;
       }
       
-      // Determine consumer_id - null for guest posting
       const consumerId = session?.user?.id || null;
-      // Use verified guest email/phone if available, otherwise use form values or session email
       const finalEmail = verifiedGiggerEmail || email || session?.user?.email;
       const finalPhone = verifiedGiggerPhone || phone;
 
-      // Geocode location
       let locationLat: number | undefined;
       let locationLng: number | undefined;
       
@@ -351,7 +325,6 @@ const PostGig = () => {
         }
       }
 
-      // Create gig with pending confirmation status (consumer_id can be null for guest posting)
       const { data: gigData, error: gigError } = await supabase
         .from("gigs")
         .insert({
@@ -378,7 +351,6 @@ const PostGig = () => {
 
       if (gigError) throw gigError;
 
-      // Save intake responses (only if tables exist and we have responses)
       if (Object.keys(intakeResponses).length > 0 && detectedCategory) {
         try {
           const { data: template, error: templateError } = await supabase
@@ -388,7 +360,6 @@ const PostGig = () => {
             .eq('is_active', true)
             .maybeSingle();
 
-          // Handle table not found error gracefully
           if (templateError) {
             if (templateError.code === 'PGRST205' || templateError.message?.includes('Could not find the table') || templateError.message?.includes('404')) {
               console.log('Intake form templates table not found - skipping intake form responses');
@@ -405,7 +376,6 @@ const PostGig = () => {
 
             const { error: insertError } = await supabase.from('intake_form_responses').insert(responseInserts);
             if (insertError) {
-              // Handle table not found error gracefully
               if (insertError.code === 'PGRST205' || insertError.message?.includes('Could not find the table') || insertError.message?.includes('404')) {
                 console.log('Intake form responses table not found - skipping intake form responses');
               } else {
@@ -414,7 +384,6 @@ const PostGig = () => {
             }
           }
         } catch (error: any) {
-          // Silently handle errors - intake form is optional
           if (error?.code === 'PGRST205' || error?.message?.includes('Could not find the table') || error?.message?.includes('404')) {
             console.log('Intake form tables not found - skipping intake form responses');
           } else {
@@ -423,7 +392,6 @@ const PostGig = () => {
         }
       }
 
-      // Send confirmation email
       toast.info("Sending confirmation email...");
       const { error: emailError } = await supabase.functions.invoke("send-gig-confirmation", {
         body: {
@@ -445,7 +413,6 @@ const PostGig = () => {
 
       toast.success("Confirmation email sent! Please check your inbox to confirm your gig.");
       
-      // Track gig submission as GA4 conversion event
       if (typeof gtag !== 'undefined') {
         gtag('event', 'gig_submitted', {
           event_category: 'conversion',
@@ -460,12 +427,11 @@ const PostGig = () => {
           escrow_requested: escrowRequested
         });
       }
-      // Clear guest verification data
+      
       sessionStorage.removeItem('verifiedGiggerEmail');
       sessionStorage.removeItem('verifiedGiggerPhone');
       sessionStorage.removeItem('pendingGig');
       
-      // Navigate to gig confirmed page with the gig ID
       navigate(`/gig-confirmed?gigId=${gigData.id}`);
     } catch (error: any) {
       console.error("Error posting gig:", error);
@@ -500,82 +466,46 @@ const PostGig = () => {
       />
       <Navigation showBackButton backLabel="Back to Home" />
 
-      <div className="container mx-auto px-4 py-12 max-w-3xl">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Briefcase className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-3xl">Post a Gig</CardTitle>
-                <CardDescription className="text-base mt-1">
-                  Step {currentStep} of 3
-                </CardDescription>
-              </div>
-            </div>
-            
-            {/* Progress Indicator */}
-            <div className="flex gap-2 mt-4">
-              {[1, 2, 3].map((step) => (
-                <div
-                  key={step}
-                  className={`h-2 flex-1 rounded-full transition-colors ${
-                    step <= currentStep ? 'bg-primary' : 'bg-muted'
-                  }`}
-                />
-              ))}
-            </div>
-          </CardHeader>
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
+        {/* Trust Banner - Only on Step 1 */}
+        {currentStep === 1 && !showPreview && <PostGigTrustBanner />}
 
-          <CardContent>
-            {/* STEP 1: Basic Info & Contact */}
+        <Card className="shadow-lg">
+          <CardContent className="pt-6">
+            {/* Progress Dots - Replaces "Step X of Y" */}
+            {!showPreview && (
+              <PostGigProgressDots currentStep={currentStep} totalSteps={4} />
+            )}
+
+            {/* STEP 1: Project Basics (Simplified) */}
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="profession">Describe your gig in detail *</Label>
+                  <Label htmlFor="profession" className="text-base font-medium">
+                    What do you need help with? *
+                  </Label>
                   <Textarea
                     id="profession"
-                    placeholder="Describe your project or service need in detail (e.g., 'I need help refinancing my mortgage to get a better rate', 'Looking for an electrician to rewire my kitchen and install new outlets')"
+                    placeholder="Describe your project (e.g., 'Need an electrician to rewire my kitchen and install new outlets')"
                     value={professionDescription}
                     onChange={(e) => setProfessionDescription(e.target.value)}
                     rows={4}
                     required
+                    className="text-base"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="zipcode">Zipcode *</Label>
+                  <Label htmlFor="zipcode" className="text-base font-medium">
+                    Your Zipcode *
+                  </Label>
                   <Input
                     id="zipcode"
                     placeholder="Enter your zipcode"
                     value={zipcode}
                     onChange={(e) => setZipcode(e.target.value)}
                     required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Contact Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Contact Phone *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="(555) 123-4567"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
+                    className="text-base"
                   />
                 </div>
 
@@ -588,21 +518,87 @@ const PostGig = () => {
                   {detectingCategory ? (
                     <>
                       <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
-                      Analyzing...
+                      Finding Pros...
                     </>
                   ) : (
                     <>
-                      Next Step
+                      Get Free Quotes
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
                 </Button>
+
+                <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Takes less than 60 seconds
+                </p>
               </div>
             )}
 
-            {/* STEP 2: Project Details */}
+            {/* STEP 2: Contact Info */}
             {currentStep === 2 && (
               <div className="space-y-6">
+                <div className="text-center mb-4">
+                  <h2 className="text-xl font-semibold">How should contractors reach you?</h2>
+                  <p className="text-sm text-muted-foreground mt-1">We'll only share this with pros who want to bid on your project</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-base font-medium">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="text-base"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-base font-medium">
+                    Phone Number <span className="text-muted-foreground text-sm">(Optional - faster responses)</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="(555) 123-4567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="text-base"
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep(1)}
+                    className="flex-1"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleStep2Submit}
+                    className="flex-1"
+                    size="lg"
+                  >
+                    Continue
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Project Details */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="text-center mb-4">
+                  <h2 className="text-xl font-semibold">Tell us more about your project</h2>
+                  <p className="text-sm text-muted-foreground mt-1">More details help pros give you accurate quotes</p>
+                </div>
+
                 {detectedCategory && (
                   <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
                     <div className="flex items-center gap-2">
@@ -623,7 +619,6 @@ const PostGig = () => {
                       value={manualCategoryId}
                       onChange={async (categoryId) => {
                         setManualCategoryId(categoryId);
-                        // Find category name for display
                         const { data: category } = await supabase
                           .from("categories")
                           .select("id, name, parent_category_id")
@@ -773,14 +768,14 @@ const PostGig = () => {
                 <div className="flex gap-4">
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentStep(1)}
+                    onClick={() => setCurrentStep(2)}
                     className="flex-1"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
                   <Button
-                    onClick={handleStep2Submit}
+                    onClick={handleStep3Submit}
                     disabled={generatingKeywords}
                     className="flex-1"
                   >
@@ -800,9 +795,14 @@ const PostGig = () => {
               </div>
             )}
 
-            {/* STEP 3: Keywords & Submit */}
-            {currentStep === 3 && (
+            {/* STEP 4: Keywords & Submit */}
+            {currentStep === 4 && !showPreview && (
               <div className="space-y-6">
+                <div className="text-center mb-4">
+                  <h2 className="text-xl font-semibold">Almost done!</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Review keywords to match you with the right pros</p>
+                </div>
+
                 <div>
                   <h3 className="text-lg font-semibold mb-4">AI-Suggested Keywords</h3>
                   {suggestedKeywords.length > 0 ? (
@@ -989,7 +989,7 @@ const PostGig = () => {
                 <div className="flex gap-4">
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentStep(2)}
+                    onClick={() => setCurrentStep(3)}
                     className="flex-1"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -1067,7 +1067,7 @@ const PostGig = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-sm text-muted-foreground mb-1">Contact Phone</h3>
-                        <p className="text-sm">{phone}</p>
+                        <p className="text-sm">{phone || "Not provided"}</p>
                       </div>
                     </div>
 
