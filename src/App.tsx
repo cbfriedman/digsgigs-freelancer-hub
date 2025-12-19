@@ -67,6 +67,8 @@ import KeywordSummary from "./pages/KeywordSummary";
 import GigConfirmed from "./pages/GigConfirmed";
 import LogoGeneratorPage from "./pages/LogoGeneratorPage";
 import BrandAssets from "./pages/BrandAssets";
+import GetFreeQuote from "./pages/GetFreeQuote";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
@@ -323,6 +325,14 @@ const router = createBrowserRouter([
   {
     path: "/logo-generator",
     element: <LogoGeneratorPage />,
+  },
+  {
+    path: "/get-free-quote",
+    element: <GetFreeQuote />,
+  },
+  {
+    path: "/unsubscribe",
+    element: <Unsubscribe />,
   },
       {
         path: "*",
