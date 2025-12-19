@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { Shield, Phone, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 
 // TCPA-compliant consent text - DO NOT MODIFY without legal review
 const CONSENT_TEXT = `By checking this box and clicking "Get My Free Quote", I expressly consent to receive telemarketing calls and text messages, including calls made using an automatic telephone dialing system or an artificial or prerecorded voice, from DigsandGigs and its partners at the telephone number I provided above. I understand that my consent is not a condition of purchase. Message and data rates may apply. I can opt out at any time by replying STOP or by contacting us at support@digsandgigs.com.`;
@@ -19,6 +20,7 @@ const CONSENT_VERSION = "1.0";
 export default function GetFreeQuote() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { trackEvent } = useFacebookPixel();
   
   const [formData, setFormData] = useState({
     fullName: "",
@@ -32,11 +34,24 @@ export default function GetFreeQuote() {
   const [verificationCode, setVerificationCode] = useState("");
   const [consentRecordId, setConsentRecordId] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [hasTrackedViewContent, setHasTrackedViewContent] = useState(false);
 
   // Capture UTM parameters
   const utmSource = searchParams.get("utm_source");
   const utmMedium = searchParams.get("utm_medium");
   const utmCampaign = searchParams.get("utm_campaign");
+
+  // Track ViewContent when user starts interacting with form
+  useEffect(() => {
+    if (!hasTrackedViewContent && (formData.fullName || formData.phone)) {
+      trackEvent('ViewContent', {
+        content_name: 'Free Quote Form',
+        content_category: utmCampaign || 'organic',
+        content_type: 'lead_form',
+      });
+      setHasTrackedViewContent(true);
+    }
+  }, [formData.fullName, formData.phone, hasTrackedViewContent, trackEvent, utmCampaign]);
 
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, "");
@@ -132,6 +147,14 @@ export default function GetFreeQuote() {
       });
 
       if (error) throw error;
+
+      // Track Lead conversion on successful SMS verification
+      trackEvent('Lead', {
+        content_name: 'PEWC Consent Verified',
+        content_category: utmCampaign || 'organic',
+        value: 25.00, // Estimated lead value for optimization
+        currency: 'USD',
+      });
 
       toast({
         title: "Phone Verified!",
