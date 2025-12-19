@@ -429,6 +429,18 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Tax Law Attorney',
       'tax law attorney',
       
+      // Tax Relief Services
+      'Tax Relief',
+      'Tax Relief Services',
+      'IRS Tax Relief',
+      'Tax Debt Relief',
+      'Back Taxes Help',
+      'Offer in Compromise',
+      'Tax Lien Removal',
+      'Tax Levy Release',
+      'IRS Debt Settlement',
+      'Tax Penalty Abatement',
+      
       // Real Estate
       'Real Estate',
       'Real Estate Agent',
@@ -1044,6 +1056,14 @@ export const INDUSTRY_GROUPS: IndustryGroup[] = [
       { name: "accounting", value: "high-value", indicator: "HV" },
       { name: "tax preparation", value: "high-value", indicator: "HV" },
       { name: "bookkeeping", value: "mid-value", indicator: "MV" },
+      { name: "credit repair", value: "high-value", indicator: "HV" },
+      { name: "credit repair services", value: "high-value", indicator: "HV" },
+      { name: "irs tax relief", value: "high-value", indicator: "HV" },
+      { name: "tax debt relief", value: "high-value", indicator: "HV" },
+      { name: "back taxes help", value: "high-value", indicator: "HV" },
+      { name: "offer in compromise", value: "high-value", indicator: "HV" },
+      { name: "tax lien removal", value: "high-value", indicator: "HV" },
+      { name: "tax levy release", value: "high-value", indicator: "HV" },
     ]
   },
   {
