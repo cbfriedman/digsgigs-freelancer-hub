@@ -14,6 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_call_logs: {
+        Row: {
+          ai_agent_id: string | null
+          ai_agent_version: string | null
+          appointment_datetime: string | null
+          appointment_scheduled: boolean | null
+          call_connected_at: string | null
+          call_duration_seconds: number | null
+          call_ended_at: string | null
+          call_initiated_at: string
+          call_outcome: string | null
+          consent_record_id: string
+          conversation_id: string | null
+          created_at: string
+          dnc_scrub_id: string | null
+          gig_created: boolean | null
+          gig_id: string | null
+          id: string
+          lead_qualified: boolean | null
+          opted_out_during_call: boolean | null
+          recipient_local_time: string | null
+          recipient_timezone: string | null
+          recording_storage_path: string | null
+          recording_url: string | null
+          telemarketer_id: string | null
+          timezone_compliant: boolean
+          transcription: string | null
+        }
+        Insert: {
+          ai_agent_id?: string | null
+          ai_agent_version?: string | null
+          appointment_datetime?: string | null
+          appointment_scheduled?: boolean | null
+          call_connected_at?: string | null
+          call_duration_seconds?: number | null
+          call_ended_at?: string | null
+          call_initiated_at?: string
+          call_outcome?: string | null
+          consent_record_id: string
+          conversation_id?: string | null
+          created_at?: string
+          dnc_scrub_id?: string | null
+          gig_created?: boolean | null
+          gig_id?: string | null
+          id?: string
+          lead_qualified?: boolean | null
+          opted_out_during_call?: boolean | null
+          recipient_local_time?: string | null
+          recipient_timezone?: string | null
+          recording_storage_path?: string | null
+          recording_url?: string | null
+          telemarketer_id?: string | null
+          timezone_compliant?: boolean
+          transcription?: string | null
+        }
+        Update: {
+          ai_agent_id?: string | null
+          ai_agent_version?: string | null
+          appointment_datetime?: string | null
+          appointment_scheduled?: boolean | null
+          call_connected_at?: string | null
+          call_duration_seconds?: number | null
+          call_ended_at?: string | null
+          call_initiated_at?: string
+          call_outcome?: string | null
+          consent_record_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          dnc_scrub_id?: string | null
+          gig_created?: boolean | null
+          gig_id?: string | null
+          id?: string
+          lead_qualified?: boolean | null
+          opted_out_during_call?: boolean | null
+          recipient_local_time?: string | null
+          recipient_timezone?: string | null
+          recording_storage_path?: string | null
+          recording_url?: string | null
+          telemarketer_id?: string | null
+          timezone_compliant?: boolean
+          transcription?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_logs_consent_record_id_fkey"
+            columns: ["consent_record_id"]
+            isOneToOne: false
+            referencedRelation: "consent_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_dnc_scrub_id_fkey"
+            columns: ["dnc_scrub_id"]
+            isOneToOne: false
+            referencedRelation: "dnc_scrub_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bids: {
         Row: {
           amount: number
@@ -326,6 +439,86 @@ export type Database = {
         }
         Relationships: []
       }
+      callable_leads_queue: {
+        Row: {
+          attempt_count: number | null
+          consent_record_id: string
+          created_at: string
+          dnc_scrub_id: string
+          id: string
+          last_attempt_at: string | null
+          last_call_log_id: string | null
+          max_attempts: number | null
+          next_attempt_at: string | null
+          priority: number | null
+          scheduled_call_time: string | null
+          status: string
+          telemarketer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number | null
+          consent_record_id: string
+          created_at?: string
+          dnc_scrub_id: string
+          id?: string
+          last_attempt_at?: string | null
+          last_call_log_id?: string | null
+          max_attempts?: number | null
+          next_attempt_at?: string | null
+          priority?: number | null
+          scheduled_call_time?: string | null
+          status?: string
+          telemarketer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number | null
+          consent_record_id?: string
+          created_at?: string
+          dnc_scrub_id?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_call_log_id?: string | null
+          max_attempts?: number | null
+          next_attempt_at?: string | null
+          priority?: number | null
+          scheduled_call_time?: string | null
+          status?: string
+          telemarketer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "callable_leads_queue_consent_record_id_fkey"
+            columns: ["consent_record_id"]
+            isOneToOne: false
+            referencedRelation: "consent_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "callable_leads_queue_dnc_scrub_id_fkey"
+            columns: ["dnc_scrub_id"]
+            isOneToOne: false
+            referencedRelation: "dnc_scrub_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "callable_leads_queue_last_call_log_id_fkey"
+            columns: ["last_call_log_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "callable_leads_queue_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -384,6 +577,98 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      consent_records: {
+        Row: {
+          consent_given_at: string
+          consent_revoked: boolean | null
+          consent_text: string
+          consent_version: string
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          ip_address: string
+          page_url: string
+          phone: string
+          phone_hash: string | null
+          property_address: string | null
+          raw_data_source: string | null
+          revocation_method: string | null
+          revoked_at: string | null
+          sms_verification_code: string | null
+          sms_verified: boolean | null
+          sms_verified_at: string | null
+          telemarketer_id: string | null
+          updated_at: string
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          consent_given_at?: string
+          consent_revoked?: boolean | null
+          consent_text: string
+          consent_version?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          ip_address: string
+          page_url: string
+          phone: string
+          phone_hash?: string | null
+          property_address?: string | null
+          raw_data_source?: string | null
+          revocation_method?: string | null
+          revoked_at?: string | null
+          sms_verification_code?: string | null
+          sms_verified?: boolean | null
+          sms_verified_at?: string | null
+          telemarketer_id?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          consent_given_at?: string
+          consent_revoked?: boolean | null
+          consent_text?: string
+          consent_version?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          ip_address?: string
+          page_url?: string
+          phone?: string
+          phone_hash?: string | null
+          property_address?: string | null
+          raw_data_source?: string | null
+          revocation_method?: string | null
+          revoked_at?: string | null
+          sms_verification_code?: string | null
+          sms_verified?: boolean | null
+          sms_verified_at?: string | null
+          telemarketer_id?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_records_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversations: {
         Row: {
@@ -816,6 +1101,74 @@ export type Database = {
             columns: ["profession_id"]
             isOneToOne: false
             referencedRelation: "digger_professions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dnc_scrub_results: {
+        Row: {
+          block_reason: string | null
+          callable_until: string | null
+          consent_record_id: string
+          created_at: string
+          federal_dnc_checked_at: string | null
+          federal_dnc_listed: boolean | null
+          id: string
+          internal_dnc_listed: boolean | null
+          is_callable: boolean | null
+          phone: string
+          rnd_checked_at: string | null
+          rnd_disconnect_date: string | null
+          rnd_reassigned: boolean | null
+          state_dnc_checked_at: string | null
+          state_dnc_listed: boolean | null
+          state_dnc_states_checked: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          block_reason?: string | null
+          callable_until?: string | null
+          consent_record_id: string
+          created_at?: string
+          federal_dnc_checked_at?: string | null
+          federal_dnc_listed?: boolean | null
+          id?: string
+          internal_dnc_listed?: boolean | null
+          is_callable?: boolean | null
+          phone: string
+          rnd_checked_at?: string | null
+          rnd_disconnect_date?: string | null
+          rnd_reassigned?: boolean | null
+          state_dnc_checked_at?: string | null
+          state_dnc_listed?: boolean | null
+          state_dnc_states_checked?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          block_reason?: string | null
+          callable_until?: string | null
+          consent_record_id?: string
+          created_at?: string
+          federal_dnc_checked_at?: string | null
+          federal_dnc_listed?: boolean | null
+          id?: string
+          internal_dnc_listed?: boolean | null
+          is_callable?: boolean | null
+          phone?: string
+          rnd_checked_at?: string | null
+          rnd_disconnect_date?: string | null
+          rnd_reassigned?: boolean | null
+          state_dnc_checked_at?: string | null
+          state_dnc_listed?: boolean | null
+          state_dnc_states_checked?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dnc_scrub_results_consent_record_id_fkey"
+            columns: ["consent_record_id"]
+            isOneToOne: false
+            referencedRelation: "consent_records"
             referencedColumns: ["id"]
           },
         ]
@@ -1264,6 +1617,44 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_dnc_list: {
+        Row: {
+          added_at: string
+          added_reason: string
+          consent_record_id: string | null
+          id: string
+          phone: string
+          phone_hash: string | null
+          source: string | null
+        }
+        Insert: {
+          added_at?: string
+          added_reason: string
+          consent_record_id?: string | null
+          id?: string
+          phone: string
+          phone_hash?: string | null
+          source?: string | null
+        }
+        Update: {
+          added_at?: string
+          added_reason?: string
+          consent_record_id?: string | null
+          id?: string
+          phone?: string
+          phone_hash?: string | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_dnc_list_consent_record_id_fkey"
+            columns: ["consent_record_id"]
+            isOneToOne: false
+            referencedRelation: "consent_records"
             referencedColumns: ["id"]
           },
         ]
