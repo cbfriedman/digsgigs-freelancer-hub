@@ -171,6 +171,10 @@ const router = createBrowserRouter([
     element: <PostGig />,  // No auth required - Craigslist model
   },
   {
+    path: "/get-free-quote",
+    element: <GetFreeQuote />,  // PEWC landing page - no auth required
+  },
+  {
     path: "/my-gigs",
     element: <ProtectedRoute><MyGigs /></ProtectedRoute>,
   },
