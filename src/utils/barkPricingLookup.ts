@@ -77,6 +77,18 @@ export const BARK_PRICING_DATABASE: BarkPricingData[] = [
   { keyword: "tax preparation", barkCredits: 8, barkPrice: 17.60, category: "Financial Services", valueIndicator: "high-value" },
   { keyword: "bookkeeping", barkCredits: 7, barkPrice: 15.40, category: "Financial Services", valueIndicator: "mid-value" },
   
+  // Credit Repair - High-value financial services
+  { keyword: "credit repair", barkCredits: 14, barkPrice: 30.80, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "credit repair services", barkCredits: 15, barkPrice: 33.00, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "credit repair company", barkCredits: 14, barkPrice: 30.80, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "credit repair specialist", barkCredits: 13, barkPrice: 28.60, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "credit restoration", barkCredits: 13, barkPrice: 28.60, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "fix my credit", barkCredits: 12, barkPrice: 26.40, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "credit score repair", barkCredits: 12, barkPrice: 26.40, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "bad credit repair", barkCredits: 11, barkPrice: 24.20, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "credit dispute services", barkCredits: 10, barkPrice: 22.00, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "credit counseling", barkCredits: 9, barkPrice: 19.80, category: "Financial Services", valueIndicator: "high-value" },
+  
   { keyword: "commercial real estate", barkCredits: 12, barkPrice: 26.40, category: "Real Estate", valueIndicator: "high-value" },
   { keyword: "real estate agent", barkCredits: 10, barkPrice: 22.00, category: "Real Estate", valueIndicator: "high-value" },
   { keyword: "homes for sale", barkCredits: 10, barkPrice: 22.00, category: "Real Estate", valueIndicator: "high-value" },

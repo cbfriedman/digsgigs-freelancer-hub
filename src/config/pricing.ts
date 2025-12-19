@@ -278,7 +278,6 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       
       // Financial Services - Mid Level
       'Bookkeeping',
-      'Credit Repair',
       'Debt Consolidation',
       'Payroll Services',
       
@@ -403,6 +402,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Insurance Broker',
       'Life Insurance',
       'Health Insurance',
+      'Credit Repair',
+      'Credit Repair Services',
+      'Credit Restoration',
       'Financial Planning',
       'Investment Advisory',
       'Wealth Management',
