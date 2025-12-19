@@ -1,14 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleOptionsRequest } from "../_shared/cors.ts";
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleOptionsRequest(origin);
   }
 
   try {
@@ -18,7 +16,15 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({ 
+          error: "OPENAI_API_KEY is not configured. Please add it to Supabase Edge Function secrets." 
+        }),
+        {
+          status: 500,
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Initialize Supabase client
@@ -108,26 +114,35 @@ Be friendly, concise, and helpful. Guide users to the right pages for detailed i
           JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
           {
             status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+          }
+        );
+      }
+      if (response.status === 401) {
+        return new Response(
+          JSON.stringify({ error: "OpenAI API key is invalid. Please check your OPENAI_API_KEY configuration." }),
+          {
+            status: 401,
+            headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
           }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Payment required, please add funds to your workspace." }),
+          JSON.stringify({ error: "Payment required, please add funds to your OpenAI account." }),
           {
             status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
           }
         );
       }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("OpenAI API error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: "AI gateway error" }),
+        JSON.stringify({ error: `OpenAI API error: ${response.status} ${response.statusText}` }),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
         }
       );
     }
@@ -183,17 +198,19 @@ Be friendly, concise, and helpful. Guide users to the right pages for detailed i
     });
 
     return new Response(stream, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...getCorsHeaders(origin), "Content-Type": "text/event-stream" },
     });
   } catch (error) {
     console.error("Chat bot error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error" 
+        error: errorMessage,
+        details: error instanceof Error ? error.stack : undefined
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
       }
     );
   }

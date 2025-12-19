@@ -134,7 +134,9 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
       // Use session token for authenticated requests, fallback to anon key for public access
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      const CHAT_URL = `https://ibyhvkfrbdwrnxutnkdy.supabase.co/functions/v1/chat-bot`;
+      // Use environment variable or fallback to match client.ts pattern
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ibyhvkfrbdwrnxutnkdy.supabase.co';
+      const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-bot`;
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -149,6 +151,16 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
       });
 
       if (!response.ok) {
+        // Try to parse error message from response
+        let errorMessage = "Failed to send message. Please try again.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+
         if (response.status === 429) {
           toast({
             title: "Rate limit exceeded",
@@ -157,15 +169,30 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
           });
           return;
         }
-        if (response.status === 402) {
+        if (response.status === 401) {
           toast({
-            title: "Service unavailable",
-            description: "Please contact support.",
+            title: "Configuration Error",
+            description: errorMessage || "OpenAI API key is not configured. Please contact support.",
             variant: "destructive",
           });
           return;
         }
-        throw new Error("Failed to start chat stream");
+        if (response.status === 402) {
+          toast({
+            title: "Payment Required",
+            description: errorMessage || "Please add funds to your OpenAI account.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // For other errors, show the specific error message
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
       }
 
       if (!response.body) throw new Error("No response body");
@@ -223,11 +250,24 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
       }
     } catch (error) {
       console.error("Chat error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Failed to send message. Please try again.";
+      
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        toast({
+          title: "Network Error",
+          description: "Unable to connect to the chat service. Please check your internet connection.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
