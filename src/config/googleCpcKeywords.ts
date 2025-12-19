@@ -277,6 +277,33 @@ export const GOOGLE_CPC_KEYWORDS: IndustryCpcData[] = [
       { keyword: 'business credit card', cpc: 85, searchVolume: 74000, competitionLevel: 'medium' },
     ],
   },
+  {
+    industry: 'Tax Relief Services',
+    category: 'high-value',
+    averageCpc: 200,
+    keywords: [
+      { keyword: 'IRS tax debt relief program', cpc: 320, searchVolume: 4400, competitionLevel: 'high' },
+      { keyword: 'tax debt relief', cpc: 285, searchVolume: 8100, competitionLevel: 'high' },
+      { keyword: 'IRS tax relief', cpc: 265, searchVolume: 12100, competitionLevel: 'high' },
+      { keyword: 'offer in compromise', cpc: 245, searchVolume: 9900, competitionLevel: 'high' },
+      { keyword: 'tax debt settlement', cpc: 225, searchVolume: 6600, competitionLevel: 'high' },
+      { keyword: 'IRS debt help', cpc: 205, searchVolume: 5400, competitionLevel: 'high' },
+      { keyword: 'back taxes help', cpc: 195, searchVolume: 4400, competitionLevel: 'high' },
+      { keyword: 'tax lien attorney', cpc: 185, searchVolume: 3600, competitionLevel: 'high' },
+      { keyword: 'tax levy help', cpc: 175, searchVolume: 2900, competitionLevel: 'high' },
+      { keyword: 'IRS wage garnishment relief', cpc: 165, searchVolume: 2400, competitionLevel: 'high' },
+      { keyword: 'IRS payment plan help', cpc: 155, searchVolume: 6600, competitionLevel: 'high' },
+      { keyword: 'tax penalty abatement', cpc: 145, searchVolume: 3600, competitionLevel: 'high' },
+      { keyword: 'unfiled tax returns help', cpc: 135, searchVolume: 2900, competitionLevel: 'high' },
+      { keyword: 'IRS installment agreement', cpc: 125, searchVolume: 4400, competitionLevel: 'high' },
+      { keyword: 'innocent spouse relief', cpc: 115, searchVolume: 2400, competitionLevel: 'high' },
+      { keyword: 'IRS audit representation', cpc: 105, searchVolume: 3600, competitionLevel: 'medium' },
+      { keyword: 'tax resolution services', cpc: 95, searchVolume: 2900, competitionLevel: 'medium' },
+      { keyword: 'IRS fresh start program', cpc: 185, searchVolume: 5400, competitionLevel: 'high' },
+      { keyword: 'currently not collectible status', cpc: 145, searchVolume: 1900, competitionLevel: 'medium' },
+      { keyword: 'tax attorney near me', cpc: 225, searchVolume: 8100, competitionLevel: 'high' },
+    ],
+  },
 
   // HOME SERVICES - HVAC & PLUMBING
   {

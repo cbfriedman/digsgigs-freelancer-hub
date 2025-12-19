@@ -89,6 +89,20 @@ export const BARK_PRICING_DATABASE: BarkPricingData[] = [
   { keyword: "credit dispute services", barkCredits: 10, barkPrice: 22.00, category: "Financial Services", valueIndicator: "high-value" },
   { keyword: "credit counseling", barkCredits: 9, barkPrice: 19.80, category: "Financial Services", valueIndicator: "high-value" },
   
+  // Tax Relief - High-value financial services
+  { keyword: "irs tax relief", barkCredits: 16, barkPrice: 35.20, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "tax debt relief", barkCredits: 15, barkPrice: 33.00, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "tax debt help", barkCredits: 14, barkPrice: 30.80, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "back taxes help", barkCredits: 13, barkPrice: 28.60, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "offer in compromise", barkCredits: 15, barkPrice: 33.00, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "irs debt settlement", barkCredits: 14, barkPrice: 30.80, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "tax lien removal", barkCredits: 13, barkPrice: 28.60, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "tax levy release", barkCredits: 13, barkPrice: 28.60, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "irs payment plan", barkCredits: 11, barkPrice: 24.20, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "unfiled tax returns help", barkCredits: 12, barkPrice: 26.40, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "irs wage garnishment help", barkCredits: 13, barkPrice: 28.60, category: "Financial Services", valueIndicator: "high-value" },
+  { keyword: "tax penalty abatement", barkCredits: 12, barkPrice: 26.40, category: "Financial Services", valueIndicator: "high-value" },
+  
   { keyword: "commercial real estate", barkCredits: 12, barkPrice: 26.40, category: "Real Estate", valueIndicator: "high-value" },
   { keyword: "real estate agent", barkCredits: 10, barkPrice: 22.00, category: "Real Estate", valueIndicator: "high-value" },
   { keyword: "homes for sale", barkCredits: 10, barkPrice: 22.00, category: "Real Estate", valueIndicator: "high-value" },
