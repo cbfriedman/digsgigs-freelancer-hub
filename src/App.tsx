@@ -337,21 +337,21 @@ const router = createBrowserRouter([
     element: <GetFreeQuote />,
   },
   {
-338:     path: "/unsubscribe",
-339:     element: <Unsubscribe />,
-340:   },
-341:   {
-342:     path: "/services/:service",
-343:     element: <ServiceIndexPage />,
-344:   },
-345:   {
-346:     path: "/services/:service/:city",
-347:     element: <ServiceLocationPage />,
-348:   },
-349:       {
-350:         path: "*",
-351:         element: <NotFound />,
-352:       },
+    path: "/unsubscribe",
+    element: <Unsubscribe />,
+  },
+  {
+    path: "/services/:service",
+    element: <ServiceIndexPage />,
+  },
+  {
+    path: "/services/:service/:city",
+    element: <ServiceLocationPage />,
+  },
+  {
+    path: "*",
+    element: <NotFound />,
+  },
     ],
   },
 ]);
