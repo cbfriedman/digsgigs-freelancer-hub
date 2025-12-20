@@ -549,7 +549,7 @@ const Index = () => {
                 Leads That Actually <span className="text-primary">Convert</span>
               </h3>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Our leads cost up to <span className="font-bold text-foreground">60% less</span> than Google Ads with <span className="font-bold text-foreground">3x higher</span> conversion rates
+                Pay only for <span className="font-bold text-foreground">real leads</span> — no wasted clicks, no subscription fees, just <span className="font-bold text-foreground">transparent pricing</span>
               </p>
             </div>
 
@@ -571,10 +571,10 @@ const Index = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                     <TrendingUp className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="text-3xl font-bold text-primary">40%</div>
+                  <div className="text-3xl font-bold text-primary">10%+</div>
                 </div>
-                <div className="text-sm text-muted-foreground">Average conversion rate of exclusive lead</div>
-                <div className="text-xs text-muted-foreground mt-1">vs. 7% PPC average</div>
+                <div className="text-sm text-muted-foreground">Confirmed lead conversion rate</div>
+                <div className="text-xs text-muted-foreground mt-1">Phone-verified contacts</div>
               </div>
 
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
