@@ -80,9 +80,11 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
   ],
   "Construction & Home Services": [
     "General Contracting",
+    "Architecture",
     "Artificial Lawn",
     "Carpentry",
     "Ceiling Tile Installation",
+    "Civil Engineering",
     "Concrete & Finishing",
     "Construction Management",
     "Drywall Installation",
