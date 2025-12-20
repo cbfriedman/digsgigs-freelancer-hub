@@ -140,7 +140,7 @@ serve(async (req) => {
             "Authorization": `Bearer ${resendApiKey}`,
           },
           body: JSON.stringify({
-            from: "DigsandGigs <noreply@digsandgigs.com>",
+            from: "Digs and Gigs <noreply@digsandgigs.net>",
             to: [email],
             subject: "Your Verification Code",
             html: `
