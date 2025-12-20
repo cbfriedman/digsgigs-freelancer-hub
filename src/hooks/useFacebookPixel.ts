@@ -11,32 +11,40 @@ const FB_PIXEL_ID = import.meta.env.VITE_FB_PIXEL_ID;
 
 export const useFacebookPixel = () => {
   useEffect(() => {
-    if (!FB_PIXEL_ID) {
-      console.warn('Facebook Pixel ID not configured');
-      return;
-    }
+    try {
+      if (!FB_PIXEL_ID) {
+        // Silently skip - no warning needed in production
+        return;
+      }
 
-    // Initialize Facebook Pixel
-    if (!window.fbq) {
-      const n = (window.fbq = function (...args: any[]) {
-        n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args);
-      } as any);
-      
-      if (!window._fbq) window._fbq = n;
-      n.push = n;
-      n.loaded = true;
-      n.version = '2.0';
-      n.queue = [];
+      // Initialize Facebook Pixel
+      if (!window.fbq) {
+        const n = (window.fbq = function (...args: any[]) {
+          if (n.callMethod) {
+            n.callMethod.apply(n, args);
+          } else {
+            n.queue.push(args);
+          }
+        } as any);
+        
+        if (!window._fbq) window._fbq = n;
+        n.push = n;
+        n.loaded = true;
+        n.version = '2.0';
+        n.queue = [];
 
-      // Load the FB Pixel script
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = 'https://connect.facebook.net/en_US/fbevents.js';
-      document.head.appendChild(script);
+        // Load the FB Pixel script
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+        document.head.appendChild(script);
 
-      // Initialize with pixel ID
-      window.fbq('init', FB_PIXEL_ID);
-      window.fbq('track', 'PageView');
+        // Initialize with pixel ID
+        window.fbq('init', FB_PIXEL_ID);
+        window.fbq('track', 'PageView');
+      }
+    } catch (error) {
+      console.error('Facebook Pixel initialization error:', error);
     }
   }, []);
 
