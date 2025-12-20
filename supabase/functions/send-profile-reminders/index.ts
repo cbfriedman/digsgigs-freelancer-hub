@@ -253,7 +253,7 @@ const handler = async (req: Request): Promise<Response> => {
                   </p>
                 </div>
                 <div class="footer">
-                  <p>Digsandgiggs - Where Talent Meets Opportunity</p>
+                  <p>Digs and Gigs - Where Talent Meets Opportunity</p>
                   <p>You're receiving this because you have an incomplete digger profile.</p>
                 </div>
               </div>
@@ -262,9 +262,9 @@ const handler = async (req: Request): Promise<Response> => {
         `;
 
         const emailResponse = await resend.emails.send({
-          from: "Digsandgigs <noreply@digsandgigs.net>",
+          from: "Digs and Gigs <noreply@digsandgigs.net>",
           to: [email],
-          subject: emailSubject,
+          subject: `${emailSubject} | Digs and Gigs`,
           html: emailHtml,
         });
 

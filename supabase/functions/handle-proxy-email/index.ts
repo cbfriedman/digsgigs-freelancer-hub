@@ -77,10 +77,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Forward the email to the real recipient
     const emailResponse = await resend.emails.send({
-      from: `Digs and Gigs <noreply@digsandgigs.com>`,
+      from: `Digs and Gigs <noreply@digsandgigs.net>`,
       reply_to: senderProxyAddress,
       to: [proxyRecord.real_email],
-      subject: `[DigsandGigs] ${emailData.subject}`,
+      subject: `[Digs and Gigs] ${emailData.subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">

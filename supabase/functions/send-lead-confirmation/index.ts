@@ -96,23 +96,27 @@ serve(async (req) => {
     // Send confirmation based on preference
     if (confirmationMethod === "email" && consumerEmail) {
       const { error: emailError } = await resend.emails.send({
-        from: "FindGig <noreply@resend.dev>",
+        from: "Digs and Gigs <noreply@digsandgigs.net>",
         to: [consumerEmail],
-        subject: "Confirm Your Service Request",
+        subject: "Confirm Your Service Request - Digs and Gigs",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333;">Confirm Your Service Request</h1>
-            <p>Hi ${consumerName},</p>
-            <p>Thank you for submitting your service request: <strong>${gig.title}</strong></p>
-            <p>To confirm and activate your request, please use the following confirmation code:</p>
-            <div style="background: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-              ${confirmationCode}
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="margin: 0;">Confirm Your Service Request</h1>
             </div>
-            <p>Enter this code on the confirmation page to activate your request.</p>
-            <p><strong>Why confirm?</strong> Confirmed leads ensure serious requests and help us connect you with the best professionals.</p>
-            <p>If you didn't submit this request, please ignore this email.</p>
-            <hr style="border: 1px solid #eee; margin: 30px 0;" />
-            <p style="color: #666; font-size: 12px;">FindGig - Connecting you with skilled professionals</p>
+            <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+              <p>Hi ${consumerName},</p>
+              <p>Thank you for submitting your service request: <strong>${gig.title}</strong></p>
+              <p>To confirm and activate your request, please use the following confirmation code:</p>
+              <div style="background: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border-radius: 8px;">
+                ${confirmationCode}
+              </div>
+              <p>Enter this code on the confirmation page to activate your request.</p>
+              <p><strong>Why confirm?</strong> Confirmed leads ensure serious requests and help us connect you with the best professionals.</p>
+              <p>If you didn't submit this request, please ignore this email.</p>
+              <hr style="border: 1px solid #eee; margin: 30px 0;" />
+              <p style="color: #666; font-size: 12px; text-align: center;">© 2025 Digs and Gigs. All rights reserved.<br/>Connecting you with skilled professionals.</p>
+            </div>
           </div>
         `,
       });
@@ -125,7 +129,7 @@ serve(async (req) => {
       console.log("[SEND-LEAD-CONFIRMATION] Confirmation email sent to:", consumerEmail);
     } else if (confirmationMethod === "sms" && gig.consumer_phone) {
       try {
-        const smsMessage = `FindGig: Your confirmation code for "${gig.title}" is: ${confirmationCode}. Enter this code to activate your service request.`;
+        const smsMessage = `Digs and Gigs: Your confirmation code for "${gig.title}" is: ${confirmationCode}. Enter this code to activate your service request.`;
         
         await sendTwilioSMS(gig.consumer_phone, smsMessage);
         
@@ -136,12 +140,16 @@ serve(async (req) => {
         // Fall back to email if SMS fails and email is available
         if (consumerEmail) {
           const { error: emailError } = await resend.emails.send({
-            from: "FindGig <noreply@resend.dev>",
+            from: "Digs and Gigs <noreply@digsandgigs.net>",
             to: [consumerEmail],
-            subject: "Confirm Your Service Request",
+            subject: "Confirm Your Service Request - Digs and Gigs",
             html: `
-              <p>Your confirmation code is: <strong>${confirmationCode}</strong></p>
-              <p>Note: We couldn't deliver your SMS. We've sent this via email instead.</p>
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <p>Your confirmation code is: <strong style="font-size: 24px; letter-spacing: 3px;">${confirmationCode}</strong></p>
+                <p>Note: We couldn't deliver your SMS. We've sent this via email instead.</p>
+                <hr style="border: 1px solid #eee; margin: 20px 0;" />
+                <p style="color: #666; font-size: 12px;">© 2025 Digs and Gigs. All rights reserved.</p>
+              </div>
             `,
           });
 
