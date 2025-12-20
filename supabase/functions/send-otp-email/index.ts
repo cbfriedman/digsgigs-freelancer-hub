@@ -162,19 +162,37 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "Digs and Gigs <noreply@digsandgigs.net>",
         to: [email],
-        subject: "Your Verification Code",
+        subject: "🔐 Your Verification Code - Digs and Gigs",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #4F46E5;">Digs and Gigs</h1>
-            <h2>Email Verification</h2>
-            ${name ? `<p>Hi ${name},</p>` : '<p>Hi there,</p>'}
-            <p>Your verification code is:</p>
-            <div style="background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 20px 0;">
-              ${code}
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="margin: 0; font-size: 24px;">Email Verification</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Digs and Gigs</p>
             </div>
-            <p>This code will expire in 5 minutes.</p>
-            <p>If you didn't request this code, you can safely ignore this email.</p>
-            <p>Best regards,<br>The Digs and Gigs Team</p>
+            
+            <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+              ${name ? `<p style="font-size: 16px; color: #333;">Hi ${name},</p>` : '<p style="font-size: 16px; color: #333;">Hi there,</p>'}
+              
+              <p style="color: #555;">Use the verification code below to complete your sign-in:</p>
+              
+              <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; text-align: center; font-size: 36px; font-weight: bold; letter-spacing: 10px; margin: 25px 0; border-radius: 10px; border: 2px dashed #667eea; color: #333;">
+                ${code}
+              </div>
+              
+              <p style="color: #888; font-size: 14px; text-align: center;">
+                ⏱️ This code expires in <strong>5 minutes</strong>
+              </p>
+              
+              <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+              
+              <p style="color: #888; font-size: 12px; text-align: center;">
+                If you didn't request this code, you can safely ignore this email.
+              </p>
+              
+              <p style="color: #aaa; font-size: 11px; text-align: center; margin-top: 20px;">
+                © 2025 Digs and Gigs. All rights reserved.
+              </p>
+            </div>
           </div>
         `,
       }),

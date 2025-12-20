@@ -152,28 +152,28 @@ function generateDigestEmail(notifications: Notification[], userName: string | n
   }, {} as Record<string, Notification[]>);
 
   const typeLabels: Record<string, string> = {
-    'new_bid': 'New Bids',
-    'bid_status': 'Bid Updates',
-    'new_message': 'New Messages',
-    'keyword_request': 'Keyword Requests',
-    'system': 'System Alerts',
+    'new_bid': '💼 New Bids',
+    'bid_status': '📋 Bid Updates',
+    'new_message': '💬 New Messages',
+    'keyword_request': '🔑 Keyword Requests',
+    'system': '⚙️ System Alerts',
   };
 
   const notificationSections = Object.entries(notificationsByType)
     .map(([type, notifs]) => {
       const typeLabel = typeLabels[type] || 'Notifications';
       const items = notifs.map(n => `
-        <div style="padding: 15px; background-color: #f9f9f9; border-radius: 6px; margin-bottom: 10px;">
+        <div style="padding: 15px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
           <h3 style="margin: 0 0 8px 0; color: #333; font-size: 16px;">${n.title}</h3>
           <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">${n.message}</p>
-          ${n.link ? `<a href="${n.link}" style="color: #4CAF50; text-decoration: none; font-size: 14px;">View Details →</a>` : ''}
+          ${n.link ? `<a href="${n.link}" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: bold;">View Details →</a>` : ''}
           <p style="margin: 8px 0 0 0; color: #999; font-size: 12px;">${new Date(n.created_at).toLocaleDateString()}</p>
         </div>
       `).join('');
 
       return `
         <div style="margin-bottom: 30px;">
-          <h2 style="color: #4CAF50; margin: 0 0 15px 0; font-size: 18px; border-bottom: 2px solid #4CAF50; padding-bottom: 8px;">
+          <h2 style="color: #667eea; margin: 0 0 15px 0; font-size: 18px; border-bottom: 2px solid #667eea; padding-bottom: 8px;">
             ${typeLabel} (${notifs.length})
           </h2>
           ${items}
@@ -182,26 +182,40 @@ function generateDigestEmail(notifications: Notification[], userName: string | n
     }).join('');
 
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h1 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">
-        Your ${frequency === 'daily' ? 'Daily' : 'Weekly'} Notification Summary
-      </h1>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="margin: 0; font-size: 24px;">
+          Your ${frequency === 'daily' ? 'Daily' : 'Weekly'} Digest
+        </h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">Digs and Gigs</p>
+      </div>
       
-      <p style="color: #666; font-size: 14px; margin: 20px 0;">
-        Hi ${userName || 'there'},
-      </p>
-      
-      <p style="color: #666; font-size: 14px; margin-bottom: 30px;">
-        Here's a summary of your notifications from the past ${frequency === 'daily' ? '24 hours' : 'week'}:
-      </p>
-      
-      ${notificationSections}
-      
-      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-        <p style="color: #999; font-size: 12px; margin: 0;">
-          You're receiving this digest because you have email notifications enabled.
-          <br/>
-          To change your notification preferences, visit your account settings.
+      <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+        <p style="color: #333; font-size: 16px; margin: 0 0 10px 0;">
+          Hi ${userName || 'there'},
+        </p>
+        
+        <p style="color: #555; font-size: 14px; margin-bottom: 30px;">
+          Here's a summary of your notifications from the past ${frequency === 'daily' ? '24 hours' : 'week'}:
+        </p>
+        
+        ${notificationSections}
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://digsandgigs.net/notifications" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+            View All Notifications
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+        
+        <p style="color: #888; font-size: 12px; text-align: center;">
+          You're receiving this digest because you have email notifications enabled.<br/>
+          <a href="https://digsandgigs.net/email-preferences" style="color: #667eea;">Manage your notification preferences</a>
+        </p>
+        
+        <p style="color: #aaa; font-size: 11px; text-align: center; margin-top: 20px;">
+          © 2025 Digs and Gigs. All rights reserved.
         </p>
       </div>
     </div>
