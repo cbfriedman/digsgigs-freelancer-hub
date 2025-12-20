@@ -243,7 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p>It only takes a few minutes to complete your profile and start getting more opportunities!</p>
                   
                   <div style="text-align: center;">
-                    <a href="${supabaseUrl.replace('supabase.co', 'lovable.app')}/profile-completion" class="button">
+                    <a href="https://digsandgigs.com/profile-completion" class="button">
                       Complete My Profile Now
                     </a>
                   </div>
