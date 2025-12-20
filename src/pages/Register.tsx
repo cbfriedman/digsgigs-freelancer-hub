@@ -18,6 +18,9 @@ import DiggerRoleForm from "@/components/registration/DiggerRoleForm";
 import GiggerRoleForm from "@/components/registration/GiggerRoleForm";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useUTMTracking } from "@/hooks/useUTMTracking";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 
 // SECURITY: Input validation schemas
 const basicInfoSchema = z.object({
@@ -173,6 +176,11 @@ const Register = () => {
   // Step 3+: Role-specific forms data
   const [roleFormData, setRoleFormData] = useState<RoleFormData>({});
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
+
+  // UTM and campaign tracking
+  const { getCampaignData, clearUTMData } = useUTMTracking();
+  const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
+  const { trackConversion: trackGAConversion, isConfigured: gaConfigured } = useGoogleAdsConversion();
 
   // Handle expired password reset tokens - but delay check to allow Supabase to process token first
   useEffect(() => {
@@ -763,6 +771,42 @@ const Register = () => {
       }
 
       // Telemarketer role removed - feature discontinued
+
+      // Track campaign conversion for signup
+      try {
+        const campaignData = getCampaignData();
+        const conversionType = selectedRoles.has('digger') ? 'digger_registered' : 'signup';
+        
+        // Log to campaign_conversions table
+        await supabase.functions.invoke('log-campaign-event', {
+          body: {
+            conversion_type: conversionType,
+            email,
+            user_id: userId,
+            ...campaignData,
+          },
+        });
+        
+        // Fire Facebook Pixel CompleteRegistration event
+        if (fbConfigured) {
+          trackFBEvent('CompleteRegistration', {
+            content_name: conversionType,
+            value: 1,
+            ...campaignData,
+          });
+        }
+        
+        // Fire Google Ads conversion
+        if (gaConfigured) {
+          trackGAConversion(1);
+        }
+        
+        // Clear UTM data after successful conversion
+        clearUTMData();
+      } catch (trackingError) {
+        // Don't fail registration if tracking fails
+        console.error("Campaign tracking error:", trackingError);
+      }
 
       toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
       

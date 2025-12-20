@@ -519,6 +519,60 @@ export type Database = {
           },
         ]
       }
+      campaign_conversions: {
+        Row: {
+          browser: string | null
+          conversion_type: string
+          created_at: string
+          device_type: string | null
+          email: string | null
+          id: string
+          ip_address: string | null
+          landing_page: string | null
+          referrer: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          browser?: string | null
+          conversion_type: string
+          created_at?: string
+          device_type?: string | null
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          landing_page?: string | null
+          referrer?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          browser?: string | null
+          conversion_type?: string
+          created_at?: string
+          device_type?: string | null
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          landing_page?: string | null
+          referrer?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string

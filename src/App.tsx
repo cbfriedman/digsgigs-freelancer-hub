@@ -75,6 +75,7 @@ import FAQHub from "./pages/FAQHub";
 import FAQCategory from "./pages/FAQCategory";
 import CompareHub from "./pages/CompareHub";
 import CompareDetail from "./pages/CompareDetail";
+import EmailLanding from "./pages/EmailLanding";
 
 const queryClient = new QueryClient();
 
@@ -339,6 +340,10 @@ const router = createBrowserRouter([
   {
     path: "/get-free-quote",
     element: <GetFreeQuote />,
+  },
+  {
+    path: "/email",
+    element: <EmailLanding />,
   },
   {
     path: "/unsubscribe",
