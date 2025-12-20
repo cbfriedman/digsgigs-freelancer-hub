@@ -143,6 +143,7 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
     "Accounting",
     "Bookkeeping",
     "Business Consulting",
+    "Collection Services",
     "Marketing",
     "HR Services",
     "Legal Services",
