@@ -103,7 +103,8 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
     "Construction Manager",
     "Mason",
     "Civil Engineer",
-    "Architect"
+    "Architect",
+    "Handyman"
   ],
   "Medical & Healthcare": [
     "Primary Care",
