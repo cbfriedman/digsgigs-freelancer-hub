@@ -1,7 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@3.0.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const supabase = createClient(supabaseUrl, supabaseKey);
     const { email, name, campaign }: MarketingEmailRequest = await req.json();
 
     console.log('Sending marketing email to:', { email, name, campaign });
@@ -111,6 +115,19 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     console.log("Marketing email sent successfully:", emailResponse);
+
+    // Log to database
+    const { error: logError } = await supabase
+      .from('marketing_email_log')
+      .insert({
+        email,
+        email_type: 'marketing',
+        campaign_name: campaign || 'default'
+      });
+
+    if (logError) {
+      console.error('Failed to log email:', logError);
+    }
 
     return new Response(JSON.stringify({ success: true, emailResponse }), {
       status: 200,

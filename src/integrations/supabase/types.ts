@@ -2171,6 +2171,54 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_email_log: {
+        Row: {
+          campaign_name: string | null
+          created_at: string | null
+          email: string
+          email_type: string
+          id: string
+          reason: string | null
+          sent_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          campaign_name?: string | null
+          created_at?: string | null
+          email: string
+          email_type: string
+          id?: string
+          reason?: string | null
+          sent_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          campaign_name?: string | null
+          created_at?: string | null
+          email?: string
+          email_type?: string
+          id?: string
+          reason?: string | null
+          sent_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_email_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_email_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
