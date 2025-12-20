@@ -331,6 +331,10 @@ const router = createBrowserRouter([
     element: <LogoGeneratorPage />,
   },
   {
+    path: "/get-free-quote",
+    element: <GetFreeQuote />,
+  },
+  {
     path: "/unsubscribe",
     element: <Unsubscribe />,
   },

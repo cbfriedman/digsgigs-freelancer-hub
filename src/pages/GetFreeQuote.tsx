@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Shield, Phone, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Shield, Phone, CheckCircle2 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 
 // TCPA-compliant consent text - DO NOT MODIFY without legal review
 const CONSENT_TEXT = `By checking this box and clicking "Get My Free Quote", I expressly consent to receive telemarketing calls and text messages, including calls made using an automatic telephone dialing system or an artificial or prerecorded voice, from DigsandGigs and its partners at the telephone number I provided above. I understand that my consent is not a condition of purchase. Message and data rates may apply. I can opt out at any time by replying STOP or by contacting us at support@digsandgigs.com.`;
@@ -21,6 +22,7 @@ export default function GetFreeQuote() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { trackEvent } = useFacebookPixel();
+  const { trackConversion: trackGoogleConversion } = useGoogleAdsConversion();
   
   const [formData, setFormData] = useState({
     fullName: "",
@@ -156,6 +158,9 @@ export default function GetFreeQuote() {
         currency: 'USD',
       });
 
+      // Track Google Ads conversion
+      trackGoogleConversion(25.00, 'USD');
+
       toast({
         title: "Phone Verified!",
         description: "Thank you! A specialist will call you soon.",
@@ -175,11 +180,44 @@ export default function GetFreeQuote() {
     }
   };
 
+  // Open Graph optimized image URL
+  const ogImageUrl = "https://digsgigs-freelancer-hub.lovable.app/og-image.jpg";
+
   return (
     <>
       <SEOHead
-        title="Get a Free Quote | DigsandGigs"
-        description="Get a free, no-obligation quote from local professionals. Fast, easy, and completely free."
+        title="Get a Free Quote from Local Pros | DigsandGigs"
+        description="Get a free, no-obligation quote from trusted local professionals in your area. Fast response times, 1000+ verified contractors. 100% free service."
+        canonical="https://digsgigs-freelancer-hub.lovable.app/get-free-quote"
+        ogImage={ogImageUrl}
+        keywords="free quote, local contractors, home services, free estimate, professional services"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "Service",
+          "name": "Free Quote Service",
+          "description": "Get free quotes from local professionals for your home improvement and service needs",
+          "provider": {
+            "@type": "Organization",
+            "name": "DigsandGigs",
+            "url": "https://digsgigs-freelancer-hub.lovable.app"
+          },
+          "areaServed": "United States",
+          "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Professional Services",
+            "itemListElement": [
+              {
+                "@type": "Offer",
+                "itemOffered": {
+                  "@type": "Service",
+                  "name": "Free Quote Request"
+                },
+                "price": "0",
+                "priceCurrency": "USD"
+              }
+            ]
+          }
+        }}
       />
       <Navigation />
       
