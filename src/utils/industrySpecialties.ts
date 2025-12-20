@@ -84,7 +84,7 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
     "Artificial Lawn",
     "Carpentry",
     "Ceiling Tile Installation",
-    "Civil Engineering",
+    "Engineers",
     "Concrete & Finishing",
     "Construction Management",
     "Drywall Installation",
