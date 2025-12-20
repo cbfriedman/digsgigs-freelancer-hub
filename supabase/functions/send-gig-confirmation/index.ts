@@ -42,7 +42,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Digs and Gigs <noreply@digsandgigs.net>",
       to: [email],
-      subject: "Confirm Your Gig Posting - Digs and Gigs",
+      subject: "Almost there! Confirm your project to get matched with pros 🛠️",
       html: `
         <!DOCTYPE html>
         <html>
@@ -127,9 +127,16 @@ const handler = async (req: Request): Promise<Response> => {
                 padding-top: 20px;
                 border-top: 1px solid #e0e0e0;
               }
-              .warning {
-                background: #fff3cd;
-                border-left: 4px solid #ffc107;
+              .tip-box {
+                background: #e8f5e9;
+                border-left: 4px solid #4caf50;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 4px;
+              }
+              .next-steps {
+                background: #fff3e0;
+                border-left: 4px solid #ff9800;
                 padding: 15px;
                 margin: 20px 0;
                 border-radius: 4px;
@@ -138,20 +145,20 @@ const handler = async (req: Request): Promise<Response> => {
           </head>
           <body>
             <div class="header">
-              <h1 style="margin: 0; font-size: 28px;">Confirm Your Gig Posting</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">Digs and Gigs</p>
+              <h1 style="margin: 0; font-size: 28px;">You're One Click Away!</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Let's get you connected with qualified professionals</p>
             </div>
             
             <div class="content">
-              <p>Hi there,</p>
+              <p>Hi there! 👋</p>
               
-              <p>Thank you for posting a gig on Digs and Gigs! Please review the details below and confirm to make your gig live:</p>
+              <p>Thanks for posting your project on Digs and Gigs! We just need you to confirm the details below, and then we'll start matching you with qualified professionals in your area.</p>
               
               <div class="gig-details">
-                <h2 style="margin-top: 0; color: #667eea;">Gig Details</h2>
+                <h2 style="margin-top: 0; color: #667eea;">Your Project Details</h2>
                 
                 <div class="detail-row">
-                  <span class="detail-label">Title:</span>
+                  <span class="detail-label">Project:</span>
                   <span>${gigTitle}</span>
                 </div>
                 
@@ -172,7 +179,7 @@ const handler = async (req: Request): Promise<Response> => {
                 
                 ${keywords.length > 0 ? `
                   <div class="detail-row">
-                    <span class="detail-label">Keywords:</span>
+                    <span class="detail-label">Categories:</span>
                     <div class="keywords">
                       ${keywords.map(k => `<span class="keyword-badge">${k}</span>`).join('')}
                     </div>
@@ -180,23 +187,29 @@ const handler = async (req: Request): Promise<Response> => {
                 ` : ''}
               </div>
               
-              <div class="warning">
-                <strong>⚠️ Important:</strong> By confirming this gig, you agree that the information provided is accurate. Confirmed gigs will be matched with qualified professionals in your area.
-              </div>
-              
               <div style="text-align: center;">
                 <a href="${confirmationUrl}" class="confirm-button">
-                  ✓ Confirm and Post Gig
+                  ✓ Confirm & Get Matched
                 </a>
               </div>
               
-              <p style="font-size: 14px; color: #666; margin-top: 30px;">
-                <strong>What happens next?</strong><br>
-                After you confirm, your gig will be live and matched with qualified professionals who will be able to purchase your lead and contact you with proposals.
-              </p>
+              <div class="next-steps">
+                <strong>📋 What happens next?</strong>
+                <ol style="margin: 10px 0 0 0; padding-left: 20px;">
+                  <li>Click the button above to confirm your project</li>
+                  <li>We'll match you with qualified professionals nearby</li>
+                  <li>Pros will reach out with quotes and availability</li>
+                  <li>Compare options and choose the best fit for you!</li>
+                </ol>
+              </div>
+              
+              <div class="tip-box">
+                <strong>💡 Pro tip:</strong> Respond quickly to professionals who contact you! The best pros book up fast, and quick responses lead to better service and pricing.
+              </div>
               
               <div class="footer">
-                <p>If you didn't create this gig, please ignore this email.</p>
+                <p>Didn't request this? No worries — just ignore this email and nothing will happen.</p>
+                <p>Questions? Reply to this email or visit <a href="https://digsandgigs.net/faq" style="color: #667eea;">our FAQ</a>.</p>
                 <p>© 2025 Digs and Gigs. All rights reserved.</p>
               </div>
             </div>
