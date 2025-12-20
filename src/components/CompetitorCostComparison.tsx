@@ -2,31 +2,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { getLeadCostForIndustry, INDUSTRY_PRICING, getIndustryCategory } from "@/config/pricing";
+import { getLeadCostForIndustry, INDUSTRY_PRICING } from "@/config/pricing";
 import { TrendingDown, Award, DollarSign } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 export default function CompetitorCostComparison() {
   const [leadVolume, setLeadVolume] = useState(30);
   const [selectedIndustry, setSelectedIndustry] = useState('HVAC');
-  const [exclusivity, setExclusivity] = useState<'non-exclusive' | 'exclusive-24h'>('non-exclusive');
 
-  // DigsandGigs costs - industry-specific
-  const digsAndGigsCost = getLeadCostForIndustry(selectedIndustry, exclusivity);
+  // DigsandGigs costs - industry-specific (always non-exclusive)
+  const digsAndGigsCost = getLeadCostForIndustry(selectedIndustry);
 
   const calculateDigsAndGigsCost = (leads: number) => {
     return leads * digsAndGigsCost;
   };
 
-  // Get industry-specific competitor pricing
-  const industryCategory = getIndustryCategory(selectedIndustry);
+  // Get competitor pricing based on industry type
   const getCompetitorLeadCost = (platform: string): number => {
-    // Industry-specific pricing for competitors
-    if (industryCategory === 'mid-value') {
-      return platform === 'HomeAdvisor' ? 60 : platform === 'Angi' ? 55 : 50;
-    } else { // high-value
-      return platform === 'HomeAdvisor' ? 150 : platform === 'Angi' ? 140 : 125;
-    }
+    // Competitor pricing varies by platform
+    return platform === 'HomeAdvisor' ? 75 : platform === 'Angi' ? 65 : 50;
   };
 
   const platforms = [
@@ -36,7 +30,7 @@ export default function CompetitorCostComparison() {
       bgColor: "bg-primary/10",
       borderColor: "border-primary/30",
       cost: calculateDigsAndGigsCost(leadVolume),
-      description: `${exclusivity === 'non-exclusive' ? 'Non-Exclusive' : '24-Hour Exclusive'}`,
+      description: "Simple, transparent pricing",
       badge: "Our Platform",
       badgeColor: "bg-primary text-white"
     },
@@ -109,18 +103,6 @@ export default function CompetitorCostComparison() {
               </Select>
             </div>
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium">Exclusivity:</Label>
-              <Select value={exclusivity} onValueChange={(v) => setExclusivity(v as 'non-exclusive' | 'exclusive-24h')}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="non-exclusive">Non-Exclusive</SelectItem>
-                  <SelectItem value="exclusive-24h">24-Hour Exclusive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium">Lead Volume:</Label>
               <Select value={leadVolume.toString()} onValueChange={(v) => setLeadVolume(parseInt(v))}>
                 <SelectTrigger className="w-[150px]">
@@ -141,7 +123,7 @@ export default function CompetitorCostComparison() {
       <CardContent className="space-y-6">
         {/* Visual Comparison Bars */}
         <div className="space-y-4">
-          {sortedPlatforms.map((platform, index) => {
+          {sortedPlatforms.map((platform) => {
             const savings = platform.cost - lowestCost;
             const widthPercent = (platform.cost / sortedPlatforms[sortedPlatforms.length - 1].cost) * 100;
             const isDigsAndGigs = platform.name === "DigsandGigs";
@@ -273,7 +255,7 @@ export default function CompetitorCostComparison() {
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p><strong>Choose Your Exclusivity:</strong> Pay less for non-exclusive or more for 24-hour exclusive leads</p>
+                  <p><strong>Industry-Specific Pricing:</strong> Pay based on your trade, not one-size-fits-all rates</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
@@ -287,7 +269,7 @@ export default function CompetitorCostComparison() {
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                  <p><strong>Fair 8% Escrow:</strong> Lower than most platforms and protects both parties</p>
+                  <p><strong>Verified Leads:</strong> Phone-verified leads with higher contact rates</p>
                 </div>
               </div>
             </div>
