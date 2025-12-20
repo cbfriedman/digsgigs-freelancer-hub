@@ -356,24 +356,28 @@ export const CategoryBrowserWithDescription = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Category Selection */}
-        <div className="space-y-2">
-          <Label htmlFor="category">Select Industry Category</Label>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger id="category" className="bg-background">
-              <SelectValue placeholder="Choose a category..." />
-            </SelectTrigger>
-            <SelectContent className="bg-background z-50 max-h-[300px] overflow-y-auto">
-              {allCategories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                  {customCategories.some(c => c.name === category) && (
-                    <span className="ml-2 text-xs text-muted-foreground">(Custom)</span>
-                  )}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Category Selection - Horizontal Grid */}
+        <div className="space-y-3">
+          <Label>Select Industry Category</Label>
+          <div className="flex flex-wrap gap-2">
+            {allCategories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
+                  selectedCategory === category
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background hover:bg-muted border-border'
+                }`}
+              >
+                {category}
+                {customCategories.some(c => c.name === category) && (
+                  <span className="ml-1 text-xs opacity-70">(Custom)</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Add Custom Industry Category */}
