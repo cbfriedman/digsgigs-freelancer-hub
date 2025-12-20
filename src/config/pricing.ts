@@ -48,20 +48,31 @@ export interface IndustryGroup {
 export interface IndustryPricing {
   category: IndustryCategory;
   industries: string[];
-  nonExclusive: number;  // Bark price - $0.50
-  semiExclusive: number; // Sold to up to 4 people
-  exclusive24h: number;  // Premium exclusive access
+  nonExclusive: number;  // Standard lead price
+  /** @deprecated - exclusivity removed, all leads are non-exclusive */
+  semiExclusive: number;
+  /** @deprecated - exclusivity removed, all leads are non-exclusive */
+  exclusive24h: number;
 }
 
+/**
+ * @deprecated - Exclusivity tiers removed. All leads are now non-exclusive.
+ * Kept for backward compatibility with existing code.
+ */
 export interface PricingTier {
   id: 'non-exclusive' | 'semi-exclusive' | 'exclusive-24h';
   name: string;
   exclusivityPeriod: string;
   description: string;
+  /** @deprecated - Escrow feature removed */
   escrowFee: string;
+  /** @deprecated - Escrow feature removed */
   escrowFeeValue: number;
+  /** @deprecated - Escrow feature removed */
   escrowProcessingFee: string;
+  /** @deprecated - Escrow feature removed */
   escrowProcessingFeeValue: number;
+  /** @deprecated - Escrow feature removed */
   escrowProcessingMinimum: number;
   priceId: string | null;
   productId: string | null;
@@ -573,51 +584,62 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
   }
 ];
 
-// Volume-based tier thresholds (NO monthly fees, competitive pricing)
-// Exclusivity-based pricing tiers (NO monthly fees)
-// Non-exclusive Unconfirmed: 25% of Google CPC
-// Non-exclusive Confirmed: 30% of Google CPC
-// Semi-exclusive: 50% of Google CPC
-// Exclusive-24h: 90% of Google CPC
+/**
+ * SIMPLIFIED PRICING MODEL - All leads are non-exclusive
+ * Exclusivity and escrow features have been removed for simplicity.
+ * 
+ * Pricing by industry category:
+ * - Low-value: $7.50
+ * - Mid-value: $14.50  
+ * - High-value: $24.50
+ * 
+ * Confirmed leads add a 20% premium.
+ */
+
+/**
+ * @deprecated - Exclusivity tiers removed. All leads are now non-exclusive.
+ * Kept for backward compatibility with existing code.
+ */
 export const PRICING_TIERS: Record<'non-exclusive' | 'semi-exclusive' | 'exclusive-24h', PricingTier> = {
   'non-exclusive': {
     id: 'non-exclusive',
-    name: 'Non-Exclusive',
-    exclusivityPeriod: 'Shared immediately',
-    description: 'Most affordable option - 25% of Google CPC (30% if confirmed), lead shared with other diggers',
-    escrowFee: 'Optional 8% (min $10)',
-    escrowFeeValue: 0.08,
-    escrowProcessingFee: '8%',
-    escrowProcessingFeeValue: 0.08,
-    escrowProcessingMinimum: 10,
-    priceId: null,
-    productId: null,
-    popular: false,
-  },
-  'semi-exclusive': {
-    id: 'semi-exclusive',
-    name: 'Semi-Exclusive',
-    exclusivityPeriod: 'Shared with up to 4 diggers',
-    description: 'Balanced option - Google CPC pricing, shared with up to 3 other diggers',
-    escrowFee: 'Optional 8% (min $10)',
-    escrowFeeValue: 0.08,
-    escrowProcessingFee: '8%',
-    escrowProcessingFeeValue: 0.08,
-    escrowProcessingMinimum: 10,
+    name: 'Standard Lead',
+    exclusivityPeriod: 'Shared with matching diggers',
+    description: 'Industry-specific pricing - leads shared with all matching diggers in your area',
+    escrowFee: 'N/A',
+    escrowFeeValue: 0,
+    escrowProcessingFee: 'N/A',
+    escrowProcessingFeeValue: 0,
+    escrowProcessingMinimum: 0,
     priceId: null,
     productId: null,
     popular: true,
   },
+  // Deprecated tiers - kept for backward compatibility
+  'semi-exclusive': {
+    id: 'semi-exclusive',
+    name: 'Standard Lead',
+    exclusivityPeriod: 'Shared with matching diggers',
+    description: 'Feature discontinued - redirects to non-exclusive',
+    escrowFee: 'N/A',
+    escrowFeeValue: 0,
+    escrowProcessingFee: 'N/A',
+    escrowProcessingFeeValue: 0,
+    escrowProcessingMinimum: 0,
+    priceId: null,
+    productId: null,
+    popular: false,
+  },
   'exclusive-24h': {
     id: 'exclusive-24h',
-    name: '24-Hour Exclusive',
-    exclusivityPeriod: '24 hours exclusive access',
-    description: 'Premium option - 2x Google CPC, exclusive access for 24 hours',
-    escrowFee: 'Optional 8% (min $10)',
-    escrowFeeValue: 0.08,
-    escrowProcessingFee: '8%',
-    escrowProcessingFeeValue: 0.08,
-    escrowProcessingMinimum: 10,
+    name: 'Standard Lead',
+    exclusivityPeriod: 'Shared with matching diggers',
+    description: 'Feature discontinued - redirects to non-exclusive',
+    escrowFee: 'N/A',
+    escrowFeeValue: 0,
+    escrowProcessingFee: 'N/A',
+    escrowProcessingFeeValue: 0,
+    escrowProcessingMinimum: 0,
     priceId: null,
     productId: null,
     popular: false,
