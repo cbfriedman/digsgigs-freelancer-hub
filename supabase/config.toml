@@ -186,3 +186,8 @@ verify_jwt = true
 [functions.revoke-consent]
 verify_jwt = false
 
+[functions.auto-generate-blog]
+verify_jwt = false
+
+[functions.scheduled-blog-generation]
+verify_jwt = false

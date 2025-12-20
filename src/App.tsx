@@ -69,6 +69,8 @@ import LogoGeneratorPage from "./pages/LogoGeneratorPage";
 import BrandAssets from "./pages/BrandAssets";
 import GetFreeQuote from "./pages/GetFreeQuote";
 import Unsubscribe from "./pages/Unsubscribe";
+import ServiceLocationPage from "./pages/ServiceLocationPage";
+import ServiceIndexPage from "./pages/ServiceIndexPage";
 
 const queryClient = new QueryClient();
 
@@ -335,13 +337,21 @@ const router = createBrowserRouter([
     element: <GetFreeQuote />,
   },
   {
-    path: "/unsubscribe",
-    element: <Unsubscribe />,
-  },
-      {
-        path: "*",
-        element: <NotFound />,
-      },
+338:     path: "/unsubscribe",
+339:     element: <Unsubscribe />,
+340:   },
+341:   {
+342:     path: "/services/:service",
+343:     element: <ServiceIndexPage />,
+344:   },
+345:   {
+346:     path: "/services/:service/:city",
+347:     element: <ServiceLocationPage />,
+348:   },
+349:       {
+350:         path: "*",
+351:         element: <NotFound />,
+352:       },
     ],
   },
 ]);
