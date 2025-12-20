@@ -593,8 +593,8 @@ const Index = () => {
             <div className="bg-background/90 backdrop-blur-sm rounded-xl p-6 border border-accent/30 max-w-2xl mx-auto mb-8">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-[200px]">
-                  <div className="text-sm text-muted-foreground mb-1">Real Example: Construction (24hr Exclusive)</div>
-                  <div className="text-2xl font-bold text-primary">$306</div>
+                  <div className="text-sm text-muted-foreground mb-1">Real Example: Construction Lead</div>
+                  <div className="text-2xl font-bold text-primary">$300</div>
                   <div className="text-xs text-muted-foreground">cost per closed deal</div>
                 </div>
                 <div className="text-muted-foreground text-2xl font-light">vs.</div>
