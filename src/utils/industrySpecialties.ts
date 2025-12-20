@@ -63,6 +63,8 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
     "Wealth Management",
     "CPA Services",
     "Bookkeeping",
+    "Business Plan Writing",
+    "Debt Collection Services",
     "Tax Attorney",
     "Accounting Services"
   ],
