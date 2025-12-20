@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Eye, EyeOff, Home, ArrowRight, ArrowLeft, CheckCircle2, Mail, Smartphone, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Home, ArrowRight, ArrowLeft, CheckCircle2, Mail, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import SEOHead from "@/components/SEOHead";
 import { Progress } from "@/components/ui/progress";
@@ -137,7 +137,8 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
-  const [verificationMethod, setVerificationMethod] = useState<'email' | 'sms'>('email');
+  // SMS verification removed - email only
+  const verificationMethod = 'email';
 
   // Step 1.5: Verification
   const [verificationCode, setVerificationCode] = useState(""); // User-entered code
@@ -164,14 +165,8 @@ const Register = () => {
     return false;
   });
   
-  // Initialize signInVerificationMethod from sessionStorage if in OTP flow
-  const [signInVerificationMethod, setSignInVerificationMethod] = useState<'email' | 'sms'>(() => {
-    if (isSignInMode) {
-      const savedMethod = sessionStorage.getItem('signInVerificationMethod') as 'email' | 'sms' | null;
-      return savedMethod || 'email';
-    }
-    return 'email';
-  });
+  // SMS verification removed - email only
+  const signInVerificationMethod = 'email';
   
   const [userPhone, setUserPhone] = useState<string | null>(null); // Store user's phone for sign-in
   const [pendingDiggerVerification, setPendingDiggerVerification] = useState(false); // Track if we're verifying for Digger role
@@ -215,7 +210,6 @@ const Register = () => {
     if (isInOtpFlow) {
       const savedUserId = sessionStorage.getItem('signInUserId');
       const savedEmail = sessionStorage.getItem('signInEmail');
-      const savedMethod = sessionStorage.getItem('signInVerificationMethod') as 'email' | 'sms' | null;
       
       if (savedUserId && savedEmail) {
         // State is already initialized from useState, but ensure flags are set
@@ -227,7 +221,6 @@ const Register = () => {
         setUserId(savedUserId);
         setEmail(savedEmail);
         setSignInOtpSent(true);
-        setSignInVerificationMethod(savedMethod || 'email');
         // OTP flow state restored from sessionStorage
       }
     }
@@ -252,7 +245,6 @@ const Register = () => {
       setFullName("");
       setConfirmPassword("");
       setPhone("");
-      setVerificationMethod('email');
       setVerificationCode("");
       setUserId(null);
       setSelectedRoles(new Set());
@@ -260,7 +252,6 @@ const Register = () => {
       setCurrentRoleIndex(0);
       setOtpSent(false);
       setSignInOtpSent(false);
-      setSignInVerificationMethod('email');
       setUserPhone(null);
     } else if (!isSignInMode) {
       // Reset flag when switching away from sign-in mode
@@ -449,17 +440,10 @@ const Register = () => {
         }
         
         // Check if it's a configuration error
-        if (errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('TWILIO') || errorMessage.includes('not configured')) {
-          errorMessage = `${verificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`;
-          if (verificationMethod === 'sms') {
-            errorMessage += " Twilio credentials (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER) need to be set in Supabase secrets.";
-          }
+        if (errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('not configured')) {
+          errorMessage = "Email service is not configured. Please contact support.";
         } else if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) {
-          if (verificationMethod === 'sms') {
-            errorMessage = "SMS service error. Please ensure Twilio is configured in Supabase secrets, or use email verification instead.";
-          } else {
-            errorMessage = "Server error occurred. Please check that the send-otp function is properly configured with all required secrets.";
-          }
+          errorMessage = "Server error occurred. Please check that the send-otp function is properly configured with all required secrets.";
         }
         
         // Show error with details if available
@@ -474,8 +458,7 @@ const Register = () => {
 
       // OTP sent successfully - move to verification step
       setOtpSent(true);
-      const methodText = verificationMethod === 'email' ? 'email' : 'phone';
-      toast.success(`Verification code sent! Please check your ${methodText}.`);
+      toast.success("Verification code sent! Please check your email.");
       setStep(2); // Move to verification step
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -507,8 +490,7 @@ const Register = () => {
       // Verify OTP code using edge function (checks database)
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
         body: {
-          email: verificationMethod === 'email' ? email : undefined,
-          phone: verificationMethod === 'sms' ? formattedPhone : undefined,
+          email: email,
           code: verificationCode,
         },
       });
@@ -656,8 +638,8 @@ const Register = () => {
       if (error) {
         console.error("Resend OTP error:", error);
         // Check if it's a configuration error
-        if (error.message?.includes('RESEND_API_KEY') || error.message?.includes('TWILIO') || error.message?.includes('not configured')) {
-          toast.error(`${verificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`);
+        if (error.message?.includes('RESEND_API_KEY') || error.message?.includes('not configured')) {
+          toast.error("Email service is not configured. Please contact support.");
         } else {
           toast.error(error.message || "Failed to resend verification code");
         }
@@ -667,8 +649,7 @@ const Register = () => {
 
       // Clear old verification code input
       setVerificationCode("");
-      const methodText = verificationMethod === 'email' ? 'email' : 'phone';
-      toast.success(`Verification code resent! Please check your ${methodText}.`);
+      toast.success("Verification code resent! Please check your email.");
     } catch (error: any) {
       console.error("Resend error:", error);
       toast.error(error.message || "Failed to resend verification code");
@@ -872,12 +853,10 @@ const Register = () => {
       sessionStorage.setItem('signInOtpFlow', 'true');
       sessionStorage.setItem('signInUserId', tempUserId);
       sessionStorage.setItem('signInEmail', email);
-      sessionStorage.setItem('signInVerificationMethod', signInVerificationMethod);
       
       // Set state IMMEDIATELY and synchronously so UI updates before signOut
       setUserId(tempUserId);
       setSignInOtpSent(true);
-      setSignInVerificationMethod(signInVerificationMethod);
       
       // Force a re-render by updating a dummy state if needed
       // The state updates above should trigger a re-render, but we ensure it happens
@@ -885,13 +864,12 @@ const Register = () => {
       // Generate OTP code
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Send OTP via selected method
+      // Send OTP via email
       const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp', {
         body: {
-          email: signInVerificationMethod === 'email' ? email : undefined,
-          phone: signInVerificationMethod === 'sms' && userPhoneNumber ? userPhoneNumber : undefined,
+          email: email,
           code: otpCode,
-          method: signInVerificationMethod,
+          method: 'email',
         },
       });
 
@@ -910,11 +888,8 @@ const Register = () => {
         
         // Sign out on error since we didn't complete verification
         await supabase.auth.signOut();
-        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('TWILIO') || otpError.message?.includes('not configured')) {
-          toast.error(`${signInVerificationMethod === 'email' ? 'Email' : 'SMS'} service is not configured. Please contact support.`);
-        } else if (signInVerificationMethod === 'sms' && !userPhoneNumber) {
-          toast.error("Phone number not found. Please use email verification or update your profile.");
-          setSignInVerificationMethod('email');
+        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
+          toast.error("Email service is not configured. Please contact support.");
         } else {
           toast.error(otpError.message || "Failed to send verification code. Please try again.");
         }
@@ -926,8 +901,7 @@ const Register = () => {
       // We sign out after OTP is sent to prevent premature access
       await supabase.auth.signOut();
       
-      const methodText = signInVerificationMethod === 'email' ? 'email' : 'phone';
-      toast.success(`Verification code sent! Please check your ${methodText}.`);
+      toast.success("Verification code sent! Please check your email.");
       setLoading(false);
     } catch (error: any) {
       console.error("Sign in error caught:", error);
@@ -960,8 +934,7 @@ const Register = () => {
       // Verify OTP code
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
         body: {
-          email: signInVerificationMethod === 'email' ? email : undefined,
-          phone: signInVerificationMethod === 'sms' && userPhone ? userPhone : undefined,
+          email: email,
           code: verificationCode,
         },
       });
@@ -1384,47 +1357,6 @@ const Register = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Verification Method *</Label>
-                      <div className="flex gap-4">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="signin-verify-email"
-                            name="signInVerificationMethod"
-                            value="email"
-                            checked={signInVerificationMethod === 'email'}
-                            onChange={(e) => setSignInVerificationMethod(e.target.value as 'email' | 'sms')}
-                            className="h-4 w-4"
-                            disabled={loading}
-                          />
-                          <Label htmlFor="signin-verify-email" className="cursor-pointer flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
-                            Email
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="signin-verify-sms"
-                            name="signInVerificationMethod"
-                            value="sms"
-                            checked={signInVerificationMethod === 'sms'}
-                            onChange={(e) => setSignInVerificationMethod(e.target.value as 'email' | 'sms')}
-                            className="h-4 w-4"
-                            disabled={loading}
-                          />
-                          <Label htmlFor="signin-verify-sms" className="cursor-pointer flex items-center gap-2">
-                            <Smartphone className="h-4 w-4" />
-                            SMS
-                          </Label>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Choose how you want to receive your verification code
-                      </p>
-                    </div>
-
                     <Button
                       type="submit"
                       className="w-full"
@@ -1438,15 +1370,11 @@ const Register = () => {
                   <>
                     <div className="space-y-4 p-4 border rounded-lg bg-accent/10">
                       <div className="flex items-center gap-2">
-                        {signInVerificationMethod === 'email' ? (
-                          <Mail className="h-5 w-5 text-primary" />
-                        ) : (
-                          <Smartphone className="h-5 w-5 text-primary" />
-                        )}
+                        <Mail className="h-5 w-5 text-primary" />
                         <div>
                           <h4 className="font-medium">Verification Code Sent!</h4>
                           <p className="text-sm text-muted-foreground">
-                            Check your {signInVerificationMethod === 'email' ? 'email' : 'phone'} for the 6-digit code
+                            Check your email for the 6-digit code
                           </p>
                         </div>
                       </div>
@@ -1521,7 +1449,6 @@ const Register = () => {
                       setConfirmPassword("");
                       setFullName("");
                       setPhone("");
-                      setVerificationMethod('email');
                       setVerificationCode("");
                       setUserId(null);
                       setStep(1);
@@ -1657,52 +1584,13 @@ const Register = () => {
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Verification Method *</Label>
-                  <div className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="verify-email"
-                        name="verificationMethod"
-                        value="email"
-                        checked={verificationMethod === 'email'}
-                        onChange={(e) => setVerificationMethod(e.target.value as 'email' | 'sms')}
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor="verify-email" className="cursor-pointer flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        Email
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="verify-sms"
-                        name="verificationMethod"
-                        value="sms"
-                        checked={verificationMethod === 'sms'}
-                        onChange={(e) => setVerificationMethod(e.target.value as 'email' | 'sms')}
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor="verify-sms" className="cursor-pointer flex items-center gap-2">
-                        <Smartphone className="h-4 w-4" />
-                        SMS
-                      </Label>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Choose how you want to receive your verification code
-                  </p>
-                </div>
-
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 p-3 border rounded-lg bg-accent/50">
                     <Mail className="h-4 w-4 text-primary" />
                     <div>
-                      <div className="font-medium">{isFromGigPosting ? "Quick Email Verification" : "Instant Account Creation"}</div>
+                      <div className="font-medium">Email Verification</div>
                       <div className="text-xs text-muted-foreground">
-                        {isFromGigPosting ? "Verify your email to post your gig - no password needed!" : "Your account will be created immediately"}
+                        We'll send a verification code to your email
                       </div>
                     </div>
                   </div>
@@ -1851,7 +1739,6 @@ const Register = () => {
                       setConfirmPassword("");
                       setPhone("");
                       setPassword("");
-                      setVerificationMethod('email');
                       setVerificationCode("");
                       setUserId(null);
                       setStep(1);
