@@ -105,9 +105,9 @@ Deno.serve(async (req) => {
       // Send email
       try {
         await resend.emails.send({
-          from: 'Digsandgigs <noreply@digsandgigs.net>',
+          from: 'Digs and Gigs <noreply@digsandgigs.net>',
           to: profile.email,
-          subject: `Your ${frequency === 'daily' ? 'Daily' : 'Weekly'} Notification Digest`,
+          subject: `Your ${frequency === 'daily' ? 'Daily' : 'Weekly'} Notification Digest - Digs and Gigs`,
           html: emailHtml,
         });
 

@@ -108,23 +108,33 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (gigOwnerEmail) {
         emailResponse = await resend.emails.send({
-          from: "Digsandgigs <noreply@digsandgigs.net>",
+          from: "Digs and Gigs <noreply@digsandgigs.net>",
           to: [gigOwnerEmail],
           subject: `New Bid on Your Gig: ${gig.title}`,
           html: `
-            <h1>New Bid Received!</h1>
-            <p>Great news! You've received a new bid on your gig <strong>${gig.title}</strong>.</p>
-            
-            <h2>Bid Details:</h2>
-            <ul>
-              <li><strong>Digger:</strong> @${digger.handle}</li>
-              <li><strong>Amount:</strong> $${amount.toFixed(2)}</li>
-              <li><strong>Timeline:</strong> ${timeline}</li>
-            </ul>
-            
-            <p>Log in to view the full proposal and accept the bid if you're interested!</p>
-            
-            <p>Best regards,<br>The digsandgigs Team</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="margin: 0;">New Bid Received!</h1>
+              </div>
+              <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+                <p>Great news! You've received a new bid on your gig <strong>${gig.title}</strong>.</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h2 style="margin-top: 0; color: #667eea;">Bid Details:</h2>
+                  <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong>Digger:</strong> @${digger.handle}</li>
+                    <li><strong>Amount:</strong> $${amount.toFixed(2)}</li>
+                    <li><strong>Timeline:</strong> ${timeline}</li>
+                  </ul>
+                </div>
+                
+                <p>Log in to view the full proposal and accept the bid if you're interested!</p>
+                
+                <p>Best regards,<br>The Digs and Gigs Team</p>
+                <hr style="border: 1px solid #eee; margin: 20px 0;" />
+                <p style="color: #666; font-size: 12px; text-align: center;">© 2025 Digs and Gigs. All rights reserved.</p>
+              </div>
+            </div>
           `,
         });
       }
@@ -134,22 +144,32 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (diggerEmail) {
         emailResponse = await resend.emails.send({
-          from: "Digsandgigs <noreply@digsandgigs.net>",
+          from: "Digs and Gigs <noreply@digsandgigs.net>",
           to: [diggerEmail],
           subject: `Your Bid Was Accepted: ${gig.title}`,
           html: `
-            <h1>Congratulations! Your Bid Was Accepted!</h1>
-            <p>Excellent news! Your bid for <strong>${gig.title}</strong> has been accepted.</p>
-            
-            <h2>Project Details:</h2>
-            <ul>
-              <li><strong>Amount:</strong> $${amount.toFixed(2)}</li>
-              <li><strong>Timeline:</strong> ${timeline}</li>
-            </ul>
-            
-            <p>The client is excited to work with you. Log in to view the full project details and get started!</p>
-            
-            <p>Best regards,<br>The digsandgigs Team</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="margin: 0;">🎉 Congratulations!</h1>
+              </div>
+              <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+                <p>Excellent news! Your bid for <strong>${gig.title}</strong> has been accepted.</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h2 style="margin-top: 0; color: #667eea;">Project Details:</h2>
+                  <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong>Amount:</strong> $${amount.toFixed(2)}</li>
+                    <li><strong>Timeline:</strong> ${timeline}</li>
+                  </ul>
+                </div>
+                
+                <p>The client is excited to work with you. Log in to view the full project details and get started!</p>
+                
+                <p>Best regards,<br>The Digs and Gigs Team</p>
+                <hr style="border: 1px solid #eee; margin: 20px 0;" />
+                <p style="color: #666; font-size: 12px; text-align: center;">© 2025 Digs and Gigs. All rights reserved.</p>
+              </div>
+            </div>
           `,
         });
       }

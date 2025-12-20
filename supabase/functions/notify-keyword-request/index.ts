@@ -100,9 +100,9 @@ Deno.serve(async (req) => {
 
     // Send email to admins
     const emailResponse = await resend.emails.send({
-      from: 'Digsandgigs <noreply@digsandgigs.net>',
+      from: 'Digs and Gigs <noreply@digsandgigs.net>',
       to: notifyEmails,
-      subject: `New Keyword Request: ${profession}`,
+      subject: `New Keyword Request: ${profession} | Digs and Gigs`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
             <p style="color: #999; font-size: 12px; margin: 0;">
-              This is an automated notification from Digsandgigs Admin System
+              This is an automated notification from Digs and Gigs Admin System
             </p>
           </div>
         </div>
