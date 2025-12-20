@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-type UserAppRole = 'digger' | 'gigger' | 'telemarketer' | 'admin';
+type UserAppRole = 'digger' | 'gigger' | 'admin';
 
 interface SubscriptionStatus {
   subscribed: boolean;

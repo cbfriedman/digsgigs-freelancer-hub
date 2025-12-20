@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DiggerRoleForm from "@/components/registration/DiggerRoleForm";
 import GiggerRoleForm from "@/components/registration/GiggerRoleForm";
-import TelemarketerRoleForm from "@/components/registration/TelemarketerRoleForm";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
@@ -75,10 +74,6 @@ interface RoleFormData {
   };
   gigger?: {
     preferences?: any;
-  };
-  telemarketer?: {
-    businessInfo: any;
-    compensationPreference: 'percentage' | 'flat_fee';
   };
 }
 
@@ -1147,7 +1142,7 @@ const Register = () => {
     <>
       <SEOHead
         title="Register - DigsandGigs"
-        description="Create your DigsandGigs account and start connecting with opportunities. Choose to be a Digger, Gigger, or Telemarketer."
+        description="Create your DigsandGigs account and start connecting with opportunities. Choose to be a Digger or Gigger."
         canonical="/register"
       />
       
@@ -1196,7 +1191,7 @@ const Register = () => {
               )}
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : (step === 1 && isFromGigPosting) ? "Register your Gig" : step === 1 ? "Create your Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Dig" : currentRole === 'gigger' ? "Create Your Gig" : "Telemarketer Registration"}
+              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : (step === 1 && isFromGigPosting) ? "Register your Gig" : step === 1 ? "Create your Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Digger Profile" : "Create Your Gigger Profile"}
             </CardTitle>
             <CardDescription>
               {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : (step === 1 && isFromGigPosting) ? "Create an account to post and manage your gig" : step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
@@ -1947,9 +1942,7 @@ const Register = () => {
                       <SelectContent>
                         {roleArray.map((role) => (
                           <SelectItem key={role} value={role}>
-                            {role === 'digger' ? '🔧 Digger Profile' : 
-                             role === 'gigger' ? '📋 Gigger Profile' : 
-                             '📞 Telemarketer Profile'}
+                            {role === 'digger' ? '🔧 Digger Profile' : '📋 Gigger Profile'}
                           </SelectItem>
                         ))}
                       </SelectContent>

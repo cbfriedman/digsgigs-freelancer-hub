@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Briefcase, Phone, TrendingUp, FileText, DollarSign, Plus } from "lucide-react";
+import { Wrench, Briefcase, TrendingUp, FileText, DollarSign, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 
@@ -20,17 +20,11 @@ interface RoleStats {
     activeBidsCount: number;
     awardedGigsCount: number;
   };
-  telemarketer?: {
-    leadsUploadedCount: number;
-    pendingCommissions: number;
-    paidCommissions: number;
-  };
 }
 
 const roleConfig = {
   digger: { label: 'Digger', emoji: '🔧', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100', icon: Wrench },
   gigger: { label: 'Gigger', emoji: '📋', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100', icon: Briefcase },
-  telemarketer: { label: 'Telemarketer', emoji: '📞', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100', icon: Phone },
 };
 
 export default function RoleDashboard() {
@@ -187,7 +181,7 @@ export default function RoleDashboard() {
     }
   };
 
-  const handleSwitchRole = async (role: 'digger' | 'gigger' | 'telemarketer') => {
+  const handleSwitchRole = async (role: 'digger' | 'gigger') => {
     await switchRole(role);
     toast({
       title: "Role switched",
@@ -404,85 +398,6 @@ export default function RoleDashboard() {
                   }
                 }}>
                   Register as Gigger
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Telemarketer Role Card */}
-        <Card className="relative overflow-hidden">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
-                  <Phone className="h-6 w-6 text-purple-600 dark:text-purple-300" />
-                </div>
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    Telemarketer
-                    {activeRole === 'telemarketer' && (
-                      <Badge variant="secondary" className="text-xs">Active</Badge>
-                    )}
-                    {!userRoles.includes('telemarketer') && (
-                      <Badge variant="outline" className="text-xs">Not Registered</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>Lead Provider</CardDescription>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {userRoles.includes('telemarketer') ? (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Leads Uploaded</p>
-                    <p className="text-2xl font-bold">{stats.telemarketer?.leadsUploadedCount ?? 0}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-2xl font-bold text-amber-500">
-                      ${(stats.telemarketer?.pendingCommissions ?? 0).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Total Earned</p>
-                  <p className="text-xl font-semibold text-primary">
-                    ${(stats.telemarketer?.paidCommissions ?? 0).toFixed(2)}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 pt-4 border-t">
-                  <Button 
-                    variant="default" 
-                    className="w-full"
-                    onClick={() => {
-                      handleSwitchRole('telemarketer');
-                      navigate('/telemarketer-dashboard');
-                    }}
-                  >
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    View Commissions
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => {
-                      handleSwitchRole('telemarketer');
-                      navigate('/telemarketer-dashboard');
-                    }}
-                  >
-                    Upload Leads
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Register as a Telemarketer to earn commissions</p>
-                <Button onClick={() => navigate('/register?role=telemarketer')}>
-                  Register as Telemarketer
                 </Button>
               </div>
             )}
