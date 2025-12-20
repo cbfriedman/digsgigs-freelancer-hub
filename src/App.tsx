@@ -71,6 +71,10 @@ import GetFreeQuote from "./pages/GetFreeQuote";
 import Unsubscribe from "./pages/Unsubscribe";
 import ServiceLocationPage from "./pages/ServiceLocationPage";
 import ServiceIndexPage from "./pages/ServiceIndexPage";
+import FAQHub from "./pages/FAQHub";
+import FAQCategory from "./pages/FAQCategory";
+import CompareHub from "./pages/CompareHub";
+import CompareDetail from "./pages/CompareDetail";
 
 const queryClient = new QueryClient();
 
@@ -347,6 +351,22 @@ const router = createBrowserRouter([
   {
     path: "/services/:service/:city",
     element: <ServiceLocationPage />,
+  },
+  {
+    path: "/faq",
+    element: <FAQHub />,
+  },
+  {
+    path: "/faq/:category",
+    element: <FAQCategory />,
+  },
+  {
+    path: "/compare",
+    element: <CompareHub />,
+  },
+  {
+    path: "/compare/:competitor",
+    element: <CompareDetail />,
   },
   {
     path: "*",

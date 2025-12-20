@@ -35,35 +35,40 @@ export const Footer = () => {
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/blog")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Blog
+                <button onClick={() => navigate("/compare")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  Compare Platforms
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/brand")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Brand Assets
+                <button onClick={() => navigate("/blog")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  Blog
                 </button>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-3">Support</h4>
+            <h4 className="font-semibold mb-3">Resources</h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <button onClick={() => navigate("/faq")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  FAQ
+                  FAQ & Help Center
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate("/faq/plumbing")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  Plumbing FAQ
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate("/faq/electrical")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  Electrical FAQ
                 </button>
               </li>
               <li>
                 <button onClick={() => navigate("/contact")} className="text-muted-foreground hover:text-foreground transition-colors">
                   Contact Us
                 </button>
-              </li>
-              <li>
-                <a href="mailto:support@digsandgigs.com" className="text-muted-foreground hover:text-foreground transition-colors">
-                  support@digsandgigs.com
-                </a>
               </li>
             </ul>
           </div>
