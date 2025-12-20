@@ -97,6 +97,7 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
     "Flooring",
     "Glass & Glazing",
     "Grading",
+    "Gutters Installation",
     "Handyman Services",
     "HVAC",
     "Ironwork",
