@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, TrendingDown, Shield, Zap, Target } from "lucide-react";
-import { getLeadCostForIndustry, getAllIndustries, getIndustryCategory } from "@/config/pricing";
+import { getLeadCostForIndustry, getAllIndustries } from "@/config/pricing";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 
@@ -9,20 +9,15 @@ export default function CompetitiveAdvantageShowcase() {
   const allIndustries = getAllIndustries();
   const [selectedIndustry, setSelectedIndustry] = useState<string>("HVAC");
   
-  const nonExclusiveCost = getLeadCostForIndustry(selectedIndustry, 'non-exclusive');
-  const exclusiveCost = getLeadCostForIndustry(selectedIndustry, 'exclusive-24h');
+  const leadCost = getLeadCostForIndustry(selectedIndustry);
   
-  // Get industry-specific competitor pricing
-  const industryCategory = getIndustryCategory(selectedIndustry);
+  // Get competitor pricing
   const getCompetitorLeadCost = (platform: string): number => {
-    if (industryCategory === 'mid-value') {
-      return platform === 'HomeAdvisor' ? 60 : 
-             platform === 'Angi' ? 55 : 
-             platform === 'Google AdWords' ? 160 : 50;
-    } else { // high-value
-      return platform === 'HomeAdvisor' ? 150 : 
-             platform === 'Angi' ? 140 : 
-             platform === 'Google AdWords' ? 400 : 125;
+    switch (platform) {
+      case 'HomeAdvisor': return 60;
+      case 'Angi': return 55;
+      case 'Google AdWords': return 160;
+      default: return 50;
     }
   };
 
@@ -31,62 +26,54 @@ export default function CompetitiveAdvantageShowcase() {
       name: "HomeAdvisor",
       monthlyFee: "$0",
       leadCost: `$${getCompetitorLeadCost('HomeAdvisor')}`,
-      volumeDiscount: "None",
-      escrow: "Not available",
       leadQuality: "Shared (3-5 pros)",
       advantages: ["Established brand"],
-      disadvantages: ["No volume discounts", "Shared leads mean high competition", "Pay for bad leads", "No escrow protection"]
+      disadvantages: ["No volume discounts", "Shared leads mean high competition", "Pay for bad leads"]
     },
     {
       name: "Angi (Angie's List)",
       monthlyFee: "$0",
       leadCost: `$${getCompetitorLeadCost('Angi')}`,
-      volumeDiscount: "None",
-      escrow: "Not available",
       leadQuality: "Shared",
       advantages: ["Trusted reviews"],
-      disadvantages: ["Lead sharing reduces conversion", "No exclusivity options", "Pay for all leads regardless of quality"]
+      disadvantages: ["Lead sharing reduces conversion", "Pay for all leads regardless of quality"]
     },
     {
       name: "Google Ads (PPC)",
       monthlyFee: "$0",
       leadCost: `$${getCompetitorLeadCost('Google AdWords')} effective*`,
-      volumeDiscount: "None",
-      escrow: "None",
       leadQuality: "Unvetted clicks",
       advantages: ["Full control", "Direct reach"],
-      disadvantages: ["25% click-to-lead rate = 4x cost", "No quality guarantees", "Requires expertise", "Time-intensive management"]
+      disadvantages: ["25% click-to-lead rate = 4x cost", "No quality guarantees", "Requires expertise"]
     },
     {
       name: "Yelp",
       monthlyFee: "$300",
       leadCost: "Varies",
-      volumeDiscount: "None",
-      escrow: "None",
       leadQuality: "Passive (not guaranteed)",
       advantages: ["Brand visibility"],
-      disadvantages: ["$300/month mandatory fee", "No guaranteed leads", "Review dependency", "Passive system"]
+      disadvantages: ["$300/month mandatory fee", "No guaranteed leads", "Review dependency"]
     }
   ];
 
   const digsandgigsAdvantages = [
     {
       icon: <TrendingDown className="h-5 w-5 text-green-600" />,
-      title: "Choose Your Exclusivity",
-      description: "Pay based on your exclusivity preference. Non-exclusive leads start lower than HomeAdvisor, or get 24-hour exclusive access. You choose what works for your business.",
-      value: `$${nonExclusiveCost} or $${exclusiveCost} per lead (${selectedIndustry})`
+      title: "Industry-Specific Pricing",
+      description: "Pay based on your trade, not one-size-fits-all rates. Every industry has transparent, competitive pricing.",
+      value: `$${leadCost} per lead (${selectedIndustry})`
     },
     {
       icon: <Shield className="h-5 w-5 text-blue-600" />,
-      title: "Optional Escrow Protection",
-      description: "Only pay 8% escrow fee if the gig poster requests it. Unlike competitors, escrow is your choice.",
-      value: "8% only when requested"
+      title: "Phone-Verified Leads",
+      description: "Our confirmed leads are phone-verified for higher contact rates and better conversion.",
+      value: "Higher quality contacts"
     },
     {
       icon: <Zap className="h-5 w-5 text-purple-600" />,
-      title: "True Exclusive Leads",
-      description: "When you choose 24-hour exclusive, the lead is yours alone. No sharing with 3-5 other pros like on competitor platforms.",
-      value: "100% exclusive option"
+      title: "No Wasted Spend",
+      description: "Pay only for real leads from people actively seeking your services. No clicks, no tire-kickers.",
+      value: "Real leads only"
     },
     {
       icon: <Target className="h-5 w-5 text-orange-600" />,
@@ -108,7 +95,7 @@ export default function CompetitiveAdvantageShowcase() {
             <div>
               <CardTitle className="text-3xl">Why DigsandGigs Wins</CardTitle>
               <CardDescription className="mt-2 text-base">
-                The only platform where you choose between non-exclusive or exclusive leads
+                Transparent, industry-specific pricing with no hidden fees
               </CardDescription>
             </div>
           </div>
@@ -168,9 +155,7 @@ export default function CompetitiveAdvantageShowcase() {
                   <th className="text-left p-4 font-bold">Platform</th>
                   <th className="text-left p-4 font-bold">Monthly Fee</th>
                   <th className="text-left p-4 font-bold">Cost Per Lead</th>
-                  <th className="text-left p-4 font-bold">Exclusivity Options</th>
                   <th className="text-left p-4 font-bold">Lead Quality</th>
-                  <th className="text-left p-4 font-bold">Escrow</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,26 +175,14 @@ export default function CompetitiveAdvantageShowcase() {
                   </td>
                   <td className="p-4">
                     <div className="font-semibold text-primary">
-                      ${nonExclusiveCost} or ${exclusiveCost}
+                      ${leadCost}
                     </div>
-                    <p className="text-xs text-muted-foreground">Your choice of exclusivity</p>
+                    <p className="text-xs text-muted-foreground">Industry-specific pricing</p>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-1">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="font-semibold text-green-600">Both options</span>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="font-semibold">Exclusive available</span>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="font-semibold">Optional 8%</span>
+                      <span className="font-semibold">Phone-verified available</span>
                     </div>
                   </td>
                 </tr>
@@ -237,21 +210,12 @@ export default function CompetitiveAdvantageShowcase() {
                     </td>
                     <td className="p-4">
                       <span className="font-semibold">{competitor.leadCost}</span>
-                      {competitor.name === "Google AdWords" && (
+                      {competitor.name === "Google Ads (PPC)" && (
                         <p className="text-xs text-muted-foreground">*Assumes 25% conversion</p>
                       )}
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center gap-1">
-                        <XCircle className="h-4 w-4 text-red-600" />
-                        <span className="text-red-600">{competitor.volumeDiscount}</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
                       <span className="text-sm">{competitor.leadQuality}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm">{competitor.escrow}</span>
                     </td>
                   </tr>
                 ))}
@@ -262,8 +226,8 @@ export default function CompetitiveAdvantageShowcase() {
           <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
             <p className="text-sm font-semibold text-primary mb-2">💡 Key Insight:</p>
             <p className="text-sm text-muted-foreground">
-              DigsandGigs is the <strong>only platform</strong> that lets you choose between non-exclusive leads (lower than HomeAdvisor) 
-              and 24-hour exclusive leads. Competitors like HomeAdvisor and Angi's offer no such flexibility—you're stuck with their one-size-fits-all approach.
+              DigsandGigs offers <strong>transparent, industry-specific pricing</strong> with no monthly fees. 
+              Unlike competitors, you only pay for the leads you receive—no wasted ad spend, no subscription traps.
             </p>
           </div>
         </CardContent>

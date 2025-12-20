@@ -2,24 +2,15 @@
  * Centralized Pricing Configuration
  * Single source of truth for all pricing across the platform
  * 
- * BARK-BASED PRICING MODEL
- * All lead pricing is calculated from Bark.com lead costs using these multipliers:
+ * SIMPLIFIED PRICING MODEL
+ * All lead pricing is based on industry categories with transparent pricing.
  * 
- * - Non-exclusive Unconfirmed: Bark × 0.90 (5% conversion rate)
- * - Non-exclusive Confirmed: Bark × 1.25 (10% conversion rate)
- * - Semi-exclusive leads: Bark × 2.00 (20% conversion rate)
- * - 24-hour exclusive leads: Bark × 4.00 (50% conversion rate)
+ * - Unconfirmed leads: Base industry price
+ * - Confirmed leads: Base price + 20% premium (phone-verified)
  * 
  * All prices rounded up to nearest $0.50 or whole number.
- * Bark's leads are unconfirmed, so our confirmed leads provide premium value.
- * This model provides clear value differentiation with competitive pricing.
  * 
- * Conversion Rate Comparison:
- * - Bark unconfirmed leads: 5% conversion
- * - Google Ads click-to-consumer: 7% conversion
- * - Our confirmed leads: 10-50% conversion depending on exclusivity
- * 
- * NOTE: Prices are based on Bark.com lead costs and may fluctuate based on market conditions.
+ * NOTE: Exclusivity tiers have been removed. All leads are now non-exclusive.
  */
 
 import { getKeywordCPC } from '@/config/googleCpcKeywords';
