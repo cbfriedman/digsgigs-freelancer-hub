@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
 import { CpcDataUploader } from "@/components/CpcDataUploader";
+import { MarketingEmailsTab } from "@/components/admin/MarketingEmailsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 interface ReminderStats {
   total: number;
   day3: number;
@@ -335,6 +335,10 @@ const AdminDashboard = () => {
         <Tabs defaultValue="reminders" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="reminders">Profile Reminders</TabsTrigger>
+            <TabsTrigger value="marketing" className="flex items-center gap-1">
+              <Megaphone className="h-3 w-3" />
+              Marketing Emails
+            </TabsTrigger>
             <TabsTrigger value="keywords">Keyword Analytics</TabsTrigger>
             <TabsTrigger value="requests">Keyword Requests</TabsTrigger>
             <TabsTrigger value="cpc-data" className="flex items-center gap-1">
@@ -489,6 +493,10 @@ const AdminDashboard = () => {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="marketing">
+            <MarketingEmailsTab />
           </TabsContent>
 
           <TabsContent value="keywords">

@@ -153,6 +153,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Re-engagement email sent successfully:", emailResponse);
 
+    // Log to database
+    const { error: logError } = await supabase
+      .from('marketing_email_log')
+      .insert({
+        email: recipientEmail,
+        email_type: 'reengagement',
+        reason: reason,
+        user_id: userId || null
+      });
+
+    if (logError) {
+      console.error('Failed to log email:', logError);
+    }
+
     return new Response(JSON.stringify({ success: true, emailResponse }), {
       status: 200,
       headers: {

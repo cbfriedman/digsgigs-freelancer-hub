@@ -194,3 +194,12 @@ verify_jwt = false
 
 [functions.log-campaign-event]
 verify_jwt = false
+
+[functions.send-marketing-email]
+verify_jwt = false
+
+[functions.send-reengagement-email]
+verify_jwt = false
+
+[functions.check-inactive-users]
+verify_jwt = false
