@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import SEOHead from "@/components/SEOHead";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
-import { LeadExclusivityExtension } from "@/components/LeadExclusivityExtension";
+// LeadExclusivityExtension removed - exclusivity feature deprecated
 import { LeadCountdownTimer } from "@/components/LeadCountdownTimer";
 import { formatDistanceToNow } from "date-fns";
 
@@ -283,12 +283,7 @@ export default function MyLeads() {
                                 label="Expires in"
                                 onExpire={() => loadLeads()}
                               />
-                              <LeadExclusivityExtension
-                                queueEntryId={queueEntry.id}
-                                basePrice={queueEntry.base_price}
-                                currentExtensionNumber={extensions.length}
-                                onSuccess={loadLeads}
-                              />
+                              {/* Exclusivity extension removed */}
                             </div>
                           )}
                         </div>

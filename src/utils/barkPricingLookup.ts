@@ -2,36 +2,35 @@
  * Bark.com Pricing Lookup Utility
  * 
  * This utility provides Bark.com lead pricing data for different professions/keywords.
- * Bark uses a credit system where 1 credit = $2.20 USD.
+ * Used as a reference for competitive pricing.
  * 
- * DigsandGigs Bark-Based Pricing Strategy:
- * - Non-Exclusive Unconfirmed: Bark × 0.90 (5% conversion rate)
- * - Non-Exclusive Confirmed: Bark × 1.25 (10% conversion rate)
- * - Semi-Exclusive: Bark × 2.00 (20% conversion rate)
- * - 24-Hour Exclusive: Bark × 4.00 (50% conversion rate)
+ * DigsandGigs Simplified Pricing:
+ * - Standard leads: Industry-based pricing
+ * - Confirmed leads: +20% premium for phone-verified contacts
  * 
- * All prices rounded up to nearest $0.50 or whole number.
- * Bark leads are unconfirmed, so our confirmed leads provide more value.
- * 
- * These values should be updated quarterly based on competitive market analysis.
+ * NOTE: Exclusivity tiers have been removed. All leads are now non-exclusive.
  */
 
 // Conversion rates by lead type
 export const LEAD_CONVERSION_RATES = {
-  nonExclusiveUnconfirmed: 0.05,  // 5% - same as Bark
+  nonExclusiveUnconfirmed: 0.05,  // 5% - standard leads
   nonExclusiveConfirmed: 0.10,    // 10% - verified leads
-  semiExclusive: 0.20,            // 20% - limited competition
-  exclusive24h: 0.50,             // 50% - exclusive access
+  /** @deprecated - exclusivity removed */
+  semiExclusive: 0.20,
+  /** @deprecated - exclusivity removed */
+  exclusive24h: 0.50,
   barkComparison: 0.05,           // 5% - Bark's unconfirmed leads
   googleCPC: 0.07,                // 7% - Google Ads click-to-consumer
 };
 
-// Bark pricing multipliers
+// Pricing multipliers (simplified)
 export const BARK_PRICING_MULTIPLIERS = {
   nonExclusiveUnconfirmed: 0.90,  // 90% of Bark
-  nonExclusiveConfirmed: 1.25,    // 125% of Bark
-  semiExclusive: 2.00,            // 2x Bark
-  exclusive24h: 4.00,             // 4x Bark
+  nonExclusiveConfirmed: 1.25,    // 125% of Bark (confirmed premium)
+  /** @deprecated - exclusivity removed */
+  semiExclusive: 2.00,
+  /** @deprecated - exclusivity removed */
+  exclusive24h: 4.00,
 };
 
 export interface BarkPricingData {
