@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const baseUrl = 'https://digsandgigs.com';
+    const baseUrl = 'https://digsandgigs.net';
     const now = new Date().toISOString();
 
     console.log('Fetching data from database...');

@@ -140,7 +140,7 @@ const generateEmailHTML = (
                   <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px;" />
                   <p style="color: #64748b; font-size: 12px; line-height: 20px; margin: 0;">
                     This is your automated monthly report from Digs and Gigs.<br/>
-                    Questions? Contact us at support@digsandgigs.com
+                    Questions? Contact us at support@digsandgigs.net
                   </p>
                 </td>
               </tr>
