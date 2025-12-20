@@ -786,24 +786,7 @@ const Register = () => {
         }
       }
 
-      // Telemarketer role removed - skip processing
-        const isPercentage = roleFormData.telemarketer.compensationPreference === 'percentage';
-        const { error: telemarketerError } = await supabase
-          .from('telemarketer_profiles')
-          .insert({
-            user_id: userId,
-            email: email,
-            phone: phone || '',
-            business_name: roleFormData.telemarketer.businessInfo?.companyName || fullName,
-            compensation_type: isPercentage ? 'percentage' : 'flat_fee',
-            commission_percentage: isPercentage ? 35 : null,
-            flat_fee_amount: !isPercentage ? 25 : null,
-          });
-
-        if (telemarketerError) {
-          console.error("Error creating telemarketer profile:", telemarketerError);
-        }
-      }
+      // Telemarketer role removed - feature discontinued
 
       toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
       
@@ -2115,19 +2098,7 @@ const Register = () => {
                   />
                 )}
 
-                {currentRole === 'telemarketer' && (
-                  <TelemarketerRoleForm
-                    onComplete={(data) => handleRoleFormComplete('telemarketer', data)}
-                    onBack={() => {
-                      if (currentRoleIndex === 0) {
-                        setStep(3); // Back to role selection
-                      } else {
-                        setCurrentRoleIndex(currentRoleIndex - 1);
-                        setStep(step - 1);
-                      }
-                    }}
-                  />
-                )}
+                {/* Telemarketer role removed */}
               </div>
             )}
           </CardContent>
