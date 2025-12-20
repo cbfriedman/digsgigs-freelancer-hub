@@ -222,28 +222,50 @@ async function sendAlertEmail(
     })
     .join("");
 
+  const browseUrl = searchType === "gigs" 
+    ? "https://digsandgigs.net/browse-gigs" 
+    : "https://digsandgigs.net/browse-diggers";
+
   const emailPayload = {
-    from: "Lovable <onboarding@resend.dev>",
+    from: "Digs and Gigs <noreply@digsandgigs.net>",
     to: [email],
-    subject: `New matches for your saved search: ${searchName}`,
+    subject: `🔔 ${matches.length} New Match${matches.length > 1 ? 'es' : ''} for "${searchName}"`,
     html: `
-      <h1>Hi ${name}!</h1>
-      <p>We found ${matches.length} new ${itemType} matching your saved search "<strong>${searchName}</strong>":</p>
-      <ul style="list-style-type: none; padding-left: 0;">
-        ${itemsHtml}
-      </ul>
-      ${matches.length > 5 ? `<p>...and ${matches.length - 5} more!</p>` : ""}
-      <p>
-        <a href="${supabaseUrl.replace('.supabase.co', '.lovable.app')}/browse-${searchType}" 
-           style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-          View All Matches
-        </a>
-      </p>
-      <hr style="margin: 30px 0;">
-      <p style="color: #666; font-size: 14px;">
-        You're receiving this email because you have email alerts enabled for this saved search. 
-        You can manage your saved searches and email preferences in your account settings.
-      </p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="margin: 0; font-size: 24px;">New Matches Found!</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Digs and Gigs</p>
+        </div>
+        
+        <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+          <p style="font-size: 16px; color: #333;">Hi ${name},</p>
+          
+          <p style="color: #555;">Great news! We found <strong>${matches.length} new ${itemType}</strong> matching your saved search "<strong>${searchName}</strong>":</p>
+          
+          <ul style="list-style-type: none; padding-left: 0; margin: 20px 0;">
+            ${itemsHtml}
+          </ul>
+          
+          ${matches.length > 5 ? `<p style="color: #667eea; font-weight: bold;">...and ${matches.length - 5} more matches waiting for you!</p>` : ""}
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${browseUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              View All Matches
+            </a>
+          </div>
+          
+          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+          
+          <p style="color: #888; font-size: 12px; text-align: center;">
+            You're receiving this email because you have alerts enabled for this saved search.<br/>
+            <a href="https://digsandgigs.net/saved-searches" style="color: #667eea;">Manage your saved searches</a>
+          </p>
+          
+          <p style="color: #aaa; font-size: 11px; text-align: center; margin-top: 20px;">
+            © 2025 Digs and Gigs. All rights reserved.
+          </p>
+        </div>
+      </div>
     `
   };
 
