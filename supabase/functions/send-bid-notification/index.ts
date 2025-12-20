@@ -128,7 +128,9 @@ const handler = async (req: Request): Promise<Response> => {
                   </ul>
                 </div>
                 
-                <p>Log in to view the full proposal and accept the bid if you're interested!</p>
+                <div style="text-align: center; margin: 25px 0;">
+                  <a href="https://digsandgigs.com/my-gigs" style="display: inline-block; background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Bid Details</a>
+                </div>
                 
                 <p>Best regards,<br>The Digs and Gigs Team</p>
                 <hr style="border: 1px solid #eee; margin: 20px 0;" />
@@ -163,7 +165,9 @@ const handler = async (req: Request): Promise<Response> => {
                   </ul>
                 </div>
                 
-                <p>The client is excited to work with you. Log in to view the full project details and get started!</p>
+                <div style="text-align: center; margin: 25px 0;">
+                  <a href="https://digsandgigs.com/my-bids" style="display: inline-block; background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Project Details</a>
+                </div>
                 
                 <p>Best regards,<br>The Digs and Gigs Team</p>
                 <hr style="border: 1px solid #eee; margin: 20px 0;" />
