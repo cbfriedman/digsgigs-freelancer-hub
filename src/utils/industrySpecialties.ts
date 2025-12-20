@@ -1,5 +1,26 @@
 // Industry-specific specialty mappings
 export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
+  "Credit Repair": [
+    "Credit Score Improvement",
+    "Credit Dispute Services",
+    "Credit Restoration",
+    "Collection Account Removal",
+    "Credit Counseling",
+    "Credit Repair for Mortgage",
+    "Identity Theft Recovery",
+    "Credit Report Analysis"
+  ],
+  "Tax Relief Services": [
+    "IRS Tax Debt Relief",
+    "Offer in Compromise",
+    "Tax Lien Removal",
+    "Tax Levy Release",
+    "Tax Penalty Abatement",
+    "Back Taxes Help",
+    "IRS Debt Settlement",
+    "Wage Garnishment Release",
+    "State Tax Relief"
+  ],
   "Legal Services": [
     "Personal Injury",
     "Family Law",

@@ -90,6 +90,8 @@ const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: num
 };
 
 const DEFAULT_CATEGORIES = [
+  "Credit Repair",
+  "Tax Relief Services",
   "Legal Services",
   "Insurance",
   "Mortgage & Financing",
@@ -289,7 +291,9 @@ export const CategoryBrowserWithDescription = () => {
         "Technology Services": "designer",
         "Business Services": "consultant",
         "Event Services": "photographer",
-        "Investors": "angel investor"
+        "Investors": "angel investor",
+        "Credit Repair": "credit repair specialist",
+        "Tax Relief Services": "tax relief specialist"
       };
 
       const profession = categoryToprofession[selectedCategory] || "contractor";
@@ -458,29 +462,35 @@ export const CategoryBrowserWithDescription = () => {
               </Button>
             </div>
             
-            {/* Checkbox list */}
-            <div className="border rounded-lg p-3 max-h-[250px] overflow-y-auto bg-background space-y-2">
-              {industrySpecialties.map((specialty) => (
-                <div key={specialty} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`specialty-${specialty}`}
-                    checked={selectedSpecialties.includes(specialty)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedSpecialties([...selectedSpecialties, specialty]);
-                      } else {
-                        setSelectedSpecialties(selectedSpecialties.filter(s => s !== specialty));
-                      }
-                    }}
-                  />
+            {/* Checkbox list - Horizontal grid layout */}
+            <div className="border rounded-lg p-3 max-h-[300px] overflow-y-auto bg-background">
+              <div className="flex flex-wrap gap-2">
+                {industrySpecialties.map((specialty) => (
                   <label
+                    key={specialty}
                     htmlFor={`specialty-${specialty}`}
-                    className="text-sm cursor-pointer flex-1 py-1"
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-full border cursor-pointer transition-colors text-sm ${
+                      selectedSpecialties.includes(specialty)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background hover:bg-muted border-border'
+                    }`}
                   >
+                    <Checkbox
+                      id={`specialty-${specialty}`}
+                      checked={selectedSpecialties.includes(specialty)}
+                      className="hidden"
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedSpecialties([...selectedSpecialties, specialty]);
+                        } else {
+                          setSelectedSpecialties(selectedSpecialties.filter(s => s !== specialty));
+                        }
+                      }}
+                    />
                     {specialty}
                   </label>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
             
             {/* Request Custom Specialty */}
