@@ -7,17 +7,15 @@ interface Gig {
   budget_max: number | null;
   location: string;
   description: string;
-  exclusivity_type?: 'non-exclusive' | 'semi-exclusive' | 'exclusive';
 }
 
 interface CartContextType {
   cartItems: Gig[];
-  addToCart: (gig: Gig, exclusivityType?: 'non-exclusive' | 'semi-exclusive' | 'exclusive') => void;
+  addToCart: (gig: Gig) => void;
   removeFromCart: (gigId: string) => void;
   clearCart: () => void;
   isInCart: (gigId: string) => boolean;
   cartCount: number;
-  updateExclusivity: (gigId: string, exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive') => void;
   getTotalPrice: () => number;
 }
 
@@ -54,18 +52,9 @@ const determineIndustryCategory = (gig: Gig): 'low-value' | 'mid-value' | 'high-
 const calculateLeadPrice = (gig: Gig): number => {
   const category = determineIndustryCategory(gig);
   const pricing = INDUSTRY_PRICING.find(p => p.category === category)!;
-  const exclusivityType = gig.exclusivity_type || 'non-exclusive';
   
-  switch (exclusivityType) {
-    case 'non-exclusive':
-      return pricing.nonExclusive;
-    case 'semi-exclusive':
-      return pricing.semiExclusive;
-    case 'exclusive':
-      return pricing.exclusive24h;
-    default:
-      return pricing.nonExclusive;
-  }
+  // All leads are now non-exclusive
+  return pricing.nonExclusive;
 };
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -88,21 +77,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("gigCart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (gig: Gig, exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive' = 'non-exclusive') => {
+  const addToCart = (gig: Gig) => {
     setCartItems((prev) => {
       if (prev.some((item) => item.id === gig.id)) {
         return prev;
       }
-      return [...prev, { ...gig, exclusivity_type: exclusivityType }];
+      return [...prev, gig];
     });
-  };
-
-  const updateExclusivity = (gigId: string, exclusivityType: 'non-exclusive' | 'semi-exclusive' | 'exclusive') => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === gigId ? { ...item, exclusivity_type: exclusivityType } : item
-      )
-    );
   };
 
   const removeFromCart = (gigId: string) => {
@@ -133,7 +114,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearCart,
         isInCart,
         cartCount: cartItems.length,
-        updateExclusivity,
         getTotalPrice,
       }}
     >

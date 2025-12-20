@@ -5,7 +5,6 @@ import { X, ShoppingCart, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -17,7 +16,7 @@ interface CartDrawerProps {
 }
 
 export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
-  const { cartItems, removeFromCart, clearCart, getTotalPrice, cartCount, updateExclusivity } = useCart();
+  const { cartItems, removeFromCart, clearCart, getTotalPrice, cartCount } = useCart();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
@@ -38,9 +37,10 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
         return;
       }
 
+      // All leads are now non-exclusive
       const purchases = cartItems.map(item => ({
         gigId: item.id,
-        exclusivityType: item.exclusivity_type || 'non-exclusive'
+        exclusivityType: 'non-exclusive'
       }));
       
       const { data, error } = await supabase.functions.invoke("create-bulk-lead-purchase", {
@@ -82,7 +82,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
             )}
           </SheetTitle>
           <SheetDescription>
-            Review your leads and select exclusivity type before checkout
+            Review your leads before checkout
           </SheetDescription>
         </SheetHeader>
 
@@ -119,22 +119,6 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
                       >
                         <X className="h-4 w-4" />
                       </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between gap-3">
-                      <Select
-                        value={gig.exclusivity_type || 'non-exclusive'}
-                        onValueChange={(value: any) => updateExclusivity(gig.id, value)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="non-exclusive">Non-Exclusive</SelectItem>
-                          <SelectItem value="semi-exclusive">Semi-Exclusive (4 max)</SelectItem>
-                          <SelectItem value="exclusive">24hr Exclusive</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </Card>
                 );

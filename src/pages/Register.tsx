@@ -65,7 +65,7 @@ const gigPostingSchema = z.object({
     .or(z.literal("")),
 });
 
-type UserAppRole = 'digger' | 'gigger' | 'telemarketer';
+type UserAppRole = 'digger' | 'gigger';
 
 interface RoleFormData {
   digger?: {
@@ -786,7 +786,7 @@ const Register = () => {
         }
       }
 
-      if (selectedRoles.has('telemarketer') && roleFormData.telemarketer) {
+      // Telemarketer role removed - skip processing
         const isPercentage = roleFormData.telemarketer.compensationPreference === 'percentage';
         const { error: telemarketerError } = await supabase
           .from('telemarketer_profiles')
@@ -2020,32 +2020,7 @@ const Register = () => {
 
                   {!isFromGigPosting && (
                     <>
-                      {/* Telemarketer Role */}
-                      <Card
-                        className={`cursor-pointer transition-all ${
-                          selectedRoles.has('telemarketer')
-                            ? 'ring-2 ring-primary bg-primary/5'
-                            : 'hover:bg-accent'
-                        }`}
-                        onClick={() => toggleRole('telemarketer')}
-                      >
-                        <CardContent className="flex items-start space-x-4 p-4">
-                          <Checkbox
-                            checked={selectedRoles.has('telemarketer')}
-                            onCheckedChange={() => toggleRole('telemarketer')}
-                            className="mt-1"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">Upload Leads & Earn Commissions (Telemarketer)</h3>
-                              <Badge variant="secondary">📞</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Upload verified leads and earn commission when they're awarded to professionals.
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      {/* Telemarketer role has been removed */}
                     </>
                   )}
                 </div>
