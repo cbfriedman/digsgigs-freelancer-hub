@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, DollarSign, Target, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,8 +11,7 @@ import { getKeywordCPC } from "@/config/googleCpcKeywords";
 import { 
   getAverageBarkPriceForCategory, 
   calculateLeadCostFromBark,
-  LEAD_CONVERSION_RATES,
-  BARK_PRICING_MULTIPLIERS
+  LEAD_CONVERSION_RATES
 } from "@/utils/barkPricingLookup";
 
 interface CompetitorPlatform {
@@ -156,36 +155,27 @@ export const ROIComparisonCalculator = () => {
     competitorCostPerDeal = competitorCostPerLead / googleConversionRate;
   }
 
-  // Calculate platform costs using Bark-based pricing
-  // Formula: Bark × 0.90, Bark × 1.25, Bark × 2.00, Bark × 4.00
+  // Calculate platform costs - simplified to non-exclusive only
   const platformCosts = {
     nonExclusiveUnconfirmed: calculateLeadCostFromBark(categoryBarkPrice, 'non-exclusive', false),
     nonExclusiveConfirmed: calculateLeadCostFromBark(categoryBarkPrice, 'non-exclusive', true),
-    semiExclusive: calculateLeadCostFromBark(categoryBarkPrice, 'semi-exclusive', false),
-    exclusive24h: calculateLeadCostFromBark(categoryBarkPrice, 'exclusive-24h', false),
   };
 
   // Cost per deal uses our improved conversion rates
   const platformCostPerDeal = {
     nonExclusiveUnconfirmed: platformCosts.nonExclusiveUnconfirmed / LEAD_CONVERSION_RATES.nonExclusiveUnconfirmed, // 5%
     nonExclusiveConfirmed: platformCosts.nonExclusiveConfirmed / LEAD_CONVERSION_RATES.nonExclusiveConfirmed, // 10%
-    semiExclusive: platformCosts.semiExclusive / LEAD_CONVERSION_RATES.semiExclusive, // 20%
-    exclusive24h: platformCosts.exclusive24h / LEAD_CONVERSION_RATES.exclusive24h, // 50%
   };
 
   // Savings per deal (vs competitor)
   const savings = {
     nonExclusiveUnconfirmed: competitorCostPerDeal - platformCostPerDeal.nonExclusiveUnconfirmed,
     nonExclusiveConfirmed: competitorCostPerDeal - platformCostPerDeal.nonExclusiveConfirmed,
-    semiExclusive: competitorCostPerDeal - platformCostPerDeal.semiExclusive,
-    exclusive24h: competitorCostPerDeal - platformCostPerDeal.exclusive24h,
   };
 
   const savingsPercent = {
     nonExclusiveUnconfirmed: (savings.nonExclusiveUnconfirmed / competitorCostPerDeal) * 100,
     nonExclusiveConfirmed: (savings.nonExclusiveConfirmed / competitorCostPerDeal) * 100,
-    semiExclusive: (savings.semiExclusive / competitorCostPerDeal) * 100,
-    exclusive24h: (savings.exclusive24h / competitorCostPerDeal) * 100,
   };
 
 
@@ -319,7 +309,7 @@ export const ROIComparisonCalculator = () => {
               </div>
               <div className="grid grid-cols-4 gap-2 items-center">
                 <div>
-                  <p className="text-xs text-muted-foreground">Non-Exclusive Unconfirmed</p>
+                  <p className="text-xs text-muted-foreground">Unconfirmed</p>
                   <p className="text-[10px] text-muted-foreground">{(LEAD_CONVERSION_RATES.nonExclusiveUnconfirmed * 100).toFixed(0)}% conversion</p>
                 </div>
                 <p className="text-lg font-bold text-primary text-center">
@@ -334,7 +324,7 @@ export const ROIComparisonCalculator = () => {
               </div>
               <div className="grid grid-cols-4 gap-2 items-center pt-2 border-t border-primary/20">
                 <div>
-                  <p className="text-xs text-muted-foreground">Non-Exclusive Confirmed</p>
+                  <p className="text-xs text-muted-foreground">Confirmed</p>
                   <p className="text-[10px] text-muted-foreground">{(LEAD_CONVERSION_RATES.nonExclusiveConfirmed * 100).toFixed(0)}% conversion</p>
                 </div>
                 <p className="text-lg font-bold text-primary text-center">
@@ -345,36 +335,6 @@ export const ROIComparisonCalculator = () => {
                 </p>
                 <p className="text-lg font-bold text-green-600 text-right">
                   ${savings.nonExclusiveConfirmed.toFixed(0)}
-                </p>
-              </div>
-              <div className="grid grid-cols-4 gap-2 items-center pt-2 border-t border-primary/20">
-                <div>
-                  <p className="text-xs text-muted-foreground">Semi-Exclusive</p>
-                  <p className="text-[10px] text-muted-foreground">{(LEAD_CONVERSION_RATES.semiExclusive * 100).toFixed(0)}% conversion</p>
-                </div>
-                <p className="text-lg font-bold text-primary text-center">
-                  ${platformCosts.semiExclusive.toFixed(2)}
-                </p>
-                <p className="text-lg font-semibold text-foreground text-center">
-                  ${platformCostPerDeal.semiExclusive.toFixed(0)}
-                </p>
-                <p className="text-lg font-bold text-green-600 text-right">
-                  ${savings.semiExclusive.toFixed(0)}
-                </p>
-              </div>
-              <div className="grid grid-cols-4 gap-2 items-center pt-2 border-t border-primary/20">
-                <div>
-                  <p className="text-xs text-muted-foreground">24hr Exclusive</p>
-                  <p className="text-[10px] text-muted-foreground">{(LEAD_CONVERSION_RATES.exclusive24h * 100).toFixed(0)}% conversion</p>
-                </div>
-                <p className="text-lg font-bold text-primary text-center">
-                  ${platformCosts.exclusive24h.toFixed(2)}
-                </p>
-                <p className="text-lg font-semibold text-foreground text-center">
-                  ${platformCostPerDeal.exclusive24h.toFixed(0)}
-                </p>
-                <p className="text-lg font-bold text-green-600 text-right">
-                  ${savings.exclusive24h.toFixed(0)}
                 </p>
               </div>
             </div>
@@ -430,13 +390,11 @@ export const ROIComparisonCalculator = () => {
               <h5 className="font-semibold text-sm mb-2">Digsandgigs Platform Calculation</h5>
               <div className="space-y-2 text-xs text-muted-foreground">
                 <div>
-                  <p className="font-semibold text-foreground">Lead Cost by Exclusivity:</p>
+                  <p className="font-semibold text-foreground">Lead Cost:</p>
                   <p>Based on industry lead costs</p>
                   <ul className="mt-1 space-y-1">
-                    <li className="text-primary">Non-Exclusive Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}/lead</li>
-                    <li className="text-primary">Non-Exclusive Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</li>
-                    <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)}/lead</li>
-                    <li className="text-primary">24hr Exclusive: ${platformCosts.exclusive24h.toFixed(2)}/lead</li>
+                    <li className="text-primary">Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)}/lead</li>
+                    <li className="text-primary">Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)}/lead</li>
                   </ul>
                 </div>
                 <div className="pt-2 border-t">
@@ -445,8 +403,6 @@ export const ROIComparisonCalculator = () => {
                   <ul className="mt-1 space-y-1">
                     <li className="text-primary">Unconfirmed: ${platformCosts.nonExclusiveUnconfirmed.toFixed(2)} ÷ {(LEAD_CONVERSION_RATES.nonExclusiveUnconfirmed * 100).toFixed(0)}% = ${platformCostPerDeal.nonExclusiveUnconfirmed.toFixed(0)}</li>
                     <li className="text-primary">Confirmed: ${platformCosts.nonExclusiveConfirmed.toFixed(2)} ÷ {(LEAD_CONVERSION_RATES.nonExclusiveConfirmed * 100).toFixed(0)}% = ${platformCostPerDeal.nonExclusiveConfirmed.toFixed(0)}</li>
-                    <li className="text-primary">Semi-Exclusive: ${platformCosts.semiExclusive.toFixed(2)} ÷ {(LEAD_CONVERSION_RATES.semiExclusive * 100).toFixed(0)}% = ${platformCostPerDeal.semiExclusive.toFixed(0)}</li>
-                    <li className="text-primary">24hr Exclusive: ${platformCosts.exclusive24h.toFixed(2)} ÷ {(LEAD_CONVERSION_RATES.exclusive24h * 100).toFixed(0)}% = ${platformCostPerDeal.exclusive24h.toFixed(0)}</li>
                   </ul>
                 </div>
               </div>
@@ -463,8 +419,8 @@ export const ROIComparisonCalculator = () => {
             <>
               <div className="flex items-center justify-between p-4 rounded-lg border bg-green-500/10">
                 <div>
-                  <p className="font-semibold text-green-700 dark:text-green-400">Non-Exclusive Unconfirmed</p>
-                  <p className="text-xs text-muted-foreground">Lowest cost - shared leads</p>
+                  <p className="font-semibold text-green-700 dark:text-green-400">Unconfirmed Leads</p>
+                  <p className="text-xs text-muted-foreground">Standard leads - great value</p>
                 </div>
                 <div className="text-right">
                   <Badge className="text-lg px-4 py-2 bg-green-600 hover:bg-green-700">
@@ -477,51 +433,17 @@ export const ROIComparisonCalculator = () => {
               </div>
 
               {savings.nonExclusiveConfirmed > 0 && (
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-accent/5">
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-primary/10">
                   <div>
-                    <p className="font-semibold">Non-Exclusive Confirmed</p>
-                    <p className="text-xs text-muted-foreground">Verified leads - shared access</p>
+                    <p className="font-semibold text-primary">Confirmed Leads</p>
+                    <p className="text-xs text-muted-foreground">Phone-verified - higher contact rates</p>
                   </div>
                   <div className="text-right">
-                    <Badge variant="secondary" className="text-lg px-4 py-2">
+                    <Badge className="text-lg px-4 py-2 bg-primary hover:bg-primary/90">
                       ${savings.nonExclusiveConfirmed.toFixed(0)} saved
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">
                       {savingsPercent.nonExclusiveConfirmed.toFixed(0)}% cheaper
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {savings.semiExclusive > 0 && (
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-primary/5">
-                  <div>
-                    <p className="font-semibold">Semi-Exclusive</p>
-                    <p className="text-xs text-muted-foreground">Limited to 3 service providers</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant="default" className="text-lg px-4 py-2">
-                      ${savings.semiExclusive.toFixed(0)} saved
-                    </Badge>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {savingsPercent.semiExclusive.toFixed(0)}% cheaper
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {savings.exclusive24h > 0 && (
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-amber-500/10">
-                  <div>
-                    <p className="font-semibold text-amber-700 dark:text-amber-400">24hr Exclusive</p>
-                    <p className="text-xs text-muted-foreground">You only - 24 hour head start</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge className="text-lg px-4 py-2 bg-amber-600 hover:bg-amber-700">
-                      ${savings.exclusive24h.toFixed(0)} saved
-                    </Badge>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {savingsPercent.exclusive24h.toFixed(0)}% cheaper
                     </p>
                   </div>
                 </div>
