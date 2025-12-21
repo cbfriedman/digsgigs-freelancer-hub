@@ -45,6 +45,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const { cartCount } = useCart();
   const [profileCartCount, setProfileCartCount] = useState(0);
   const [adminId, setAdminId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Hide digger profile selector on client-facing pages (gig posting, etc.)
   const hideDiggerSelector = ['/post-gig', '/browse-gigs'].includes(location.pathname);
@@ -151,7 +162,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   align="end" 
+                  side={isMobile ? "top" : "bottom"}
                   sideOffset={8}
+                  collisionPadding={8}
                   className="w-48 bg-background border shadow-lg z-[9999] min-w-[12rem]"
                 >
                   <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
@@ -182,7 +195,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-background border shadow-lg z-[9999]">
+                <DropdownMenuContent 
+                  align="end" 
+                  side={isMobile ? "top" : "bottom"}
+                  sideOffset={8}
+                  collisionPadding={8}
+                  className="w-56 bg-background border shadow-lg z-[9999] min-w-[14rem]"
+                >
                   <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {userRoles.map((role) => (

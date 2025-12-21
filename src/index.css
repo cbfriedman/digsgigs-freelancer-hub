@@ -111,5 +111,11 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+  }
+
+  /* Ensure dropdown portals render correctly */
+  [data-radix-portal] {
+    z-index: 9999;
   }
 }
