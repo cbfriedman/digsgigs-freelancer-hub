@@ -116,6 +116,13 @@ All colors MUST be HSL.
 
   /* Ensure dropdown portals render correctly */
   [data-radix-portal] {
-    z-index: 9999;
+    z-index: 10000;
+  }
+
+  /* Prevent body scroll when dropdown is open on mobile */
+  body:has([data-radix-dropdown-menu-content][data-state="open"]) {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 }

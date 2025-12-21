@@ -159,167 +159,79 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
             {/* User Dropdown Menu */}
             {user && (
-              <>
-                {/* Mobile: Use Sheet */}
-                {isMobile ? (
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button variant="ghost" className="gap-1 font-semibold px-2">
-                        <User className="h-4 w-4" />
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side="right" className="w-[300px]">
-                      <SheetHeader>
-                        <SheetTitle>Account Menu</SheetTitle>
-                      </SheetHeader>
-                      <div className="flex flex-col gap-4 mt-6">
-                        <Button
-                          variant="ghost"
-                          className="justify-start"
-                          onClick={() => {
-                            navigate('/role-dashboard');
-                            window.location.reload();
-                          }}
-                        >
-                          Dashboard
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-destructive"
-                          onClick={() => signOut()}
-                        >
-                          Sign Out
-                        </Button>
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-                ) : (
-                  /* Desktop: Use Dropdown */
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="gap-2 font-semibold px-3">
-                        <User className="h-4 w-4" />
-                        <span>{user.email?.split('@')[0] || 'User'}</span>
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent 
-                      align="end" 
-                      sideOffset={8}
-                      collisionPadding={8}
-                      className="w-48 bg-background border shadow-lg z-[9999] min-w-[12rem]"
-                    >
-                      <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
-                        Dashboard
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
-                        Sign Out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </>
+              <DropdownMenu modal={true}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-1 sm:gap-2 font-semibold px-2 sm:px-3">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">{user.email?.split('@')[0] || 'User'}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="end" 
+                  side="bottom"
+                  sideOffset={isMobile ? 60 : 8}
+                  collisionPadding={isMobile ? 20 : 8}
+                  className="w-48 bg-background border shadow-lg z-[10000] min-w-[12rem]"
+                >
+                  <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
             {/* Role Icons for authenticated users */}
             {user && userRoles.length > 0 && (
-              <>
-                {/* Mobile: Use Sheet */}
-                {isMobile ? (
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button variant="outline" className="gap-2 px-2">
-                        <div className="flex items-center gap-1">
-                          {userRoles.map((role) => (
-                            <span key={role} className="text-base" title={roleConfig[role].label}>
-                              {roleConfig[role].emoji}
-                            </span>
-                          ))}
-                        </div>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side="right" className="w-[300px]">
-                      <SheetHeader>
-                        <SheetTitle>Switch Role</SheetTitle>
-                      </SheetHeader>
-                      <div className="flex flex-col gap-2 mt-6">
+              <DropdownMenu modal={true}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 px-2 sm:px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
                         {userRoles.map((role) => (
-                          <Button
-                            key={role}
-                            variant={activeRole === role ? "default" : "ghost"}
-                            className="justify-start"
-                            onClick={() => {
-                              switchRole(role);
-                              window.location.reload();
-                            }}
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <div className="flex items-center gap-2">
-                                <span>{roleConfig[role].emoji}</span>
-                                <span>{roleConfig[role].label}</span>
-                              </div>
-                              {activeRole === role && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Active
-                                </Badge>
-                              )}
-                            </div>
-                          </Button>
+                          <span key={role} className="text-base" title={roleConfig[role].label}>
+                            {roleConfig[role].emoji}
+                          </span>
                         ))}
                       </div>
-                    </SheetContent>
-                  </Sheet>
-                ) : (
-                  /* Desktop: Use Dropdown */
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="gap-2 px-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            {userRoles.map((role) => (
-                              <span key={role} className="text-base" title={roleConfig[role].label}>
-                                {roleConfig[role].emoji}
-                              </span>
-                            ))}
-                          </div>
-                          <ChevronDown className="h-4 w-4 opacity-50" />
-                        </div>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent 
-                      align="end" 
-                      sideOffset={8}
-                      collisionPadding={8}
-                      className="w-56 bg-background border shadow-lg z-[9999] min-w-[14rem]"
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="end" 
+                  side="bottom"
+                  sideOffset={isMobile ? 60 : 8}
+                  collisionPadding={isMobile ? 20 : 8}
+                  className="w-56 bg-background border shadow-lg z-[10000] min-w-[14rem]"
+                >
+                  <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {userRoles.map((role) => (
+                    <DropdownMenuItem
+                      key={role}
+                      onClick={() => switchRole(role)}
+                      className={`cursor-pointer ${activeRole === role ? 'bg-accent' : ''}`}
                     >
-                      <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {userRoles.map((role) => (
-                        <DropdownMenuItem
-                          key={role}
-                          onClick={() => switchRole(role)}
-                          className={`cursor-pointer ${activeRole === role ? 'bg-accent' : ''}`}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
-                              <span>{roleConfig[role].emoji}</span>
-                              <span>{roleConfig[role].label}</span>
-                            </div>
-                            {activeRole === role && (
-                              <Badge variant="secondary" className="text-xs">
-                                Active
-                              </Badge>
-                            )}
-                          </div>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </>
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <span>{roleConfig[role].emoji}</span>
+                          <span>{roleConfig[role].label}</span>
+                        </div>
+                        {activeRole === role && (
+                          <Badge variant="secondary" className="text-xs">
+                            Active
+                          </Badge>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
             {user && !hideDiggerSelector && window.location.pathname !== '/register' && userRoles.includes('digger') && <DiggerProfileSelector />}
