@@ -79,8 +79,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
   return (
     <>
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between overflow-visible">
+      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50 relative">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div 
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
@@ -94,7 +94,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             <Button
               variant="ghost"
               onClick={() => navigate("/")}
-              className="font-semibold"
+              className="font-semibold text-xs sm:text-sm px-2 sm:px-3"
             >
               HOME
             </Button>
@@ -104,7 +104,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               <Button
                 variant="ghost"
                 onClick={() => navigate("/role-dashboard")}
-                className="font-semibold"
+                className="font-semibold text-xs sm:text-sm px-2 sm:px-3 hidden sm:inline-flex"
               >
                 MY DASHBOARD
               </Button>
@@ -152,7 +152,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 <DropdownMenuContent 
                   align="end" 
                   sideOffset={8}
-                  className="w-48 bg-background border shadow-lg z-[100] min-w-[12rem]"
+                  className="w-48 bg-background border shadow-lg z-[9999] min-w-[12rem]"
                 >
                   <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
                     Dashboard
@@ -182,7 +182,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-background border shadow-lg z-50">
+                <DropdownMenuContent align="end" className="w-56 bg-background border shadow-lg z-[9999]">
                   <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {userRoles.map((role) => (

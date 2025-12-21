@@ -195,7 +195,7 @@ export default function RoleDashboard() {
   };
 
   return (
-    <>
+    <div className="min-h-screen">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -405,6 +405,6 @@ export default function RoleDashboard() {
         </Card>
       </div>
       </div>
-    </>
+    </div>
   );
 }
