@@ -197,15 +197,15 @@ export default function RoleDashboard() {
   return (
     <div className="min-h-screen relative">
       <Navigation />
-      <div className="container mx-auto px-4 py-8 relative z-0">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">My Dashboard</h1>
-        <p className="text-muted-foreground">
+      <div className="container mx-auto px-4 py-4 sm:py-8 relative z-0">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">My Dashboard</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Manage all your roles and activities in one place
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Digger Role Card */}
         <Card className="relative overflow-hidden">
           <CardHeader>
@@ -243,13 +243,13 @@ export default function RoleDashboard() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Active Leads</p>
-                  <p className="text-xl font-semibold text-primary">{stats.digger?.activeLeadsCount ?? 0}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Active Leads</p>
+                  <p className="text-lg sm:text-xl font-semibold text-primary">{stats.digger?.activeLeadsCount ?? 0}</p>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t">
                   <Button 
                     variant="default" 
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     onClick={() => {
                       handleSwitchRole('digger');
                       navigate('/my-leads');
@@ -260,7 +260,7 @@ export default function RoleDashboard() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     onClick={() => {
                       handleSwitchRole('digger');
                       navigate('/my-profiles');
@@ -270,7 +270,7 @@ export default function RoleDashboard() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     onClick={() => {
                       handleSwitchRole('digger');
                       navigate('/pricing');
@@ -318,24 +318,24 @@ export default function RoleDashboard() {
           <CardContent className="space-y-4">
             {userRoles.includes('gigger') ? (
               <>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Gigs Posted</p>
-                    <p className="text-2xl font-bold">{stats.gigger?.gigsCount ?? 0}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Gigs Posted</p>
+                    <p className="text-xl sm:text-2xl font-bold">{stats.gigger?.gigsCount ?? 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Active Bids</p>
-                    <p className="text-2xl font-bold">{stats.gigger?.activeBidsCount ?? 0}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Active Bids</p>
+                    <p className="text-xl sm:text-2xl font-bold">{stats.gigger?.activeBidsCount ?? 0}</p>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Awarded Gigs</p>
-                  <p className="text-xl font-semibold text-primary">{stats.gigger?.awardedGigsCount ?? 0}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Awarded Gigs</p>
+                  <p className="text-lg sm:text-xl font-semibold text-primary">{stats.gigger?.awardedGigsCount ?? 0}</p>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t">
                   <Button 
                     variant="default" 
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     onClick={() => {
                       handleSwitchRole('gigger');
                       navigate('/my-gigs');
@@ -346,7 +346,7 @@ export default function RoleDashboard() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     onClick={() => {
                       handleSwitchRole('gigger');
                       navigate('/post-gig');

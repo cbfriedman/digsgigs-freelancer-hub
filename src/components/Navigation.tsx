@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/digsandgigs-logo.png";
-import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User, Shovel } from "lucide-react";
+import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User, Shovel, Menu, X, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";
 import { DiggerProfileSelector } from "@/components/DiggerProfileSelector";
@@ -53,6 +53,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [profileCartCount, setProfileCartCount] = useState(0);
   const [adminId, setAdminId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -98,21 +99,23 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   return (
     <>
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50 relative">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
           <div 
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Digs&Gigs
             </h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4 overflow-visible">
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-2 lg:gap-4 overflow-visible">
             {/* Home Button */}
             <Button
               variant="ghost"
               onClick={() => navigate("/")}
-              className="font-semibold text-xs sm:text-sm px-2 sm:px-3"
+              className="font-semibold text-sm px-3"
             >
               HOME
             </Button>
@@ -122,7 +125,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               <Button
                 variant="ghost"
                 onClick={() => navigate("/role-dashboard")}
-                className="font-semibold text-xs sm:text-sm px-2 sm:px-3 hidden sm:inline-flex"
+                className="font-semibold text-sm px-3"
               >
                 MY DASHBOARD
               </Button>
@@ -161,17 +164,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             {user && (
               <DropdownMenu modal={true}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-1 sm:gap-2 font-semibold px-2 sm:px-3">
+                  <Button variant="ghost" className="gap-2 font-semibold px-3">
                     <User className="h-4 w-4" />
-                    <span className="hidden sm:inline">{user.email?.split('@')[0] || 'User'}</span>
+                    <span>{user.email?.split('@')[0] || 'User'}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 
                   align="end" 
                   side="bottom"
-                  sideOffset={isMobile ? 60 : 8}
-                  collisionPadding={isMobile ? 20 : 8}
+                  sideOffset={8}
+                  collisionPadding={8}
                   className="w-48 bg-background border shadow-lg z-[10000] min-w-[12rem]"
                 >
                   <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
@@ -189,7 +192,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             {user && userRoles.length > 0 && (
               <DropdownMenu modal={true}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 px-2 sm:px-3">
+                  <Button variant="outline" className="gap-2 px-3">
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1">
                         {userRoles.map((role) => (
@@ -205,8 +208,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 <DropdownMenuContent 
                   align="end" 
                   side="bottom"
-                  sideOffset={isMobile ? 60 : 8}
-                  collisionPadding={isMobile ? 20 : 8}
+                  sideOffset={8}
+                  collisionPadding={8}
                   className="w-56 bg-background border shadow-lg z-[10000] min-w-[14rem]"
                 >
                   <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
@@ -270,6 +273,196 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 {backLabel}
               </Button>
             )}
+          </div>
+
+          {/* Mobile Navigation */}
+          <div className="flex md:hidden items-center gap-2">
+            {/* User Icon - Mobile */}
+            {user && (
+              <DropdownMenu modal={true}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <User className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="end" 
+                  side="bottom"
+                  sideOffset={8}
+                  collisionPadding={8}
+                  className="w-48 bg-background border shadow-lg z-[10000] min-w-[12rem]"
+                >
+                  <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive">
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Mobile Menu Button */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-4 mt-6">
+                  {/* Navigation Links */}
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      navigate("/");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    Home
+                  </Button>
+
+                  {user && (
+                    <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={() => {
+                        navigate("/role-dashboard");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      My Dashboard
+                    </Button>
+                  )}
+
+                  {user && userRoles.includes('admin') && (
+                    <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={() => {
+                        navigate("/admin/users");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      👑 Admin
+                    </Button>
+                  )}
+
+                  {/* Role Switcher - Mobile */}
+                  {user && userRoles.length > 0 && (
+                    <>
+                      <div className="border-t border-border my-2" />
+                      <div className="px-2 py-1 text-sm font-semibold text-muted-foreground">
+                        Switch Role
+                      </div>
+                      {userRoles.map((role) => (
+                        <Button
+                          key={role}
+                          variant={activeRole === role ? "default" : "ghost"}
+                          className="justify-start"
+                          onClick={() => {
+                            switchRole(role);
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <span className="mr-2">{roleConfig[role].emoji}</span>
+                          {roleConfig[role].label}
+                          {activeRole === role && (
+                            <Badge variant="secondary" className="ml-auto text-xs">
+                              Active
+                            </Badge>
+                          )}
+                        </Button>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Account Actions */}
+                  {user && (
+                    <>
+                      <div className="border-t border-border my-2" />
+                      <Button
+                        variant="ghost"
+                        className="justify-start text-destructive"
+                        onClick={() => {
+                          signOut();
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Auth for non-authenticated */}
+                  {!user && (
+                    <>
+                      <div className="border-t border-border my-2" />
+                      <Button
+                        variant="ghost"
+                        className="justify-start"
+                        onClick={() => {
+                          navigate("/register?mode=signin");
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        Sign In
+                      </Button>
+                      <Button
+                        variant="default"
+                        className="justify-start"
+                        onClick={() => {
+                          navigate("/post-gig");
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        Get Started
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Cart - Mobile */}
+                  <div className="border-t border-border my-2" />
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      setCartOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Cart
+                    {cartCount > 0 && (
+                      <Badge variant="destructive" className="ml-auto">
+                        {cartCount}
+                      </Badge>
+                    )}
+                  </Button>
+
+                  {/* Chat - Mobile */}
+                  <Button
+                    variant="default"
+                    className="justify-start"
+                    onClick={() => {
+                      setChatOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Chat with us
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </nav>
