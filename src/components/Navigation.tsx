@@ -80,7 +80,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   return (
     <>
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between overflow-visible">
           <div 
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
@@ -89,7 +89,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               Digs&Gigs
             </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 overflow-visible">
             {/* Home Button */}
             <Button
               variant="ghost"
@@ -143,13 +143,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 font-semibold">
+                  <Button variant="ghost" className="gap-1 sm:gap-2 font-semibold px-2 sm:px-3">
                     <User className="h-4 w-4" />
-                    <span>{user.email?.split('@')[0] || 'User'}</span>
+                    <span className="hidden sm:inline">{user.email?.split('@')[0] || 'User'}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg z-50">
+                <DropdownMenuContent 
+                  align="end" 
+                  sideOffset={8}
+                  className="w-48 bg-background border shadow-lg z-[100] min-w-[12rem]"
+                >
                   <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
                     Dashboard
                   </DropdownMenuItem>
