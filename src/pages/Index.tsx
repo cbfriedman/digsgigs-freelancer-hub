@@ -287,7 +287,7 @@ const Index = () => {
             ) : (
               <>
                 <Button variant="ghost" onClick={() => navigate("/register?mode=signin")}>Sign In</Button>
-                <Button variant="hero" onClick={() => navigate("/post-gig")}>Get Started</Button>
+                <Button variant="hero" onClick={() => navigate("/get-free-quote")}>Get Started</Button>
               </>
             )}
           </div>
@@ -400,7 +400,7 @@ const Index = () => {
                     <Button 
                       variant="hero" 
                       onClick={() => {
-                        navigate("/post-gig");
+                        navigate("/get-free-quote");
                         setMobileMenuOpen(false);
                       }}
                     >
