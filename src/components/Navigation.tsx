@@ -153,7 +153,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </Button>
                 <Button
                   variant="default"
-                  onClick={() => navigate("/post-gig")}
+                  onClick={() => navigate("/get-free-quote")}
                 >
                   Get Started
                 </Button>
@@ -420,7 +420,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         variant="default"
                         className="justify-start"
                         onClick={() => {
-                          navigate("/post-gig");
+                          navigate("/get-free-quote");
                           setMobileMenuOpen(false);
                         }}
                       >

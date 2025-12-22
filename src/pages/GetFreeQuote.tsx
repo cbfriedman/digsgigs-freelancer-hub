@@ -12,6 +12,7 @@ import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
+import { getIndustryConfig } from "@/config/industryConfig";
 
 // TCPA-compliant consent text - DO NOT MODIFY without legal review
 const CONSENT_TEXT = `By checking this box and clicking "Get My Free Quote", I expressly consent to receive telemarketing calls and text messages, including calls made using an automatic telephone dialing system or an artificial or prerecorded voice, from DigsandGigs and its partners at the telephone number I provided above. I understand that my consent is not a condition of purchase. Message and data rates may apply. I can opt out at any time by replying STOP or by contacting us at support@digsandgigs.com.`;
@@ -23,6 +24,10 @@ export default function GetFreeQuote() {
   const navigate = useNavigate();
   const { trackEvent } = useFacebookPixel();
   const { trackConversion: trackGoogleConversion } = useGoogleAdsConversion();
+  
+  // Get industry from URL parameter
+  const industry = searchParams.get("industry");
+  const industryConfig = getIndustryConfig(industry);
   
   const [formData, setFormData] = useState({
     fullName: "",
@@ -50,10 +55,11 @@ export default function GetFreeQuote() {
         content_name: 'Free Quote Form',
         content_category: utmCampaign || 'organic',
         content_type: 'lead_form',
+        industry: industryConfig.slug,
       });
       setHasTrackedViewContent(true);
     }
-  }, [formData.fullName, formData.phone, hasTrackedViewContent, trackEvent, utmCampaign]);
+  }, [formData.fullName, formData.phone, hasTrackedViewContent, trackEvent, utmCampaign, industryConfig.slug]);
 
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, "");
@@ -182,35 +188,41 @@ export default function GetFreeQuote() {
 
   // Open Graph optimized image URL
   const ogImageUrl = "https://digsgigs-freelancer-hub.lovable.app/og-image.jpg";
+  
+  // Build canonical URL with industry param if present
+  const canonicalUrl = industry 
+    ? `https://digsgigs-freelancer-hub.lovable.app/get-free-quote?industry=${industry}`
+    : "https://digsgigs-freelancer-hub.lovable.app/get-free-quote";
 
   return (
     <>
       <SEOHead
-        title="Get a Free Quote from Local Pros | DigsandGigs"
-        description="Get a free, no-obligation quote from trusted local professionals in your area. Fast response times, 1000+ verified contractors. 100% free service."
-        canonical="https://digsgigs-freelancer-hub.lovable.app/get-free-quote"
+        title={industryConfig.seo.title}
+        description={industryConfig.seo.description}
+        canonical={canonicalUrl}
         ogImage={ogImageUrl}
-        keywords="free quote, local contractors, home services, free estimate, professional services"
+        keywords={industryConfig.seo.keywords}
         structuredData={{
           "@context": "https://schema.org",
           "@type": "Service",
-          "name": "Free Quote Service",
-          "description": "Get free quotes from local professionals for your home improvement and service needs",
+          "name": `Free ${industryConfig.name} Quote Service`,
+          "description": industryConfig.seo.description,
           "provider": {
             "@type": "Organization",
             "name": "DigsandGigs",
             "url": "https://digsgigs-freelancer-hub.lovable.app"
           },
           "areaServed": "United States",
+          "serviceType": industryConfig.structuredDataType,
           "hasOfferCatalog": {
             "@type": "OfferCatalog",
-            "name": "Professional Services",
+            "name": industryConfig.structuredDataType,
             "itemListElement": [
               {
                 "@type": "Offer",
                 "itemOffered": {
                   "@type": "Service",
-                  "name": "Free Quote Request"
+                  "name": `Free ${industryConfig.name} Quote Request`
                 },
                 "price": "0",
                 "priceCurrency": "USD"
@@ -228,9 +240,9 @@ export default function GetFreeQuote() {
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 <Phone className="w-8 h-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl font-bold">Get Your Free Quote</CardTitle>
+              <CardTitle className="text-2xl font-bold">{industryConfig.headline}</CardTitle>
               <CardDescription>
-                Tell us about your project and we'll connect you with local experts
+                {industryConfig.subheadline}
               </CardDescription>
             </CardHeader>
             
@@ -352,19 +364,19 @@ export default function GetFreeQuote() {
             </CardContent>
           </Card>
 
-          {/* Trust Indicators */}
+          {/* Trust Indicators - Dynamic based on industry */}
           <div className="mt-8 grid grid-cols-3 gap-4 text-center text-sm text-muted-foreground">
             <div>
-              <div className="text-2xl font-bold text-foreground">100%</div>
-              <div>Free Service</div>
+              <div className="text-2xl font-bold text-foreground">{industryConfig.trustStats.stat1.value}</div>
+              <div>{industryConfig.trustStats.stat1.label}</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-foreground">24hr</div>
-              <div>Response Time</div>
+              <div className="text-2xl font-bold text-foreground">{industryConfig.trustStats.stat2.value}</div>
+              <div>{industryConfig.trustStats.stat2.label}</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-foreground">1000+</div>
-              <div>Local Pros</div>
+              <div className="text-2xl font-bold text-foreground">{industryConfig.trustStats.stat3.value}</div>
+              <div>{industryConfig.trustStats.stat3.label}</div>
             </div>
           </div>
         </div>
