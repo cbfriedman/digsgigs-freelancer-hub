@@ -810,6 +810,26 @@ const Register = () => {
 
       toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
       
+      // Send welcome email in the background
+      try {
+        const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
+        await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            userId,
+            email,
+            name: fullName,
+            role: primaryRole,
+            utmSource: getCampaignData()?.utm_source,
+            utmMedium: getCampaignData()?.utm_medium,
+            utmCampaign: getCampaignData()?.utm_campaign,
+          },
+        });
+        console.log('Welcome email sent successfully');
+      } catch (welcomeEmailError) {
+        // Don't fail registration if welcome email fails
+        console.error("Welcome email error:", welcomeEmailError);
+      }
+      
       // Wait a moment for roles to be created, then refresh auth context and navigate
       setTimeout(async () => {
         // Refresh the page to ensure auth context picks up the new roles
