@@ -209,3 +209,12 @@ verify_jwt = false
 
 [functions.send-notification-digest]
 verify_jwt = false
+
+[functions.send-cold-email-gigger]
+verify_jwt = false
+
+[functions.send-cold-email-digger]
+verify_jwt = false
+
+[functions.process-cold-email-sequence]
+verify_jwt = false
