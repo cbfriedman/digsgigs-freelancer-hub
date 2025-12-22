@@ -203,3 +203,9 @@ verify_jwt = false
 
 [functions.check-inactive-users]
 verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.send-notification-digest]
+verify_jwt = false
