@@ -632,6 +632,101 @@ export type Database = {
         }
         Relationships: []
       }
+      cold_email_leads: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          lead_type: string
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          lead_type: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          lead_type?: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cold_email_sequence: {
+        Row: {
+          clicked: boolean | null
+          converted: boolean | null
+          created_at: string
+          current_step: number
+          id: string
+          last_sent_at: string | null
+          lead_id: string
+          next_send_at: string | null
+          opened: boolean | null
+          step_1_sent_at: string | null
+          step_2_sent_at: string | null
+          step_3_sent_at: string | null
+          step_4_sent_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          clicked?: boolean | null
+          converted?: boolean | null
+          created_at?: string
+          current_step?: number
+          id?: string
+          last_sent_at?: string | null
+          lead_id: string
+          next_send_at?: string | null
+          opened?: boolean | null
+          step_1_sent_at?: string | null
+          step_2_sent_at?: string | null
+          step_3_sent_at?: string | null
+          step_4_sent_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          clicked?: boolean | null
+          converted?: boolean | null
+          created_at?: string
+          current_step?: number
+          id?: string
+          last_sent_at?: string | null
+          lead_id?: string
+          next_send_at?: string | null
+          opened?: boolean | null
+          step_1_sent_at?: string | null
+          step_2_sent_at?: string | null
+          step_3_sent_at?: string | null
+          step_4_sent_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cold_email_sequence_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "cold_email_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consent_records: {
         Row: {
           consent_given_at: string
