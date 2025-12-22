@@ -69,6 +69,7 @@ import LogoGeneratorPage from "./pages/LogoGeneratorPage";
 import BrandAssets from "./pages/BrandAssets";
 import GetFreeQuote from "./pages/GetFreeQuote";
 import Unsubscribe from "./pages/Unsubscribe";
+import UnsubscribeCold from "./pages/UnsubscribeCold";
 import ServiceLocationPage from "./pages/ServiceLocationPage";
 import ServiceIndexPage from "./pages/ServiceIndexPage";
 import FAQHub from "./pages/FAQHub";
@@ -348,6 +349,10 @@ const router = createBrowserRouter([
   {
     path: "/unsubscribe",
     element: <Unsubscribe />,
+  },
+  {
+    path: "/unsubscribe-cold",
+    element: <UnsubscribeCold />,
   },
   {
     path: "/services/:service",
