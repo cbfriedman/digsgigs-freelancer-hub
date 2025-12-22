@@ -369,7 +369,72 @@ COMMENT ON COLUMN public.email_preferences.digest_enabled IS 'Enable email diges
 COMMENT ON COLUMN public.email_preferences.digest_frequency IS 'Frequency of email digest (daily or weekly)';
 
 -- ============================================================================
--- 8. Insert initial blog data if tables are empty
+-- 8. Ensure keyword_analytics table exists (for Keyword Analytics Dashboard)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.keyword_analytics (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  keyword TEXT NOT NULL,
+  profession TEXT,
+  category_name TEXT,
+  times_used INTEGER NOT NULL DEFAULT 1,
+  last_used_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_keyword_analytics_keyword ON public.keyword_analytics(keyword);
+CREATE INDEX IF NOT EXISTS idx_keyword_analytics_profession ON public.keyword_analytics(profession);
+CREATE INDEX IF NOT EXISTS idx_keyword_analytics_category ON public.keyword_analytics(category_name);
+CREATE INDEX IF NOT EXISTS idx_keyword_analytics_times_used ON public.keyword_analytics(times_used DESC);
+
+ALTER TABLE public.keyword_analytics ENABLE ROW LEVEL SECURITY;
+
+-- Drop old policies if they exist
+DROP POLICY IF EXISTS "Anyone can view keyword analytics" ON public.keyword_analytics;
+DROP POLICY IF EXISTS "System can manage keyword analytics" ON public.keyword_analytics;
+
+-- Create policies (open read access, system can manage)
+CREATE POLICY "Anyone can view keyword analytics"
+  ON public.keyword_analytics
+  FOR SELECT
+  USING (true);
+
+CREATE POLICY "System can manage keyword analytics"
+  ON public.keyword_analytics
+  FOR ALL
+  USING (true);
+
+-- Create or replace function to track keyword usage
+CREATE OR REPLACE FUNCTION public.track_keyword_usage(
+  p_keyword TEXT,
+  p_profession TEXT DEFAULT NULL,
+  p_category_name TEXT DEFAULT NULL
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Try to update existing record
+  UPDATE keyword_analytics
+  SET 
+    times_used = times_used + 1,
+    last_used_at = now()
+  WHERE 
+    keyword = p_keyword
+    AND (profession = p_profession OR (profession IS NULL AND p_profession IS NULL))
+    AND (category_name = p_category_name OR (category_name IS NULL AND p_category_name IS NULL));
+  
+  -- If no record exists, insert new one
+  IF NOT FOUND THEN
+    INSERT INTO keyword_analytics (keyword, profession, category_name)
+    VALUES (p_keyword, p_profession, p_category_name);
+  END IF;
+END;
+$$;
+
+-- ============================================================================
+-- 9. Insert initial blog data if tables are empty
 -- ============================================================================
 INSERT INTO public.blog_categories (name, slug, description) VALUES
   ('Industry Insights', 'industry-insights', 'Latest trends and insights in the service industry'),
