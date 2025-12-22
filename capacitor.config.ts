@@ -4,10 +4,14 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.38914fc1d6d14d8eb6fbaca3e6477039',
   appName: 'digsgigs-freelancer-hub',
   webDir: 'dist',
-  server: {
-    url: 'https://38914fc1-d6d1-4d8e-b6fb-aca3e6477039.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  }
+  // Server URL is only used in development for live reload
+  // Remove or comment out for production builds
+  ...(process.env.NODE_ENV === 'development' && {
+    server: {
+      url: 'https://38914fc1-d6d1-4d8e-b6fb-aca3e6477039.lovableproject.com?forceHideBadge=true',
+      cleartext: true
+    }
+  })
 };
 
 export default config;
