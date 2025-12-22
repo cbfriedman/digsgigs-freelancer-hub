@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
 import { CpcDataUploader } from "@/components/CpcDataUploader";
 import { MarketingEmailsTab } from "@/components/admin/MarketingEmailsTab";
+import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface ReminderStats {
   total: number;
@@ -339,6 +340,10 @@ const AdminDashboard = () => {
               <Megaphone className="h-3 w-3" />
               Marketing Emails
             </TabsTrigger>
+            <TabsTrigger value="cold-outreach" className="flex items-center gap-1">
+              <MailPlus className="h-3 w-3" />
+              Cold Outreach
+            </TabsTrigger>
             <TabsTrigger value="keywords">Keyword Analytics</TabsTrigger>
             <TabsTrigger value="requests">Keyword Requests</TabsTrigger>
             <TabsTrigger value="cpc-data" className="flex items-center gap-1">
@@ -497,6 +502,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="marketing">
             <MarketingEmailsTab />
+          </TabsContent>
+
+          <TabsContent value="cold-outreach">
+            <ColdOutreachTab />
           </TabsContent>
 
           <TabsContent value="keywords">
