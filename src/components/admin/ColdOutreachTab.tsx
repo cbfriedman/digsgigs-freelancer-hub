@@ -236,12 +236,21 @@ export const ColdOutreachTab = () => {
       }
 
       // Trigger the sequence processor
-      const { data, error } = await supabase.functions.invoke('process-cold-email-sequence');
+      const { data, error } = await supabase.functions.invoke('process-cold-email-sequence', {
+        body: {},
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        // Provide more helpful error messages
+        if (error.message?.includes('Failed to send a request')) {
+          throw new Error('Edge function may not be deployed. Please deploy the process-cold-email-sequence function to Supabase.');
+        }
+        throw error;
+      }
 
-      toast.success(`Campaign processed: ${data.sent} emails sent`, {
-        description: data.errors?.length > 0 ? `${data.errors.length} errors` : undefined,
+      toast.success(`Campaign processed: ${data?.sent || 0} emails sent`, {
+        description: data?.errors?.length > 0 ? `${data.errors.length} errors` : data?.skipped ? `${data.skipped} skipped` : undefined,
       });
 
       loadLeads();
