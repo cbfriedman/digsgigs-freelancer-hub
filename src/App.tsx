@@ -50,6 +50,7 @@ import AdminBlog from "./pages/AdminBlog";
 import Sitemap from "./pages/Sitemap";
 import SitemapXML from "./pages/SitemapXML";
 import DiggerSubscription from "./pages/DiggerSubscription";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
@@ -137,6 +138,10 @@ const router = createBrowserRouter([
   {
     path: "/subscription",
     element: <ProtectedRoute><Subscription /></ProtectedRoute>,
+  },
+  {
+    path: "/subscription-success",
+    element: <ProtectedRoute><SubscriptionSuccess /></ProtectedRoute>,
   },
   {
     path: "/checkout",
