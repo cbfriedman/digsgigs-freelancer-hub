@@ -382,9 +382,15 @@ const handler = async (req: Request): Promise<Response> => {
           errorMessage = errorJson.message || errorMessage;
           
           // Check for domain verification error
-          if (errorMessage.includes('domain is not verified') || errorMessage.includes('not verified')) {
-            errorMessage = "Email domain not verified. Please verify digsandgigs.net in Resend.";
-            errorDetails = "Go to https://resend.com/domains to add and verify your domain. You can use 'onboarding@resend.dev' for testing.";
+          if (errorMessage.includes('domain is not verified') || errorMessage.includes('not verified') || errorMessage.includes('verify a domain')) {
+            errorMessage = "Email domain verification required. Please verify digsandgigs.net in Resend.";
+            errorDetails = "Go to https://resend.com/domains to add and verify your domain. The test domain can only send to the account owner's email. Domain verification is required to send to any recipient.";
+          }
+          
+          // Check for test domain restriction error
+          if (errorMessage.includes('only send testing emails') || errorMessage.includes('testing emails to your own')) {
+            errorMessage = "Domain verification required. The test domain can only send to your own email address.";
+            errorDetails = "You MUST verify digsandgigs.net in Resend to send emails to other recipients. Go to https://resend.com/domains to add and verify your domain. After verification, update the 'from' address to noreply@digsandgigs.net.";
           }
         } catch {
           // Use the text as-is if not JSON
