@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info, Map, List, Filter } from "lucide-react";
+import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info, Map, List, Filter, HandHeart } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -466,7 +466,12 @@ const BrowseGigs = () => {
                     onClick={() => navigate(`/gig/${gig.id}`)}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex gap-2 mb-2 flex-wrap">
+                      <div className="flex gap-2 mb-2 flex-wrap items-center">
+                        {gig.status === 'open' && (
+                          <Badge variant="default" className="bg-green-500 text-white">
+                            ✓ Open for Bidding
+                          </Badge>
+                        )}
                         {inCart && (
                           <Badge variant="secondary">
                             In Cart
@@ -548,6 +553,31 @@ const BrowseGigs = () => {
                       <div className="text-sm text-muted-foreground">
                         Posted {formatDistanceToNow(new Date(gig.created_at))} ago
                       </div>
+                      {/* Quick Bid Button for Diggers */}
+                      {diggerProfile && gig.status === 'open' && !userBids.has(gig.id) && (
+                        <Button
+                          className="w-full mt-3"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/gig/${gig.id}#bid`);
+                          }}
+                        >
+                          <HandHeart className="h-4 w-4 mr-2" />
+                          Bid Now
+                        </Button>
+                      )}
+                      {diggerProfile && userBids.has(gig.id) && (
+                        <Button
+                          variant="outline"
+                          className="w-full mt-3"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/gig/${gig.id}`);
+                          }}
+                        >
+                          View Your Bid
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
