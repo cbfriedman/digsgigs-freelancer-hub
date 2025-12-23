@@ -408,7 +408,7 @@ export default function Pricing() {
                 <h3 className="font-semibold mb-3">Extended Price Protection</h3>
                 <p className="text-sm text-muted-foreground">
                   After your initial 12 months, your price lock continues as long as you receive 
-                  fewer than <strong>{PRICE_LOCK_CLICK_THRESHOLD} profile views per month</strong>. 
+                  fewer than <strong>24 profile views per year</strong>. 
                   This rewards loyal subscribers who may not be receiving high lead volume.
                 </p>
               </div>

@@ -339,7 +339,7 @@ export default function Subscription() {
                     <div>
                       <p className="font-medium">Extended Price Protection</p>
                       <p className="text-sm text-muted-foreground">
-                        Keep your locked rate with &lt;{PRICE_LOCK_CLICK_THRESHOLD} monthly profile views
+                        Keep your locked rate with fewer than 24 yearly profile views
                       </p>
                     </div>
                   </div>
