@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useAuth } from "@/contexts/AuthContext";
+import { CategoryBrowserWithDescription } from "@/components/CategoryBrowserWithDescription";
 
 const tierIcons: Record<GeographicTier, React.ReactNode> = {
   local: <MapPin className="h-6 w-6" />,
@@ -56,10 +58,49 @@ const tierColors: Record<GeographicTier, string> = {
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [industryType, setIndustryType] = useState<'lv_mv' | 'hv'>('lv_mv');
 
   const geographicTiers: GeographicTier[] = ['local', 'statewide', 'nationwide'];
+  
+  // Check if user wants to create a profile (from "Create New Profile" button)
+  const createProfile = searchParams.get('create') === 'true' || searchParams.get('createProfile') === 'true';
+
+  // If user is logged in and wants to create a profile, show the profile creation form
+  if (user && createProfile) {
+    return (
+      <>
+        <Helmet>
+          <title>Create New Digger Profile | DigsAndGigs</title>
+          <meta name="description" content="Create a new digger profile to start receiving leads for your services." />
+        </Helmet>
+        <Navigation />
+        <div className="min-h-screen bg-background">
+          <div className="container mx-auto px-4 py-8">
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-6">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/my-profiles')}
+                  className="mb-4"
+                >
+                  ← Back to My Profiles
+                </Button>
+                <h1 className="text-3xl font-bold mb-2">Create New Profile</h1>
+                <p className="text-muted-foreground">
+                  Set up a new profile to organize your services, target different locations, or market separate specializations.
+                </p>
+              </div>
+              <CategoryBrowserWithDescription />
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>

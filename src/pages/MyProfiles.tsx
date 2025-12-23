@@ -37,10 +37,8 @@ export default function MyProfiles() {
   });
 
   const handleCreateNewProfile = () => {
-    // Navigate directly to category browser - naming is handled there
-    // Primary profiles auto-name from category
-    // Secondary profiles get name input after category selection
-    navigate("/pricing");
+    // Navigate to pricing page with create flag to show profile creation form
+    navigate("/pricing?create=true");
   };
 
   useEffect(() => {
