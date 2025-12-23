@@ -265,17 +265,34 @@ export default function Subscription() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="mt-4 pt-4 border-t">
+                  <div className="mt-4 pt-4 border-t space-y-3">
                     <div className="flex items-start gap-2 text-sm text-muted-foreground">
                       <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
                       <p>
-                        Subscription pricing is <strong>per profile</strong>. If you have multiple profiles, each will need its own subscription based on its professions and geographic coverage.
+                        Subscription pricing is <strong>per profile</strong>. Each profile has its own subscription based on its professions and geographic coverage.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <p>
+                        Need <strong>different geographic coverage</strong> for different services? Create separate profiles — each can have its own coverage area and rate.
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* Geographic Coverage Note */}
+            <Alert variant="default" className="mb-8 border-primary/30 bg-primary/5">
+              <Info className="h-4 w-4" />
+              <AlertTitle>Geographic Coverage Applies to All Professions</AlertTitle>
+              <AlertDescription>
+                The geographic tier you select will apply to <strong>all professions</strong> on this profile.
+                If you need different coverage areas for different services (e.g., local for plumbing, statewide for consulting), 
+                consider creating separate profiles to optimize your subscription costs.
+              </AlertDescription>
+            </Alert>
 
             {/* Tier Selector */}
             <div className="mb-8">
