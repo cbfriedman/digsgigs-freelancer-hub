@@ -218,3 +218,18 @@ verify_jwt = false
 
 [functions.process-cold-email-sequence]
 verify_jwt = false
+
+[functions.create-geo-subscription-checkout]
+verify_jwt = true
+
+[functions.stripe-webhook-geo-subscription]
+verify_jwt = false
+
+[functions.record-profile-click]
+verify_jwt = false
+
+[functions.check-price-locks]
+verify_jwt = false
+
+[functions.check-geo-subscription]
+verify_jwt = true
