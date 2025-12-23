@@ -78,6 +78,7 @@ import FAQCategory from "./pages/FAQCategory";
 import CompareHub from "./pages/CompareHub";
 import CompareDetail from "./pages/CompareDetail";
 import EmailLanding from "./pages/EmailLanding";
+import AdvertiserPortal from "./pages/AdvertiserPortal";
 
 const queryClient = new QueryClient();
 
