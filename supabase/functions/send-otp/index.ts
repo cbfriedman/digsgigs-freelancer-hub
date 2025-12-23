@@ -146,12 +146,36 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
+    console.log("Environment check:", {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      serviceKeyPrefix: supabaseServiceKey?.substring(0, 10) + "..."
+    });
+    
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("CRITICAL: Supabase environment variables not configured");
+      console.error("CRITICAL: Supabase environment variables not configured", {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseServiceKey
+      });
       return new Response(
         JSON.stringify({ 
           error: "Database service is not configured",
-          details: "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing"
+          details: "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing. Please check Supabase function secrets."
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+    
+    // Validate service key format
+    if (!supabaseServiceKey.startsWith('eyJ') && !supabaseServiceKey.includes('service_role')) {
+      console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY format appears invalid");
+      return new Response(
+        JSON.stringify({ 
+          error: "Database service configuration error",
+          details: "SUPABASE_SERVICE_ROLE_KEY format is invalid. Please check Supabase function secrets."
         }),
         {
           status: 500,
@@ -168,25 +192,43 @@ const handler = async (req: Request): Promise<Response> => {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 5);
 
+    // Map 'sms' to 'phone' for database compatibility (table constraint uses 'phone')
+    const dbVerificationType = method === 'sms' ? 'phone' : method;
+    
+    console.log("Attempting to insert verification code:", {
+      email: method === 'email' ? email : null,
+      phone: method === 'sms' ? phone : null,
+      method,
+      dbVerificationType,
+      codeLength: code.length
+    });
+
     const { data: insertedCode, error: dbError } = await supabase
       .from("verification_codes")
       .insert({
-        email: method === 'email' ? email : null,
+        email: method === 'email' ? email?.toLowerCase() : null,
         phone: method === 'sms' ? phone : null,
         code,
         expires_at: expiresAt.toISOString(),
         verified: false,
-        verification_type: method,
+        verification_type: dbVerificationType,
       })
       .select()
       .single();
 
     if (dbError) {
-      console.error("Error storing verification code:", dbError);
+      console.error("Error storing verification code:", {
+        error: dbError,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint,
+        code: dbError.code
+      });
       return new Response(
         JSON.stringify({ 
           error: "Failed to store verification code",
-          details: dbError.message 
+          details: dbError.message,
+          hint: dbError.hint || "Check database constraints and RLS policies"
         }),
         {
           status: 500,
@@ -343,29 +385,48 @@ const handler = async (req: Request): Promise<Response> => {
     }
   } catch (error: any) {
     console.error("Error sending OTP:", error);
-    console.error("Error stack:", error.stack);
+    console.error("Error name:", error?.name);
+    console.error("Error message:", error?.message);
+    console.error("Error stack:", error?.stack);
+    
+    // Log full error details for debugging
+    if (error?.cause) {
+      console.error("Error cause:", error.cause);
+    }
     
     // Provide more helpful error messages
-    let errorMessage = error.message || "Failed to send verification code";
+    let errorMessage = error?.message || "Failed to send verification code";
     let statusCode = 500;
+    let errorDetails: any = { success: false };
     
     // Handle specific error types
-    if (errorMessage.includes("Resend API")) {
+    if (errorMessage.includes("Resend API") || errorMessage.includes("Resend")) {
       statusCode = 502; // Bad Gateway
       errorMessage = "Email service temporarily unavailable. Please try again in a moment.";
-    } else if (errorMessage.includes("Failed to store")) {
+      errorDetails.resendError = true;
+    } else if (errorMessage.includes("Failed to store") || errorMessage.includes("database") || errorMessage.includes("constraint")) {
       statusCode = 500;
-      errorMessage = "Unable to process verification request. Please try again.";
+      errorMessage = "Unable to process verification request. Please check database configuration.";
+      errorDetails.databaseError = true;
     } else if (errorMessage.includes("Twilio")) {
       statusCode = 502;
       errorMessage = "SMS service temporarily unavailable. Please try email verification.";
+      errorDetails.twilioError = true;
+    } else {
+      // For unknown errors, include more details in development
+      if (Deno.env.get("ENVIRONMENT") === "development" || !Deno.env.get("ENVIRONMENT")) {
+        errorDetails.debug = {
+          name: error?.name,
+          message: error?.message,
+          stack: error?.stack?.split('\n').slice(0, 5) // First 5 lines of stack
+        };
+      }
     }
     
+    errorDetails.error = errorMessage;
+    
     return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        success: false
-      }),
+      JSON.stringify(errorDetails),
       {
         status: statusCode,
         headers: { 
