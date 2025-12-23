@@ -5,11 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Star, DollarSign, Briefcase, Map } from "lucide-react";
+import { Search, DollarSign, Briefcase, Map } from "lucide-react";
 import { DiggerAdvancedFilters } from "@/components/DiggerAdvancedFilters";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
@@ -18,6 +16,7 @@ import SEOHead from "@/components/SEOHead";
 import { generateBreadcrumbSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
+import { DirectoryDiggerCard } from "@/components/DirectoryDiggerCard";
 
 interface Category {
   id: string;
@@ -408,140 +407,30 @@ const BrowseDiggers = () => {
                   </Card>
                  ) : (
                   <div className="grid md:grid-cols-2 gap-6">
-            {filteredDiggers.map((digger) => {
-              const isOnline = onlineDiggers.has(digger.id);
-              return (
-              <Card 
-                key={digger.id} 
-                className="hover:shadow-[var(--shadow-hover)] transition-all duration-300 cursor-pointer"
-                onClick={() => navigate(`/digger/${digger.id}`)}
-              >
-                 <CardContent className="p-6">
-                  <div className="flex items-start gap-4 mb-4">
-                    <Avatar className="h-16 w-16 relative">
-                      <AvatarImage src={digger.profile_image_url || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {getInitials(digger.handle)}
-                      </AvatarFallback>
-                      {/* Online Status Badge */}
-                      <div className="absolute -bottom-1 -right-1">
-                        <div className={`w-4 h-4 rounded-full border-2 border-background ${isOnline ? 'bg-green-500' : 'bg-muted'}`} />
-                      </div>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg truncate">
-                            @{digger.handle || "anonymous"}
-                          </h3>
-                          <span className={`text-xs font-medium ${isOnline ? 'text-green-600' : 'text-muted-foreground'}`}>
-                            {isOnline ? '● Online' : '○ Offline'}
-                          </span>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          {digger.verified && (
-                            <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">
-                              ✓
-                            </Badge>
-                          )}
-                          {digger.is_insured && (
-                            <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-xs">
-                              I
-                            </Badge>
-                          )}
-                          {digger.is_bonded && (
-                            <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-purple-500/20 text-xs">
-                              B
-                            </Badge>
-                          )}
-                          {digger.is_licensed === 'yes' && (
-                            <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">
-                              L
-                            </Badge>
-                          )}
-                          {digger.offers_free_estimates && (
-                            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
-                              <DollarSign className="h-3 w-3" />
-                            </Badge>
-                          )}
-                        </div>
-                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{getDisplayProfession(digger)}</p>
-                      {digger.country && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <span>{getCountryFlag(digger.country)}</span>
-                          <span>{digger.country}</span>
-                        </div>
-                      )}
-                      {digger.offers_free_estimates && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                            <DollarSign className="h-3 w-3 mr-1" />
-                            Free Estimate
-                          </Badge>
-                          <Badge variant="default" className="text-xs bg-primary">
-                            ${getFreeEstimatePrice(digger.subscription_tier)}
-                          </Badge>
-                        </div>
-                      )}
-                      {getOccupationBadge(digger) && (
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {getOccupationBadge(digger)}
-                        </Badge>
-                      )}
-                    </div>
+                    {filteredDiggers.map((digger) => {
+                      const isOnline = onlineDiggers.has(digger.id);
+                      return (
+                        <DirectoryDiggerCard
+                          key={digger.id}
+                          id={digger.id}
+                          profession={digger.profession}
+                          customOccupationTitle={digger.custom_occupation_title}
+                          categories={(digger.digger_categories || []).map(dc => dc.categories?.name || '').filter(Boolean)}
+                          rating={digger.average_rating}
+                          reviewCount={digger.total_ratings}
+                          profileImageUrl={digger.profile_image_url}
+                          yearsExperience={digger.years_experience}
+                          hourlyRateMin={digger.hourly_rate_min}
+                          hourlyRateMax={digger.hourly_rate_max}
+                          isInsured={digger.is_insured}
+                          isBonded={digger.is_bonded}
+                          isLicensed={digger.is_licensed}
+                          offersFreeEstimates={digger.offers_free_estimates}
+                          isOnline={isOnline}
+                        />
+                      );
+                    })}
                   </div>
-
-                  <div className="flex items-center gap-4 mb-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-accent text-accent" />
-                      <span className="font-medium">{digger.average_rating.toFixed(1)}</span>
-                      <span className="text-muted-foreground">({digger.total_ratings})</span>
-                    </div>
-                    {(digger.hourly_rate_min && digger.hourly_rate_max) ? (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <DollarSign className="h-4 w-4" />
-                        <span>${digger.hourly_rate_min}-${digger.hourly_rate_max}/hr</span>
-                      </div>
-                    ) : digger.hourly_rate && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <DollarSign className="h-4 w-4" />
-                        <span>${digger.hourly_rate}/hr</span>
-                      </div>
-                    )}
-                    {digger.years_experience && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Briefcase className="h-4 w-4" />
-                        <span>{digger.years_experience}y</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {digger.bio && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                      {digger.bio}
-                    </p>
-                  )}
-
-                  {(digger.digger_categories?.length ?? 0) > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {(digger.digger_categories || []).slice(0, 3).map((dc, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {dc.categories?.name || ''}
-                        </Badge>
-                      ))}
-                      {(digger.digger_categories?.length ?? 0) > 3 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{(digger.digger_categories?.length ?? 0) - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              );
-            })}
-          </div>
                 )}
               </TabsContent>
 
