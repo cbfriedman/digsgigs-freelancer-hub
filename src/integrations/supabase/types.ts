@@ -819,6 +819,57 @@ export type Database = {
           },
         ]
       }
+      contact_reveals: {
+        Row: {
+          cost_cents: number
+          created_at: string
+          digger_id: string
+          gig_id: string
+          id: string
+          industry_category: string | null
+          revealed_at: string
+          subscription_tier: string | null
+          used_free_click: boolean | null
+        }
+        Insert: {
+          cost_cents: number
+          created_at?: string
+          digger_id: string
+          gig_id: string
+          id?: string
+          industry_category?: string | null
+          revealed_at?: string
+          subscription_tier?: string | null
+          used_free_click?: boolean | null
+        }
+        Update: {
+          cost_cents?: number
+          created_at?: string
+          digger_id?: string
+          gig_id?: string
+          id?: string
+          industry_category?: string | null
+          revealed_at?: string
+          subscription_tier?: string | null
+          used_free_click?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_reveals_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_reveals_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           consumer_id: string
@@ -1037,6 +1088,7 @@ export type Database = {
       }
       digger_profiles: {
         Row: {
+          accumulated_free_clicks: number | null
           availability: string | null
           average_rating: number | null
           billing_cycle: string | null
@@ -1101,6 +1153,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
+          subscription_lapsed_at: string | null
           subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
@@ -1113,6 +1166,7 @@ export type Database = {
           years_experience: number | null
         }
         Insert: {
+          accumulated_free_clicks?: number | null
           availability?: string | null
           average_rating?: number | null
           billing_cycle?: string | null
@@ -1177,6 +1231,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
+          subscription_lapsed_at?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
@@ -1189,6 +1244,7 @@ export type Database = {
           years_experience?: number | null
         }
         Update: {
+          accumulated_free_clicks?: number | null
           availability?: string | null
           average_rating?: number | null
           billing_cycle?: string | null
@@ -1253,6 +1309,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
+          subscription_lapsed_at?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
@@ -2585,6 +2642,91 @@ export type Database = {
           },
         ]
       }
+      profile_calls: {
+        Row: {
+          call_duration_seconds: number | null
+          called_at: string
+          consumer_id: string
+          cost_cents: number
+          created_at: string
+          digger_profile_id: string
+          google_high_cpc_cents: number | null
+          id: string
+          keyword_matched: string | null
+        }
+        Insert: {
+          call_duration_seconds?: number | null
+          called_at?: string
+          consumer_id: string
+          cost_cents: number
+          created_at?: string
+          digger_profile_id: string
+          google_high_cpc_cents?: number | null
+          id?: string
+          keyword_matched?: string | null
+        }
+        Update: {
+          call_duration_seconds?: number | null
+          called_at?: string
+          consumer_id?: string
+          cost_cents?: number
+          created_at?: string
+          digger_profile_id?: string
+          google_high_cpc_cents?: number | null
+          id?: string
+          keyword_matched?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_calls_digger_profile_id_fkey"
+            columns: ["digger_profile_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_clicks: {
+        Row: {
+          clicked_at: string
+          consumer_id: string
+          cost_cents: number
+          created_at: string
+          digger_profile_id: string
+          google_avg_cpc_cents: number | null
+          id: string
+          keyword_matched: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          consumer_id: string
+          cost_cents: number
+          created_at?: string
+          digger_profile_id: string
+          google_avg_cpc_cents?: number | null
+          id?: string
+          keyword_matched?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          consumer_id?: string
+          cost_cents?: number
+          created_at?: string
+          digger_profile_id?: string
+          google_avg_cpc_cents?: number | null
+          id?: string
+          keyword_matched?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_clicks_digger_profile_id_fkey"
+            columns: ["digger_profile_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_completion_reminders: {
         Row: {
           created_at: string
@@ -3399,6 +3541,7 @@ export type Database = {
       }
     }
     Functions: {
+      add_monthly_free_clicks: { Args: never; Returns: undefined }
       calculate_lead_price: {
         Args: { gig_budget_max: number; gig_budget_min: number }
         Returns: number
@@ -3429,6 +3572,7 @@ export type Database = {
         }
         Returns: string
       }
+      expire_grace_period_clicks: { Args: never; Returns: undefined }
       generate_proxy_email: { Args: { p_user_id: string }; Returns: string }
       get_tier_for_lead_count: { Args: { lead_count: number }; Returns: string }
       get_user_app_roles: {
