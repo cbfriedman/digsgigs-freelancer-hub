@@ -22,6 +22,13 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   );
 
+  // Service role client for admin operations (click tracking)
+  const supabaseServiceClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
+  );
+
   try {
     logStep("Function started");
 
@@ -43,6 +50,78 @@ serve(async (req) => {
 
     logStep("Request data", { diggerId });
 
+    // Get digger profile to check subscription status FIRST
+    const { data: diggerProfile, error: diggerError } = await supabaseClient
+      .from('digger_profiles')
+      .select('subscription_status, subscription_tier, business_name, user_id, id')
+      .eq('id', diggerId)
+      .single();
+
+    if (diggerError || !diggerProfile) {
+      throw new Error("Digger profile not found");
+    }
+
+    logStep("Digger profile found", { 
+      subscription_status: diggerProfile.subscription_status,
+      tier: diggerProfile.subscription_tier 
+    });
+
+    // CRITICAL: Check if digger has active subscription
+    // If not subscribed, digger must subscribe before consumers can view contact info
+    if (diggerProfile.subscription_status !== 'active') {
+      logStep("Digger not subscribed - subscription required", { 
+        diggerId,
+        subscription_status: diggerProfile.subscription_status 
+      });
+      
+      return new Response(JSON.stringify({ 
+        requiresSubscription: true,
+        diggerId: diggerProfile.id,
+        message: "This digger needs to activate their subscription before consumers can view contact information."
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 402, // Payment Required
+      });
+    }
+
+    // Record click for subscribed digger (for price lock tracking)
+    try {
+      const now = new Date();
+      const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      
+      // Check if record exists for this month
+      const { data: existingClick } = await supabaseServiceClient
+        .from('digger_monthly_clicks')
+        .select('id, click_count')
+        .eq('digger_id', diggerId)
+        .eq('month_year', monthYear)
+        .single();
+
+      if (existingClick) {
+        // Update existing record
+        await supabaseServiceClient
+          .from('digger_monthly_clicks')
+          .update({ 
+            click_count: existingClick.click_count + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingClick.id);
+      } else {
+        // Create new record
+        await supabaseServiceClient
+          .from('digger_monthly_clicks')
+          .insert({
+            digger_id: diggerId,
+            month_year: monthYear,
+            click_count: 1,
+          });
+      }
+      logStep("Click recorded for subscribed digger", { diggerId, monthYear });
+    } catch (clickError) {
+      // Don't fail the request if click recording fails, just log it
+      logStep("Warning: Failed to record click", { error: clickError });
+    }
+
     // Check if user has already viewed this profile
     const { data: existingView } = await supabaseClient
       .from('profile_views')
@@ -63,118 +142,30 @@ serve(async (req) => {
       });
     }
 
-    // Get digger profile to determine costs based on tier
-    const { data: diggerProfile, error: diggerError } = await supabaseClient
-      .from('digger_profiles')
-      .select('subscription_tier, business_name')
-      .eq('id', diggerId)
-      .single();
+    // For subscribed diggers, consumers can view contact info for free
+    // (Digger already paid subscription, so no additional charge to consumer)
+    logStep("Digger is subscribed - unlocking contact info for free", { diggerId });
 
-    if (diggerError || !diggerProfile) {
-      throw new Error("Digger profile not found");
-    }
-
-    logStep("Digger profile found", { tier: diggerProfile.subscription_tier });
-
-    // Calculate total charge: view fee + lead cost based on tier
-    const tier = (diggerProfile.subscription_tier || 'free') as 'free' | 'pro' | 'premium';
-    let viewFee = 125; // Default free tier
-    let leadCost = 20; // Default free tier
-    
-    if (tier === 'premium') {
-      viewFee = 75;
-      leadCost = 5;
-    } else if (tier === 'pro') {
-      viewFee = 100;
-      leadCost = 10;
-    }
-
-    const totalCharge = viewFee + leadCost;
-
-    logStep("Charge calculated", { viewFee, leadCost, totalCharge, tier });
-
-    // If total charge is 0, just record the view
-    if (totalCharge === 0) {
-      const { error: viewError } = await supabaseClient
-        .from('profile_views')
-        .insert({
-          consumer_id: user.id,
-          digger_id: diggerId,
-          amount_charged: 0,
-        });
-
-      if (viewError) {
-        throw new Error(`Failed to record profile view: ${viewError.message}`);
-      }
-
-      return new Response(JSON.stringify({ 
-        success: true,
-        charged: false,
-        message: "Contact info unlocked (no charge for Premium diggers)"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    // Initialize Stripe for payment
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
-
-    // Get or create Stripe customer
-    const customers = await stripe.customers.list({
-      email: user.email,
-      limit: 1,
-    });
-
-    let customerId = customers.data.length > 0 ? customers.data[0].id : null;
-
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { supabase_user_id: user.id },
-      });
-      customerId = customer.id;
-      logStep("Created new Stripe customer", { customerId });
-    }
-
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `View Contact Info - ${diggerProfile.business_name}`,
-              description: `Profile View Fee ($${viewFee}) + Lead Access Fee ($${leadCost})`,
-            },
-            unit_amount: totalCharge * 100, // Convert to cents
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${req.headers.get("origin")}/digger-detail/${diggerId}?view=success`,
-      cancel_url: `${req.headers.get("origin")}/digger-detail/${diggerId}?view=cancelled`,
-      metadata: {
-        type: "profile_view",
+    // Record the profile view
+    const { error: viewError } = await supabaseClient
+      .from('profile_views')
+      .insert({
         consumer_id: user.id,
         digger_id: diggerId,
-        view_fee: viewFee.toString(),
-        lead_cost: leadCost.toString(),
-        total_charge: totalCharge.toString(),
-      },
-    });
+        amount_charged: 0, // Free for subscribed diggers
+      });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    if (viewError) {
+      throw new Error(`Failed to record profile view: ${viewError.message}`);
+    }
+
+    logStep("Profile view recorded", { consumerId: user.id, diggerId });
 
     return new Response(JSON.stringify({ 
-      url: session.url,
-      totalCharge,
-      viewFee,
-      leadCost
+      success: true,
+      charged: false,
+      alreadyPaid: true,
+      message: "Contact info unlocked (digger has active subscription)"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
