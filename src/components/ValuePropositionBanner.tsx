@@ -65,7 +65,7 @@ export const ValuePropositionBanner = () => {
               <span className="font-bold text-foreground">{coverageLabel}</span>.{' '}
               {industryLabel} lead subscribers get{' '}
               <span className="font-bold text-foreground">2 free lead reveals monthly</span> plus{' '}
-              <span className="font-bold text-foreground">${subLeadMin}-${subLeadMax}</span> per additional reveal.
+              <span className="font-bold text-foreground">${subLeadMax}</span> per additional reveal.
             </p>
           </div>
 
@@ -118,11 +118,11 @@ export const ValuePropositionBanner = () => {
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-primary" />
                 </div>
-                <div className="text-2xl font-bold text-primary">${subLeadMin}-${subLeadMax}</div>
+                <div className="text-2xl font-bold text-primary">${subLeadMax}</div>
               </div>
               <div className="text-sm text-muted-foreground">Per lead (subscribers)</div>
               <div className="text-xs text-muted-foreground mt-1">
-                vs ${nonSubLeadMin}-${nonSubLeadMax} non-subscribers
+                vs ${nonSubLeadMax} non-subscribers
               </div>
               <div className="text-xs text-primary/70 mt-2 font-medium">Save ~28% per lead</div>
             </div>
