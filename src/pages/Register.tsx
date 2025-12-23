@@ -417,60 +417,80 @@ const Register = () => {
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
       
       // Send OTP via unified edge function (supports both email and SMS)
-      const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp', {
-        body: {
-          email,
-          phone: formattedPhone,
-          code: otpCode,
-          name: fullName,
-          method: verificationMethod,
-        },
-      });
+      let otpData, otpError;
+      try {
+        const result = await supabase.functions.invoke('send-otp', {
+          body: {
+            email,
+            phone: formattedPhone,
+            code: otpCode,
+            name: fullName,
+            method: verificationMethod,
+          },
+        });
+        otpData = result.data;
+        otpError = result.error;
+      } catch (err: any) {
+        console.error("Exception calling send-otp:", err);
+        otpError = err;
+      }
 
       if (otpError) {
-        console.error("OTP send error:", otpError);
-        console.error("OTP error details:", JSON.stringify(otpError, null, 2));
+        console.error("=== OTP SEND ERROR ===");
+        console.error("Error object:", otpError);
+        console.error("Error name:", otpError?.name);
+        console.error("Error message:", otpError?.message);
+        console.error("Error context:", otpError?.context);
         
-        // Try to extract error details from the response
+        // Try to extract error message from response
         let errorMessage = "Failed to send verification code. Please try again.";
         let errorDetails = "";
         
-        // Check if error has a message
-        if (otpError.message) {
-          errorMessage = otpError.message;
-        }
-        
-        // Try to parse error details from the response if available
-        if (otpError.context && typeof otpError.context === 'object') {
-          const context = otpError.context as any;
-          if (context.body) {
-            try {
-              const parsedBody = typeof context.body === 'string' ? JSON.parse(context.body) : context.body;
-              if (parsedBody.error) {
-                errorMessage = parsedBody.error;
-              }
-              if (parsedBody.details) {
-                errorDetails = parsedBody.details;
-              }
-            } catch (e) {
-              // Ignore parse errors
+        // Check if we can get the actual error from the function response
+        if (otpError?.context?.body) {
+          try {
+            const errorBody = typeof otpError.context.body === 'string' 
+              ? JSON.parse(otpError.context.body) 
+              : otpError.context.body;
+            
+            if (errorBody?.error) {
+              errorMessage = errorBody.error;
             }
+            if (errorBody?.message) {
+              errorMessage = errorBody.message;
+            }
+            if (errorBody?.details) {
+              errorDetails = errorBody.details;
+            }
+          } catch (e) {
+            console.error("Could not parse error body:", e);
           }
         }
         
-        // Check if it's a configuration error
-        if (errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('not configured')) {
-          errorMessage = "Email service is not configured. Please contact support.";
-        } else if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) {
-          errorMessage = "Server error occurred. Please check that the send-otp function is properly configured with all required secrets.";
+        // Fallback to error message if available
+        if (otpError?.message && !errorMessage.includes(otpError.message)) {
+          errorMessage = otpError.message;
         }
         
-        // Show error with details if available
-        if (errorDetails && !errorMessage.includes(errorDetails)) {
+        // Provide specific error messages
+        if (errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('not configured') || errorMessage.includes('Email service')) {
+          errorMessage = "Email service is not configured. The send-otp function needs RESEND_API_KEY to be set in Supabase secrets.";
+        } else if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error') || errorMessage.includes('non-2xx')) {
+          errorMessage = "Server error: The send-otp function returned an error. Please check Supabase function logs for details.";
+          errorDetails = "Go to Supabase Dashboard → Edge Functions → send-otp → Logs tab to see the exact error.";
+        } else if (errorMessage.includes('Database') || errorMessage.includes('verification_codes')) {
+          errorMessage = "Database error: Unable to store verification code. Please check database configuration.";
+        }
+        
+        console.error("Final error message:", errorMessage);
+        if (errorDetails) {
           console.error("Error details:", errorDetails);
         }
         
-        toast.error(errorMessage);
+        toast.error(errorMessage, {
+          description: errorDetails || "Check browser console and Supabase function logs for details",
+          duration: 7000
+        });
         setLoading(false);
         return;
       }
