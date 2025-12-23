@@ -371,16 +371,32 @@ const Register = () => {
           },
         });
 
-        if (otpError) {
-          console.error("OTP send error:", otpError);
-          let errorMessage = "Failed to send verification code. Please try again.";
-          if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
-            errorMessage = "Email service is not configured. Please contact support.";
-          }
-          toast.error(errorMessage);
-          setLoading(false);
-          return;
+      if (otpError) {
+        console.error("OTP send error:", otpError);
+        console.error("OTP error details:", {
+          name: otpError.name,
+          message: otpError.message,
+          context: otpError.context
+        });
+        
+        let errorMessage = "Failed to send verification code. Please try again.";
+        
+        // Provide more specific error messages
+        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
+          errorMessage = "Email service is not configured. Please contact support.";
+        } else if (otpError.message?.includes('500') || otpError.message?.includes('non-2xx')) {
+          errorMessage = "Server error. Please check that the send-otp function is deployed and RESEND_API_KEY is set.";
+        } else if (otpError.message) {
+          errorMessage = otpError.message;
         }
+        
+        toast.error(errorMessage, {
+          description: "Check browser console for details",
+          duration: 5000
+        });
+        setLoading(false);
+        return;
+      }
 
         // OTP sent successfully - move to verification step
         setOtpSent(true);

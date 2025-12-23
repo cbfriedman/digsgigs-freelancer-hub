@@ -113,14 +113,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Parse request body with error handling
     let requestBody: OTPRequest;
     try {
-      const bodyText = await req.text();
-      console.log("Raw request body length:", bodyText.length);
-      requestBody = JSON.parse(bodyText);
+      requestBody = await req.json();
       console.log("Parsed request body:", { 
         email: requestBody.email, 
-        phone: requestBody.phone ? '***' : null,
+        hasPhone: !!requestBody.phone,
         codeLength: requestBody.code?.length,
-        name: requestBody.name,
+        hasName: !!requestBody.name,
         method: requestBody.method 
       });
     } catch (parseError: any) {
@@ -139,6 +137,22 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { email, phone, code, name, method } = requestBody;
+    
+    // Validate method is provided
+    if (!method) {
+      console.error("Method is missing from request");
+      return new Response(
+        JSON.stringify({ 
+          error: "Method is required",
+          details: "Please specify 'email' or 'sms' as the verification method"
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+    
     console.log("Processing OTP request:", { email, method, codeLength: code?.length });
 
     // Validate required fields
