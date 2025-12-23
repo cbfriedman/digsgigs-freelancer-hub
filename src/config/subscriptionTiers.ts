@@ -192,11 +192,44 @@ export function isHighValueIndustry(profession: string): boolean {
 }
 
 /**
- * Get the industry type based on profession
+ * Get the industry type based on a single profession
  */
 export function getIndustryType(profession: string | null): IndustryType {
   if (!profession) return 'lv_mv';
   return isHighValueIndustry(profession) ? 'hv' : 'lv_mv';
+}
+
+/**
+ * Analyze multiple professions to determine if there's a mix of HV and LV/MV
+ * Returns the highest tier (HV if any HV profession exists) and whether there's a mix
+ */
+export function analyzeProfileIndustryTypes(professions: string[]): {
+  industryType: IndustryType;
+  hasMixedTypes: boolean;
+  hvProfessions: string[];
+  lvMvProfessions: string[];
+} {
+  const hvProfessions: string[] = [];
+  const lvMvProfessions: string[] = [];
+
+  professions.forEach((profession) => {
+    if (isHighValueIndustry(profession)) {
+      hvProfessions.push(profession);
+    } else {
+      lvMvProfessions.push(profession);
+    }
+  });
+
+  const hasMixedTypes = hvProfessions.length > 0 && lvMvProfessions.length > 0;
+  // Default to HV if any HV profession exists
+  const industryType: IndustryType = hvProfessions.length > 0 ? 'hv' : 'lv_mv';
+
+  return {
+    industryType,
+    hasMixedTypes,
+    hvProfessions,
+    lvMvProfessions,
+  };
 }
 
 /**

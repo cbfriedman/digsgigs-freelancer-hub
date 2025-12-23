@@ -126,6 +126,9 @@ export function SubscriptionStatusCard({ diggerProfileId }: SubscriptionStatusCa
           <p className="text-sm text-muted-foreground mb-4">
             When a consumer clicks your profile, your subscription will be activated. Choose your geographic coverage area to set your pricing.
           </p>
+          <p className="text-xs text-muted-foreground mb-4 flex items-start gap-1">
+            <span className="font-medium">Note:</span> Subscriptions are billed per profile. Each profile requires its own subscription based on its professions and coverage area.
+          </p>
           <Button onClick={() => navigate(`/subscription?profileId=${diggerProfileId}`)}>
             View Subscription Options
           </Button>
