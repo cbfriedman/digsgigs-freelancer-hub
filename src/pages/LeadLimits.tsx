@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function LeadLimits() {
   const navigate = useNavigate();
+  const { user, isDigger, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [leadLimitEnabled, setLeadLimitEnabled] = useState(false);
@@ -21,36 +23,53 @@ export default function LeadLimits() {
   const [diggerId, setDiggerId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait for auth to load before checking
+    if (authLoading) return;
+    
     loadLeadLimits();
-  }, []);
+  }, [authLoading, user, isDigger]);
 
   const loadLeadLimits = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Check authentication
       if (!user) {
         navigate('/register');
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', user.id)
-        .single();
+      // Check if user is a digger using both role systems for backward compatibility
+      // Check the newer role system (user_app_roles) first
+      let userIsDigger = isDigger;
+      
+      // If not a digger via role system, check the older profiles.user_type system
+      if (!userIsDigger) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', user.id)
+          .single();
 
-      if (profile?.user_type !== 'digger') {
+        userIsDigger = profile?.user_type === 'digger';
+      }
+
+      // If still not a digger, deny access
+      if (!userIsDigger) {
         toast.error('Only diggers can access this page');
         navigate('/');
         return;
       }
 
+      // Load digger profile settings
       const { data: diggerProfile, error } = await supabase
         .from('digger_profiles')
         .select('id, lead_limit_enabled, lead_limit, lead_limit_period')
         .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
+      // If no digger profile exists, that's okay - we'll create one when saving
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
 
       if (diggerProfile) {
         setDiggerId(diggerProfile.id);
@@ -70,6 +89,12 @@ export default function LeadLimits() {
   };
 
   const handleSave = async () => {
+    if (!user) {
+      toast.error('Please log in to save settings');
+      navigate('/register');
+      return;
+    }
+
     if (leadLimitEnabled && (!leadLimit || parseInt(leadLimit) < 1)) {
       toast.error('Please enter a valid lead limit (minimum 1)');
       return;
@@ -77,20 +102,51 @@ export default function LeadLimits() {
 
     setSaving(true);
     try {
-      if (!diggerId) {
-        throw new Error('Digger profile ID not found');
+      // If we have a digger profile ID, update it
+      if (diggerId) {
+        const { error } = await supabase
+          .from('digger_profiles')
+          .update({
+            lead_limit_enabled: leadLimitEnabled,
+            lead_limit: leadLimitEnabled ? parseInt(leadLimit) : null,
+            lead_limit_period: period,
+          })
+          .eq('id', diggerId);
+
+        if (error) throw error;
+      } else {
+        // If no digger profile exists, we need to get or create one
+        // First, try to get the digger profile
+        const { data: existingProfile, error: fetchError } = await supabase
+          .from('digger_profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (fetchError && fetchError.code === 'PGRST116') {
+          // No profile exists - user needs to complete digger registration first
+          toast.error('Please complete your digger profile first');
+          navigate('/digger-registration');
+          return;
+        }
+
+        if (fetchError) throw fetchError;
+
+        // Update the existing profile
+        if (existingProfile) {
+          const { error: updateError } = await supabase
+            .from('digger_profiles')
+            .update({
+              lead_limit_enabled: leadLimitEnabled,
+              lead_limit: leadLimitEnabled ? parseInt(leadLimit) : null,
+              lead_limit_period: period,
+            })
+            .eq('id', existingProfile.id);
+
+          if (updateError) throw updateError;
+          setDiggerId(existingProfile.id);
+        }
       }
-
-      const { error } = await supabase
-        .from('digger_profiles')
-        .update({
-          lead_limit_enabled: leadLimitEnabled,
-          lead_limit: leadLimitEnabled ? parseInt(leadLimit) : null,
-          lead_limit_period: period,
-        })
-        .eq('id', diggerId);
-
-      if (error) throw error;
 
       toast.success('Lead limit settings saved successfully');
     } catch (error: any) {
@@ -104,7 +160,7 @@ export default function LeadLimits() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
