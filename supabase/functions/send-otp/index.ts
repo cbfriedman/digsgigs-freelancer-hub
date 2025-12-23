@@ -349,7 +349,9 @@ const handler = async (req: Request): Promise<Response> => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "Digs and Gigs <noreply@digsandgigs.net>",
+          // TODO: Change back to noreply@digsandgigs.net after domain verification in Resend
+          // For now using Resend's test domain for testing
+          from: "Digs and Gigs <onboarding@resend.dev>",
           to: [email!],
           subject: "Your Verification Code",
           html: `
@@ -372,16 +374,30 @@ const handler = async (req: Request): Promise<Response> => {
       if (!emailResponse.ok) {
         const errorText = await emailResponse.text();
         let errorMessage = `Resend API error: ${errorText}`;
+        let errorDetails = "";
         
         // Try to parse error for better message
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.message || errorMessage;
+          
+          // Check for domain verification error
+          if (errorMessage.includes('domain is not verified') || errorMessage.includes('not verified')) {
+            errorMessage = "Email domain not verified. Please verify digsandgigs.net in Resend.";
+            errorDetails = "Go to https://resend.com/domains to add and verify your domain. You can use 'onboarding@resend.dev' for testing.";
+          }
         } catch {
           // Use the text as-is if not JSON
+          if (errorText.includes('domain is not verified') || errorText.includes('not verified')) {
+            errorMessage = "Email domain not verified. Please verify digsandgigs.net in Resend.";
+            errorDetails = "Go to https://resend.com/domains to add and verify your domain. You can use 'onboarding@resend.dev' for testing.";
+          }
         }
         
         console.error("Resend API error:", errorMessage);
+        if (errorDetails) {
+          console.error("Error details:", errorDetails);
+        }
         throw new Error(errorMessage);
       }
 
