@@ -385,6 +385,10 @@ const router = createBrowserRouter([
     element: <CompareDetail />,
   },
   {
+    path: "/advertiser",
+    element: <AdvertiserPortal />,
+  },
+  {
     path: "*",
     element: <NotFound />,
   },
