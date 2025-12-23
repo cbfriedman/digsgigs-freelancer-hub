@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, RefreshCw, Send, Users, UserX, TrendingUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Mail, RefreshCw, Send, Users, UserX, TrendingUp, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -22,6 +23,7 @@ interface EmailLog {
 interface EmailStats {
   totalMarketing: number;
   totalReengagement: number;
+  totalCommunity: number;
   last7Days: number;
   last30Days: number;
 }
@@ -30,15 +32,21 @@ export const MarketingEmailsTab = () => {
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
   const [stats, setStats] = useState<EmailStats>({ 
     totalMarketing: 0, 
-    totalReengagement: 0, 
+    totalReengagement: 0,
+    totalCommunity: 0,
     last7Days: 0, 
     last30Days: 0 
   });
   const [loading, setLoading] = useState(true);
   const [triggeringReengagement, setTriggeringReengagement] = useState(false);
   const [sendingMarketing, setSendingMarketing] = useState(false);
+  const [sendingCommunity, setSendingCommunity] = useState(false);
   const [marketingEmail, setMarketingEmail] = useState("");
   const [marketingName, setMarketingName] = useState("");
+  const [communityEmail, setCommunityEmail] = useState("");
+  const [communityName, setCommunityName] = useState("");
+  const [communityAudience, setCommunityAudience] = useState<string>("single");
+  const [communityLimit, setCommunityLimit] = useState("100");
 
   useEffect(() => {
     loadEmailData();
@@ -67,6 +75,7 @@ export const MarketingEmailsTab = () => {
       setStats({
         totalMarketing: allLogs.filter(l => l.email_type === 'marketing').length,
         totalReengagement: allLogs.filter(l => l.email_type === 'reengagement').length,
+        totalCommunity: allLogs.filter(l => l.email_type === 'community').length,
         last7Days: allLogs.filter(l => new Date(l.sent_at) >= sevenDaysAgo).length,
         last30Days: allLogs.filter(l => new Date(l.sent_at) >= thirtyDaysAgo).length,
       });
@@ -137,9 +146,63 @@ export const MarketingEmailsTab = () => {
     }
   };
 
+  const sendCommunityEmail = async () => {
+    setSendingCommunity(true);
+    try {
+      let body: any;
+      
+      if (communityAudience === 'single') {
+        if (!communityEmail) {
+          toast.error("Please enter an email address");
+          setSendingCommunity(false);
+          return;
+        }
+        body = {
+          email: communityEmail,
+          name: communityName || undefined,
+        };
+      } else {
+        body = {
+          targetAudience: communityAudience,
+          limit: parseInt(communityLimit) || 100,
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke("send-community-email", {
+        body
+      });
+
+      if (error) throw error;
+
+      if (communityAudience === 'single') {
+        toast.success("Community email sent!", {
+          description: `Email sent to ${communityEmail}`
+        });
+        setCommunityEmail("");
+        setCommunityName("");
+      } else {
+        toast.success("Bulk community emails sent!", {
+          description: data?.message || `Sent to ${data?.sentCount || 0} users`
+        });
+      }
+      
+      await loadEmailData();
+    } catch (error: any) {
+      console.error("Error sending community email:", error);
+      toast.error("Failed to send community email", {
+        description: error.message
+      });
+    } finally {
+      setSendingCommunity(false);
+    }
+  };
+
   const getTypeBadge = (type: string, reason: string | null) => {
     if (type === 'marketing') {
       return <Badge variant="default">Marketing</Badge>;
+    }
+    if (type === 'community') {
+      return <Badge className="bg-purple-500 hover:bg-purple-600">Community</Badge>;
     }
     return (
       <Badge variant="secondary">
@@ -159,10 +222,10 @@ export const MarketingEmailsTab = () => {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Marketing Emails</CardTitle>
+            <CardTitle className="text-sm font-medium">Marketing</CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -173,12 +236,23 @@ export const MarketingEmailsTab = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Community</CardTitle>
+            <MessageSquare className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCommunity}</div>
+            <p className="text-xs text-muted-foreground">Launch emails</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Re-engagement</CardTitle>
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalReengagement}</div>
-            <p className="text-xs text-muted-foreground">Inactive users contacted</p>
+            <p className="text-xs text-muted-foreground">Inactive users</p>
           </CardContent>
         </Card>
 
@@ -205,7 +279,92 @@ export const MarketingEmailsTab = () => {
         </Card>
       </div>
 
-      {/* Actions */}
+      {/* Community Email Campaign - Featured */}
+      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-purple-500" />
+            🚀 Community Launch Email Campaign
+          </CardTitle>
+          <CardDescription>
+            Announce the new Digs and Gigs Community - Forums, Project Showcases, and Pro Networking!
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Target Audience</Label>
+            <Select value={communityAudience} onValueChange={setCommunityAudience}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="single">Single Email</SelectItem>
+                <SelectItem value="diggers">All Diggers (Contractors)</SelectItem>
+                <SelectItem value="giggers">All Giggers (Homeowners)</SelectItem>
+                <SelectItem value="all">All Users</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {communityAudience === 'single' ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="community-email">Email Address</Label>
+                <Input
+                  id="community-email"
+                  type="email"
+                  placeholder="user@example.com"
+                  value={communityEmail}
+                  onChange={(e) => setCommunityEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="community-name">Name (optional)</Label>
+                <Input
+                  id="community-name"
+                  placeholder="John Doe"
+                  value={communityName}
+                  onChange={(e) => setCommunityName(e.target.value)}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="community-limit">Batch Limit</Label>
+              <Input
+                id="community-limit"
+                type="number"
+                placeholder="100"
+                value={communityLimit}
+                onChange={(e) => setCommunityLimit(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Number of users to email in this batch (recommended: 100-500)
+              </p>
+            </div>
+          )}
+
+          <Button
+            onClick={sendCommunityEmail}
+            disabled={sendingCommunity || (communityAudience === 'single' && !communityEmail)}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+          >
+            {sendingCommunity ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                {communityAudience === 'single' ? 'Send Community Email' : `Send to ${communityAudience === 'all' ? 'All Users' : communityAudience === 'diggers' ? 'All Diggers' : 'All Giggers'}`}
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Other Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Re-engagement Trigger */}
         <Card>
@@ -300,7 +459,7 @@ export const MarketingEmailsTab = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Email Log</CardTitle>
-              <CardDescription>Recent marketing and re-engagement emails sent</CardDescription>
+              <CardDescription>Recent marketing, community, and re-engagement emails sent</CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={loadEmailData}>
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -349,12 +508,15 @@ export const MarketingEmailsTab = () => {
           <div className="flex items-start gap-4">
             <Mail className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
             <div className="space-y-2">
-              <h3 className="font-semibold">About Marketing Emails</h3>
+              <h3 className="font-semibold">About Email Campaigns</h3>
+              <p className="text-sm text-muted-foreground">
+                <strong>Community emails</strong> announce the new Digs and Gigs Community featuring forums, project showcases, and pro-to-pro networking.
+              </p>
               <p className="text-sm text-muted-foreground">
                 <strong>Marketing emails</strong> are sent to attract new users to post projects. They highlight benefits like free posting, multiple quotes, and verified professionals.
               </p>
               <p className="text-sm text-muted-foreground">
-                <strong>Re-engagement emails</strong> are automatically sent daily to users who have been inactive for 7+ days, encouraging them to post new projects.
+                <strong>Re-engagement emails</strong> are automatically sent daily to users who have been inactive for 7+ days.
               </p>
             </div>
           </div>
