@@ -141,11 +141,29 @@ serve(async (req) => {
     }
     logStep("Digger profile verified", { profileId: diggerProfile.id });
 
-    // Initialize Stripe
+    // Initialize Stripe with validation
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) {
+      logStep("ERROR: STRIPE_SECRET_KEY not configured");
+      throw new Error("STRIPE_SECRET_KEY is not set. Please configure it in Supabase Dashboard > Edge Functions > Secrets");
+    }
+    
+    // Validate Stripe key format (should start with sk_)
+    if (!stripeKey.startsWith("sk_")) {
+      logStep("ERROR: Invalid Stripe key format");
+      throw new Error("Invalid STRIPE_SECRET_KEY format. Must start with 'sk_'");
+    }
     
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    
+    // Validate price ID exists in Stripe
+    try {
+      const price = await stripe.prices.retrieve(priceId);
+      logStep("Price validated in Stripe", { priceId, amount: price.unit_amount, currency: price.currency });
+    } catch (priceError: any) {
+      logStep("ERROR: Price ID validation failed", { priceId, error: priceError.message });
+      throw new Error(`Invalid Stripe price ID: ${priceId}. Please verify the price exists in your Stripe dashboard.`);
+    }
 
     // Check if customer exists in Stripe
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -157,6 +175,12 @@ serve(async (req) => {
 
     // Create Stripe checkout session
     const checkoutOrigin = origin || "https://digsandgigs.com";
+    
+    // Validate origin URL format
+    if (!checkoutOrigin.startsWith("http://") && !checkoutOrigin.startsWith("https://")) {
+      logStep("ERROR: Invalid origin format", { origin: checkoutOrigin });
+      throw new Error("Invalid origin URL format");
+    }
     
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -188,6 +212,11 @@ serve(async (req) => {
         },
       },
     });
+    
+    if (!session.url) {
+      logStep("ERROR: No checkout URL returned from Stripe");
+      throw new Error("Failed to create checkout session: No URL returned");
+    }
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 

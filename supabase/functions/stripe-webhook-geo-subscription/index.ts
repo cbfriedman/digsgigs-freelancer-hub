@@ -31,7 +31,23 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     if (!stripeKey || !webhookSecret) {
-      throw new Error("Stripe keys not configured");
+      logStep("ERROR: Missing Stripe configuration", {
+        hasStripeKey: !!stripeKey,
+        hasWebhookSecret: !!webhookSecret
+      });
+      throw new Error("Stripe keys not configured. Please set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Supabase Dashboard > Edge Functions > Secrets");
+    }
+    
+    // Validate Stripe key format
+    if (!stripeKey.startsWith("sk_")) {
+      logStep("ERROR: Invalid Stripe key format");
+      throw new Error("Invalid STRIPE_SECRET_KEY format");
+    }
+    
+    // Validate webhook secret format
+    if (!webhookSecret.startsWith("whsec_")) {
+      logStep("ERROR: Invalid webhook secret format");
+      throw new Error("Invalid STRIPE_WEBHOOK_SECRET format. Must start with 'whsec_'");
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
