@@ -965,6 +965,41 @@ export type Database = {
           },
         ]
       }
+      digger_monthly_clicks: {
+        Row: {
+          click_count: number | null
+          created_at: string | null
+          digger_id: string
+          id: string
+          month_year: string
+          updated_at: string | null
+        }
+        Insert: {
+          click_count?: number | null
+          created_at?: string | null
+          digger_id: string
+          id?: string
+          month_year: string
+          updated_at?: string | null
+        }
+        Update: {
+          click_count?: number | null
+          created_at?: string | null
+          digger_id?: string
+          id?: string
+          month_year?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digger_monthly_clicks_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digger_professions: {
         Row: {
           created_at: string
@@ -1004,6 +1039,7 @@ export type Database = {
         Row: {
           availability: string | null
           average_rating: number | null
+          billing_cycle: string | null
           bio: string | null
           business_name: string
           certifications: string[] | null
@@ -1015,11 +1051,13 @@ export type Database = {
           custom_occupation_title: string | null
           expected_lead_period: string | null
           expected_lead_volume: number | null
+          geographic_tier: string | null
           handle: string | null
           hourly_rate: number | null
           hourly_rate_max: number | null
           hourly_rate_min: number | null
           id: string
+          industry_type: string | null
           is_bonded: boolean | null
           is_insured: boolean | null
           is_licensed: string | null
@@ -1036,9 +1074,13 @@ export type Database = {
           monthly_lead_count: number | null
           naics_code: string[] | null
           offers_free_estimates: boolean | null
+          original_price_cents: number | null
           phone: string
           portfolio_url: string | null
           portfolio_urls: string[] | null
+          price_lock_notified_30d: boolean | null
+          price_lock_notified_7d: boolean | null
+          price_locked: boolean | null
           pricing_model: string | null
           primary_profession_index: number | null
           profession: string | null
@@ -1057,7 +1099,9 @@ export type Database = {
           stripe_connect_charges_enabled: boolean | null
           stripe_connect_onboarded: boolean | null
           stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           subscription_end_date: string | null
+          subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
           tagline: string | null
@@ -1071,6 +1115,7 @@ export type Database = {
         Insert: {
           availability?: string | null
           average_rating?: number | null
+          billing_cycle?: string | null
           bio?: string | null
           business_name: string
           certifications?: string[] | null
@@ -1082,11 +1127,13 @@ export type Database = {
           custom_occupation_title?: string | null
           expected_lead_period?: string | null
           expected_lead_volume?: number | null
+          geographic_tier?: string | null
           handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
           hourly_rate_min?: number | null
           id?: string
+          industry_type?: string | null
           is_bonded?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
@@ -1103,9 +1150,13 @@ export type Database = {
           monthly_lead_count?: number | null
           naics_code?: string[] | null
           offers_free_estimates?: boolean | null
+          original_price_cents?: number | null
           phone: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
+          price_lock_notified_30d?: boolean | null
+          price_lock_notified_7d?: boolean | null
+          price_locked?: boolean | null
           pricing_model?: string | null
           primary_profession_index?: number | null
           profession?: string | null
@@ -1124,7 +1175,9 @@ export type Database = {
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_onboarded?: boolean | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           subscription_end_date?: string | null
+          subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           tagline?: string | null
@@ -1138,6 +1191,7 @@ export type Database = {
         Update: {
           availability?: string | null
           average_rating?: number | null
+          billing_cycle?: string | null
           bio?: string | null
           business_name?: string
           certifications?: string[] | null
@@ -1149,11 +1203,13 @@ export type Database = {
           custom_occupation_title?: string | null
           expected_lead_period?: string | null
           expected_lead_volume?: number | null
+          geographic_tier?: string | null
           handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
           hourly_rate_min?: number | null
           id?: string
+          industry_type?: string | null
           is_bonded?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
@@ -1170,9 +1226,13 @@ export type Database = {
           monthly_lead_count?: number | null
           naics_code?: string[] | null
           offers_free_estimates?: boolean | null
+          original_price_cents?: number | null
           phone?: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
+          price_lock_notified_30d?: boolean | null
+          price_lock_notified_7d?: boolean | null
+          price_locked?: boolean | null
           pricing_model?: string | null
           primary_profession_index?: number | null
           profession?: string | null
@@ -1191,7 +1251,9 @@ export type Database = {
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_onboarded?: boolean | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           subscription_end_date?: string | null
+          subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           tagline?: string | null
@@ -2910,6 +2972,45 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscription_pricing: {
+        Row: {
+          annual_price_cents: number
+          created_at: string | null
+          geographic_tier: string
+          id: string
+          industry_type: string
+          is_active: boolean | null
+          monthly_price_cents: number
+          stripe_price_id_annual: string | null
+          stripe_price_id_monthly: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          annual_price_cents: number
+          created_at?: string | null
+          geographic_tier: string
+          id?: string
+          industry_type: string
+          is_active?: boolean | null
+          monthly_price_cents: number
+          stripe_price_id_annual?: string | null
+          stripe_price_id_monthly?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          annual_price_cents?: number
+          created_at?: string | null
+          geographic_tier?: string
+          id?: string
+          industry_type?: string
+          is_active?: boolean | null
+          monthly_price_cents?: number
+          stripe_price_id_annual?: string | null
+          stripe_price_id_monthly?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
