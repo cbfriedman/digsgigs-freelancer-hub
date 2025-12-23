@@ -106,16 +106,30 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log("=== send-otp function called ===");
+    console.log("Method:", req.method);
+    console.log("URL:", req.url);
+    
     // Parse request body with error handling
     let requestBody: OTPRequest;
     try {
-      requestBody = await req.json();
-    } catch (parseError) {
+      const bodyText = await req.text();
+      console.log("Raw request body length:", bodyText.length);
+      requestBody = JSON.parse(bodyText);
+      console.log("Parsed request body:", { 
+        email: requestBody.email, 
+        phone: requestBody.phone ? '***' : null,
+        codeLength: requestBody.code?.length,
+        name: requestBody.name,
+        method: requestBody.method 
+      });
+    } catch (parseError: any) {
       console.error("Error parsing request body:", parseError);
       return new Response(
         JSON.stringify({ 
           error: "Invalid request format",
-          details: "Request body must be valid JSON"
+          details: "Request body must be valid JSON",
+          parseError: parseError?.message
         }),
         {
           status: 400,
@@ -125,6 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { email, phone, code, name, method } = requestBody;
+    console.log("Processing OTP request:", { email, method, codeLength: code?.length });
 
     // Validate required fields
     if (!code) {
@@ -481,22 +496,36 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-// Wrap handler to catch any unhandled errors
+// Wrap handler to catch any unhandled errors at the top level
 const wrappedHandler = async (req: Request): Promise<Response> => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+  
   try {
     return await handler(req);
   } catch (error: any) {
-    console.error("Unhandled error in send-otp function:", error);
+    console.error("=== UNHANDLED ERROR IN send-otp ===");
+    console.error("Error type:", error?.constructor?.name);
+    console.error("Error message:", error?.message);
     console.error("Error stack:", error?.stack);
+    console.error("Request method:", req.method);
+    console.error("Request URL:", req.url);
     
-    const origin = req.headers.get("origin");
-    const corsHeaders = getCorsHeaders(origin);
+    // Try to get request body for debugging (but don't fail if it's already consumed)
+    try {
+      const clonedReq = req.clone();
+      const body = await clonedReq.text();
+      console.error("Request body:", body);
+    } catch (e) {
+      console.error("Could not read request body:", e);
+    }
     
     return new Response(
       JSON.stringify({ 
         error: "Internal server error",
         message: error?.message || "An unexpected error occurred",
-        success: false
+        success: false,
+        details: process.env.DENO_ENV === "development" ? error?.stack : undefined
       }),
       {
         status: 500,
@@ -509,6 +538,7 @@ const wrappedHandler = async (req: Request): Promise<Response> => {
   }
 };
 
+// Serve with error handling
 serve(wrappedHandler);
 
 
