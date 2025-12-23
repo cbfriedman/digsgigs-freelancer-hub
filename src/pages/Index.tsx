@@ -56,7 +56,7 @@ import heroImage from "@/assets/hero-image.jpg";
 import logo from "@/assets/digsandgigs-logo.png";
 import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
 import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
-import { ROIComparisonCalculator } from "@/components/ROIComparisonCalculator";
+
 import AIChatbot from "@/components/AIChatbot";
 import { toast } from "sonner";
 
@@ -69,7 +69,6 @@ const Index = () => {
   const [profileCompletion, setProfileCompletion] = useState<number>(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showROICalculator, setShowROICalculator] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
@@ -457,7 +456,7 @@ const Index = () => {
                       className="text-base w-full sm:w-auto"
                       onClick={() => navigate("/pricing")}
                     >
-                      Buy Leads
+                      View Pricing
                     </Button>
                   </div>
                 ) : (
@@ -536,20 +535,20 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Value Proposition Banner - PPC Cost Comparison */}
+      {/* Value Proposition Banner - Subscription Model */}
       <section className="py-16 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border-y border-primary/10">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             {/* Main Headline */}
             <div className="text-center mb-12">
-              <Badge className="mb-4 bg-destructive/10 text-destructive border-destructive/20 text-base px-4 py-1">
-                🔥 Stop Burning Money on Google Ads
+              <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 text-base px-4 py-1">
+                ✨ Simple, Predictable Pricing
               </Badge>
               <h3 className="text-4xl lg:text-5xl font-bold mb-4">
-                Leads That Actually <span className="text-primary">Convert</span>
+                One Subscription. <span className="text-primary">Unlimited Leads.</span>
               </h3>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Pay only for <span className="font-bold text-foreground">real leads</span> — no wasted clicks, no subscription fees, just <span className="font-bold text-foreground">transparent pricing</span>
+                No per-click fees. No per-lead charges. Just a <span className="font-bold text-foreground">simple monthly subscription</span> for all leads in your coverage area.
               </p>
             </div>
 
@@ -560,10 +559,10 @@ const Index = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                     <DollarSign className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="text-3xl font-bold text-primary">$7.50</div>
+                  <div className="text-3xl font-bold text-primary">$19</div>
                 </div>
-                <div className="text-sm text-muted-foreground">Starting cost per lead</div>
-                <div className="text-xs text-muted-foreground mt-1">vs. $45+ PPC average</div>
+                <div className="text-sm text-muted-foreground">Starting monthly subscription</div>
+                <div className="text-xs text-muted-foreground mt-1">For local coverage</div>
               </div>
 
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
@@ -571,10 +570,10 @@ const Index = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                     <TrendingUp className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="text-3xl font-bold text-primary">10%+</div>
+                  <div className="text-3xl font-bold text-primary">Unlimited</div>
                 </div>
-                <div className="text-sm text-muted-foreground">Confirmed lead conversion rate</div>
-                <div className="text-xs text-muted-foreground mt-1">Phone-verified contacts</div>
+                <div className="text-sm text-muted-foreground">Leads in your coverage area</div>
+                <div className="text-xs text-muted-foreground mt-1">No per-lead fees</div>
               </div>
 
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
@@ -582,26 +581,30 @@ const Index = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                     <Shield className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="text-3xl font-bold text-primary">Zero</div>
+                  <div className="text-3xl font-bold text-primary">12-Month</div>
                 </div>
-                <div className="text-sm text-muted-foreground">Wasted ad clicks</div>
-                <div className="text-xs text-muted-foreground mt-1">Pay only for real leads</div>
+                <div className="text-sm text-muted-foreground">Price lock guarantee</div>
+                <div className="text-xs text-muted-foreground mt-1">Your rate is protected</div>
               </div>
             </div>
 
-            {/* Comparison Example */}
-            <div className="bg-background/90 backdrop-blur-sm rounded-xl p-6 border border-accent/30 max-w-2xl mx-auto mb-8">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="text-sm text-muted-foreground mb-1">Real Example: Construction Lead</div>
-                  <div className="text-2xl font-bold text-primary">$300</div>
-                  <div className="text-xs text-muted-foreground">cost per closed deal</div>
+            {/* Coverage Options */}
+            <div className="bg-background/90 backdrop-blur-sm rounded-xl p-6 border border-accent/30 max-w-3xl mx-auto mb-8">
+              <div className="text-center mb-4">
+                <div className="text-sm text-muted-foreground mb-2">Choose your coverage area</div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                  <div className="font-bold text-blue-600">Local</div>
+                  <div className="text-xs text-muted-foreground">From $19/mo</div>
                 </div>
-                <div className="text-muted-foreground text-2xl font-light">vs.</div>
-                <div className="flex-1 min-w-[200px]">
-                  <div className="text-sm text-muted-foreground mb-1">Google Ads</div>
-                  <div className="text-2xl font-bold text-destructive line-through">$1,943</div>
-                  <div className="text-xs text-muted-foreground">per closed deal</div>
+                <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/20">
+                  <div className="font-bold text-purple-600">Statewide</div>
+                  <div className="text-xs text-muted-foreground">From $49/mo</div>
+                </div>
+                <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                  <div className="font-bold text-amber-600">Nationwide</div>
+                  <div className="text-xs text-muted-foreground">From $99/mo</div>
                 </div>
               </div>
             </div>
@@ -612,21 +615,14 @@ const Index = () => {
                 variant="hero" 
                 size="lg" 
                 className="text-lg px-8"
-                onClick={() => setShowROICalculator(!showROICalculator)}
+                onClick={() => navigate("/pricing")}
               >
-                {showROICalculator ? "Hide Pricing Comparison" : "See Full Pricing Comparison"} <ArrowRight className={`ml-2 w-5 h-5 transition-transform ${showROICalculator ? "rotate-90" : ""}`} />
+                View All Pricing Plans <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
               <p className="text-sm text-muted-foreground mt-3">
-                Join 10,000+ service professionals who switched from PPC
+                Join 10,000+ service professionals growing with DigsAndGigs
               </p>
             </div>
-
-            {/* ROI Calculator - Expandable */}
-            {showROICalculator && (
-              <div className="mt-12 animate-in fade-in slide-in-from-top-4 duration-500">
-                <ROIComparisonCalculator />
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -824,16 +820,6 @@ const Index = () => {
             <Button variant="outline" size="lg" onClick={() => navigate("/browse-gigs")}>
               View All Gigs <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-          </div>
-        </div>
-      </section>
-
-
-      {/* ROI Comparison Calculator */}
-      <section className="py-20 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <ROIComparisonCalculator />
           </div>
         </div>
       </section>
