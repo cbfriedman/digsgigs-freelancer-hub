@@ -57,6 +57,7 @@ import heroImage from "@/assets/hero-image.jpg";
 import logo from "@/assets/digsandgigs-logo.png";
 import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
 import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
+import { ValuePropositionBanner } from "@/components/ValuePropositionBanner";
 
 import AIChatbot from "@/components/AIChatbot";
 import { toast } from "sonner";
@@ -546,109 +547,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Value Proposition Banner - Subscription Model */}
-      <section className="py-16 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border-y border-primary/10">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            {/* Main Headline */}
-            <div className="text-center mb-12">
-              <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 text-base px-4 py-1">
-                ✨ Simple, Predictable Pricing
-              </Badge>
-              <h3 className="text-4xl lg:text-5xl font-bold mb-4">
-                Subscribe for Visibility. <span className="text-primary">Pay Less Per Lead.</span>
-              </h3>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Get discovered by homeowners in your coverage area. Subscribers get <span className="font-bold text-foreground">2 free lead reveals monthly</span> plus <span className="font-bold text-foreground">65% off</span> additional reveals.
-              </p>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid md:grid-cols-4 gap-6 mb-10">
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="text-3xl font-bold text-primary">$19</div>
-                </div>
-                <div className="text-sm text-muted-foreground">Starting monthly subscription</div>
-                <div className="text-xs text-muted-foreground mt-1">For local coverage</div>
-              </div>
-
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="text-2xl font-bold text-primary">$5-$23</div>
-                </div>
-                <div className="text-sm text-muted-foreground">Per lead reveal (subscribers)</div>
-                <div className="text-xs text-muted-foreground mt-1">vs $7-$32 for non-subscribers</div>
-                <div className="text-xs text-primary/70 mt-2 font-medium">Save 25-35% on every reveal</div>
-              </div>
-
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <Gift className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div className="text-3xl font-bold text-green-600">2 Free</div>
-                </div>
-                <div className="text-sm text-muted-foreground">Lead reveals per month</div>
-                <div className="text-xs text-muted-foreground mt-1">Accumulates while subscribed</div>
-              </div>
-
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="text-3xl font-bold text-primary">12-Month</div>
-                </div>
-                <div className="text-sm text-muted-foreground">Price lock guarantee</div>
-                <div className="text-xs text-muted-foreground mt-1">Your rate is protected</div>
-              </div>
-            </div>
-
-            {/* Coverage Options */}
-            <div className="bg-background/90 backdrop-blur-sm rounded-xl p-6 border border-accent/30 max-w-3xl mx-auto mb-8">
-              <div className="text-center mb-4">
-                <div className="text-sm text-muted-foreground mb-2">Choose your coverage area</div>
-              </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                  <div className="font-bold text-blue-600">Local</div>
-                  <div className="text-xs text-muted-foreground">From $19/mo</div>
-                </div>
-                <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/20">
-                  <div className="font-bold text-purple-600">Statewide</div>
-                  <div className="text-xs text-muted-foreground">From $49/mo</div>
-                </div>
-                <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                  <div className="font-bold text-amber-600">Nationwide</div>
-                  <div className="text-xs text-muted-foreground">From $99/mo</div>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="text-center">
-              <Button 
-                variant="hero" 
-                size="lg" 
-                className="text-lg px-8"
-                onClick={() => navigate("/pricing")}
-              >
-                View All Pricing Plans <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <p className="text-sm text-muted-foreground mt-3">
-                Join 10,000+ service professionals growing with DigsAndGigs
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ValuePropositionBanner />
 
       {/* Digger Onboarding - Show choice dialog or checklist */}
       {isDigger && showOnboardingChoice && (
