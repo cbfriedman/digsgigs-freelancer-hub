@@ -273,7 +273,7 @@ export default function RoleDashboard() {
                     className="w-full text-sm sm:text-base"
                     onClick={() => {
                       handleSwitchRole('digger');
-                      navigate('/pricing');
+                      navigate('/pricing?create=true');
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
