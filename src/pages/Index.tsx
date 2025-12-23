@@ -42,7 +42,8 @@ import {
   Menu,
   MessageCircle,
   MessageSquare,
-  Shovel
+  Shovel,
+  Gift
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -555,15 +556,15 @@ const Index = () => {
                 ✨ Simple, Predictable Pricing
               </Badge>
               <h3 className="text-4xl lg:text-5xl font-bold mb-4">
-                One Subscription. <span className="text-primary">Unlimited Leads.</span>
+                Subscribe for Visibility. <span className="text-primary">Pay Less Per Lead.</span>
               </h3>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                No per-click fees. No per-lead charges. Just a <span className="font-bold text-foreground">simple monthly subscription</span> for all leads in your coverage area.
+                Get discovered by homeowners in your coverage area. Subscribers get <span className="font-bold text-foreground">2 free lead reveals monthly</span> plus <span className="font-bold text-foreground">65% off</span> additional reveals.
               </p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid md:grid-cols-3 gap-6 mb-10">
+            <div className="grid md:grid-cols-4 gap-6 mb-10">
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -580,10 +581,21 @@ const Index = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                     <TrendingUp className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="text-3xl font-bold text-primary">Unlimited</div>
+                  <div className="text-3xl font-bold text-primary">65% Off</div>
                 </div>
-                <div className="text-sm text-muted-foreground">Leads in your coverage area</div>
-                <div className="text-xs text-muted-foreground mt-1">No per-lead fees</div>
+                <div className="text-sm text-muted-foreground">Discounted lead reveal pricing</div>
+                <div className="text-xs text-muted-foreground mt-1">vs 90% for non-subscribers</div>
+              </div>
+
+              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <Gift className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="text-3xl font-bold text-green-600">2 Free</div>
+                </div>
+                <div className="text-sm text-muted-foreground">Lead reveals per month</div>
+                <div className="text-xs text-muted-foreground mt-1">Accumulates while subscribed</div>
               </div>
 
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
