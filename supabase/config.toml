@@ -233,3 +233,6 @@ verify_jwt = false
 
 [functions.check-geo-subscription]
 verify_jwt = true
+
+[functions.send-community-email]
+verify_jwt = false
