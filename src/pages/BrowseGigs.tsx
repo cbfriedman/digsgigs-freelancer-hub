@@ -84,6 +84,17 @@ const BrowseGigs = () => {
     loadData();
   }, [selectedCategory, budgetFilter, diggerProfile, advancedFilters]);
 
+  // Debug: Log digger profile and bids for troubleshooting
+  useEffect(() => {
+    if (diggerProfile) {
+      console.log('[BrowseGigs] Digger profile loaded:', {
+        id: diggerProfile.id,
+        hasProfile: !!diggerProfile
+      });
+    }
+    console.log('[BrowseGigs] User bids:', Array.from(userBids));
+  }, [diggerProfile, userBids]);
+
   const loadDiggerData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -559,6 +570,8 @@ const BrowseGigs = () => {
                           className="w-full mt-3"
                           onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
+                            console.log('[BrowseGigs] Navigating to bid form for gig:', gig.id);
                             navigate(`/gig/${gig.id}#bid`);
                           }}
                         >
@@ -572,11 +585,18 @@ const BrowseGigs = () => {
                           className="w-full mt-3"
                           onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             navigate(`/gig/${gig.id}`);
                           }}
                         >
                           View Your Bid
                         </Button>
+                      )}
+                      {/* Debug info - remove in production */}
+                      {process.env.NODE_ENV === 'development' && diggerProfile && (
+                        <div className="text-xs text-muted-foreground mt-2">
+                          Debug: Profile={!!diggerProfile}, Status={gig.status}, HasBid={userBids.has(gig.id)}
+                        </div>
                       )}
                     </div>
                   </div>

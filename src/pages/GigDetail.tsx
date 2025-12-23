@@ -59,14 +59,39 @@ const GigDetail = () => {
   useEffect(() => {
     // Scroll to bid form if hash is present
     if (window.location.hash === '#bid') {
-      setTimeout(() => {
+      console.log('[GigDetail] Hash detected, scrolling to bid form');
+      // Use a more reliable scroll method
+      const scrollToBid = () => {
         const bidElement = document.getElementById('bid');
         if (bidElement) {
+          console.log('[GigDetail] Bid element found, scrolling');
           bidElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return true;
         }
-      }, 500);
+        return false;
+      };
+
+      // Try immediately
+      if (!scrollToBid()) {
+        // If not found, wait a bit and retry (form might still be rendering)
+        setTimeout(() => {
+          if (!scrollToBid()) {
+            // Final retry after longer delay
+            setTimeout(() => {
+              if (!scrollToBid()) {
+                console.error('[GigDetail] Bid element not found after multiple retries. Check if form conditions are met:', {
+                  isDigger,
+                  diggerId,
+                  gigStatus: gig?.status,
+                  existingBid: !!existingBid
+                });
+              }
+            }, 1500);
+          }
+        }, 500);
+      }
     }
-  }, [id, loading]);
+  }, [id, loading, gig, isDigger, diggerId, existingBid]);
 
   const loadData = async () => {
     if (!id) return;
