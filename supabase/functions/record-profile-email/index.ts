@@ -8,11 +8,11 @@ const corsHeaders = {
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[RECORD-PROFILE-CALL] ${step}${detailsStr}`);
+  console.log(`[RECORD-PROFILE-EMAIL] ${step}${detailsStr}`);
 };
 
 /**
- * Google CPC data by industry category (same as calculate-profile-click-price)
+ * Google CPC data by industry category
  */
 const INDUSTRY_CPC_DATA: Record<string, { avgCpc: number; highCpc: number }> = {
   'personal injury law': { avgCpc: 450, highCpc: 935 },
@@ -44,8 +44,8 @@ const DEFAULT_CPC = {
   'low-value': { avgCpc: 15, highCpc: 35 },
 };
 
-// Call action costs 2x the click value (2x of 75% of Google avg PPC = 150% of avg PPC)
-const PROFILE_CALL_MULTIPLIER = 1.50;
+// Email action costs 1x the click value (75% of Google avg PPC)
+const PROFILE_CLICK_MULTIPLIER = 0.75;
 
 function findCpcData(keyword: string): { avgCpc: number; highCpc: number; matchedKey: string | null } {
   const normalized = keyword.toLowerCase().trim();
@@ -103,15 +103,15 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id });
 
-    const { digger_profile_id, call_duration_seconds } = await req.json();
+    const { digger_profile_id } = await req.json();
     
     if (!digger_profile_id) {
       throw new Error('digger_profile_id is required');
     }
 
-    logStep("Request received", { digger_profile_id, call_duration_seconds });
+    logStep("Request received", { digger_profile_id });
 
-    // Get gigger profile (the person clicking call)
+    // Get gigger profile (the person clicking email)
     const { data: giggerProfile, error: giggerError } = await supabaseClient
       .from('profiles')
       .select('id, full_name, email, phone')
@@ -135,9 +135,9 @@ serve(async (req) => {
       throw new Error(`Failed to fetch profile: ${profileError.message}`);
     }
 
-    // Prevent diggers from calling themselves
+    // Prevent diggers from emailing themselves
     if (profile.user_id === user.id) {
-      throw new Error('Cannot record call to your own profile');
+      throw new Error('Cannot record email to your own profile');
     }
 
     // Get digger's email from profiles table
@@ -153,93 +153,51 @@ serve(async (req) => {
 
     logStep("Profile fetched", { profession: profile.profession });
 
-    // Calculate call price (2x click value = 2x of 75% of Google avg PPC = 150% of avg PPC)
+    // Calculate email price (1x click value = 75% of Google avg PPC)
     const keyword = profile.profession || profile.industry_type || 'general contractor';
     const cpcData = findCpcData(keyword);
-    const costDollars = roundToHalfDollar(cpcData.avgCpc * PROFILE_CALL_MULTIPLIER);
+    const costDollars = roundToHalfDollar(cpcData.avgCpc * PROFILE_CLICK_MULTIPLIER);
     const costCents = Math.round(costDollars * 100);
 
     logStep("Price calculated", { costCents, avgCpc: cpcData.avgCpc });
 
-    // Record the call
-    const { data: callRecord, error: insertError } = await supabaseClient
-      .from('profile_calls')
+    // Record the email action
+    const { data: emailRecord, error: insertError } = await supabaseClient
+      .from('profile_emails')
       .insert({
         digger_profile_id,
         consumer_id: user.id,
-        call_duration_seconds: call_duration_seconds || null,
         cost_cents: costCents,
         keyword_matched: cpcData.matchedKey,
-        google_high_cpc_cents: Math.round(cpcData.avgCpc * 100),
+        google_avg_cpc_cents: Math.round(cpcData.avgCpc * 100),
       })
       .select()
       .single();
 
     if (insertError) {
-      throw new Error(`Failed to record call: ${insertError.message}`);
+      throw new Error(`Failed to record email: ${insertError.message}`);
     }
 
-    logStep("Call recorded", { callId: callRecord.id });
+    logStep("Email action recorded", { emailId: emailRecord.id });
 
     // Create in-app notification for digger
     await supabaseClient.rpc('create_notification', {
       p_user_id: profile.user_id,
       p_title: 'A new lead from Digs&Gigs',
-      p_message: `${giggerProfile.full_name || 'A consumer'} called your profile! Contact: ${giggerProfile.email}${giggerProfile.phone ? `, ${giggerProfile.phone}` : ''}. Lead charge: $${costDollars.toFixed(2)}`,
-      p_type: 'profile_call',
+      p_message: `${giggerProfile.full_name || 'A consumer'} wants to email you! Contact: ${giggerProfile.email}${giggerProfile.phone ? `, ${giggerProfile.phone}` : ''}. Lead charge: $${costDollars.toFixed(2)}`,
+      p_type: 'profile_email',
       p_link: '/profile-dashboard',
     });
 
     logStep("In-app notification created");
 
-    // Send email notification to digger
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    if (RESEND_API_KEY && diggerUserProfile.email) {
-      try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: 'Digs and Gigs <onboarding@resend.dev>',
-            to: [diggerUserProfile.email],
-            subject: 'A new lead from Digs&Gigs',
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #333;">🎉 You have a new lead!</h2>
-                <p>Great news! Someone just called your profile on Digs and Gigs.</p>
-                
-                <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <h3 style="margin-top: 0; color: #333;">Consumer Contact Information:</h3>
-                  <p><strong>Name:</strong> ${giggerProfile.full_name || 'Not provided'}</p>
-                  <p><strong>Email:</strong> ${giggerProfile.email}</p>
-                  ${giggerProfile.phone ? `<p><strong>Phone:</strong> ${giggerProfile.phone}</p>` : ''}
-                </div>
-                
-                <p><strong>Lead charge:</strong> $${costDollars.toFixed(2)}</p>
-                
-                <p>We recommend reaching out promptly to maximize your chances of winning this lead!</p>
-                
-                <p style="color: #666; font-size: 14px;">— The Digs and Gigs Team</p>
-              </div>
-            `,
-          }),
-        });
-        logStep("Email notification sent to digger");
-      } catch (emailError) {
-        logStep("Failed to send email notification", { error: String(emailError) });
-        // Don't fail the whole request if email fails
-      }
-    }
-
+    // Return the digger's email to the gigger so they can email them
     return new Response(JSON.stringify({
       success: true,
-      callId: callRecord.id,
+      emailId: emailRecord.id,
       costCents,
       costDollars,
-      diggerPhone: profile.phone,
+      diggerEmail: diggerUserProfile.email,
       googleAvgCpc: cpcData.avgCpc,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

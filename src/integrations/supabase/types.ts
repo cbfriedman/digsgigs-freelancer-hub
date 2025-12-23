@@ -2762,6 +2762,44 @@ export type Database = {
           },
         ]
       }
+      profile_emails: {
+        Row: {
+          consumer_id: string
+          cost_cents: number
+          created_at: string
+          digger_profile_id: string
+          google_avg_cpc_cents: number | null
+          id: string
+          keyword_matched: string | null
+        }
+        Insert: {
+          consumer_id: string
+          cost_cents?: number
+          created_at?: string
+          digger_profile_id: string
+          google_avg_cpc_cents?: number | null
+          id?: string
+          keyword_matched?: string | null
+        }
+        Update: {
+          consumer_id?: string
+          cost_cents?: number
+          created_at?: string
+          digger_profile_id?: string
+          google_avg_cpc_cents?: number | null
+          id?: string
+          keyword_matched?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_emails_digger_profile_id_fkey"
+            columns: ["digger_profile_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_views: {
         Row: {
           amount_charged: number
