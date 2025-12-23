@@ -81,7 +81,25 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, phone, code, name, method }: OTPRequest = await req.json();
+    // Parse request body with error handling
+    let requestBody: OTPRequest;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid request format",
+          details: "Request body must be valid JSON"
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const { email, phone, code, name, method } = requestBody;
 
     // Validate required fields
     if (!code) {
@@ -438,6 +456,34 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-serve(handler);
+// Wrap handler to catch any unhandled errors
+const wrappedHandler = async (req: Request): Promise<Response> => {
+  try {
+    return await handler(req);
+  } catch (error: any) {
+    console.error("Unhandled error in send-otp function:", error);
+    console.error("Error stack:", error?.stack);
+    
+    const origin = req.headers.get("origin");
+    const corsHeaders = getCorsHeaders(origin);
+    
+    return new Response(
+      JSON.stringify({ 
+        error: "Internal server error",
+        message: error?.message || "An unexpected error occurred",
+        success: false
+      }),
+      {
+        status: 500,
+        headers: { 
+          "Content-Type": "application/json", 
+          ...corsHeaders 
+        },
+      }
+    );
+  }
+};
+
+serve(wrappedHandler);
 
 
