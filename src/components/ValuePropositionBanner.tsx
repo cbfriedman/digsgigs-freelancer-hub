@@ -36,11 +36,14 @@ export const ValuePropositionBanner = () => {
   const subscriptionTier = getSubscriptionTier(selectedGeoTier, selectedIndustryType);
   const monthlyPrice = subscriptionTier ? (subscriptionTier.monthly_price_cents / 100).toFixed(0) : '19';
   
+  // Geographic tier multipliers: Statewide = 2x, Nationwide = 3x local pricing
+  const geoMultiplier = selectedGeoTier === 'nationwide' ? 3 : selectedGeoTier === 'statewide' ? 2 : 1;
+  
   const leadTier = selectedIndustryType === 'hv' ? 'high-value' : 'mid-value';
-  const subLeadMin = Math.round(ANGI_CPL_TIERS[leadTier].min * SUBSCRIBER_CPL_MULTIPLIER);
-  const subLeadMax = Math.round(ANGI_CPL_TIERS[leadTier].max * SUBSCRIBER_CPL_MULTIPLIER);
-  const nonSubLeadMin = Math.round(ANGI_CPL_TIERS[leadTier].min * NON_SUBSCRIBER_CPL_MULTIPLIER);
-  const nonSubLeadMax = Math.round(ANGI_CPL_TIERS[leadTier].max * NON_SUBSCRIBER_CPL_MULTIPLIER);
+  const subLeadMin = Math.round(ANGI_CPL_TIERS[leadTier].min * SUBSCRIBER_CPL_MULTIPLIER * geoMultiplier);
+  const subLeadMax = Math.round(ANGI_CPL_TIERS[leadTier].max * SUBSCRIBER_CPL_MULTIPLIER * geoMultiplier);
+  const nonSubLeadMin = Math.round(ANGI_CPL_TIERS[leadTier].min * NON_SUBSCRIBER_CPL_MULTIPLIER * geoMultiplier);
+  const nonSubLeadMax = Math.round(ANGI_CPL_TIERS[leadTier].max * NON_SUBSCRIBER_CPL_MULTIPLIER * geoMultiplier);
 
   const coverageLabel = selectedGeoTier === 'local' ? 'local area' : selectedGeoTier === 'statewide' ? 'entire state' : 'nationwide';
   const industryLabel = selectedIndustryType === 'hv' ? 'High-value' : 'Standard';
