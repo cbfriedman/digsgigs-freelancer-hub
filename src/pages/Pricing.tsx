@@ -474,10 +474,9 @@ export default function Pricing() {
                     How does the price lock work after 12 months?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    After your initial 12-month price lock, we check your monthly profile views. 
-                    If you receive fewer than {PRICE_LOCK_CLICK_THRESHOLD} views, your locked rate 
-                    continues. If you receive {PRICE_LOCK_CLICK_THRESHOLD} or more, your rate updates 
-                    to current pricing on your next billing cycle.
+                    After your initial 12-month price lock, we check your annual profile views. 
+                    If you receive fewer than 24 views, your locked rate continues. If you receive 
+                    25 or more, your rate updates to current pricing on your next billing cycle.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
