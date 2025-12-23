@@ -59,10 +59,12 @@ import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
 
 import AIChatbot from "@/components/AIChatbot";
 import { toast } from "sonner";
+import { usePlatformCounts } from "@/hooks/usePlatformCounts";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, isDigger, signOut } = useAuth();
+  const { showBrowseButtons } = usePlatformCounts();
   const [showOnboardingChoice, setShowOnboardingChoice] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [userName, setUserName] = useState<string>("");
@@ -245,12 +247,16 @@ const Index = () => {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/browse-diggers")}>
-              Browse Diggers
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/browse-gigs")}>
-              Browse Gigs
-            </Button>
+            {showBrowseButtons && (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/browse-diggers")}>
+                  Browse Diggers
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/browse-gigs")}>
+                  Browse Gigs
+                </Button>
+              </>
+            )}
             <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")}>
               Pricing
             </Button>
@@ -303,28 +309,32 @@ const Index = () => {
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-4 mt-6">
-                <Button 
-                  variant="ghost" 
-                  className="justify-start" 
-                  onClick={() => {
-                    navigate("/browse-diggers");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Browse Diggers
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="justify-start" 
-                  onClick={() => {
-                    navigate("/browse-gigs");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <Briefcase className="mr-2 h-4 w-4" />
-                  Browse Gigs
-                </Button>
+                {showBrowseButtons && (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start" 
+                      onClick={() => {
+                        navigate("/browse-diggers");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      Browse Diggers
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start" 
+                      onClick={() => {
+                        navigate("/browse-gigs");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      Browse Gigs
+                    </Button>
+                  </>
+                )}
                 <Button 
                   variant="ghost" 
                   className="justify-start" 
@@ -791,11 +801,13 @@ const Index = () => {
             ))}
           </div>
 
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg" onClick={() => navigate("/browse-diggers")}>
-              Browse All Diggers <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </div>
+          {showBrowseButtons && (
+            <div className="text-center mt-12">
+              <Button variant="outline" size="lg" onClick={() => navigate("/browse-diggers")}>
+                Browse All Diggers <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -816,11 +828,13 @@ const Index = () => {
             ))}
           </div>
 
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg" onClick={() => navigate("/browse-gigs")}>
-              View All Gigs <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </div>
+          {showBrowseButtons && (
+            <div className="text-center mt-12">
+              <Button variant="outline" size="lg" onClick={() => navigate("/browse-gigs")}>
+                View All Gigs <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
