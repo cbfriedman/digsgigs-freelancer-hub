@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { GeographicTierSelector } from "@/components/GeographicTierSelector";
 import { 
   Crown, 
@@ -15,7 +16,9 @@ import {
   Check, 
   ArrowRight,
   Loader2,
-  Lock
+  Lock,
+  AlertTriangle,
+  Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { Helmet } from "react-helmet-async";
@@ -24,7 +27,7 @@ import {
   IndustryType,
   BillingCycle,
   getSubscriptionTier,
-  getIndustryType,
+  analyzeProfileIndustryTypes,
   formatSubscriptionPrice,
   PRICE_LOCK_PERIOD_MONTHS,
   PRICE_LOCK_CLICK_THRESHOLD,
@@ -45,6 +48,11 @@ export default function Subscription() {
   const [selectedTier, setSelectedTier] = useState<GeographicTier>('local');
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [industryType, setIndustryType] = useState<IndustryType>('lv_mv');
+  
+  // Mixed industry type warning
+  const [hasMixedTypes, setHasMixedTypes] = useState(false);
+  const [hvProfessions, setHvProfessions] = useState<string[]>([]);
+  const [lvMvProfessions, setLvMvProfessions] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -77,9 +85,31 @@ export default function Subscription() {
         const profile = profiles[0];
         setDiggerProfile(profile);
         
-        // Set industry type based on profession
-        const detectedIndustryType = getIndustryType(profile.profession);
-        setIndustryType(detectedIndustryType);
+        // Fetch all professions for this profile
+        const { data: professions } = await supabase
+          .from('digger_professions')
+          .select('profession_name')
+          .eq('digger_profile_id', profile.id);
+        
+        // Collect all profession names (from digger_professions table + main profession field)
+        const allProfessions: string[] = [];
+        if (profile.profession) {
+          allProfessions.push(profile.profession);
+        }
+        if (professions) {
+          professions.forEach((p) => {
+            if (!allProfessions.includes(p.profession_name)) {
+              allProfessions.push(p.profession_name);
+            }
+          });
+        }
+        
+        // Analyze industry types for all professions
+        const analysis = analyzeProfileIndustryTypes(allProfessions);
+        setIndustryType(analysis.industryType);
+        setHasMixedTypes(analysis.hasMixedTypes);
+        setHvProfessions(analysis.hvProfessions);
+        setLvMvProfessions(analysis.lvMvProfessions);
         
         // Pre-select existing tier if upgrading
         if (profile.geographic_tier) {
@@ -178,6 +208,37 @@ export default function Subscription() {
               </p>
             </div>
 
+            {/* Mixed Industry Types Warning */}
+            {hasMixedTypes && (
+              <Alert variant="default" className="mb-8 border-amber-500/50 bg-amber-500/10">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertTitle className="text-amber-700 dark:text-amber-400">Mixed Industry Types Detected</AlertTitle>
+                <AlertDescription className="text-amber-600 dark:text-amber-300">
+                  <p className="mb-2">
+                    This profile contains both <strong>high-value</strong> ({hvProfessions.join(', ')}) and{' '}
+                    <strong>standard</strong> ({lvMvProfessions.join(', ')}) professions.
+                  </p>
+                  <p className="mb-3">
+                    To optimize your costs, consider creating <strong>separate profiles</strong> for each industry type.
+                    Standard industry professions qualify for lower subscription rates.
+                  </p>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/digger-registration?newProfile=true')}
+                      className="border-amber-500 text-amber-700 hover:bg-amber-500/20"
+                    >
+                      Create Additional Profile
+                    </Button>
+                  </div>
+                  <p className="text-xs mt-3 opacity-75">
+                    Continuing with this profile will apply <strong>high-value pricing</strong> due to the HV profession(s).
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Profile Info */}
             {diggerProfile && (
               <Card className="mb-8">
@@ -202,6 +263,14 @@ export default function Subscription() {
                       <Badge variant="secondary" className="mt-1">
                         {industryType === 'hv' ? 'High-Value Industry' : 'Standard Industry'}
                       </Badge>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <p>
+                        Subscription pricing is <strong>per profile</strong>. If you have multiple profiles, each will need its own subscription based on its professions and geographic coverage.
+                      </p>
                     </div>
                   </div>
                 </CardContent>
