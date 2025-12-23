@@ -61,7 +61,7 @@ export const ValuePropositionBanner = () => {
               Subscribe for Visibility. <span className="text-primary">Pay Less Per Lead.</span>
             </h3>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Get discovered by homeowners in your{' '}
+              Get discovered by consumers in your{' '}
               <span className="font-bold text-foreground">{coverageLabel}</span>.{' '}
               {industryLabel} lead subscribers get{' '}
               <span className="font-bold text-foreground">2 free lead reveals monthly</span> plus{' '}
