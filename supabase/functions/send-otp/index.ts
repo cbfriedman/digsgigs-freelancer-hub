@@ -80,6 +80,31 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 
+  // Health check endpoint
+  if (req.method === "GET" && new URL(req.url).searchParams.get("health") === "check") {
+    const hasResendKey = !!RESEND_API_KEY;
+    const hasSupabaseUrl = !!Deno.env.get("SUPABASE_URL");
+    const hasServiceKey = !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    return new Response(
+      JSON.stringify({
+        status: "ok",
+        function: "send-otp",
+        timestamp: new Date().toISOString(),
+        environment: {
+          hasResendKey,
+          hasSupabaseUrl,
+          hasServiceKey,
+          resendKeyFormat: RESEND_API_KEY ? (RESEND_API_KEY.startsWith('re_') ? 'valid' : 'invalid') : 'missing'
+        }
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+
   try {
     // Parse request body with error handling
     let requestBody: OTPRequest;
