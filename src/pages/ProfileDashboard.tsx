@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
+import { SubscriptionStatusCard } from "@/components/SubscriptionStatusCard";
 import { 
   ArrowLeft, 
   Edit, 
@@ -19,7 +20,8 @@ import {
   Clock, 
   CheckCircle2, 
   AlertCircle,
-  RefreshCw 
+  RefreshCw,
+  Crown
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -301,6 +303,13 @@ export default function ProfileDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Subscription Status Card */}
+        {profileId && (
+          <div className="mb-6">
+            <SubscriptionStatusCard diggerProfileId={profileId} />
+          </div>
+        )}
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="keywords" className="space-y-6">
