@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit } from "lucide-react";
+import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -19,6 +19,8 @@ import { DiggerPricingSelector } from "@/components/DiggerPricingSelector";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
+import { ProfileClickPricingCard } from "@/components/ProfileClickPricingCard";
+import { useProfileCallTracking } from "@/hooks/useProfileCallTracking";
 
 interface Reference {
   id: string;
@@ -115,6 +117,7 @@ const DiggerDetail = () => {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [diggerNeedsSubscription, setDiggerNeedsSubscription] = useState(false);
   const { isOnline } = useDiggerPresence(id);
+  const { recordCall, isRecording: isCallingDigger } = useProfileCallTracking();
   
   // Owner dashboard states
   const [leadPurchases, setLeadPurchases] = useState<LeadPurchase[]>([]);
@@ -322,6 +325,24 @@ const DiggerDetail = () => {
       } else {
         toast.error("Failed to send request");
       }
+    }
+  };
+
+  const handleCallDigger = async () => {
+    if (!currentUser) {
+      toast.error("Please sign in to call this digger");
+      navigate("/register");
+      return;
+    }
+
+    if (!digger || !id) return;
+
+    // Record the call (this charges the digger, not the caller)
+    const result = await recordCall(id);
+    
+    if (result.success) {
+      // Open the phone dialer with the digger's phone number
+      window.location.href = `tel:${digger.phone}`;
     }
   };
 
@@ -1235,21 +1256,44 @@ const DiggerDetail = () => {
           <div className="lg:col-span-1">
             <div className="space-y-6 sticky top-24">
               {!isOwnProfile && (
-                <Card>
-                  <CardContent className="p-6">
-                    <Button 
-                      className="w-full mb-4" 
-                      size="lg"
-                      onClick={handleSendMessage}
-                    >
-                      <MessageSquare className="mr-2 h-5 w-5" />
-                      Send Message
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Start a conversation to discuss your project with this digger
-                    </p>
-                  </CardContent>
-                </Card>
+                <>
+                  <Card>
+                    <CardContent className="p-6 space-y-3">
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={handleSendMessage}
+                      >
+                        <MessageSquare className="mr-2 h-5 w-5" />
+                        Send Message
+                      </Button>
+                      {digger.phone && hasViewAccess && (
+                        <Button 
+                          className="w-full" 
+                          size="lg"
+                          variant="secondary"
+                          onClick={handleCallDigger}
+                          disabled={isCallingDigger}
+                        >
+                          <Phone className="mr-2 h-5 w-5" />
+                          {isCallingDigger ? 'Connecting...' : 'Call Digger'}
+                        </Button>
+                      )}
+                      <p className="text-xs text-muted-foreground text-center">
+                        Start a conversation to discuss your project with this digger
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Profile Pricing Info for Diggers */}
+                  {digger.subscription_tier && digger.subscription_tier !== 'free' && (
+                    <ProfileClickPricingCard
+                      profession={digger.profession || 'contractor'}
+                      showActions={false}
+                      variant="full"
+                    />
+                  )}
+                </>
               )}
 
               {/* Google Search Preview */}
