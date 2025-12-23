@@ -581,10 +581,11 @@ const Index = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                     <TrendingUp className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="text-3xl font-bold text-primary">65% Off</div>
+                  <div className="text-2xl font-bold text-primary">$5-$23</div>
                 </div>
-                <div className="text-sm text-muted-foreground">Discounted lead reveal pricing</div>
-                <div className="text-xs text-muted-foreground mt-1">vs 90% for non-subscribers</div>
+                <div className="text-sm text-muted-foreground">Per lead reveal (subscribers)</div>
+                <div className="text-xs text-muted-foreground mt-1">vs $7-$32 for non-subscribers</div>
+                <div className="text-xs text-primary/70 mt-2 font-medium">Save 25-35% on every reveal</div>
               </div>
 
               <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
