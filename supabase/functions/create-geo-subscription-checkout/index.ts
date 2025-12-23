@@ -2,9 +2,30 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  "https://digsgigs-freelancer-hub.vercel.app",
+  "https://digsandgigs.com",
+  "https://www.digsandgigs.com",
+  "https://digsandgigs.net",
+  "https://www.digsandgigs.net",
+  "http://localhost:8080",
+  "http://localhost:5173",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:5173",
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0];
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Max-Age": "86400",
+  };
 };
 
 const logStep = (step: string, details?: any) => {
@@ -53,8 +74,14 @@ const SUBSCRIPTION_TIERS: Record<string, { monthly: string; annual: string; mont
 };
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    });
   }
 
   try {
@@ -129,7 +156,7 @@ serve(async (req) => {
     }
 
     // Create Stripe checkout session
-    const origin = req.headers.get("origin") || "https://digsandgigs.com";
+    const checkoutOrigin = origin || "https://digsandgigs.com";
     
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -141,8 +168,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/subscription?canceled=true`,
+      success_url: `${checkoutOrigin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${checkoutOrigin}/subscription?canceled=true`,
       metadata: {
         digger_profile_id,
         geographic_tier,
