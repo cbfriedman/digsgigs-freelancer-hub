@@ -7,10 +7,30 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const MAX_REQUESTS_PER_EMAIL = 3;
 const RATE_LIMIT_WINDOW_MINUTES = 5;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  "https://digsgigs-freelancer-hub.vercel.app",
+  "https://digsandgigs.com",
+  "https://www.digsandgigs.com",
+  "https://digsandgigs.net",
+  "https://www.digsandgigs.net",
+  "http://localhost:8080",
+  "http://localhost:5173",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:5173",
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0]; // Default to a production URL if origin is not allowed or missing
+
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Max-Age": "86400", // 24 hours
+  };
 };
 
 interface OTPEmailRequest {
@@ -20,8 +40,15 @@ interface OTPEmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      status: 204, // No Content for preflight
+      headers: corsHeaders
+    });
   }
 
   // Validate RESEND_API_KEY is configured
@@ -34,7 +61,28 @@ const handler = async (req: Request): Promise<Response> => {
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { 
+          "Content-Type": "application/json", 
+          ...corsHeaders 
+        },
+      }
+    );
+  }
+
+  // Validate RESEND_API_KEY format
+  if (!RESEND_API_KEY.startsWith('re_')) {
+    console.error("CRITICAL: RESEND_API_KEY format is invalid");
+    return new Response(
+      JSON.stringify({ 
+        error: "Email service configuration error. Please contact support.",
+        details: "RESEND_API_KEY format is invalid"
+      }),
+      {
+        status: 500,
+        headers: { 
+          "Content-Type": "application/json", 
+          ...corsHeaders 
+        },
       }
     );
   }
@@ -199,14 +247,29 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (!emailResponse.ok) {
-      const error = await emailResponse.text();
-      throw new Error(`Resend API error: ${error}`);
+      const errorText = await emailResponse.text();
+      let errorMessage = `Resend API error: ${errorText}`;
+      
+      // Try to parse error for better message
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorMessage;
+      } catch {
+        // Use the text as-is if not JSON
+      }
+      
+      console.error("Resend API error:", errorMessage);
+      throw new Error(errorMessage);
     }
 
     const result = await emailResponse.json();
     console.log("OTP email sent successfully:", result);
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: "Verification code sent successfully",
+      emailId: result.id 
+    }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -215,11 +278,31 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error sending OTP email:", error);
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || "Failed to send verification code";
+    let statusCode = 500;
+    
+    // Handle specific error types
+    if (errorMessage.includes("Resend API")) {
+      statusCode = 502; // Bad Gateway
+      errorMessage = "Email service temporarily unavailable. Please try again in a moment.";
+    } else if (errorMessage.includes("Failed to store")) {
+      statusCode = 500;
+      errorMessage = "Unable to process verification request. Please try again.";
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: errorMessage,
+        success: false
+      }),
       {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: statusCode,
+        headers: { 
+          "Content-Type": "application/json", 
+          ...corsHeaders 
+        },
       }
     );
   }
