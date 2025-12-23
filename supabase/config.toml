@@ -1,4 +1,4 @@
-project_id = "ibyhvkfrbdwrnxutnkdy"
+project_id = "njpjxasfesdapxukvyth"
 
 [functions.send-gig-confirmation]
 verify_jwt = false

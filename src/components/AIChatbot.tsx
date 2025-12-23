@@ -135,7 +135,7 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       // Use environment variable or fallback to match client.ts pattern
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ibyhvkfrbdwrnxutnkdy.supabase.co';
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://njpjxasfesdapxukvyth.supabase.co';
       const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-bot`;
       const response = await fetch(CHAT_URL, {
         method: "POST",

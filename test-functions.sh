@@ -4,7 +4,7 @@
 
 EMAIL="${1:-test@example.com}"
 ANON_KEY="${2:-}"
-PROJECT_REF="${3:-ibyhvkfrbdwrnxutnkdy}"
+PROJECT_REF="${3:-njpjxasfesdapxukvyth}"
 
 echo "========================================"
 echo "Edge Functions Testing Script"

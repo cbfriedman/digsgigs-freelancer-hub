@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 // Fallback values for Lovable Cloud environment variable injection issue
-const FALLBACK_SUPABASE_URL = 'https://ibyhvkfrbdwrnxutnkdy.supabase.co';
-const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlieWh2a2ZyYmR3cm54dXRua2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2Njg4NDcsImV4cCI6MjA3NzI0NDg0N30.fU0B8A_VTfFaGvhrNMV5kWK_YA98p4bv3HAH6ekpJEM';
+const FALLBACK_SUPABASE_URL = 'https://njpjxasfesdapxukvyth.supabase.co';
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qcGp4YXNmZXNkYXB4dWt2eXRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1MzY4MjMsImV4cCI6MjA4MDExMjgyM30.TgM7vZ-MhYzN2Bn4wyQJZDUolXbOuB6XH40hEJm8Z0I';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_SUPABASE_PUBLISHABLE_KEY;

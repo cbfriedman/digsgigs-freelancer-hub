@@ -4,7 +4,7 @@
 param(
     [string]$Email = "test@example.com",
     [string]$AnonKey = "",
-    [string]$ProjectRef = "ibyhvkfrbdwrnxutnkdy"
+    [string]$ProjectRef = "njpjxasfesdapxukvyth"
 )
 
 Write-Host "========================================" -ForegroundColor Cyan
