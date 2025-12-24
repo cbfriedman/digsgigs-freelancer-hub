@@ -80,6 +80,7 @@ import CompareDetail from "./pages/CompareDetail";
 import EmailLanding from "./pages/EmailLanding";
 import AdvertiserPortal from "./pages/AdvertiserPortal";
 import BusinessPlan from "./pages/BusinessPlan";
+import ColdEmailDocs from "./pages/ColdEmailDocs";
 
 const queryClient = new QueryClient();
 
@@ -392,6 +393,10 @@ const router = createBrowserRouter([
   {
     path: "/business-plan",
     element: <BusinessPlan />,
+  },
+  {
+    path: "/cold-email-docs",
+    element: <ColdEmailDocs />,
   },
   {
     path: "*",
