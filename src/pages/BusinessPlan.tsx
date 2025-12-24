@@ -59,58 +59,69 @@ const BusinessPlan = () => {
       yPos += summaryLines.length * 5 + 10;
 
       // Revenue Model Flow Chart (simplified text representation)
-      checkPageBreak(60);
+      checkPageBreak(70);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('Revenue Model Flow Chart', margin, yPos);
       yPos += 10;
 
-      // Draw flow chart boxes
-      const boxWidth = 50;
-      const boxHeight = 20;
-      const startX = 25;
+      // Draw flow chart boxes - smaller and centered
+      const boxWidth = 45;
+      const boxHeight = 18;
+      const gap = 15;
+      const totalWidth = (boxWidth * 3) + (gap * 4); // 3 boxes + 4 gaps (for arrows)
+      const startX = (pageWidth - totalWidth) / 2;
 
       // Digger box
       doc.setDrawColor(79, 70, 229);
       doc.setFillColor(245, 245, 255);
-      doc.roundedRect(startX, yPos, boxWidth, boxHeight, 3, 3, 'FD');
-      doc.setFontSize(9);
+      doc.roundedRect(startX, yPos, boxWidth, boxHeight, 2, 2, 'FD');
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('DIGGER', startX + boxWidth / 2, yPos + 8, { align: 'center' });
+      doc.text('DIGGER', startX + boxWidth / 2, yPos + 7, { align: 'center' });
       doc.setFont('helvetica', 'normal');
-      doc.text('(Service Provider)', startX + boxWidth / 2, yPos + 14, { align: 'center' });
+      doc.setFontSize(6);
+      doc.text('(Service Provider)', startX + boxWidth / 2, yPos + 12, { align: 'center' });
 
       // Arrow 1
+      const arrow1X = startX + boxWidth;
       doc.setDrawColor(100);
-      doc.line(startX + boxWidth + 5, yPos + boxHeight / 2, startX + boxWidth + 20, yPos + boxHeight / 2);
-      doc.text('$', startX + boxWidth + 10, yPos + boxHeight / 2 - 3);
+      doc.line(arrow1X + 2, yPos + boxHeight / 2, arrow1X + gap - 2, yPos + boxHeight / 2);
+      doc.setFontSize(7);
+      doc.text('$', arrow1X + gap / 2, yPos + boxHeight / 2 - 2, { align: 'center' });
 
       // Platform box
-      const platformX = startX + boxWidth + 25;
+      const platformX = startX + boxWidth + gap;
       doc.setDrawColor(34, 197, 94);
       doc.setFillColor(240, 253, 244);
-      doc.roundedRect(platformX, yPos, boxWidth, boxHeight, 3, 3, 'FD');
+      doc.roundedRect(platformX, yPos, boxWidth, boxHeight, 2, 2, 'FD');
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('PLATFORM', platformX + boxWidth / 2, yPos + 8, { align: 'center' });
+      doc.text('PLATFORM', platformX + boxWidth / 2, yPos + 7, { align: 'center' });
       doc.setFont('helvetica', 'normal');
-      doc.text('(Digs & Gigs)', platformX + boxWidth / 2, yPos + 14, { align: 'center' });
+      doc.setFontSize(6);
+      doc.text('(Digs & Gigs)', platformX + boxWidth / 2, yPos + 12, { align: 'center' });
 
       // Arrow 2
+      const arrow2X = platformX + boxWidth;
       doc.setDrawColor(100);
-      doc.line(platformX + boxWidth + 5, yPos + boxHeight / 2, platformX + boxWidth + 20, yPos + boxHeight / 2);
-      doc.text('Leads', platformX + boxWidth + 7, yPos + boxHeight / 2 - 3);
+      doc.line(arrow2X + 2, yPos + boxHeight / 2, arrow2X + gap - 2, yPos + boxHeight / 2);
+      doc.setFontSize(6);
+      doc.text('Leads', arrow2X + gap / 2, yPos + boxHeight / 2 - 2, { align: 'center' });
 
       // Gigger box
-      const giggerX = platformX + boxWidth + 25;
+      const giggerX = platformX + boxWidth + gap;
       doc.setDrawColor(249, 115, 22);
       doc.setFillColor(255, 247, 237);
-      doc.roundedRect(giggerX, yPos, boxWidth, boxHeight, 3, 3, 'FD');
+      doc.roundedRect(giggerX, yPos, boxWidth, boxHeight, 2, 2, 'FD');
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('GIGGER', giggerX + boxWidth / 2, yPos + 8, { align: 'center' });
+      doc.text('GIGGER', giggerX + boxWidth / 2, yPos + 7, { align: 'center' });
       doc.setFont('helvetica', 'normal');
-      doc.text('(Consumer)', giggerX + boxWidth / 2, yPos + 14, { align: 'center' });
+      doc.setFontSize(6);
+      doc.text('(Consumer)', giggerX + boxWidth / 2, yPos + 12, { align: 'center' });
 
-      yPos += boxHeight + 15;
+      yPos += boxHeight + 12;
 
       // Revenue streams below
       doc.setFontSize(9);
