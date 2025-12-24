@@ -144,10 +144,7 @@ export const ValuePropositionBanner = () => {
               <div className="text-xs text-muted-foreground mt-1">
                 vs ${nonSubLeadPrice} non-subscribers
               </div>
-              <div className="text-xs text-primary/70 mt-2 font-medium">
-                {isConfirmed && <span className="text-amber-600">+50% confirmed premium</span>}
-                {!isConfirmed && <span>Save ~28% per lead</span>}
-              </div>
+              <div className="text-xs text-primary/70 mt-2 font-medium">Save ~28% per lead</div>
             </div>
 
             <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
