@@ -79,6 +79,7 @@ import CompareHub from "./pages/CompareHub";
 import CompareDetail from "./pages/CompareDetail";
 import EmailLanding from "./pages/EmailLanding";
 import AdvertiserPortal from "./pages/AdvertiserPortal";
+import BusinessPlan from "./pages/BusinessPlan";
 
 const queryClient = new QueryClient();
 
@@ -387,6 +388,10 @@ const router = createBrowserRouter([
   {
     path: "/advertiser",
     element: <AdvertiserPortal />,
+  },
+  {
+    path: "/business-plan",
+    element: <BusinessPlan />,
   },
   {
     path: "*",
