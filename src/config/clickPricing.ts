@@ -1,79 +1,246 @@
 /**
  * Click & Call Pricing Configuration
  * 
- * This module handles three types of pricing:
+ * This module handles pricing for:
  * 
- * 1. LEAD CONTACT REVEALS (clicking to see lead contact info)
- *    - Subscribers: 65% of Angi/Bark CPL (2 free clicks/month accumulated)
- *    - Non-subscribers: 90% of Angi/Bark CPL
- *    - 10-day grace period after subscription lapses
+ * 1. LEAD REVEAL PRICING (Digger → Gigger)
+ *    - Unconfirmed leads: Base CPL × Geographic Multiplier
+ *    - Confirmed leads: +50% premium on unconfirmed prices
+ *    - Subscribers: 2 free leads/month (accumulating)
  * 
- * 2. PROFILE CLICKS (giggers clicking on digger profiles)
- *    - Cost: 75% of Google's average PPC for the industry
- * 
- * 3. PROFILE CALLS (giggers calling diggers)
- *    - Cost: 100% of Google's HIGH price point PPC for the industry
+ * 2. PROFILE DISCOVERY PRICING (Gigger → Digger)
+ *    - Digger pays when Gigger clicks to reveal contact info
+ *    - Fixed pricing based on geographic tier and industry type
  */
 
 import { GOOGLE_CPC_KEYWORDS, IndustryCpcData } from './googleCpcKeywords';
 import { BARK_PRICING_DATABASE, BarkPricingData } from '@/utils/barkPricingLookup';
 
 // =====================================================
-// ANGI CPL PRICING (based on Bark as proxy)
+// GEOGRAPHIC MULTIPLIERS
+// =====================================================
+
+export const GEOGRAPHIC_MULTIPLIERS = {
+  local: 1,      // ≤50 miles
+  statewide: 2,  // >50 miles
+  nationwide: 3,
+} as const;
+
+export type GeographicCoverage = keyof typeof GEOGRAPHIC_MULTIPLIERS;
+
+// =====================================================
+// LEAD REVEAL PRICING (Digger → Gigger)
 // =====================================================
 
 /**
- * Angi CPL tiers based on industry value
- * Using Bark pricing data as our proxy for Angi's actual CPL
+ * Base CPL for unconfirmed leads by industry type
+ * Standard = Low-Value + Mid-Value combined average
  */
-export const ANGI_CPL_TIERS = {
-  'low-value': {
-    min: 5.50,   // ~$5.50 (Bark low end)
-    max: 11.00,  // ~$11 (Bark high end for low-value)
-    average: 8.25,
+export const BASE_CPL = {
+  standard: 16.50,   // LV + MV average
+  highValue: 35.20,  // HV average
+} as const;
+
+/**
+ * Confirmed lead multiplier (50% premium)
+ */
+export const CONFIRMED_LEAD_MULTIPLIER = 1.50;
+
+/**
+ * Complete Lead Reveal Pricing Matrix
+ */
+export const LEAD_REVEAL_PRICING = {
+  standard: {
+    unconfirmed: {
+      local: BASE_CPL.standard * GEOGRAPHIC_MULTIPLIERS.local,         // $16.50
+      statewide: BASE_CPL.standard * GEOGRAPHIC_MULTIPLIERS.statewide, // $33.00
+      nationwide: BASE_CPL.standard * GEOGRAPHIC_MULTIPLIERS.nationwide, // $49.50
+    },
+    confirmed: {
+      local: BASE_CPL.standard * GEOGRAPHIC_MULTIPLIERS.local * CONFIRMED_LEAD_MULTIPLIER,         // $24.75
+      statewide: BASE_CPL.standard * GEOGRAPHIC_MULTIPLIERS.statewide * CONFIRMED_LEAD_MULTIPLIER, // $49.50
+      nationwide: BASE_CPL.standard * GEOGRAPHIC_MULTIPLIERS.nationwide * CONFIRMED_LEAD_MULTIPLIER, // $74.25
+    },
   },
-  'mid-value': {
-    min: 13.20,  // ~$13 (Bark mid-value start)
-    max: 19.80,  // ~$20 (Bark mid-value end)
-    average: 16.50,
-  },
-  'high-value': {
-    min: 22.00,  // ~$22 (Bark high-value start)
-    max: 48.40,  // ~$48 (Bark high-value end)
-    average: 35.20,
+  highValue: {
+    unconfirmed: {
+      local: BASE_CPL.highValue * GEOGRAPHIC_MULTIPLIERS.local,         // $35.20
+      statewide: BASE_CPL.highValue * GEOGRAPHIC_MULTIPLIERS.statewide, // $70.40
+      nationwide: BASE_CPL.highValue * GEOGRAPHIC_MULTIPLIERS.nationwide, // $105.60
+    },
+    confirmed: {
+      local: BASE_CPL.highValue * GEOGRAPHIC_MULTIPLIERS.local * CONFIRMED_LEAD_MULTIPLIER,         // $52.80
+      statewide: BASE_CPL.highValue * GEOGRAPHIC_MULTIPLIERS.statewide * CONFIRMED_LEAD_MULTIPLIER, // $105.60
+      nationwide: BASE_CPL.highValue * GEOGRAPHIC_MULTIPLIERS.nationwide * CONFIRMED_LEAD_MULTIPLIER, // $158.40
+    },
   },
 } as const;
 
-// Subscriber discount: 65% of Angi CPL
-export const SUBSCRIBER_CPL_MULTIPLIER = 0.65;
-
-// Non-subscriber rate: 90% of Angi CPL
-export const NON_SUBSCRIBER_CPL_MULTIPLIER = 0.90;
-
-// Free clicks per month for subscribers
-export const FREE_CLICKS_PER_MONTH = 2;
+// Subscriber benefit: 2 free leads per month (accumulating)
+export const FREE_LEADS_PER_MONTH = 2;
 
 // Grace period in days after subscription lapses
 export const GRACE_PERIOD_DAYS = 10;
 
 // =====================================================
-// GOOGLE PPC PRICING FOR PROFILE CLICKS/CALLS
+// PROFILE DISCOVERY PRICING (Gigger → Digger)
 // =====================================================
 
 /**
- * Profile click pricing: 75% of Google's average PPC
+ * Base Profile Discovery costs by industry type
  */
-export const PROFILE_CLICK_MULTIPLIER = 0.75;
+export const PROFILE_DISCOVERY_BASE = {
+  standard: 85.00,
+  highValue: 170.00,
+} as const;
 
 /**
- * Profile call pricing: 100% of Google's HIGH price point PPC
+ * Complete Profile Discovery Pricing Matrix
+ * Digger pays when Gigger clicks to reveal contact info
  */
-export const PROFILE_CALL_MULTIPLIER = 1.0;
+export const PROFILE_DISCOVERY_PRICING = {
+  standard: {
+    local: PROFILE_DISCOVERY_BASE.standard * GEOGRAPHIC_MULTIPLIERS.local,         // $85.00
+    statewide: PROFILE_DISCOVERY_BASE.standard * GEOGRAPHIC_MULTIPLIERS.statewide, // $170.00
+    nationwide: PROFILE_DISCOVERY_BASE.standard * GEOGRAPHIC_MULTIPLIERS.nationwide, // $255.00
+  },
+  highValue: {
+    local: PROFILE_DISCOVERY_BASE.highValue * GEOGRAPHIC_MULTIPLIERS.local,         // $170.00
+    statewide: PROFILE_DISCOVERY_BASE.highValue * GEOGRAPHIC_MULTIPLIERS.statewide, // $340.00
+    nationwide: PROFILE_DISCOVERY_BASE.highValue * GEOGRAPHIC_MULTIPLIERS.nationwide, // $510.00
+  },
+} as const;
+
+// =====================================================
+// HIGH-VALUE INDUSTRY DETECTION
+// =====================================================
+
+export const HIGH_VALUE_KEYWORDS = [
+  'lawyer', 'attorney', 'law', 'legal',
+  'insurance', 'mortgage', 'credit repair',
+  'tax', 'financial', 'wealth', 'investment',
+  'dental', 'dentist', 'medical', 'doctor', 'physician',
+  'cpa', 'accounting', 'accountant',
+  'real estate', 'realtor',
+  'solar', 'roofing', 'hvac',
+];
+
+/**
+ * Determine if an industry/keyword is high-value
+ */
+export const isHighValueIndustry = (keyword: string): boolean => {
+  const normalized = keyword.toLowerCase().trim();
+  return HIGH_VALUE_KEYWORDS.some(hv => 
+    normalized.includes(hv) || hv.includes(normalized)
+  );
+};
+
+/**
+ * Get industry type from keyword
+ */
+export const getIndustryType = (keyword: string): 'standard' | 'highValue' => {
+  return isHighValueIndustry(keyword) ? 'highValue' : 'standard';
+};
 
 // =====================================================
 // PRICING CALCULATION FUNCTIONS
 // =====================================================
 
+export interface LeadRevealPricingResult {
+  costCents: number;
+  costDollars: number;
+  usedFreeLead: boolean;
+  remainingFreeLeads: number;
+  isConfirmed: boolean;
+  geographicCoverage: GeographicCoverage;
+  industryType: 'standard' | 'highValue';
+}
+
+export interface ProfileDiscoveryPricingResult {
+  costCents: number;
+  costDollars: number;
+  geographicCoverage: GeographicCoverage;
+  industryType: 'standard' | 'highValue';
+}
+
+/**
+ * Calculate lead reveal price for a Digger viewing a Gigger's contact info
+ */
+export const calculateLeadRevealPrice = (
+  keyword: string,
+  geographicCoverage: GeographicCoverage,
+  isConfirmed: boolean,
+  accumulatedFreeLeads: number,
+  isSubscriber: boolean
+): LeadRevealPricingResult => {
+  const industryType = getIndustryType(keyword);
+  
+  // Check if subscriber can use a free lead
+  if (isSubscriber && accumulatedFreeLeads > 0) {
+    return {
+      costCents: 0,
+      costDollars: 0,
+      usedFreeLead: true,
+      remainingFreeLeads: accumulatedFreeLeads - 1,
+      isConfirmed,
+      geographicCoverage,
+      industryType,
+    };
+  }
+  
+  // Get price from matrix
+  const priceType = isConfirmed ? 'confirmed' : 'unconfirmed';
+  const costDollars = LEAD_REVEAL_PRICING[industryType][priceType][geographicCoverage];
+  const costCents = Math.round(costDollars * 100);
+  
+  return {
+    costCents,
+    costDollars,
+    usedFreeLead: false,
+    remainingFreeLeads: accumulatedFreeLeads,
+    isConfirmed,
+    geographicCoverage,
+    industryType,
+  };
+};
+
+/**
+ * Calculate profile discovery price for a Digger when Gigger views their contact info
+ */
+export const calculateProfileDiscoveryPrice = (
+  keyword: string,
+  geographicCoverage: GeographicCoverage
+): ProfileDiscoveryPricingResult => {
+  const industryType = getIndustryType(keyword);
+  const costDollars = PROFILE_DISCOVERY_PRICING[industryType][geographicCoverage];
+  const costCents = Math.round(costDollars * 100);
+  
+  return {
+    costCents,
+    costDollars,
+    geographicCoverage,
+    industryType,
+  };
+};
+
+// =====================================================
+// LEGACY COMPATIBILITY (for gradual migration)
+// =====================================================
+
+// Keep old exports for backward compatibility
+export const ANGI_CPL_TIERS = {
+  'low-value': { min: 5.50, max: 11.00, average: 8.25 },
+  'mid-value': { min: 13.20, max: 19.80, average: 16.50 },
+  'high-value': { min: 22.00, max: 48.40, average: 35.20 },
+} as const;
+
+export const SUBSCRIBER_CPL_MULTIPLIER = 0.65;
+export const NON_SUBSCRIBER_CPL_MULTIPLIER = 0.90;
+export const FREE_CLICKS_PER_MONTH = FREE_LEADS_PER_MONTH;
+export const PROFILE_CLICK_MULTIPLIER = 0.75;
+export const PROFILE_CALL_MULTIPLIER = 1.0;
+
+// Legacy interfaces
 export interface LeadPricingResult {
   costCents: number;
   costDollars: number;
@@ -108,13 +275,11 @@ export interface ProfileCallPricingResult {
 export const getBarkPriceForKeyword = (keyword: string): BarkPricingData | null => {
   const normalized = keyword.toLowerCase().trim();
   
-  // Exact match first
   const exactMatch = BARK_PRICING_DATABASE.find(
     item => item.keyword.toLowerCase() === normalized
   );
   if (exactMatch) return exactMatch;
   
-  // Partial match
   const partialMatch = BARK_PRICING_DATABASE.find(
     item => item.keyword.toLowerCase().includes(normalized) ||
             normalized.includes(item.keyword.toLowerCase())
@@ -131,7 +296,6 @@ export const getIndustryCategory = (keyword: string): 'low-value' | 'mid-value' 
     return barkData.valueIndicator;
   }
   
-  // Check Google CPC data for category
   const normalizedKeyword = keyword.toLowerCase().trim();
   for (const industry of GOOGLE_CPC_KEYWORDS) {
     const hasKeyword = industry.keywords.some(
@@ -146,12 +310,11 @@ export const getIndustryCategory = (keyword: string): 'low-value' | 'mid-value' 
     }
   }
   
-  return 'mid-value'; // Default fallback
+  return 'mid-value';
 };
 
 /**
  * Get Angi CPL for a specific keyword/profession
- * Uses Bark pricing as our proxy for Angi's CPL
  */
 export const getAngiCplForKeyword = (keyword: string): number => {
   const barkData = getBarkPriceForKeyword(keyword);
@@ -159,51 +322,8 @@ export const getAngiCplForKeyword = (keyword: string): number => {
     return barkData.barkPrice;
   }
   
-  // Fallback to category average
   const category = getIndustryCategory(keyword);
   return ANGI_CPL_TIERS[category].average;
-};
-
-/**
- * Calculate lead contact reveal pricing
- */
-export const calculateLeadRevealPrice = (
-  keyword: string,
-  isSubscriber: boolean,
-  accumulatedFreeClicks: number
-): LeadPricingResult => {
-  const angiCpl = getAngiCplForKeyword(keyword);
-  const category = getIndustryCategory(keyword);
-  
-  // Check if subscriber can use a free click
-  if (isSubscriber && accumulatedFreeClicks > 0) {
-    return {
-      costCents: 0,
-      costDollars: 0,
-      usedFreeClick: true,
-      remainingFreeClicks: accumulatedFreeClicks - 1,
-      industryCategory: category,
-      baseCplDollars: angiCpl,
-      discountApplied: 'Free click (subscriber benefit)',
-    };
-  }
-  
-  // Calculate cost based on subscription status
-  const multiplier = isSubscriber ? SUBSCRIBER_CPL_MULTIPLIER : NON_SUBSCRIBER_CPL_MULTIPLIER;
-  const costDollars = roundToNearestHalfDollar(angiCpl * multiplier);
-  const costCents = Math.round(costDollars * 100);
-  
-  return {
-    costCents,
-    costDollars,
-    usedFreeClick: false,
-    remainingFreeClicks: accumulatedFreeClicks,
-    industryCategory: category,
-    baseCplDollars: angiCpl,
-    discountApplied: isSubscriber 
-      ? `Subscriber rate (${Math.round(SUBSCRIBER_CPL_MULTIPLIER * 100)}% of Angi CPL)` 
-      : `Non-subscriber rate (${Math.round(NON_SUBSCRIBER_CPL_MULTIPLIER * 100)}% of Angi CPL)`,
-  };
 };
 
 /**
@@ -218,7 +338,6 @@ export const getGoogleCpcData = (keyword: string): {
   const normalizedKeyword = keyword.toLowerCase().trim();
   
   for (const industry of GOOGLE_CPC_KEYWORDS) {
-    // Check for exact keyword match
     const matchedKeyword = industry.keywords.find(
       kw => kw.keyword.toLowerCase() === normalizedKeyword
     );
@@ -232,7 +351,6 @@ export const getGoogleCpcData = (keyword: string): {
       };
     }
     
-    // Check for partial keyword match
     const partialMatch = industry.keywords.find(
       kw => kw.keyword.toLowerCase().includes(normalizedKeyword) ||
             normalizedKeyword.includes(kw.keyword.toLowerCase())
@@ -247,7 +365,6 @@ export const getGoogleCpcData = (keyword: string): {
       };
     }
     
-    // Check for industry name match
     if (industry.industry.toLowerCase().includes(normalizedKeyword) ||
         normalizedKeyword.includes(industry.industry.toLowerCase())) {
       const highestCpc = Math.max(...industry.keywords.map(k => k.cpc));
@@ -283,7 +400,7 @@ export const getDefaultCpcByCategory = (category: 'low-value' | 'mid-value' | 'h
 };
 
 /**
- * Calculate profile click pricing (75% of Google avg PPC)
+ * Calculate profile click pricing (legacy - now uses Profile Discovery pricing)
  */
 export const calculateProfileClickPrice = (
   professionOrKeyword: string
@@ -304,7 +421,6 @@ export const calculateProfileClickPrice = (
     };
   }
   
-  // Fallback to category-based pricing
   const category = getIndustryCategory(professionOrKeyword);
   const defaultCpc = getDefaultCpcByCategory(category);
   const costDollars = roundToNearestHalfDollar(defaultCpc.avgCpc * PROFILE_CLICK_MULTIPLIER);
@@ -321,7 +437,7 @@ export const calculateProfileClickPrice = (
 };
 
 /**
- * Calculate profile call pricing (100% of Google high PPC)
+ * Calculate profile call pricing (legacy)
  */
 export const calculateProfileCallPrice = (
   professionOrKeyword: string
@@ -342,7 +458,6 @@ export const calculateProfileCallPrice = (
     };
   }
   
-  // Fallback to category-based pricing
   const category = getIndustryCategory(professionOrKeyword);
   const defaultCpc = getDefaultCpcByCategory(category);
   const costDollars = roundToNearestHalfDollar(defaultCpc.highCpc * PROFILE_CALL_MULTIPLIER);
@@ -374,29 +489,16 @@ export const roundToNearestHalfDollar = (amount: number): number => {
  */
 export const getPricingSummary = () => {
   return {
-    leadPricing: {
-      subscriberDiscount: `${Math.round(SUBSCRIBER_CPL_MULTIPLIER * 100)}% of Angi CPL`,
-      nonSubscriberRate: `${Math.round(NON_SUBSCRIBER_CPL_MULTIPLIER * 100)}% of Angi CPL`,
-      freeClicksPerMonth: FREE_CLICKS_PER_MONTH,
-      gracePeriodDays: GRACE_PERIOD_DAYS,
-      tiers: {
-        'low-value': {
-          subscriberRange: `$${(ANGI_CPL_TIERS['low-value'].min * SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)} - $${(ANGI_CPL_TIERS['low-value'].max * SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)}`,
-          nonSubscriberRange: `$${(ANGI_CPL_TIERS['low-value'].min * NON_SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)} - $${(ANGI_CPL_TIERS['low-value'].max * NON_SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)}`,
-        },
-        'mid-value': {
-          subscriberRange: `$${(ANGI_CPL_TIERS['mid-value'].min * SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)} - $${(ANGI_CPL_TIERS['mid-value'].max * SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)}`,
-          nonSubscriberRange: `$${(ANGI_CPL_TIERS['mid-value'].min * NON_SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)} - $${(ANGI_CPL_TIERS['mid-value'].max * NON_SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)}`,
-        },
-        'high-value': {
-          subscriberRange: `$${(ANGI_CPL_TIERS['high-value'].min * SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)} - $${(ANGI_CPL_TIERS['high-value'].max * SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)}`,
-          nonSubscriberRange: `$${(ANGI_CPL_TIERS['high-value'].min * NON_SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)} - $${(ANGI_CPL_TIERS['high-value'].max * NON_SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)}`,
-        },
-      },
+    leadReveal: {
+      standard: LEAD_REVEAL_PRICING.standard,
+      highValue: LEAD_REVEAL_PRICING.highValue,
+      freeLeadsPerMonth: FREE_LEADS_PER_MONTH,
+      confirmedPremium: '50%',
     },
-    profilePricing: {
-      clickRate: `${Math.round(PROFILE_CLICK_MULTIPLIER * 100)}% of Google avg PPC`,
-      callRate: `${Math.round(PROFILE_CALL_MULTIPLIER * 100)}% of Google high PPC`,
+    profileDiscovery: {
+      standard: PROFILE_DISCOVERY_PRICING.standard,
+      highValue: PROFILE_DISCOVERY_PRICING.highValue,
     },
+    geographicMultipliers: GEOGRAPHIC_MULTIPLIERS,
   };
 };

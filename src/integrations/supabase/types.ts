@@ -1117,6 +1117,7 @@ export type Database = {
       digger_profiles: {
         Row: {
           accumulated_free_clicks: number | null
+          allow_gigger_contact: boolean | null
           availability: string | null
           average_rating: number | null
           billing_cycle: string | null
@@ -1195,6 +1196,7 @@ export type Database = {
         }
         Insert: {
           accumulated_free_clicks?: number | null
+          allow_gigger_contact?: boolean | null
           availability?: string | null
           average_rating?: number | null
           billing_cycle?: string | null
@@ -1273,6 +1275,7 @@ export type Database = {
         }
         Update: {
           accumulated_free_clicks?: number | null
+          allow_gigger_contact?: boolean | null
           availability?: string | null
           average_rating?: number | null
           billing_cycle?: string | null

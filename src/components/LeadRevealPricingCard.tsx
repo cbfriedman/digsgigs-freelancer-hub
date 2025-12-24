@@ -2,23 +2,24 @@
  * LeadRevealPricingCard - Displays pricing for revealing lead contact info
  * 
  * Shows:
- * - Subscriber pricing (65% of Angi/Bark CPL)
- * - Non-subscriber pricing (90% of Angi/Bark CPL)
- * - Free clicks remaining for subscribers
+ * - Lead reveal pricing based on geographic coverage and confirmation status
+ * - Free leads remaining for subscribers
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Unlock, Gift, DollarSign, Crown, Loader2 } from "lucide-react";
+import { Unlock, Gift, DollarSign, Crown, Loader2, MapPin, CheckCircle } from "lucide-react";
 import { useClickPricing } from "@/hooks/useClickPricing";
-import { SUBSCRIBER_CPL_MULTIPLIER, NON_SUBSCRIBER_CPL_MULTIPLIER } from "@/config/clickPricing";
+import { FREE_LEADS_PER_MONTH, GeographicCoverage } from "@/config/clickPricing";
 
 interface LeadRevealPricingCardProps {
   keyword: string;
   onRevealContact: () => void;
   isRevealing?: boolean;
   variant?: 'compact' | 'full';
+  geographicCoverage?: GeographicCoverage;
+  isConfirmedLead?: boolean;
 }
 
 export const LeadRevealPricingCard = ({
@@ -26,14 +27,15 @@ export const LeadRevealPricingCard = ({
   onRevealContact,
   isRevealing = false,
   variant = 'full',
+  geographicCoverage = 'local',
+  isConfirmedLead = false,
 }: LeadRevealPricingCardProps) => {
-  const { pricingInfo, getLeadRevealPrice, isLoading } = useClickPricing();
+  const { pricingInfo, getLeadRevealPrice, isLoading, leadRevealPricing } = useClickPricing();
   
-  const pricing = getLeadRevealPrice(keyword);
+  const pricing = getLeadRevealPrice(keyword, geographicCoverage, isConfirmedLead);
   const isSubscriber = pricingInfo?.isSubscriber || pricingInfo?.isInGracePeriod || false;
-  const freeClicks = pricingInfo?.accumulatedFreeClicks || 0;
-  const isFreeClick = pricing.usedFreeClick;
-  const discountPercent = isSubscriber ? Math.round((1 - SUBSCRIBER_CPL_MULTIPLIER) * 100) : Math.round((1 - NON_SUBSCRIBER_CPL_MULTIPLIER) * 100);
+  const freeLeads = pricingInfo?.accumulatedFreeClicks || 0;
+  const isFreeLead = pricing.usedFreeLead;
 
   if (isLoading) {
     return (
@@ -47,19 +49,20 @@ export const LeadRevealPricingCard = ({
     return (
       <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50">
         <div className="flex items-center gap-2">
-          {isFreeClick ? (
+          {isFreeLead ? (
             <>
               <Gift className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium text-green-600">Free Click!</span>
-              <span className="text-xs text-muted-foreground">({pricing.remainingFreeClicks} remaining)</span>
+              <span className="text-sm font-medium text-green-600">Free Lead!</span>
+              <span className="text-xs text-muted-foreground">({pricing.remainingFreeLeads} remaining)</span>
             </>
           ) : (
             <>
               <DollarSign className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">${pricing.costDollars.toFixed(2)}</span>
-              {isSubscriber && (
-                <Badge variant="secondary" className="text-xs">
-                  {discountPercent}% off
+              {isConfirmedLead && (
+                <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Verified
                 </Badge>
               )}
             </>
@@ -84,13 +87,13 @@ export const LeadRevealPricingCard = ({
   }
 
   return (
-    <Card className={`border-2 ${isFreeClick ? 'border-green-500/50 bg-green-500/5' : isSubscriber ? 'border-primary/50 bg-primary/5' : 'border-border'}`}>
+    <Card className={`border-2 ${isFreeLead ? 'border-green-500/50 bg-green-500/5' : isSubscriber ? 'border-primary/50 bg-primary/5' : 'border-border'}`}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          {isFreeClick ? (
+          {isFreeLead ? (
             <>
               <Gift className="h-5 w-5 text-green-600" />
-              <span className="text-green-600">Free Click Available!</span>
+              <span className="text-green-600">Free Lead Available!</span>
             </>
           ) : (
             <>
@@ -100,11 +103,11 @@ export const LeadRevealPricingCard = ({
           )}
         </CardTitle>
         <CardDescription>
-          {isFreeClick 
-            ? `You have ${pricing.remainingFreeClicks + 1} free clicks remaining this period`
+          {isFreeLead 
+            ? `You have ${pricing.remainingFreeLeads + 1} free leads remaining this period`
             : isSubscriber 
-              ? "Subscriber discount applied to this lead"
-              : "Subscribe to get 65% off lead prices + 2 free clicks/month"
+              ? "Subscriber benefit: 2 free leads/month"
+              : "Subscribe to get 2 free lead reveals per month"
           }
         </CardDescription>
       </CardHeader>
@@ -112,57 +115,56 @@ export const LeadRevealPricingCard = ({
         {/* Pricing Display */}
         <div className="flex items-center justify-between p-4 bg-background rounded-lg border border-border/50">
           <div>
-            <div className="text-sm text-muted-foreground">Cost to reveal contact</div>
-            <div className="flex items-baseline gap-2">
-              <span className={`text-2xl font-bold ${isFreeClick ? 'text-green-600' : 'text-primary'}`}>
-                {isFreeClick ? 'FREE' : `$${pricing.costDollars.toFixed(2)}`}
-              </span>
-              {!isFreeClick && isSubscriber && (
-                <span className="text-sm line-through text-muted-foreground">
-                  ${pricing.baseCplDollars.toFixed(2)}
-                </span>
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <span>Cost to reveal contact</span>
+              {isConfirmedLead && (
+                <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Verified Lead
+                </Badge>
               )}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-2xl font-bold ${isFreeLead ? 'text-green-600' : 'text-primary'}`}>
+                {isFreeLead ? 'FREE' : `$${pricing.costDollars.toFixed(2)}`}
+              </span>
             </div>
           </div>
           
-          {isSubscriber && !isFreeClick && (
-            <Badge className="bg-primary/20 text-primary border-primary/30">
-              <Crown className="h-3 w-3 mr-1" />
-              {discountPercent}% Subscriber Discount
-            </Badge>
-          )}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3" />
+            <span className="capitalize">{geographicCoverage}</span>
+          </div>
         </div>
 
         {/* Pricing Breakdown */}
         <div className="text-xs text-muted-foreground space-y-1">
           <div className="flex justify-between">
-            <span>Angi/Bark baseline CPL:</span>
-            <span>${pricing.baseCplDollars.toFixed(2)}</span>
+            <span>Industry type:</span>
+            <span className="capitalize">{pricing.industryType === 'highValue' ? 'High-Value' : 'Standard'}</span>
           </div>
-          {isSubscriber && (
+          <div className="flex justify-between">
+            <span>Geographic coverage:</span>
+            <span className="capitalize">{geographicCoverage}</span>
+          </div>
+          {isConfirmedLead && (
             <div className="flex justify-between text-green-600">
-              <span>Subscriber rate (65%):</span>
-              <span>${(pricing.baseCplDollars * SUBSCRIBER_CPL_MULTIPLIER).toFixed(2)}</span>
-            </div>
-          )}
-          {!isSubscriber && (
-            <div className="flex justify-between">
-              <span>Non-subscriber rate (90%):</span>
-              <span>${pricing.costDollars.toFixed(2)}</span>
+              <span>Verified lead premium:</span>
+              <span>+50%</span>
             </div>
           )}
         </div>
 
-        {/* Free Clicks Status for Subscribers */}
+        {/* Free Leads Status for Subscribers */}
         {isSubscriber && (
           <div className="flex items-center gap-2 p-3 bg-green-500/10 rounded-lg border border-green-500/30">
             <Gift className="h-4 w-4 text-green-600" />
             <div className="flex-1">
               <div className="text-sm font-medium text-green-700 dark:text-green-400">
-                {freeClicks} free click{freeClicks !== 1 ? 's' : ''} remaining
+                {freeLeads} free lead{freeLeads !== 1 ? 's' : ''} remaining
               </div>
               <div className="text-xs text-muted-foreground">
-                +2 added each month, unlimited accumulation
+                +{FREE_LEADS_PER_MONTH} added each month, unlimited accumulation
               </div>
             </div>
           </div>
@@ -180,10 +182,10 @@ export const LeadRevealPricingCard = ({
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               Processing...
             </>
-          ) : isFreeClick ? (
+          ) : isFreeLead ? (
             <>
               <Gift className="mr-2 h-5 w-5" />
-              Use Free Click to Reveal
+              Use Free Lead to Reveal
             </>
           ) : (
             <>
@@ -197,7 +199,7 @@ export const LeadRevealPricingCard = ({
         {!isSubscriber && (
           <div className="text-center">
             <p className="text-xs text-muted-foreground mb-2">
-              Subscribers save 35% on every lead + get 2 free clicks/month
+              Subscribers get {FREE_LEADS_PER_MONTH} free lead reveals per month
             </p>
             <Button variant="link" size="sm" className="text-primary">
               Learn about subscription benefits →
