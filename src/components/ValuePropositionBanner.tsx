@@ -17,36 +17,54 @@ import {
   Gift
 } from "lucide-react";
 import { 
-  GeographicTier, 
-  IndustryType, 
-  getSubscriptionTier 
+  GeographicTier
 } from "@/config/subscriptionTiers";
 import { 
-  ANGI_CPL_TIERS, 
-  SUBSCRIBER_CPL_MULTIPLIER, 
-  NON_SUBSCRIBER_CPL_MULTIPLIER 
+  LEAD_REVEAL_PRICING,
+  GEOGRAPHIC_MULTIPLIERS,
+  FREE_LEADS_PER_MONTH
 } from "@/config/clickPricing";
+
+// Lead type options combining industry and confirmation status
+type LeadTypeOption = 'standard-unconfirmed' | 'standard-confirmed' | 'hv-unconfirmed' | 'hv-confirmed';
+
+const LEAD_TYPE_LABELS: Record<LeadTypeOption, string> = {
+  'standard-unconfirmed': 'Standard (Unconfirmed)',
+  'standard-confirmed': 'Standard (Confirmed)',
+  'hv-unconfirmed': 'High-Value (Unconfirmed)',
+  'hv-confirmed': 'High-Value (Confirmed)',
+};
+
+// Subscription pricing (same for all industries)
+const SUBSCRIPTION_PRICES: Record<GeographicTier, number> = {
+  local: 29,
+  statewide: 59,
+  nationwide: 299,
+};
 
 export const ValuePropositionBanner = () => {
   const navigate = useNavigate();
   const [selectedGeoTier, setSelectedGeoTier] = useState<GeographicTier>('local');
-  const [selectedIndustryType, setSelectedIndustryType] = useState<IndustryType>('lv_mv');
+  const [selectedLeadType, setSelectedLeadType] = useState<LeadTypeOption>('standard-unconfirmed');
 
-  // Calculate dynamic pricing
-  const subscriptionTier = getSubscriptionTier(selectedGeoTier, selectedIndustryType);
-  const monthlyPrice = subscriptionTier ? (subscriptionTier.monthly_price_cents / 100).toFixed(0) : '19';
-  
-  // Geographic tier multipliers: Statewide = 2x, Nationwide = 3x local pricing
-  const geoMultiplier = selectedGeoTier === 'nationwide' ? 3 : selectedGeoTier === 'statewide' ? 2 : 1;
-  
-  const leadTier = selectedIndustryType === 'hv' ? 'high-value' : 'mid-value';
-  const subLeadMin = Math.round(ANGI_CPL_TIERS[leadTier].min * SUBSCRIBER_CPL_MULTIPLIER * geoMultiplier);
-  const subLeadMax = Math.round(ANGI_CPL_TIERS[leadTier].max * SUBSCRIBER_CPL_MULTIPLIER * geoMultiplier);
-  const nonSubLeadMin = Math.round(ANGI_CPL_TIERS[leadTier].min * NON_SUBSCRIBER_CPL_MULTIPLIER * geoMultiplier);
-  const nonSubLeadMax = Math.round(ANGI_CPL_TIERS[leadTier].max * NON_SUBSCRIBER_CPL_MULTIPLIER * geoMultiplier);
+  // Parse the lead type into industry and confirmation status
+  const isHighValue = selectedLeadType.startsWith('hv-');
+  const isConfirmed = selectedLeadType.endsWith('-confirmed');
+  const industryKey = isHighValue ? 'highValue' : 'standard';
+  const confirmationKey = isConfirmed ? 'confirmed' : 'unconfirmed';
+
+  // Get subscription price (same for all industries)
+  const monthlyPrice = SUBSCRIPTION_PRICES[selectedGeoTier];
+
+  // Get per-lead price from the pricing matrix
+  const perLeadPrice = LEAD_REVEAL_PRICING[industryKey][confirmationKey][selectedGeoTier];
+
+  // Non-subscriber pays 38% more (legacy calculation for comparison)
+  const nonSubLeadPrice = Math.round(perLeadPrice * 1.38);
 
   const coverageLabel = selectedGeoTier === 'local' ? 'local area' : selectedGeoTier === 'statewide' ? 'entire state' : 'nationwide';
-  const industryLabel = selectedIndustryType === 'hv' ? 'High-value' : 'Standard';
+  const industryLabel = isHighValue ? 'High-value' : 'Standard';
+  const confirmationLabel = isConfirmed ? 'confirmed' : 'unconfirmed';
 
   return (
     <section className="py-16 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border-y border-primary/10">
@@ -63,9 +81,9 @@ export const ValuePropositionBanner = () => {
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Get discovered by consumers in your{' '}
               <span className="font-bold text-foreground">{coverageLabel}</span>.{' '}
-              {industryLabel} lead subscribers get{' '}
-              <span className="font-bold text-foreground">2 free lead reveals monthly</span> plus{' '}
-              <span className="font-bold text-foreground">${subLeadMax}</span> per additional reveal.
+              {industryLabel} {confirmationLabel} lead subscribers get{' '}
+              <span className="font-bold text-foreground">{FREE_LEADS_PER_MONTH} free lead reveals monthly</span> plus{' '}
+              <span className="font-bold text-foreground">${perLeadPrice.toFixed(2)}</span> per additional reveal.
             </p>
           </div>
 
@@ -86,13 +104,15 @@ export const ValuePropositionBanner = () => {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-foreground">Lead Type:</span>
-              <Select value={selectedIndustryType} onValueChange={(v) => setSelectedIndustryType(v as IndustryType)}>
-                <SelectTrigger className="w-[180px] bg-background border-primary/30 font-medium">
+              <Select value={selectedLeadType} onValueChange={(v) => setSelectedLeadType(v as LeadTypeOption)}>
+                <SelectTrigger className="w-[220px] bg-background border-primary/30 font-medium">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-background border-border">
-                  <SelectItem value="lv_mv">Standard Leads</SelectItem>
-                  <SelectItem value="hv">High Value Leads</SelectItem>
+                  <SelectItem value="standard-unconfirmed">{LEAD_TYPE_LABELS['standard-unconfirmed']}</SelectItem>
+                  <SelectItem value="standard-confirmed">{LEAD_TYPE_LABELS['standard-confirmed']}</SelectItem>
+                  <SelectItem value="hv-unconfirmed">{LEAD_TYPE_LABELS['hv-unconfirmed']}</SelectItem>
+                  <SelectItem value="hv-confirmed">{LEAD_TYPE_LABELS['hv-confirmed']}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -118,13 +138,16 @@ export const ValuePropositionBanner = () => {
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-primary" />
                 </div>
-                <div className="text-2xl font-bold text-primary">${subLeadMax}</div>
+                <div className="text-2xl font-bold text-primary">${perLeadPrice.toFixed(2)}</div>
               </div>
               <div className="text-sm text-muted-foreground">Per lead (subscribers)</div>
               <div className="text-xs text-muted-foreground mt-1">
-                vs ${nonSubLeadMax} non-subscribers
+                vs ${nonSubLeadPrice} non-subscribers
               </div>
-              <div className="text-xs text-primary/70 mt-2 font-medium">Save ~28% per lead</div>
+              <div className="text-xs text-primary/70 mt-2 font-medium">
+                {isConfirmed && <span className="text-amber-600">+50% confirmed premium</span>}
+                {!isConfirmed && <span>Save ~28% per lead</span>}
+              </div>
             </div>
 
             <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
@@ -132,7 +155,7 @@ export const ValuePropositionBanner = () => {
                 <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
                   <Gift className="w-6 h-6 text-green-600" />
                 </div>
-                <div className="text-3xl font-bold text-green-600">2 Free</div>
+                <div className="text-3xl font-bold text-green-600">{FREE_LEADS_PER_MONTH} Free</div>
               </div>
               <div className="text-sm text-muted-foreground">Lead reveals per month</div>
               <div className="text-xs text-muted-foreground mt-1">Accumulates while subscribed</div>

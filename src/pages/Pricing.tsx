@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/accordion";
 import { useAuth } from "@/contexts/AuthContext";
 import { CategoryBrowserWithDescription } from "@/components/CategoryBrowserWithDescription";
+import { LeadCostCalculator } from "@/components/LeadCostCalculator";
 
 const tierIcons: Record<GeographicTier, React.ReactNode> = {
   local: <MapPin className="h-6 w-6" />,
@@ -382,154 +383,23 @@ export default function Pricing() {
           </div>
         </section>
 
-        {/* Industry Note Section - Simplified */}
+        {/* Lead Costs Section with Interactive Dropdown */}
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-10">
                 <Badge variant="outline" className="mb-4">
-                  <Building2 className="h-3 w-3 mr-1" />
-                  Same Subscription for All Industries
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  Lead Reveal Costs
                 </Badge>
-                <h2 className="text-3xl font-bold mb-4">Unified Subscription Pricing</h2>
+                <h2 className="text-3xl font-bold mb-4">Per-Lead Pricing</h2>
                 <p className="text-muted-foreground">
-                  Whether you're a plumber, lawyer, or real estate agent - everyone pays the same subscription rate.
-                  Industry type only affects lead reveal costs, not your monthly subscription.
+                  Subscribers pay reduced per-lead rates. Confirmed leads cost 50% more but have higher conversion rates.
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Briefcase className="h-5 w-5" />
-                      Standard Industries
-                    </CardTitle>
-                    <CardDescription>
-                      Most service professions including home services, trades, and general consulting
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Examples: Plumbing, Electrical, HVAC, Cleaning, Landscaping, Tutoring, Photography, Web Design, and more.
-                    </p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-medium">Lead Reveal: from $16.50</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-primary/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Crown className="h-5 w-5 text-primary" />
-                      High-Value Industries
-                    </CardTitle>
-                    <CardDescription>
-                      Industries with higher lead values and competitive customer acquisition costs
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Accordion type="single" collapsible className="mb-4">
-                      <AccordionItem value="industries" className="border-none">
-                        <AccordionTrigger className="text-sm py-2">
-                          View all high-value industries
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-                            {HIGH_VALUE_INDUSTRIES.slice(0, 20).map((industry) => (
-                              <span key={industry}>{industry}</span>
-                            ))}
-                            {HIGH_VALUE_INDUSTRIES.length > 20 && (
-                              <span className="text-primary">+{HIGH_VALUE_INDUSTRIES.length - 20} more</span>
-                            )}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-medium">Lead Reveal: from $35.20</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* High-Value Industries Section */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-10">
-                <Badge variant="outline" className="mb-4">
-                  <Building2 className="h-3 w-3 mr-1" />
-                  Industry Categories
-                </Badge>
-                <h2 className="text-3xl font-bold mb-4">Standard vs. High-Value Industries</h2>
-                <p className="text-muted-foreground">
-                  Pricing varies based on industry type. High-value industries typically have higher 
-                  lead values and more competitive markets.
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Briefcase className="h-5 w-5" />
-                      Standard Industries
-                    </CardTitle>
-                    <CardDescription>
-                      Most service professions including home services, trades, and general consulting
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Examples: Plumbing, Electrical, HVAC, Cleaning, Landscaping, Tutoring, Photography, Web Design, and more.
-                    </p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold">From {formatSubscriptionPrice(1900)}</span>
-                      <span className="text-muted-foreground">/month</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-primary/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Crown className="h-5 w-5 text-primary" />
-                      High-Value Industries
-                    </CardTitle>
-                    <CardDescription>
-                      Industries with higher lead values and competitive customer acquisition costs
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Accordion type="single" collapsible className="mb-4">
-                      <AccordionItem value="industries" className="border-none">
-                        <AccordionTrigger className="text-sm py-2">
-                          View all high-value industries
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-                            {HIGH_VALUE_INDUSTRIES.slice(0, 20).map((industry) => (
-                              <span key={industry}>{industry}</span>
-                            ))}
-                            {HIGH_VALUE_INDUSTRIES.length > 20 && (
-                              <span className="text-primary">+{HIGH_VALUE_INDUSTRIES.length - 20} more</span>
-                            )}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold">From {formatSubscriptionPrice(3900)}</span>
-                      <span className="text-muted-foreground">/month</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              {/* Lead Type Selector */}
+              <LeadCostCalculator />
             </div>
           </div>
         </section>
