@@ -31,6 +31,7 @@ interface ColdLead {
   first_name: string | null;
   last_name: string | null;
   lead_type: 'gigger' | 'digger';
+  industry: string | null;
   source: string | null;
   status: string;
   created_at: string;
@@ -42,6 +43,22 @@ interface ColdLead {
     converted: boolean;
   };
 }
+
+const INDUSTRY_OPTIONS = [
+  { value: 'general', label: 'General' },
+  { value: 'home-improvement', label: 'Home Improvement' },
+  { value: 'legal', label: 'Legal Services' },
+  { value: 'medical', label: 'Medical / Healthcare' },
+  { value: 'creative', label: 'Creative / Design' },
+  { value: 'tech', label: 'Technology / IT' },
+  { value: 'finance', label: 'Finance / Accounting' },
+  { value: 'events', label: 'Events / Entertainment' },
+  { value: 'automotive', label: 'Automotive' },
+  { value: 'education', label: 'Education / Tutoring' },
+  { value: 'wellness', label: 'Wellness / Fitness' },
+  { value: 'cleaning', label: 'Cleaning Services' },
+  { value: 'landscaping', label: 'Landscaping / Lawn Care' },
+];
 
 interface Stats {
   total: number;
@@ -59,11 +76,14 @@ export const ColdOutreachTab = () => {
   const [processing, setProcessing] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'gigger' | 'digger'>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterIndustry, setFilterIndustry] = useState<string>('all');
+  const [previewingEmail, setPreviewingEmail] = useState(false);
+  const [emailPreview, setEmailPreview] = useState<{ subject: string; body: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadLeads();
-  }, [filterType, filterStatus]);
+  }, [filterType, filterStatus, filterIndustry]);
 
   const loadLeads = async () => {
     setLoading(true);
@@ -83,6 +103,10 @@ export const ColdOutreachTab = () => {
 
       if (filterStatus !== 'all') {
         query = query.eq('status', filterStatus);
+      }
+
+      if (filterIndustry !== 'all') {
+        query = query.eq('industry', filterIndustry);
       }
 
       const { data, error } = await query;
@@ -140,6 +164,7 @@ export const ColdOutreachTab = () => {
         const firstNameIndex = headers.findIndex(h => h === 'first_name' || h === 'firstname');
         const lastNameIndex = headers.findIndex(h => h === 'last_name' || h === 'lastname');
         const typeIndex = headers.findIndex(h => h === 'type' || h === 'lead_type');
+        const industryIndex = headers.findIndex(h => h === 'industry');
 
         if (emailIndex === -1) {
           toast.error("CSV must have an 'email' column");
@@ -164,11 +189,14 @@ export const ColdOutreachTab = () => {
             continue;
           }
 
+          const industry = industryIndex !== -1 ? values[industryIndex]?.toLowerCase() || 'general' : 'general';
+          
           leadsToInsert.push({
             email: email.toLowerCase(),
             first_name: firstNameIndex !== -1 ? values[firstNameIndex] || null : null,
             last_name: lastNameIndex !== -1 ? values[lastNameIndex] || null : null,
             lead_type: leadType,
+            industry: industry,
             source: 'csv_import',
             status: 'pending',
           });
@@ -294,10 +322,13 @@ export const ColdOutreachTab = () => {
   };
 
   const downloadSampleCSV = () => {
-    const csv = `email,first_name,last_name,type
-john@example.com,John,Doe,gigger
-jane@example.com,Jane,Smith,digger
-bob@example.com,Bob,Johnson,gigger`;
+    const csv = `email,first_name,last_name,type,industry
+john@example.com,John,Doe,gigger,home-improvement
+jane@example.com,Jane,Smith,digger,legal
+bob@example.com,Bob,Johnson,gigger,medical
+alice@example.com,Alice,Williams,digger,creative
+mike@example.com,Mike,Brown,gigger,tech
+sarah@example.com,Sarah,Davis,digger,finance`;
     
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -306,6 +337,34 @@ bob@example.com,Bob,Johnson,gigger`;
     a.download = 'cold_leads_template.csv';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const previewEmailForLead = async (lead: ColdLead) => {
+    setPreviewingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-cold-email', {
+        body: {
+          leadType: lead.lead_type,
+          industry: lead.industry || 'general',
+          firstName: lead.first_name || 'there',
+          step: (lead.sequence?.current_step || 0) + 1,
+          leadId: lead.id,
+        },
+      });
+
+      if (error) throw error;
+
+      setEmailPreview({
+        subject: data.subject,
+        body: data.body,
+      });
+      toast.success("Email preview generated!");
+    } catch (error: any) {
+      console.error("Error generating preview:", error);
+      toast.error("Failed to generate preview: " + error.message);
+    } finally {
+      setPreviewingEmail(false);
+    }
   };
 
   return (
@@ -424,7 +483,7 @@ bob@example.com,Bob,Johnson,gigger`;
             </Button>
           </div>
 
-          <div className="flex gap-4 mt-4">
+          <div className="flex flex-wrap gap-4 mt-4">
             <div>
               <Label className="text-xs">Lead Type</Label>
               <Select value={filterType} onValueChange={(v: any) => setFilterType(v)}>
@@ -451,6 +510,20 @@ bob@example.com,Bob,Johnson,gigger`;
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="unsubscribed">Unsubscribed</SelectItem>
                   <SelectItem value="converted">Converted</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Industry</Label>
+              <Select value={filterIndustry} onValueChange={setFilterIndustry}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Industries</SelectItem>
+                  {INDUSTRY_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -482,10 +555,10 @@ bob@example.com,Bob,Johnson,gigger`;
                     <TableHead>Email</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Industry</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Sequence</TableHead>
                     <TableHead>Last Sent</TableHead>
-                    <TableHead>Added</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -503,6 +576,9 @@ bob@example.com,Bob,Johnson,gigger`;
                           {lead.lead_type}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <span className="text-sm capitalize">{lead.industry || 'general'}</span>
+                      </TableCell>
                       <TableCell>{getStatusBadge(lead.status)}</TableCell>
                       <TableCell>
                         {getStepDisplay(lead.sequence?.current_step || 0)}
@@ -512,9 +588,6 @@ bob@example.com,Bob,Johnson,gigger`;
                           ? format(new Date(lead.sequence.last_sent_at), "MMM d, h:mm a")
                           : <span className="text-muted-foreground">—</span>
                         }
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(lead.created_at), "MMM d, yyyy")}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -538,10 +611,13 @@ bob@example.com,Bob,Johnson,gigger`;
                 converts (signs up), or completes all 4 emails.
               </p>
               <div className="mt-4 p-3 bg-background border rounded-md">
-                <p className="text-sm font-medium mb-2">CSV Format:</p>
+                <p className="text-sm font-medium mb-2">CSV Format (with AI-powered industry personalization):</p>
                 <code className="text-xs bg-muted px-2 py-1 rounded">
-                  email, first_name, last_name, type (gigger/digger)
+                  email, first_name, last_name, type (gigger/digger), industry
                 </code>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Industries: general, home-improvement, legal, medical, creative, tech, finance, events, automotive, education, wellness, cleaning, landscaping
+                </p>
               </div>
             </div>
           </div>

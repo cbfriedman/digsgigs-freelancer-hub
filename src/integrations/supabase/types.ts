@@ -652,6 +652,7 @@ export type Database = {
           email: string
           first_name: string | null
           id: string
+          industry: string | null
           last_name: string | null
           lead_type: string
           source: string | null
@@ -663,6 +664,7 @@ export type Database = {
           email: string
           first_name?: string | null
           id?: string
+          industry?: string | null
           last_name?: string | null
           lead_type: string
           source?: string | null
@@ -674,6 +676,7 @@ export type Database = {
           email?: string
           first_name?: string | null
           id?: string
+          industry?: string | null
           last_name?: string | null
           lead_type?: string
           source?: string | null
