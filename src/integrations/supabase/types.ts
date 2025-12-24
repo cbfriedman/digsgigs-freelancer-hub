@@ -119,6 +119,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ai_call_logs_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ai_call_logs_telemarketer_id_fkey"
             columns: ["telemarketer_id"]
             isOneToOne: false
@@ -192,6 +199,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bids_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -868,6 +882,13 @@ export type Database = {
             referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contact_reveals_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       conversations: {
@@ -908,6 +929,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -1573,6 +1601,13 @@ export type Database = {
             referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "escrow_contracts_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       gigs: {
@@ -1840,6 +1875,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_form_responses_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
           {
@@ -2214,6 +2256,13 @@ export type Database = {
             referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lead_exclusivity_queue_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lead_issues: {
@@ -2350,6 +2399,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_purchases_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
           {
@@ -2955,6 +3011,13 @@ export type Database = {
             referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ratings_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reference_contact_requests: {
@@ -3252,6 +3315,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "telemarketer_commissions_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "telemarketer_commissions_lead_purchase_id_fkey"
             columns: ["lead_purchase_id"]
             isOneToOne: false
@@ -3420,6 +3490,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_milestone_payment_id_fkey"
             columns: ["milestone_payment_id"]
             isOneToOne: false
@@ -3556,6 +3633,169 @@ export type Database = {
       }
     }
     Views: {
+      safe_public_gigs: {
+        Row: {
+          ai_matched_codes: boolean | null
+          awarded_at: string | null
+          awarded_bid_id: string | null
+          awarded_digger_id: string | null
+          budget_max: number | null
+          budget_min: number | null
+          category_id: string | null
+          confirmation_method_preference: string | null
+          confirmation_sent_at: string | null
+          confirmation_status: string | null
+          confirmed_at: string | null
+          consumer_email: string | null
+          consumer_id: string | null
+          consumer_phone: string | null
+          contact_preferences: string | null
+          created_at: string | null
+          deadline: string | null
+          description: string | null
+          documents: string[] | null
+          escrow_requested_by_consumer: boolean | null
+          id: string | null
+          images: string[] | null
+          is_confirmed_lead: boolean | null
+          lead_number: string | null
+          lead_source: string | null
+          location: string | null
+          location_lat: number | null
+          location_lng: number | null
+          naics_codes: string[] | null
+          purchase_count: number | null
+          sic_codes: string[] | null
+          status: string | null
+          telemarketer_id: string | null
+          timeline: string | null
+          title: string | null
+          updated_at: string | null
+          uploaded_by_telemarketer: boolean | null
+        }
+        Insert: {
+          ai_matched_codes?: boolean | null
+          awarded_at?: string | null
+          awarded_bid_id?: string | null
+          awarded_digger_id?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          category_id?: string | null
+          confirmation_method_preference?: string | null
+          confirmation_sent_at?: string | null
+          confirmation_status?: string | null
+          confirmed_at?: string | null
+          consumer_email?: never
+          consumer_id?: string | null
+          consumer_phone?: never
+          contact_preferences?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          documents?: string[] | null
+          escrow_requested_by_consumer?: boolean | null
+          id?: string | null
+          images?: string[] | null
+          is_confirmed_lead?: boolean | null
+          lead_number?: string | null
+          lead_source?: string | null
+          location?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          naics_codes?: string[] | null
+          purchase_count?: number | null
+          sic_codes?: string[] | null
+          status?: string | null
+          telemarketer_id?: string | null
+          timeline?: string | null
+          title?: string | null
+          updated_at?: string | null
+          uploaded_by_telemarketer?: boolean | null
+        }
+        Update: {
+          ai_matched_codes?: boolean | null
+          awarded_at?: string | null
+          awarded_bid_id?: string | null
+          awarded_digger_id?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          category_id?: string | null
+          confirmation_method_preference?: string | null
+          confirmation_sent_at?: string | null
+          confirmation_status?: string | null
+          confirmed_at?: string | null
+          consumer_email?: never
+          consumer_id?: string | null
+          consumer_phone?: never
+          contact_preferences?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          documents?: string[] | null
+          escrow_requested_by_consumer?: boolean | null
+          id?: string | null
+          images?: string[] | null
+          is_confirmed_lead?: boolean | null
+          lead_number?: string | null
+          lead_source?: string | null
+          location?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          naics_codes?: string[] | null
+          purchase_count?: number | null
+          sic_codes?: string[] | null
+          status?: string | null
+          telemarketer_id?: string | null
+          timeline?: string | null
+          title?: string | null
+          updated_at?: string | null
+          uploaded_by_telemarketer?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gigs_awarded_bid_id_fkey"
+            columns: ["awarded_bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_awarded_digger_id_fkey"
+            columns: ["awarded_digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_telemarketer_id_fkey"
+            columns: ["telemarketer_id"]
+            isOneToOne: false
+            referencedRelation: "telemarketer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safe_public_profiles: {
         Row: {
           created_at: string | null
@@ -3644,6 +3884,7 @@ export type Database = {
         Args: { _gig_id: string; _user_id: string }
         Returns: boolean
       }
+      is_gig_participant: { Args: { gig_id: string }; Returns: boolean }
       reset_monthly_lead_counts: { Args: never; Returns: undefined }
       track_keyword_usage: {
         Args: {
