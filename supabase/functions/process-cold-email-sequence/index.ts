@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { Resend } from "https://esm.sh/resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
   );
 
   try {
-    console.log("Starting cold email sequence processing...");
+    console.log("Starting AI-powered cold email sequence processing...");
 
     const now = new Date();
     
@@ -91,28 +94,55 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      // Send the email
-      const functionName = lead.lead_type === 'gigger' 
-        ? 'send-cold-email-gigger' 
-        : 'send-cold-email-digger';
-
       try {
-        console.log(`Sending step ${nextStep} email to ${lead.email} (${lead.lead_type})`);
+        console.log(`Generating AI email for ${lead.email} (${lead.lead_type}, ${lead.industry || 'general'}, step ${nextStep})`);
         
-        const { data: emailResult, error: emailError } = await supabase.functions.invoke(functionName, {
+        // Generate personalized email using AI
+        const { data: emailContent, error: generateError } = await supabase.functions.invoke('generate-cold-email', {
           body: {
-            leadId: lead.id,
-            email: lead.email,
+            leadType: lead.lead_type,
+            industry: lead.industry || 'general',
             firstName: lead.first_name,
             step: nextStep,
+            leadId: lead.id,
           },
         });
 
-        if (emailError) {
-          console.error(`Error sending email to ${lead.email}:`, emailError);
-          results.errors.push(`${lead.email}: ${emailError.message}`);
+        if (generateError) {
+          console.error(`Error generating email for ${lead.email}:`, generateError);
+          results.errors.push(`${lead.email}: AI generation failed - ${generateError.message}`);
           continue;
         }
+
+        if (!emailContent?.success) {
+          console.error(`AI generation failed for ${lead.email}:`, emailContent?.error);
+          results.errors.push(`${lead.email}: ${emailContent?.error || 'Unknown AI error'}`);
+          continue;
+        }
+
+        // Send the email via Resend
+        console.log(`Sending step ${nextStep} email to ${lead.email}`);
+        
+        const emailResponse = await resend.emails.send({
+          from: "Digs and Gigs <hello@digsandgigs.com>",
+          to: [lead.email],
+          subject: emailContent.subject,
+          html: emailContent.html,
+        });
+
+        if (emailResponse.error) {
+          console.error(`Error sending email to ${lead.email}:`, emailResponse.error);
+          results.errors.push(`${lead.email}: ${emailResponse.error.message}`);
+          continue;
+        }
+
+        // Log the email
+        await supabase.from("marketing_email_log").insert({
+          email: lead.email,
+          email_type: 'cold_outreach',
+          reason: `${lead.lead_type}_ai_step_${nextStep}`,
+          campaign_name: `cold_${lead.lead_type}_${lead.industry || 'general'}`,
+        });
 
         // Update sequence tracking
         const stepField = `step_${nextStep}_sent_at`;
@@ -148,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         results.sent++;
-        console.log(`Successfully sent step ${nextStep} to ${lead.email}`);
+        console.log(`Successfully sent AI-generated step ${nextStep} to ${lead.email}`);
 
       } catch (error: any) {
         console.error(`Error processing lead ${lead.id}:`, error);
@@ -158,7 +188,7 @@ const handler = async (req: Request): Promise<Response> => {
       results.processed++;
     }
 
-    console.log("Cold email sequence processing complete:", results);
+    console.log("AI-powered cold email sequence processing complete:", results);
 
     return new Response(
       JSON.stringify({

@@ -236,3 +236,6 @@ verify_jwt = true
 
 [functions.send-community-email]
 verify_jwt = false
+
+[functions.generate-cold-email]
+verify_jwt = false
