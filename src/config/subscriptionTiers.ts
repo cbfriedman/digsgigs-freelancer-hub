@@ -1,14 +1,10 @@
 /**
  * Geographic Subscription Tiers Configuration
  * 
- * Pricing Model:
- * - Local: Serves a single city/metro area
- * - Statewide: Serves an entire state
- * - Nationwide: Serves the entire country
- * 
- * Industry Types:
- * - LV/MV: Low/Medium Value industries (e.g., cleaning, handyman, tutoring)
- * - HV: High Value industries (e.g., legal, insurance, real estate, financial)
+ * Pricing Model (UNIFIED - Same for Standard and High-Value):
+ * - Local: $29/month - Serves a single city/metro area
+ * - Statewide: $59/month (1 state) + $15/additional state, max $199/month
+ * - Nationwide: $299/month - Serves the entire country
  * 
  * Price Lock:
  * - 12-month price guarantee from sign-up date
@@ -24,7 +20,6 @@ export type BillingCycle = 'monthly' | 'annual';
 export interface SubscriptionTier {
   key: string;
   geographic_tier: GeographicTier;
-  industry_type: IndustryType;
   monthly_price_cents: number;
   annual_price_cents: number;
   stripe_price_id_monthly: string;
@@ -33,7 +28,14 @@ export interface SubscriptionTier {
   description: string;
 }
 
-// High Value Industries - these get HV pricing tier
+// Statewide pricing configuration
+export const STATEWIDE_PRICING = {
+  base_monthly_cents: 5900,           // $59 for 1 state
+  additional_state_cents: 1500,       // $15 per additional state
+  max_monthly_cents: 19900,           // $199 maximum per month
+};
+
+// High Value Industries - these get HV lead reveal pricing tier (but same subscription)
 export const HIGH_VALUE_INDUSTRIES = [
   // Legal Services
   'Legal Services',
@@ -90,95 +92,133 @@ export const HIGH_VALUE_INDUSTRIES = [
   'Dental Services',
 ];
 
-// Subscription pricing configuration with Stripe price IDs
+// Unified subscription pricing configuration (same for all industries)
 export const SUBSCRIPTION_TIERS: Record<string, SubscriptionTier> = {
+  local: {
+    key: 'local',
+    geographic_tier: 'local',
+    monthly_price_cents: 2900,        // $29/month
+    annual_price_cents: 29000,        // $290/year (2 months free)
+    stripe_price_id_monthly: 'price_local_monthly',
+    stripe_price_id_annual: 'price_local_annual',
+    label: 'Local',
+    description: 'Serve customers in your city or metro area',
+  },
+  statewide: {
+    key: 'statewide',
+    geographic_tier: 'statewide',
+    monthly_price_cents: 5900,        // $59/month (1 state)
+    annual_price_cents: 59000,        // $590/year (2 months free)
+    stripe_price_id_monthly: 'price_statewide_monthly',
+    stripe_price_id_annual: 'price_statewide_annual',
+    label: 'Statewide',
+    description: '$59/mo for 1 state, +$15 per additional state (max $199/mo)',
+  },
+  nationwide: {
+    key: 'nationwide',
+    geographic_tier: 'nationwide',
+    monthly_price_cents: 29900,       // $299/month
+    annual_price_cents: 299000,       // $2,990/year (2 months free)
+    stripe_price_id_monthly: 'price_nationwide_monthly',
+    stripe_price_id_annual: 'price_nationwide_annual',
+    label: 'Nationwide',
+    description: 'Serve customers anywhere in the country',
+  },
+  // Legacy keys for backward compatibility
   local_lv_mv: {
     key: 'local_lv_mv',
     geographic_tier: 'local',
-    industry_type: 'lv_mv',
-    monthly_price_cents: 1900,
-    annual_price_cents: 19000,
-    stripe_price_id_monthly: 'price_1ShJOkRuFpm7XGfuldUtDYCW',
-    stripe_price_id_annual: 'price_1ShJOyRuFpm7XGfuBzBRR8jh',
-    label: 'Local (LV/MV)',
-    description: 'Local service area for low/medium value industries',
+    monthly_price_cents: 2900,
+    annual_price_cents: 29000,
+    stripe_price_id_monthly: 'price_local_monthly',
+    stripe_price_id_annual: 'price_local_annual',
+    label: 'Local',
+    description: 'Serve customers in your city or metro area',
   },
   local_hv: {
     key: 'local_hv',
     geographic_tier: 'local',
-    industry_type: 'hv',
-    monthly_price_cents: 3900,
-    annual_price_cents: 39000,
-    stripe_price_id_monthly: 'price_1ShJPxRuFpm7XGfuFsl8EDpz',
-    stripe_price_id_annual: 'price_1ShJQrRuFpm7XGfuzHnllY63',
-    label: 'Local (HV)',
-    description: 'Local service area for high value industries',
+    monthly_price_cents: 2900,
+    annual_price_cents: 29000,
+    stripe_price_id_monthly: 'price_local_monthly',
+    stripe_price_id_annual: 'price_local_annual',
+    label: 'Local',
+    description: 'Serve customers in your city or metro area',
   },
   statewide_lv_mv: {
     key: 'statewide_lv_mv',
     geographic_tier: 'statewide',
-    industry_type: 'lv_mv',
-    monthly_price_cents: 4900,
-    annual_price_cents: 49000,
-    stripe_price_id_monthly: 'price_1ShJR4RuFpm7XGfuDnd5zQBW',
-    stripe_price_id_annual: 'price_1ShJRFRuFpm7XGfuH23MrcKN',
-    label: 'Statewide (LV/MV)',
-    description: 'Statewide service area for low/medium value industries',
+    monthly_price_cents: 5900,
+    annual_price_cents: 59000,
+    stripe_price_id_monthly: 'price_statewide_monthly',
+    stripe_price_id_annual: 'price_statewide_annual',
+    label: 'Statewide',
+    description: '$59/mo for 1 state, +$15 per additional state (max $199/mo)',
   },
   statewide_hv: {
     key: 'statewide_hv',
     geographic_tier: 'statewide',
-    industry_type: 'hv',
-    monthly_price_cents: 9900,
-    annual_price_cents: 99000,
-    stripe_price_id_monthly: 'price_1ShJRTRuFpm7XGfuOeU7QREH',
-    stripe_price_id_annual: 'price_1ShJRhRuFpm7XGfupcbZV55Z',
-    label: 'Statewide (HV)',
-    description: 'Statewide service area for high value industries',
+    monthly_price_cents: 5900,
+    annual_price_cents: 59000,
+    stripe_price_id_monthly: 'price_statewide_monthly',
+    stripe_price_id_annual: 'price_statewide_annual',
+    label: 'Statewide',
+    description: '$59/mo for 1 state, +$15 per additional state (max $199/mo)',
   },
   nationwide_lv_mv: {
     key: 'nationwide_lv_mv',
     geographic_tier: 'nationwide',
-    industry_type: 'lv_mv',
-    monthly_price_cents: 9900,
-    annual_price_cents: 99000,
-    stripe_price_id_monthly: 'price_1ShJRuRuFpm7XGfuD6GZfhv2',
-    stripe_price_id_annual: 'price_1ShJT2RuFpm7XGfueqAqc2DP',
-    label: 'Nationwide (LV/MV)',
-    description: 'Nationwide service area for low/medium value industries',
+    monthly_price_cents: 29900,
+    annual_price_cents: 299000,
+    stripe_price_id_monthly: 'price_nationwide_monthly',
+    stripe_price_id_annual: 'price_nationwide_annual',
+    label: 'Nationwide',
+    description: 'Serve customers anywhere in the country',
   },
   nationwide_hv: {
     key: 'nationwide_hv',
     geographic_tier: 'nationwide',
-    industry_type: 'hv',
-    monthly_price_cents: 19900,
-    annual_price_cents: 199000,
-    stripe_price_id_monthly: 'price_1ShJTnRuFpm7XGfuMQPfNwDk',
-    stripe_price_id_annual: 'price_1ShJU2RuFpm7XGfu9oO3NF4Y',
-    label: 'Nationwide (HV)',
-    description: 'Nationwide service area for high value industries',
+    monthly_price_cents: 29900,
+    annual_price_cents: 299000,
+    stripe_price_id_monthly: 'price_nationwide_monthly',
+    stripe_price_id_annual: 'price_nationwide_annual',
+    label: 'Nationwide',
+    description: 'Serve customers anywhere in the country',
   },
 };
 
 /**
- * Get the subscription tier key based on geographic tier and industry type
+ * Calculate statewide subscription price based on number of states
  */
-export function getSubscriptionTierKey(
-  geographicTier: GeographicTier,
-  industryType: IndustryType
-): string {
-  return `${geographicTier}_${industryType}`;
+export function calculateStatewidePriceMonthly(numberOfStates: number): number {
+  if (numberOfStates <= 0) return 0;
+  if (numberOfStates === 1) return STATEWIDE_PRICING.base_monthly_cents;
+  
+  const additionalCost = (numberOfStates - 1) * STATEWIDE_PRICING.additional_state_cents;
+  const total = STATEWIDE_PRICING.base_monthly_cents + additionalCost;
+  
+  return Math.min(total, STATEWIDE_PRICING.max_monthly_cents);
 }
 
 /**
- * Get the subscription tier configuration
+ * Get the subscription tier key (unified - no longer depends on industry type)
+ */
+export function getSubscriptionTierKey(
+  geographicTier: GeographicTier,
+  industryType?: IndustryType
+): string {
+  // Industry type no longer affects subscription pricing
+  return geographicTier;
+}
+
+/**
+ * Get the subscription tier configuration (unified pricing)
  */
 export function getSubscriptionTier(
   geographicTier: GeographicTier,
-  industryType: IndustryType
+  industryType?: IndustryType
 ): SubscriptionTier | undefined {
-  const key = getSubscriptionTierKey(geographicTier, industryType);
-  return SUBSCRIPTION_TIERS[key];
+  return SUBSCRIPTION_TIERS[geographicTier];
 }
 
 /**
@@ -240,14 +280,14 @@ export function formatSubscriptionPrice(cents: number): string {
 }
 
 /**
- * Get price ID based on tier and billing cycle
+ * Get price ID based on tier and billing cycle (unified pricing)
  */
 export function getStripePriceId(
   geographicTier: GeographicTier,
-  industryType: IndustryType,
+  industryType: IndustryType | undefined,
   billingCycle: BillingCycle
 ): string | undefined {
-  const tier = getSubscriptionTier(geographicTier, industryType);
+  const tier = getSubscriptionTier(geographicTier);
   if (!tier) return undefined;
   
   return billingCycle === 'monthly'
@@ -260,9 +300,9 @@ export function getStripePriceId(
  */
 export function getAnnualSavings(
   geographicTier: GeographicTier,
-  industryType: IndustryType
+  industryType?: IndustryType
 ): number {
-  const tier = getSubscriptionTier(geographicTier, industryType);
+  const tier = getSubscriptionTier(geographicTier);
   if (!tier) return 0;
   
   const monthlyYearCost = tier.monthly_price_cents * 12;

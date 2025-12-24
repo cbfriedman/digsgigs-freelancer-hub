@@ -125,8 +125,8 @@ export default function Pricing() {
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> Unlimited Leads.</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                No per-click fees. No per-lead charges. Just a simple monthly subscription 
-                that gives you access to all consumer leads in your coverage area.
+                Same pricing for all industries. No per-click fees. No per-lead charges. 
+                Just a simple monthly subscription for unlimited leads in your coverage area.
               </p>
               
               {/* Key Benefits */}
@@ -152,36 +152,8 @@ export default function Pricing() {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
-              {/* Industry Type Toggle */}
+              {/* Billing Cycle Toggle - No more industry toggle needed */}
               <div className="flex flex-col items-center gap-6 mb-10">
-                <div className="flex items-center gap-4">
-                  <span className={cn(
-                    "text-sm font-medium transition-colors",
-                    industryType === 'lv_mv' ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    Standard Industries
-                  </span>
-                  <button
-                    onClick={() => setIndustryType(industryType === 'lv_mv' ? 'hv' : 'lv_mv')}
-                    className={cn(
-                      "relative w-14 h-7 rounded-full transition-colors",
-                      industryType === 'hv' ? "bg-primary" : "bg-muted"
-                    )}
-                  >
-                    <div className={cn(
-                      "absolute top-1 w-5 h-5 rounded-full bg-white transition-transform",
-                      industryType === 'hv' ? "translate-x-8" : "translate-x-1"
-                    )} />
-                  </button>
-                  <span className={cn(
-                    "text-sm font-medium transition-colors",
-                    industryType === 'hv' ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    High-Value Industries
-                  </span>
-                </div>
-                
-                {/* Billing Cycle Toggle */}
                 <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
                   <button
                     onClick={() => setBillingCycle('monthly')}
@@ -211,95 +183,193 @@ export default function Pricing() {
                 </div>
               </div>
 
-              {/* Pricing Cards */}
+              {/* Pricing Cards - Unified for all industries */}
               <div className="grid md:grid-cols-3 gap-6 mb-12">
-                {geographicTiers.map((tier, index) => {
-                  const tierKey = `${tier}_${industryType}`;
-                  const tierData = SUBSCRIPTION_TIERS[tierKey];
-                  if (!tierData) return null;
-
-                  const price = billingCycle === 'monthly' 
-                    ? tierData.monthly_price_cents 
-                    : tierData.annual_price_cents;
-                  const isPopular = tier === 'statewide';
-
-                  return (
-                    <Card 
-                      key={tier}
-                      className={cn(
-                        "relative transition-all duration-300 hover:shadow-xl",
-                        tierColors[tier],
-                        isPopular && "ring-2 ring-primary scale-105 md:scale-110 z-10"
+                {/* Local Tier */}
+                <Card className={cn("relative transition-all duration-300 hover:shadow-xl", tierColors['local'])}>
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 bg-blue-500/10 text-blue-600">
+                      {tierIcons['local']}
+                    </div>
+                    <CardTitle className="text-2xl">Local</CardTitle>
+                    <CardDescription>Serve customers in your city or metro area</CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="text-center">
+                    <div className="mb-6">
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-4xl font-bold">
+                          ${billingCycle === 'monthly' ? '29' : '290'}
+                        </span>
+                        <span className="text-muted-foreground">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                      </div>
+                      {billingCycle === 'annual' && (
+                        <p className="text-sm text-green-600 mt-1">
+                          Save $58/year (2 months free)
+                        </p>
                       )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        per profile
+                      </p>
+                    </div>
+
+                    <ul className="space-y-3 text-left mb-6">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Unlimited leads in your local area</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Shield className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Extended protection with &lt;{PRICE_LOCK_CLICK_THRESHOLD} views/month</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Cancel anytime, no contracts</span>
+                      </li>
+                    </ul>
+
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => navigate("/register?mode=signup&type=digger")}
                     >
-                      {isPopular && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                          <Badge className="bg-primary text-primary-foreground">
-                            Most Popular
-                          </Badge>
-                        </div>
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Statewide Tier - Most Popular */}
+                <Card className={cn(
+                  "relative transition-all duration-300 hover:shadow-xl ring-2 ring-primary scale-105 md:scale-110 z-10",
+                  tierColors['statewide']
+                )}>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-primary text-primary-foreground">
+                      Most Popular
+                    </Badge>
+                  </div>
+                  
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 bg-purple-500/10 text-purple-600">
+                      {tierIcons['statewide']}
+                    </div>
+                    <CardTitle className="text-2xl">Statewide</CardTitle>
+                    <CardDescription>Serve customers across your entire state</CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="text-center">
+                    <div className="mb-6">
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-4xl font-bold">
+                          ${billingCycle === 'monthly' ? '59' : '590'}
+                        </span>
+                        <span className="text-muted-foreground">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        +$15/mo per additional state (max $199/mo)
+                      </p>
+                      {billingCycle === 'annual' && (
+                        <p className="text-sm text-green-600 mt-1">
+                          Save $118/year (2 months free)
+                        </p>
                       )}
-                      
-                      <CardHeader className="text-center pb-4">
-                        <div className={cn(
-                          "w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4",
-                          tier === 'local' && "bg-blue-500/10 text-blue-600",
-                          tier === 'statewide' && "bg-purple-500/10 text-purple-600",
-                          tier === 'nationwide' && "bg-amber-500/10 text-amber-600"
-                        )}>
-                          {tierIcons[tier]}
-                        </div>
-                        <CardTitle className="text-2xl">{GEOGRAPHIC_TIER_LABELS[tier]}</CardTitle>
-                        <CardDescription>{GEOGRAPHIC_TIER_DESCRIPTIONS[tier]}</CardDescription>
-                      </CardHeader>
-                      
-                      <CardContent className="text-center">
-                        <div className="mb-6">
-                          <div className="flex items-baseline justify-center gap-1">
-                            <span className="text-4xl font-bold">{formatSubscriptionPrice(price)}</span>
-                            <span className="text-muted-foreground">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-                          </div>
-                          {billingCycle === 'annual' && (
-                            <p className="text-sm text-green-600 mt-1">
-                              Save {formatSubscriptionPrice(tierData.monthly_price_cents * 2)}/year
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            per profile
-                          </p>
-                        </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        per profile
+                      </p>
+                    </div>
 
-                        <ul className="space-y-3 text-left mb-6">
-                          <li className="flex items-start gap-2">
-                            <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span className="text-sm">Unlimited leads in your {tier} area</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <Shield className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span className="text-sm">Extended protection with &lt;{PRICE_LOCK_CLICK_THRESHOLD} views/month</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span className="text-sm">Cancel anytime, no contracts</span>
-                          </li>
-                        </ul>
+                    <ul className="space-y-3 text-left mb-6">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Unlimited leads in your statewide area</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Add multiple states at discounted rates</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Cancel anytime, no contracts</span>
+                      </li>
+                    </ul>
 
-                        <Button 
-                          className="w-full" 
-                          variant={isPopular ? "default" : "outline"}
-                          onClick={() => navigate("/register?mode=signup&type=digger")}
-                        >
-                          Get Started
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                    <Button 
+                      className="w-full" 
+                      variant="default"
+                      onClick={() => navigate("/register?mode=signup&type=digger")}
+                    >
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Nationwide Tier */}
+                <Card className={cn("relative transition-all duration-300 hover:shadow-xl", tierColors['nationwide'])}>
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 bg-amber-500/10 text-amber-600">
+                      {tierIcons['nationwide']}
+                    </div>
+                    <CardTitle className="text-2xl">Nationwide</CardTitle>
+                    <CardDescription>Serve customers anywhere in the country</CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="text-center">
+                    <div className="mb-6">
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-4xl font-bold">
+                          ${billingCycle === 'monthly' ? '299' : '2,990'}
+                        </span>
+                        <span className="text-muted-foreground">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                      </div>
+                      {billingCycle === 'annual' && (
+                        <p className="text-sm text-green-600 mt-1">
+                          Save $598/year (2 months free)
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        per profile
+                      </p>
+                    </div>
+
+                    <ul className="space-y-3 text-left mb-6">
+                      <li className="flex items-start gap-2">
+                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Unlimited leads nationwide</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Globe className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Access to all 50 states</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Cancel anytime, no contracts</span>
+                      </li>
+                    </ul>
+
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => navigate("/register?mode=signup&type=digger")}
+                    >
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Per Profile Note */}
@@ -307,6 +377,81 @@ export default function Pricing() {
                 <p className="text-sm text-muted-foreground">
                   <strong>Pricing is per profile.</strong> Create separate profiles for different professions or coverage areas to optimize your costs.
                 </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Industry Note Section - Simplified */}
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-10">
+                <Badge variant="outline" className="mb-4">
+                  <Building2 className="h-3 w-3 mr-1" />
+                  Same Subscription for All Industries
+                </Badge>
+                <h2 className="text-3xl font-bold mb-4">Unified Subscription Pricing</h2>
+                <p className="text-muted-foreground">
+                  Whether you're a plumber, lawyer, or real estate agent - everyone pays the same subscription rate.
+                  Industry type only affects lead reveal costs, not your monthly subscription.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Briefcase className="h-5 w-5" />
+                      Standard Industries
+                    </CardTitle>
+                    <CardDescription>
+                      Most service professions including home services, trades, and general consulting
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Examples: Plumbing, Electrical, HVAC, Cleaning, Landscaping, Tutoring, Photography, Web Design, and more.
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-medium">Lead Reveal: from $16.50</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-primary/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Crown className="h-5 w-5 text-primary" />
+                      High-Value Industries
+                    </CardTitle>
+                    <CardDescription>
+                      Industries with higher lead values and competitive customer acquisition costs
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Accordion type="single" collapsible className="mb-4">
+                      <AccordionItem value="industries" className="border-none">
+                        <AccordionTrigger className="text-sm py-2">
+                          View all high-value industries
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                            {HIGH_VALUE_INDUSTRIES.slice(0, 20).map((industry) => (
+                              <span key={industry}>{industry}</span>
+                            ))}
+                            {HIGH_VALUE_INDUSTRIES.length > 20 && (
+                              <span className="text-primary">+{HIGH_VALUE_INDUSTRIES.length - 20} more</span>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-medium">Lead Reveal: from $35.20</span>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>

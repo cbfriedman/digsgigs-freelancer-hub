@@ -549,6 +549,58 @@ const Index = () => {
 
       <ValuePropositionBanner />
 
+      {/* Pricing Highlight Section */}
+      <section className="py-16 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+              <DollarSign className="h-3 w-3 mr-1" />
+              Simple Pricing
+            </Badge>
+            <h3 className="text-3xl font-bold mb-4">Same Price for All Industries</h3>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              One subscription. Unlimited leads. No per-click fees.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="p-6 rounded-xl border border-border/50 bg-card text-center hover:shadow-lg transition-all">
+              <div className="w-12 h-12 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Search className="w-6 h-6" />
+              </div>
+              <h4 className="text-xl font-bold mb-1">Local</h4>
+              <div className="text-3xl font-bold text-primary mb-2">$29<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
+              <p className="text-sm text-muted-foreground">City or metro area</p>
+            </div>
+
+            <div className="p-6 rounded-xl border-2 border-primary bg-card text-center hover:shadow-lg transition-all relative">
+              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">Most Popular</Badge>
+              <div className="w-12 h-12 bg-purple-500/10 text-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-6 h-6" />
+              </div>
+              <h4 className="text-xl font-bold mb-1">Statewide</h4>
+              <div className="text-3xl font-bold text-primary mb-2">$59<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
+              <p className="text-sm text-muted-foreground">+$15/state, max $199</p>
+            </div>
+
+            <div className="p-6 rounded-xl border border-border/50 bg-card text-center hover:shadow-lg transition-all">
+              <div className="w-12 h-12 bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <h4 className="text-xl font-bold mb-1">Nationwide</h4>
+              <div className="text-3xl font-bold text-primary mb-2">$299<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
+              <p className="text-sm text-muted-foreground">All 50 states</p>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <Button variant="default" size="lg" onClick={() => navigate("/pricing")}>
+              View Full Pricing <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Digger Onboarding - Show choice dialog or checklist */}
       {isDigger && showOnboardingChoice && (
         <section className="py-8 bg-background">
