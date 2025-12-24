@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, FileText, ArrowRight, Users, Building, DollarSign, TrendingUp } from 'lucide-react';
+import { Download, FileText, ArrowRight, Users, Building, DollarSign, TrendingUp, Link, ExternalLink, Info } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -288,6 +291,166 @@ const BusinessPlan = () => {
         margin: { left: margin, right: margin },
       });
 
+      // SEO & Backlink Strategy
+      doc.addPage();
+      yPos = 20;
+      
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text('SEO & Backlink Strategy', margin, yPos);
+      yPos += 12;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const seoIntro = 'Domain Authority (DA) is a 0-100 score developed by Moz that predicts how well a website will rank on search engines. Higher DA sites pass more "link juice" to your site, improving your search rankings. A backlink from a DA 50+ site is worth significantly more than multiple links from low DA sites.';
+      const seoLines = doc.splitTextToSize(seoIntro, contentWidth);
+      doc.text(seoLines, margin, yPos);
+      yPos += seoLines.length * 5 + 8;
+
+      // Free/Low-Cost Backlinks
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Free/Low-Cost Backlinks ($0-$50)', margin, yPos);
+      yPos += 6;
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Platform', 'Type', 'Est. DA', 'Cost', 'Action Required']],
+        body: [
+          ['Google Business Profile', 'Business Listing', '95+', 'Free', 'Claim & optimize listing'],
+          ['Bing Places', 'Business Listing', '90+', 'Free', 'Submit business info'],
+          ['Yelp', 'Business Listing', '90+', 'Free', 'Create business profile'],
+          ['LinkedIn Company Page', 'Social Profile', '95+', 'Free', 'Create company page'],
+          ['Crunchbase', 'Startup Directory', '90+', 'Free', 'Submit company profile'],
+          ['AngelList', 'Startup Directory', '85+', 'Free', 'Create startup profile'],
+          ['Product Hunt', 'Product Launch', '90+', 'Free', 'Submit for launch'],
+          ['HARO (Help a Reporter)', 'PR/Media', 'Varies', 'Free', 'Respond to queries'],
+          ['Medium', 'Content Platform', '95+', 'Free', 'Publish guest articles'],
+          ['Quora', 'Q&A Platform', '90+', 'Free', 'Answer industry questions'],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [34, 197, 94], fontSize: 8 },
+        bodyStyles: { fontSize: 7 },
+        margin: { left: margin, right: margin },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+
+      // Mid-Range Backlinks
+      checkPageBreak(60);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Mid-Range Backlinks ($100-$500)', margin, yPos);
+      yPos += 6;
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Platform', 'Type', 'Est. DA', 'Cost', 'SEO Value']],
+        body: [
+          ['Clutch.co', 'B2B Directory', 'DA 70', '$300-$500', 'High - Trusted B2B reviews'],
+          ['G2', 'Software Reviews', 'DA 80', '$200-$400', 'Very High - Tech authority'],
+          ['Capterra', 'Software Directory', 'DA 80', '$100-$300', 'Very High - Established platform'],
+          ['GoodFirms', 'Service Directory', 'DA 60', '$150-$300', 'Medium-High - Growing authority'],
+          ['Software Advice', 'Review Platform', 'DA 75', '$200-$400', 'High - Gartner owned'],
+          ['Chamber of Commerce', 'Business Network', 'DA 50-70', '$200-$500/yr', 'Medium-High - Local authority'],
+          ['BBB Accreditation', 'Trust Badge', 'DA 80', '$400-$600/yr', 'High - Trust signal'],
+          ['Industry Podcasts', 'Media Outreach', 'DA 40-70', '$200-$500', 'Medium - Niche relevance'],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246], fontSize: 8 },
+        bodyStyles: { fontSize: 7 },
+        margin: { left: margin, right: margin },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+
+      // Premium Backlinks
+      checkPageBreak(60);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Premium Backlinks ($500-$2,000+)', margin, yPos);
+      yPos += 6;
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Platform', 'Type', 'Est. DA', 'Cost', 'SEO Value']],
+        body: [
+          ['Forbes Councils', 'Contributed Content', 'DA 95', '$1,200-$2,400/yr', 'Exceptional - Top-tier authority'],
+          ['Entrepreneur.com', 'Sponsored Content', 'DA 92', '$1,500-$3,000', 'Exceptional - Business authority'],
+          ['Inc.com', 'Sponsored Article', 'DA 92', '$1,000-$2,500', 'Exceptional - Business media'],
+          ['TechCrunch', 'Press Coverage', 'DA 94', '$500-$2,000 (PR)', 'Exceptional - Tech authority'],
+          ['Business Insider', 'Sponsored/PR', 'DA 94', '$2,000-$5,000', 'Exceptional - Wide reach'],
+          ['HubSpot Guest Post', 'Content Partner', 'DA 93', '$500-$1,500', 'Very High - Marketing authority'],
+          ['Neil Patel Blog', 'Outreach/Guest', 'DA 90', '$500-$1,000', 'Very High - SEO niche'],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [139, 92, 246], fontSize: 8 },
+        bodyStyles: { fontSize: 7 },
+        margin: { left: margin, right: margin },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+
+      // Service Industry Specific
+      checkPageBreak(60);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Service Industry Specific Backlinks', margin, yPos);
+      yPos += 6;
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Platform', 'Target Industry', 'Est. DA', 'Cost']],
+        body: [
+          ['HomeAdvisor/Angi', 'Home Services', 'DA 80', 'Free-$350/yr'],
+          ['Thumbtack', 'General Services', 'DA 70', 'Free listing'],
+          ['Houzz Pro', 'Home Services', 'DA 85', '$300-$600/mo'],
+          ['Avvo', 'Legal', 'DA 75', 'Free-$500/mo'],
+          ['FindLaw', 'Legal', 'DA 70', '$300-$800/mo'],
+          ['Martindale-Hubbell', 'Legal', 'DA 70', '$200-$500/yr'],
+          ['Expertise.com', 'Various Services', 'DA 65', 'Free (earned)'],
+          ['Trade Association Sites', 'Industry-specific', 'DA 40-60', '$100-$500/yr'],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [249, 115, 22], fontSize: 8 },
+        bodyStyles: { fontSize: 7 },
+        margin: { left: margin, right: margin },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 12;
+
+      // Priority Actions
+      checkPageBreak(50);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Priority Backlink Actions (Recommended Order)', margin, yPos);
+      yPos += 8;
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      const priorities = [
+        '1. IMMEDIATE (Week 1): Google Business Profile, LinkedIn, Bing Places, Yelp - All free, high DA',
+        '2. WEEK 2-4: Crunchbase, AngelList, Product Hunt launch - Free startup visibility',
+        '3. MONTH 2: Clutch.co, G2, Capterra listings - Paid but high conversion value',
+        '4. MONTH 3: Chamber of Commerce, BBB Accreditation - Trust signals',
+        '5. ONGOING: HARO responses, Medium articles, Quora answers - Content marketing',
+        '6. QUARTERLY: Industry podcasts, guest posts, trade publications - Authority building',
+        '7. ANNUALLY: Forbes Councils or similar premium placement - Major credibility boost',
+      ];
+      priorities.forEach(priority => {
+        const pLines = doc.splitTextToSize(priority, contentWidth);
+        doc.text(pLines, margin, yPos);
+        yPos += pLines.length * 4 + 2;
+      });
+
+      yPos += 8;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Estimated Total Investment:', margin, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.text('• Year 1 Minimum (Free + Essential): $1,000-$2,000', margin + 5, yPos);
+      yPos += 5;
+      doc.text('• Year 1 Moderate (Add mid-range): $3,000-$5,000', margin + 5, yPos);
+      yPos += 5;
+      doc.text('• Year 1 Aggressive (Include premium): $8,000-$15,000', margin + 5, yPos);
+
       // Add page numbers
       const pageCount = doc.getNumberOfPages();
       doc.setFontSize(8);
@@ -317,21 +480,28 @@ const BusinessPlan = () => {
       <Navigation />
       
       <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Digs & Gigs Business Plan</h1>
-          <p className="text-muted-foreground text-lg mb-6">
-            Lead Generation & Service Marketplace Platform
-          </p>
-          <Button 
-            onClick={generatePDF} 
-            disabled={isGenerating}
-            size="lg"
-            className="gap-2"
-          >
-            <Download className="h-5 w-5" />
-            {isGenerating ? 'Generating PDF...' : 'Download Business Plan PDF'}
-          </Button>
-        </div>
+        {/* Prominent Download Section */}
+        <Card className="mb-8 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
+          <CardContent className="py-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">Digs & Gigs Business Plan</h1>
+                <p className="text-muted-foreground text-lg">
+                  Lead Generation & Service Marketplace Platform
+                </p>
+              </div>
+              <Button 
+                onClick={generatePDF} 
+                disabled={isGenerating}
+                size="lg"
+                className="gap-2 px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-shadow"
+              >
+                <Download className="h-6 w-6" />
+                {isGenerating ? 'Generating PDF...' : 'Download Complete PDF'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Flow Chart Visual */}
         <Card className="mb-8">
@@ -497,6 +667,201 @@ const BusinessPlan = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* SEO & Backlink Strategy Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5" />
+              SEO & Backlink Strategy
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p><strong>Domain Authority (DA)</strong> is a 0-100 score by Moz predicting how well a site ranks. Higher DA = more valuable backlink. DA 50+ is considered good, DA 70+ is excellent.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-muted-foreground">
+              <strong>DA (Domain Authority)</strong> is a search engine ranking score from 0-100 developed by Moz. 
+              Higher DA sites pass more "link juice" to improve your rankings. A single DA 80+ backlink can be worth more than dozens of low-quality links.
+            </p>
+
+            {/* Free/Low-Cost */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <Badge variant="secondary" className="bg-green-500/10 text-green-700">Free - $50</Badge>
+                Free/Low-Cost Backlinks
+              </h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Platform</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Est. DA</TableHead>
+                    <TableHead>Cost</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">Google Business Profile</TableCell>
+                    <TableCell>Business Listing</TableCell>
+                    <TableCell><Badge variant="outline">DA 95+</Badge></TableCell>
+                    <TableCell className="text-green-600 font-semibold">Free</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">LinkedIn Company Page</TableCell>
+                    <TableCell>Social Profile</TableCell>
+                    <TableCell><Badge variant="outline">DA 95+</Badge></TableCell>
+                    <TableCell className="text-green-600 font-semibold">Free</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Crunchbase</TableCell>
+                    <TableCell>Startup Directory</TableCell>
+                    <TableCell><Badge variant="outline">DA 90+</Badge></TableCell>
+                    <TableCell className="text-green-600 font-semibold">Free</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Product Hunt</TableCell>
+                    <TableCell>Product Launch</TableCell>
+                    <TableCell><Badge variant="outline">DA 90+</Badge></TableCell>
+                    <TableCell className="text-green-600 font-semibold">Free</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">HARO</TableCell>
+                    <TableCell>PR/Media</TableCell>
+                    <TableCell><Badge variant="outline">Varies</Badge></TableCell>
+                    <TableCell className="text-green-600 font-semibold">Free</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mid-Range */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <Badge variant="secondary" className="bg-blue-500/10 text-blue-700">$100 - $500</Badge>
+                Mid-Range Backlinks
+              </h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Platform</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Est. DA</TableHead>
+                    <TableHead>Cost</TableHead>
+                    <TableHead>SEO Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">Clutch.co</TableCell>
+                    <TableCell>B2B Directory</TableCell>
+                    <TableCell><Badge variant="outline">DA 70</Badge></TableCell>
+                    <TableCell>$300-$500</TableCell>
+                    <TableCell><Badge className="bg-green-500">High</Badge></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">G2</TableCell>
+                    <TableCell>Software Reviews</TableCell>
+                    <TableCell><Badge variant="outline">DA 80</Badge></TableCell>
+                    <TableCell>$200-$400</TableCell>
+                    <TableCell><Badge className="bg-green-600">Very High</Badge></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Capterra</TableCell>
+                    <TableCell>Software Directory</TableCell>
+                    <TableCell><Badge variant="outline">DA 80</Badge></TableCell>
+                    <TableCell>$100-$300</TableCell>
+                    <TableCell><Badge className="bg-green-600">Very High</Badge></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">BBB Accreditation</TableCell>
+                    <TableCell>Trust Badge</TableCell>
+                    <TableCell><Badge variant="outline">DA 80</Badge></TableCell>
+                    <TableCell>$400-$600/yr</TableCell>
+                    <TableCell><Badge className="bg-green-500">High</Badge></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Premium */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <Badge variant="secondary" className="bg-purple-500/10 text-purple-700">$500 - $2,000+</Badge>
+                Premium Backlinks
+              </h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Platform</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Est. DA</TableHead>
+                    <TableHead>Cost</TableHead>
+                    <TableHead>SEO Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">Forbes Councils</TableCell>
+                    <TableCell>Contributed Content</TableCell>
+                    <TableCell><Badge variant="outline">DA 95</Badge></TableCell>
+                    <TableCell>$1,200-$2,400/yr</TableCell>
+                    <TableCell><Badge className="bg-purple-600">Exceptional</Badge></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Entrepreneur.com</TableCell>
+                    <TableCell>Sponsored Content</TableCell>
+                    <TableCell><Badge variant="outline">DA 92</Badge></TableCell>
+                    <TableCell>$1,500-$3,000</TableCell>
+                    <TableCell><Badge className="bg-purple-600">Exceptional</Badge></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">TechCrunch</TableCell>
+                    <TableCell>Press Coverage</TableCell>
+                    <TableCell><Badge variant="outline">DA 94</Badge></TableCell>
+                    <TableCell>$500-$2,000 (PR)</TableCell>
+                    <TableCell><Badge className="bg-purple-600">Exceptional</Badge></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">HubSpot Guest Post</TableCell>
+                    <TableCell>Content Partner</TableCell>
+                    <TableCell><Badge variant="outline">DA 93</Badge></TableCell>
+                    <TableCell>$500-$1,500</TableCell>
+                    <TableCell><Badge className="bg-green-600">Very High</Badge></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Investment Summary */}
+            <Card className="bg-muted/50">
+              <CardContent className="pt-6">
+                <h4 className="font-semibold mb-4">Estimated Annual Investment</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-background rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">$1,000-$2,000</div>
+                    <div className="text-sm text-muted-foreground">Minimum (Free + Essential)</div>
+                  </div>
+                  <div className="text-center p-4 bg-background rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">$3,000-$5,000</div>
+                    <div className="text-sm text-muted-foreground">Moderate (+ Mid-range)</div>
+                  </div>
+                  <div className="text-center p-4 bg-background rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">$8,000-$15,000</div>
+                    <div className="text-sm text-muted-foreground">Aggressive (+ Premium)</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </CardContent>
+        </Card>
       </main>
 
       <Footer />
