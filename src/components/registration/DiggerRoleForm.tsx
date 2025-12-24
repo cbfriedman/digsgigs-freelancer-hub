@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, ArrowRight, AlertCircle, Info, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
@@ -10,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { INDUSTRY_PRICING, getLeadCostForIndustry, IndustryCategory } from "@/config/pricing";
+import { isHighValueIndustry, PROFILE_DISCOVERY_PRICING } from "@/config/clickPricing";
 
 const diggerSchema = z.object({
   companyName: z.string()
@@ -27,6 +29,10 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
   const [companyName, setCompanyName] = useState("");
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [showTierWarning, setShowTierWarning] = useState(false);
+  const [allowGiggerContact, setAllowGiggerContact] = useState(false);
+
+  // Determine if any selected industry is high-value
+  const hasHighValueIndustry = selectedIndustries.some(industry => isHighValueIndustry(industry));
 
   // Detect keyword tiers from selected industries
   const detectKeywordTiers = () => {
@@ -77,6 +83,7 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
       onComplete({
         companyName,
         selectedIndustries,
+        allowGiggerContact,
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -89,6 +96,11 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
 
   const tiers = detectKeywordTiers();
   const highestCost = Math.max(...tiers.map(t => t.cost), 0);
+
+  // Get Profile Discovery pricing based on industry type
+  const profileDiscoveryPricing = hasHighValueIndustry 
+    ? PROFILE_DISCOVERY_PRICING.highValue 
+    : PROFILE_DISCOVERY_PRICING.standard;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,6 +126,62 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
           selectedIndustries={selectedIndustries}
           onIndustriesChange={handleIndustriesChange}
         />
+      </div>
+
+      {/* Allow Giggers to Contact Me Opt-in */}
+      <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="allowGiggerContact"
+            checked={allowGiggerContact}
+            onCheckedChange={(checked) => setAllowGiggerContact(checked as boolean)}
+          />
+          <div className="space-y-1">
+            <Label htmlFor="allowGiggerContact" className="font-medium cursor-pointer">
+              I'd like Giggers to contact me
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Allow homeowners to discover and contact you directly from our marketplace
+            </p>
+          </div>
+        </div>
+        
+        {allowGiggerContact && (
+          <Alert className="mt-3">
+            <Phone className="h-4 w-4" />
+            <AlertDescription>
+              <p className="font-medium mb-2">Profile Discovery Costs:</p>
+              <p className="text-sm mb-2">
+                When a Gigger clicks to reveal your contact info, you pay:
+              </p>
+              
+              <ul className="text-sm space-y-1 mb-2">
+                <li className="flex justify-between">
+                  <span>• Local (≤50 miles):</span>
+                  <strong>${profileDiscoveryPricing.local.toFixed(2)}</strong>
+                </li>
+                <li className="flex justify-between">
+                  <span>• Statewide:</span>
+                  <strong>${profileDiscoveryPricing.statewide.toFixed(2)}</strong>
+                </li>
+                <li className="flex justify-between">
+                  <span>• Nationwide:</span>
+                  <strong>${profileDiscoveryPricing.nationwide.toFixed(2)}</strong>
+                </li>
+              </ul>
+              
+              {hasHighValueIndustry && (
+                <Badge variant="secondary" className="mb-2 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                  High-Value Industry Pricing
+                </Badge>
+              )}
+              
+              <p className="text-xs text-muted-foreground">
+                💡 You'll receive an email with the Gigger's contact info when they request it
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
 
       {/* Smart Tier Detection Warning */}

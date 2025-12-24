@@ -2,9 +2,8 @@
  * React Hook for Click & Call Pricing
  * 
  * Provides easy access to pricing calculations for:
- * - Lead contact reveals
- * - Profile clicks (giggers clicking on digger profiles)
- * - Profile calls (giggers calling diggers)
+ * - Lead reveals (Digger → Gigger)
+ * - Profile discovery (Gigger → Digger)
  */
 
 import { useMemo, useCallback } from 'react';
@@ -13,14 +12,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import {
   calculateLeadRevealPrice,
+  calculateProfileDiscoveryPrice,
   calculateProfileClickPrice,
   calculateProfileCallPrice,
   getPricingSummary,
-  LeadPricingResult,
+  LeadRevealPricingResult,
+  ProfileDiscoveryPricingResult,
   ProfileClickPricingResult,
   ProfileCallPricingResult,
-  FREE_CLICKS_PER_MONTH,
+  FREE_LEADS_PER_MONTH,
   GRACE_PERIOD_DAYS,
+  GeographicCoverage,
+  isHighValueIndustry,
+  LEAD_REVEAL_PRICING,
+  PROFILE_DISCOVERY_PRICING,
 } from '@/config/clickPricing';
 
 interface DiggerPricingInfo {
@@ -30,6 +35,8 @@ interface DiggerPricingInfo {
   subscriptionStatus: string | null;
   subscriptionLapsedAt: string | null;
   isInGracePeriod: boolean;
+  geographicTier: GeographicCoverage;
+  allowGiggerContact: boolean;
 }
 
 /**
@@ -46,7 +53,7 @@ export const useClickPricing = () => {
 
       const { data, error } = await supabase
         .from('digger_profiles')
-        .select('subscription_status, subscription_tier, accumulated_free_clicks, subscription_lapsed_at')
+        .select('subscription_status, subscription_tier, accumulated_free_clicks, subscription_lapsed_at, geographic_tier, allow_gigger_contact')
         .eq('user_id', user.id)
         .eq('is_primary', true)
         .maybeSingle();
@@ -73,26 +80,42 @@ export const useClickPricing = () => {
         subscriptionStatus: data.subscription_status,
         subscriptionLapsedAt: data.subscription_lapsed_at,
         isInGracePeriod,
+        geographicTier: (data.geographic_tier as GeographicCoverage) || 'local',
+        allowGiggerContact: data.allow_gigger_contact || false,
       };
     },
     enabled: !!user?.id,
     staleTime: 30000, // 30 seconds
   });
 
-  // Calculate lead reveal price
-  const getLeadRevealPrice = useCallback((keyword: string): LeadPricingResult => {
+  // Calculate lead reveal price (Digger → Gigger)
+  const getLeadRevealPrice = useCallback((
+    keyword: string,
+    geographicCoverage?: GeographicCoverage,
+    isConfirmed: boolean = false
+  ): LeadRevealPricingResult => {
     const isSubscriber = pricingInfo?.isSubscriber || pricingInfo?.isInGracePeriod || false;
     const freeClicks = pricingInfo?.accumulatedFreeClicks || 0;
+    const coverage = geographicCoverage || pricingInfo?.geographicTier || 'local';
     
-    return calculateLeadRevealPrice(keyword, isSubscriber, freeClicks);
+    return calculateLeadRevealPrice(keyword, coverage, isConfirmed, freeClicks, isSubscriber);
   }, [pricingInfo]);
 
-  // Calculate profile click price
+  // Calculate profile discovery price (Gigger → Digger)
+  const getProfileDiscoveryPrice = useCallback((
+    keyword: string,
+    geographicCoverage?: GeographicCoverage
+  ): ProfileDiscoveryPricingResult => {
+    const coverage = geographicCoverage || pricingInfo?.geographicTier || 'local';
+    return calculateProfileDiscoveryPrice(keyword, coverage);
+  }, [pricingInfo]);
+
+  // Legacy: Calculate profile click price
   const getProfileClickPrice = useCallback((professionOrKeyword: string): ProfileClickPricingResult => {
     return calculateProfileClickPrice(professionOrKeyword);
   }, []);
 
-  // Calculate profile call price
+  // Legacy: Calculate profile call price
   const getProfileCallPrice = useCallback((professionOrKeyword: string): ProfileCallPricingResult => {
     return calculateProfileCallPrice(professionOrKeyword);
   }, []);
@@ -108,33 +131,54 @@ export const useClickPricing = () => {
 
     // Price calculators
     getLeadRevealPrice,
+    getProfileDiscoveryPrice,
     getProfileClickPrice,
     getProfileCallPrice,
 
     // Constants
-    freeClicksPerMonth: FREE_CLICKS_PER_MONTH,
+    freeLeadsPerMonth: FREE_LEADS_PER_MONTH,
     gracePeriodDays: GRACE_PERIOD_DAYS,
     pricingSummary,
+    
+    // Pricing matrices for display
+    leadRevealPricing: LEAD_REVEAL_PRICING,
+    profileDiscoveryPricing: PROFILE_DISCOVERY_PRICING,
   };
 };
 
 /**
- * Hook specifically for profile click/call pricing (for gigger-side use)
+ * Hook specifically for profile discovery pricing (for gigger-side use)
  */
 export const useProfilePricing = () => {
-  // Calculate profile click price
+  // Calculate profile discovery price
+  const getDiscoveryPrice = useCallback((
+    professionOrKeyword: string,
+    geographicCoverage: GeographicCoverage = 'local'
+  ): ProfileDiscoveryPricingResult => {
+    return calculateProfileDiscoveryPrice(professionOrKeyword, geographicCoverage);
+  }, []);
+
+  // Legacy: Calculate profile click price
   const getClickPrice = useCallback((professionOrKeyword: string): ProfileClickPricingResult => {
     return calculateProfileClickPrice(professionOrKeyword);
   }, []);
 
-  // Calculate profile call price
+  // Legacy: Calculate profile call price
   const getCallPrice = useCallback((professionOrKeyword: string): ProfileCallPricingResult => {
     return calculateProfileCallPrice(professionOrKeyword);
   }, []);
 
+  // Check if industry is high value
+  const checkHighValue = useCallback((keyword: string): boolean => {
+    return isHighValueIndustry(keyword);
+  }, []);
+
   return {
+    getDiscoveryPrice,
     getClickPrice,
     getCallPrice,
+    checkHighValue,
+    profileDiscoveryPricing: PROFILE_DISCOVERY_PRICING,
   };
 };
 
