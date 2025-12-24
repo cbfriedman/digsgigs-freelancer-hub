@@ -287,18 +287,21 @@ const BusinessPlan = () => {
         startY: yPos,
         head: [['Feature', 'Status']],
         body: [
-          ['Unified Subscription Pricing', '✓ Implemented'],
-          ['Four Lead Reveal Types', '✓ Implemented'],
-          ['Profile Discovery Opt-in', '✓ Implemented'],
-          ['Geographic Multipliers', '✓ Implemented'],
-          ['Confirmed Lead Premium (+50%)', '✓ Implemented'],
-          ['High-Value Industry Detection', '✓ Implemented'],
-          ['12-Month Price Lock', '✓ Implemented'],
-          ['2 Free Accumulating Leads/Month', '✓ Implemented'],
+          ['Unified Subscription Pricing', 'COMPLETE'],
+          ['Four Lead Reveal Types', 'COMPLETE'],
+          ['Profile Discovery Opt-in', 'COMPLETE'],
+          ['Geographic Multipliers', 'COMPLETE'],
+          ['Confirmed Lead Premium (+50%)', 'COMPLETE'],
+          ['High-Value Industry Detection', 'COMPLETE'],
+          ['12-Month Price Lock', 'COMPLETE'],
+          ['2 Free Accumulating Leads/Month', 'COMPLETE'],
         ],
         theme: 'grid',
         headStyles: { fillColor: [34, 197, 94], fontSize: 9 },
         bodyStyles: { fontSize: 8 },
+        columnStyles: {
+          1: { fontStyle: 'bold', textColor: [34, 139, 34] }
+        },
         margin: { left: margin, right: margin },
       });
 
