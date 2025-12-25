@@ -233,9 +233,7 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        // TODO: Change back to noreply@digsandgigs.net after domain verification in Resend
-        // For now using Resend's test domain for testing
-        from: "Digs and Gigs <onboarding@resend.dev>",
+        from: "Digs and Gigs <noreply@digsandgigs.net>",
         to: [email],
         subject: "🔐 Your Verification Code - Digs and Gigs",
         html: `
