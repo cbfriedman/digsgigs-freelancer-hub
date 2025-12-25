@@ -343,6 +343,13 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
+      // Log API key info for debugging (first 10 chars only for security)
+      console.log("Resend API Key Info:", {
+        prefix: RESEND_API_KEY.substring(0, 10) + "...",
+        length: RESEND_API_KEY.length,
+        note: "If you see test mode errors, ensure you're using a PRODUCTION API key from https://resend.com/api-keys"
+      });
+
       // Use Resend SDK instead of direct fetch
       const resend = new Resend(RESEND_API_KEY);
       
@@ -375,10 +382,27 @@ const handler = async (req: Request): Promise<Response> => {
           if (errorMessage.includes('only send testing emails') || 
               errorMessage.includes('testing emails to your own') ||
               errorMessage.includes('test domain')) {
-            errorMessage = "Resend API key is in test mode. A production API key is required to send emails to all recipients.";
-            errorDetails = "The current Resend API key is a test key that only allows sending to the account owner's email (coby@cfcontracting.com). You need to: 1) Create a production API key in Resend dashboard, 2) Update the RESEND_API_KEY secret in Supabase with the production key, 3) Ensure digsandgigs.net domain is verified in Resend. Go to https://resend.com/api-keys to create a production key.";
-            console.error("Resend test mode error:", errorMessage);
-            console.error("Error details:", errorDetails);
+            errorMessage = "Resend API key is in TEST mode. A PRODUCTION API key is required.";
+            errorDetails = `The current Resend API key is a TEST key that only allows sending to the account owner's email (coby@cfcontracting.com). 
+
+CRITICAL: Even though your domain (digsandgigs.net) is verified, TEST API keys have restrictions.
+
+To fix this:
+1. Go to https://resend.com/api-keys
+2. Create a NEW PRODUCTION API key (not a test key)
+3. Copy the production key (starts with 're_')
+4. Go to Supabase Dashboard → Project Settings → Edge Functions → Secrets
+5. Update the RESEND_API_KEY secret with the PRODUCTION key
+6. Redeploy the send-otp function (or wait a few minutes for secrets to refresh)
+7. Test again
+
+Note: Test keys and production keys look the same but have different permissions. Make sure you're creating a PRODUCTION key, not a test key.`;
+            console.error("=== RESEND TEST MODE ERROR ===");
+            console.error("Error message:", errorMessage);
+            console.error("Full error details:", errorDetails);
+            console.error("API Key prefix:", RESEND_API_KEY.substring(0, 10) + "...");
+            console.error("Domain status: Verified (digsandgigs.net)");
+            console.error("Action required: Replace test API key with production API key");
             throw new Error(errorMessage);
           }
           
