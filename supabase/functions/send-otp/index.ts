@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { Resend } from "https://esm.sh/resend@3.0.0";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
@@ -342,13 +343,11 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      const emailResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
+      // Use Resend SDK instead of direct fetch
+      const resend = new Resend(RESEND_API_KEY);
+      
+      try {
+        const emailResponse = await resend.emails.send({
           from: "Digs and Gigs <noreply@digsandgigs.net>",
           to: [email!],
           subject: "Your Verification Code",
@@ -366,60 +365,59 @@ const handler = async (req: Request): Promise<Response> => {
               <p>Best regards,<br>The Digs and Gigs Team</p>
             </div>
           `,
-        }),
-      });
+        });
 
-      if (!emailResponse.ok) {
-        const errorText = await emailResponse.text();
-        let errorMessage = `Resend API error: ${errorText}`;
-        let errorDetails = "";
-        
-        // Try to parse error for better message
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.message || errorMessage;
+        if (emailResponse.error) {
+          let errorMessage = emailResponse.error.message || "Failed to send email";
+          let errorDetails = "";
+          
+          // Check for test mode restriction
+          if (errorMessage.includes('only send testing emails') || 
+              errorMessage.includes('testing emails to your own') ||
+              errorMessage.includes('test domain')) {
+            errorMessage = "Resend API key is in test mode. A production API key is required to send emails to all recipients.";
+            errorDetails = "The current Resend API key is a test key that only allows sending to the account owner's email (coby@cfcontracting.com). You need to: 1) Create a production API key in Resend dashboard, 2) Update the RESEND_API_KEY secret in Supabase with the production key, 3) Ensure digsandgigs.net domain is verified in Resend. Go to https://resend.com/api-keys to create a production key.";
+            console.error("Resend test mode error:", errorMessage);
+            console.error("Error details:", errorDetails);
+            throw new Error(errorMessage);
+          }
           
           // Check for domain verification error
-          if (errorMessage.includes('domain is not verified') || errorMessage.includes('not verified') || errorMessage.includes('verify a domain')) {
+          if (errorMessage.includes('domain is not verified') || 
+              errorMessage.includes('not verified') || 
+              errorMessage.includes('verify a domain')) {
             errorMessage = "Email domain verification required. Please verify digsandgigs.net in Resend.";
             errorDetails = "Go to https://resend.com/domains to add and verify your domain. The test domain can only send to the account owner's email. Domain verification is required to send to any recipient.";
+            console.error("Resend domain verification error:", errorMessage);
+            if (errorDetails) {
+              console.error("Error details:", errorDetails);
+            }
+            throw new Error(errorMessage);
           }
           
-          // Check for test domain restriction error
-          if (errorMessage.includes('only send testing emails') || errorMessage.includes('testing emails to your own')) {
-            errorMessage = "Domain verification required. The test domain can only send to your own email address.";
-            errorDetails = "You MUST verify digsandgigs.net in Resend to send emails to other recipients. Go to https://resend.com/domains to add and verify your domain. After verification, update the 'from' address to noreply@digsandgigs.net.";
-          }
-        } catch {
-          // Use the text as-is if not JSON
-          if (errorText.includes('domain is not verified') || errorText.includes('not verified')) {
-            errorMessage = "Email domain not verified. Please verify digsandgigs.net in Resend.";
-            errorDetails = "Go to https://resend.com/domains to add and verify your domain. You can use 'onboarding@resend.dev' for testing.";
-          }
+          console.error("Resend API error:", errorMessage);
+          throw new Error(errorMessage);
         }
-        
-        console.error("Resend API error:", errorMessage);
-        if (errorDetails) {
-          console.error("Error details:", errorDetails);
-        }
-        throw new Error(errorMessage);
+
+        console.log("OTP email sent successfully:", emailResponse.data);
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          method: 'email',
+          message: "Verification code sent successfully",
+          emailId: emailResponse.data?.id 
+        }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        });
+      } catch (resendError: any) {
+        // Re-throw Resend SDK errors with better context
+        console.error("Resend SDK error:", resendError);
+        throw resendError;
       }
-
-      const result = await emailResponse.json();
-      console.log("OTP email sent successfully:", result);
-
-      return new Response(JSON.stringify({ 
-        success: true, 
-        method: 'email',
-        message: "Verification code sent successfully",
-        emailId: result.id 
-      }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      });
     } else if (method === 'sms') {
       // Check if Twilio is configured before attempting to send
       if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
