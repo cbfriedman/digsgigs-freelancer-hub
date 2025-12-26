@@ -106,8 +106,8 @@ export default function Pricing() {
   return (
     <>
       <Helmet>
-        <title>Simple Subscription Pricing | DigsAndGigs</title>
-        <meta name="description" content="Transparent, predictable pricing for service professionals. One monthly subscription, unlimited leads in your coverage area. No per-lead fees." />
+        <title>Subscription + Pay-Per-Lead Pricing | DigsAndGigs</title>
+        <meta name="description" content="Low monthly subscription with pay-per-lead pricing. Get 2 free leads monthly, reduced per-lead rates, and a 12-month price lock guarantee." />
       </Helmet>
       
       <Navigation />
@@ -119,15 +119,15 @@ export default function Pricing() {
             <div className="max-w-4xl mx-auto text-center">
               <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
                 <Crown className="h-3 w-3 mr-1" />
-                Simple, Predictable Pricing
+                Subscription + Pay-Per-Lead
               </Badge>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                One Subscription.
-                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> Unlimited Leads.</span>
+                Low Monthly Subscription.
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> Pay Only for Leads You Want.</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Same pricing for all industries. No per-click fees. No per-lead charges. 
-                Just a simple monthly subscription for unlimited leads in your coverage area.
+                Same subscription pricing for all industries. Subscribers get 2 free leads every month 
+                and pay reduced rates to reveal contact info on additional leads.
               </p>
               
               {/* Key Benefits */}
@@ -138,7 +138,7 @@ export default function Pricing() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-green-500" />
-                  <span>Unlimited leads</span>
+                  <span>2 free leads/month (accumulating)</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-green-500" />
@@ -217,19 +217,19 @@ export default function Pricing() {
                     <ul className="space-y-3 text-left mb-6">
                       <li className="flex items-start gap-2">
                         <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Unlimited leads in your local area</span>
+                        <span className="text-sm">Access all leads in your local area</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Zap className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">2 free lead reveals/month (accumulating)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Reduced per-lead pricing</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                         <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Shield className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Extended protection with &lt;{PRICE_LOCK_CLICK_THRESHOLD} views/month</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Cancel anytime, no contracts</span>
                       </li>
                     </ul>
 
@@ -287,19 +287,19 @@ export default function Pricing() {
                     <ul className="space-y-3 text-left mb-6">
                       <li className="flex items-start gap-2">
                         <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Unlimited leads in your statewide area</span>
+                        <span className="text-sm">Access all leads in your statewide area</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Zap className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">2 free lead reveals/month (accumulating)</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Add multiple states at discounted rates</span>
+                        <span className="text-sm">Reduced per-lead pricing + add states at $15/mo</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                         <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Cancel anytime, no contracts</span>
                       </li>
                     </ul>
 
@@ -344,20 +344,20 @@ export default function Pricing() {
 
                     <ul className="space-y-3 text-left mb-6">
                       <li className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Unlimited leads nationwide</span>
+                        <Globe className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Access all leads across 50 states</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Globe className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Access to all 50 states</span>
+                        <Zap className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">2 free lead reveals/month (accumulating)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Reduced per-lead pricing</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                         <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Cancel anytime, no contracts</span>
                       </li>
                     </ul>
 
@@ -390,16 +390,49 @@ export default function Pricing() {
               <div className="text-center mb-10">
                 <Badge variant="outline" className="mb-4">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  Lead Reveal Costs
+                  Pay-Per-Lead Costs
                 </Badge>
-                <h2 className="text-3xl font-bold mb-4">Per-Lead Pricing</h2>
-                <p className="text-muted-foreground">
-                  Subscribers pay reduced per-lead rates. Confirmed leads cost 50% more but have higher conversion rates.
+                <h2 className="text-3xl font-bold mb-4">Lead Reveal Pricing</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  In addition to your subscription, you pay to reveal contact info on leads you want to pursue. 
+                  <strong className="text-foreground"> Subscribers get 2 free reveals/month</strong> that accumulate if unused.
+                  Confirmed leads (phone-verified) cost 50% more but convert better.
                 </p>
               </div>
 
               {/* Lead Type Selector */}
               <LeadCostCalculator />
+
+              {/* Value Proposition */}
+              <div className="mt-10 grid md:grid-cols-3 gap-6">
+                <div className="bg-background rounded-lg p-6 border">
+                  <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+                    <Zap className="h-5 w-5 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold mb-2">2 Free Leads/Month</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Every month you get 2 free lead reveals. Unused credits accumulate—never lose them.
+                  </p>
+                </div>
+                <div className="bg-background rounded-lg p-6 border">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold mb-2">Pay Only When Ready</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Browse all leads for free. Only pay when you're ready to contact a potential customer.
+                  </p>
+                </div>
+                <div className="bg-background rounded-lg p-6 border">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
+                    <Shield className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <h3 className="font-semibold mb-2">No Wasted Spend</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Unlike Google Ads, you don't pay for clicks that don't convert. Only pay for real opportunities.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -407,15 +440,15 @@ export default function Pricing() {
         {/* How It Works */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold mb-4">How Subscription Works</h2>
+                <h2 className="text-3xl font-bold mb-4">How It Works</h2>
                 <p className="text-muted-foreground">
-                  Simple, transparent pricing with no surprises
+                  Simple subscription + pay-per-lead model
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className="grid md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Users className="h-8 w-8 text-primary" />
@@ -430,9 +463,19 @@ export default function Pricing() {
                   <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <MapPin className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="font-semibold mb-2">2. Choose Your Coverage</h3>
+                  <h3 className="font-semibold mb-2">2. Subscribe</h3>
                   <p className="text-sm text-muted-foreground">
-                    Select local, statewide, or nationwide coverage based on where you serve customers.
+                    Choose local, statewide, or nationwide coverage. Get 2 free leads/month with your subscription.
+                  </p>
+                </div>
+
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Briefcase className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-2">3. Browse Leads</h3>
+                  <p className="text-sm text-muted-foreground">
+                    See all matching leads in your area. Review project details before deciding to pursue.
                   </p>
                 </div>
 
@@ -440,9 +483,9 @@ export default function Pricing() {
                   <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Zap className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="font-semibold mb-2">3. Receive Unlimited Leads</h3>
+                  <h3 className="font-semibold mb-2">4. Reveal & Connect</h3>
                   <p className="text-sm text-muted-foreground">
-                    Get all matching leads in your area. No per-lead fees, just one predictable monthly cost.
+                    Use free credits or pay to reveal contact info. Connect directly with customers you choose.
                   </p>
                 </div>
               </div>
@@ -481,26 +524,52 @@ export default function Pricing() {
               </div>
 
               <Accordion type="single" collapsible className="space-y-4">
+                <AccordionItem value="lead-cost" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    How much do leads cost?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    Lead costs depend on your industry type (Standard or High-Value) and your 
+                    geographic coverage tier. <strong>Subscribers get 2 free lead reveals per month</strong> that 
+                    accumulate if unused. Additional leads range from $16.50 to $158.40 depending 
+                    on industry, coverage area, and whether the lead is confirmed (phone-verified). 
+                    See the pricing table above for exact costs.
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="free-leads" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    What are free leads and how do they work?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    Every subscriber receives <strong>2 free lead reveals per month</strong>. These credits 
+                    accumulate—if you don't use them one month, they roll over to the next. 
+                    For example, if you're subscribed for 3 months without revealing any leads, 
+                    you'll have 6 free reveals available.
+                  </AccordionContent>
+                </AccordionItem>
+
                 <AccordionItem value="per-profile" className="border rounded-lg px-4">
                   <AccordionTrigger className="hover:no-underline">
                     Is pricing per profile or per account?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Pricing is <strong>per profile</strong>. If you offer multiple services in different 
-                    industries or need different geographic coverage for different services, you can 
-                    create separate profiles. Each profile has its own subscription based on its 
-                    industry type and coverage area.
+                    Both subscription and lead costs are <strong>per profile</strong>. Each profile has its 
+                    own subscription, its own 2 free monthly leads, and its own per-lead pricing based 
+                    on its coverage area. Create separate profiles to optimize costs for different 
+                    services or geographic areas.
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="mixed-industries" className="border rounded-lg px-4">
+                <AccordionItem value="confirmed-leads" className="border rounded-lg px-4">
                   <AccordionTrigger className="hover:no-underline">
-                    What if I have both standard and high-value professions?
+                    What's the difference between confirmed and unconfirmed leads?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    If a single profile contains both standard and high-value professions, the 
-                    <strong> higher rate applies</strong>. To optimize costs, we recommend creating 
-                    separate profiles for standard and high-value services.
+                    <strong>Confirmed leads</strong> have verified their phone number or email, indicating 
+                    higher intent and making them easier to contact. They cost 50% more but typically 
+                    convert at higher rates. <strong>Unconfirmed leads</strong> haven't verified their contact 
+                    info yet—they're cheaper but may require more follow-up effort.
                   </AccordionContent>
                 </AccordionItem>
 
