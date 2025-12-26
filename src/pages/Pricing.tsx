@@ -431,6 +431,48 @@ export default function Pricing() {
           </div>
         </section>
 
+        {/* Lifetime Pricing Guarantee Section */}
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-amber-500/10">
+                <CardHeader className="text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center mb-4">
+                    <Lock className="h-8 w-8 text-amber-600" />
+                  </div>
+                  <Badge className="mx-auto mb-4 bg-amber-500/10 text-amber-700 border-amber-500/20">
+                    For Founding Diggers Only
+                  </Badge>
+                  <CardTitle className="text-2xl md:text-3xl">Lifetime Pricing Guarantee</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-center max-w-3xl mx-auto">
+                  <p className="text-lg">
+                    As a Founding Digger, your subscription price is <span className="font-semibold text-amber-700">permanently locked at $19/month</span> for the life of your account.
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-4 text-left mt-6">
+                    <div className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">Your subscription rate will never increase as long as you remain an active, paying member.</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">This guarantee applies only to the subscription fee, not to optional lead purchases or future add-on services.</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">Future pricing tiers (Local, Statewide, Nationwide) may be introduced for new members, but Founding Diggers remain on the guaranteed $19/month plan permanently.</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Lock className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">If your subscription lapses or is canceled, the Lifetime Pricing Guarantee expires and future pricing will apply.</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
         {/* Pricing Comparison Table */}
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
@@ -493,8 +535,18 @@ export default function Pricing() {
                         <TableCell className="font-medium">Add-ons</TableCell>
                         <TableCell className="text-center text-muted-foreground">Optional</TableCell>
                       </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Lifetime Pricing Guarantee</TableCell>
+                      <TableRow className="bg-amber-500/5">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Lock className="h-4 w-4 text-amber-600" />
+                            <span>Lifetime Pricing Guarantee</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Your subscription will remain $19/month for life as long as your account stays active.
+                            <br />
+                            <span className="text-amber-600">(Lead pricing and future add-ons not included.)</span>
+                          </p>
+                        </TableCell>
                         <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
                       </TableRow>
                     </TableBody>
@@ -656,6 +708,38 @@ export default function Pricing() {
                     No credit card is required to start your free 60-day trial. You can explore the 
                     platform and start receiving leads risk-free. A payment method is only needed 
                     after your trial ends if you choose to continue.
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="item-8">
+                  <AccordionTrigger className="text-left">
+                    Will my monthly subscription ever increase?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    No. As a Founding Digger, your subscription is permanently locked at $19/month for life 
+                    as long as your account stays active. This replaces all future Local, Statewide, and 
+                    Nationwide subscription pricing for you.
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="item-9">
+                  <AccordionTrigger className="text-left">
+                    Does the Lifetime Pricing Guarantee include lead prices?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    No. Lead pricing, high-value lead categories, and future add-on services may change 
+                    over time as we introduce new features and improve lead quality. Only the monthly 
+                    subscription is guaranteed for life.
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="item-10">
+                  <AccordionTrigger className="text-left">
+                    What happens if I cancel?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    If your subscription is canceled or lapses, the Lifetime Pricing Guarantee expires. 
+                    When you return, you'll be subject to the current pricing available at that time.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
