@@ -163,7 +163,7 @@ export default function Pricing() {
                 </div>
                 <div className="flex items-center justify-center gap-2 bg-background/80 rounded-lg p-3">
                   <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm">Lifetime Pricing Guarantee</span>
+                  <span className="text-sm">Lifetime Subscription Pricing Guarantee</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 bg-background/80 rounded-lg p-3">
                   <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
@@ -232,7 +232,7 @@ export default function Pricing() {
                     <Lock className="h-8 w-8 text-amber-600" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">Locked-In Pricing</h3>
-                  <p className="text-muted-foreground">Your rate never increases — guaranteed forever</p>
+                  <p className="text-muted-foreground">Your subscription rate never increases — guaranteed forever</p>
                 </div>
               </div>
               
@@ -254,7 +254,7 @@ export default function Pricing() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      <span>Priority ranking in your ZIP codes</span>
+                      <span>Priority ranking in your service area</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
@@ -262,7 +262,7 @@ export default function Pricing() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      <span>Locked-in pricing — your rate never increases</span>
+                      <span>Lifetime subscription pricing guaranteed</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
@@ -316,7 +316,7 @@ export default function Pricing() {
                       <span className="text-2xl text-muted-foreground">for 60 days</span>
                     </div>
                     <p className="text-lg text-muted-foreground mt-2">
-                      then <span className="font-semibold text-foreground">$19/month</span> (lifetime guaranteed)
+                      then <span className="font-semibold text-foreground">$19/month</span> (lifetime subscription pricing guaranteed)
                     </p>
                   </div>
                   
@@ -327,7 +327,7 @@ export default function Pricing() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      <span>Unlimited ZIP codes</span>
+                      <span>Unlimited service areas</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
@@ -568,7 +568,7 @@ export default function Pricing() {
                         <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="font-medium">ZIP Codes</TableCell>
+                        <TableCell className="font-medium">Service Areas</TableCell>
                         <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
                       </TableRow>
                       <TableRow>
@@ -718,7 +718,7 @@ export default function Pricing() {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span>Unlimited categories and ZIP codes</span>
+                        <span>Unlimited categories and service areas</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
@@ -802,11 +802,11 @@ export default function Pricing() {
                 
                 <AccordionItem value="item-9">
                   <AccordionTrigger className="text-left">
-                    Do you limit the number of professionals in each ZIP code?
+                    Do you limit the number of professionals in each service area?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    During launch, ZIP codes are open. Over time we may cap categories per region 
-                    to maintain lead quality.
+                    During launch, service areas are open. As we grow, we may limit the number of 
+                    professionals per region to maintain lead quality and ensure fair distribution.
                   </AccordionContent>
                 </AccordionItem>
                 
@@ -838,7 +838,7 @@ export default function Pricing() {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Ready to Get More Customers Without Paying Per Lead?
+                Ready to Get More Customers with Simple, Flat-Rate Lead Pricing?
               </h2>
               <p className="text-xl opacity-90 mb-4">
                 Become a Founding Digger today and never pay full price again.
