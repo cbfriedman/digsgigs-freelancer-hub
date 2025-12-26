@@ -12,6 +12,46 @@ const corsHeaders = {
 // Sequence timing: Day 0, Day 3, Day 7, Day 14
 const STEP_DELAYS_DAYS = [0, 3, 7, 14];
 
+// Maximum emails per sender address per day (Apollo.ai recommendation)
+const MAX_EMAILS_PER_ADDRESS_PER_DAY = 50;
+
+/**
+ * Get next available sender address that hasn't reached daily limit
+ * Returns null if all addresses have reached their limit
+ */
+async function getNextSenderAddress(supabase: any): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.rpc('get_next_sender_address');
+    
+    if (error) {
+      console.error('Error getting next sender address:', error);
+      return null;
+    }
+    
+    return data || null;
+  } catch (error) {
+    console.error('Exception getting next sender address:', error);
+    return null;
+  }
+}
+
+/**
+ * Increment the daily sent count for a sender address after successful send
+ */
+async function incrementSenderCount(supabase: any, senderEmail: string): Promise<void> {
+  try {
+    const { error } = await supabase.rpc('increment_sender_count', {
+      sender_email: senderEmail
+    });
+    
+    if (error) {
+      console.error(`Error incrementing sender count for ${senderEmail}:`, error);
+    }
+  } catch (error) {
+    console.error(`Exception incrementing sender count for ${senderEmail}:`, error);
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -120,11 +160,21 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        // Send the email via Resend
-        console.log(`Sending step ${nextStep} email to ${lead.email}`);
+        // Get next available sender address (rotates through 100 addresses, max 50/day each)
+        const senderAddress = await getNextSenderAddress(supabase);
+        
+        if (!senderAddress) {
+          console.warn(`No available sender addresses (all may have reached daily limit of ${MAX_EMAILS_PER_ADDRESS_PER_DAY}). Skipping ${lead.email}`);
+          results.errors.push(`${lead.email}: No available sender addresses - daily limit reached`);
+          results.skipped++;
+          continue;
+        }
+
+        // Send the email via Resend using rotated sender address
+        console.log(`Sending step ${nextStep} email to ${lead.email} from ${senderAddress}`);
         
         const emailResponse = await resend.emails.send({
-          from: "Digs and Gigs <hello@digsandgigs.com>",
+          from: `Digs and Gigs <${senderAddress}>`,
           to: [lead.email],
           subject: emailContent.subject,
           html: emailContent.html,
@@ -135,6 +185,9 @@ const handler = async (req: Request): Promise<Response> => {
           results.errors.push(`${lead.email}: ${emailResponse.error.message}`);
           continue;
         }
+
+        // Increment sender count after successful send
+        await incrementSenderCount(supabase, senderAddress);
 
         // Log the email
         await supabase.from("marketing_email_log").insert({

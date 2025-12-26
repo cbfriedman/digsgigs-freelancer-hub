@@ -196,7 +196,10 @@ const EditDiggerProfile = () => {
   const checkSubscription = async () => {
     try {
       const { data } = await supabase.functions.invoke('check-subscription');
-      if (data?.tier) {
+      if (data?.subscription_tier) {
+        setSubscriptionTier(data.subscription_tier);
+      } else if (data?.tier) {
+        // Fallback for backward compatibility
         setSubscriptionTier(data.tier);
       }
     } catch (error) {
@@ -287,6 +290,11 @@ const EditDiggerProfile = () => {
         setTitle(profile.custom_occupation_title || "");
         setTagline(profile.tagline || "");
         setProfileData(profile);
+        
+        // Load subscription tier from profile as fallback
+        if (profile.subscription_tier) {
+          setSubscriptionTier(profile.subscription_tier);
+        }
         
         // Load category name from digger_categories
         if (profile.digger_categories && profile.digger_categories.length > 0) {

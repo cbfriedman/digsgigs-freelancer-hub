@@ -799,6 +799,8 @@ const Register = () => {
             location: '',
             keywords: roleFormData.digger.selectedIndustries,
             registration_status: roleFormData.digger.selectedIndustries.length > 0 ? 'complete' : 'incomplete',
+            subscription_tier: 'free', // Explicitly set to free tier for new profiles
+            subscription_status: 'inactive',
           });
 
         if (diggerError) {
