@@ -106,8 +106,11 @@ export default function Pricing() {
                     Founding Digger Pricing
                     <span className="block text-primary">Join Today. Free for 60 Days.</span>
                   </h1>
-                  <p className="text-xl text-muted-foreground mb-8">
+                  <p className="text-xl text-muted-foreground mb-4">
                     Get matched with real customers in your service area. No commissions. No bidding wars. No risk.
+                  </p>
+                  <p className="text-lg text-muted-foreground/80 mb-8">
+                    Get matched with real customers in your service area. No commissions. No bidding wars. Zero risk.
                   </p>
                   
                   <Button 
@@ -209,6 +212,10 @@ export default function Pricing() {
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
                       <span>Locked-in pricing — your rate never increases</span>
                     </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Unlimited categories — grow your services without upgrading</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -232,6 +239,7 @@ export default function Pricing() {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">Founding Digger Plan</h2>
               <Card className="relative border-2 border-primary shadow-2xl">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <Badge className="bg-green-500 text-white px-4 py-1 text-sm">
@@ -317,8 +325,11 @@ export default function Pricing() {
             <div className="max-w-5xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Flat-Rate Lead Pricing</h2>
-                <p className="text-lg text-muted-foreground">
-                  Pay only when you want to reveal contact details. No bidding wars. No per-lead penalties.
+                <p className="text-lg text-muted-foreground mb-2">
+                  Pay only when you want the customer's contact details.
+                </p>
+                <p className="text-muted-foreground">
+                  No bidding wars. No per-lead penalties. No commitments.
                 </p>
               </div>
               
@@ -420,6 +431,80 @@ export default function Pricing() {
           </div>
         </section>
 
+        {/* Pricing Comparison Table */}
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Pricing at a Glance</h2>
+              </div>
+              
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-1/2">Feature</TableHead>
+                        <TableHead className="text-center">Founding Digger Plan</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Subscription</TableCell>
+                        <TableCell className="text-center">Free 60 days → $19/mo</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Lead Reveal (Standard)</TableCell>
+                        <TableCell className="text-center">$10</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Lead Reveal (High-Value)</TableCell>
+                        <TableCell className="text-center">$25</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Messaging</TableCell>
+                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Matches</TableCell>
+                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Categories</TableCell>
+                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">ZIP Codes</TableCell>
+                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Priority Ranking</TableCell>
+                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Profile Visibility</TableCell>
+                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Founding Badge</TableCell>
+                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Add-ons</TableCell>
+                        <TableCell className="text-center text-muted-foreground">Optional</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Lifetime Pricing Guarantee</TableCell>
+                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
         {/* Optional Add-ons */}
         <section className="py-16">
           <div className="container mx-auto px-4">
@@ -493,76 +578,6 @@ export default function Pricing() {
           </div>
         </section>
 
-        {/* Pricing Comparison Table */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Pricing at a Glance</h2>
-              </div>
-              
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-1/2">Feature</TableHead>
-                        <TableHead className="text-center">Founding Digger Plan</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">Subscription</TableCell>
-                        <TableCell className="text-center">Free 60 days → $19/mo</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Lead Reveal (Standard)</TableCell>
-                        <TableCell className="text-center">$10</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Lead Reveal (High-Value)</TableCell>
-                        <TableCell className="text-center">$25</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Messaging</TableCell>
-                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Matches</TableCell>
-                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Categories</TableCell>
-                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">ZIP Codes</TableCell>
-                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Priority Ranking</TableCell>
-                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Profile Visibility</TableCell>
-                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Founding Badge</TableCell>
-                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Add-ons</TableCell>
-                        <TableCell className="text-center text-muted-foreground">Optional</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
         {/* FAQ Section */}
         <section className="py-16">
           <div className="container mx-auto px-4">
@@ -632,6 +647,17 @@ export default function Pricing() {
                     settings with no cancellation fees or penalties.
                   </AccordionContent>
                 </AccordionItem>
+                
+                <AccordionItem value="item-7">
+                  <AccordionTrigger className="text-left">
+                    Do I need a credit card to start?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    No credit card is required to start your free 60-day trial. You can explore the 
+                    platform and start receiving leads risk-free. A payment method is only needed 
+                    after your trial ends if you choose to continue.
+                  </AccordionContent>
+                </AccordionItem>
               </Accordion>
             </div>
           </div>
@@ -644,8 +670,11 @@ export default function Pricing() {
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
                 Ready to Get More Customers Without Paying Per Lead?
               </h2>
-              <p className="text-xl opacity-90 mb-8">
+              <p className="text-xl opacity-90 mb-4">
                 Become a Founding Digger today and never pay full price again.
+              </p>
+              <p className="text-lg opacity-75 mb-8">
+                Founding Digger pricing is only available for a limited time.
               </p>
               <Button 
                 size="lg" 
