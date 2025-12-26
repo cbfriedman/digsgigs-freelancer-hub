@@ -1,39 +1,27 @@
-import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  MapPin,
-  Map,
-  Globe,
   Check,
   Crown,
+  Rocket,
+  DollarSign,
   Lock,
-  Shield,
-  TrendingUp,
-  Users,
-  Zap,
   ArrowRight,
-  HelpCircle,
-  Building2,
-  Briefcase
+  Wrench,
+  Briefcase,
+  Zap,
+  Star,
+  MapPin,
+  TrendingUp,
+  MessageSquare,
+  Users,
+  Eye,
+  Award
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import {
-  SUBSCRIPTION_TIERS,
-  HIGH_VALUE_INDUSTRIES,
-  formatSubscriptionPrice,
-  GEOGRAPHIC_TIER_LABELS,
-  GEOGRAPHIC_TIER_DESCRIPTIONS,
-  PRICE_LOCK_PERIOD_MONTHS,
-  PRICE_LOCK_CLICK_THRESHOLD,
-  GeographicTier,
-  BillingCycle,
-} from "@/config/subscriptionTiers";
 import { Helmet } from "react-helmet-async";
 import {
   Accordion,
@@ -43,29 +31,20 @@ import {
 } from "@/components/ui/accordion";
 import { useAuth } from "@/contexts/AuthContext";
 import { CategoryBrowserWithDescription } from "@/components/CategoryBrowserWithDescription";
-import { LeadCostCalculator } from "@/components/LeadCostCalculator";
-
-const tierIcons: Record<GeographicTier, React.ReactNode> = {
-  local: <MapPin className="h-6 w-6" />,
-  statewide: <Map className="h-6 w-6" />,
-  nationwide: <Globe className="h-6 w-6" />,
-};
-
-const tierColors: Record<GeographicTier, string> = {
-  local: "border-blue-500/30 bg-blue-500/5",
-  statewide: "border-purple-500/30 bg-purple-500/5",
-  nationwide: "border-amber-500/30 bg-amber-500/5",
-};
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function Pricing() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
-  const [industryType, setIndustryType] = useState<'lv_mv' | 'hv'>('lv_mv');
 
-  const geographicTiers: GeographicTier[] = ['local', 'statewide', 'nationwide'];
-  
   // Check if user wants to create a profile (from "Create New Profile" button)
   const createProfile = searchParams.get('create') === 'true' || searchParams.get('createProfile') === 'true';
 
@@ -106,502 +85,551 @@ export default function Pricing() {
   return (
     <>
       <Helmet>
-        <title>Subscription + Pay-Per-Lead Pricing | DigsAndGigs</title>
-        <meta name="description" content="Low monthly subscription with pay-per-lead pricing. Get 2 free leads monthly, reduced per-lead rates, and a 12-month price lock guarantee." />
+        <title>Founding Digger Pricing — Free for 60 Days | DigsAndGigs</title>
+        <meta name="description" content="Join as a Founding Digger. Free 60-day trial, then just $19/month. Flat-rate leads at $10-$25. No commissions. No bidding wars. Locked-in pricing forever." />
       </Helmet>
       
       <Navigation />
       
       <div className="min-h-screen bg-background">
         {/* Hero Section */}
-        <section className="relative overflow-hidden py-20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <section className="relative overflow-hidden py-20 bg-gradient-to-br from-primary/10 via-background to-accent/10">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center">
-              <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
-                <Crown className="h-3 w-3 mr-1" />
-                Subscription + Pay-Per-Lead
-              </Badge>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                Low Monthly Subscription.
-                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> Pay Only for Leads You Want.</span>
-              </h1>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Same subscription pricing for all industries. Subscribers get 2 free leads every month 
-                and pay reduced rates to reveal contact info on additional leads.
-              </p>
-              
-              {/* Key Benefits */}
-              <div className="flex flex-wrap justify-center gap-4 mb-8">
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span>{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span>2 free leads/month (accumulating)</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span>Cancel anytime</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
-              {/* Billing Cycle Toggle - No more industry toggle needed */}
-              <div className="flex flex-col items-center gap-6 mb-10">
-                <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
-                  <button
-                    onClick={() => setBillingCycle('monthly')}
-                    className={cn(
-                      "px-4 py-2 rounded-md text-sm font-medium transition-all",
-                      billingCycle === 'monthly'
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setBillingCycle('annual')}
-                    className={cn(
-                      "px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2",
-                      billingCycle === 'annual'
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Annual
-                    <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs">
-                      2 months free
-                    </Badge>
-                  </button>
-                </div>
-              </div>
-
-              {/* Pricing Cards - Unified for all industries */}
-              <div className="grid md:grid-cols-3 gap-6 mb-12">
-                {/* Local Tier */}
-                <Card className={cn("relative transition-all duration-300 hover:shadow-xl", tierColors['local'])}>
-                  <CardHeader className="text-center pb-4">
-                    <div className="w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 bg-blue-500/10 text-blue-600">
-                      {tierIcons['local']}
-                    </div>
-                    <CardTitle className="text-2xl">Local</CardTitle>
-                    <CardDescription>Serve customers in your city or metro area</CardDescription>
-                  </CardHeader>
+            <div className="max-w-5xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="text-left">
+                  <Badge className="mb-4 bg-green-500/10 text-green-600 border-green-500/20">
+                    <Crown className="h-3 w-3 mr-1" />
+                    Limited Time Offer
+                  </Badge>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                    Founding Digger Pricing
+                    <span className="block text-primary">Join Today. Free for 60 Days.</span>
+                  </h1>
+                  <p className="text-xl text-muted-foreground mb-8">
+                    Get matched with real customers in your service area. No commissions. No bidding wars. No risk.
+                  </p>
                   
-                  <CardContent className="text-center">
-                    <div className="mb-6">
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-4xl font-bold">
-                          ${billingCycle === 'monthly' ? '29' : '290'}
-                        </span>
-                        <span className="text-muted-foreground">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                  <Button 
+                    size="lg" 
+                    className="text-lg px-8 py-6"
+                    onClick={() => navigate("/register?mode=signup&type=digger")}
+                  >
+                    Start Free for 60 Days
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </div>
+                
+                <div className="hidden md:flex items-center justify-center">
+                  <div className="relative">
+                    <div className="w-64 h-64 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                      <div className="w-48 h-48 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="text-5xl font-bold text-primary">$0</div>
+                          <div className="text-muted-foreground">for 60 days</div>
+                        </div>
                       </div>
-                      {billingCycle === 'annual' && (
-                        <p className="text-sm text-green-600 mt-1">
-                          Save $58/year (2 months free)
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        per profile
-                      </p>
                     </div>
-
-                    <ul className="space-y-3 text-left mb-6">
-                      <li className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Access all leads in your local area</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Zap className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">2 free lead reveals/month (accumulating)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Reduced per-lead pricing</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
-                      </li>
-                    </ul>
-
-                    <Button 
-                      className="w-full" 
-                      variant="outline"
-                      onClick={() => navigate("/register?mode=signup&type=digger")}
-                    >
-                      Get Started
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Statewide Tier - Most Popular */}
-                <Card className={cn(
-                  "relative transition-all duration-300 hover:shadow-xl ring-2 ring-primary scale-105 md:scale-110 z-10",
-                  tierColors['statewide']
-                )}>
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground">
-                      Most Popular
-                    </Badge>
+                    <div className="absolute -top-4 -right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      Then $19/mo
+                    </div>
                   </div>
-                  
-                  <CardHeader className="text-center pb-4">
-                    <div className="w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 bg-purple-500/10 text-purple-600">
-                      {tierIcons['statewide']}
-                    </div>
-                    <CardTitle className="text-2xl">Statewide</CardTitle>
-                    <CardDescription>Serve customers across your entire state</CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="text-center">
-                    <div className="mb-6">
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-4xl font-bold">
-                          ${billingCycle === 'monthly' ? '59' : '590'}
-                        </span>
-                        <span className="text-muted-foreground">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        +$15/mo per additional state (max $199/mo)
-                      </p>
-                      {billingCycle === 'annual' && (
-                        <p className="text-sm text-green-600 mt-1">
-                          Save $118/year (2 months free)
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        per profile
-                      </p>
-                    </div>
-
-                    <ul className="space-y-3 text-left mb-6">
-                      <li className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Access all leads in your statewide area</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Zap className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">2 free lead reveals/month (accumulating)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Reduced per-lead pricing + add states at $15/mo</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
-                      </li>
-                    </ul>
-
-                    <Button 
-                      className="w-full" 
-                      variant="default"
-                      onClick={() => navigate("/register?mode=signup&type=digger")}
-                    >
-                      Get Started
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Nationwide Tier */}
-                <Card className={cn("relative transition-all duration-300 hover:shadow-xl", tierColors['nationwide'])}>
-                  <CardHeader className="text-center pb-4">
-                    <div className="w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-4 bg-amber-500/10 text-amber-600">
-                      {tierIcons['nationwide']}
-                    </div>
-                    <CardTitle className="text-2xl">Nationwide</CardTitle>
-                    <CardDescription>Serve customers anywhere in the country</CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="text-center">
-                    <div className="mb-6">
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-4xl font-bold">
-                          ${billingCycle === 'monthly' ? '299' : '2,990'}
-                        </span>
-                        <span className="text-muted-foreground">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-                      </div>
-                      {billingCycle === 'annual' && (
-                        <p className="text-sm text-green-600 mt-1">
-                          Save $598/year (2 months free)
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        per profile
-                      </p>
-                    </div>
-
-                    <ul className="space-y-3 text-left mb-6">
-                      <li className="flex items-start gap-2">
-                        <Globe className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Access all leads across 50 states</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Zap className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">2 free lead reveals/month (accumulating)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">Reduced per-lead pricing</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Lock className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{PRICE_LOCK_PERIOD_MONTHS}-month price lock guarantee</span>
-                      </li>
-                    </ul>
-
-                    <Button 
-                      className="w-full" 
-                      variant="outline"
-                      onClick={() => navigate("/register?mode=signup&type=digger")}
-                    >
-                      Get Started
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Per Profile Note */}
-              <div className="text-center mb-12">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Pricing is per profile.</strong> Create separate profiles for different professions or coverage areas to optimize your costs.
-                </p>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Lead Costs Section with Interactive Dropdown */}
+        {/* Value Proposition Section */}
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-10">
-                <Badge variant="outline" className="mb-4">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  Pay-Per-Lead Costs
-                </Badge>
-                <h2 className="text-3xl font-bold mb-4">Lead Reveal Pricing</h2>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  In addition to your subscription, you pay to reveal contact info on leads you want to pursue. 
-                  <strong className="text-foreground"> Subscribers get 2 free reveals/month</strong> that accumulate if unused.
-                  Confirmed leads (phone-verified) cost 50% more but convert better.
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  Built for Professionals. Priced for Growth.
+                </h2>
+                <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                  Digs & Gigs is a new marketplace connecting homeowners ("Giggers") with verified service professionals ("Diggers").
+                  For a limited time, early members receive exclusive benefits.
                 </p>
               </div>
-
-              {/* Lead Type Selector */}
-              <LeadCostCalculator />
-
-              {/* Value Proposition */}
-              <div className="mt-10 grid md:grid-cols-3 gap-6">
-                <div className="bg-background rounded-lg p-6 border">
-                  <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
-                    <Zap className="h-5 w-5 text-green-600" />
+              
+              {/* 3-Column Value Props */}
+              <div className="grid md:grid-cols-3 gap-8 mb-12">
+                <div className="text-center p-6">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Rocket className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="font-semibold mb-2">2 Free Leads/Month</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Every month you get 2 free lead reveals. Unused credits accumulate—never lose them.
-                  </p>
+                  <h3 className="text-xl font-semibold mb-2">Fast Start</h3>
+                  <p className="text-muted-foreground">Get matched with leads immediately after signing up</p>
                 </div>
-                <div className="bg-background rounded-lg p-6 border">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                
+                <div className="text-center p-6">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+                    <DollarSign className="h-8 w-8 text-green-600" />
                   </div>
-                  <h3 className="font-semibold mb-2">Pay Only When Ready</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Browse all leads for free. Only pay when you're ready to contact a potential customer.
-                  </p>
+                  <h3 className="text-xl font-semibold mb-2">Low Cost</h3>
+                  <p className="text-muted-foreground">$10-$25 flat-rate leads with no hidden fees</p>
                 </div>
-                <div className="bg-background rounded-lg p-6 border">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
-                    <Shield className="h-5 w-5 text-purple-600" />
+                
+                <div className="text-center p-6">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
+                    <Lock className="h-8 w-8 text-amber-600" />
                   </div>
-                  <h3 className="font-semibold mb-2">No Wasted Spend</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Unlike Google Ads, you don't pay for clicks that don't convert. Only pay for real opportunities.
-                  </p>
+                  <h3 className="text-xl font-semibold mb-2">Locked-In Pricing</h3>
+                  <p className="text-muted-foreground">Your rate never increases — guaranteed forever</p>
                 </div>
+              </div>
+              
+              {/* Founding Benefits List */}
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-8">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Free 60-day subscription</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>$10 flat-rate standard leads</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>$25 flat-rate high-value leads</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Priority ranking in your ZIP codes</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Founding Digger badge</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Locked-in pricing — your rate never increases</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <div className="text-center mt-8">
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => navigate("/register?mode=signup&type=digger")}
+                >
+                  Claim Founding Digger Access
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
         </section>
 
-        {/* How It Works */}
+        {/* Single Subscription Card */}
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="max-w-2xl mx-auto">
+              <Card className="relative border-2 border-primary shadow-2xl">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-green-500 text-white px-4 py-1 text-sm">
+                    Free for 60 Days
+                  </Badge>
+                </div>
+                
+                <CardHeader className="text-center pt-10 pb-6">
+                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4">
+                    <Crown className="h-10 w-10 text-white" />
+                  </div>
+                  <CardTitle className="text-3xl">Founding Digger Plan</CardTitle>
+                  <CardDescription className="text-lg">
+                    Everything you need to grow your business
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="text-center pb-8">
+                  <div className="mb-8">
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-6xl font-bold">$0</span>
+                      <span className="text-2xl text-muted-foreground">for 60 days</span>
+                    </div>
+                    <p className="text-lg text-muted-foreground mt-2">
+                      then <span className="font-semibold text-foreground">$19/month</span> (lifetime guaranteed)
+                    </p>
+                  </div>
+                  
+                  <div className="grid sm:grid-cols-2 gap-4 text-left mb-8">
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Unlimited categories</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Unlimited ZIP codes</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Unlimited matches</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Unlimited messages</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Unlimited profile visibility</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Priority ranking</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Award className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                      <span>Founding Digger badge</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span>Access to flat-rate lead pricing</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-6">Cancel anytime. No questions asked.</p>
+                  
+                  <Button 
+                    size="lg" 
+                    className="w-full text-lg py-6"
+                    onClick={() => navigate("/register?mode=signup&type=digger")}
+                  >
+                    Start Free — No Credit Card Required
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Lead Pricing Cards */}
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Flat-Rate Lead Pricing</h2>
+                <p className="text-lg text-muted-foreground">
+                  Pay only when you want to reveal contact details. No bidding wars. No per-lead penalties.
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-8 mb-12">
+                {/* Standard Leads */}
+                <Card className="border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-blue-500/10 hover:shadow-lg transition-shadow">
+                  <CardHeader className="text-center">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-blue-500/20 flex items-center justify-center mb-4">
+                      <Wrench className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <CardTitle className="text-2xl">Standard Leads</CardTitle>
+                    <div className="flex items-baseline justify-center gap-1 mt-4">
+                      <span className="text-5xl font-bold text-blue-600">$10</span>
+                      <span className="text-muted-foreground">/reveal</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-center text-muted-foreground mb-4">
+                      For service categories like:
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center mb-6">
+                      {['Handyman', 'Plumbing', 'Electrical', 'HVAC', 'Painting', 'Landscaping', 'Moving', 'Cleaning'].map((category) => (
+                        <Badge key={category} variant="secondary" className="bg-blue-500/10 text-blue-700">
+                          {category}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* High-Value Leads */}
+                <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-amber-500/10 hover:shadow-lg transition-shadow">
+                  <CardHeader className="text-center">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center mb-4">
+                      <Briefcase className="h-8 w-8 text-amber-600" />
+                    </div>
+                    <CardTitle className="text-2xl">High-Value Leads</CardTitle>
+                    <div className="flex items-baseline justify-center gap-1 mt-4">
+                      <span className="text-5xl font-bold text-amber-600">$25</span>
+                      <span className="text-muted-foreground">/reveal</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-center text-muted-foreground mb-4">
+                      For professional categories like:
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center mb-6">
+                      {['Mortgage', 'Credit Repair', 'Insurance', 'Legal', 'CPA', 'Business Consulting'].map((category) => (
+                        <Badge key={category} variant="secondary" className="bg-amber-500/10 text-amber-700">
+                          {category}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* What's Included */}
+              <Card className="border-green-500/20 bg-green-500/5">
+                <CardContent className="p-8">
+                  <h3 className="text-xl font-semibold text-center mb-6">What you get with every lead reveal:</h3>
+                  <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-green-600" />
+                      <span>Full name</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-green-600" />
+                      <span>Phone number</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-green-600" />
+                      <span>Email address</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-green-600" />
+                      <span>ZIP code</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-5 w-5 text-green-600" />
+                      <span>Project description</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                      <span>Timeframe</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                      <span>Budget (if provided)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600" />
+                      <span>No commitments</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Optional Add-ons */}
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-                <p className="text-muted-foreground">
-                  Simple subscription + pay-per-lead model
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Optional Add-Ons</h2>
+                <p className="text-lg text-muted-foreground">
+                  Boost your visibility and stand out from the competition
                 </p>
               </div>
-
-              <div className="grid md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Users className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="font-semibold mb-2">1. Create Your Profile</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Set up your professional profile with your services, coverage area, and expertise.
-                  </p>
-                </div>
-
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <MapPin className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="font-semibold mb-2">2. Subscribe</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Choose local, statewide, or nationwide coverage. Get 2 free leads/month with your subscription.
-                  </p>
-                </div>
-
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Briefcase className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="font-semibold mb-2">3. Browse Leads</h3>
-                  <p className="text-sm text-muted-foreground">
-                    See all matching leads in your area. Review project details before deciding to pursue.
-                  </p>
-                </div>
-
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Zap className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="font-semibold mb-2">4. Reveal & Connect</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Use free credits or pay to reveal contact info. Connect directly with customers you choose.
-                  </p>
-                </div>
+              
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Boosted Profile */}
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="text-center">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-purple-500/10 flex items-center justify-center mb-3">
+                      <Rocket className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <CardTitle className="text-lg">Boosted Profile</CardTitle>
+                    <div className="flex items-baseline justify-center gap-1 mt-2">
+                      <span className="text-3xl font-bold">$20</span>
+                      <span className="text-muted-foreground">/month</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground">
+                      Appear at the top of search results in your ZIP codes
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                {/* Featured Badge */}
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="text-center">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center mb-3">
+                      <Star className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <CardTitle className="text-lg">Featured Digger Badge</CardTitle>
+                    <div className="flex items-baseline justify-center gap-1 mt-2">
+                      <span className="text-3xl font-bold">$10</span>
+                      <span className="text-muted-foreground">/month</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground">
+                      Stand out with enhanced trust signals
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                {/* ZIP Code Dominance */}
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="text-center">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-green-500/10 flex items-center justify-center mb-3">
+                      <MapPin className="h-6 w-6 text-green-600" />
+                    </div>
+                    <CardTitle className="text-lg">ZIP Code Dominance</CardTitle>
+                    <div className="flex items-baseline justify-center gap-1 mt-2">
+                      <span className="text-3xl font-bold">$49</span>
+                      <span className="text-muted-foreground">/month</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground">
+                      Lock in premium visibility for up to 3 ZIP codes
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Price Lock Explanation */}
-        <section className="py-16 bg-gradient-to-br from-green-500/5 via-background to-green-500/5 border-y border-green-500/20">
+        {/* Pricing Comparison Table */}
+        <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center">
-              <Lock className="h-12 w-12 mx-auto text-green-600 mb-4" />
-              <h2 className="text-3xl font-bold mb-4">{PRICE_LOCK_PERIOD_MONTHS}-Month Price Lock Guarantee</h2>
-              <p className="text-lg text-muted-foreground mb-6">
-                Your subscription rate is guaranteed for 12 months from sign-up. 
-                Even if we raise prices, you keep your locked rate.
-              </p>
-              <div className="bg-background/80 backdrop-blur-sm rounded-xl p-6 border border-green-500/20 max-w-xl mx-auto">
-                <h3 className="font-semibold mb-3">Extended Price Protection</h3>
-                <p className="text-sm text-muted-foreground">
-                  After your initial 12 months, your price lock continues as long as you receive 
-                  fewer than <strong>24 profile views per year</strong>. 
-                  This rewards loyal subscribers who may not be receiving high lead volume.
-                </p>
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Pricing at a Glance</h2>
               </div>
+              
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-1/2">Feature</TableHead>
+                        <TableHead className="text-center">Founding Digger Plan</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Subscription</TableCell>
+                        <TableCell className="text-center">Free 60 days → $19/mo</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Lead Reveal (Standard)</TableCell>
+                        <TableCell className="text-center">$10</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Lead Reveal (High-Value)</TableCell>
+                        <TableCell className="text-center">$25</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Messaging</TableCell>
+                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Matches</TableCell>
+                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Categories</TableCell>
+                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">ZIP Codes</TableCell>
+                        <TableCell className="text-center text-green-600 font-medium">Unlimited</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Priority Ranking</TableCell>
+                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Profile Visibility</TableCell>
+                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Founding Badge</TableCell>
+                        <TableCell className="text-center"><Check className="h-5 w-5 text-green-600 mx-auto" /></TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Add-ons</TableCell>
+                        <TableCell className="text-center text-muted-foreground">Optional</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
 
-        {/* FAQ */}
+        {/* FAQ Section */}
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
-              <div className="text-center mb-10">
-                <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
               </div>
-
-              <Accordion type="single" collapsible className="space-y-4">
-                <AccordionItem value="lead-cost" className="border rounded-lg px-4">
-                  <AccordionTrigger className="hover:no-underline">
-                    How much do leads cost?
+              
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="item-1">
+                  <AccordionTrigger className="text-left">
+                    Why is pricing so low during launch?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Lead costs depend on your industry type (Standard or High-Value) and your 
-                    geographic coverage tier. <strong>Subscribers get 2 free lead reveals per month</strong> that 
-                    accumulate if unused. Additional leads range from $16.50 to $158.40 depending 
-                    on industry, coverage area, and whether the lead is confirmed (phone-verified). 
-                    See the pricing table above for exact costs.
+                    We want to reward early professionals and build the strongest possible supply base. 
+                    Prices for Founding Diggers are locked permanently — you'll never pay more than these rates.
                   </AccordionContent>
                 </AccordionItem>
-
-                <AccordionItem value="free-leads" className="border rounded-lg px-4">
-                  <AccordionTrigger className="hover:no-underline">
-                    What are free leads and how do they work?
+                
+                <AccordionItem value="item-2">
+                  <AccordionTrigger className="text-left">
+                    Will subscription pricing increase for Founders?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Every subscriber receives <strong>2 free lead reveals per month</strong>. These credits 
-                    accumulate—if you don't use them one month, they roll over to the next. 
-                    For example, if you're subscribed for 3 months without revealing any leads, 
-                    you'll have 6 free reveals available.
+                    Never. As a Founding Digger, your $19/month rate is locked in forever. Even when we 
+                    raise prices for new members, you'll keep your original rate.
                   </AccordionContent>
                 </AccordionItem>
-
-                <AccordionItem value="per-profile" className="border rounded-lg px-4">
-                  <AccordionTrigger className="hover:no-underline">
-                    Is pricing per profile or per account?
+                
+                <AccordionItem value="item-3">
+                  <AccordionTrigger className="text-left">
+                    What happens after 60 days?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Both subscription and lead costs are <strong>per profile</strong>. Each profile has its 
-                    own subscription, its own 2 free monthly leads, and its own per-lead pricing based 
-                    on its coverage area. Create separate profiles to optimize costs for different 
-                    services or geographic areas.
+                    Your plan renews at $19/month unless canceled. You can cancel anytime during your 
+                    free trial with no charge. We'll send you a reminder before your trial ends.
                   </AccordionContent>
                 </AccordionItem>
-
-                <AccordionItem value="confirmed-leads" className="border rounded-lg px-4">
-                  <AccordionTrigger className="hover:no-underline">
-                    What's the difference between confirmed and unconfirmed leads?
+                
+                <AccordionItem value="item-4">
+                  <AccordionTrigger className="text-left">
+                    How do lead reveals work?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    <strong>Confirmed leads</strong> have verified their phone number or email, indicating 
-                    higher intent and making them easier to contact. They cost 50% more but typically 
-                    convert at higher rates. <strong>Unconfirmed leads</strong> haven't verified their contact 
-                    info yet—they're cheaper but may require more follow-up effort.
+                    When a Gigger (homeowner) posts a job, you're matched automatically based on your 
+                    categories and service area. You can view job details for free. If you want the 
+                    customer's contact details, you pay one flat-rate fee ($10 or $25) to reveal them.
                   </AccordionContent>
                 </AccordionItem>
-
-                <AccordionItem value="geographic" className="border rounded-lg px-4">
-                  <AccordionTrigger className="hover:no-underline">
-                    Can I have different geographic coverage for different services?
+                
+                <AccordionItem value="item-5">
+                  <AccordionTrigger className="text-left">
+                    Are there refunds for bad leads?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Yes! Create separate profiles for each coverage area. For example, if you offer 
-                    local plumbing services but statewide consulting, create two profiles with 
-                    different geographic tiers.
+                    Yes. Leads with invalid contact info (wrong number, fake email, etc.) are credited 
+                    back to your account. Just report the issue within 7 days and we'll review it.
                   </AccordionContent>
                 </AccordionItem>
-
-                <AccordionItem value="cancel" className="border rounded-lg px-4">
-                  <AccordionTrigger className="hover:no-underline">
+                
+                <AccordionItem value="item-6">
+                  <AccordionTrigger className="text-left">
                     Can I cancel anytime?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Yes, there are no long-term contracts. You can cancel your subscription at any 
-                    time. Your access continues until the end of your current billing period.
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="price-lock" className="border rounded-lg px-4">
-                  <AccordionTrigger className="hover:no-underline">
-                    How does the price lock work after 12 months?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    After your initial 12-month price lock, we check your annual profile views. 
-                    If you receive fewer than 24 views, your locked rate continues. If you receive 
-                    25 or more, your rate updates to current pricing on your next billing cycle.
+                    Absolutely. There are no long-term contracts. Cancel anytime from your account 
+                    settings with no cancellation fees or penalties.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -609,34 +637,24 @@ export default function Pricing() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="py-20 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to Grow Your Business?
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join thousands of service professionals who trust DigsAndGigs for predictable, 
-              quality lead generation.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {/* Final CTA */}
+        <section className="py-20 bg-primary text-primary-foreground">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Ready to Get More Customers Without Paying Per Lead?
+              </h2>
+              <p className="text-xl opacity-90 mb-8">
+                Become a Founding Digger today and never pay full price again.
+              </p>
               <Button 
                 size="lg" 
-                variant="default"
+                variant="secondary"
+                className="text-lg px-8 py-6 bg-white text-primary hover:bg-white/90"
                 onClick={() => navigate("/register?mode=signup&type=digger")}
-                className="text-lg px-8"
               >
-                Create Your Profile
+                Start Free for 60 Days
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => navigate("/how-it-works")}
-                className="text-lg px-8"
-              >
-                <HelpCircle className="mr-2 h-5 w-5" />
-                Learn More
               </Button>
             </div>
           </div>
