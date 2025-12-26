@@ -143,6 +143,58 @@ export default function Pricing() {
           </div>
         </section>
 
+        {/* Limited Time Founders Program Banner */}
+        <section className="py-12 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/10 border-y border-amber-500/20">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Star className="h-6 w-6 text-amber-500" />
+                <h2 className="text-2xl md:text-3xl font-bold">Limited Time Founders Program</h2>
+                <Star className="h-6 w-6 text-amber-500" />
+              </div>
+              <p className="text-lg text-muted-foreground mb-6">
+                Become a Founding Digger and lock in your <span className="font-semibold text-foreground">$19/month subscription for life.</span>
+              </p>
+              
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                <div className="flex items-center justify-center gap-2 bg-background/80 rounded-lg p-3">
+                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm">Free 60-day subscription</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 bg-background/80 rounded-lg p-3">
+                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm">Lifetime Pricing Guarantee</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 bg-background/80 rounded-lg p-3">
+                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm">$10 / $25 flat-rate leads</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 bg-background/80 rounded-lg p-3">
+                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm">Priority ranking</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 bg-background/80 rounded-lg p-3">
+                  <Award className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                  <span className="text-sm">Founding Digger badge</span>
+                </div>
+              </div>
+              
+              <p className="text-amber-700 font-semibold mb-6">
+                Only the first 500 professionals qualify.
+              </p>
+              
+              <Button 
+                size="lg"
+                className="text-lg px-8 py-6 bg-amber-500 hover:bg-amber-600 text-white"
+                onClick={() => navigate("/register?mode=signup&type=digger")}
+              >
+                Secure Your Founding Digger Spot Now
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </section>
+
         {/* Value Proposition Section */}
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
@@ -631,7 +683,7 @@ export default function Pricing() {
         </section>
 
         {/* FAQ Section */}
-        <section className="py-16">
+        <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
               <div className="text-center mb-12">
@@ -644,102 +696,136 @@ export default function Pricing() {
                     Why is pricing so low during launch?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    We want to reward early professionals and build the strongest possible supply base. 
-                    Prices for Founding Diggers are locked permanently — you'll never pay more than these rates.
+                    We're rewarding early professionals who help us build the platform. Founding Diggers 
+                    get a limited-time offer that will never be available again.
                   </AccordionContent>
                 </AccordionItem>
                 
                 <AccordionItem value="item-2">
                   <AccordionTrigger className="text-left">
-                    Will subscription pricing increase for Founders?
+                    What is included in the Founding Digger Plan?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Never. As a Founding Digger, your $19/month rate is locked in forever. Even when we 
-                    raise prices for new members, you'll keep your original rate.
+                    <p className="mb-3">Everything you need to grow your business:</p>
+                    <ul className="space-y-2">
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>Free 60-day subscription</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>$19/month locked-in subscription for life</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>Unlimited categories and ZIP codes</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>Unlimited matches and messages</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>Priority ranking in your area</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>Access to flat-rate $10 / $25 lead reveals</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                        <span>Founding Digger badge</span>
+                      </li>
+                    </ul>
                   </AccordionContent>
                 </AccordionItem>
                 
                 <AccordionItem value="item-3">
                   <AccordionTrigger className="text-left">
-                    What happens after 60 days?
+                    Will my subscription price ever increase?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Your plan renews at $19/month unless canceled. You can cancel anytime during your 
-                    free trial with no charge. We'll send you a reminder before your trial ends.
+                    No. As long as your Founding Digger subscription remains active, your monthly price 
+                    will never increase. This Lifetime Pricing Guarantee is exclusive to early members.
                   </AccordionContent>
                 </AccordionItem>
                 
                 <AccordionItem value="item-4">
                   <AccordionTrigger className="text-left">
-                    How do lead reveals work?
+                    Does the Lifetime Pricing Guarantee include lead pricing?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    When a Gigger (homeowner) posts a job, you're matched automatically based on your 
-                    categories and service area. You can view job details for free. If you want the 
-                    customer's contact details, you pay one flat-rate fee ($10 or $25) to reveal them.
+                    No. Lead pricing may change as new features and high-value categories are added. 
+                    Only the monthly subscription fee is guaranteed for life.
                   </AccordionContent>
                 </AccordionItem>
                 
                 <AccordionItem value="item-5">
                   <AccordionTrigger className="text-left">
-                    Are there refunds for bad leads?
+                    What happens after my 60-day free period?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Yes. Leads with invalid contact info (wrong number, fake email, etc.) are credited 
-                    back to your account. Just report the issue within 7 days and we'll review it.
+                    Your subscription renews at $19/month, guaranteed for life, unless you cancel.
                   </AccordionContent>
                 </AccordionItem>
                 
                 <AccordionItem value="item-6">
                   <AccordionTrigger className="text-left">
-                    Can I cancel anytime?
+                    Do I need a credit card to start the free trial?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    Absolutely. There are no long-term contracts. Cancel anytime from your account 
-                    settings with no cancellation fees or penalties.
-                  </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem value="item-7">
-                  <AccordionTrigger className="text-left">
-                    Do I need a credit card to start?
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    No credit card is required to start your free 60-day trial. You can explore the 
+                    No credit card is required to begin your free 60-day trial. You can explore the 
                     platform and start receiving leads risk-free. A payment method is only needed 
                     after your trial ends if you choose to continue.
                   </AccordionContent>
                 </AccordionItem>
                 
-                <AccordionItem value="item-8">
+                <AccordionItem value="item-7">
                   <AccordionTrigger className="text-left">
-                    Will my monthly subscription ever increase?
+                    What happens if I cancel my subscription?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    No. As a Founding Digger, your subscription is permanently locked at $19/month for life 
-                    as long as your account stays active. This replaces all future Local, Statewide, and 
-                    Nationwide subscription pricing for you.
+                    If your subscription lapses or is canceled, the Lifetime Pricing Guarantee expires. 
+                    If you reactivate later, normal pricing will apply.
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="item-8">
+                  <AccordionTrigger className="text-left">
+                    Are refunds offered for bad leads?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    Yes. Leads with invalid or non-working contact information are credited back to 
+                    your account. Just report the issue within 7 days and we'll review it.
                   </AccordionContent>
                 </AccordionItem>
                 
                 <AccordionItem value="item-9">
                   <AccordionTrigger className="text-left">
-                    Does the Lifetime Pricing Guarantee include lead prices?
+                    Do you limit the number of professionals in each ZIP code?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    No. Lead pricing, high-value lead categories, and future add-on services may change 
-                    over time as we introduce new features and improve lead quality. Only the monthly 
-                    subscription is guaranteed for life.
+                    During launch, ZIP codes are open. Over time we may cap categories per region 
+                    to maintain lead quality.
                   </AccordionContent>
                 </AccordionItem>
                 
                 <AccordionItem value="item-10">
                   <AccordionTrigger className="text-left">
-                    What happens if I cancel?
+                    Can I change my service categories at any time?
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
-                    If your subscription is canceled or lapses, the Lifetime Pricing Guarantee expires. 
-                    When you return, you'll be subject to the current pricing available at that time.
+                    Yes. You may add or remove categories anytime at no cost under the Founding Digger Plan.
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="item-11">
+                  <AccordionTrigger className="text-left">
+                    Can I pause my subscription?
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    Yes. You may pause your subscription once every 12 months for up to 30 days. 
+                    Pausing counts as "active" and does not void your Lifetime Pricing Guarantee.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
