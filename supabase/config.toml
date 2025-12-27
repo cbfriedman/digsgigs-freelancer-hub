@@ -245,3 +245,9 @@ verify_jwt = false
 
 [functions.send-sms]
 verify_jwt = false
+
+[functions.send-consumer-onboarding-email]
+verify_jwt = false
+
+[functions.send-freelancer-winback-email]
+verify_jwt = false

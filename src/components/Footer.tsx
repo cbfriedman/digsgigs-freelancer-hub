@@ -76,6 +76,11 @@ export const Footer = () => {
                   Privacy Policy
                 </button>
               </li>
+              <li>
+                <button onClick={() => navigate("/legal")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  Legal Documents
+                </button>
+              </li>
             </ul>
           </div>
         </div>
