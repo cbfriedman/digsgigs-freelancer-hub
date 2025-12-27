@@ -33,12 +33,11 @@ import {
   Menu,
   MessageCircle,
   MessageSquare,
-  Home,
-  Phone,
   Clock,
   Zap,
   Award,
-  Crown
+  Crown,
+  FileText
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -158,40 +157,40 @@ const Index = () => {
     }
   };
 
-  // Recent home improvement projects
+  // Recent freelance projects (marketplace examples)
   const recentProjects = [
     {
-      title: "Bathroom Remodel",
-      budget: "$12,000",
-      timeline: "4-6 weeks",
+      title: "UI/UX Redesign for SaaS App",
+      budget: "$3,000–$6,000",
+      timeline: "4–6 weeks",
+      requestCount: 8
+    },
+    {
+      title: "Custom WordPress Site",
+      budget: "$2,500–$4,500",
+      timeline: "3–5 weeks",
       requestCount: 12
     },
     {
-      title: "Electrical Panel Upgrade",
-      budget: "$3,500",
-      timeline: "1-2 weeks",
+      title: "Brand Identity + Logo Development",
+      budget: "$800–$1,400",
+      timeline: "2 weeks",
+      requestCount: 14
+    },
+    {
+      title: "SEO Content Strategy for E-commerce Brand",
+      budget: "$1,500–$3,000",
+      timeline: "1–3 months",
       requestCount: 9
-    },
-    {
-      title: "Artificial Turf Installation",
-      budget: "$8,000",
-      timeline: "2-3 weeks",
-      requestCount: 15
-    },
-    {
-      title: "Roof Replacement",
-      budget: "$16,000",
-      timeline: "6-8 weeks",
-      requestCount: 7
     }
   ];
 
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Get Real Customers. No Bidding Wars. No Commissions | Digs & Gigs"
-        description="Digs & Gigs connects homeowners with trusted service professionals. Join free for 60 days and get matched with real customers in your area. No middleman fees."
-        keywords="hire contractor near me, local home improvement leads, contractor lead generation, find electrician leads, plumber leads, handyman leads, contractor advertising alternatives"
+        title="Hire Top Freelancers | No Commissions | Digs & Gigs"
+        description="Hire freelancers without commissions or bidding wars. Freelancers join for free and get the lowest lead pricing we will ever offer — $10/$25 for the first year."
+        keywords="hire freelancers, no commissions, freelance marketplace, design freelancers, development freelancers, marketing freelancers, business services, writing freelancers"
         structuredData={{
           "@context": "https://schema.org",
           "@graph": [
@@ -218,10 +217,10 @@ const Index = () => {
             {showBrowseButtons && (
               <>
                 <Button variant="ghost" size="sm" onClick={() => navigate("/browse-diggers")}>
-                  Browse Diggers
+                  Browse Freelancers
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate("/browse-gigs")}>
-                  Browse Gigs
+                  Browse Projects
                 </Button>
               </>
             )}
@@ -288,7 +287,7 @@ const Index = () => {
                       }}
                     >
                       <Users className="mr-2 h-4 w-4" />
-                      Browse Diggers
+                      Browse Freelancers
                     </Button>
                     <Button 
                       variant="ghost" 
@@ -299,7 +298,7 @@ const Index = () => {
                       }}
                     >
                       <Briefcase className="mr-2 h-4 w-4" />
-                      Browse Gigs
+                      Browse Projects
                     </Button>
                   </>
                 )}
@@ -398,15 +397,14 @@ const Index = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <Badge className="bg-primary/10 text-primary border-primary/20">
-                For Service Professionals
+                For Freelancers & Clients
               </Badge>
               <h2 className="text-5xl lg:text-6xl font-bold leading-tight">
-                Get Real Customers.
-                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> No Bidding Wars. No Commissions.</span>
+                Hire Top Freelancers.
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> No Commissions. No Bidding Wars. Just Results.</span>
               </h2>
               <p className="text-xl text-muted-foreground">
-                Digs & Gigs connects homeowners with trusted service professionals ("Diggers"). 
-                Join free for 60 days and get matched with real customers in your area.
+                Digs & Gigs connects consumers with skilled freelancers ("Diggers") across design, development, marketing, business services, writing, and more. Pay only for qualified leads — not for clicks, proposals, or commissions.
               </p>
               
               <div className="space-y-4">
@@ -443,28 +441,28 @@ const Index = () => {
                       variant="default" 
                       size="lg" 
                       className="text-base w-full sm:w-auto"
-                      onClick={() => navigate("/register")}
+                      onClick={() => navigate("/browse-diggers")}
                     >
-                      Create a Free Digger Profile
+                      Browse Freelancers
                     </Button>
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">No credit card required</p>
               </div>
               
-              {/* Supporting Points */}
+              {/* Trust Indicators */}
               <div className="grid grid-cols-2 gap-4 pt-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="text-sm text-foreground">Real customer requests</span>
+                  <span className="text-sm text-foreground">No commissions</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="text-sm text-foreground">No middleman fees</span>
+                  <span className="text-sm text-foreground">No bidding</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="text-sm text-foreground">Pay only for qualified leads</span>
+                  <span className="text-sm text-foreground">No pay-per-click</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
@@ -476,7 +474,7 @@ const Index = () => {
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-accent/20 rounded-3xl blur-3xl"></div>
               <OptimizedImage
                 src={heroImage} 
-                alt="Contractors and homeowners connecting" 
+                alt="Freelancers and clients connecting" 
                 width={1200}
                 height={800}
                 sizes="(max-width: 768px) 100vw, 50vw"
@@ -494,56 +492,34 @@ const Index = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Badge className="mb-4 bg-amber-500/10 text-amber-600 border-amber-500/30">
               <Zap className="h-3 w-3 mr-1" />
-              Limited-Time Founders Program
+              LIMITED-TIME FOUNDERS PROGRAM — FIRST 500 FREELANCERS ONLY
             </Badge>
             <h3 className="text-3xl md:text-4xl font-bold mb-4">
-              Become a Founding Digger and lock in your $19/month subscription for life.
+              Join today and lock in:
             </h3>
             
-            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 mt-8 mb-8">
-              <div className="p-4 rounded-xl bg-card border border-border/50">
-                <div className="text-2xl font-bold text-primary mb-1">60 Days</div>
-                <div className="text-sm text-muted-foreground">Free subscription</div>
+            <div className="grid sm:grid-cols-2 gap-4 mt-8 mb-8 max-w-2xl mx-auto text-left">
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50">
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground">$19/month subscription for life</span>
               </div>
-              <div className="p-4 rounded-xl bg-card border border-border/50">
-                <div className="text-2xl font-bold text-primary mb-1">$19/mo</div>
-                <div className="text-sm text-muted-foreground">Lifetime guaranteed</div>
-              </div>
-              <div className="p-4 rounded-xl bg-card border border-border/50">
-                <div className="text-2xl font-bold text-primary mb-1">$10</div>
-                <div className="text-sm text-muted-foreground">Standard leads</div>
-              </div>
-              <div className="p-4 rounded-xl bg-card border border-border/50">
-                <div className="text-2xl font-bold text-primary mb-1">$25</div>
-                <div className="text-sm text-muted-foreground">High-value leads</div>
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50">
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground">The lowest lead pricing we will ever offer — $10/$25 for your entire first year</span>
               </div>
             </div>
             
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
-              {[
-                "Unlimited service areas",
-                "Unlimited categories",
-                "Priority ranking in search",
-                "Founding Digger badge"
-              ].map((benefit, i) => (
-                <Badge key={i} variant="secondary" className="text-sm py-1.5 px-3">
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-                  {benefit}
-                </Badge>
-              ))}
-            </div>
+            <p className="text-muted-foreground mb-4">Pricing may adjust after year one.</p>
+            <p className="text-lg font-semibold text-amber-600 mb-6">You will never see this offer again.</p>
             
-            <div className="flex flex-col items-center gap-3">
-              <p className="text-lg font-semibold text-amber-600">Only the first 500 professionals qualify.</p>
-              <Button 
-                variant="hero" 
-                size="lg" 
-                className="text-base"
-                onClick={() => navigate("/register")}
-              >
-                Secure Your Founding Digger Spot <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </div>
+            <Button 
+              variant="hero" 
+              size="lg" 
+              className="text-base"
+              onClick={() => navigate("/founding-digger")}
+            >
+              Claim Your Founders Spot <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
           </div>
         </div>
       </section>
@@ -569,30 +545,30 @@ const Index = () => {
       <section className="py-20 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">How It Works</Badge>
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">How Digs & Gigs Works</Badge>
             <h3 className="text-4xl font-bold mb-4">Simple. Transparent. Built for Results.</h3>
           </div>
 
           <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            {/* For Homeowners */}
+            {/* For Consumers */}
             <div 
               className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 hover:-translate-y-1"
               onClick={() => navigate("/post-gig")}
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Home className="w-8 h-8 text-accent-foreground" />
+                  <Briefcase className="w-8 h-8 text-accent-foreground" />
                 </div>
-                <h4 className="text-2xl font-bold mb-2">For Homeowners (Giggers)</h4>
-                <p className="text-muted-foreground">Find the right pro for your project</p>
+                <h4 className="text-2xl font-bold mb-2">For Consumers (Clients)</h4>
+                <p className="text-muted-foreground">Find the right freelancer for your project</p>
               </div>
               <div className="space-y-4">
                 {[
-                  "Tell us what you need — remodel, repairs, improvements",
-                  "Get matched instantly with qualified local pros",
-                  "Compare profiles, reviews, and past work",
-                  "Contact your favorite pro directly",
-                  "No fees, no commitments"
+                  "Describe your project",
+                  "Get matched instantly with qualified freelancers",
+                  "Browse profiles and portfolios",
+                  "Contact the freelancer you choose",
+                  "No platform fees, no commissions"
                 ].map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
@@ -601,11 +577,11 @@ const Index = () => {
                 ))}
               </div>
               <Button className="w-full" size="lg" onClick={(e) => { e.stopPropagation(); navigate("/post-gig"); }}>
-                Post Your Project <ArrowRight className="ml-2 w-5 h-5" />
+                Post a Project <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
 
-            {/* For Diggers */}
+            {/* For Freelancers */}
             <div 
               className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-accent/50 hover:-translate-y-1"
               onClick={() => navigate("/register")}
@@ -614,16 +590,17 @@ const Index = () => {
                 <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-primary-foreground" />
                 </div>
-                <h4 className="text-2xl font-bold mb-2">For Professionals (Diggers)</h4>
+                <h4 className="text-2xl font-bold mb-2">For Freelancers (Diggers)</h4>
                 <p className="text-muted-foreground">Grow your business with real leads</p>
               </div>
               <div className="space-y-4">
                 {[
-                  "Create your professional profile",
-                  "Choose your service categories & areas",
-                  "Receive homeowner requests matched to your skills",
-                  "Pay only when you want the homeowner's contact info",
-                  "Grow your business without paying for ads"
+                  "Create your profile",
+                  "Select your skills & categories",
+                  "Receive matched project requests",
+                  "Pay only for lead reveals ($10/$25 first year)",
+                  "Keep 100% of your earnings",
+                  "No bidding wars — you choose the clients you want"
                 ].map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
@@ -645,14 +622,11 @@ const Index = () => {
           <div className="text-center mb-10">
             <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
               <DollarSign className="h-3 w-3 mr-1" />
-              Simple Pricing
+              Lowest Lead Pricing We Will Ever Offer
             </Badge>
-            <h3 className="text-3xl font-bold mb-4">Simple, Flat-Rate Lead Pricing</h3>
+            <h3 className="text-3xl font-bold mb-2">Flat-Rate Lead Pricing (Founders Only)</h3>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Stop paying for clicks. Only pay when a homeowner actually wants to speak with you.
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Pay only when you want the customer's contact details.
+              (Exclusive to first 500 Founders)
             </p>
           </div>
 
@@ -665,7 +639,7 @@ const Index = () => {
               <h4 className="text-xl font-bold mb-2">Standard Leads</h4>
               <div className="text-4xl font-bold text-primary mb-4">$10<span className="text-base font-normal text-muted-foreground"> per reveal</span></div>
               <p className="text-sm text-muted-foreground">
-                For services like: Handyman, Plumbing, Electrical, Painting, Landscaping, HVAC, Moving
+                Design · Writing · Admin · Video · Editing · Marketing support · General freelancing
               </p>
             </div>
 
@@ -678,29 +652,33 @@ const Index = () => {
               <h4 className="text-xl font-bold mb-2">High-Value Leads</h4>
               <div className="text-4xl font-bold text-primary mb-4">$25<span className="text-base font-normal text-muted-foreground"> per reveal</span></div>
               <p className="text-sm text-muted-foreground">
-                For services like: Mortgage, Business Consulting, Legal, Credit Repair, Insurance, CPA
+                Web development · Software · SEO · Paid ads · Business consulting · Accounting · Legal · Finance
               </p>
             </div>
           </div>
 
           {/* What You Get */}
           <div className="max-w-2xl mx-auto mt-10 p-6 rounded-xl bg-card border border-border/50">
-            <h4 className="text-lg font-bold mb-4 text-center">What You Get With Every Lead:</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <h4 className="text-lg font-bold mb-4 text-center">Includes:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { icon: User, label: "Full name" },
-                { icon: Phone, label: "Phone number" },
-                { icon: Mail, label: "Email address" },
-                { icon: Home, label: "ZIP code" },
-                { icon: Briefcase, label: "Project description" },
-                { icon: Clock, label: "Timeframe & budget" }
+                { icon: Mail, label: "Email" },
+                { icon: MessageSquare, label: "Phone" },
+                { icon: FileText, label: "Project details" },
+                { icon: DollarSign, label: "Budget range" },
+                { icon: Clock, label: "Timeline" },
+                { icon: Briefcase, label: "File attachments" }
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <item.icon className="w-4 h-4 text-primary" />
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
                   <span className="text-sm text-foreground">{item.label}</span>
                 </div>
               ))}
             </div>
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              Pricing may adjust after the first year.
+            </p>
           </div>
         </div>
       </section>
@@ -718,9 +696,9 @@ const Index = () => {
               <h3 className="text-2xl font-bold mt-4 mb-2">Everything you need to grow your business.</h3>
               
               <div className="my-6">
-                <div className="text-sm text-muted-foreground">$0 for 60 days, then</div>
+                <div className="text-sm text-muted-foreground">Free for 60 days, then</div>
                 <div className="text-5xl font-bold text-primary">$19<span className="text-lg font-normal text-muted-foreground">/month</span></div>
-                <div className="text-sm text-muted-foreground mt-1">Lifetime subscription pricing guaranteed</div>
+                <div className="text-sm text-muted-foreground mt-1">(lifetime guaranteed)</div>
               </div>
               
               <div className="space-y-3 text-left mb-8">
@@ -731,7 +709,7 @@ const Index = () => {
                   "Unlimited messages",
                   "Priority ranking",
                   "Founding Digger badge",
-                  "Access to flat-rate $10/$25 leads",
+                  "Access to $10/$25 leads for your first year",
                   "Cancel anytime"
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
@@ -754,14 +732,14 @@ const Index = () => {
         </div>
       </section>
 
-      {/* SECTION 6 — Recent Projects Near You */}
+      {/* SECTION 6 — Recently Posted Projects */}
       <section className="py-20 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-accent/10 text-accent border-accent/20">Active Projects</Badge>
-            <h3 className="text-4xl font-bold mb-4">Recent Projects Near You</h3>
+            <h3 className="text-4xl font-bold mb-4">Recently Posted Projects</h3>
             <p className="text-xl text-muted-foreground">
-              Real homeowner requests looking for professionals like you
+              Real project requests from clients looking for freelancers like you
             </p>
           </div>
 
@@ -777,31 +755,31 @@ const Index = () => {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4 text-primary" />
-                    <span className="text-muted-foreground">Timeframe:</span>
+                    <span className="text-muted-foreground">Timeline:</span>
                     <span className="font-semibold">{project.timeline}</span>
                   </div>
                 </div>
                 <Badge variant="secondary" className="text-xs">
-                  {project.requestCount} homeowners requested quotes
+                  {project.requestCount} freelancers matched
                 </Badge>
               </div>
             ))}
           </div>
 
           <div className="text-center mt-12">
-            <Button variant="default" size="lg" onClick={() => navigate("/register")}>
-              Start Getting Leads <ArrowRight className="ml-2 w-5 h-5" />
+            <Button variant="default" size="lg" onClick={() => navigate("/browse-gigs")}>
+              Browse More Projects <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
         </div>
       </section>
 
-      {/* SECTION 7 — Features */}
+      {/* SECTION 7 — Why Freelancers Choose Digs & Gigs */}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-accent/10 text-accent border-accent/20">Features</Badge>
-            <h3 className="text-4xl font-bold mb-4">Built for Service Professionals</h3>
+            <h3 className="text-4xl font-bold mb-4">Why Freelancers Choose Digs & Gigs</h3>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -809,32 +787,32 @@ const Index = () => {
               {
                 icon: Search,
                 title: "Smart Matching",
-                description: "We connect you with homeowners looking for your exact service."
-              },
-              {
-                icon: Shield,
-                title: "Verified Profiles",
-                description: "Build trust with a professional profile and customer reviews."
-              },
-              {
-                icon: Star,
-                title: "Rating System",
-                description: "Earn ratings from completed jobs and stand out from competitors."
+                description: "Find clients who actually want your skills."
               },
               {
                 icon: DollarSign,
-                title: "Flexible Pricing",
-                description: "Flat-rate leads. Lifetime $19/month subscription. No hidden fees."
+                title: "No Commissions",
+                description: "You keep everything you earn."
               },
               {
-                icon: Briefcase,
-                title: "Project Management Tools",
-                description: "Chat, proposals, file sharing — all in one place."
+                icon: Shield,
+                title: "No Bidding Wars",
+                description: "Choose the gigs you want — no racing to the bottom."
               },
               {
-                icon: Users,
-                title: "Community",
-                description: "Join a reliable network of contractors and homeowners ready to work together."
+                icon: TrendingUp,
+                title: "Flat-Rate Leads",
+                description: "Never pay for clicks or impressions again."
+              },
+              {
+                icon: Star,
+                title: "Professional Profiles",
+                description: "Showcase your work with portfolio, experience, and reviews."
+              },
+              {
+                icon: Crown,
+                title: "Priority Ranking (Founders Only)",
+                description: "Rise above competitors instantly."
               }
             ].map((feature, i) => (
               <div key={i} className="p-6 rounded-xl border border-border/50 hover:shadow-[var(--shadow-hover)] transition-all duration-300">
@@ -853,16 +831,16 @@ const Index = () => {
           <div className="relative rounded-3xl overflow-hidden">
             <div className="absolute inset-0 bg-[var(--gradient-hero)]"></div>
             <div className="relative px-8 py-16 text-center">
-              <h3 className="text-4xl font-bold text-white mb-4">
-                Ready to Grow Your Business Without Paying for Ads?
+              <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Ready to Get More Clients Without Paying for Ads or Commissions?
               </h3>
-              <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Become a Founding Digger today and lock in your $19/month lifetime subscription.
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Become a Founding Digger today and lock in lifetime pricing + the lowest lead rates we will ever offer.
               </p>
               <Button 
                 variant="hero" 
                 size="lg" 
-                className="text-base bg-white text-primary hover:bg-white/90"
+                className="text-base"
                 onClick={() => navigate("/register")}
               >
                 Start Free for 60 Days <ArrowRight className="ml-2 w-5 h-5" />
@@ -872,34 +850,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
-
-      {/* Floating Buttons */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
-        {/* Chat with us button */}
-        <Button
-          variant="secondary"
-          size="sm"
-          className="shadow-lg hover:shadow-xl transition-all flex items-center gap-2 rounded-full px-4 py-2"
-          onClick={() => setIsChatOpen(true)}
-        >
-          <MessageSquare className="w-4 h-4" />
-          Chat with us
-        </Button>
-        
-        {/* Feedback button */}
-        <Button
-          variant="default"
-          size="sm"
-          className="shadow-lg hover:shadow-xl transition-all flex items-center gap-2 rounded-full px-4 py-2"
-          onClick={() => navigate("/contact")}
-        >
-          <MessageCircle className="w-4 h-4" />
-          Help Us Improve
-        </Button>
-      </div>
-
+      
       {/* AI Chatbot */}
       <AIChatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>

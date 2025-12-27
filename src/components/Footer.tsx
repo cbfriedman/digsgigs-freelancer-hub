@@ -9,10 +9,10 @@ export const Footer = () => {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Digs and Gigs
+              Digs & Gigs
             </h3>
             <p className="text-sm text-muted-foreground">
-              Connecting skilled professionals with clients seeking expertise.
+              Connecting Freelancers & Clients Worldwide
             </p>
           </div>
 
@@ -26,17 +26,28 @@ export const Footer = () => {
               </li>
               <li>
                 <button onClick={() => navigate("/browse-diggers")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Find Talent
+                  Browse Freelancers
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/browse-gigs")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Find Work
+                <button onClick={() => navigate("/pricing")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  Pricing
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/compare")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Compare Platforms
+                <button onClick={() => navigate("/post-gig")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  Post a Project
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold mb-3">Company</h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <button onClick={() => navigate("/about")} className="text-muted-foreground hover:text-foreground transition-colors">
+                  About
                 </button>
               </li>
               <li>
@@ -44,30 +55,9 @@ export const Footer = () => {
                   Blog
                 </button>
               </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-3">Resources</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <button onClick={() => navigate("/faq")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  FAQ & Help Center
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigate("/faq/plumbing")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Plumbing FAQ
-                </button>
-              </li>
-              <li>
-                <button onClick={() => navigate("/faq/electrical")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Electrical FAQ
-                </button>
-              </li>
               <li>
                 <button onClick={() => navigate("/contact")} className="text-muted-foreground hover:text-foreground transition-colors">
-                  Contact Us
+                  Contact
                 </button>
               </li>
             </ul>
@@ -91,7 +81,7 @@ export const Footer = () => {
         </div>
 
         <div className="border-t border-border/50 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Digs and Gigs. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Digs & Gigs. All Rights Reserved.</p>
         </div>
       </div>
     </footer>
