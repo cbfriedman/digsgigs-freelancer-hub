@@ -71,6 +71,7 @@ export const HIGH_VALUE_INDUSTRIES = [
   'Mortgage Brokers',
   'Estate Planning',
   'Accounting',
+  'Bookkeeping',
   'Tax Preparation',
   'CPA Services',
   'Tax Services',
@@ -90,6 +91,27 @@ export const HIGH_VALUE_INDUSTRIES = [
   'Medical & Dental',
   'Healthcare Consulting',
   'Dental Services',
+  
+  // Professional Services (Tech & Marketing)
+  'Web Development',
+  'Web Developer',
+  'Software Development',
+  'Software Developer',
+  'SEO',
+  'SEO Services',
+  'SEO Expert',
+  'PPC Management',
+  'PPC Manager',
+  'Google Ads Management',
+  'Google Ads Manager',
+  'Marketing Strategist',
+  'Marketing Strategy',
+  'Professional Graphic Design',
+  'Brand Identity Design',
+  'Professional Video Editing',
+  'Video Production',
+  'Business Consulting',
+  'Business Consultant',
 ];
 
 // Unified subscription pricing configuration (same for all industries)

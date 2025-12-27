@@ -119,6 +119,11 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Fitness Training',
       'Personal Training',
       'Life Coaching',
+      'Life Coach',
+      'Fitness Coaching',
+      'Fitness Coach',
+      'Business Coaching',
+      'Business Coach',
       'Massage Therapy',
       'Nutrition Consulting',
       'Yoga Instruction',
@@ -126,6 +131,8 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       // Digital & Creative - Entry Level
       'Data Entry',
       'Virtual Assistant',
+      'Customer Support',
+      'Customer Service',
       'Transcription',
       'Basic Graphic Design',
       'Photo Editing',
@@ -134,23 +141,30 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Logo Design',
       'Icon Design',
       'Social Media Management',
+      'Social Media Manager',
       'Content Writing',
       'Article Writing',
       'Blog Writing',
       'Copywriting',
+      'Copywriter',
       'Creative Writing',
       'Editing',
+      'Editor',
+      'Proofreader',
       'eBook Writing',
       'Press Release Writing',
       'Product Descriptions',
       'Resume Writing',
+      'Resume Writer',
       'Proofreading',
       'Basic Video Editing',
       'Voice Over',
+      'Voice Actor',
       'Audio Editing',
       'Product Photography',
       'Real Estate Photography',
       'Translation',
+      'Translator',
       'Language Tutoring',
       'Book Cover Design',
       'Calligraphy',
@@ -160,6 +174,12 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'T-Shirt Design',
       'Tattoo Design',
       'Vector Tracing',
+      'Content Creator',
+      'AI Trainer',
+      'Prompt Writer',
+      'Prompt Engineer',
+      'Podcast Producer',
+      'Podcast Production',
       
       // IT & Software - Entry Level
       'IT Support',
@@ -168,6 +188,7 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       
       // Marketing - Entry Level
       'Email Marketing',
+      'Email Marketer',
     ],
     nonExclusive: 7.50,     // 20% of Google CPC (~$37.50)
     semiExclusive: 37.50,   // = Google CPC (non-exclusive / 0.20)
@@ -236,17 +257,15 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Patio Installation',
       'Sod Installation',
       
-      // Digital & Creative - Professional Level
-      'Web Development',
+      // Digital & Creative - Professional Level (not HV)
       'Web Design',
       'E-commerce Development',
-      'Mobile App Development',
-      'Software Development',
       'UI/UX Design',
-      'Professional Graphic Design',
-      'Brand Identity Design',
+      'UX Designer',
+      'UI Designer',
       'Illustration',
       'Animation',
+      'Animator',
       '2D Animation',
       '3D Modeling',
       'CAD Design',
@@ -260,9 +279,6 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Product Design',
       'Storyboarding',
       'Technical Illustration',
-      'Video Production',
-      'Professional Video Editing',
-      'Motion Graphics',
       'Photography',
       'Photography (Wedding)',
       'Architectural Rendering',
@@ -279,7 +295,6 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Statistical Analysis',
       
       // Financial Services - Mid Level
-      'Bookkeeping',
       'Debt Consolidation',
       'Payroll Services',
       
@@ -301,28 +316,21 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Network Administration',
       'Quality Assurance',
       'System Administration',
-      'Web Development',
       
       // Legal Services - Mid Level
       'Paralegal Services',
+      'Legal Research',
       
-      // Marketing & Advertising
+      // Marketing & Advertising - Mid Level
       'Affiliate Marketing',
-      'Brand Strategy',
       'Content Marketing',
-      'Digital Marketing',
       'Event Marketing',
-      'Google Ads Management',
       'Growth Hacking',
       'Influencer Marketing',
       'Market Research',
       'Marketing Analytics',
       'Marketing Automation',
-      'Marketing Consulting',
       'PR & Communications',
-      'PPC Management',
-      'SEO',
-      'SEO Services',
       'Social Media Marketing',
       'Video Marketing',
       
@@ -363,7 +371,6 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       
       // Business & Consulting - Mid Level
       'HR Consulting',
-      'Marketing Consulting',
       'Sales Consulting',
       'Supply Chain Consulting',
       
@@ -371,6 +378,9 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Interior Architecture',
       'Landscape Architecture',
       'Urban Planning',
+      
+      // Consulting - General
+      'Consultant',
     ],
     nonExclusive: 14.50,    // 20% of Google CPC (~$72.50)
     semiExclusive: 72.50,   // = Google CPC (non-exclusive / 0.20)
@@ -416,6 +426,7 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Estate Planning Lawyer',
       'estate planning lawyer',
       'Accounting',
+      'Bookkeeping',
       'Tax Preparation',
       'CPA Services',
       'Tax Services',
@@ -460,6 +471,7 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       
       // Business Consulting
       'Business Consulting',
+      'Business Consultant',
       'Brand Consulting',
       'Change Management',
       'Executive Coaching',
@@ -467,11 +479,17 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'IT Consulting',
       'Management Consulting',
       'Marketing Consulting',
+      'Marketing Strategist',
+      'Marketing Strategy',
       'Operations Consulting',
       'Risk Management',
       'Strategy Consulting',
       
       // High-Value Tech & Engineering
+      'Web Development',
+      'Web Developer',
+      'Software Development',
+      'Software Developer',
       'Enterprise Software Development',
       'Cloud Architecture',
       'Cloud Computing',
@@ -497,6 +515,30 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Mobile App Development',
       'Software Architecture',
       
+      // High-Value Marketing
+      'SEO',
+      'SEO Services',
+      'SEO Expert',
+      'PPC Management',
+      'PPC Manager',
+      'Google Ads Management',
+      'Google Ads Manager',
+      'Digital Marketing',
+      'Brand Strategy',
+      'Full-Service Marketing',
+      'Media Buying',
+      'Creative Direction',
+      'Public Relations',
+      'Marketing & Advertising',
+      
+      // High-Value Creative
+      'Professional Graphic Design',
+      'Graphic Designer',
+      'Brand Identity Design',
+      'Professional Video Editing',
+      'Video Editor',
+      'Video Production',
+      
       // Architecture & Engineering
       'Architecture',
       'Aerospace Engineering',
@@ -512,14 +554,6 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'Structural Engineering',
       'Patent Illustration',
       'Visual Effects (VFX)',
-      
-      // Marketing & Advertising - Agency Level
-      'Marketing & Advertising',
-      'Brand Strategy',
-      'Full-Service Marketing',
-      'Media Buying',
-      'Creative Direction',
-      'Public Relations',
       
       // Writing - High Value
       'Legal Writing',
@@ -568,6 +602,15 @@ export const INDUSTRY_PRICING: IndustryPricing[] = [
       'real estate lawyer',
       'patent attorney',
       'immigration lawyer',
+      'web developer',
+      'software developer',
+      'seo expert',
+      'seo',
+      'ppc manager',
+      'google ads manager',
+      'marketing strategist',
+      'graphic designer',
+      'video editor',
     ],
     nonExclusive: 24.50,   // 20% of Google CPC (~$122.50)
     semiExclusive: 61.25,  // = 50% of Google CPC
