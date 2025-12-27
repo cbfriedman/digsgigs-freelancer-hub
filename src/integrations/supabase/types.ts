@@ -1144,6 +1144,45 @@ export type Database = {
           },
         ]
       }
+      digger_profession_assignments: {
+        Row: {
+          created_at: string | null
+          digger_profile_id: string | null
+          id: string
+          is_primary: boolean | null
+          profession_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          digger_profile_id?: string | null
+          id?: string
+          is_primary?: boolean | null
+          profession_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          digger_profile_id?: string | null
+          id?: string
+          is_primary?: boolean | null
+          profession_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digger_profession_assignments_digger_profile_id_fkey"
+            columns: ["digger_profile_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digger_profession_assignments_profession_id_fkey"
+            columns: ["profession_id"]
+            isOneToOne: false
+            referencedRelation: "professions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digger_professions: {
         Row: {
           created_at: string
@@ -1849,6 +1888,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      industry_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       industry_codes: {
         Row: {
@@ -2801,6 +2876,142 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      profession_requests: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          email: string | null
+          id: string
+          industry_category: string | null
+          rejection_reason: string | null
+          requested_profession: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          industry_category?: string | null
+          rejection_reason?: string | null
+          requested_profession: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          industry_category?: string | null
+          rejection_reason?: string | null
+          requested_profession?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profession_specialties: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          profession_id: string | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          profession_id?: string | null
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          profession_id?: string | null
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profession_specialties_profession_id_fkey"
+            columns: ["profession_id"]
+            isOneToOne: false
+            referencedRelation: "professions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          industry_category_id: string | null
+          is_active: boolean | null
+          is_licensed_risk: boolean | null
+          keywords: string[] | null
+          lead_price_cents: number
+          lead_tier: string
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          industry_category_id?: string | null
+          is_active?: boolean | null
+          is_licensed_risk?: boolean | null
+          keywords?: string[] | null
+          lead_price_cents?: number
+          lead_tier: string
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          industry_category_id?: string | null
+          is_active?: boolean | null
+          is_licensed_risk?: boolean | null
+          keywords?: string[] | null
+          lead_price_cents?: number
+          lead_tier?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professions_industry_category_id_fkey"
+            columns: ["industry_category_id"]
+            isOneToOne: false
+            referencedRelation: "industry_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profile_calls: {
         Row: {
