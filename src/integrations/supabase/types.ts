@@ -1082,6 +1082,68 @@ export type Database = {
           },
         ]
       }
+      digger_onboarding_emails: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          current_step: number
+          digger_profile_id: string | null
+          email: string
+          id: string
+          step_1_sent_at: string | null
+          step_2_sent_at: string | null
+          step_3_sent_at: string | null
+          step_4_sent_at: string | null
+          step_5_sent_at: string | null
+          step_6_sent_at: string | null
+          step_7_sent_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          current_step?: number
+          digger_profile_id?: string | null
+          email: string
+          id?: string
+          step_1_sent_at?: string | null
+          step_2_sent_at?: string | null
+          step_3_sent_at?: string | null
+          step_4_sent_at?: string | null
+          step_5_sent_at?: string | null
+          step_6_sent_at?: string | null
+          step_7_sent_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          current_step?: number
+          digger_profile_id?: string | null
+          email?: string
+          id?: string
+          step_1_sent_at?: string | null
+          step_2_sent_at?: string | null
+          step_3_sent_at?: string | null
+          step_4_sent_at?: string | null
+          step_5_sent_at?: string | null
+          step_6_sent_at?: string | null
+          step_7_sent_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digger_onboarding_emails_digger_profile_id_fkey"
+            columns: ["digger_profile_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digger_professions: {
         Row: {
           created_at: string
