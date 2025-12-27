@@ -7,38 +7,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Send, AlertTriangle, Shield } from "lucide-react";
+import { Send, Shield } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-// Only pre-approved, safe industries (unlicensed/support services)
-const existingIndustries = [
-  "Construction & Home Services",
-  "Technology Services",
-  "Business Services",
-  "Automotive Services",
-  "Pet Care",
-  "Education & Tutoring",
-  "Fitness & Wellness",
-  "Event Services",
-  "Cleaning & Maintenance",
-  "Moving & Storage",
-  "Beauty & Personal Care",
-  "Digital & Creative Services",
-  "Coaching & Training",
-  "Customer Support & Admin"
-];
+import { useProfessions, useSubmitProfessionRequest } from "@/hooks/useProfessions";
 
 export const ProfessionRequestForm = () => {
-  const [selectedIndustry, setSelectedIndustry] = useState("");
+  const { categories, loading: categoriesLoading } = useProfessions();
+  const { submitRequest, submitting } = useSubmitProfessionRequest();
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [profession, setProfession] = useState("");
   const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedIndustry) {
+    if (!selectedCategory) {
       toast({
         title: "Error",
         description: "Please select an industry category",
@@ -56,51 +40,28 @@ export const ProfessionRequestForm = () => {
       return;
     }
 
-    setIsSubmitting(true);
+    const result = await submitRequest({
+      requestedProfession: profession.trim(),
+      industryCategory: selectedCategory,
+      description: description.trim() || undefined,
+    });
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Add timeout to prevent indefinite hanging
-      const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 30000)
-      );
-
-      const invokePromise = supabase.functions.invoke('request-keyword-suggestions', {
-        body: { 
-          industry: selectedIndustry,
-          profession: profession.trim(),
-          specialties: [profession.trim()], // Use profession as the specialty
-          isNewIndustry: false,
-          description: description.trim()
-        }
-      });
-
-      const { data, error } = await Promise.race([invokePromise, timeout]) as any;
-
-      if (error) {
-        console.error("Function returned error:", error);
-        throw error;
-      }
-
+    if (result.success) {
       toast({
         title: "Request Submitted",
         description: "Thank you! Our team will review your profession request. You'll be notified once it's approved.",
       });
       
       // Reset form
-      setSelectedIndustry("");
+      setSelectedCategory("");
       setProfession("");
       setDescription("");
-    } catch (error: any) {
-      console.error("Error submitting request:", error);
+    } else {
       toast({
         title: "Error",
-        description: error?.message || "Failed to submit request. Please try again.",
+        description: result.error || "Failed to submit request. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -132,17 +93,21 @@ export const ProfessionRequestForm = () => {
         </Alert>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Industry Selection */}
+          {/* Industry Selection - Now from database */}
           <div className="space-y-2">
             <Label>Industry Category *</Label>
-            <Select value={selectedIndustry} onValueChange={setSelectedIndustry} disabled={isSubmitting}>
+            <Select 
+              value={selectedCategory} 
+              onValueChange={setSelectedCategory} 
+              disabled={submitting || categoriesLoading}
+            >
               <SelectTrigger className="bg-background">
-                <SelectValue placeholder="Select an industry category..." />
+                <SelectValue placeholder={categoriesLoading ? "Loading categories..." : "Select an industry category..."} />
               </SelectTrigger>
               <SelectContent className="bg-background z-50 max-h-[200px] overflow-y-auto">
-                {existingIndustries.map((industry) => (
-                  <SelectItem key={industry} value={industry}>
-                    {industry}
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -157,7 +122,7 @@ export const ProfessionRequestForm = () => {
               value={profession}
               onChange={(e) => setProfession(e.target.value)}
               placeholder="e.g., Pet Groomer, Virtual Assistant, Event Photographer"
-              disabled={isSubmitting}
+              disabled={submitting}
               maxLength={100}
             />
             <p className="text-xs text-muted-foreground">
@@ -173,14 +138,14 @@ export const ProfessionRequestForm = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Briefly describe the services you provide..."
-              disabled={isSubmitting}
+              disabled={submitting}
               maxLength={500}
               rows={3}
             />
           </div>
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Submitting..." : "Submit Request for Review"}
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? "Submitting..." : "Submit Request for Review"}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
