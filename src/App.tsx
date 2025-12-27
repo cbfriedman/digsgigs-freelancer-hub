@@ -27,6 +27,7 @@ import Contact from "./pages/Contact";
 import HowItWorks from "./pages/HowItWorks";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import LegalDocuments from "./pages/LegalDocuments";
 import Subscription from "./pages/Subscription";
 import Pricing from "./pages/Pricing";
 import PricingStrategy from "./pages/PricingStrategy";
@@ -275,6 +276,10 @@ const router = createBrowserRouter([
   {
     path: "/privacy",
     element: <PrivacyPolicy />,
+  },
+  {
+    path: "/legal",
+    element: <LegalDocuments />,
   },
   {
     path: "/brand",
