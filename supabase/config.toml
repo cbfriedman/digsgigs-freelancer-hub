@@ -1,5 +1,8 @@
 project_id = "njpjxasfesdapxukvyth"
 
+[functions.send-digger-onboarding-email]
+verify_jwt = false
+
 [functions.send-gig-confirmation]
 verify_jwt = false
 
