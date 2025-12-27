@@ -85,6 +85,7 @@ const Register = () => {
   const isNavigatingRef = useRef(false); // Prevent race conditions with useProtectedRoute
   const isInSignInOtpFlowRef = useRef(false); // Prevent redirect during sign-in OTP flow
   const hasInitializedSignInModeRef = useRef(false); // Track if we've initialized sign-in mode
+  const isSendingOtpRef = useRef(false); // Prevent multiple simultaneous OTP requests
   const { user, loading: authLoading } = useProtectedRoute({ 
     redirectIfAuthenticated: true,
     requireVerified: false // Allow unverified users to complete registration
@@ -703,14 +704,20 @@ const Register = () => {
       return;
     }
 
+    // Prevent multiple simultaneous calls
+    if (loading || isSendingOtpRef.current) {
+      return;
+    }
+
     // If Digger is selected, require email verification before proceeding
     if (selectedRoles.has('digger') && !pendingDiggerVerification) {
+      isSendingOtpRef.current = true;
       setLoading(true);
       try {
         // Generate and send OTP for Digger verification
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         
-        const { error: otpError } = await supabase.functions.invoke('send-otp-email', {
+        const { data, error: otpError } = await supabase.functions.invoke('send-otp-email', {
           body: {
             email,
             code: otpCode,
@@ -720,8 +727,22 @@ const Register = () => {
 
         if (otpError) {
           console.error("OTP send error:", otpError);
-          toast.error("Failed to send verification code. Please try again.");
+          
+          // Handle rate limiting specifically
+          const errorMessage = otpError.message || '';
+          const errorStatus = otpError.status || (otpError as any)?.context?.status;
+          
+          if (errorStatus === 429 || errorMessage.includes('429') || errorMessage.includes('Too many')) {
+            const retryAfter = (otpError as any)?.context?.retryAfter || 300; // Default 5 minutes
+            const minutes = Math.ceil(retryAfter / 60);
+            toast.error(`Too many verification requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.`, {
+              duration: 8000,
+            });
+          } else {
+            toast.error("Failed to send verification code. Please try again.");
+          }
           setLoading(false);
+          isSendingOtpRef.current = false;
           return;
         }
 
@@ -731,9 +752,21 @@ const Register = () => {
         setStep(2); // Go to verification step
       } catch (error: any) {
         console.error("Error sending OTP:", error);
-        toast.error("Failed to send verification code");
+        
+        // Handle rate limiting in catch block too
+        const errorMessage = error?.message || '';
+        const errorStatus = error?.status || (error as any)?.response?.status;
+        
+        if (errorStatus === 429 || errorMessage.includes('429') || errorMessage.includes('Too many')) {
+          toast.error("Too many verification requests. Please wait a few minutes before trying again.", {
+            duration: 8000,
+          });
+        } else {
+          toast.error("Failed to send verification code");
+        }
       } finally {
         setLoading(false);
+        isSendingOtpRef.current = false;
       }
       return;
     }
@@ -2003,10 +2036,10 @@ const Register = () => {
                   </Button>
                   <Button
                     onClick={handleRoleSelection}
-                    disabled={selectedRoles.size === 0}
+                    disabled={selectedRoles.size === 0 || loading}
                     className="flex-1"
                   >
-                    Continue <ArrowRight className="ml-2 h-4 w-4" />
+                    {loading ? "Sending..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>
