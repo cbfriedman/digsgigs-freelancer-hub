@@ -834,26 +834,9 @@ const PostGig = () => {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="customKeyword">Add Custom Keyword</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="customKeyword"
-                      placeholder="Enter a keyword"
-                      value={customKeyword}
-                      onChange={(e) => setCustomKeyword(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddCustomKeyword();
-                        }
-                      }}
-                    />
-                    <Button onClick={handleAddCustomKeyword} variant="secondary">
-                      Add
-                    </Button>
-                  </div>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Select from the suggested keywords above to help match your gig with the right professionals.
+                </p>
 
                 {selectedKeywords.length > 0 && (
                   <div className="bg-muted/50 rounded-lg p-4">

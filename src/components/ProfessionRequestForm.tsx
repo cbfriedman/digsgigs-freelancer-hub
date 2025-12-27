@@ -7,16 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Send, AlertTriangle, Shield } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+// Only pre-approved, safe industries (unlicensed/support services)
 const existingIndustries = [
-  "Legal Services",
-  "Insurance",
-  "Mortgage & Financing",
-  "Financial Services & Accounting",
   "Construction & Home Services",
-  "Medical & Healthcare",
   "Technology Services",
   "Business Services",
   "Automotive Services",
@@ -26,39 +22,26 @@ const existingIndustries = [
   "Event Services",
   "Cleaning & Maintenance",
   "Moving & Storage",
-  "Beauty & Personal Care"
+  "Beauty & Personal Care",
+  "Digital & Creative Services",
+  "Coaching & Training",
+  "Customer Support & Admin"
 ];
 
 export const ProfessionRequestForm = () => {
-  const [industryType, setIndustryType] = useState<"new" | "existing">("existing");
   const [selectedIndustry, setSelectedIndustry] = useState("");
-  const [newIndustry, setNewIndustry] = useState("");
   const [profession, setProfession] = useState("");
-  const [specialtyInput, setSpecialtyInput] = useState("");
-  const [specialties, setSpecialties] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-
-  const addSpecialty = () => {
-    if (specialtyInput.trim() && !specialties.includes(specialtyInput.trim())) {
-      setSpecialties([...specialties, specialtyInput.trim()]);
-      setSpecialtyInput("");
-    }
-  };
-
-  const removeSpecialty = (specialty: string) => {
-    setSpecialties(specialties.filter(s => s !== specialty));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const industry = industryType === "new" ? newIndustry.trim() : selectedIndustry;
-    
-    if (!industry) {
+    if (!selectedIndustry) {
       toast({
         title: "Error",
-        description: "Please select or enter an industry",
+        description: "Please select an industry category",
         variant: "destructive",
       });
       return;
@@ -68,25 +51,6 @@ export const ProfessionRequestForm = () => {
       toast({
         title: "Error",
         description: "Please enter a profession name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Parse comma-separated specialties from input field if any
-    let finalSpecialties = [...specialties];
-    if (specialtyInput.trim()) {
-      const inputSpecialties = specialtyInput
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s && !finalSpecialties.includes(s));
-      finalSpecialties = [...finalSpecialties, ...inputSpecialties];
-    }
-
-    if (finalSpecialties.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one specialty",
         variant: "destructive",
       });
       return;
@@ -104,10 +68,11 @@ export const ProfessionRequestForm = () => {
 
       const invokePromise = supabase.functions.invoke('request-keyword-suggestions', {
         body: { 
-          industry: industry,
+          industry: selectedIndustry,
           profession: profession.trim(),
-          specialties: finalSpecialties,
-          isNewIndustry: industryType === "new"
+          specialties: [profession.trim()], // Use profession as the specialty
+          isNewIndustry: false,
+          description: description.trim()
         }
       });
 
@@ -120,15 +85,13 @@ export const ProfessionRequestForm = () => {
 
       toast({
         title: "Request Submitted",
-        description: "Thank you! We'll review your industry/profession request and add it to our system.",
+        description: "Thank you! Our team will review your profession request. You'll be notified once it's approved.",
       });
       
       // Reset form
       setSelectedIndustry("");
-      setNewIndustry("");
       setProfession("");
-      setSpecialties([]);
-      setSpecialtyInput("");
+      setDescription("");
     } catch (error: any) {
       console.error("Error submitting request:", error);
       toast({
@@ -145,130 +108,84 @@ export const ProfessionRequestForm = () => {
     <Card className="w-full">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <PlusCircle className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg">Create New Industry/Profession</CardTitle>
+          <Send className="h-5 w-5 text-primary" />
+          <CardTitle className="text-lg">Request New Profession</CardTitle>
         </div>
         <CardDescription>
-          Add a new industry category with professions and specialties, or add to an existing industry
+          Can't find your profession in our list? Submit a request and our team will review it.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* Important Notice */}
+        <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <Shield className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800 dark:text-amber-200">Important Notice</AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+            <p className="mb-2">
+              All profession requests are manually reviewed to ensure compliance with platform guidelines.
+            </p>
+            <p className="font-medium">
+              Note: We do not support licensed/regulated professions including attorneys, architects, 
+              licensed contractors, mortgage brokers, real estate agents, CPAs, therapists, or medical professionals.
+            </p>
+          </AlertDescription>
+        </Alert>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Industry Selection */}
           <div className="space-y-2">
-            <Label>Industry Type</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="existing"
-                  checked={industryType === "existing"}
-                  onChange={(e) => setIndustryType(e.target.value as "existing")}
-                  disabled={isSubmitting}
-                />
-                <span>Existing Industry</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="new"
-                  checked={industryType === "new"}
-                  onChange={(e) => setIndustryType(e.target.value as "new")}
-                  disabled={isSubmitting}
-                />
-                <span>New Industry</span>
-              </label>
-            </div>
+            <Label>Industry Category *</Label>
+            <Select value={selectedIndustry} onValueChange={setSelectedIndustry} disabled={isSubmitting}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="Select an industry category..." />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50 max-h-[200px] overflow-y-auto">
+                {existingIndustries.map((industry) => (
+                  <SelectItem key={industry} value={industry}>
+                    {industry}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
-          {industryType === "existing" ? (
-            <div className="space-y-2">
-              <Label>Select Industry</Label>
-              <Select value={selectedIndustry} onValueChange={setSelectedIndustry} disabled={isSubmitting}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Choose an existing industry..." />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50 max-h-[200px] overflow-y-auto">
-                  {existingIndustries.map((industry) => (
-                    <SelectItem key={industry} value={industry}>
-                      {industry}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="newIndustry">New Industry Name</Label>
-              <Input
-                id="newIndustry"
-                value={newIndustry}
-                onChange={(e) => setNewIndustry(e.target.value)}
-                placeholder="e.g., Marine Services, Aerospace"
-                disabled={isSubmitting}
-              />
-            </div>
-          )}
 
           {/* Profession Name */}
           <div className="space-y-2">
-            <Label htmlFor="profession">Profession Name</Label>
+            <Label htmlFor="profession">Profession Name *</Label>
             <Input
               id="profession"
               value={profession}
               onChange={(e) => setProfession(e.target.value)}
-              placeholder="e.g., Yacht Maintenance, Drone Photography"
+              placeholder="e.g., Pet Groomer, Virtual Assistant, Event Photographer"
               disabled={isSubmitting}
+              maxLength={100}
             />
-          </div>
-
-          {/* Specialties */}
-          <div className="space-y-2">
-            <Label htmlFor="specialty">Specialties/Keywords</Label>
-            <div className="flex gap-2">
-              <Input
-                id="specialty"
-                value={specialtyInput}
-                onChange={(e) => setSpecialtyInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addSpecialty();
-                  }
-                }}
-                placeholder="e.g., hull cleaning, engine repair"
-                disabled={isSubmitting}
-              />
-              <Button
-                type="button"
-                onClick={addSpecialty}
-                disabled={isSubmitting || !specialtyInput.trim()}
-                variant="outline"
-              >
-                Add
-              </Button>
-            </div>
-            {specialties.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {specialties.map((specialty) => (
-                  <Badge key={specialty} variant="secondary" className="gap-1">
-                    {specialty}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => removeSpecialty(specialty)}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            )}
             <p className="text-xs text-muted-foreground">
-              Add multiple specialties by typing and clicking "Add" or pressing Enter. You can also use commas to separate multiple specialties.
+              Enter the specific profession or service you provide
             </p>
           </div>
 
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Briefly describe the services you provide..."
+              disabled={isSubmitting}
+              maxLength={500}
+              rows={3}
+            />
+          </div>
+
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Submitting..." : "Submit Request"}
+            {isSubmitting ? "Submitting..." : "Submit Request for Review"}
           </Button>
+
+          <p className="text-xs text-center text-muted-foreground">
+            Requests are typically reviewed within 1-2 business days
+          </p>
         </form>
       </CardContent>
     </Card>

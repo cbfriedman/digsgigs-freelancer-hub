@@ -167,74 +167,11 @@ export const IndustryCodeLookup: React.FC<IndustryCodeLookupProps> = ({
           )}
         </div>
 
-        {!showManualEntry && (
-          <div className="pt-4 border-t">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowManualEntry(true)}
-              className="w-full"
-            >
-              Can't find your occupation? Enter manually
-            </Button>
-          </div>
-        )}
-
-        {showManualEntry && (
-          <div className="pt-4 border-t space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Enter Manually</Label>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowManualEntry(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-            <div>
-              <Label className="text-sm mb-2 block">Select Code Type</Label>
-              <RadioGroup value={manualCodeType} onValueChange={(val) => setManualCodeType(val as "SIC" | "NAICS")}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="NAICS" id="manual-naics" />
-                  <Label htmlFor="manual-naics" className="cursor-pointer font-normal text-sm">
-                    NAICS
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="SIC" id="manual-sic" />
-                  <Label htmlFor="manual-sic" className="cursor-pointer font-normal text-sm">
-                    SIC
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-            <div>
-              <Label htmlFor="manual-code" className="text-sm">
-                {manualCodeType} Code
-              </Label>
-              <Input
-                id="manual-code"
-                placeholder={`e.g., ${manualCodeType === "NAICS" ? "541511" : "7371"}`}
-                value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="manual-title" className="text-sm">
-                Occupation Title
-              </Label>
-              <Input
-                id="manual-title"
-                placeholder="e.g., Software Developer"
-                value={manualTitle}
-                onChange={(e) => setManualTitle(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleManualEntry} variant="secondary" className="w-full">
-              Add Custom Occupation
-            </Button>
-          </div>
-        )}
+        <div className="pt-4 border-t">
+          <p className="text-sm text-muted-foreground">
+            Can't find your occupation? Contact support to request it be added to our approved list.
+          </p>
+        </div>
       </div>
     </div>
   );
