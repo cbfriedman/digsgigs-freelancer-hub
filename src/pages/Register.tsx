@@ -335,6 +335,13 @@ const Register = () => {
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (loading || isSendingOtpRef.current) {
+      return;
+    }
+    
+    isSendingOtpRef.current = true;
     setLoading(true);
 
     try {
@@ -396,6 +403,7 @@ const Register = () => {
           duration: 5000
         });
         setLoading(false);
+        isSendingOtpRef.current = false;
         return;
       }
 
@@ -405,6 +413,7 @@ const Register = () => {
         toast.success(`Verification code sent! Please check your ${methodText}.`);
         setStep(2); // Move to verification step
         setLoading(false);
+        isSendingOtpRef.current = false;
         return;
       }
 
@@ -446,6 +455,7 @@ const Register = () => {
         // Try to extract error message from response
         let errorMessage = "Failed to send verification code. Please try again.";
         let errorDetails = "";
+        let retryAfter = 300; // Default 5 minutes
         
         // Check if we can get the actual error from the function response
         if (otpError?.context?.body) {
@@ -463,17 +473,35 @@ const Register = () => {
             if (errorBody?.details) {
               errorDetails = errorBody.details;
             }
+            if (errorBody?.retryAfter) {
+              retryAfter = errorBody.retryAfter;
+            }
           } catch (e) {
             console.error("Could not parse error body:", e);
           }
         }
+        
+        // Check for 429 status code
+        const errorStatus = otpError.status || (otpError as any)?.context?.status || (otpError as any)?.response?.status;
         
         // Fallback to error message if available
         if (otpError?.message && !errorMessage.includes(otpError.message)) {
           errorMessage = otpError.message;
         }
         
-        // Provide specific error messages
+        // Handle rate limiting (429) specifically
+        if (errorStatus === 429 || errorMessage.includes('429') || errorMessage.includes('Too many')) {
+          const minutes = Math.ceil(retryAfter / 60);
+          errorMessage = `Too many verification requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.`;
+          toast.error(errorMessage, {
+            duration: 10000,
+          });
+          setLoading(false);
+          isSendingOtpRef.current = false;
+          return;
+        }
+        
+        // Provide specific error messages for other errors
         if (errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('not configured') || errorMessage.includes('Email service')) {
           errorMessage = "Email service is not configured. The send-otp function needs RESEND_API_KEY to be set in Supabase secrets.";
         } else if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error') || errorMessage.includes('non-2xx')) {
@@ -493,6 +521,7 @@ const Register = () => {
           duration: 7000
         });
         setLoading(false);
+        isSendingOtpRef.current = false;
         return;
       }
 
@@ -509,6 +538,10 @@ const Register = () => {
       }
     } finally {
       setLoading(false);
+      // Ensure ref is always reset
+      setTimeout(() => {
+        isSendingOtpRef.current = false;
+      }, 100);
     }
   };
 
@@ -704,15 +737,18 @@ const Register = () => {
       return;
     }
 
-    // Prevent multiple simultaneous calls
+    // Prevent multiple simultaneous calls - check both loading state and ref
     if (loading || isSendingOtpRef.current) {
+      console.log("Prevented duplicate OTP request - already in progress");
       return;
     }
 
     // If Digger is selected, require email verification before proceeding
     if (selectedRoles.has('digger') && !pendingDiggerVerification) {
+      // Set ref and loading state IMMEDIATELY to prevent duplicate clicks
       isSendingOtpRef.current = true;
       setLoading(true);
+      
       try {
         // Generate and send OTP for Digger verification
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -730,25 +766,42 @@ const Register = () => {
           
           // Handle rate limiting specifically
           const errorMessage = otpError.message || '';
-          const errorStatus = otpError.status || (otpError as any)?.context?.status;
+          const errorStatus = otpError.status || (otpError as any)?.context?.status || (otpError as any)?.response?.status;
+          
+          // Check response body for retry-after info
+          let retryAfter = 300; // Default 5 minutes
+          try {
+            if ((otpError as any)?.context?.body) {
+              const errorBody = typeof (otpError as any).context.body === 'string' 
+                ? JSON.parse((otpError as any).context.body) 
+                : (otpError as any).context.body;
+              if (errorBody?.retryAfter) {
+                retryAfter = errorBody.retryAfter;
+              }
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
           
           if (errorStatus === 429 || errorMessage.includes('429') || errorMessage.includes('Too many')) {
-            const retryAfter = (otpError as any)?.context?.retryAfter || 300; // Default 5 minutes
             const minutes = Math.ceil(retryAfter / 60);
             toast.error(`Too many verification requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.`, {
-              duration: 8000,
+              duration: 10000,
             });
           } else {
-            toast.error("Failed to send verification code. Please try again.");
+            toast.error("Failed to send verification code. Please try again.", {
+              duration: 5000,
+            });
           }
-          setLoading(false);
-          isSendingOtpRef.current = false;
           return;
         }
 
+        // Success - OTP sent
         setPendingDiggerVerification(true);
         setOtpSent(true);
-        toast.info("Digger registration requires email verification. Please check your email for the code.");
+        toast.success("Verification code sent! Please check your email.", {
+          duration: 5000,
+        });
         setStep(2); // Go to verification step
       } catch (error: any) {
         console.error("Error sending OTP:", error);
@@ -759,19 +812,25 @@ const Register = () => {
         
         if (errorStatus === 429 || errorMessage.includes('429') || errorMessage.includes('Too many')) {
           toast.error("Too many verification requests. Please wait a few minutes before trying again.", {
-            duration: 8000,
+            duration: 10000,
           });
         } else {
-          toast.error("Failed to send verification code");
+          toast.error("Failed to send verification code. Please try again.", {
+            duration: 5000,
+          });
         }
       } finally {
+        // Always reset loading state and ref
         setLoading(false);
-        isSendingOtpRef.current = false;
+        // Use setTimeout to ensure ref is reset after state update completes
+        setTimeout(() => {
+          isSendingOtpRef.current = false;
+        }, 100);
       }
       return;
     }
 
-    // Move to first role form (step 4)
+    // Move to first role form (step 4) - no OTP needed for non-digger roles
     setStep(4);
     setCurrentRoleIndex(0);
   };
@@ -2036,10 +2095,10 @@ const Register = () => {
                   </Button>
                   <Button
                     onClick={handleRoleSelection}
-                    disabled={selectedRoles.size === 0 || loading}
+                    disabled={selectedRoles.size === 0 || loading || isSendingOtpRef.current}
                     className="flex-1"
                   >
-                    {loading ? "Sending..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
+                    {(loading || isSendingOtpRef.current) ? "Sending..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>

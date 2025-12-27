@@ -4,8 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 // Rate limiting configuration
-const MAX_REQUESTS_PER_EMAIL = 3;
-const RATE_LIMIT_WINDOW_MINUTES = 5;
+// Increased limits to reduce false positives during registration
+const MAX_REQUESTS_PER_EMAIL = 5; // Increased from 3 to 5
+const RATE_LIMIT_WINDOW_MINUTES = 10; // Increased from 5 to 10 minutes
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
