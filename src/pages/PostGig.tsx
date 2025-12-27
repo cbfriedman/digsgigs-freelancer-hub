@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Sparkles, Check, Clock } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, Check, Clock, Info, Shield } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { DynamicIntakeForm } from "@/components/DynamicIntakeForm";
@@ -18,6 +19,7 @@ import { geocodeAddress } from "@/utils/geocoding";
 import { GigCategorySelector } from "@/components/GigCategorySelector";
 import PostGigTrustBanner from "@/components/PostGigTrustBanner";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
+import { getIndustryContentByName } from "@/config/industryContent";
 
 const PostGig = () => {
   const navigate = useNavigate();
@@ -612,6 +614,37 @@ const PostGig = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Industry-Specific Gigger Prompt */}
+                {detectedCategory && (() => {
+                  const industryContent = getIndustryContentByName(detectedCategory.parentName);
+                  if (industryContent?.giggerPrompt) {
+                    return (
+                      <Alert variant="default" className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <AlertTitle className="text-blue-800 dark:text-blue-200">
+                          {industryContent.giggerPrompt.heading}
+                        </AlertTitle>
+                        <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm mt-2">
+                          <p>{industryContent.giggerPrompt.body}</p>
+                          {industryContent.giggerPrompt.bulletPoints && (
+                            <ul className="mt-2 space-y-1 list-disc list-inside">
+                              {industryContent.giggerPrompt.bulletPoints.map((point, index) => (
+                                <li key={index}>{point}</li>
+                              ))}
+                            </ul>
+                          )}
+                          {industryContent.disclaimer && (
+                            <p className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800 text-xs font-medium">
+                              {industryContent.disclaimer}
+                            </p>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  return null;
+                })()}
 
                 {requiresManualSelection && !detectedCategory && (
                   <div className="space-y-2">

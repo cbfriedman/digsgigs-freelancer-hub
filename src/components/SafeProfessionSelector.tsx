@@ -1,14 +1,14 @@
 import { useState, useMemo } from "react";
-import { Check, ChevronDown, ChevronRight, X, Search, Shield, AlertTriangle } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, X, Search, Shield, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useProfessions, Profession, CategoryWithProfessions } from "@/hooks/useProfessions";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { getIndustryContentByName, IndustryContentConfig } from "@/config/industryContent";
 interface SafeProfessionSelectorProps {
   selectedProfessionIds: string[];
   onProfessionsChange: (professionIds: string[]) => void;
@@ -70,6 +70,18 @@ export const SafeProfessionSelector = ({
   }, [searchQuery, filteredCategories]);
 
   const selectedProfessions = professions.filter(p => selectedProfessionIds.includes(p.id));
+
+  // Check if any selected profession has industry-specific content
+  const selectedIndustryContent = useMemo((): IndustryContentConfig | null => {
+    for (const profession of selectedProfessions) {
+      const category = categoriesWithProfessions.find(c => c.id === profession.industry_category_id);
+      if (category) {
+        const content = getIndustryContentByName(category.name);
+        if (content) return content;
+      }
+    }
+    return null;
+  }, [selectedProfessions, categoriesWithProfessions]);
 
   const getTierBadge = (tier: 'low' | 'mid' | 'high') => {
     const labels = { low: 'LV', mid: 'MV', high: 'HV' };
@@ -307,6 +319,29 @@ export const SafeProfessionSelector = ({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Industry-Specific Content for Digger Signup */}
+      {selectedIndustryContent?.diggerBlurb && (
+        <Alert variant="default" className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800 dark:text-blue-200">
+            {selectedIndustryContent.diggerBlurb.title}
+          </AlertTitle>
+          <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm whitespace-pre-line mt-2">
+            {selectedIndustryContent.diggerBlurb.body}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Industry Disclaimer */}
+      {selectedIndustryContent?.disclaimer && (
+        <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <Shield className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+            {selectedIndustryContent.disclaimer}
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );
