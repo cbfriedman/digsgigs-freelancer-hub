@@ -125,7 +125,7 @@ const HowItWorks = () => {
             Join thousands of freelancers and clients connecting on Digs & Gigs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/register?role=digger")} className="text-lg px-8">
+            <Button size="lg" onClick={() => navigate("/register?mode=signup&type=digger")} className="text-lg px-8">
               Become a Digger
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate("/post-gig")} className="text-lg px-8">
