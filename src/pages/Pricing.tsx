@@ -87,7 +87,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Freelancer Pricing — $19 Lifetime Subscription + $10/$25 Leads | Digs & Gigs</title>
-        <meta name="description" content="Only 500 Founding Diggers get $19/month forever plus $10/$25 lead pricing for the first year." />
+        <meta name="description" content="Only 500 Founding Diggers get $19/month forever plus $10/$25 lead pricing for the first year. No commissions, no bidding wars." />
       </Helmet>
       
       <Navigation />

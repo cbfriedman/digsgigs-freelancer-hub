@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, MessageSquare, Phone } from "lucide-react";
+import { Mail, MessageSquare, Clock } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 
@@ -48,21 +48,29 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Contact Us - Get Support & Assistance"
-        description="Have questions about digsandgigs? Contact our support team for help with your account, pricing, or any other inquiries. We're here to help clients and service professionals succeed."
-        keywords="contact us, customer support, help desk, get help, support team, contact digsandgigs"
+        title="Contact Us - Get Support & Assistance | Digs & Gigs"
+        description="Have questions about Digs & Gigs? Contact our support team for help with your account, pricing, or any other inquiries. We reply within 24–48 hours."
+        keywords="contact us, customer support, help desk, get help, support team, contact digs and gigs"
       />
       <Navigation showBackButton backLabel="Back to Home" />
 
       <div className="container mx-auto px-4 py-12 max-w-6xl">
+        {/* Hero */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4">We're Here to Help</h1>
+          <p className="text-xl text-muted-foreground">
+            We reply within 24–48 hours.
+          </p>
+        </div>
+
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Contact Form */}
           <div>
             <Card>
               <CardHeader>
-                <CardTitle className="text-3xl">Get in Touch</CardTitle>
+                <CardTitle className="text-2xl">Send Us a Message</CardTitle>
                 <CardDescription>
-                  Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+                  Have questions? We'd love to hear from you.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -130,9 +138,9 @@ const Contact = () => {
           {/* Contact Information */}
           <div className="space-y-8">
             <div>
-              <h2 className="text-3xl font-bold mb-4">Contact Information</h2>
+              <h2 className="text-2xl font-bold mb-4">Contact Information</h2>
               <p className="text-muted-foreground mb-8">
-                We're here to help! Whether you're a digger looking to grow your business or a client seeking the perfect freelancer, our team is ready to assist you.
+                Whether you're a freelancer looking to grow your business or a client seeking the perfect talent, our team is ready to assist you.
               </p>
             </div>
 
@@ -144,12 +152,12 @@ const Contact = () => {
                       <Mail className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-1">Email Us</h3>
+                      <h3 className="font-semibold mb-1">Support</h3>
                       <p className="text-sm text-muted-foreground mb-2">
                         For general inquiries and support
                       </p>
-                      <a href="mailto:support@digsandgigs.com" className="text-primary hover:underline">
-                        support@digsandgigs.com
+                      <a href="mailto:support@digsandgigs.net" className="text-primary hover:underline">
+                        support@digsandgigs.net
                       </a>
                     </div>
                   </div>
@@ -160,15 +168,15 @@ const Contact = () => {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
-                      <Phone className="w-6 h-6 text-accent" />
+                      <MessageSquare className="w-6 h-6 text-accent" />
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-1">Call Us</h3>
+                      <h3 className="font-semibold mb-1">Partnerships</h3>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Monday - Friday, 9am - 6pm EST
+                        For business partnerships and collaborations
                       </p>
-                      <a href="tel:+15551234567" className="text-primary hover:underline">
-                        +1 (555) 123-4567
+                      <a href="mailto:partnerships@digsandgigs.net" className="text-primary hover:underline">
+                        partnerships@digsandgigs.net
                       </a>
                     </div>
                   </div>
@@ -179,16 +187,16 @@ const Contact = () => {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                      <MessageSquare className="w-6 h-6 text-primary" />
+                      <Clock className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-1">Live Chat</h3>
+                      <h3 className="font-semibold mb-1">Press</h3>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Get instant help from our support team
+                        For media inquiries and press releases
                       </p>
-                      <Button variant="link" className="p-0 h-auto text-primary">
-                        Start a conversation →
-                      </Button>
+                      <a href="mailto:press@digsandgigs.net" className="text-primary hover:underline">
+                        press@digsandgigs.net
+                      </a>
                     </div>
                   </div>
                 </CardContent>
@@ -200,7 +208,7 @@ const Contact = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 Before reaching out, check our FAQ section for quick answers to common questions.
               </p>
-              <Button variant="outline" onClick={() => navigate("/")}>
+              <Button variant="outline" onClick={() => navigate("/pricing")}>
                 View FAQs
               </Button>
             </div>
