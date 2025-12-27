@@ -1197,6 +1197,7 @@ export type Database = {
           custom_occupation_title: string | null
           expected_lead_period: string | null
           expected_lead_volume: number | null
+          founding_digger_number: number | null
           geographic_tier: string | null
           handle: string | null
           hourly_rate: number | null
@@ -1205,6 +1206,7 @@ export type Database = {
           id: string
           industry_type: string | null
           is_bonded: boolean | null
+          is_founding_digger: boolean | null
           is_insured: boolean | null
           is_licensed: string | null
           is_primary: boolean | null
@@ -1213,6 +1215,7 @@ export type Database = {
           lead_limit: number | null
           lead_limit_enabled: boolean | null
           lead_limit_period: string | null
+          lead_price_lock_expires_at: string | null
           lead_tier_description: string | null
           location: string
           location_lat: number | null
@@ -1276,6 +1279,7 @@ export type Database = {
           custom_occupation_title?: string | null
           expected_lead_period?: string | null
           expected_lead_volume?: number | null
+          founding_digger_number?: number | null
           geographic_tier?: string | null
           handle?: string | null
           hourly_rate?: number | null
@@ -1284,6 +1288,7 @@ export type Database = {
           id?: string
           industry_type?: string | null
           is_bonded?: boolean | null
+          is_founding_digger?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
           is_primary?: boolean | null
@@ -1292,6 +1297,7 @@ export type Database = {
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
+          lead_price_lock_expires_at?: string | null
           lead_tier_description?: string | null
           location: string
           location_lat?: number | null
@@ -1355,6 +1361,7 @@ export type Database = {
           custom_occupation_title?: string | null
           expected_lead_period?: string | null
           expected_lead_volume?: number | null
+          founding_digger_number?: number | null
           geographic_tier?: string | null
           handle?: string | null
           hourly_rate?: number | null
@@ -1363,6 +1370,7 @@ export type Database = {
           id?: string
           industry_type?: string | null
           is_bonded?: boolean | null
+          is_founding_digger?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
           is_primary?: boolean | null
@@ -1371,6 +1379,7 @@ export type Database = {
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
+          lead_price_lock_expires_at?: string | null
           lead_tier_description?: string | null
           location?: string
           location_lat?: number | null
@@ -2766,6 +2775,33 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       profile_calls: {
         Row: {
           call_duration_seconds: number | null
@@ -3920,6 +3956,10 @@ export type Database = {
       }
       expire_grace_period_clicks: { Args: never; Returns: undefined }
       generate_proxy_email: { Args: { p_user_id: string }; Returns: string }
+      get_founding_digger_pricing: {
+        Args: { p_digger_id: string }
+        Returns: Json
+      }
       get_tier_for_lead_count: { Args: { lead_count: number }; Returns: string }
       get_user_app_roles: {
         Args: { _user_id: string }
@@ -3953,6 +3993,7 @@ export type Database = {
         Returns: boolean
       }
       is_gig_participant: { Args: { gig_id: string }; Returns: boolean }
+      register_founding_digger: { Args: { p_digger_id: string }; Returns: Json }
       reset_monthly_lead_counts: { Args: never; Returns: undefined }
       track_keyword_usage: {
         Args: {

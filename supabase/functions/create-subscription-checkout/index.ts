@@ -45,6 +45,19 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    // Get user's digger profile
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: diggerProfile } = await adminClient
+      .from('digger_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_primary', true)
+      .single();
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -55,6 +68,11 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
+      metadata: {
+        user_id: user.id,
+        digger_id: diggerProfile?.id || '',
+        register_founding_digger: 'true',
+      },
       success_url: `${req.headers.get('origin')}/subscription?success=true`,
       cancel_url: `${req.headers.get('origin')}/subscription?canceled=true`,
     });
