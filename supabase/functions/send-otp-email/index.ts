@@ -163,30 +163,54 @@ const handler = async (req: Request): Promise<Response> => {
 
     // === RATE LIMITING ===
     // Check how many OTP requests this email has made in the rate limit window
+    // Only count unverified codes that haven't expired yet (more accurate rate limiting)
     const windowStart = new Date();
     windowStart.setMinutes(windowStart.getMinutes() - RATE_LIMIT_WINDOW_MINUTES);
+    const now = new Date();
 
+    // Count only unverified, non-expired codes within the rate limit window
     const { count, error: countError } = await supabase
       .from("verification_codes")
       .select("*", { count: "exact", head: true })
       .eq("email", email.toLowerCase())
-      .gte("created_at", windowStart.toISOString());
+      .eq("verified", false) // Only count unverified codes
+      .gte("created_at", windowStart.toISOString())
+      .gt("expires_at", now.toISOString()); // Only count codes that haven't expired
 
     if (countError) {
       console.error("Error checking rate limit:", countError);
       // Continue anyway - don't block legitimate requests due to rate limit check failure
     } else if (count !== null && count >= MAX_REQUESTS_PER_EMAIL) {
-      console.warn(`Rate limit exceeded for email: ${email}. Count: ${count}`);
+      // Calculate time until oldest code expires
+      const { data: oldestCode } = await supabase
+        .from("verification_codes")
+        .select("expires_at")
+        .eq("email", email.toLowerCase())
+        .eq("verified", false)
+        .gte("created_at", windowStart.toISOString())
+        .gt("expires_at", now.toISOString())
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .single();
+      
+      let retryAfter = RATE_LIMIT_WINDOW_MINUTES * 60;
+      if (oldestCode?.expires_at) {
+        const expiresAt = new Date(oldestCode.expires_at);
+        const secondsUntilExpiry = Math.ceil((expiresAt.getTime() - now.getTime()) / 1000);
+        retryAfter = Math.max(60, secondsUntilExpiry); // At least 1 minute
+      }
+      
+      console.warn(`Rate limit exceeded for email: ${email}. Count: ${count}/${MAX_REQUESTS_PER_EMAIL}. Retry after: ${retryAfter}s`);
       return new Response(
         JSON.stringify({ 
           error: "Too many verification requests. Please try again in a few minutes.",
-          retryAfter: RATE_LIMIT_WINDOW_MINUTES * 60
+          retryAfter: retryAfter
         }),
         {
           status: 429,
           headers: { 
             "Content-Type": "application/json",
-            "Retry-After": String(RATE_LIMIT_WINDOW_MINUTES * 60),
+            "Retry-After": String(retryAfter),
             ...corsHeaders 
           },
         }
@@ -194,6 +218,24 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`Rate limit check passed for ${email}. Current count: ${count || 0}/${MAX_REQUESTS_PER_EMAIL}`);
+    
+    // Clean up old expired codes for this email (background cleanup)
+    // This helps keep the database clean without blocking the request
+    supabase
+      .from("verification_codes")
+      .delete()
+      .eq("email", email.toLowerCase())
+      .lt("expires_at", now.toISOString())
+      .then(({ error: cleanupError }) => {
+        if (cleanupError) {
+          console.warn("Error cleaning up expired codes:", cleanupError);
+        } else {
+          console.log(`Cleaned up expired verification codes for ${email}`);
+        }
+      })
+      .catch(err => {
+        console.warn("Cleanup error (non-blocking):", err);
+      });
 
     // Store verification code in database (expires in 5 minutes)
     const expiresAt = new Date();

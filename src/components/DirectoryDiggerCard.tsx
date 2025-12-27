@@ -12,7 +12,7 @@ import { useProfileEmailTracking } from "@/hooks/useProfileEmailTracking";
 
 interface DirectoryDiggerCardProps {
   id: string;
-  profession: string;
+  profession: string | null;
   customOccupationTitle?: string | null;
   categories: string[];
   rating: number;
@@ -50,9 +50,10 @@ export const DirectoryDiggerCard = ({
   const { recordEmail, isRecording: isEmailingDigger } = useProfileEmailTracking();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const displayProfession = customOccupationTitle || profession;
+  const displayProfession = customOccupationTitle || profession || "Professional";
 
   const getInitials = () => {
+    if (!displayProfession) return "PR";
     const words = displayProfession.split(' ');
     if (words.length >= 2) {
       return (words[0][0] + words[1][0]).toUpperCase();

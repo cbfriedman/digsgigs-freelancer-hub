@@ -45,7 +45,7 @@ interface Digger {
   id: string;
   user_id: string;
   handle: string | null;
-  profession: string;
+  profession: string | null;
   bio: string | null;
   hourly_rate: number | null;
   hourly_rate_min: number | null;
@@ -212,10 +212,14 @@ const BrowseDiggers = () => {
   };
 
   const filteredDiggers = diggers.filter((digger) => {
+    if (!searchTerm) return true; // Show all if no search term
+    
     const searchLower = searchTerm.toLowerCase();
     const customOccupation = digger.custom_occupation_title || "";
+    const profession = digger.profession || "";
+    
     return (
-      digger.profession.toLowerCase().includes(searchLower) ||
+      profession.toLowerCase().includes(searchLower) ||
       digger.handle?.toLowerCase().includes(searchLower) ||
       digger.bio?.toLowerCase().includes(searchLower) ||
       customOccupation.toLowerCase().includes(searchLower)
@@ -226,7 +230,7 @@ const BrowseDiggers = () => {
     if (digger.custom_occupation_title) {
       return digger.custom_occupation_title;
     }
-    return digger.profession;
+    return digger.profession || "Professional";
   };
 
   const getOccupationBadge = (digger: Digger) => {
@@ -413,7 +417,7 @@ const BrowseDiggers = () => {
                         <DirectoryDiggerCard
                           key={digger.id}
                           id={digger.id}
-                          profession={digger.profession}
+                          profession={digger.profession || "Professional"}
                           customOccupationTitle={digger.custom_occupation_title}
                           categories={(digger.digger_categories || []).map(dc => dc.categories?.name || '').filter(Boolean)}
                           rating={digger.average_rating}
@@ -438,7 +442,7 @@ const BrowseDiggers = () => {
                 <MapView 
                   items={filteredDiggers.map(d => ({
                     id: d.id,
-                    title: `@${d.handle || "anonymous"} - ${d.profession}`,
+                    title: `@${d.handle || "anonymous"} - ${d.profession || "Professional"}`,
                     location_lat: d.location_lat,
                     location_lng: d.location_lng,
                   }))}
