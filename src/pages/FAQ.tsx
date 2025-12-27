@@ -14,84 +14,152 @@ const FAQ = () => {
   const faqData = {
     general: [
       {
-        question: "What is this platform?",
-        answer: "We're a marketplace connecting homeowners and businesses with verified service professionals (diggers) for projects of all sizes. Whether you need a plumber, electrician, contractor, or any other skilled professional, our platform makes it easy to find, compare, and hire the right person for your job."
+        question: "What is Digs & Gigs?",
+        answer: "Digs & Gigs is a freelance marketplace where consumers (clients) can post projects and freelancers (\"Diggers\") can connect with them. We charge no commissions — freelancers pay only for subscription access and optional lead reveals."
       },
       {
-        question: "How does the platform work?",
-        answer: "For consumers: Post your project details for free, receive bids from qualified professionals, review their profiles and ratings, then choose who to hire. For service professionals: Create a profile, browse available projects, submit competitive bids, and get hired for jobs that match your skills."
+        question: "Is Digs & Gigs a bidding platform?",
+        answer: "No. Freelancers do not compete in bidding wars. Instead, freelancers choose which leads they want to pursue and pay a flat-rate fee to access the client's contact info."
       },
       {
-        question: "Is the platform free to use?",
-        answer: "Posting projects is completely free for consumers. Service professionals can browse projects for free, but pay a small fee per lead when they want to contact a potential client. We also offer subscription plans for professionals who want unlimited leads and additional features."
+        question: "Who can use the platform?",
+        answer: "Anyone 18 or older can create an account. Freelancers worldwide may join. Consumers may post any project that does not violate our terms."
+      },
+      {
+        question: "Does Digs & Gigs take a percentage of what freelancers earn?",
+        answer: "Never. Freelancers keep 100% of what they make."
+      }
+    ],
+    forDiggers: [
+      {
+        question: "How do I become a Digger?",
+        answer: "Click \"Become a Digger\", create a profile, choose your categories, and start receiving project matches."
+      },
+      {
+        question: "How does matching work?",
+        answer: "When a consumer posts a project, our system automatically pairs it with Diggers whose skills match the project criteria."
+      },
+      {
+        question: "Do I need to buy credits or tokens?",
+        answer: "No. We do not use credit packs or point systems. You simply pay the monthly subscription and pay flat-rate prices for lead reveals. That's it."
+      },
+      {
+        question: "What do I get when I pay for a lead reveal?",
+        answer: "Freelancers receive: Client's full name, email address, phone number, project description, budget range (if provided), timeline, and attachments."
+      },
+      {
+        question: "Are leads exclusive?",
+        answer: "Not necessarily. Multiple Diggers can reveal the same lead. This ensures clients receive multiple viable options, and freelancers can pursue as many leads as they want."
+      },
+      {
+        question: "If a client doesn't respond, do I get a refund?",
+        answer: "No. Lead fees are non-refundable. Like all freelance marketplaces, Digs & Gigs cannot guarantee client responsiveness or job outcomes."
+      },
+      {
+        question: "Do you guarantee freelance work?",
+        answer: "No. We provide access to project opportunities, not guaranteed earnings."
+      },
+      {
+        question: "Can freelancers be removed from the platform?",
+        answer: "Yes — accounts may be suspended for: Harassment, attempting to bypass lead fees (\"off-platform solicitation\"), fraudulent or misleading behavior, abusing refund systems, or violating platform policies."
       }
     ],
     forConsumers: [
       {
-        question: "How do I post a project?",
-        answer: "Click 'Post a Gig' in the navigation menu, fill out details about your project including description, location, budget, and timeline. Your project will be visible to relevant professionals immediately. You'll receive bids from interested service providers within hours."
+        question: "Is it free to post a project?",
+        answer: "Yes. Consumers post projects for free."
       },
       {
-        question: "How do I choose the right professional?",
-        answer: "Review each professional's profile including their ratings, reviews, certifications, years of experience, and portfolio. Compare bids, read past client feedback, and check if they're licensed and insured. You can also message professionals directly to ask questions before hiring."
+        question: "How many freelancers will contact me?",
+        answer: "It depends on the category, your budget, timeline, and project clarity. Typically, 1–6 freelancers reach out per project."
       },
       {
-        question: "What payment methods are accepted?",
-        answer: "We accept all major credit cards and debit cards through our secure Stripe payment integration. For larger projects, we also offer escrow services to protect both parties and milestone-based payments."
+        question: "Does it cost money for consumers to hire freelancers?",
+        answer: "No. Consumers pay nothing to use the platform."
       },
       {
-        question: "What is escrow and how does it work?",
-        answer: "Escrow is a secure payment method where funds are held by us until work is completed. You fund the project upfront, we hold the money safely, and release payments to the professional as they complete agreed-upon milestones. This protects both you and the service provider."
+        question: "Do freelancers see my contact info automatically?",
+        answer: "No. A freelancer must choose to pay to reveal your contact details."
+      },
+      {
+        question: "Do you vet freelancers?",
+        answer: "We review accounts for compliance, but we do not certify, employ, or guarantee the skills of freelancers. Consumers must review profiles and portfolios before hiring."
       }
     ],
-    forProfessionals: [
+    pricing: [
       {
-        question: "How do I create a professional profile?",
-        answer: "Click 'Digger Registration' to create your profile. Add your business information, services offered, service area, hourly rates, certifications, licenses, insurance information, and portfolio photos. A complete profile helps you get hired faster."
+        question: "How much does it cost to use Digs & Gigs as a freelancer?",
+        answer: "Two components: Subscription ($19/month for Founders) and optional lead reveal fees ($10/$25 for first-year Founders)."
       },
       {
-        question: "How much does it cost to use the platform?",
-        answer: "Creating a profile is free. We offer three pricing tiers: Free (pay per lead), Pro ($49/month with discounted leads), and Premium ($99/month with unlimited leads). Choose the plan that fits your business size and growth goals."
+        question: "Are subscription fees refundable?",
+        answer: "No. Because subscription access is immediate, all subscription payments are non-refundable except where law requires."
       },
       {
-        question: "How do lead credits work?",
-        answer: "When you want to contact a potential client or respond to a project, you purchase a 'lead'. Lead prices vary based on project value and your subscription tier. Free tier pays full price per lead, Pro gets 50% off, and Premium gets unlimited leads included."
+        question: "How long is the $19/month Founder subscription price guaranteed?",
+        answer: "For life — as long as the subscription remains active. If a Founder cancels or lapses for any reason, the lifetime guarantee expires."
       },
       {
-        question: "When do I get paid?",
-        answer: "For direct payments, you receive payment according to your agreement with the client. For escrow contracts, you receive payment when the client approves each completed milestone. Funds are transferred to your connected bank account within 2-3 business days."
+        question: "Will lead pricing increase after a year?",
+        answer: "It may. Founders receive the lowest lead pricing we will ever offer — $10/$25 for their entire first year. Pricing may adjust afterward."
+      }
+    ],
+    leads: [
+      {
+        question: "What counts as a \"lead\"?",
+        answer: "A project opportunity where the freelancer reveals the client's contact information."
       },
       {
-        question: "What are the platform fees?",
-        answer: "We charge a tier-based escrow fee on milestone payments: 9% for Free tier, 8% for Pro tier, and 4% for Premium tier, with a minimum of $10 per payment. This covers secure payment processing, dispute resolution, and platform maintenance. The escrow system protects both parties throughout the project."
+        question: "Do you guarantee the client will hire me?",
+        answer: "No. No freelance marketplace can guarantee a job outcome."
+      },
+      {
+        question: "Do you guarantee client responsiveness?",
+        answer: "No. Lead pricing reflects contact information access, not job fulfillment."
+      },
+      {
+        question: "Can I request a refund on a bad lead?",
+        answer: "Digs & Gigs does not refund lead fees unless legally required. Refunds are not provided for: Non-responsive clients, duplicate clients, clients who change their mind, inaccurate budgets, or competitively revealed leads."
+      },
+      {
+        question: "Why do multiple freelancers sometimes contact a client?",
+        answer: "Digs & Gigs is built to give consumers multiple high-quality freelancer options, which increases the likelihood of project completion."
       }
     ],
     safety: [
       {
-        question: "How do you verify professionals?",
-        answer: "We verify business information, check licenses where applicable, and encourage professionals to upload insurance certificates and certifications. We also maintain a rating and review system where past clients can share their experiences."
+        question: "Do you screen freelancers?",
+        answer: "We verify profiles for policy compliance but cannot fully vet identity, training, or skills."
       },
       {
-        question: "What if there's a problem with my project?",
-        answer: "Contact our support team immediately. For escrow contracts, we can hold milestone payments while disputes are resolved. We review all complaints and work with both parties to find fair solutions. Serious violations may result in account suspension."
+        question: "What if a freelancer or consumer behaves inappropriately?",
+        answer: "Report the behavior immediately. Accounts may be suspended or removed for: Harassment, fraud, misrepresentation, or abuse."
       },
       {
-        question: "Are professionals insured?",
-        answer: "Many professionals on our platform carry insurance, but it's not required for all services. Each profile clearly shows if the professional is licensed, insured, and bonded. We recommend choosing insured professionals for larger projects."
+        question: "Do you protect user data?",
+        answer: "Yes. User data is encrypted, and payments are handled securely through Stripe."
       }
     ],
-    technical: [
+    founders: [
       {
-        question: "Can I save my favorite professionals?",
-        answer: "Yes! You can save professionals to your favorites list and set up saved searches with email alerts. This way you'll be notified when new professionals matching your criteria join the platform or when new projects in your area are posted."
+        question: "What is the Founders Program?",
+        answer: "A limited offer for the first 500 freelancers who join Digs & Gigs."
       },
       {
-        question: "How do notifications work?",
-        answer: "You'll receive notifications for important events like new bids on your projects, messages from professionals, milestone approvals, and payment confirmations. You can customize notification preferences in your account settings."
+        question: "What do Founders receive?",
+        answer: "Free 60-day subscription, $19/month subscription locked for life, lowest lead pricing we will ever offer — $10/$25 for the first 12 months, priority ranking, and Founding Digger badge."
       },
       {
-        question: "Is my payment information secure?",
-        answer: "Absolutely. We use Stripe, an industry-leading payment processor, to handle all transactions. We never store your full credit card details on our servers. All payment data is encrypted and PCI-DSS compliant."
+        question: "Can new freelancers join after all 500 spots are taken?",
+        answer: "Yes, but they will not receive: $19 lifetime subscription, first-year $10/$25 lead pricing, Founders badge, or priority ranking."
+      },
+      {
+        question: "Can Founders lose their lifetime subscription price?",
+        answer: "Yes. If a Founder cancels or lapses payments, the guarantee permanently expires."
+      },
+      {
+        question: "Will Founders still receive new features as the platform grows?",
+        answer: "Yes. All active Founders will continue to receive all new platform features."
       }
     ]
   };
@@ -102,10 +170,10 @@ const FAQ = () => {
   return (
     <>
       <SEOHead
-        title="Frequently Asked Questions - Find Service Professionals"
-        description="Get answers to common questions about finding and hiring service professionals, posting projects, pricing, payments, and platform features. Learn how our marketplace works for consumers and professionals."
+        title="Frequently Asked Questions | Digs & Gigs"
+        description="Get answers to common questions about Digs & Gigs freelance marketplace. Learn about pricing, leads, the Founders Program, and how to get started as a freelancer or client."
         canonical="/faq"
-        keywords="FAQ, service professional questions, hiring help, platform guide, pricing questions, payment information"
+        keywords="FAQ, Digs and Gigs questions, freelance marketplace help, lead pricing, founders program, freelancer questions"
         structuredData={generateFAQSchema(allFAQs)}
       />
       
@@ -117,14 +185,14 @@ const FAQ = () => {
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold mb-4">Frequently Asked Questions</h1>
               <p className="text-xl text-muted-foreground">
-                Everything you need to know about our platform
+                Everything you need to know about Digs & Gigs
               </p>
             </div>
 
             <div className="space-y-8">
               {/* General Questions */}
               <Card className="p-6">
-                <h2 className="text-2xl font-semibold mb-4">General Questions</h2>
+                <h2 className="text-2xl font-semibold mb-4">🌐 General</h2>
                 <Accordion type="single" collapsible className="w-full">
                   {faqData.general.map((faq, index) => (
                     <AccordionItem key={index} value={`general-${index}`}>
@@ -139,9 +207,26 @@ const FAQ = () => {
                 </Accordion>
               </Card>
 
+              {/* For Diggers */}
+              <Card className="p-6">
+                <h2 className="text-2xl font-semibold mb-4">💼 For Diggers (Freelancers)</h2>
+                <Accordion type="single" collapsible className="w-full">
+                  {faqData.forDiggers.map((faq, index) => (
+                    <AccordionItem key={index} value={`digger-${index}`}>
+                      <AccordionTrigger className="text-left">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </Card>
+
               {/* For Consumers */}
               <Card className="p-6">
-                <h2 className="text-2xl font-semibold mb-4">For Consumers</h2>
+                <h2 className="text-2xl font-semibold mb-4">👤 For Consumers (Clients)</h2>
                 <Accordion type="single" collapsible className="w-full">
                   {faqData.forConsumers.map((faq, index) => (
                     <AccordionItem key={index} value={`consumer-${index}`}>
@@ -156,12 +241,12 @@ const FAQ = () => {
                 </Accordion>
               </Card>
 
-              {/* For Professionals */}
+              {/* Pricing */}
               <Card className="p-6">
-                <h2 className="text-2xl font-semibold mb-4">For Service Professionals</h2>
+                <h2 className="text-2xl font-semibold mb-4">💰 Pricing</h2>
                 <Accordion type="single" collapsible className="w-full">
-                  {faqData.forProfessionals.map((faq, index) => (
-                    <AccordionItem key={index} value={`professional-${index}`}>
+                  {faqData.pricing.map((faq, index) => (
+                    <AccordionItem key={index} value={`pricing-${index}`}>
                       <AccordionTrigger className="text-left">
                         {faq.question}
                       </AccordionTrigger>
@@ -173,9 +258,26 @@ const FAQ = () => {
                 </Accordion>
               </Card>
 
-              {/* Safety & Trust */}
+              {/* Leads */}
               <Card className="p-6">
-                <h2 className="text-2xl font-semibold mb-4">Safety & Trust</h2>
+                <h2 className="text-2xl font-semibold mb-4">📩 Leads</h2>
+                <Accordion type="single" collapsible className="w-full">
+                  {faqData.leads.map((faq, index) => (
+                    <AccordionItem key={index} value={`leads-${index}`}>
+                      <AccordionTrigger className="text-left">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </Card>
+
+              {/* Trust & Safety */}
+              <Card className="p-6">
+                <h2 className="text-2xl font-semibold mb-4">🛡️ Trust & Safety</h2>
                 <Accordion type="single" collapsible className="w-full">
                   {faqData.safety.map((faq, index) => (
                     <AccordionItem key={index} value={`safety-${index}`}>
@@ -190,12 +292,12 @@ const FAQ = () => {
                 </Accordion>
               </Card>
 
-              {/* Technical Questions */}
+              {/* Founders Program */}
               <Card className="p-6">
-                <h2 className="text-2xl font-semibold mb-4">Technical Questions</h2>
+                <h2 className="text-2xl font-semibold mb-4">👑 Founders Program</h2>
                 <Accordion type="single" collapsible className="w-full">
-                  {faqData.technical.map((faq, index) => (
-                    <AccordionItem key={index} value={`technical-${index}`}>
+                  {faqData.founders.map((faq, index) => (
+                    <AccordionItem key={index} value={`founders-${index}`}>
                       <AccordionTrigger className="text-left">
                         {faq.question}
                       </AccordionTrigger>
