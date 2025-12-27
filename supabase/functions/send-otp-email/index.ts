@@ -202,9 +202,11 @@ const handler = async (req: Request): Promise<Response> => {
       .from("verification_codes")
       .insert({
         email: email.toLowerCase(),
+        phone: null, // Required by constraint - must have either email or phone
         code,
         expires_at: expiresAt.toISOString(),
         verified: false,
+        verification_type: 'email', // Required field - must be 'email' or 'phone'
       })
       .select()
       .single();
