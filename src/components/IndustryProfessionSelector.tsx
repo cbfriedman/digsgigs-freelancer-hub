@@ -1,3 +1,10 @@
+/**
+ * @deprecated This component is deprecated and no longer used.
+ * Use SafeProfessionSelector or RegistrationCategorySelector instead.
+ * This component uses the old hardcoded GOOGLE_CPC_KEYWORDS system.
+ * The new taxonomy system uses the database (industry_categories, professions tables).
+ */
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

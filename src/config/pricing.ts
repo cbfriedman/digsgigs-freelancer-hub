@@ -844,6 +844,12 @@ export const getPricingTier = (
   return PRICING_TIERS[exclusivity];
 };
 
+/**
+ * @deprecated This constant is deprecated. Use the database taxonomy system instead.
+ * The new system uses industry_categories and professions tables via useProfessions hook.
+ * This legacy list includes licensed professions and should not be used for new features.
+ * See: src/hooks/useProfessions.ts and src/components/SafeProfessionSelector.tsx
+ */
 // Hierarchical industry structure for UI display - expanded to 22 categories with 357+ professions
 export const INDUSTRY_GROUPS: IndustryGroup[] = [
   {

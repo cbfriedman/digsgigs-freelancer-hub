@@ -1,22 +1,20 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Plus, Loader2, MapPin, X } from "lucide-react";
+import { Target, Loader2, MapPin, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { generateKeywordSuggestions } from "@/utils/keywordSuggestions";
-import { getIndustrySpecialties, hasIndustrySpecialties } from "@/utils/industrySpecialties";
-import { SpecialtyRequestForm } from "./SpecialtyRequestForm";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
 import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
+import { SafeProfessionSelector } from "./SafeProfessionSelector";
+import { useProfessions } from "@/hooks/useProfessions";
 
 // Helper function to look up CPC and calculate lead cost for a keyword
 const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: number | null } => {
@@ -89,53 +87,19 @@ const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: num
   return { cpc: null, leadCost: null };
 };
 
-const DEFAULT_CATEGORIES = [
-  "Credit Repair",
-  "Tax Relief Services",
-  "Legal Services",
-  "Insurance",
-  "Mortgage & Financing",
-  "Financial Services & Accounting",
-  "Investors",
-  "Construction & Home Services",
-  "Medical & Healthcare",
-  "Technology Services",
-  "Business Services",
-  "Automotive Services",
-  "Pet Care",
-  "Education & Tutoring",
-  "Fitness & Wellness",
-  "Event Services",
-  "Cleaning & Maintenance",
-  "Moving & Storage",
-  "Beauty & Personal Care"
-].sort();
-
-interface CustomCategory {
-  id: string;
-  name: string;
-  user_id: string;
-}
-
 export const CategoryBrowserWithDescription = () => {
   const { user, refreshRoles } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const existingProfileId = searchParams.get('profileId');
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const { professions, getProfessionById } = useProfessions();
+  const [selectedProfessionIds, setSelectedProfessionIds] = useState<string[]>([]);
   const [description, setDescription] = useState<string>("");
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
   const [newKeyword, setNewKeyword] = useState("");
   const [isAddingKeyword, setIsAddingKeyword] = useState(false);
-  const [showSpecialtyRequest, setShowSpecialtyRequest] = useState(false);
-  const [industrySpecialties, setIndustrySpecialties] = useState<string[]>([]);
   const [profileName, setProfileName] = useState("");
   const [locationPreferenceType, setLocationPreferenceType] = useState<"zip_codes" | "radius">("zip_codes");
   const [serviceZipCodes, setServiceZipCodes] = useState("");
@@ -144,117 +108,36 @@ export const CategoryBrowserWithDescription = () => {
   const [country, setCountry] = useState("");
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [city, setCity] = useState("");
-  const [hasPrimaryForCategory, setHasPrimaryForCategory] = useState(false);
-  const [isSecondaryProfile, setIsSecondaryProfile] = useState(false);
 
   // Reset state when country changes
   useEffect(() => {
     setSelectedStates([]);
   }, [country]);
 
-  // Check if primary profile exists for selected category
+  // Auto-generate profile name from selected professions
   useEffect(() => {
-    const checkPrimaryProfile = async () => {
-      if (!user?.id || !selectedCategory || existingProfileId) return;
+    if (selectedProfessionIds.length > 0 && !existingProfileId) {
+      const selectedProfessions = selectedProfessionIds
+        .map(id => getProfessionById(id))
+        .filter(Boolean)
+        .map(p => p!.name);
       
-      const { data, error } = await supabase
-        .from('digger_profiles')
-        .select('id, is_primary, profile_name')
-        .eq('user_id', user.id)
-        .eq('profile_name', selectedCategory)
-        .eq('is_primary', true)
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Error checking primary profile:", error);
-        return;
+      if (selectedProfessions.length === 1) {
+        setProfileName(selectedProfessions[0]);
+      } else if (selectedProfessions.length > 1) {
+        // Use first profession as base name
+        setProfileName(selectedProfessions[0]);
       }
-      
-      const primaryExists = !!data;
-      setHasPrimaryForCategory(primaryExists);
-      
-      // If no primary exists for this category, auto-set profile name to category
-      if (!primaryExists && !existingProfileId) {
-        setProfileName(selectedCategory);
-        setIsSecondaryProfile(false);
-      }
-    };
-    
-    checkPrimaryProfile();
-  }, [selectedCategory, user?.id, existingProfileId]);
-
-  // Load profile name from sessionStorage only for secondary profiles
-  useEffect(() => {
-    const storedProfileName = sessionStorage.getItem('newProfileName');
-    if (storedProfileName && !existingProfileId && hasPrimaryForCategory) {
-      setProfileName(storedProfileName);
-      setIsSecondaryProfile(true);
     }
-  }, [existingProfileId, hasPrimaryForCategory]);
-
-  // Fetch user's custom categories
-  useEffect(() => {
-    if (user?.id) {
-      fetchCustomCategories();
-    }
-  }, [user?.id]);
-
-  const fetchCustomCategories = async () => {
-    if (!user?.id) return;
-    
-    const { data, error } = await supabase
-      .from('custom_categories')
-      .select('*')
-      .eq('user_id', user.id);
-    
-    if (error) {
-      console.error("Error fetching custom categories:", error);
-      return;
-    }
-    
-    setCustomCategories(data || []);
-  };
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast.error("Please enter a category name");
-      return;
-    }
-
-    if (!user?.id) {
-      toast.error("You must be logged in to create custom categories");
-      return;
-    }
-
-    setIsCreatingCategory(true);
-
-    try {
-      const { data, error } = await supabase
-        .from('custom_categories')
-        .insert({
-          name: newCategoryName.trim(),
-          user_id: user.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setCustomCategories(prev => [...prev, data]);
-      setNewCategoryName("");
-      setIsAddingCategory(false);
-      toast.success("Custom category created!");
-    } catch (error: any) {
-      console.error("Error creating category:", error);
-      toast.error(error.message || "Failed to create category");
-    } finally {
-      setIsCreatingCategory(false);
-    }
-  };
+  }, [selectedProfessionIds, existingProfileId, getProfessionById]);
 
   const handleContinue = async () => {
-    // Description is optional - if empty, generate keywords from category/specialty
-    const descriptionText = description.trim() || `${selectedCategory} ${selectedSpecialties.join(', ')}`.trim();
+    // Description is optional - if empty, generate keywords from selected professions
+    const selectedProfessionNames = selectedProfessionIds
+      .map(id => getProfessionById(id))
+      .filter(Boolean)
+      .map(p => p!.name);
+    const descriptionText = description.trim() || selectedProfessionNames.join(', ').trim();
 
     setIsProcessing(true);
 
@@ -296,8 +179,12 @@ export const CategoryBrowserWithDescription = () => {
         "Tax Relief Services": "tax relief specialist"
       };
 
-      const profession = categoryToprofession[selectedCategory] || "contractor";
-      const localKeywords = generateKeywordSuggestions(profession, [selectedCategory.toLowerCase()]);
+      // Use first selected profession for keyword generation
+      const firstProfession = selectedProfessionIds.length > 0 
+        ? getProfessionById(selectedProfessionIds[0])
+        : null;
+      const professionName = firstProfession?.name.toLowerCase() || "contractor";
+      const localKeywords = generateKeywordSuggestions(professionName, []);
 
       if (localKeywords.length > 0) {
         setSuggestedKeywords(localKeywords);
@@ -311,22 +198,17 @@ export const CategoryBrowserWithDescription = () => {
     }
   };
 
-  // Update industry specialties when category changes
-  useEffect(() => {
-    if (selectedCategory) {
-      const specialties = getIndustrySpecialties(selectedCategory);
-      setIndustrySpecialties(specialties);
-      setSelectedSpecialties([]); // Reset specialties when category changes
-    } else {
-      setIndustrySpecialties([]);
-      setSelectedSpecialties([]);
+  // Generate description placeholder from selected professions
+  const getDescriptionPlaceholder = () => {
+    if (selectedProfessionIds.length === 0) {
+      return "Select professions first, then describe your specific services, expertise, and specializations...";
     }
-  }, [selectedCategory]);
-
-  const allCategories = [
-    ...DEFAULT_CATEGORIES,
-    ...customCategories.map(c => c.name)
-  ].sort();
+    const selectedProfessions = selectedProfessionIds
+      .map(id => getProfessionById(id))
+      .filter(Boolean)
+      .map(p => p!.name);
+    return `Describe your expertise in ${selectedProfessions.join(', ')}...`;
+  };
 
   return (
     <Card className="w-full">
@@ -335,179 +217,56 @@ export const CategoryBrowserWithDescription = () => {
           <Target className="h-6 w-6 text-primary" />
           <CardTitle>Browse Categories</CardTitle>
         </div>
-        {selectedCategory && !existingProfileId && (
+        {selectedProfessionIds.length > 0 && !existingProfileId && (
           <div className="mt-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
             <p className="text-sm font-medium text-primary">
-              {hasPrimaryForCategory ? (
-                <>Creating Secondary Profile: <span className="font-bold">{profileName || '(enter name below)'}</span></>
-              ) : (
-                <>Creating Primary Profile: <span className="font-bold">{selectedCategory}</span></>
-              )}
+              Creating Profile: <span className="font-bold">{profileName || 'Enter name below'}</span>
             </p>
-            {!hasPrimaryForCategory && (
-              <p className="text-xs text-muted-foreground mt-1">
-                This will be your primary profile for {selectedCategory}
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {selectedProfessionIds.length} profession{selectedProfessionIds.length !== 1 ? 's' : ''} selected
+            </p>
           </div>
         )}
         <CardDescription>
-          Select your industry category and describe your specialties
+          Select your professions and describe your specialties
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Category Selection - Horizontal Grid */}
+        {/* Profession Selection */}
         <div className="space-y-3">
-          <Label>Select Industry Category</Label>
-          <div className="flex flex-wrap gap-2">
-            {allCategories.map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background hover:bg-muted border-border'
-                }`}
-              >
-                {category}
-                {customCategories.some(c => c.name === category) && (
-                  <span className="ml-1 text-xs opacity-70">(Custom)</span>
-                )}
-              </button>
-            ))}
-          </div>
+          <Label>Select Your Professions *</Label>
+          <SafeProfessionSelector
+            selectedProfessionIds={selectedProfessionIds}
+            onProfessionsChange={setSelectedProfessionIds}
+            maxSelections={10}
+          />
         </div>
-
-        {/* Request New Profession Notice */}
-        <div className="p-3 bg-muted/50 rounded-lg border">
-          <p className="text-sm text-muted-foreground">
-            Can't find your profession? <a href="/contact" className="text-primary hover:underline">Contact support</a> to request a new profession be added to our approved list.
-          </p>
-        </div>
-
-        {/* Specialty Selection - Multi-select with checkboxes */}
-        {selectedCategory && hasIndustrySpecialties(selectedCategory) && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Select Specialties</Label>
-              {selectedSpecialties.length > 0 && (
-                <span className="text-sm text-muted-foreground">
-                  {selectedSpecialties.length} selected
-                </span>
-              )}
-            </div>
-            
-            {/* Select All / Clear All buttons */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedSpecialties([...industrySpecialties])}
-                disabled={selectedSpecialties.length === industrySpecialties.length}
-              >
-                Select All
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedSpecialties([])}
-                disabled={selectedSpecialties.length === 0}
-              >
-                Clear All
-              </Button>
-            </div>
-            
-            {/* Checkbox list - Horizontal grid layout */}
-            <div className="border rounded-lg p-3 max-h-[300px] overflow-y-auto bg-background">
-              <div className="flex flex-wrap gap-2">
-                {industrySpecialties.map((specialty) => (
-                  <label
-                    key={specialty}
-                    htmlFor={`specialty-${specialty}`}
-                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-full border cursor-pointer transition-colors text-sm ${
-                      selectedSpecialties.includes(specialty)
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background hover:bg-muted border-border'
-                    }`}
-                  >
-                    <Checkbox
-                      id={`specialty-${specialty}`}
-                      checked={selectedSpecialties.includes(specialty)}
-                      className="hidden"
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedSpecialties([...selectedSpecialties, specialty]);
-                        } else {
-                          setSelectedSpecialties(selectedSpecialties.filter(s => s !== specialty));
-                        }
-                      }}
-                    />
-                    {specialty}
-                  </label>
-                ))}
-              </div>
-            </div>
-            
-            {/* Request Custom Specialty */}
-            <Dialog open={showSpecialtyRequest} onOpenChange={setShowSpecialtyRequest}>
-              <DialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Request Custom Specialty
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <SpecialtyRequestForm
-                  industry={selectedCategory}
-                  profession={selectedCategory}
-                  onSuccess={() => {
-                    setShowSpecialtyRequest(false);
-                    toast.success("You can now add keywords for your custom specialty!");
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-        )}
 
 
         {/* Specialty Description */}
-        {selectedCategory && (
+        {selectedProfessionIds.length > 0 && (
           <div className="space-y-2">
             <Label htmlFor="description">Describe Your Specialties</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={
-                selectedSpecialties.length > 0
-                  ? `Describe your expertise in ${selectedSpecialties.join(', ')}...`
-                  : "Describe what you do within this category, your specific services, expertise, and specializations..."
-              }
+              placeholder={getDescriptionPlaceholder()}
               className="min-h-[150px] bg-background"
             />
             <p className="text-sm text-muted-foreground">
-              Be specific about your services and expertise within {selectedSpecialties.length > 0 ? selectedSpecialties.join(', ') : selectedCategory}
+              Be specific about your services and expertise in your selected professions
             </p>
           </div>
         )}
 
         {/* Info Box and Continue Button */}
-        {selectedCategory && description && !suggestedKeywords.length && (
+        {selectedProfessionIds.length > 0 && description && !suggestedKeywords.length && (
           <div className="space-y-4">
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
               <h4 className="font-semibold mb-2">Next Steps</h4>
               <p className="text-sm text-muted-foreground">
-                Your description will be used to match you with relevant leads in the {selectedCategory} category.
+                Your description will be used to match you with relevant leads for your selected professions.
                 The more specific you are, the better your matches will be.
               </p>
             </div>
@@ -594,33 +353,21 @@ export const CategoryBrowserWithDescription = () => {
               </p>
             </div>
             
-            {/* Profile Name Input - Only for secondary profiles */}
-            {hasPrimaryForCategory ? (
-              <div className="space-y-2 mt-4">
-                <Label htmlFor="profile-name">Secondary Profile Name <span className="text-destructive">*</span></Label>
-                <Input
-                  id="profile-name"
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  placeholder="e.g., Commercial Cleaning, Residential Services"
-                  className="w-full"
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  You already have a primary profile for {selectedCategory}. Enter a unique name for this secondary profile.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2 mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <Label className="text-green-700 dark:text-green-400 font-medium">
-                  ✓ Primary Profile Name
-                </Label>
-                <p className="text-sm font-medium">{selectedCategory}</p>
-                <p className="text-xs text-muted-foreground">
-                  Primary profiles are automatically named after the category. Only one primary profile is allowed per category.
-                </p>
-              </div>
-            )}
+            {/* Profile Name Input */}
+            <div className="space-y-2 mt-4">
+              <Label htmlFor="profile-name">Profile Name <span className="text-destructive">*</span></Label>
+              <Input
+                id="profile-name"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="e.g., My Design Services, Web Development"
+                className="w-full"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter a name for this profile. This will help you organize multiple profiles.
+              </p>
+            </div>
 
             {/* Location Preferences Section */}
             <Card className="p-4 border-2 border-primary/20 bg-primary/5 mt-4">
@@ -827,8 +574,8 @@ export const CategoryBrowserWithDescription = () => {
                     return;
                   }
 
-                  if (selectedSpecialties.length === 0) {
-                    toast.error("Please select at least one specialty before continuing");
+                  if (selectedProfessionIds.length === 0) {
+                    toast.error("Please select at least one profession before continuing");
                     return;
                   }
 
@@ -864,20 +611,40 @@ export const CategoryBrowserWithDescription = () => {
                         .from('digger_profiles')
                         .update({
                           keywords: selected,
-                          profession: selectedSpecialties.join(', '),
+                          profile_name: profileName.trim(),
                           service_zip_codes: zipCodesArray,
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
-                          // Note: state and city fields removed - not in database schema. 
-                          // State/city info can be stored in location field if needed.
                           updated_at: new Date().toISOString(),
                         })
                         .eq('id', existingProfileId);
 
                       if (updateError) throw updateError;
+
+                      // Update profession assignments
+                      // First, delete existing assignments
+                      const { error: deleteAssignmentsError } = await supabase
+                        .from('digger_profession_assignments')
+                        .delete()
+                        .eq('digger_profile_id', existingProfileId);
+
+                      if (deleteAssignmentsError) throw deleteAssignmentsError;
+
+                      // Then, insert new assignments
+                      const assignments = selectedProfessionIds.map((professionId, index) => ({
+                        digger_profile_id: existingProfileId,
+                        profession_id: professionId,
+                        is_primary: index === 0 // First profession is primary
+                      }));
+
+                      const { error: insertAssignmentsError } = await supabase
+                        .from('digger_profession_assignments')
+                        .insert(assignments);
+
+                      if (insertAssignmentsError) throw insertAssignmentsError;
                       
-                      toast.success(`Profile updated with ${selected.length} keywords!`);
+                      toast.success(`Profile updated with ${selected.length} keywords and ${selectedProfessionIds.length} profession${selectedProfessionIds.length !== 1 ? 's' : ''}!`);
 
                       // Navigate back to the profile detail page
                       navigate(`/digger/${existingProfileId}`, { replace: true });
@@ -908,13 +675,7 @@ export const CategoryBrowserWithDescription = () => {
                         ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
                         : null;
 
-                      // Primary profile = first profile for this category (named after category)
-                      // Secondary profiles have custom names
-                      const isPrimaryProfile = !hasPrimaryForCategory;
-                      const finalProfileName = isPrimaryProfile ? selectedCategory : profileName.trim();
-
                       // Build location string from city, state, and country
-                      // Include state info in location since state column doesn't exist in database
                       const locationParts: string[] = [];
                       if (city.trim()) locationParts.push(city.trim());
                       if (selectedStates.length > 0) locationParts.push(selectedStates.join(', '));
@@ -928,29 +689,38 @@ export const CategoryBrowserWithDescription = () => {
                         .insert({
                           user_id: user.id,
                           business_name: '', // Business name is separate - user sets it later
-                          profile_name: finalProfileName,
-                          profession: selectedSpecialties.join(', '),
+                          profile_name: profileName.trim(),
                           keywords: selected,
                           location: locationString,
                           phone: 'Not specified',
-                          is_primary: isPrimaryProfile,
+                          is_primary: false, // All profiles use is_primary=false in new system
                           service_zip_codes: zipCodesArray,
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
-                          // Note: state and city fields removed - not in database schema. 
-                          // State/city info is included in location field.
                         })
                         .select()
                         .single();
 
                       if (createError) throw createError;
+
+                      // Create profession assignments
+                      const assignments = selectedProfessionIds.map((professionId, index) => ({
+                        digger_profile_id: newProfile.id,
+                        profession_id: professionId,
+                        is_primary: index === 0 // First profession is primary
+                      }));
+
+                      const { error: insertAssignmentsError } = await supabase
+                        .from('digger_profession_assignments')
+                        .insert(assignments);
+
+                      if (insertAssignmentsError) throw insertAssignmentsError;
                       
                       // Clear sessionStorage after successful profile creation
                       sessionStorage.removeItem('newProfileName');
                       
-                      const typeLabel = isPrimaryProfile ? 'Primary' : 'Secondary';
-                      toast.success(`${typeLabel} profile "${finalProfileName}" created with ${selected.length} keywords!`);
+                      toast.success(`Profile "${profileName.trim()}" created with ${selected.length} keywords and ${selectedProfessionIds.length} profession${selectedProfessionIds.length !== 1 ? 's' : ''}!`);
 
                       // Navigate to the new profile's detail page for lead purchasing
                       navigate(`/digger/${newProfile.id}`, { replace: true });
@@ -962,7 +732,7 @@ export const CategoryBrowserWithDescription = () => {
                     setIsProcessing(false);
                   }
                 }}
-                disabled={selectedKeywords.size === 0 || isProcessing || selectedSpecialties.length === 0 || !selectedCategory || (hasPrimaryForCategory && !profileName.trim()) || !country || (getRegionsForCountry(country).length > 0 && selectedStates.length === 0)}
+                disabled={selectedKeywords.size === 0 || isProcessing || selectedProfessionIds.length === 0 || !profileName.trim() || !country || (getRegionsForCountry(country).length > 0 && selectedStates.length === 0)}
               >
                 {isProcessing ? (
                   <>
