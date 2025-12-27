@@ -221,21 +221,24 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Clean up old expired codes for this email (background cleanup)
     // This helps keep the database clean without blocking the request
-    supabase
-      .from("verification_codes")
-      .delete()
-      .eq("email", email.toLowerCase())
-      .lt("expires_at", now.toISOString())
-      .then(({ error: cleanupError }) => {
+    // Background cleanup - don't await, just fire and forget
+    (async () => {
+      try {
+        const { error: cleanupError } = await supabase
+          .from("verification_codes")
+          .delete()
+          .eq("email", email.toLowerCase())
+          .lt("expires_at", now.toISOString());
+        
         if (cleanupError) {
           console.warn("Error cleaning up expired codes:", cleanupError);
         } else {
           console.log(`Cleaned up expired verification codes for ${email}`);
         }
-      })
-      .catch(err => {
+      } catch (err: unknown) {
         console.warn("Cleanup error (non-blocking):", err);
-      });
+      }
+    })();
 
     // Store verification code in database (expires in 5 minutes)
     const expiresAt = new Date();
