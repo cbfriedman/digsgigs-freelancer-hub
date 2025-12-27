@@ -50,7 +50,10 @@ export const useProfessions = () => {
         .eq("is_active", true)
         .order("display_order");
 
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) {
+        console.error("Error fetching industry_categories:", categoriesError);
+        throw new Error(`Failed to load categories: ${categoriesError.message}. Please ensure database migrations have been run.`);
+      }
 
       // Fetch professions
       const { data: professionsData, error: professionsError } = await supabase
@@ -59,7 +62,10 @@ export const useProfessions = () => {
         .eq("is_active", true)
         .order("name");
 
-      if (professionsError) throw professionsError;
+      if (professionsError) {
+        console.error("Error fetching professions:", professionsError);
+        throw new Error(`Failed to load professions: ${professionsError.message}. Please ensure database migrations have been run.`);
+      }
 
       // Type assertions for the data
       const typedCategories = (categoriesData || []) as IndustryCategory[];
@@ -77,12 +83,28 @@ export const useProfessions = () => {
         professions: typedProfessions.filter(prof => prof.industry_category_id === cat.id)
       }));
 
+      if (!categoriesData || categoriesData.length === 0) {
+        console.warn("No industry categories found in database. Ensure migration 20251227040752 has been run.");
+      }
+      if (!professionsData || professionsData.length === 0) {
+        console.warn("No professions found in database. Ensure migration 20251227040752 has been run.");
+      }
+
       setCategories(typedCategories);
       setProfessions(professionsWithCategories);
       setCategoriesWithProfessions(categoriesWithProfs);
     } catch (err: any) {
       console.error("Error fetching professions:", err);
-      setError(err.message || "Failed to load professions");
+      const errorMessage = err.message || "Failed to load professions";
+      setError(errorMessage);
+      
+      // Log additional debugging info
+      if (err.code === 'PGRST116') {
+        console.error("Table not found. Please run database migrations:");
+        console.error("1. supabase/migrations/20251227035532_2be4521d-55ef-4008-ad0e-2b067faedd94.sql");
+        console.error("2. supabase/migrations/20251227040752_a66c2ef9-4c3c-4575-9916-950e0f688a2b.sql");
+        console.error("3. supabase/migrations/20251228000000_fix_taxonomy_rls_policies.sql");
+      }
     } finally {
       setLoading(false);
     }
