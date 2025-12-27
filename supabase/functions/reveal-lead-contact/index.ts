@@ -24,6 +24,13 @@ const SUBSCRIBER_CPL_MULTIPLIER = 0.65;     // 65% of Angi CPL
 const NON_SUBSCRIBER_CPL_MULTIPLIER = 0.90; // 90% of Angi CPL
 const GRACE_PERIOD_DAYS = 10;
 
+// Founding Digger fixed pricing (during 1-year lock period)
+const FOUNDING_DIGGER_PRICES = {
+  'low-value': 1000,   // $10
+  'mid-value': 1000,   // $10 (same as low for simplicity)
+  'high-value': 2500,  // $25
+};
+
 /**
  * Determine industry category from gig title/description
  */
@@ -81,7 +88,7 @@ serve(async (req) => {
     // Get digger profile for this user
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from('digger_profiles')
-      .select('id, subscription_status, subscription_tier, accumulated_free_clicks, subscription_lapsed_at')
+      .select('id, subscription_status, subscription_tier, accumulated_free_clicks, subscription_lapsed_at, is_founding_digger, lead_price_lock_expires_at')
       .eq('user_id', user.id)
       .eq('is_primary', true)
       .single();
@@ -134,7 +141,20 @@ serve(async (req) => {
     const hasSubscriberBenefits = isActiveSubscriber || isInGracePeriod;
     const freeClicks = diggerProfile.accumulated_free_clicks || 0;
 
-    logStep("Subscription status", { isActiveSubscriber, isInGracePeriod, freeClicks });
+    // Check Founding Digger status
+    const isFoundingDigger = diggerProfile.is_founding_digger || false;
+    const leadPriceLockExpires = diggerProfile.lead_price_lock_expires_at 
+      ? new Date(diggerProfile.lead_price_lock_expires_at) 
+      : null;
+    const foundingLeadPriceLocked = isFoundingDigger && leadPriceLockExpires && new Date() < leadPriceLockExpires;
+
+    logStep("Subscription status", { 
+      isActiveSubscriber, 
+      isInGracePeriod, 
+      freeClicks, 
+      isFoundingDigger,
+      foundingLeadPriceLocked,
+    });
 
     // Determine pricing
     const category = getIndustryCategory(gig.title, gig.description);
@@ -161,8 +181,14 @@ serve(async (req) => {
         
       logStep("Used free click", { remainingClicks: freeClicks - 1 });
       
+    } else if (foundingLeadPriceLocked) {
+      // Founding Digger with active lead price lock - use fixed $10/$25 pricing
+      costCents = FOUNDING_DIGGER_PRICES[category];
+      discountApplied = `Founding Digger rate (${category === 'high-value' ? '$25' : '$10'} locked for 1 year)`;
+      logStep("Applied Founding Digger pricing", { costCents, category });
+      
     } else {
-      // Calculate paid cost
+      // Calculate paid cost based on Angi CPL
       const multiplier = hasSubscriberBenefits ? SUBSCRIBER_CPL_MULTIPLIER : NON_SUBSCRIBER_CPL_MULTIPLIER;
       const costDollars = roundToHalfDollar(angiCpl * multiplier);
       costCents = Math.round(costDollars * 100);
