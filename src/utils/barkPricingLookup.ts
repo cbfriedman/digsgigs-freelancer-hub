@@ -198,7 +198,42 @@ export const BARK_PRICING_DATABASE: BarkPricingData[] = [
   { keyword: "transcription", barkCredits: 2.5, barkPrice: 5.50, category: "Creative & Design", valueIndicator: "low-value" },
   
   { keyword: "social media management", barkCredits: 4, barkPrice: 8.80, category: "Marketing & Advertising", valueIndicator: "low-value" },
+  { keyword: "social media manager", barkCredits: 4, barkPrice: 8.80, category: "Marketing & Advertising", valueIndicator: "low-value" },
   { keyword: "email marketing", barkCredits: 3.5, barkPrice: 7.70, category: "Marketing & Advertising", valueIndicator: "low-value" },
+  { keyword: "email marketer", barkCredits: 3.5, barkPrice: 7.70, category: "Marketing & Advertising", valueIndicator: "low-value" },
+  
+  // ===== NEW PROFESSIONS (Added) =====
+  { keyword: "customer support", barkCredits: 3, barkPrice: 6.60, category: "Business & Consulting", valueIndicator: "low-value" },
+  { keyword: "customer service", barkCredits: 3, barkPrice: 6.60, category: "Business & Consulting", valueIndicator: "low-value" },
+  { keyword: "business coach", barkCredits: 5, barkPrice: 11.00, category: "Business & Consulting", valueIndicator: "low-value" },
+  { keyword: "business coaching", barkCredits: 5, barkPrice: 11.00, category: "Business & Consulting", valueIndicator: "low-value" },
+  { keyword: "life coach", barkCredits: 4.5, barkPrice: 9.90, category: "Personal Services", valueIndicator: "low-value" },
+  { keyword: "fitness coach", barkCredits: 4.5, barkPrice: 9.90, category: "Personal Services", valueIndicator: "low-value" },
+  { keyword: "ai trainer", barkCredits: 3, barkPrice: 6.60, category: "IT & Software Development", valueIndicator: "low-value" },
+  { keyword: "prompt writer", barkCredits: 3, barkPrice: 6.60, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "prompt engineer", barkCredits: 4, barkPrice: 8.80, category: "IT & Software Development", valueIndicator: "low-value" },
+  { keyword: "podcast producer", barkCredits: 5, barkPrice: 11.00, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "podcast production", barkCredits: 5, barkPrice: 11.00, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "content creator", barkCredits: 4, barkPrice: 8.80, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "resume writer", barkCredits: 3.5, barkPrice: 7.70, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "voice actor", barkCredits: 4, barkPrice: 8.80, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "copywriter", barkCredits: 4, barkPrice: 8.80, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "editor", barkCredits: 3.5, barkPrice: 7.70, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "proofreader", barkCredits: 3, barkPrice: 6.60, category: "Creative & Design", valueIndicator: "low-value" },
+  { keyword: "tutor", barkCredits: 4, barkPrice: 8.80, category: "Personal Services", valueIndicator: "low-value" },
+  
+  // ===== HIGH-VALUE PROFESSIONAL SERVICES (Reclassified) =====
+  { keyword: "web developer", barkCredits: 10, barkPrice: 22.00, category: "IT & Software Development", valueIndicator: "high-value" },
+  { keyword: "software developer", barkCredits: 11, barkPrice: 24.20, category: "IT & Software Development", valueIndicator: "high-value" },
+  { keyword: "seo expert", barkCredits: 9, barkPrice: 19.80, category: "Marketing & Advertising", valueIndicator: "high-value" },
+  { keyword: "ppc manager", barkCredits: 9, barkPrice: 19.80, category: "Marketing & Advertising", valueIndicator: "high-value" },
+  { keyword: "google ads manager", barkCredits: 9, barkPrice: 19.80, category: "Marketing & Advertising", valueIndicator: "high-value" },
+  { keyword: "marketing strategist", barkCredits: 10, barkPrice: 22.00, category: "Marketing & Advertising", valueIndicator: "high-value" },
+  { keyword: "graphic designer", barkCredits: 8, barkPrice: 17.60, category: "Creative & Design", valueIndicator: "high-value" },
+  { keyword: "video editor", barkCredits: 8, barkPrice: 17.60, category: "Creative & Design", valueIndicator: "high-value" },
+  { keyword: "animator", barkCredits: 7, barkPrice: 15.40, category: "Creative & Design", valueIndicator: "mid-value" },
+  { keyword: "ux designer", barkCredits: 8, barkPrice: 17.60, category: "Creative & Design", valueIndicator: "mid-value" },
+  { keyword: "ui designer", barkCredits: 8, barkPrice: 17.60, category: "Creative & Design", valueIndicator: "mid-value" },
 
   // ===== EVENTS & ENTERTAINMENT (30 keywords) =====
   { keyword: "wedding planner", barkCredits: 12, barkPrice: 26.40, category: "Events & Entertainment", valueIndicator: "high-value" },

@@ -249,6 +249,42 @@ export const INDUSTRY_SPECIALTIES: Record<string, string[]> = {
     "Spa Services",
     "Barbering",
     "Skincare"
+  ],
+  "Digital & Creative Services": [
+    "AI Training",
+    "Prompt Engineering",
+    "Podcast Production",
+    "Content Creation",
+    "Virtual Assistance",
+    "Social Media Management",
+    "Video Editing",
+    "Graphic Design",
+    "Copywriting",
+    "Data Entry"
+  ],
+  "Coaching & Training": [
+    "Life Coaching",
+    "Business Coaching",
+    "Fitness Coaching",
+    "Career Coaching",
+    "Executive Coaching",
+    "Health Coaching",
+    "Relationship Coaching",
+    "Performance Coaching",
+    "Leadership Coaching",
+    "Mindset Coaching"
+  ],
+  "Customer Support & Admin": [
+    "Customer Service",
+    "Customer Support",
+    "Technical Support",
+    "Help Desk",
+    "Chat Support",
+    "Phone Support",
+    "Email Support",
+    "Ticket Management",
+    "Customer Success",
+    "Client Relations"
   ]
 };
 
