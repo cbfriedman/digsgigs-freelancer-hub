@@ -18,7 +18,7 @@ import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 // Note: Using native radio inputs for pricing model selection to ensure stable controlled component behavior
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
-import { getLeadTierDescription, INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, getIndustryCategory } from "@/config/pricing";
+import { getLeadTierDescription, INDUSTRY_PRICING, getLeadCostForIndustry, getIndustryCategory } from "@/config/pricing";
 import { GOOGLE_CPC_KEYWORDS, getKeywordCPC } from "@/config/googleCpcKeywords";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEditor";
@@ -26,6 +26,8 @@ import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
+import { SafeProfessionSelector } from "@/components/SafeProfessionSelector";
+import { useProfessions } from "@/hooks/useProfessions";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -35,105 +37,29 @@ const EditDiggerProfile = () => {
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [businessName, setBusinessName] = useState("");
-  const [selectedProfessions, setSelectedProfessions] = useState<string[]>([]);
-  const [professionSearch, setProfessionSearch] = useState("");
+  const [selectedProfessionIds, setSelectedProfessionIds] = useState<string[]>([]);
   const [location, setLocation] = useState("");
+  const { professions, getProfessionById, getLeadPriceForProfession, loading: professionsLoading } = useProfessions();
+  const [pendingProfessionNames, setPendingProfessionNames] = useState<string[]>([]);
   
-  const [profileCategory, setProfileCategory] = useState<string>("");
-  
-  // Helper to check if profession has actual CPC data in database
-  const hasCpcData = (professionName: string): boolean => {
-    const normalizedName = professionName.toLowerCase().trim();
-    
-    for (const industryData of GOOGLE_CPC_KEYWORDS) {
-      // Check if the industry name matches
-      if (industryData.industry.toLowerCase().includes(normalizedName) ||
-          normalizedName.includes(industryData.industry.toLowerCase())) {
-        return true;
-      }
-      // Check individual keywords
-      const keywordMatch = industryData.keywords.find(
-        kw => kw.keyword.toLowerCase().includes(normalizedName) ||
-              normalizedName.includes(kw.keyword.toLowerCase())
-      );
-      if (keywordMatch) {
-        return true;
-      }
+  // Helper to get lead price for a profession ID
+  const getProfessionPricingById = (professionId: string) => {
+    const profession = getProfessionById(professionId);
+    if (!profession) {
+      return { cpc: null, leadCost: 15 }; // Default to $15
     }
-    return false;
+    const leadCost = getLeadPriceForProfession(professionId);
+    // For display purposes, we can estimate CPC from lead cost (reverse calculation)
+    const estimatedCpc = leadCost * 4; // Rough estimate
+    return { cpc: estimatedCpc, leadCost };
   };
-
-  // Generate profession list filtered by profile's category AND only those with CPC data
-  // Also always include currently selected professions so they appear checked
-  const professionOptions = useMemo(() => {
-    let professions: string[] = [];
-    
-    if (!profileCategory) {
-      // Fallback to all professions if no category
-      const allProfessions = new Set<string>();
-      INDUSTRY_GROUPS.forEach(group => {
-        group.industries.forEach(ind => {
-          allProfessions.add(ind.name);
-        });
-      });
-      professions = Array.from(allProfessions);
-    } else {
-      // Find the category in INDUSTRY_GROUPS
-      const categoryGroup = INDUSTRY_GROUPS.find(
-        g => g.categoryName.toLowerCase() === profileCategory.toLowerCase()
-      );
-      
-      if (categoryGroup) {
-        professions = categoryGroup.industries.map(ind => ind.name);
-      } else {
-        // Fallback to all
-        const allProfessions = new Set<string>();
-        INDUSTRY_GROUPS.forEach(group => {
-          group.industries.forEach(ind => {
-            allProfessions.add(ind.name);
-          });
-        });
-        professions = Array.from(allProfessions);
-      }
-    }
-    
-    // Filter to only professions with actual CPC data
-    const filteredProfessions = professions.filter(prof => hasCpcData(prof));
-    
-    // Always include selected professions so they appear in the list even if from another category
-    const allOptions = new Set([...filteredProfessions, ...selectedProfessions]);
-    
-    return Array.from(allOptions).sort();
-  }, [profileCategory, selectedProfessions]);
   
-  // Helper to get CPC and lead cost for a profession
-  const getProfessionPricing = (professionName: string) => {
-    const normalizedName = professionName.toLowerCase().trim();
-    
-    // Search through GOOGLE_CPC_KEYWORDS industry data
-    let cpc: number | null = null;
-    for (const industryData of GOOGLE_CPC_KEYWORDS) {
-      // Check if the industry name matches
-      if (industryData.industry.toLowerCase().includes(normalizedName) ||
-          normalizedName.includes(industryData.industry.toLowerCase())) {
-        cpc = industryData.averageCpc;
-        break;
-      }
-      // Check individual keywords
-      const keywordMatch = industryData.keywords.find(
-        kw => kw.keyword.toLowerCase().includes(normalizedName) ||
-              normalizedName.includes(kw.keyword.toLowerCase())
-      );
-      if (keywordMatch) {
-        cpc = keywordMatch.cpc;
-        break;
-      }
-    }
-    
-    const leadCost = getLeadCostForIndustry(professionName, 'non-exclusive', false, profileCategory);
-    const category = getIndustryCategory(professionName, profileCategory);
-    
-    return { cpc, leadCost, category };
+  // Get profession names from IDs for display/legacy compatibility
+  const getProfessionNames = () => {
+    return selectedProfessionIds
+      .map(id => getProfessionById(id))
+      .filter(Boolean)
+      .map(p => p!.name);
   };
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
@@ -168,6 +94,25 @@ const EditDiggerProfile = () => {
     .split(/[,;]/)
     .map(k => k.trim())
     .filter(k => k.length > 0);
+
+  // Match pending profession names to IDs once professions are loaded
+  useEffect(() => {
+    if (pendingProfessionNames.length > 0 && professions.length > 0 && !professionsLoading) {
+      const professionIds: string[] = [];
+      pendingProfessionNames.forEach(profName => {
+        const matchedProf = professions.find(p => 
+          p.name.toLowerCase() === profName.toLowerCase()
+        );
+        if (matchedProf) {
+          professionIds.push(matchedProf.id);
+        }
+      });
+      if (professionIds.length > 0) {
+        setSelectedProfessionIds(professionIds);
+        setPendingProfessionNames([]); // Clear pending names
+      }
+    }
+  }, [pendingProfessionNames, professions, professionsLoading]);
 
   useEffect(() => {
     // Don't reload if we're in the middle of updating
@@ -217,7 +162,7 @@ const EditDiggerProfile = () => {
     try {
       let query = supabase
         .from("digger_profiles")
-        .select("*, digger_categories(category_id)")
+        .select("*")
         .eq("user_id", user.id);
       
       // If a specific profileId is provided, load that profile
@@ -235,11 +180,27 @@ const EditDiggerProfile = () => {
       if (profile) {
         setProfileId(profile.id);
         setBusinessName(profile.business_name || "");
-        // Parse comma-separated professions into array
-        const professionsList = profile.profession 
-          ? profile.profession.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0)
-          : [];
-        setSelectedProfessions(professionsList);
+        
+        // Load profession assignments from digger_profession_assignments table
+        const { data: assignments, error: assignmentsError } = await supabase
+          .from('digger_profession_assignments')
+          .select('profession_id')
+          .eq('digger_profile_id', profile.id);
+        
+        if (assignmentsError) {
+          console.error("Error loading profession assignments:", assignmentsError);
+          // Fallback to old profession field if assignments don't exist
+          const professionsList = profile.profession 
+            ? profile.profession.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0)
+            : [];
+          // Store profession names to match later when professions are loaded
+          setPendingProfessionNames(professionsList);
+        } else {
+          // Use profession IDs from assignments
+          const professionIds = assignments?.map(a => a.profession_id) || [];
+          setSelectedProfessionIds(professionIds);
+        }
+        
         setLocation(profile.location || "");
         setPhone(profile.phone || "");
         setBio(profile.bio || "");
@@ -294,21 +255,7 @@ const EditDiggerProfile = () => {
           setSubscriptionTier(profile.subscription_tier);
         }
         
-        // Load category name from digger_categories
-        if (profile.digger_categories && profile.digger_categories.length > 0) {
-          const categoryId = profile.digger_categories[0].category_id;
-          if (categoryId) {
-            const { data: categoryData } = await supabase
-              .from('categories')
-              .select('name')
-              .eq('id', categoryId)
-              .single();
-            
-            if (categoryData?.name) {
-              setProfileCategory(categoryData.name);
-            }
-          }
-        }
+        // Category loading removed - using new taxonomy system with profession assignments
       }
     } catch (error: any) {
       // Error logging - consider using proper error tracking service in production
@@ -339,7 +286,7 @@ const EditDiggerProfile = () => {
     e.preventDefault();
     if (!user || !profileId) return;
 
-    if (!businessName || selectedProfessions.length === 0 || !location || !phone) {
+    if (!businessName || selectedProfessionIds.length === 0 || !location || !phone) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -350,7 +297,12 @@ const EditDiggerProfile = () => {
       return;
     }
 
-    const professionString = selectedProfessions.join(', ');
+    // Get profession names for legacy field (backward compatibility)
+    const professionNames = selectedProfessionIds
+      .map(id => getProfessionById(id))
+      .filter(Boolean)
+      .map(p => p!.name);
+    const professionString = professionNames.join(', ');
 
     if (!pricingModel) {
       toast.error("Please select a pricing option (Fixed Price, Hourly, or Both Models)");
@@ -361,8 +313,8 @@ const EditDiggerProfile = () => {
     setIsUpdating(true); // Set flag to prevent useEffect from reloading
 
     try {
-      // Calculate lead tier description based on professions
-      const leadTierDescription = getLeadTierDescription(selectedProfessions);
+      // Calculate lead tier description based on profession names
+      const leadTierDescription = getLeadTierDescription(professionNames);
 
       // Parse location preferences
       const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
@@ -413,6 +365,28 @@ const EditDiggerProfile = () => {
         .eq("id", profileId);
 
       if (error) throw error;
+
+      // Update profession assignments
+      // First, delete existing assignments
+      const { error: deleteAssignmentsError } = await supabase
+        .from('digger_profession_assignments')
+        .delete()
+        .eq('digger_profile_id', profileId);
+
+      if (deleteAssignmentsError) throw deleteAssignmentsError;
+
+      // Then, insert new assignments
+      const assignments = selectedProfessionIds.map((professionId, index) => ({
+        digger_profile_id: profileId,
+        profession_id: professionId,
+        is_primary: index === 0 // First profession is primary
+      }));
+
+      const { error: insertAssignmentsError } = await supabase
+        .from('digger_profession_assignments')
+        .insert(assignments);
+
+      if (insertAssignmentsError) throw insertAssignmentsError;
 
       toast.success("Profile saved successfully!");
       
@@ -481,7 +455,7 @@ const EditDiggerProfile = () => {
       try {
         await supabase.rpc('track_keyword_usage', {
           p_keyword: keyword,
-          p_profession: selectedProfessions.length > 0 ? selectedProfessions[0] : null,
+          p_profession: selectedProfessionIds.length > 0 ? getProfessionById(selectedProfessionIds[0])?.name || null : null,
           p_category_name: null
         });
       } catch (error) {
@@ -536,7 +510,7 @@ const EditDiggerProfile = () => {
                 companyName={businessName}
                 location={location}
                 keywords={keywords}
-                profession={selectedProfessions.join(', ')}
+                profession={getProfessionNames().join(', ')}
                 
               />
 
@@ -559,48 +533,26 @@ const EditDiggerProfile = () => {
               onTitleChange={setTitle}
               onTaglineChange={setTagline}
               companyName={businessName}
-              profession={selectedProfessions.join(', ')}
+              profession={getProfessionNames().join(', ')}
               keywords={keywords}
             />
 
             <div className="space-y-2">
-              <Label>Professions * <span className="text-xs text-muted-foreground">({selectedProfessions.length} selected)</span></Label>
+              <Label>Professions * <span className="text-xs text-muted-foreground">({selectedProfessionIds.length} selected)</span></Label>
               
-              {profileCategory && (
-                <p className="text-xs text-muted-foreground mb-2">
-                  Showing professions for: <span className="font-medium text-foreground">{profileCategory}</span>
-                </p>
-              )}
-              
-            {/* Selected Professions Display */}
-              {selectedProfessions.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {selectedProfessions.map((prof) => {
-                    const pricing = getProfessionPricing(prof);
-                    return (
-                      <Badge key={prof} variant="secondary" className="flex items-center gap-1 px-2 py-1">
-                        <span className="capitalize">{prof}</span>
-                        <span className="text-xs text-green-600 ml-1">${pricing.leadCost.toFixed(2)}</span>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProfessions(prev => prev.filter(p => p !== prof))}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
+              <SafeProfessionSelector
+                selectedProfessionIds={selectedProfessionIds}
+                onProfessionsChange={setSelectedProfessionIds}
+                maxSelections={10}
+              />
               
               {/* Selected Keywords - shown right after professions */}
               {keywords.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-4">
                   <Label className="text-sm font-medium text-muted-foreground">Selected Keywords ({keywords.length})</Label>
                   <div className="flex flex-wrap gap-2">
                     {keywords.map((keyword, index) => {
-                      const leadCost = getLeadCostForIndustry(keyword, 'non-exclusive', false, profileCategory);
+                      const leadCost = getLeadCostForIndustry(keyword, 'non-exclusive', false, '');
                       return (
                         <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
                           <span>{keyword}</span>
@@ -623,27 +575,13 @@ const EditDiggerProfile = () => {
               )}
               
               {/* Keyword Suggestions - Budget Friendly & Premium Keywords */}
-              {selectedProfessions.length > 0 && (
+              {selectedProfessionIds.length > 0 && (
                 <KeywordSuggestions
                   currentKeywords={keywords}
                   onAddKeyword={handleAddKeyword}
-                  profession={selectedProfessions[0]}
+                  profession={getProfessionById(selectedProfessionIds[0])?.name || ''}
                 />
               )}
-              
-              {selectedProfessions.length > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedProfessions([])}
-                >
-                  Clear All
-                </Button>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Select from our approved profession list. Can't find your profession? Contact support to request a new one.
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -840,7 +778,7 @@ const EditDiggerProfile = () => {
                 }}
                 placeholder="(555) 123-4567"
                 required
-                pattern="[\d\s\-()+ ]{10,20}"
+                pattern="[\d\s\-\(\)+ ]{10,20}"
               />
               {phone && !isValidPhoneNumber(phone) && (
                 <p className="text-sm text-destructive">Please enter a valid phone number (10-15 digits)</p>
@@ -916,7 +854,7 @@ const EditDiggerProfile = () => {
                 Let AI generate a professional bio based on your profession and keywords
               </p>
               <BioGenerator 
-                profession={selectedProfessions.join(', ')}
+                profession={getProfessionNames().join(', ')}
                 currentBio={bio}
                 onBioGenerated={setBio}
               />
