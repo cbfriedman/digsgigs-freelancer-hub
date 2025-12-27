@@ -334,7 +334,7 @@ export const SafeProfessionSelector = ({
         </Alert>
       )}
 
-      {/* Industry Disclaimer */}
+      {/* Industry Short Disclaimer */}
       {selectedIndustryContent?.disclaimer && (
         <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
           <Shield className="h-4 w-4 text-amber-600" />
@@ -342,6 +342,16 @@ export const SafeProfessionSelector = ({
             {selectedIndustryContent.disclaimer}
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Industry Legal Disclaimer - Full compliance text rendered as visible HTML */}
+      {selectedIndustryContent?.legalDisclaimer && (
+        <div className="p-4 bg-muted/50 border border-border rounded-lg">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">Disclaimer:</strong>{' '}
+            {selectedIndustryContent.legalDisclaimer.replace('Disclaimer: ', '')}
+          </p>
+        </div>
       )}
     </div>
   );
