@@ -81,6 +81,8 @@ import EmailLanding from "./pages/EmailLanding";
 import AdvertiserPortal from "./pages/AdvertiserPortal";
 import BusinessPlan from "./pages/BusinessPlan";
 import ColdEmailDocs from "./pages/ColdEmailDocs";
+import FoundingDigger from "./pages/FoundingDigger";
+import About from "./pages/About";
 
 const queryClient = new QueryClient();
 
@@ -397,6 +399,14 @@ const router = createBrowserRouter([
   {
     path: "/cold-email-docs",
     element: <ColdEmailDocs />,
+  },
+  {
+    path: "/founding-digger",
+    element: <FoundingDigger />,
+  },
+  {
+    path: "/about",
+    element: <About />,
   },
   {
     path: "*",
