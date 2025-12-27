@@ -36,8 +36,6 @@ const EditDiggerProfile = () => {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [businessName, setBusinessName] = useState("");
   const [selectedProfessions, setSelectedProfessions] = useState<string[]>([]);
-  const [customProfession, setCustomProfession] = useState("");
-  const [showAddProfessionDialog, setShowAddProfessionDialog] = useState(false);
   const [professionSearch, setProfessionSearch] = useState("");
   const [location, setLocation] = useState("");
   
@@ -633,62 +631,19 @@ const EditDiggerProfile = () => {
                 />
               )}
               
-              <div className="flex gap-2">
+              {selectedProfessions.length > 0 && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => setShowAddProfessionDialog(true)}
+                  onClick={() => setSelectedProfessions([])}
                 >
-                  <Plus className="h-4 w-4 mr-1" /> Add Custom
+                  Clear All
                 </Button>
-                {selectedProfessions.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedProfessions([])}
-                  >
-                    Clear All
-                  </Button>
-                )}
-              </div>
+              )}
               <p className="text-xs text-muted-foreground">
-                Add professions and keywords to improve matching with gigs
+                Select from our approved profession list. Can't find your profession? Contact support to request a new one.
               </p>
-              
-              {/* Add Custom Profession Dialog */}
-              <Dialog open={showAddProfessionDialog} onOpenChange={setShowAddProfessionDialog}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Custom Profession</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="customProfession">Profession Name</Label>
-                      <Input
-                        id="customProfession"
-                        value={customProfession}
-                        onChange={(e) => setCustomProfession(e.target.value)}
-                        placeholder="Enter your profession"
-                      />
-                    </div>
-                    <Button 
-                      onClick={() => {
-                        if (customProfession.trim()) {
-                          setSelectedProfessions(prev => [...prev, customProfession.trim()]);
-                          setCustomProfession("");
-                          setShowAddProfessionDialog(false);
-                          toast.success(`Added "${customProfession.trim()}" as profession`);
-                        }
-                      }}
-                      disabled={!customProfession.trim()}
-                    >
-                      Add Profession
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
             </div>
 
             <div className="space-y-2">

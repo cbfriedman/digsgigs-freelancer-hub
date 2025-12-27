@@ -270,50 +270,13 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
 
           <div className="max-h-[450px] overflow-y-auto">
             {filteredGroups.length === 0 ? (
-              <div className="px-4 py-3 space-y-3">
-                <div className="text-center text-sm text-muted-foreground">
+              <div className="px-4 py-6 text-center space-y-3">
+                <div className="text-sm text-muted-foreground">
                   No professions found matching "{searchQuery}"
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const cpcData = lookupCPC(searchQuery);
-                    let valueIndicator: 'LV' | 'MV' | 'HV' = 'MV';
-                    
-                    if (cpcData) {
-                      // Map the CPC value indicator to our format
-                      valueIndicator = cpcData.valueIndicator === 'low-value' ? 'LV' : 
-                                     cpcData.valueIndicator === 'mid-value' ? 'MV' : 'HV';
-                    } else {
-                      // If no CPC data found, try to find similar keywords
-                      const similar = findSimilarKeywords(searchQuery, 1);
-                      if (similar.length > 0) {
-                        valueIndicator = similar[0].valueIndicator === 'low-value' ? 'LV' : 
-                                       similar[0].valueIndicator === 'mid-value' ? 'MV' : 'HV';
-                      }
-                    }
-                    
-                    // Add the custom industry
-                    toggleIndustry(searchQuery);
-                    setSearchQuery('');
-                  }}
-                  className="w-full"
-                  size="sm"
-                >
-                  Add "{searchQuery}" as {(() => {
-                    const cpcData = lookupCPC(searchQuery);
-                    if (cpcData) {
-                      return cpcData.valueIndicator === 'low-value' ? 'Low Value' : 
-                             cpcData.valueIndicator === 'mid-value' ? 'Mid Value' : 'High Value';
-                    }
-                    const similar = findSimilarKeywords(searchQuery, 1);
-                    if (similar.length > 0) {
-                      return similar[0].valueIndicator === 'low-value' ? 'Low Value' : 
-                             similar[0].valueIndicator === 'mid-value' ? 'Mid Value' : 'High Value';
-                    }
-                    return 'Mid Value';
-                  })()} profession
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Can't find your profession? Use the "Request New Profession" form below to submit a request for review.
+                </p>
               </div>
             ) : (
               filteredGroups.map((group) => (

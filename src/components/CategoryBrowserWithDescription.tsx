@@ -380,57 +380,12 @@ export const CategoryBrowserWithDescription = () => {
           </div>
         </div>
 
-        {/* Add Custom Industry Category */}
-        {user && (
-          <div className="space-y-2">
-            {!isAddingCategory ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsAddingCategory(true)}
-                className="w-full"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add custom Industry Category
-              </Button>
-            ) : (
-              <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
-                <Label htmlFor="newCategory">New Category Name</Label>
-                <Input
-                  id="newCategory"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Enter category name..."
-                  className="bg-background"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleCreateCategory}
-                    disabled={isCreatingCategory}
-                    size="sm"
-                  >
-                    {isCreatingCategory ? "Creating..." : "Create"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddingCategory(false);
-                      setNewCategoryName("");
-                    }}
-                    size="sm"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  This category will only be visible to you
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Request New Profession Notice */}
+        <div className="p-3 bg-muted/50 rounded-lg border">
+          <p className="text-sm text-muted-foreground">
+            Can't find your profession? <a href="/contact" className="text-primary hover:underline">Contact support</a> to request a new profession be added to our approved list.
+          </p>
+        </div>
 
         {/* Specialty Selection - Multi-select with checkboxes */}
         {selectedCategory && hasIndustrySpecialties(selectedCategory) && (
@@ -633,65 +588,10 @@ export const CategoryBrowserWithDescription = () => {
                 })}
               </div>
               
-              {/* Add Custom Keyword */}
-              <div className="mt-4 pt-4 border-t border-border">
-                {!isAddingKeyword ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsAddingKeyword(true)}
-                    className="w-full"
-                  >
-                    + Add Custom Keyword
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter keyword..."
-                      value={newKeyword}
-                      onChange={(e) => setNewKeyword(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newKeyword.trim()) {
-                          const trimmed = newKeyword.trim();
-                          if (!suggestedKeywords.includes(trimmed)) {
-                            setSuggestedKeywords([...suggestedKeywords, trimmed]);
-                            setSelectedKeywords(new Set([...selectedKeywords, trimmed]));
-                          }
-                          setNewKeyword("");
-                          setIsAddingKeyword(false);
-                        }
-                      }}
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        const trimmed = newKeyword.trim();
-                        if (trimmed) {
-                          if (!suggestedKeywords.includes(trimmed)) {
-                            setSuggestedKeywords([...suggestedKeywords, trimmed]);
-                            setSelectedKeywords(new Set([...selectedKeywords, trimmed]));
-                          }
-                          setNewKeyword("");
-                          setIsAddingKeyword(false);
-                        }
-                      }}
-                      disabled={!newKeyword.trim()}
-                    >
-                      Add
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setNewKeyword("");
-                        setIsAddingKeyword(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </div>
+              {/* Keyword Help Text */}
+              <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border">
+                Select from the available keywords above. Need a specific keyword? Contact support to request it.
+              </p>
             </div>
             
             {/* Profile Name Input - Only for secondary profiles */}
