@@ -69,7 +69,11 @@ export default function LeadCheckout() {
 
     // Require email verification for purchasing leads
     if (!user.email_confirmed_at) {
-      toast.error("Please verify your email address to purchase leads. Check your inbox for the verification code or use the banner on your dashboard to resend it.");
+      toast({
+        title: "Email Verification Required",
+        description: "Please verify your email address to purchase leads. Check your inbox for the verification code or use the banner on your dashboard to resend it.",
+        variant: "destructive"
+      });
       navigate("/register?returnTo=/lead-checkout");
       return;
     }
