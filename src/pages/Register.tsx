@@ -977,7 +977,7 @@ const Register = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // If OTP was already sent, verify the code instead
+    // If OTP was already sent (shouldn't happen in normal flow, but handle it), verify the code instead
     if (signInOtpSent) {
       await handleSignInVerification(e);
       return;
@@ -986,15 +986,10 @@ const Register = () => {
     console.log("Sign in started");
     setLoading(true);
 
-    // CRITICAL: Set flag BEFORE authentication to prevent redirect
-    // This prevents useProtectedRoute from redirecting authenticated users
-    isInSignInOtpFlowRef.current = true;
-    hasInitializedSignInModeRef.current = true;
-
     try {
       console.log("Attempting sign in with email:", email);
       
-      // Sign in with password
+      // Sign in with password - standard sign-in flow (NO OTP required)
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -1002,10 +997,6 @@ const Register = () => {
 
       if (signInError) {
         console.error("Sign in error:", signInError);
-        // Clear flags on error
-        isInSignInOtpFlowRef.current = false;
-        hasInitializedSignInModeRef.current = false;
-        sessionStorage.removeItem('signInOtpFlow');
         toast.error(signInError.message || "Failed to sign in. Please check your credentials.");
         setLoading(false);
         return;
@@ -1013,94 +1004,38 @@ const Register = () => {
 
       if (!signInData.user) {
         console.error("No user data returned");
-        // Clear flags on error
-        isInSignInOtpFlowRef.current = false;
-        hasInitializedSignInModeRef.current = false;
-        sessionStorage.removeItem('signInOtpFlow');
         toast.error("No user data returned from sign in");
         setLoading(false);
         return;
       }
 
-      // User authenticated successfully
-
-      // Get user's phone from profile for 2FA (required for all users on every login)
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('phone')
-        .eq('id', signInData.user.id)
-        .single();
-
-      const userPhoneNumber = profileData?.phone || signInData.user.user_metadata?.phone || null;
-      setUserPhone(userPhoneNumber);
-
-      // Store user ID temporarily for verification (don't sign out yet to prevent redirect)
-      const tempUserId = signInData.user.id;
-
-      // Flags already set above, but ensure they're still set
-      // Also persist to sessionStorage FIRST to survive redirects
-      sessionStorage.setItem('signInOtpFlow', 'true');
-      sessionStorage.setItem('signInUserId', tempUserId);
-      sessionStorage.setItem('signInEmail', email);
+      // User authenticated successfully - sign them in immediately
+      // No OTP required for regular sign-ins (only for sign-up)
       
-      // Set state IMMEDIATELY and synchronously so UI updates before signOut
-      setUserId(tempUserId);
-      setSignInOtpSent(true);
-      
-      // Force a re-render by updating a dummy state if needed
-      // The state updates above should trigger a re-render, but we ensure it happens
+      // Check if user has roles to determine where to redirect
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_app_roles')
+        .select('app_role')
+        .eq('user_id', signInData.user.id)
+        .eq('is_active', true);
 
-      // Generate OTP code
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Send OTP via email
-      const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp', {
-        body: {
-          email: email,
-          code: otpCode,
-          method: 'email',
-        },
-      });
-
-      if (otpError) {
-        console.error("OTP send error:", otpError);
-        // Clear flag and state on error
-        isInSignInOtpFlowRef.current = false;
-        setSignInOtpSent(false);
-        setUserId(null);
-        
-        // Clear sessionStorage on error
-        sessionStorage.removeItem('signInOtpFlow');
-        sessionStorage.removeItem('signInUserId');
-        sessionStorage.removeItem('signInEmail');
-        sessionStorage.removeItem('signInVerificationMethod');
-        
-        // Sign out on error since we didn't complete verification
-        await supabase.auth.signOut();
-        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
-          toast.error("Email service is not configured. Please contact support.");
-        } else {
-          toast.error(otpError.message || "Failed to send verification code. Please try again.");
-        }
-        setLoading(false);
-        return;
+      if (rolesError) {
+        console.error("Error checking roles:", rolesError);
       }
 
-      // OTP sent successfully - sign out now (state already set above)
-      // We sign out after OTP is sent to prevent premature access
-      await supabase.auth.signOut();
+      // Successfully signed in - redirect to appropriate page
+      toast.success("Welcome back!");
       
-      toast.success("Verification code sent! Please check your email.");
-      setLoading(false);
+      // Use full page refresh to ensure AuthContext picks up updated session and roles
+      if (roles && roles.length > 0) {
+        // User has roles - registration complete, go to dashboard
+        window.location.href = '/role-dashboard';
+      } else {
+        // User doesn't have roles yet - complete registration
+        window.location.href = '/register';
+      }
     } catch (error: any) {
       console.error("Sign in error caught:", error);
-      // Clear flags on error
-      isInSignInOtpFlowRef.current = false;
-      hasInitializedSignInModeRef.current = false;
-      sessionStorage.removeItem('signInOtpFlow');
-      sessionStorage.removeItem('signInUserId');
-      sessionStorage.removeItem('signInEmail');
-      sessionStorage.removeItem('signInVerificationMethod');
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
       setLoading(false);
     } finally {
@@ -1551,7 +1486,7 @@ const Register = () => {
                       className="w-full"
                       disabled={loading}
                     >
-                      {loading ? "Sending Code..." : "Continue"}
+                      {loading ? "Signing In..." : "Sign In"}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </>
