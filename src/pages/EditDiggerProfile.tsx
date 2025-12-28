@@ -138,7 +138,20 @@ const EditDiggerProfile = () => {
 
   const checkSubscription = async () => {
     try {
-      const { data } = await supabase.functions.invoke('check-subscription');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error checking subscription:', error);
+        return;
+      }
+
       if (data?.subscription_tier) {
         setSubscriptionTier(data.subscription_tier);
       } else if (data?.tier) {
@@ -148,7 +161,7 @@ const EditDiggerProfile = () => {
     } catch (error) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
-      console.error('Error checking subscription:', error);
+        console.error('Error checking subscription:', error);
       }
     }
   };
