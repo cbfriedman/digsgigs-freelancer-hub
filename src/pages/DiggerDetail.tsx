@@ -175,14 +175,25 @@ const DiggerDetail = () => {
 
     // Check if user has already paid to view this profile
     if (session?.user) {
-      const { data: profileView } = await supabase
-        .from("profile_views")
-        .select("*")
-        .eq("consumer_id", session.user.id)
-        .eq("digger_id", id)
-        .single();
-      
-      setHasViewAccess(!!profileView);
+      try {
+        const { data: profileView, error: profileViewError } = await supabase
+          .from("profile_views")
+          .select("*")
+          .eq("consumer_id", session.user.id)
+          .eq("digger_id", id)
+          .maybeSingle(); // Use maybeSingle() instead of single() to handle cases where no record exists
+        
+        if (profileViewError && profileViewError.code !== 'PGRST116') {
+          // PGRST116 means no rows found, which is expected - ignore it
+          console.error('Error checking profile view access:', profileViewError);
+        }
+        
+        setHasViewAccess(!!profileView);
+      } catch (error) {
+        // Silently fail - view access check shouldn't block page load
+        console.error('Failed to check profile view access:', error);
+        setHasViewAccess(false);
+      }
     }
 
     const { data: referencesData } = await supabase
@@ -236,14 +247,24 @@ const DiggerDetail = () => {
       }
 
       // Fetch lead balance
-      const { data: balanceData } = await supabase
-        .from("digger_lead_balance")
-        .select("balance, total_deposited, total_spent")
-        .eq("digger_id", id)
-        .single();
+      try {
+        const { data: balanceData, error: balanceError } = await supabase
+          .from("digger_lead_balance")
+          .select("balance, total_deposited, total_spent")
+          .eq("digger_id", id)
+          .maybeSingle(); // Use maybeSingle() instead of single() - balance might not exist yet
 
-      if (balanceData) {
-        setLeadBalance(balanceData);
+        if (balanceError && balanceError.code !== 'PGRST116') {
+          // PGRST116 means no rows found, which is expected for new diggers - ignore it
+          console.error('Error fetching lead balance:', balanceError);
+        }
+
+        if (balanceData) {
+          setLeadBalance(balanceData);
+        }
+      } catch (error) {
+        // Silently fail - balance fetch shouldn't block page load
+        console.error('Failed to fetch lead balance:', error);
       }
     }
   };
