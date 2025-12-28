@@ -12,7 +12,7 @@ interface UseProtectedRouteOptions {
 
 export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
   const {
-    requireVerified = true,
+    requireVerified = false, // Changed default: allow unverified users to access platform
     redirectTo = '/register',
     redirectIfAuthenticated = false,
   } = options;

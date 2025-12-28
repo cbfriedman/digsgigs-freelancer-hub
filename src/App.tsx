@@ -143,7 +143,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/subscription",
-    element: <ProtectedRoute><Subscription /></ProtectedRoute>,
+    element: <ProtectedRoute requireVerified={true}><Subscription /></ProtectedRoute>,
   },
   {
     path: "/subscription-success",
@@ -151,7 +151,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/checkout",
-    element: <ProtectedRoute><Checkout /></ProtectedRoute>,
+    element: <ProtectedRoute requireVerified={true}><Checkout /></ProtectedRoute>,
   },
   {
     path: "/checkout-success",

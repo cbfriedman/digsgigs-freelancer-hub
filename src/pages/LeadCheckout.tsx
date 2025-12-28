@@ -67,6 +67,13 @@ export default function LeadCheckout() {
       return;
     }
 
+    // Require email verification for purchasing leads
+    if (!user.email_confirmed_at) {
+      toast.error("Please verify your email address to purchase leads. Check your inbox for the verification code or use the banner on your dashboard to resend it.");
+      navigate("/register?returnTo=/lead-checkout");
+      return;
+    }
+
     setLoading(true);
     try {
       console.log("Starting checkout with selections:", selections);

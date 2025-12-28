@@ -6,7 +6,7 @@ interface ProtectedRouteProps {
   requireVerified?: boolean;
 }
 
-export const ProtectedRoute = ({ children, requireVerified = true }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, requireVerified = false }: ProtectedRouteProps) => {
   const { loading } = useProtectedRoute({ requireVerified });
 
   // Show nothing while checking auth status

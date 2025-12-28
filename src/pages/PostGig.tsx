@@ -281,6 +281,14 @@ const PostGig = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
+      // For authenticated users, require email verification
+      if (session?.user && !session.user.email_confirmed_at) {
+        toast.error("Please verify your email address to post a gig. Check your inbox for the verification code or use the banner on your dashboard to resend it.");
+        setLoading(false);
+        navigate("/register?returnTo=/post-gig");
+        return;
+      }
+      
       const verifiedGiggerEmail = sessionStorage.getItem('verifiedGiggerEmail');
       const verifiedGiggerPhone = sessionStorage.getItem('verifiedGiggerPhone');
       

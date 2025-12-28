@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Wrench, Briefcase, TrendingUp, FileText, DollarSign, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 
 interface RoleStats {
   digger?: {
@@ -198,6 +199,7 @@ export default function RoleDashboard() {
     <div className="min-h-screen relative">
       <Navigation />
       <div className="container mx-auto px-4 py-4 sm:py-8 relative z-0">
+      <EmailVerificationBanner />
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">My Dashboard</h1>
         <p className="text-sm sm:text-base text-muted-foreground">

@@ -137,6 +137,13 @@ export default function Subscription() {
       return;
     }
 
+    // Require email verification for subscriptions
+    if (user && !user.email_confirmed_at) {
+      toast.error("Please verify your email address to subscribe. Check your inbox for the verification code or use the banner on your dashboard to resend it.");
+      navigate("/register?returnTo=/subscription");
+      return;
+    }
+
     try {
       setSubscribing(true);
       

@@ -1932,14 +1932,80 @@ const Register = () => {
                   </Button>
                 </div>
 
-                <Button
-                  variant="outline"
-                  onClick={() => setStep(1)}
-                  className="w-full"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Basic Info
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                    className="w-full"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Basic Info
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    onClick={async () => {
+                      // Allow users to skip verification and create account
+                      // They can verify later via the banner
+                      setLoading(true);
+                      try {
+                        // Create account without OTP verification
+                        const { data: authData, error: authError } = await supabase.auth.signUp({
+                          email,
+                          password,
+                          options: {
+                            data: {
+                              full_name: fullName,
+                              phone: phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null,
+                            },
+                            emailRedirectTo: `${window.location.origin}/`,
+                          },
+                        });
+
+                        if (authError) {
+                          if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+                            toast.error("This email is already registered. Please sign in instead.");
+                            setStep(1);
+                          } else {
+                            toast.error(authError.message);
+                          }
+                          setLoading(false);
+                          return;
+                        }
+
+                        if (!authData.user) {
+                          toast.error("Failed to create account");
+                          setLoading(false);
+                          return;
+                        }
+
+                        // Store user ID for role creation
+                        setUserId(authData.user.id);
+                        
+                        // Update profiles table with phone number
+                        const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+                        if (formattedPhone) {
+                          await supabase
+                            .from('profiles')
+                            .update({ phone: formattedPhone })
+                            .eq('id', authData.user.id);
+                        }
+
+                        toast.info("Account created! You can verify your email later from your dashboard.");
+                        setStep(3); // Go to role selection
+                      } catch (error: any) {
+                        console.error("Account creation error:", error);
+                        toast.error(error.message || "Failed to create account");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="w-full text-muted-foreground"
+                  >
+                    Skip for now (verify later)
+                  </Button>
+                </div>
               </div>
             )}
 
