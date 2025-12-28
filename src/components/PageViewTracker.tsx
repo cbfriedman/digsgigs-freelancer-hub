@@ -9,8 +9,8 @@ export const PageViewTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'page_view', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'page_view', {
         page_path: location.pathname + location.search,
         page_title: document.title
       });

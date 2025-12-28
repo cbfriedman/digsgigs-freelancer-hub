@@ -43,13 +43,13 @@ const trackConversion = (eventName: string, eventData?: Record<string, unknown>)
   console.log(`[CONVERSION] ${eventName}`, eventData);
   
   // If Google Analytics is available
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('event', eventName, eventData);
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', eventName, eventData);
   }
   
   // If Facebook Pixel is available
-  if (typeof window !== 'undefined' && (window as any).fbq) {
-    (window as any).fbq('track', eventName, eventData);
+  if (typeof window !== 'undefined' && window.fbq) {
+    window.fbq('track', eventName, eventData);
   }
 };
 

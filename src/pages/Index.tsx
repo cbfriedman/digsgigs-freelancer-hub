@@ -71,7 +71,26 @@ const Index = () => {
     }
   }, [user]);
 
-  const calculateProfileCompletion = (profile: any) => {
+  interface DiggerProfileFields {
+    business_name?: string | null;
+    phone?: string | null;
+    location?: string | null;
+    profession?: string | null;
+    bio?: string | null;
+    hourly_rate_min?: number | null;
+    hourly_rate_max?: number | null;
+    years_experience?: number | null;
+    availability?: string | null;
+    portfolio_urls?: string[] | null;
+    skills?: string[] | null;
+    certifications?: string[] | null;
+    is_insured?: boolean | null;
+    is_bonded?: boolean | null;
+    sic_code?: string | null;
+    naics_code?: string | null;
+  }
+
+  const calculateProfileCompletion = (profile: DiggerProfileFields | null | undefined) => {
     if (!profile) return 0;
     
     const fields = [

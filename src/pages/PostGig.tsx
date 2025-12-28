@@ -423,8 +423,8 @@ const PostGig = () => {
 
       toast.success("Confirmation email sent! Please check your inbox to confirm your gig.");
       
-      if (typeof gtag !== 'undefined') {
-        gtag('event', 'gig_submitted', {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'gig_submitted', {
           event_category: 'conversion',
           event_label: detectedCategory?.name || 'unknown',
           value: 1,
