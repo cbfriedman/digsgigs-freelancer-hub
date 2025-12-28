@@ -462,7 +462,7 @@ const Index = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="text-sm text-foreground">No pay-per-click</span>
+                  <span className="text-sm text-foreground">Only pay to unlock the leads you want</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
@@ -509,6 +509,7 @@ const Index = () => {
               </div>
             </div>
             
+            <p className="text-muted-foreground mb-2">Lead pricing guaranteed for your first 12 months.</p>
             <p className="text-muted-foreground mb-4">Pricing may adjust after year one.</p>
             <p className="text-lg font-semibold text-amber-600 mb-6">You will never see this offer again.</p>
             
