@@ -404,7 +404,7 @@ const Index = () => {
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> No Commissions. No Bidding Wars. Just Results.</span>
               </h2>
               <p className="text-xl text-muted-foreground">
-                Digs & Gigs connects consumers with skilled freelancers ("Diggers") across design, development, marketing, business services, writing, and more. Pay only for qualified leads — not for clicks, proposals, or commissions.
+                Digs & Gigs connects clients with skilled freelancers across design, development, marketing, writing, admin, and more — without platform fees or race-to-the-bottom bidding. Freelancers keep 100% of what they earn.
               </p>
               
               <div className="space-y-4">
@@ -447,7 +447,7 @@ const Index = () => {
                     </Button>
                   </div>
                 )}
-                <p className="text-sm text-muted-foreground">No credit card required</p>
+                <p className="text-sm text-muted-foreground">No credit card required. Cancel anytime.</p>
               </div>
               
               {/* Trust Indicators */}
@@ -458,7 +458,7 @@ const Index = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="text-sm text-foreground">No bidding</span>
+                  <span className="text-sm text-foreground">No bidding wars</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
@@ -492,10 +492,10 @@ const Index = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Badge className="mb-4 bg-amber-500/10 text-amber-600 border-amber-500/30">
               <Zap className="h-3 w-3 mr-1" />
-              LIMITED-TIME FOUNDERS PROGRAM — FIRST 500 FREELANCERS ONLY
+              Limited-Time Founders Program — First 500 Freelancers Only
             </Badge>
             <h3 className="text-3xl md:text-4xl font-bold mb-4">
-              Join today and lock in:
+              Join Today & Lock In Lifetime Pricing
             </h3>
             
             <div className="grid sm:grid-cols-2 gap-4 mt-8 mb-8 max-w-2xl mx-auto text-left">
@@ -505,7 +505,7 @@ const Index = () => {
               </div>
               <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50">
                 <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-foreground">The lowest lead pricing we will ever offer — $10/$25 for your entire first year</span>
+                <span className="text-foreground">The lowest lead pricing we will ever offer — $10/$25 for your first year</span>
               </div>
             </div>
             
@@ -518,7 +518,7 @@ const Index = () => {
               className="text-base"
               onClick={() => navigate("/founding-digger")}
             >
-              Claim Your Founders Spot <ArrowRight className="ml-2 w-5 h-5" />
+              Claim Your Founder Spot <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
         </div>
@@ -550,7 +550,7 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            {/* For Consumers */}
+            {/* For Clients */}
             <div 
               className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 hover:-translate-y-1"
               onClick={() => navigate("/post-gig")}
@@ -559,7 +559,7 @@ const Index = () => {
                 <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Briefcase className="w-8 h-8 text-accent-foreground" />
                 </div>
-                <h4 className="text-2xl font-bold mb-2">For Consumers (Clients)</h4>
+                <h4 className="text-2xl font-bold mb-2">For Clients</h4>
                 <p className="text-muted-foreground">Find the right freelancer for your project</p>
               </div>
               <div className="space-y-4">
@@ -568,7 +568,7 @@ const Index = () => {
                   "Get matched instantly with qualified freelancers",
                   "Browse profiles and portfolios",
                   "Contact the freelancer you choose",
-                  "No platform fees, no commissions"
+                  "No commissions. No hidden fees."
                 ].map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
@@ -622,11 +622,11 @@ const Index = () => {
           <div className="text-center mb-10">
             <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
               <DollarSign className="h-3 w-3 mr-1" />
-              Lowest Lead Pricing We Will Ever Offer
+              The Lowest Lead Pricing We Will Ever Offer
             </Badge>
-            <h3 className="text-3xl font-bold mb-2">Flat-Rate Lead Pricing (Founders Only)</h3>
+            <h3 className="text-3xl font-bold mb-2">Flat-Rate Lead Pricing</h3>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              (Exclusive to first 500 Founders)
+              You only pay to unlock leads you actually want — and you always keep 100% of what you earn.
             </p>
           </div>
 
@@ -637,9 +637,9 @@ const Index = () => {
                 <Users className="w-6 h-6" />
               </div>
               <h4 className="text-xl font-bold mb-2">Standard Leads</h4>
-              <div className="text-4xl font-bold text-primary mb-4">$10<span className="text-base font-normal text-muted-foreground"> per reveal</span></div>
+              <div className="text-4xl font-bold text-primary mb-4">$10<span className="text-base font-normal text-muted-foreground"> / reveal</span></div>
               <p className="text-sm text-muted-foreground">
-                Design · Writing · Admin · Video · Editing · Marketing support · General freelancing
+                Design · Writing · Admin · Video Editing · Virtual Assistants · Marketing Support · General Freelancing
               </p>
             </div>
 
@@ -650,35 +650,60 @@ const Index = () => {
                 <Crown className="w-6 h-6" />
               </div>
               <h4 className="text-xl font-bold mb-2">High-Value Leads</h4>
-              <div className="text-4xl font-bold text-primary mb-4">$25<span className="text-base font-normal text-muted-foreground"> per reveal</span></div>
+              <div className="text-4xl font-bold text-primary mb-4">$25<span className="text-base font-normal text-muted-foreground"> / reveal</span></div>
               <p className="text-sm text-muted-foreground">
-                Web development · Software · SEO · Paid ads · Business consulting · Accounting · Legal · Finance
+                Web Development · SEO · Paid Ads · Consulting · Accounting · Legal · Finance
               </p>
             </div>
           </div>
 
-          {/* What You Get */}
-          <div className="max-w-2xl mx-auto mt-10 p-6 rounded-xl bg-card border border-border/50">
-            <h4 className="text-lg font-bold mb-4 text-center">Includes:</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { icon: User, label: "Full name" },
-                { icon: Mail, label: "Email" },
-                { icon: MessageSquare, label: "Phone" },
-                { icon: FileText, label: "Project details" },
-                { icon: DollarSign, label: "Budget range" },
-                { icon: Clock, label: "Timeline" },
-                { icon: Briefcase, label: "File attachments" }
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-foreground">{item.label}</span>
-                </div>
-              ))}
+          {/* Guarantees */}
+          <div className="flex flex-col sm:flex-row justify-center gap-6 mt-8 mb-8">
+            <div className="flex items-center gap-2 text-primary font-medium">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Pricing guaranteed for your first 12 months</span>
             </div>
-            <p className="text-center text-sm text-muted-foreground mt-4">
-              Pricing may adjust after the first year.
-            </p>
+            <div className="flex items-center gap-2 text-primary font-medium">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>No commissions. Ever.</span>
+            </div>
+          </div>
+
+          {/* What You Get */}
+          <div className="max-w-3xl mx-auto mt-6 grid md:grid-cols-2 gap-6">
+            {/* Before Purchase */}
+            <div className="p-6 rounded-xl bg-card border border-border/50">
+              <h4 className="text-lg font-bold mb-4 text-center">What You See Before You Buy</h4>
+              <div className="space-y-3">
+                {["Category", "Short summary", "Budget range", "Location (if provided)"].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* After Purchase */}
+            <div className="p-6 rounded-xl bg-card border border-primary/50">
+              <h4 className="text-lg font-bold mb-4 text-center">What You Unlock After Purchase</h4>
+              <div className="space-y-3">
+                {["Client name", "Email", "Phone", "Full description", "Attachments (if provided)", "Timeline"].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Lock Note */}
+          <div className="max-w-2xl mx-auto mt-6 p-4 rounded-xl bg-muted/50 border border-border/50 text-center">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Shield className="w-4 h-4" />
+              <span>Lead pricing may adjust after year one. Your subscription pricing remains guaranteed for life as long as your account stays active.</span>
+            </div>
           </div>
         </div>
       </section>
@@ -686,14 +711,17 @@ const Index = () => {
       {/* SECTION 5 — Founding Digger Plan */}
       <section className="py-16">
         <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-bold mb-2">Everything You Need To Grow Your Freelance Business</h3>
+            <p className="text-lg text-muted-foreground">Free for 60 days — then $19/month (lifetime guaranteed)</p>
+          </div>
+          
           <div className="max-w-xl mx-auto">
             <div className="p-8 rounded-2xl border-2 border-primary bg-gradient-to-br from-primary/5 to-accent/5 text-center relative">
               <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
                 <Award className="w-3 h-3 mr-1" />
                 Founding Digger Plan
               </Badge>
-              
-              <h3 className="text-2xl font-bold mt-4 mb-2">Everything you need to grow your business.</h3>
               
               <div className="my-6">
                 <div className="text-sm text-muted-foreground">Free for 60 days, then</div>
@@ -728,6 +756,18 @@ const Index = () => {
                 Start Free for 60 Days <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
+          </div>
+          
+          {/* Lifetime Pricing Banner */}
+          <div className="max-w-2xl mx-auto mt-10 p-6 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Shield className="w-5 h-5 text-primary" />
+              <h4 className="text-lg font-bold">Lifetime Subscription Guarantee</h4>
+            </div>
+            <p className="text-muted-foreground">
+              Your $19/month subscription is permanently locked for life <br className="hidden sm:inline" />
+              <span className="text-sm">(Exclusive to the first 500 Founding Diggers)</span>
+            </p>
           </div>
         </div>
       </section>
@@ -797,7 +837,7 @@ const Index = () => {
               {
                 icon: Shield,
                 title: "No Bidding Wars",
-                description: "Choose the gigs you want — no racing to the bottom."
+                description: "Choose the clients you want — no racing to the bottom."
               },
               {
                 icon: TrendingUp,
@@ -807,7 +847,7 @@ const Index = () => {
               {
                 icon: Star,
                 title: "Professional Profiles",
-                description: "Showcase your work with portfolio, experience, and reviews."
+                description: "Showcase your work, experience, and reviews."
               },
               {
                 icon: Crown,
@@ -822,6 +862,14 @@ const Index = () => {
               </div>
             ))}
           </div>
+          
+          {/* Lead Protection Banner */}
+          <div className="max-w-2xl mx-auto mt-12 p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-center">
+            <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-400 font-medium">
+              <Shield className="w-5 h-5" />
+              <span>Lead Protection Guarantee — invalid or fake leads are refunded.</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -832,7 +880,7 @@ const Index = () => {
             <div className="absolute inset-0 bg-[var(--gradient-hero)]"></div>
             <div className="relative px-8 py-16 text-center">
               <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Ready to Get More Clients Without Paying for Ads or Commissions?
+                Ready To Get More Clients Without Paying Commissions?
               </h3>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Become a Founding Digger today and lock in lifetime pricing + the lowest lead rates we will ever offer.
