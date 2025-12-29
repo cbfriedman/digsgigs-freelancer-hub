@@ -31,13 +31,10 @@ import {
   ChevronDown,
   DollarSign,
   Menu,
-  MessageCircle,
-  MessageSquare,
   Clock,
   Zap,
   Award,
-  Crown,
-  FileText
+  Crown
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -205,11 +202,20 @@ const Index = () => {
     }
   ];
 
+  // Budget-based lead pricing
+  const leadPricingTiers = [
+    { budget: "Under $1,000", price: "$25" },
+    { budget: "$1,000–$3,000", price: "$35" },
+    { budget: "$3,000–$7,500", price: "$65" },
+    { budget: "$7,500–$20,000", price: "$95" },
+    { budget: "$20,000+", price: "$140" }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Hire Top Freelancers | No Commissions | Digs & Gigs"
-        description="Hire freelancers without commissions or bidding wars. Freelancers join for free and get the lowest lead pricing we will ever offer — $10/$25 for the first year."
+        title="Hire Skilled Freelancers — No Commissions | Digs & Gigs"
+        description="Digs & Gigs connects clients with experienced freelancers across design, development, writing, marketing, and more — without platform commissions. Freelancers keep 100% of what they earn."
         keywords="hire freelancers, no commissions, freelance marketplace, design freelancers, development freelancers, marketing freelancers, business services, writing freelancers"
         structuredData={{
           "@context": "https://schema.org",
@@ -420,11 +426,11 @@ const Index = () => {
                 For Freelancers & Clients
               </Badge>
               <h2 className="text-5xl lg:text-6xl font-bold leading-tight">
-                Hire Top Freelancers.
-                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> No Commissions. No Bidding Wars. Just Results.</span>
+                Hire Skilled Freelancers —
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> Without Commissions or Bidding Wars</span>
               </h2>
               <p className="text-xl text-muted-foreground">
-                Digs & Gigs connects clients with skilled freelancers across design, development, marketing, writing, admin, and more — without platform fees or race-to-the-bottom bidding. Freelancers keep 100% of what they earn.
+                Digs & Gigs connects clients with experienced independent professionals across design, development, writing, marketing, admin, and more — without platform commissions or race-to-the-bottom pricing. Freelancers keep 100% of what they earn.
               </p>
               
               <div className="space-y-4">
@@ -453,17 +459,17 @@ const Index = () => {
                       variant="hero" 
                       size="lg" 
                       className="text-base w-full sm:w-auto"
-                      onClick={() => navigate("/register")}
+                      onClick={() => navigate("/post-gig")}
                     >
-                      Start Free for 60 Days <ArrowRight className="ml-2 w-5 h-5" />
+                      Post a Project <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                     <Button 
                       variant="default" 
                       size="lg" 
                       className="text-base w-full sm:w-auto"
-                      onClick={() => navigate("/browse-diggers")}
+                      onClick={() => navigate("/register?type=digger")}
                     >
-                      Browse Freelancers
+                      Apply as a Freelancer
                     </Button>
                   </div>
                 )}
@@ -506,40 +512,47 @@ const Index = () => {
         </div>
       </section>
 
-      {/* SECTION 2 — Limited-Time Founders Program */}
+      {/* SECTION 2 — Founder Early-Access Program */}
       <section className="py-16 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-red-500/10 border-y border-amber-500/20">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <Badge className="mb-4 bg-amber-500/10 text-amber-600 border-amber-500/30">
               <Zap className="h-3 w-3 mr-1" />
-              Limited-Time Founders Program — First 500 Freelancers Only
+              Limited to First 500 Freelancers
             </Badge>
             <h3 className="text-3xl md:text-4xl font-bold mb-4">
-              Join Today & Lock In Lifetime Pricing
+              Founder Early-Access Program
             </h3>
+            <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Join as a Founding Digger and lock in Founder pricing for 12 months — plus priority access to verified client projects. No commissions. No bidding wars. Cancel anytime.
+            </p>
             
             <div className="grid sm:grid-cols-2 gap-4 mt-8 mb-8 max-w-2xl mx-auto text-left">
               <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50">
                 <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-foreground">$19/month subscription for life</span>
+                <span className="text-foreground">30-Day Free Trial</span>
               </div>
               <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50">
                 <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-foreground">The lowest lead pricing we will ever offer — $10/$25 for your first year</span>
+                <span className="text-foreground">$49/month after trial</span>
+              </div>
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50">
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground">Founder pricing locked for 12 months</span>
+              </div>
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border/50">
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-foreground">Keep 100% of what you earn</span>
               </div>
             </div>
-            
-            <p className="text-muted-foreground mb-2">Lead pricing guaranteed for your first 12 months.</p>
-            <p className="text-muted-foreground mb-4">Pricing may adjust after year one.</p>
-            <p className="text-lg font-semibold text-amber-600 mb-6">You will never see this offer again.</p>
             
             <Button 
               variant="hero" 
               size="lg" 
               className="text-base"
-              onClick={() => navigate("/founding-digger")}
+              onClick={() => navigate("/register?type=digger")}
             >
-              Claim Your Founder Spot <ArrowRight className="ml-2 w-5 h-5" />
+              Apply as a Digger <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
         </div>
@@ -586,10 +599,10 @@ const Index = () => {
               <div className="space-y-4">
                 {[
                   "Describe your project",
-                  "Get matched instantly with qualified freelancers",
-                  "Browse profiles and portfolios",
-                  "Contact the freelancer you choose",
-                  "No commissions. No hidden fees."
+                  "Get matched with qualified freelancers",
+                  "Review profiles & proposals",
+                  "Work together directly",
+                  "No platform commission"
                 ].map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
@@ -605,23 +618,22 @@ const Index = () => {
             {/* For Freelancers */}
             <div 
               className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-accent/50 hover:-translate-y-1"
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/register?type=digger")}
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-primary-foreground" />
                 </div>
-                <h4 className="text-2xl font-bold mb-2">For Freelancers (Diggers)</h4>
+                <h4 className="text-2xl font-bold mb-2">For Freelancers</h4>
                 <p className="text-muted-foreground">Grow your business with real leads</p>
               </div>
               <div className="space-y-4">
                 {[
                   "Create your profile",
-                  "Select your skills & categories",
-                  "Receive matched project requests",
-                  "Pay only for lead reveals ($10/$25 first year)",
-                  "Keep 100% of your earnings",
-                  "No bidding wars — you choose the clients you want"
+                  "Select your skills & services",
+                  "Receive matched leads",
+                  "Only pay for verified leads you unlock",
+                  "Keep 100% of your earnings"
                 ].map((step, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
@@ -629,101 +641,46 @@ const Index = () => {
                   </div>
                 ))}
               </div>
-              <Button className="w-full" size="lg" variant="default" onClick={(e) => { e.stopPropagation(); navigate("/register"); }}>
-                Become a Digger <ArrowRight className="ml-2 w-5 h-5" />
+              <Button className="w-full" size="lg" variant="default" onClick={(e) => { e.stopPropagation(); navigate("/register?type=digger"); }}>
+                Apply as a Digger <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 4 — Flat-Rate Lead Pricing */}
+      {/* SECTION 4 — Transparent Lead Pricing Teaser */}
       <section className="py-16 bg-gradient-to-br from-primary/5 via-background to-accent/5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
               <DollarSign className="h-3 w-3 mr-1" />
-              The Lowest Lead Pricing We Will Ever Offer
+              Budget-Based Pricing
             </Badge>
-            <h3 className="text-3xl font-bold mb-2">Flat-Rate Lead Pricing</h3>
+            <h3 className="text-3xl font-bold mb-2">Transparent Lead Pricing</h3>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              You only pay to unlock leads you actually want — and you always keep 100% of what you earn.
+              Lead pricing is based on the LOW end of the client's budget range — so you never overpay for opportunities.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Standard Leads */}
-            <div className="p-8 rounded-xl border border-border/50 bg-card text-center hover:shadow-lg transition-all">
-              <div className="w-12 h-12 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Users className="w-6 h-6" />
-              </div>
-              <h4 className="text-xl font-bold mb-2">Standard Leads</h4>
-              <div className="text-4xl font-bold text-primary mb-4">$10<span className="text-base font-normal text-muted-foreground"> / reveal</span></div>
-              <p className="text-sm text-muted-foreground">
-                Design · Writing · Admin · Video Editing · Virtual Assistants · Marketing Support · General Freelancing
-              </p>
+          <div className="max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
+              {leadPricingTiers.map((tier, i) => (
+                <div key={i} className="p-4 rounded-xl border border-border/50 bg-card text-center hover:shadow-lg transition-all">
+                  <div className="text-sm text-muted-foreground mb-2">{tier.budget}</div>
+                  <div className="text-2xl font-bold text-primary">{tier.price}</div>
+                </div>
+              ))}
             </div>
 
-            {/* High-Value Leads */}
-            <div className="p-8 rounded-xl border-2 border-primary bg-card text-center hover:shadow-lg transition-all relative">
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">High Value</Badge>
-              <div className="w-12 h-12 bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Crown className="w-6 h-6" />
-              </div>
-              <h4 className="text-xl font-bold mb-2">High-Value Leads</h4>
-              <div className="text-4xl font-bold text-primary mb-4">$25<span className="text-base font-normal text-muted-foreground"> / reveal</span></div>
-              <p className="text-sm text-muted-foreground">
-                Web Development · SEO · Paid Ads · Consulting · Accounting · Legal · Finance
-              </p>
-            </div>
-          </div>
-
-          {/* Guarantees */}
-          <div className="flex flex-col sm:flex-row justify-center gap-6 mt-8 mb-8">
-            <div className="flex items-center gap-2 text-primary font-medium">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>Pricing guaranteed for your first 12 months</span>
-            </div>
-            <div className="flex items-center gap-2 text-primary font-medium">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>No commissions. Ever.</span>
-            </div>
-          </div>
-
-          {/* What You Get */}
-          <div className="max-w-3xl mx-auto mt-6 grid md:grid-cols-2 gap-6">
-            {/* Before Purchase */}
-            <div className="p-6 rounded-xl bg-card border border-border/50">
-              <h4 className="text-lg font-bold mb-4 text-center">What You See Before You Buy</h4>
-              <div className="space-y-3">
-                {["Category", "Short summary", "Budget range", "Location (if provided)"].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* After Purchase */}
-            <div className="p-6 rounded-xl bg-card border border-primary/50">
-              <h4 className="text-lg font-bold mb-4 text-center">What You Unlock After Purchase</h4>
-              <div className="space-y-3">
-                {["Client name", "Email", "Phone", "Full description", "Attachments (if provided)", "Timeline"].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-primary" />
-                    <span className="text-sm text-foreground">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Lock Note */}
-          <div className="max-w-2xl mx-auto mt-6 p-4 rounded-xl bg-muted/50 border border-border/50 text-center">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Shield className="w-4 h-4" />
-              <span>Lead pricing may adjust after year one. Your subscription pricing remains guaranteed for life as long as your account stays active.</span>
+            <div className="text-center">
+              <Button 
+                variant="default" 
+                size="lg"
+                onClick={() => navigate("/pricing")}
+              >
+                See Pricing <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -734,7 +691,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <h3 className="text-3xl font-bold mb-2">Everything You Need To Grow Your Freelance Business</h3>
-            <p className="text-lg text-muted-foreground">Free for 60 days — then $19/month (lifetime guaranteed)</p>
+            <p className="text-lg text-muted-foreground">Free for 30 days — then $49/month (Founder pricing locked for 12 months)</p>
           </div>
           
           <div className="max-w-xl mx-auto">
@@ -745,20 +702,19 @@ const Index = () => {
               </Badge>
               
               <div className="my-6">
-                <div className="text-sm text-muted-foreground">Free for 60 days, then</div>
-                <div className="text-5xl font-bold text-primary">$19<span className="text-lg font-normal text-muted-foreground">/month</span></div>
-                <div className="text-sm text-muted-foreground mt-1">(lifetime guaranteed)</div>
+                <div className="text-sm text-muted-foreground">Free for 30 days, then</div>
+                <div className="text-5xl font-bold text-primary">$49<span className="text-lg font-normal text-muted-foreground">/month</span></div>
+                <div className="text-sm text-muted-foreground mt-1">(Founder pricing locked for 12 months)</div>
               </div>
               
               <div className="space-y-3 text-left mb-8">
                 {[
-                  "Unlimited categories",
-                  "Unlimited service areas",
-                  "Unlimited matches",
-                  "Unlimited messages",
-                  "Priority ranking",
+                  "Create your professional profile",
+                  "Get matched leads",
+                  "Apply to projects",
+                  "Keep 100% of your earnings",
                   "Founding Digger badge",
-                  "Access to $10/$25 leads for your first year",
+                  "Priority ranking",
                   "Cancel anytime"
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
@@ -772,21 +728,21 @@ const Index = () => {
                 variant="hero" 
                 size="lg" 
                 className="w-full text-base"
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/register?type=digger")}
               >
-                Start Free for 60 Days <ArrowRight className="ml-2 w-5 h-5" />
+                Apply as a Digger <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
           </div>
           
-          {/* Lifetime Pricing Banner */}
+          {/* Founder Pricing Guarantee Banner */}
           <div className="max-w-2xl mx-auto mt-10 p-6 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Shield className="w-5 h-5 text-primary" />
-              <h4 className="text-lg font-bold">Lifetime Subscription Guarantee</h4>
+              <h4 className="text-lg font-bold">Founder Pricing Guarantee</h4>
             </div>
             <p className="text-muted-foreground">
-              Your $19/month subscription is permanently locked for life <br className="hidden sm:inline" />
+              Your $49/month subscription is locked for 12 months <br className="hidden sm:inline" />
               <span className="text-sm">(Exclusive to the first 500 Founding Diggers)</span>
             </p>
           </div>
@@ -835,7 +791,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* SECTION 7 — Why Freelancers Choose Digs & Gigs */}
+      {/* SECTION 7 — Why Freelancers Choose Digs & Gigs (Benefits Grid) */}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -848,32 +804,32 @@ const Index = () => {
               {
                 icon: Search,
                 title: "Smart Matching",
-                description: "Find clients who actually want your skills."
+                description: "Freelancers are matched to projects that fit their expertise."
               },
               {
                 icon: DollarSign,
                 title: "No Commissions",
-                description: "You keep everything you earn."
+                description: "Freelancers keep 100% of what they earn."
               },
               {
                 icon: Shield,
                 title: "No Bidding Wars",
-                description: "Choose the clients you want — no racing to the bottom."
+                description: "Clients choose based on fit — not lowest price."
               },
               {
                 icon: TrendingUp,
-                title: "Flat-Rate Leads",
-                description: "Never pay for clicks or impressions again."
+                title: "Transparent Lead Pricing",
+                description: "Pay only to unlock verified client details."
               },
               {
                 icon: Star,
                 title: "Professional Profiles",
-                description: "Showcase your work, experience, and reviews."
+                description: "Showcase work, experience, and reviews."
               },
               {
                 icon: Crown,
-                title: "Priority Ranking (Founders Only)",
-                description: "Rise above competitors instantly."
+                title: "Founder Pricing (Early Access)",
+                description: "Limited-time pricing for early members."
               }
             ].map((feature, i) => (
               <div key={i} className="p-6 rounded-xl border border-border/50 hover:shadow-[var(--shadow-hover)] transition-all duration-300">
@@ -894,7 +850,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* SECTION 9 — Final CTA */}
+      {/* SECTION 8 — Final CTA */}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="relative rounded-3xl overflow-hidden">
@@ -904,16 +860,26 @@ const Index = () => {
                 Ready To Get More Clients Without Paying Commissions?
               </h3>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Become a Founding Digger today and lock in lifetime pricing + the lowest lead rates we will ever offer.
+                Become a Founding Digger today and lock in your $49/month rate for 12 months.
               </p>
-              <Button 
-                variant="hero" 
-                size="lg" 
-                className="text-base"
-                onClick={() => navigate("/register")}
-              >
-                Start Free for 60 Days <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button 
+                  variant="hero" 
+                  size="lg" 
+                  className="text-base"
+                  onClick={() => navigate("/register?type=digger")}
+                >
+                  Apply as a Digger <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  className="text-base"
+                  onClick={() => navigate("/post-gig")}
+                >
+                  Post a Project
+                </Button>
+              </div>
             </div>
           </div>
         </div>
