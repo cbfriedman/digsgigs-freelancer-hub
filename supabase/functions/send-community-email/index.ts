@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@3.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -7,10 +6,9 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 interface CommunityEmailRequest {
@@ -133,8 +131,9 @@ const generateCommunityEmailHtml = (firstName: string, email: string) => {
   `;
 };
 
-const handler = async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
     return new Response(null, { 
       status: 200,
       headers: corsHeaders 
@@ -207,7 +206,7 @@ const handler = async (req: Request): Promise<Response> => {
         message: `Sent ${sentCount} community emails (${errorCount} errors)`
       }), {
         status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
 
     } else {
@@ -241,7 +240,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       return new Response(JSON.stringify({ success: true, emailResponse }), {
         status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
   } catch (error: any) {
@@ -250,10 +249,8 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ error: error.message }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     );
   }
-};
-
-serve(handler);
+});
