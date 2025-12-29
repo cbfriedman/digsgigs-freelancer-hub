@@ -25,7 +25,8 @@ const addUTM = (url: string, campaign: string, content: string): string => {
   return `${url}${separator}utm_source=email&utm_medium=marketing&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${encodeURIComponent(content)}`;
 };
 
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { 
       status: 200,
@@ -163,6 +164,4 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   }
-};
-
-serve(handler);
+});
