@@ -319,7 +319,7 @@ const AdminDashboard = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate("/admin/notification-preferences")}
+              onClick={() => navigate("/admin/notifications")}
             >
               <Settings className="mr-2 h-4 w-4" />
               Notification Settings

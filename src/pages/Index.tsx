@@ -128,12 +128,13 @@ const Index = () => {
     
     setUserName(data?.full_name || data?.email || "User");
     
-    // Check if user is admin
+    // Check if user is admin (using user_app_roles table - new system)
     const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
+      .from("user_app_roles")
+      .select("app_role")
       .eq("user_id", userId)
-      .eq("role", "admin")
+      .eq("app_role", "admin")
+      .eq("is_active", true)
       .maybeSingle();
     
     setIsAdmin(!!roles);

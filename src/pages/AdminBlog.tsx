@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,10 @@ import {
 } from "@/components/ui/table";
 
 const AdminBlog = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [settings, setSettings] = useState<any>(null);
@@ -34,20 +37,65 @@ const AdminBlog = () => {
   const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
-    loadData();
+    checkAdminAccess();
   }, []);
 
-  const loadData = async () => {
+  const checkAdminAccess = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (!user) {
         toast({
           title: "Authentication required",
           description: "Please log in to access the blog admin",
           variant: "destructive",
         });
+        navigate("/register");
         return;
       }
+
+      // Check if user is admin (using correct table: user_app_roles)
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_app_roles")
+        .select("app_role")
+        .eq("user_id", user.id)
+        .eq("app_role", "admin")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (rolesError) {
+        console.error("Error checking admin status:", rolesError);
+      }
+
+      if (!roles) {
+        toast({
+          title: "Access denied",
+          description: "Admin privileges required",
+          variant: "destructive",
+        });
+        navigate("/");
+        return;
+      }
+
+      setIsAdmin(true);
+      await loadData();
+    } catch (error) {
+      console.error("Error checking admin access:", error);
+      toast({
+        title: "Error",
+        description: "Failed to verify admin access",
+        variant: "destructive",
+      });
+      navigate("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
       // Load settings
       const { data: settingsData } = await supabase
@@ -183,6 +231,10 @@ const AdminBlog = () => {
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
+  }
+
+  if (!isAdmin) {
+    return null;
   }
 
   return (
