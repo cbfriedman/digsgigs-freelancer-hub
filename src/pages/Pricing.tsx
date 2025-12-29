@@ -63,10 +63,10 @@ export default function Pricing() {
   useEffect(() => {
     const fetchFoundingCount = async () => {
       try {
-        // Use empty select with head:true for count-only queries
+        // Use id select with count for efficient count-only queries (avoid HEAD requests with select=*)
         const { count, error } = await supabase
           .from('digger_profiles')
-          .select('', { count: 'exact', head: true })
+          .select('id', { count: 'exact', head: true })
           .eq('is_founding_digger', true);
         
         if (!error && count !== null) {
@@ -77,8 +77,11 @@ export default function Pricing() {
       }
     };
     
-    fetchFoundingCount();
-  }, []);
+    // Only fetch if not in create profile mode (no need for founding count when creating)
+    if (!searchParams.get('create')) {
+      fetchFoundingCount();
+    }
+  }, [searchParams]);
 
   // Check if user wants to create a profile (from "Create New Profile" button)
   const createProfile = searchParams.get('create') === 'true' || searchParams.get('createProfile') === 'true';
