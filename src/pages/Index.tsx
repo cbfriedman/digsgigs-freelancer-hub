@@ -86,8 +86,8 @@ const Index = () => {
     certifications?: string[] | null;
     is_insured?: boolean | null;
     is_bonded?: boolean | null;
-    sic_code?: string | null;
-    naics_code?: string | null;
+    sic_code?: string[] | null;
+    naics_code?: string[] | null;
   }
 
   const calculateProfileCompletion = (profile: DiggerProfileFields | null | undefined) => {

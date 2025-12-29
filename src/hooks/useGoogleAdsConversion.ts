@@ -8,14 +8,6 @@
 
 import { useEffect, useCallback } from 'react';
 
-// Extend window type for gtag
-declare global {
-  interface Window {
-    dataLayer: any[];
-    gtag: (...args: any[]) => void;
-  }
-}
-
 const GOOGLE_ADS_CONVERSION_ID = import.meta.env.VITE_GOOGLE_ADS_CONVERSION_ID;
 const GOOGLE_ADS_CONVERSION_LABEL = import.meta.env.VITE_GOOGLE_ADS_CONVERSION_LABEL;
 
@@ -27,18 +19,20 @@ export const useGoogleAdsConversion = () => {
       return;
     }
 
+    const win = window as any;
+
     // Check if gtag is already loaded
-    if (window.gtag) {
+    if (win.gtag) {
       return;
     }
 
     // Initialize dataLayer
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = function gtag() {
-      window.dataLayer.push(arguments);
+    win.dataLayer = win.dataLayer || [];
+    win.gtag = function gtag(...args: unknown[]) {
+      win.dataLayer.push(args);
     };
-    window.gtag('js', new Date());
-    window.gtag('config', GOOGLE_ADS_CONVERSION_ID);
+    win.gtag('js', new Date());
+    win.gtag('config', GOOGLE_ADS_CONVERSION_ID);
 
     // Load gtag.js script
     const script = document.createElement('script');
@@ -56,12 +50,13 @@ export const useGoogleAdsConversion = () => {
       return;
     }
 
-    if (!window.gtag) {
+    const win = window as any;
+    if (!win.gtag) {
       console.warn('gtag not available');
       return;
     }
 
-    window.gtag('event', 'conversion', {
+    win.gtag('event', 'conversion', {
       send_to: `${GOOGLE_ADS_CONVERSION_ID}/${GOOGLE_ADS_CONVERSION_LABEL}`,
       value: value,
       currency: currency,
@@ -72,9 +67,10 @@ export const useGoogleAdsConversion = () => {
 
   // Track page view
   const trackPageView = useCallback((pagePath?: string) => {
-    if (!GOOGLE_ADS_CONVERSION_ID || !window.gtag) return;
+    const win = window as any;
+    if (!GOOGLE_ADS_CONVERSION_ID || !win.gtag) return;
 
-    window.gtag('event', 'page_view', {
+    win.gtag('event', 'page_view', {
       page_path: pagePath || window.location.pathname,
     });
   }, []);
