@@ -1,7 +1,6 @@
-import { Resend } from "https://esm.sh/resend@3.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -176,12 +175,24 @@ Deno.serve(async (req) => {
         const firstName = user.full_name?.split(' ')[0] || 'there';
 
         try {
-          await resend.emails.send({
-            from: "Digs and Gigs Community <community@digsandgigs.net>",
-            to: [user.email],
-            subject: "🚀 You're Invited: The Digs and Gigs Community is Live!",
-            html: generateCommunityEmailHtml(firstName, user.email),
+          const emailResponse = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${resendApiKey}`,
+            },
+            body: JSON.stringify({
+              from: "Digs and Gigs Community <community@digsandgigs.net>",
+              to: [user.email],
+              subject: "🚀 You're Invited: The Digs and Gigs Community is Live!",
+              html: generateCommunityEmailHtml(firstName, user.email),
+            }),
           });
+
+          if (!emailResponse.ok) {
+            const errorText = await emailResponse.text();
+            throw new Error(`Resend API error: ${emailResponse.status} ${errorText}`);
+          }
 
           // Log to database
           await supabase
@@ -216,14 +227,27 @@ Deno.serve(async (req) => {
 
       const firstName = name?.split(' ')[0] || 'there';
 
-      const emailResponse = await resend.emails.send({
-        from: "Digs and Gigs Community <community@digsandgigs.net>",
-        to: [email],
-        subject: "🚀 You're Invited: The Digs and Gigs Community is Live!",
-        html: generateCommunityEmailHtml(firstName, email),
+      const emailResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${resendApiKey}`,
+        },
+        body: JSON.stringify({
+          from: "Digs and Gigs Community <community@digsandgigs.net>",
+          to: [email],
+          subject: "🚀 You're Invited: The Digs and Gigs Community is Live!",
+          html: generateCommunityEmailHtml(firstName, email),
+        }),
       });
 
-      console.log("Community email sent successfully:", emailResponse);
+      if (!emailResponse.ok) {
+        const errorText = await emailResponse.text();
+        throw new Error(`Resend API error: ${emailResponse.status} ${errorText}`);
+      }
+
+      const emailData = await emailResponse.json();
+      console.log("Community email sent successfully:", emailData);
 
       // Log to database
       const { error: logError } = await supabase
@@ -238,7 +262,7 @@ Deno.serve(async (req) => {
         console.error('Failed to log email:', logError);
       }
 
-      return new Response(JSON.stringify({ success: true, emailResponse }), {
+      return new Response(JSON.stringify({ success: true, emailData }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
