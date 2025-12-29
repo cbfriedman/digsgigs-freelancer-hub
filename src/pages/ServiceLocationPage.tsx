@@ -67,7 +67,7 @@ export default function ServiceLocationPage() {
       if (!serviceInfo || !cityInfo) return 0;
       const { count } = await supabase
         .from('digger_profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('', { count: 'exact', head: true })
         .or(`profession.ilike.%${serviceInfo.name}%,keywords.cs.{${serviceInfo.name}}`)
         .ilike('location', `%${cityInfo.city}%`);
       return count || 0;
@@ -85,7 +85,7 @@ export default function ServiceLocationPage() {
       
       const { count } = await supabase
         .from('gigs')
-        .select('*', { count: 'exact', head: true })
+        .select('', { count: 'exact', head: true })
         .ilike('title', `%${serviceInfo.name}%`)
         .ilike('location', `%${cityInfo.city}%`)
         .gte('created_at', thirtyDaysAgo.toISOString());

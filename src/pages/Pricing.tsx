@@ -63,9 +63,10 @@ export default function Pricing() {
   useEffect(() => {
     const fetchFoundingCount = async () => {
       try {
+        // Use empty select with head:true for count-only queries
         const { count, error } = await supabase
           .from('digger_profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('', { count: 'exact', head: true })
           .eq('is_founding_digger', true);
         
         if (!error && count !== null) {

@@ -78,14 +78,14 @@ export default function MyProfiles() {
               const [bidsResult, leadsResult] = await Promise.all([
                 retryWithBackoff(
                   async () => {
-                    const result = await supabase.from("bids").select("*", { count: "exact", head: true }).eq("digger_id", profile.id);
+                    const result = await supabase.from("bids").select("", { count: "exact", head: true }).eq("digger_id", profile.id);
                     return result;
                   },
                   { maxAttempts: 2, initialDelay: 500 }
                 ),
                 retryWithBackoff(
                   async () => {
-                    const result = await supabase.from("lead_purchases").select("*", { count: "exact", head: true }).eq("digger_id", profile.id).eq("status", "completed");
+                    const result = await supabase.from("lead_purchases").select("", { count: "exact", head: true }).eq("digger_id", profile.id).eq("status", "completed");
                     return result;
                   },
                   { maxAttempts: 2, initialDelay: 500 }

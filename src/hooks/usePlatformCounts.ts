@@ -14,12 +14,12 @@ export function usePlatformCounts() {
         // Check digger count
         const { count: diggerCount } = await supabase
           .from("digger_profiles")
-          .select("*", { count: "exact", head: true });
+          .select("", { count: "exact", head: true });
 
         // Check gig count
         const { count: gigCount } = await supabase
           .from("gigs")
-          .select("*", { count: "exact", head: true });
+          .select("", { count: "exact", head: true });
 
         setHasEnoughDiggers((diggerCount ?? 0) >= MINIMUM_COUNT);
         setHasEnoughGigs((gigCount ?? 0) >= MINIMUM_COUNT);
