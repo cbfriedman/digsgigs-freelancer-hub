@@ -1,25 +1,19 @@
 import { useEffect, useCallback } from 'react';
 
-declare global {
-  interface Window {
-    fbq: (...args: any[]) => void;
-    _fbq: any;
-  }
-}
-
 const FB_PIXEL_ID = import.meta.env.VITE_FB_PIXEL_ID;
 
 export const useFacebookPixel = () => {
   useEffect(() => {
     try {
       if (!FB_PIXEL_ID) {
-        // Silently skip - no warning needed in production
         return;
       }
 
+      const win = window as any;
+      
       // Initialize Facebook Pixel
-      if (!window.fbq) {
-        const n = (window.fbq = function (...args: any[]) {
+      if (!win.fbq) {
+        const n = (win.fbq = function (...args: unknown[]) {
           if (n.callMethod) {
             n.callMethod.apply(n, args);
           } else {
@@ -27,7 +21,7 @@ export const useFacebookPixel = () => {
           }
         } as any);
         
-        if (!window._fbq) window._fbq = n;
+        if (!win._fbq) win._fbq = n;
         n.push = n;
         n.loaded = true;
         n.version = '2.0';
@@ -40,28 +34,28 @@ export const useFacebookPixel = () => {
         document.head.appendChild(script);
 
         // Initialize with pixel ID
-        window.fbq('init', FB_PIXEL_ID);
-        window.fbq('track', 'PageView');
+        win.fbq('init', FB_PIXEL_ID);
+        win.fbq('track', 'PageView');
       }
     } catch (error) {
       console.error('Facebook Pixel initialization error:', error);
     }
   }, []);
 
-  const trackEvent = useCallback((eventName: string, params?: Record<string, any>) => {
-    if (!FB_PIXEL_ID || !window.fbq) {
-      console.warn('Facebook Pixel not available');
+  const trackEvent = useCallback((eventName: string, params?: Record<string, unknown>) => {
+    const win = window as any;
+    if (!FB_PIXEL_ID || !win.fbq) {
       return;
     }
-    window.fbq('track', eventName, params);
+    win.fbq('track', eventName, params);
   }, []);
 
-  const trackCustomEvent = useCallback((eventName: string, params?: Record<string, any>) => {
-    if (!FB_PIXEL_ID || !window.fbq) {
-      console.warn('Facebook Pixel not available');
+  const trackCustomEvent = useCallback((eventName: string, params?: Record<string, unknown>) => {
+    const win = window as any;
+    if (!FB_PIXEL_ID || !win.fbq) {
       return;
     }
-    window.fbq('trackCustom', eventName, params);
+    win.fbq('trackCustom', eventName, params);
   }, []);
 
   return {
@@ -70,11 +64,3 @@ export const useFacebookPixel = () => {
     isConfigured: !!FB_PIXEL_ID,
   };
 };
-
-// Standard FB events for reference:
-// - PageView (auto-tracked on init)
-// - ViewContent - viewing a key page
-// - Lead - form submission/signup
-// - CompleteRegistration - completed signup flow
-// - InitiateCheckout - starting checkout
-// - Purchase - completed purchase
