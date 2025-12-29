@@ -1,7 +1,6 @@
-import { Resend } from "https://esm.sh/resend@3.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -47,90 +46,105 @@ Deno.serve(async (req) => {
     const ctaUrlPS = addUTM('https://digsandgigs.net/post-gig', campaign, 'ps_cta');
     const browseUrl = addUTM('https://digsandgigs.net/browse-diggers', campaign, 'browse_pros');
 
-    const emailResponse = await resend.emails.send({
-      from: "Digs and Gigs <hello@digsandgigs.net>",
-      to: [email],
-      subject: "This week only: Skip the wait — pros respond in hours ⚡",
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0;">
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0;">
+          
+          <!-- Header with urgency -->
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; opacity: 0.9;">⏰ Limited time</p>
+            <h1 style="margin: 0; font-size: 26px; font-weight: bold;">Get 3+ Quotes by Tomorrow</h1>
+          </div>
+          
+          <div style="padding: 25px; background: #ffffff;">
             
-            <!-- Header with urgency -->
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
-              <p style="margin: 0 0 10px 0; font-size: 14px; opacity: 0.9;">⏰ Limited time</p>
-              <h1 style="margin: 0; font-size: 26px; font-weight: bold;">Get 3+ Quotes by Tomorrow</h1>
+            <!-- FIRST CTA - Above the fold -->
+            <div style="text-align: center; margin: 0 0 25px 0;">
+              <a href="${ctaUrlTop}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Post Your Project Free →</a>
             </div>
             
-            <div style="padding: 25px; background: #ffffff;">
-              
-              <!-- FIRST CTA - Above the fold -->
-              <div style="text-align: center; margin: 0 0 25px 0;">
-                <a href="${ctaUrlTop}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Post Your Project Free →</a>
-              </div>
-              
-              <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
-              
-              <!-- Social proof - specific numbers -->
-              <p style="font-size: 16px; margin: 0 0 20px 0;"><strong>847 homeowners</strong> posted projects last week. Average response time? <strong>Under 4 hours.</strong></p>
-              
-              <!-- Simple value props -->
-              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <p style="margin: 0 0 12px 0;">✅ <strong>Free to post</strong> — no credit card needed</p>
-                <p style="margin: 0 0 12px 0;">✅ <strong>Get multiple quotes</strong> — compare before you commit</p>
-                <p style="margin: 0;">✅ <strong>Verified pros only</strong> — licensed & reviewed</p>
-              </div>
-              
-              <!-- SECOND CTA -->
-              <div style="text-align: center; margin: 25px 0;">
-                <a href="${ctaUrlMiddle}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Describe Your Project (2 min)</a>
-              </div>
-              
-              <!-- Testimonial -->
-              <div style="border-left: 4px solid #667eea; padding: 15px 20px; margin: 25px 0; background: #f0f4ff;">
-                <p style="margin: 0 0 8px 0; font-style: italic;">"Posted at 9am, had 4 quotes by lunch. Hired a plumber that afternoon. So easy!"</p>
-                <p style="margin: 0; font-size: 14px; color: #666;">— Sarah K., Austin TX</p>
-              </div>
-              
-              <!-- Urgency -->
-              <p style="font-size: 16px; text-align: center; margin: 25px 0;">
-                <strong>👷 127 pros are online now</strong> waiting for new projects
-              </p>
-              
-              <!-- THIRD CTA -->
-              <div style="text-align: center; margin: 25px 0;">
-                <a href="${ctaUrlBottom}" style="display: inline-block; background: #22c55e; color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Get Free Quotes Now →</a>
-              </div>
-              
-              <!-- Alternative action -->
-              <p style="text-align: center; font-size: 14px; color: #666; margin: 20px 0;">
-                Or <a href="${browseUrl}" style="color: #667eea;">browse available pros</a> in your area
-              </p>
-              
-              <!-- PS - High performers -->
-              <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 25px;">
-                <p style="font-size: 14px; margin: 0;"><strong>P.S.</strong> Not ready for a full project? Even "I need someone to look at my leaky faucet" works. <a href="${ctaUrlPS}" style="color: #667eea; font-weight: bold;">Post it anyway →</a></p>
-              </div>
+            <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
+            
+            <!-- Social proof - specific numbers -->
+            <p style="font-size: 16px; margin: 0 0 20px 0;"><strong>847 homeowners</strong> posted projects last week. Average response time? <strong>Under 4 hours.</strong></p>
+            
+            <!-- Simple value props -->
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 0 0 12px 0;">✅ <strong>Free to post</strong> — no credit card needed</p>
+              <p style="margin: 0 0 12px 0;">✅ <strong>Get multiple quotes</strong> — compare before you commit</p>
+              <p style="margin: 0;">✅ <strong>Verified pros only</strong> — licensed & reviewed</p>
             </div>
             
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
-              <p style="margin: 0 0 10px 0; color: #666; font-size: 12px;">
-                <a href="${addUTM('https://digsandgigs.net', campaign, 'footer_home')}" style="color: #667eea; text-decoration: none;">Digs and Gigs</a> | 
-                <a href="${addUTM('https://digsandgigs.net/faq', campaign, 'footer_faq')}" style="color: #667eea; text-decoration: none;">FAQ</a> | 
-                <a href="https://digsandgigs.net/unsubscribe?email=${encodeURIComponent(email)}" style="color: #667eea; text-decoration: none;">Unsubscribe</a>
-              </p>
-              <p style="margin: 0; color: #999; font-size: 11px;">© 2025 Digs and Gigs. All rights reserved.</p>
+            <!-- SECOND CTA -->
+            <div style="text-align: center; margin: 25px 0;">
+              <a href="${ctaUrlMiddle}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Describe Your Project (2 min)</a>
             </div>
-          </body>
-        </html>
-      `,
+            
+            <!-- Testimonial -->
+            <div style="border-left: 4px solid #667eea; padding: 15px 20px; margin: 25px 0; background: #f0f4ff;">
+              <p style="margin: 0 0 8px 0; font-style: italic;">"Posted at 9am, had 4 quotes by lunch. Hired a plumber that afternoon. So easy!"</p>
+              <p style="margin: 0; font-size: 14px; color: #666;">— Sarah K., Austin TX</p>
+            </div>
+            
+            <!-- Urgency -->
+            <p style="font-size: 16px; text-align: center; margin: 25px 0;">
+              <strong>👷 127 pros are online now</strong> waiting for new projects
+            </p>
+            
+            <!-- THIRD CTA -->
+            <div style="text-align: center; margin: 25px 0;">
+              <a href="${ctaUrlBottom}" style="display: inline-block; background: #22c55e; color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Get Free Quotes Now →</a>
+            </div>
+            
+            <!-- Alternative action -->
+            <p style="text-align: center; font-size: 14px; color: #666; margin: 20px 0;">
+              Or <a href="${browseUrl}" style="color: #667eea;">browse available pros</a> in your area
+            </p>
+            
+            <!-- PS - High performers -->
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 25px;">
+              <p style="font-size: 14px; margin: 0;"><strong>P.S.</strong> Not ready for a full project? Even "I need someone to look at my leaky faucet" works. <a href="${ctaUrlPS}" style="color: #667eea; font-weight: bold;">Post it anyway →</a></p>
+            </div>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 12px;">
+              <a href="${addUTM('https://digsandgigs.net', campaign, 'footer_home')}" style="color: #667eea; text-decoration: none;">Digs and Gigs</a> | 
+              <a href="${addUTM('https://digsandgigs.net/faq', campaign, 'footer_faq')}" style="color: #667eea; text-decoration: none;">FAQ</a> | 
+              <a href="https://digsandgigs.net/unsubscribe?email=${encodeURIComponent(email)}" style="color: #667eea; text-decoration: none;">Unsubscribe</a>
+            </p>
+            <p style="margin: 0; color: #999; font-size: 11px;">© 2025 Digs and Gigs. All rights reserved.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: "Digs and Gigs <hello@digsandgigs.net>",
+        to: [email],
+        subject: "This week only: Skip the wait — pros respond in hours ⚡",
+        html: emailHtml,
+      }),
     });
 
-    console.log("Marketing email sent successfully:", emailResponse);
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      throw new Error(`Resend API error: ${emailResponse.status} ${errorText}`);
+    }
+
+    const emailData = await emailResponse.json();
+    console.log("Marketing email sent successfully:", emailData);
 
     // Log to database with campaign tracking
     const { error: logError } = await supabase
@@ -145,7 +159,7 @@ Deno.serve(async (req) => {
       console.error('Failed to log email:', logError);
     }
 
-    return new Response(JSON.stringify({ success: true, emailResponse }), {
+    return new Response(JSON.stringify({ success: true, emailData }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
