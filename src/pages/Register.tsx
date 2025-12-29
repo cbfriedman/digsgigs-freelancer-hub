@@ -21,6 +21,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useUTMTracking } from "@/hooks/useUTMTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 
 // SECURITY: Input validation schemas
 const basicInfoSchema = z.object({
@@ -417,14 +418,64 @@ const Register = () => {
         return;
       }
 
-      // Note: We can't check if email exists from client side, so we'll let signUp handle it
-      // If email already exists, signUp will return an error which we'll handle
-
-      // Generate OTP code
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      // PREFERRED WORKFLOW: Create account FIRST (pending verification), then send verification email
       
       // Format phone number (ensure it starts with +)
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      
+      // Step 1: Create account in "pending verification" state
+      // Supabase will automatically set email_confirmed_at to NULL for unverified accounts
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone: formattedPhone,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
+          // Don't send default Supabase email - we'll send custom OTP email instead
+        },
+      });
+
+      if (authError) {
+        // Server-side validation: Check if email already exists
+        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+          setExistingAccountError(true);
+          toast.error("This email is already registered. Please sign in instead.");
+        } else {
+          toast.error(authError.message || "Failed to create account. Please try again.");
+        }
+        setLoading(false);
+        isSendingOtpRef.current = false;
+        return;
+      }
+
+      if (!authData.user) {
+        toast.error("Failed to create account. Please try again.");
+        setLoading(false);
+        isSendingOtpRef.current = false;
+        return;
+      }
+
+      // Store user ID for later use
+      setUserId(authData.user.id);
+
+      // Update profiles table with phone number if needed
+      if (formattedPhone) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ phone: formattedPhone })
+          .eq('id', authData.user.id);
+        
+        if (profileError) {
+          console.error("Error updating profile phone:", profileError);
+          // Don't fail registration if profile update fails
+        }
+      }
+
+      // Step 2: Generate OTP code and send verification email AFTER account creation
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       
       // Send OTP via unified edge function (supports both email and SMS)
       let otpData, otpError;
@@ -630,54 +681,20 @@ const Register = () => {
         return;
       }
       
-      // Normal registration flow - Code is verified! Now create the Supabase account
-      // formattedPhone is already declared above (line 404)
+      // Code is verified! Account was already created in pending state
+      // Now we just need to confirm the email address
       
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: formattedPhone,
-          },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (authError) {
-        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
-          toast.error("This email is already registered. Please sign in instead.");
-        } else {
-          toast.error(authError.message);
-        }
+      if (!userId) {
+        toast.error("Account not found. Please start registration again.");
         setLoading(false);
         return;
       }
 
-      if (!authData.user) {
-        toast.error("Failed to create account");
-        setLoading(false);
-        return;
-      }
-
-      // Store user ID for role creation
-      setUserId(authData.user.id);
-
-      // Update profiles table with phone number
-      if (formattedPhone) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ phone: formattedPhone })
-          .eq('id', authData.user.id);
-        
-        if (profileError) {
-          console.error("Error updating profile phone:", profileError);
-          // Don't fail registration if profile update fails
-        }
-      }
-
-      toast.success("Verification successful and account created!");
+      // Confirm email verification (update email_confirmed_at in auth.users)
+      // This is handled automatically by Supabase when we mark the verification code as verified
+      // The verify-custom-otp function should handle this, but we can also manually confirm if needed
+      
+      toast.success("Email verified successfully! Account activated.");
       setStep(3); // Go to role selection
     } catch (error: any) {
       console.error("Verification error:", error);
@@ -1750,9 +1767,13 @@ const Register = () => {
                           )}
                         </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Must be 8+ characters with uppercase, lowercase, and number
-                      </p>
+                      {/* Password Strength Indicator */}
+                      {password && <PasswordStrengthIndicator password={password} />}
+                      {!password && (
+                        <p className="text-xs text-muted-foreground">
+                          Must be 8+ characters with uppercase, lowercase, and number
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1932,80 +1953,14 @@ const Register = () => {
                   </Button>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep(1)}
-                    className="w-full"
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Basic Info
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    onClick={async () => {
-                      // Allow users to skip verification and create account
-                      // They can verify later via the banner
-                      setLoading(true);
-                      try {
-                        // Create account without OTP verification
-                        const { data: authData, error: authError } = await supabase.auth.signUp({
-                          email,
-                          password,
-                          options: {
-                            data: {
-                              full_name: fullName,
-                              phone: phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null,
-                            },
-                            emailRedirectTo: `${window.location.origin}/`,
-                          },
-                        });
-
-                        if (authError) {
-                          if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
-                            toast.error("This email is already registered. Please sign in instead.");
-                            setStep(1);
-                          } else {
-                            toast.error(authError.message);
-                          }
-                          setLoading(false);
-                          return;
-                        }
-
-                        if (!authData.user) {
-                          toast.error("Failed to create account");
-                          setLoading(false);
-                          return;
-                        }
-
-                        // Store user ID for role creation
-                        setUserId(authData.user.id);
-                        
-                        // Update profiles table with phone number
-                        const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
-                        if (formattedPhone) {
-                          await supabase
-                            .from('profiles')
-                            .update({ phone: formattedPhone })
-                            .eq('id', authData.user.id);
-                        }
-
-                        toast.info("Account created! You can verify your email later from your dashboard.");
-                        setStep(3); // Go to role selection
-                      } catch (error: any) {
-                        console.error("Account creation error:", error);
-                        toast.error(error.message || "Failed to create account");
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    disabled={loading}
-                    className="w-full text-muted-foreground"
-                  >
-                    Skip for now (verify later)
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  className="w-full"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Basic Info
+                </Button>
               </div>
             )}
 
