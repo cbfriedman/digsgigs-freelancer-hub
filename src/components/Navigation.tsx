@@ -107,7 +107,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             <img 
               src={logo} 
               alt="Digs & Gigs — Where Opportunity Meets Talent" 
-              className="h-8 sm:h-10 md:h-12 object-contain"
+              className="h-24 sm:h-30 md:h-36 object-contain"
             />
           </div>
           
