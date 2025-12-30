@@ -44,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import heroImage from "@/assets/hero-image.jpg";
+import logo from "@/assets/digsandgigs-logo.svg";
 import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
 import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
 
@@ -233,9 +234,11 @@ const Index = () => {
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Digs&Gigs
-            </h1>
+            <img 
+              src={logo} 
+              alt="Digs & Gigs — Where Opportunity Meets Talent" 
+              className="h-24 sm:h-30 md:h-36 object-contain"
+            />
           </div>
           
           {/* Desktop Navigation */}
