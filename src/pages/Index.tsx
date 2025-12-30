@@ -237,7 +237,7 @@ const Index = () => {
             <img 
               src={logo} 
               alt="Digs & Gigs — Where Opportunity Meets Talent" 
-              className="h-24 sm:h-30 md:h-36 object-contain"
+              className="h-12 sm:h-16 md:h-16 object-contain"
             />
           </div>
           
