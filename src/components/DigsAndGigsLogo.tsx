@@ -12,7 +12,7 @@ interface DigsAndGigsLogoProps {
  * DigsAndGigs Logo Component
  * 
  * Variants:
- * - icon: Just the circular icon with dots and wavy line
+ * - icon: Just the circular handshake icon
  * - full: Square logo with icon
  * - horizontal: Logo with text side-by-side
  */
@@ -35,31 +35,20 @@ export function DigsAndGigsLogo({
         className={cn(baseClasses, className)}
         aria-label="Digs and Gigs Logo"
       >
-        <defs>
-          <linearGradient id="iconPurpleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style={{ stopColor: "#6d28d9", stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: "#9333ea", stopOpacity: 1 }} />
-          </linearGradient>
-        </defs>
+        {/* Background Circle */}
+        <circle cx="50" cy="50" r="45" fill="#3B2055" />
         
-        {/* Background Circle with Purple Gradient */}
-        <circle cx="50" cy="50" r="45" fill="url(#iconPurpleGrad)" />
+        {/* Handshake Icon - Two hands meeting */}
+        {/* Left hand (white) */}
+        <path d="M25 55 L35 42 L45 42 L52 50 L45 58 L35 58 Z" fill="white" stroke="white" strokeWidth="1" strokeLinejoin="round"/>
+        <path d="M35 42 L35 32 Q35 28 40 28 L48 28" stroke="white" strokeWidth="4" strokeLinecap="round" fill="none"/>
         
-        {/* White Dot (upper-left) */}
-        <circle cx="30" cy="30" r="6" fill="white" />
+        {/* Right hand (orange) */}
+        <path d="M75 55 L65 42 L55 42 L48 50 L55 58 L65 58 Z" fill="#f97316" stroke="#f97316" strokeWidth="1" strokeLinejoin="round"/>
+        <path d="M65 42 L65 32 Q65 28 60 28 L52 28" stroke="#f97316" strokeWidth="4" strokeLinecap="round" fill="none"/>
         
-        {/* Orange Dot (lower-right) */}
-        <circle cx="70" cy="70" r="6" fill="#f97316" />
-        
-        {/* Wavy S-shaped connecting line */}
-        <path
-          d="M 30 30 Q 40 45 50 50 Q 60 55 70 70"
-          stroke="white"
-          strokeWidth="4"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        {/* Handshake clasp in center */}
+        <ellipse cx="50" cy="50" rx="12" ry="10" fill="white" stroke="#f97316" strokeWidth="3"/>
       </svg>
     );
   }
@@ -70,7 +59,7 @@ export function DigsAndGigsLogo({
         <DigsAndGigsLogo variant="icon" width={width || 120} height={height || 120} />
         <span className="text-3xl font-semibold">
           <span className="text-gray-800 dark:text-gray-100">Digs</span>
-          <span className="text-blue-600 dark:text-blue-400"> &amp;</span>
+          <span className="text-orange-500"> &amp;</span>
           <span className="text-gray-800 dark:text-gray-100"> Gigs</span>
         </span>
       </div>
@@ -87,32 +76,20 @@ export function DigsAndGigsLogo({
       className={cn(baseClasses, className)}
       aria-label="Digs and Gigs Logo"
     >
-      <defs>
-        <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style={{ stopColor: "#6d28d9", stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: "#9333ea", stopOpacity: 1 }} />
-        </linearGradient>
-      </defs>
+      {/* Background Circle */}
+      <circle cx="100" cy="100" r="90" fill="#3B2055" />
       
-      {/* Background Circle with Purple Gradient */}
-      <circle cx="100" cy="100" r="90" fill="url(#purpleGradient)" />
+      {/* Handshake Icon - Two hands meeting */}
+      {/* Left hand (white) */}
+      <path d="M50 110 L70 84 L90 84 L104 100 L90 116 L70 116 Z" fill="white" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+      <path d="M70 84 L70 64 Q70 56 80 56 L96 56" stroke="white" strokeWidth="8" strokeLinecap="round" fill="none"/>
       
-      {/* White Dot (upper-left) */}
-      <circle cx="60" cy="60" r="12" fill="white" />
+      {/* Right hand (orange) */}
+      <path d="M150 110 L130 84 L110 84 L96 100 L110 116 L130 116 Z" fill="#f97316" stroke="#f97316" strokeWidth="2" strokeLinejoin="round"/>
+      <path d="M130 84 L130 64 Q130 56 120 56 L104 56" stroke="#f97316" strokeWidth="8" strokeLinecap="round" fill="none"/>
       
-      {/* Orange Dot (lower-right) */}
-      <circle cx="140" cy="140" r="12" fill="#f97316" />
-      
-      {/* Wavy S-shaped connecting line */}
-      <path
-        d="M 60 60 Q 80 90 100 100 Q 120 110 140 140"
-        stroke="white"
-        strokeWidth="8"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Handshake clasp in center */}
+      <ellipse cx="100" cy="100" rx="24" ry="20" fill="white" stroke="#f97316" strokeWidth="6"/>
     </svg>
   );
 }
-
