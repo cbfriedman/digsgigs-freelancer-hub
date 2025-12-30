@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import logo from "@/assets/digsandgigs-logo.svg";
+import logo from "@/assets/digsandgigs-logo.png";
 
 export const Footer = () => {
   const navigate = useNavigate();
