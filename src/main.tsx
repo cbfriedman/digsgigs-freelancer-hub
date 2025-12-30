@@ -4,7 +4,7 @@ import "./index.css";
 import { HelmetProvider } from "react-helmet-async";
 import { logIntegrationStatus } from "./utils/integrationCheck";
 import { Capacitor } from "@capacitor/core";
-import favicon from "@/assets/favicon.ico";
+import logoIcon from "@/assets/digsandgigs-logo-icon.svg";
 
 // Set favicon dynamically from assets
 const setFavicon = (iconPath: string) => {
@@ -47,7 +47,7 @@ const setFavicon = (iconPath: string) => {
 };
 
 // Set favicon on app load
-setFavicon(favicon);
+setFavicon(logoIcon);
 
 // Initialize Capacitor for mobile platforms
 if (Capacitor.isNativePlatform()) {
