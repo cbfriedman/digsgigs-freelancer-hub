@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/digsandgigs-logo.png";
+import logoFull from "@/assets/logo-full.png";
+import logoWordmark from "@/assets/logo-wordmark.png";
 import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User, Shovel, Menu, X, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";
@@ -101,12 +102,21 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50 relative">
         <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
           <div 
-            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Digs&Gigs
-            </h1>
+            {/* Desktop: Full logo with tagline */}
+            <img 
+              src={logoFull} 
+              alt="Digs & Gigs — Where Opportunity Meets Talent" 
+              className="hidden md:block h-10"
+            />
+            {/* Mobile: Wordmark without tagline */}
+            <img 
+              src={logoWordmark} 
+              alt="Digs & Gigs" 
+              className="block md:hidden h-8"
+            />
           </div>
           
           {/* Desktop Navigation */}
