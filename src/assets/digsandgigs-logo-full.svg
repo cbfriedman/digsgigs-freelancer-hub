@@ -1,11 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 50" fill="none">
   <!-- Icon Circle -->
   <circle cx="25" cy="25" r="22" fill="#3B2055"/>
-  <!-- Stylized ampersand/connection symbol -->
-  <path d="M18 18c0-3 2.5-5 5.5-5s5.5 2 5.5 5c0 2-1 3.5-3 5l-5 4c-2 1.5-3 3-3 5 0 3 2.5 5 5.5 5s5.5-2 5.5-5" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
-  <path d="M32 32c0 3-2.5 5-5.5 5" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
-  <!-- Orange accent dot -->
-  <circle cx="35" cy="28" r="4" fill="#F26B28"/>
+  
+  <!-- Handshake Icon - Two hands meeting -->
+  <!-- Left hand (white) -->
+  <path d="M12 27 L17 22 L21 22 L24 25 L21 28 L17 28 Z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/>
+  <path d="M17 22 L17 18 Q17 17 18.5 17 L21 17" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+  
+  <!-- Right hand (orange) -->
+  <path d="M38 27 L33 22 L29 22 L26 25 L29 28 L33 28 Z" fill="#F26B28" stroke="#F26B28" stroke-width="0.5" stroke-linejoin="round"/>
+  <path d="M33 22 L33 18 Q33 17 31.5 17 L29 17" stroke="#F26B28" stroke-width="2" stroke-linecap="round" fill="none"/>
+  
+  <!-- Handshake clasp in center -->
+  <ellipse cx="25" cy="25" rx="5" ry="4" fill="white" stroke="#F26B28" stroke-width="1.5"/>
   
   <!-- Text: Digs & Gigs -->
   <text x="58" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#3B2055">Digs</text>
