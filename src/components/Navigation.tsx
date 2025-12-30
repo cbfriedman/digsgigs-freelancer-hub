@@ -109,13 +109,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             <img 
               src={logoFull} 
               alt="Digs & Gigs — Where Opportunity Meets Talent" 
-              className="hidden md:block h-10"
+              className="hidden md:block h-12 w-auto"
             />
             {/* Mobile: Wordmark without tagline */}
             <img 
               src={logoWordmark} 
               alt="Digs & Gigs" 
-              className="block md:hidden h-8"
+              className="block md:hidden h-9 w-auto"
             />
           </div>
           
