@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/digsandgigs-logo.svg";
 import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User, Shovel, Menu, X, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";
@@ -103,17 +104,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            {/* Desktop: Text logo with tagline */}
-            <div className="hidden md:flex flex-col">
-              <h1 className="text-xl font-bold">
-                Digs <span className="text-primary">&amp;</span> Gigs
-              </h1>
-              <p className="text-xs text-muted-foreground">Where Opportunity Meets Talent</p>
-            </div>
-            {/* Mobile: Text logo without tagline */}
-            <h1 className="block md:hidden text-lg font-bold">
-              Digs <span className="text-primary">&amp;</span> Gigs
-            </h1>
+            <img 
+              src={logo} 
+              alt="Digs & Gigs" 
+              className="h-8 md:h-12 object-contain"
+            />
           </div>
           
           {/* Desktop Navigation */}
