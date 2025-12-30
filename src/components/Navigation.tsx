@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import logoFull from "@/assets/digsandgigs-logo-full.png";
-import logoWordmark from "@/assets/digsandgigs-logo-wordmark.png";
+import logoFull from "@/assets/digsandgigs-logo-full.svg";
+import logoWordmark from "@/assets/digsandgigs-logo-wordmark.svg";
 import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User, Shovel, Menu, X, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";

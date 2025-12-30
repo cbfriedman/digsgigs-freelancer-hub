@@ -4,22 +4,26 @@ import "./index.css";
 import { HelmetProvider } from "react-helmet-async";
 import { logIntegrationStatus } from "./utils/integrationCheck";
 import { Capacitor } from "@capacitor/core";
-import logoIcon from "@/assets/digsandgigs-logo-icon.png";
+import logoIcon from "@/assets/digsandgigs-logo-icon.svg";
 
 // Set favicon dynamically from assets
 const setFavicon = (iconPath: string) => {
+  const isSvg = iconPath.endsWith('.svg');
   const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
   if (link) {
     link.href = iconPath;
+    if (isSvg) {
+      link.type = "image/svg+xml";
+    }
   } else {
     const newLink = document.createElement("link");
     newLink.rel = "icon";
-    newLink.type = "image/png";
+    newLink.type = isSvg ? "image/svg+xml" : "image/png";
     newLink.href = iconPath;
     document.getElementsByTagName("head")[0].appendChild(newLink);
   }
   
-  // Also set apple-touch-icon
+  // Also set apple-touch-icon (SVG not supported for apple-touch-icon, but we'll set it anyway)
   const appleLink = document.querySelector("link[rel~='apple-touch-icon']") as HTMLLinkElement;
   if (appleLink) {
     appleLink.href = iconPath;
