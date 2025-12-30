@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/digsandgigs-logo.png";
+import logoFull from "@/assets/digsandgigs-logo-full.png";
+import logoWordmark from "@/assets/digsandgigs-logo-wordmark.png";
 import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User, Shovel, Menu, X, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";
@@ -104,9 +105,18 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Digs&Gigs
-            </h1>
+            {/* Desktop: Full logo with tagline */}
+            <img 
+              src={logoFull} 
+              alt="Digs & Gigs — Where Opportunity Meets Talent" 
+              className="hidden md:block h-10 md:h-12 object-contain"
+            />
+            {/* Mobile: Wordmark logo without tagline */}
+            <img 
+              src={logoWordmark} 
+              alt="Digs & Gigs" 
+              className="block md:hidden h-8 object-contain"
+            />
           </div>
           
           {/* Desktop Navigation */}

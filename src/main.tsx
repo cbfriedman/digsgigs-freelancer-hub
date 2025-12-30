@@ -4,6 +4,36 @@ import "./index.css";
 import { HelmetProvider } from "react-helmet-async";
 import { logIntegrationStatus } from "./utils/integrationCheck";
 import { Capacitor } from "@capacitor/core";
+import logoIcon from "@/assets/digsandgigs-logo-icon.png";
+
+// Set favicon dynamically from assets
+const setFavicon = (iconPath: string) => {
+  const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+  if (link) {
+    link.href = iconPath;
+  } else {
+    const newLink = document.createElement("link");
+    newLink.rel = "icon";
+    newLink.type = "image/png";
+    newLink.href = iconPath;
+    document.getElementsByTagName("head")[0].appendChild(newLink);
+  }
+  
+  // Also set apple-touch-icon
+  const appleLink = document.querySelector("link[rel~='apple-touch-icon']") as HTMLLinkElement;
+  if (appleLink) {
+    appleLink.href = iconPath;
+  } else {
+    const newAppleLink = document.createElement("link");
+    newAppleLink.rel = "apple-touch-icon";
+    newAppleLink.sizes = "180x180";
+    newAppleLink.href = iconPath;
+    document.getElementsByTagName("head")[0].appendChild(newAppleLink);
+  }
+};
+
+// Set favicon on app load
+setFavicon(logoIcon);
 
 // Initialize Capacitor for mobile platforms
 if (Capacitor.isNativePlatform()) {
