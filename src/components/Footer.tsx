@@ -12,7 +12,7 @@ export const Footer = () => {
             <img 
               src={logoWordmark} 
               alt="Digs & Gigs" 
-              className="h-12 w-auto mb-4"
+              className="h-48 w-auto mb-4"
             />
             <p className="text-sm text-muted-foreground">
               Connecting Freelancers & Clients Worldwide
