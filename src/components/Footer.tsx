@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import logoWordmark from "@/assets/digsandgigs-logo-wordmark.svg";
 
 export const Footer = () => {
   const navigate = useNavigate();
@@ -8,9 +9,11 @@ export const Footer = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
-            <h3 className="text-xl font-bold mb-2">
-              Digs <span className="text-primary">&amp;</span> Gigs
-            </h3>
+            <img 
+              src={logoWordmark} 
+              alt="Digs & Gigs" 
+              className="h-8 md:h-10 mb-4 object-contain"
+            />
             <p className="text-sm text-muted-foreground">
               Connecting Freelancers & Clients Worldwide
             </p>

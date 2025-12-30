@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import logoFull from "@/assets/digsandgigs-logo-full.svg";
+import logoWordmark from "@/assets/digsandgigs-logo-wordmark.svg";
 import { MessageSquare, ArrowUp, ShoppingCart, ChevronDown, User, Shovel, Menu, X, Home, LayoutDashboard, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AIChatbot from "@/components/AIChatbot";
@@ -103,17 +105,18 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            {/* Desktop: Text logo with tagline */}
-            <div className="hidden md:flex flex-col">
-              <h1 className="text-xl font-bold">
-                Digs <span className="text-primary">&amp;</span> Gigs
-              </h1>
-              <p className="text-xs text-muted-foreground">Where Opportunity Meets Talent</p>
-            </div>
-            {/* Mobile: Text logo without tagline */}
-            <h1 className="block md:hidden text-lg font-bold">
-              Digs <span className="text-primary">&amp;</span> Gigs
-            </h1>
+            {/* Desktop: Full logo with tagline */}
+            <img 
+              src={logoFull} 
+              alt="Digs & Gigs — Where Opportunity Meets Talent" 
+              className="hidden md:block h-10 md:h-12 object-contain"
+            />
+            {/* Mobile: Wordmark logo without tagline */}
+            <img 
+              src={logoWordmark} 
+              alt="Digs & Gigs" 
+              className="block md:hidden h-8 object-contain"
+            />
           </div>
           
           {/* Desktop Navigation */}

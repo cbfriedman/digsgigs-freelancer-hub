@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 50" fill="none">
+  <!-- Icon Circle -->
+  <circle cx="25" cy="25" r="22" fill="#3B2055"/>
+  <!-- Stylized ampersand/connection symbol -->
+  <path d="M18 18c0-3 2.5-5 5.5-5s5.5 2 5.5 5c0 2-1 3.5-3 5l-5 4c-2 1.5-3 3-3 5 0 3 2.5 5 5.5 5s5.5-2 5.5-5" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M32 32c0 3-2.5 5-5.5 5" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Orange accent dot -->
+  <circle cx="35" cy="28" r="4" fill="#F26B28"/>
+  
+  <!-- Text: Digs & Gigs -->
+  <text x="58" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#3B2055">Digs</text>
+  <text x="108" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#F26B28">&amp;</text>
+  <text x="128" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600" fill="#3B2055">Gigs</text>
+  
+  <!-- Tagline -->
+  <text x="58" y="44" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="#777777">Where Opportunity Meets Talent</text>
+</svg>
