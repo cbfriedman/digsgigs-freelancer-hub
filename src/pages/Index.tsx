@@ -44,7 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import heroImage from "@/assets/hero-image.jpg";
-import logo from "@/assets/digsandgigs-logo.png";
+import logo from "@/assets/digsandgigs-logo.svg";
 import { DiggerOnboardingChecklist } from "@/components/DiggerOnboardingChecklist";
 import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
 
