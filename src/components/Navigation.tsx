@@ -107,7 +107,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
             <img 
               src={logo} 
               alt="Digs & Gigs — Where Opportunity Meets Talent" 
-              className={`${location.pathname !== "/" ? "h-36 sm:h-20 md:h-20" : "h-12 sm:h-6 md:h-6"} object-contain`}
+              className={`${location.pathname !== "/" ? "h-[108px] sm:h-60 md:h-60" : "h-36 sm:h-20 md:h-20"} object-contain`}
             />
           </div>
           

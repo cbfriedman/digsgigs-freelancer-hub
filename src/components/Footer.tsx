@@ -12,7 +12,7 @@ export const Footer = () => {
             <img 
               src={logo} 
               alt="Digs & Gigs" 
-              className="h-64 sm:h-24 md:h-24 mb-4 object-contain"
+              className="h-[192px] sm:h-72 md:h-72 mb-4 object-contain"
             />
             <p className="text-sm text-muted-foreground">
               Connecting Freelancers & Clients Worldwide
