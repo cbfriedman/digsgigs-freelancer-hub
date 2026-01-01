@@ -84,6 +84,7 @@ import BusinessPlan from "./pages/BusinessPlan";
 import ColdEmailDocs from "./pages/ColdEmailDocs";
 import FoundingDigger from "./pages/FoundingDigger";
 import About from "./pages/About";
+import ApplyDigger from "./pages/ApplyDigger";
 
 const queryClient = new QueryClient();
 
@@ -412,6 +413,10 @@ const router = createBrowserRouter([
   {
     path: "/about",
     element: <About />,
+  },
+  {
+    path: "/apply-digger",
+    element: <ApplyDigger />,
   },
   {
     path: "*",

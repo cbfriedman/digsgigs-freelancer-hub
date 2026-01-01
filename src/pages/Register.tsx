@@ -172,8 +172,15 @@ const Register = () => {
   const [pendingDiggerVerification, setPendingDiggerVerification] = useState(false); // Track if we're verifying for Digger role
   const [isDiggerLogin, setIsDiggerLogin] = useState(false); // Track if login is for Digger (requires OTP every time)
 
-  // Step 2: Role Selection
-  const [selectedRoles, setSelectedRoles] = useState<Set<UserAppRole>>(new Set());
+  // Step 2: Role Selection - pre-select based on URL params (e.g., ?type=digger from /apply-digger)
+  const [selectedRoles, setSelectedRoles] = useState<Set<UserAppRole>>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const preselectedType = params.get('type') as UserAppRole | null;
+    if (preselectedType === 'digger' || preselectedType === 'gigger') {
+      return new Set([preselectedType]);
+    }
+    return new Set();
+  });
 
   // Step 3+: Role-specific forms data
   const [roleFormData, setRoleFormData] = useState<RoleFormData>({});
