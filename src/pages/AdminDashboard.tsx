@@ -13,6 +13,7 @@ import { CpcDataUploader } from "@/components/CpcDataUploader";
 import { MarketingEmailsTab } from "@/components/admin/MarketingEmailsTab";
 import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
 import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
+import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface ReminderStats {
   total: number;
@@ -334,8 +335,12 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="reminders" className="w-full">
-          <TabsList className="mb-6">
+        <Tabs defaultValue="signup-analytics" className="w-full">
+          <TabsList className="mb-6 flex-wrap">
+            <TabsTrigger value="signup-analytics" className="flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              Signup Analytics
+            </TabsTrigger>
             <TabsTrigger value="reminders">Profile Reminders</TabsTrigger>
             <TabsTrigger value="founding-diggers" className="flex items-center gap-1">
               <Crown className="h-3 w-3" />
@@ -356,6 +361,10 @@ const AdminDashboard = () => {
               CPC Data
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="signup-analytics">
+            <SignupAnalyticsDashboard />
+          </TabsContent>
 
           <TabsContent value="reminders" className="space-y-6">
             <div className="flex justify-end">

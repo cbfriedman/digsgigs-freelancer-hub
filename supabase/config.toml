@@ -251,3 +251,6 @@ verify_jwt = false
 
 [functions.send-freelancer-winback-email]
 verify_jwt = false
+
+[functions.notify-new-signup]
+verify_jwt = false
