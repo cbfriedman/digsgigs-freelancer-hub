@@ -191,6 +191,24 @@ const Register = () => {
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   const { trackConversion: trackGAConversion, isConfigured: gaConfigured } = useGoogleAdsConversion();
 
+  // Track page view for funnel analytics on mount
+  useEffect(() => {
+    const trackPageView = async () => {
+      try {
+        const campaignData = getCampaignData();
+        await supabase.functions.invoke('log-campaign-event', {
+          body: {
+            conversion_type: 'signup_page_view',
+            ...campaignData,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to track signup page view:", error);
+      }
+    };
+    trackPageView();
+  }, []);
+
   // Handle expired password reset tokens - but delay check to allow Supabase to process token first
   useEffect(() => {
     if (isPasswordResetMode) {
@@ -926,10 +944,10 @@ const Register = () => {
 
       // Telemarketer role removed - feature discontinued
 
-      // Track campaign conversion for signup
+      // Track campaign conversion for signup and notify admins
       try {
         const campaignData = getCampaignData();
-        const conversionType = selectedRoles.has('digger') ? 'digger_registered' : 'signup';
+        const conversionType = selectedRoles.has('digger') ? 'digger_registered' : 'gigger_registered';
         
         // Log to campaign_conversions table
         await supabase.functions.invoke('log-campaign-event', {
@@ -937,6 +955,17 @@ const Register = () => {
             conversion_type: conversionType,
             email,
             user_id: userId,
+            ...campaignData,
+          },
+        });
+        
+        // Notify admins of new signup
+        await supabase.functions.invoke('notify-new-signup', {
+          body: {
+            user_email: email,
+            user_name: fullName,
+            user_id: userId,
+            role: selectedRoles.has('digger') ? 'digger' : 'gigger',
             ...campaignData,
           },
         });
