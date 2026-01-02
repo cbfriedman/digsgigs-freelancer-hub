@@ -125,7 +125,7 @@ serve(async (req) => {
       : null;
     
     let priceLockDaysRemaining = 0;
-    let priceLockActive = diggerProfile.price_locked;
+    const priceLockActive = diggerProfile.price_locked;
 
     if (subscriptionStartDate && priceLockActive) {
       const twelveMonthsFromStart = new Date(subscriptionStartDate);

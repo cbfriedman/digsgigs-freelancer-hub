@@ -135,7 +135,6 @@ serve(async (req) => {
     const cpcData = findCpcData(keyword);
     logStep("CPC data found", cpcData);
 
-    let costDollars: number;
     let baseCpc: number;
     let multiplier: number;
 
@@ -149,7 +148,7 @@ serve(async (req) => {
       multiplier = PROFILE_CLICK_MULTIPLIER;
     }
 
-    costDollars = roundToHalfDollar(baseCpc * multiplier);
+    const costDollars = roundToHalfDollar(baseCpc * multiplier);
     const costCents = Math.round(costDollars * 100);
 
     logStep("Price calculated", { 

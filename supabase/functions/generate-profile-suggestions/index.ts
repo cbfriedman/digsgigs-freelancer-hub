@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     const suggestions = data.choices[0].message.content
       .split('\n')
       .filter((line: string) => line.trim())
-      .map((line: string) => line.replace(/^\d+[\.\)]\s*/, '').trim());
+      .map((line: string) => line.replace(/^\d+[.)]\s*/, '').trim());
 
     return new Response(
       JSON.stringify({ suggestions }),

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/rules-of-hooks */
+// Note: The 'use' function here is from Playwright's fixture system, not React hooks
 import { test as base, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 

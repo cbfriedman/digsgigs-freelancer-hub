@@ -291,7 +291,7 @@ serve(async (req) => {
 
     // Send emails to each user
     const emailResults = [];
-    let skippedCount = 0;
+    const skippedCount = 0;
     
     for (const [userId, userData] of userTransactions) {
       const { email, userType, transactions: userTxs } = userData;

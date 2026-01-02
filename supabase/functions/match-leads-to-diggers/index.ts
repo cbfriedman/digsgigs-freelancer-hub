@@ -122,7 +122,7 @@ const calculateLeadPricing = (
     const discount = leadSource === 'telemarketing' ? 0.75 : 1;
     
     let finalExclusive = exclusivePrice * discount;
-    let finalSemiExclusive = semiExclusivePrice * discount;
+    const finalSemiExclusive = semiExclusivePrice * discount;
     
     // Apply minimum pricing for exclusive only
     if (exclusivityType === 'exclusive') {

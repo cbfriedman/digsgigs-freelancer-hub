@@ -592,12 +592,6 @@ const BrowseGigs = () => {
                           View Your Bid
                         </Button>
                       )}
-                      {/* Debug info - remove in production */}
-                      {process.env.NODE_ENV === 'development' && diggerProfile && (
-                        <div className="text-xs text-muted-foreground mt-2">
-                          Debug: Profile={!!diggerProfile}, Status={gig.status}, HasBid={userBids.has(gig.id)}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </CardContent>

@@ -85,7 +85,7 @@ serve(async (req) => {
 
     const tier = diggerProfile.subscription_tier || 'free';
     let escrowFeeRate = 0.09; // Default: free tier (9%)
-    let minimumFee = 10; // $10 minimum per payment
+    const minimumFee = 10; // $10 minimum per payment
 
     // Determine escrow fee rate based on tier (these are escrow fees, not commissions)
     if (tier === 'premium') {

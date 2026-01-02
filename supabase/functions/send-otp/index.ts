@@ -511,7 +511,7 @@ Note: Test keys and production keys look the same but have different permissions
     // Provide more helpful error messages
     let errorMessage = error?.message || "Failed to send verification code";
     let statusCode = 500;
-    let errorDetails: any = { success: false };
+    const errorDetails: any = { success: false };
     
     // Handle specific error types
     if (errorMessage.includes("Resend API") || errorMessage.includes("Resend")) {
