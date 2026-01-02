@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Star } from "lucide-react";
 import {
   Dialog,
@@ -30,13 +30,7 @@ export const RatingDialog = ({
   const [existingRating, setExistingRating] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (open) {
-      checkExistingRating();
-    }
-  }, [open, diggerId, gigId]);
-
-  const checkExistingRating = async () => {
+  const checkExistingRating = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -56,7 +50,13 @@ export const RatingDialog = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [diggerId, gigId]);
+
+  useEffect(() => {
+    if (open) {
+      checkExistingRating();
+    }
+  }, [open, checkExistingRating]);
 
   const handleSuccess = () => {
     onSuccess?.();

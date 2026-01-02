@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,11 +44,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
   const [escrowDialogOpen, setEscrowDialogOpen] = useState(false);
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
 
-  useEffect(() => {
-    loadBids();
-  }, [gigId]);
-
-  const loadBids = async () => {
+  const loadBids = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('bids' as any)
@@ -73,7 +69,11 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
     } finally {
       setLoading(false);
     }
-  };
+  }, [gigId]);
+
+  useEffect(() => {
+    loadBids();
+  }, [loadBids]);
 
   const handleAcceptBid = async (bidId: string) => {
     setAccepting(bidId);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,7 +37,7 @@ export const DiggerProfileSelector = () => {
   const [newProfileName, setNewProfileName] = useState('');
 
   // Extract profile ID from URL path or query params
-  const getProfileIdFromUrl = (): string | null => {
+  const getProfileIdFromUrl = useCallback((): string | null => {
     // First check path (e.g., /digger/:id)
     const match = location.pathname.match(/\/digger\/([^/]+)/);
     if (match) return match[1];
@@ -45,30 +45,9 @@ export const DiggerProfileSelector = () => {
     // Then check query params (e.g., ?profileId=xxx)
     const searchParams = new URLSearchParams(location.search);
     return searchParams.get('profileId');
-  };
+  }, [location.pathname, location.search]);
 
-  useEffect(() => {
-    // Only load profiles if user is authenticated and not in sign-in OTP flow
-    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
-    if (user && !isInOtpFlow) {
-      loadProfiles();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
-
-  // Update current profile when URL changes
-  useEffect(() => {
-    const urlProfileId = getProfileIdFromUrl();
-    if (urlProfileId && profiles.length > 0) {
-      const matchingProfile = profiles.find(p => p.id === urlProfileId);
-      if (matchingProfile) {
-        setCurrentProfile(matchingProfile);
-      }
-    }
-  }, [location.pathname, profiles]);
-
-  const loadProfiles = async () => {
+  const loadProfiles = useCallback(async () => {
     if (!user) {
       console.log("DiggerProfileSelector: No user, skipping load");
       setLoading(false);
@@ -159,7 +138,28 @@ export const DiggerProfileSelector = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, getProfileIdFromUrl]);
+
+  useEffect(() => {
+    // Only load profiles if user is authenticated and not in sign-in OTP flow
+    const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
+    if (user && !isInOtpFlow) {
+      loadProfiles();
+    } else {
+      setLoading(false);
+    }
+  }, [user, loadProfiles]);
+
+  // Update current profile when URL changes
+  useEffect(() => {
+    const urlProfileId = getProfileIdFromUrl();
+    if (urlProfileId && profiles.length > 0) {
+      const matchingProfile = profiles.find(p => p.id === urlProfileId);
+      if (matchingProfile) {
+        setCurrentProfile(matchingProfile);
+      }
+    }
+  }, [location.pathname, profiles, getProfileIdFromUrl]);
 
   const handleCreateProfile = () => {
     setNewProfileName('');

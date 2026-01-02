@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,11 +42,7 @@ export const EscrowMilestones = ({ gigId, isConsumer }: EscrowMilestonesProps) =
   const [loading, setLoading] = useState(true);
   const [releasing, setReleasing] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadEscrowData();
-  }, [gigId]);
-
-  const loadEscrowData = async () => {
+  const loadEscrowData = useCallback(async () => {
     try {
       const { data: contractData, error: contractError } = await supabase
         .from("escrow_contracts")
@@ -72,7 +68,11 @@ export const EscrowMilestones = ({ gigId, isConsumer }: EscrowMilestonesProps) =
     } finally {
       setLoading(false);
     }
-  };
+  }, [gigId]);
+
+  useEffect(() => {
+    loadEscrowData();
+  }, [loadEscrowData]);
 
   const handleReleaseMilestone = async (milestoneId: string) => {
     setReleasing(milestoneId);

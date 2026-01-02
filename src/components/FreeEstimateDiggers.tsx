@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,11 +31,7 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDiggers();
-  }, [categories]);
-
-  const loadDiggers = async () => {
+  const loadDiggers = useCallback(async () => {
     try {
       let query = supabase
         .from("digger_profiles")
@@ -75,7 +71,11 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
     } finally {
       setLoading(false);
     }
-  };
+  }, [categories]);
+
+  useEffect(() => {
+    loadDiggers();
+  }, [loadDiggers]);
 
   const handleRequestEstimate = async (diggerId: string) => {
     setRequesting(diggerId);

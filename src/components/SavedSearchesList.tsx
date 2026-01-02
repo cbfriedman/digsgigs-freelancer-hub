@@ -26,11 +26,7 @@ export const SavedSearchesList = ({ searchType, onApplySearch }: SavedSearchesLi
   const [searches, setSearches] = useState<SavedSearch[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadSavedSearches();
-  }, [searchType]);
-
-  const loadSavedSearches = async () => {
+  const loadSavedSearches = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -49,7 +45,11 @@ export const SavedSearchesList = ({ searchType, onApplySearch }: SavedSearchesLi
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchType]);
+
+  useEffect(() => {
+    loadSavedSearches();
+  }, [loadSavedSearches]);
 
   const toggleEmailAlerts = async (searchId: string, enabled: boolean) => {
     try {

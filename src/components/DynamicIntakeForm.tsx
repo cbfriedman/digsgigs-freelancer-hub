@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -83,11 +83,7 @@ export const DynamicIntakeForm = ({
   const [responses, setResponses] = useState<Record<string, any>>(initialResponses);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadQuestions();
-  }, [industryName]);
-
-  const loadQuestions = async () => {
+  const loadQuestions = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -203,7 +199,11 @@ export const DynamicIntakeForm = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [industryName]);
+
+  useEffect(() => {
+    loadQuestions();
+  }, [loadQuestions]);
 
   const handleResponseChange = (questionId: string, value: any) => {
     const newResponses = { ...responses, [questionId]: value };

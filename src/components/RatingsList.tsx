@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RatingCard } from "./RatingCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,7 @@ export const RatingsList = ({ diggerId, isDigger, diggerName }: RatingsListProps
   const [ratings, setRatings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchRatings = async () => {
+  const fetchRatings = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("ratings")
@@ -35,11 +35,11 @@ export const RatingsList = ({ diggerId, isDigger, diggerName }: RatingsListProps
     } finally {
       setLoading(false);
     }
-  };
+  }, [diggerId]);
 
   useEffect(() => {
     fetchRatings();
-  }, [diggerId]);
+  }, [fetchRatings]);
 
   if (loading) {
     return (
