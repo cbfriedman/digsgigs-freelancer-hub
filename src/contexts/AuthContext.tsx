@@ -242,10 +242,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 window.history.replaceState(null, '', window.location.pathname);
 
                 // Check if user has completed registration by checking for roles
-                const { data: roles } = await supabase
+                const { data: roles, error: rolesError } = await supabase
                   .from('user_app_roles')
                   .select('app_role')
-                  .eq('user_id', session.user.id);
+                  .eq('user_id', session.user.id)
+                  .eq('is_active', true);
+
+                if (rolesError) {
+                  console.error('Error checking roles:', rolesError);
+                  // On error, default to dashboard (users signing in likely have roles)
+                  toast.success('Welcome back! Successfully signed in.');
+                  window.location.href = '/role-dashboard';
+                  return;
+                }
 
                 if (!roles || roles.length === 0) {
                   // User hasn't selected roles yet, redirect to registration

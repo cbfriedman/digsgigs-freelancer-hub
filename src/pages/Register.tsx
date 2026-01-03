@@ -1084,6 +1084,11 @@ const Register = () => {
 
       if (rolesError) {
         console.error("Error checking roles:", rolesError);
+        // On error, default to dashboard (users signing in likely have roles)
+        // This prevents redirecting registered users to register page
+        toast.success("Welcome back!");
+        window.location.href = '/role-dashboard';
+        return;
       }
 
       // Successfully signed in - redirect to appropriate page
@@ -1198,6 +1203,10 @@ const Register = () => {
             
             if (rolesError) {
               console.error("Error checking roles:", rolesError);
+              // On error, default to dashboard (users signing in likely have roles)
+              // This prevents redirecting registered users to register page
+              window.location.href = '/role-dashboard';
+              return;
             }
             
             // Use full page refresh to ensure AuthContext picks up updated session and roles
