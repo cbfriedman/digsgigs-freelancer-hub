@@ -9,6 +9,7 @@ import { Wrench, Briefcase, TrendingUp, FileText, DollarSign, Plus } from "lucid
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { Footer } from "@/components/Footer";
 
 interface RoleStats {
   digger?: {
@@ -407,6 +408,7 @@ export default function RoleDashboard() {
         </Card>
       </div>
       </div>
+      <Footer />
     </div>
   );
 }
