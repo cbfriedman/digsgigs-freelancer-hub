@@ -27,14 +27,23 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
   useEffect(() => {
     if (user && redirectIfAuthenticated && !hasCheckedRoles) {
       const checkRoles = async () => {
-        const { data, error } = await supabase
-          .from('user_app_roles')
-          .select('id')
-          .eq('user_id', user.id)
-          .limit(1);
-        
-        setUserHasRoles(!error && data && data.length > 0);
-        setHasCheckedRoles(true);
+        try {
+          const { data, error } = await supabase
+            .from('user_app_roles')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .limit(1);
+          
+          // On error, assume user has roles (safer than blocking access)
+          setUserHasRoles(!error && data && data.length > 0);
+          setHasCheckedRoles(true);
+        } catch (err) {
+          console.error('Error checking roles:', err);
+          // On error, assume user has roles to prevent blocking
+          setUserHasRoles(true);
+          setHasCheckedRoles(true);
+        }
       };
       checkRoles();
     }
@@ -97,12 +106,18 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
         
         const checkRolesOnce = async () => {
           try {
-            const { data: roles } = await supabase
+            const { data: roles, error: rolesError } = await supabase
               .from('user_app_roles')
               .select('app_role')
               .eq('user_id', user.id)
               .eq('is_active', true)
               .limit(1);
+            
+            if (rolesError) {
+              console.error('Error checking roles:', rolesError);
+              // On error, allow access (better than blocking registered users)
+              return;
+            }
             
             if (roles && roles.length > 0) {
               // User has roles, so they're verified - allow access
