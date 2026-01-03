@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,90 +36,15 @@ export default function RoleDashboard() {
   const [stats, setStats] = useState<RoleStats>({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCheckingRoles, setIsCheckingRoles] = useState(false);
+  const hasCheckedRolesRef = useRef(false);
+  const hasFetchedStatsRef = useRef(false);
 
-  useEffect(() => {
-    // Wait for auth to finish loading before checking user
-    if (authLoading) {
-      return;
-    }
-
-    // If no user after loading completes, redirect to register
-    if (!user) {
-      navigate("/register");
-      return;
-    }
-
-    // If user has no roles, wait for AuthContext to load them, then check
-    // Don't redirect immediately - give AuthContext time to fetch roles using RPC function
-    if (userRoles.length === 0 && !isCheckingRoles) {
-      setIsCheckingRoles(true);
-      
-      // Wait a bit for AuthContext to finish loading roles, then check
-      const checkRolesTimeout = setTimeout(async () => {
-        try {
-          // First, try refreshing roles from AuthContext (uses RPC function that bypasses RLS)
-          await refreshRoles();
-          
-          // Wait for state to potentially update
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // If still no roles after refresh, check database directly using RPC function
-          if (userRoles.length === 0) {
-            try {
-              // Use the safe RPC function that bypasses RLS completely
-              const { data: rpcRoles, error: rpcError } = await supabase
-                .rpc('get_user_app_roles_safe', { _user_id: user.id });
-              
-              if (rpcError) {
-                console.error('RPC function error (non-fatal):', rpcError);
-                // Don't redirect on error - might be temporary
-                setIsCheckingRoles(false);
-                return;
-              }
-              
-              if (!rpcRoles || rpcRoles.length === 0) {
-                // No roles found - user needs to complete registration
-                setIsCheckingRoles(false);
-                toast({
-                  title: "Complete Registration",
-                  description: "Please select your role(s) to continue.",
-                });
-                navigate("/register");
-              } else {
-                // Found roles via RPC - refresh AuthContext to update state
-                console.log('Found roles via RPC, refreshing AuthContext');
-                await refreshRoles();
-                setIsCheckingRoles(false);
-              }
-            } catch (err) {
-              console.error('Exception checking roles:', err);
-              setIsCheckingRoles(false);
-              // Don't redirect on exception - might be temporary error
-            }
-          } else {
-            // Roles loaded from AuthContext refresh
-            setIsCheckingRoles(false);
-          }
-        } catch (err) {
-          console.error('Error in role check:', err);
-          setIsCheckingRoles(false);
-        }
-      }, 2000); // Wait 2 seconds for AuthContext to load roles
-      
-      return () => {
-        clearTimeout(checkRolesTimeout);
-        setIsCheckingRoles(false);
-      };
-    }
-
-    // User has roles - fetch stats
-    if (userRoles.length > 0) {
-      fetchStats();
-    }
-  }, [user, navigate, userRoles, refreshKey, authLoading, isCheckingRoles, refreshRoles]);
-
-  const fetchStats = async () => {
-    if (!user || userRoles.length === 0) return;
+  // Memoize fetchStats to prevent recreation on every render
+  // Use user?.id instead of user object to prevent unnecessary recreations
+  const fetchStats = useCallback(async () => {
+    if (!user || userRoles.length === 0 || hasFetchedStatsRef.current) return;
+    
+    hasFetchedStatsRef.current = true;
     
     try {
       // Fetch Digger stats
@@ -222,8 +147,103 @@ export default function RoleDashboard() {
       }
     } catch (err) {
       console.error('Error fetching stats:', err);
+      hasFetchedStatsRef.current = false; // Allow retry on error
     }
-  };
+  }, [user?.id, userRoles]); // Need userRoles array to check includes()
+
+  // Check roles only once when component mounts or user changes
+  useEffect(() => {
+    // Wait for auth to finish loading before checking user
+    if (authLoading) {
+      return;
+    }
+
+    // If no user after loading completes, redirect to register
+    if (!user) {
+      navigate("/register");
+      return;
+    }
+
+    // Only check roles once
+    if (hasCheckedRolesRef.current) {
+      return;
+    }
+
+    // If user has no roles, wait for AuthContext to load them, then check
+    if (userRoles.length === 0 && !isCheckingRoles) {
+      setIsCheckingRoles(true);
+      hasCheckedRolesRef.current = true;
+      
+      // Wait a bit for AuthContext to finish loading roles, then check
+      const checkRolesTimeout = setTimeout(async () => {
+        try {
+          // First, try refreshing roles from AuthContext (uses RPC function that bypasses RLS)
+          await refreshRoles();
+          
+          // Wait for state to potentially update
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Check current userRoles (from closure, will be updated on next render)
+          // If still no roles, check database directly using RPC function
+          try {
+            // Use the safe RPC function that bypasses RLS completely
+            const { data: rpcRoles, error: rpcError } = await supabase
+              .rpc('get_user_app_roles_safe', { _user_id: user.id });
+            
+            if (rpcError) {
+              console.error('RPC function error (non-fatal):', rpcError);
+              setIsCheckingRoles(false);
+              return;
+            }
+            
+            if (!rpcRoles || rpcRoles.length === 0) {
+              // No roles found - user needs to complete registration
+              setIsCheckingRoles(false);
+              toast({
+                title: "Complete Registration",
+                description: "Please select your role(s) to continue.",
+              });
+              navigate("/register");
+            } else {
+              // Found roles via RPC - refresh AuthContext to update state
+              console.log('Found roles via RPC, refreshing AuthContext');
+              await refreshRoles();
+              setIsCheckingRoles(false);
+            }
+          } catch (err) {
+            console.error('Exception checking roles:', err);
+            setIsCheckingRoles(false);
+          }
+        } catch (err) {
+          console.error('Error in role check:', err);
+          setIsCheckingRoles(false);
+        }
+      }, 2000); // Wait 2 seconds for AuthContext to load roles
+      
+      return () => {
+        clearTimeout(checkRolesTimeout);
+      };
+    } else if (userRoles.length > 0) {
+      // User has roles, mark as checked
+      hasCheckedRolesRef.current = true;
+      setIsCheckingRoles(false);
+    }
+  }, [user, authLoading, navigate, toast]); // Removed problematic dependencies
+
+  // Fetch stats when userRoles are available (separate effect to prevent loops)
+  // Use a ref to track if we've already fetched to prevent multiple calls
+  useEffect(() => {
+    // Reset fetch flag when user or roles change significantly
+    if (user?.id && userRoles.length > 0) {
+      // Only fetch if we haven't already
+      if (!hasFetchedStatsRef.current && !authLoading) {
+        fetchStats();
+      }
+    } else {
+      // Reset flag when user/roles are cleared
+      hasFetchedStatsRef.current = false;
+    }
+  }, [authLoading, user?.id, userRoles.length, fetchStats]);
 
   const handleSwitchRole = async (role: 'digger' | 'gigger') => {
     await switchRole(role);
