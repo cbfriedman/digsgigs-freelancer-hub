@@ -28,15 +28,27 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     if (user && redirectIfAuthenticated && !hasCheckedRoles) {
       const checkRoles = async () => {
         try {
-          const { data, error } = await supabase
-            .from('user_app_roles')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('is_active', true)
-            .limit(1);
+          // Use RPC function to bypass RLS and avoid 500 errors
+          let hasRoles = false;
           
-          // On error, assume user has roles (safer than blocking access)
-          setUserHasRoles(!error && data && data.length > 0);
+          try {
+            const { data: rpcRoles, error: rpcError } = await supabase
+              .rpc('get_user_app_roles_safe', { _user_id: user.id });
+            
+            if (!rpcError && rpcRoles && rpcRoles.length > 0) {
+              hasRoles = true;
+            } else if (rpcError) {
+              // On error, assume user has roles (safer than blocking access)
+              console.warn('RPC function error (non-fatal):', rpcError);
+              hasRoles = true;
+            }
+          } catch (rpcException) {
+            // RPC function might not exist, assume user has roles to prevent blocking
+            console.warn('RPC function not available:', rpcException);
+            hasRoles = true;
+          }
+          
+          setUserHasRoles(hasRoles);
           setHasCheckedRoles(true);
         } catch (err) {
           console.error('Error checking roles:', err);
@@ -120,12 +132,32 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
         
         const checkRolesOnce = async () => {
           try {
-            const { data: roles, error: rolesError } = await supabase
-              .from('user_app_roles')
-              .select('app_role')
-              .eq('user_id', user.id)
-              .eq('is_active', true)
-              .limit(1);
+            // Use RPC function to bypass RLS and avoid 500 errors
+            let roles = null;
+            let rolesError = null;
+            
+            try {
+              const { data: rpcRoles, error: rpcError } = await supabase
+                .rpc('get_user_app_roles_safe', { _user_id: user.id });
+              
+              if (!rpcError && rpcRoles) {
+                roles = rpcRoles.map((r: any) => ({ app_role: r.app_role }));
+              } else {
+                rolesError = rpcError;
+              }
+            } catch (rpcException) {
+              // RPC function might not exist, try direct query as last resort
+              console.warn('RPC function failed, trying direct query:', rpcException);
+              const result = await supabase
+                .from('user_app_roles')
+                .select('app_role')
+                .eq('user_id', user.id)
+                .eq('is_active', true)
+                .limit(1);
+              
+              roles = result.data;
+              rolesError = result.error;
+            }
             
             if (rolesError) {
               console.error('Error checking roles:', rolesError);

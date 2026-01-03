@@ -452,50 +452,68 @@ export default function RoleDashboard() {
                       return;
                     }
                     
-                    // Check if user already has gigger role (with error handling)
-                    const { data: existingRoles, error: checkError } = await supabase
-                      .from('user_app_roles')
-                      .select('app_role')
-                      .eq('user_id', user.id)
-                      .eq('app_role', 'gigger')
-                      .eq('is_active', true)
-                      .limit(1);
+                    // Check if user already has gigger role using RPC function (bypasses RLS)
+                    let hasGiggerRole = false;
+                    let checkError = null;
                     
-                    // Handle 500 errors gracefully
-                    if (checkError) {
-                      console.error('Error checking gigger role:', checkError);
-                      if (checkError.code === '500' || checkError.message?.includes('500') || checkError.message?.includes('Internal Server Error')) {
-                        // On 500 error, try to proceed with insert (user might not have role)
-                        // But first check AuthContext as fallback
+                    try {
+                      // Use RPC function to check role (bypasses RLS)
+                      const { data: hasRole, error: hasRoleError } = await supabase
+                        .rpc('has_app_role', { 
+                          _user_id: user.id, 
+                          _role: 'gigger' 
+                        });
+                      
+                      if (!hasRoleError && hasRole === true) {
+                        hasGiggerRole = true;
+                      } else if (hasRoleError) {
+                        checkError = hasRoleError;
+                        // Fallback: check AuthContext
                         if (userRoles.includes('gigger')) {
-                          await switchRole('gigger');
-                          navigate('/post-gig');
-                          return;
+                          hasGiggerRole = true;
                         }
-                        // If still no role, try to add it
-                        toast({
-                          title: "Warning",
-                          description: "Having trouble checking your role. Attempting to add Gigger role...",
-                        });
-                      } else {
-                        toast({
-                          title: "Error",
-                          description: "Failed to check role. Please try again.",
-                          variant: "destructive",
-                        });
-                        return;
+                      }
+                    } catch (rpcException) {
+                      console.warn('RPC function failed, checking AuthContext:', rpcException);
+                      // Fallback: check AuthContext
+                      if (userRoles.includes('gigger')) {
+                        hasGiggerRole = true;
                       }
                     }
                     
-                    if (existingRoles && existingRoles.length > 0) {
+                    if (hasGiggerRole) {
                       // User already has gigger role, just switch to it
                       await switchRole('gigger');
                       navigate('/post-gig');
                     } else {
-                      // User doesn't have gigger role, add it
-                      const { error: roleError } = await supabase
-                        .from('user_app_roles')
-                        .insert({ user_id: user.id, app_role: 'gigger', is_active: true });
+                      // User doesn't have gigger role, add it using RPC function
+                      let roleError = null;
+                      
+                      try {
+                        // Try direct INSERT first
+                        const { error: directInsertError } = await supabase
+                          .from('user_app_roles')
+                          .insert({ user_id: user.id, app_role: 'gigger', is_active: true });
+                        
+                        // If recursion error, use RPC function
+                        if (directInsertError && (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion'))) {
+                          console.log('Infinite recursion detected, using RPC function');
+                          const { error: rpcInsertError } = await supabase
+                            .rpc('insert_user_app_role', {
+                              p_user_id: user.id,
+                              p_app_role: 'gigger'
+                            });
+                          
+                          if (rpcInsertError) {
+                            roleError = rpcInsertError;
+                          }
+                        } else if (directInsertError) {
+                          roleError = directInsertError;
+                        }
+                      } catch (insertException) {
+                        console.error('Exception adding gigger role:', insertException);
+                        roleError = insertException as any;
+                      }
                       
                       if (roleError) {
                         console.error('Error adding gigger role:', roleError);
