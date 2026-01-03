@@ -22,6 +22,7 @@ import { useUTMTracking } from "@/hooks/useUTMTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
+import { Footer } from "@/components/Footer";
 
 // SECURITY: Input validation schemas
 const basicInfoSchema = z.object({
@@ -2179,6 +2180,7 @@ const Register = () => {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
     </>
   );

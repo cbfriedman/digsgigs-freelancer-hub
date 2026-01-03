@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Mail, MessageSquare, Clock } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
+import { Footer } from "@/components/Footer";
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -215,6 +216,7 @@ const Contact = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
