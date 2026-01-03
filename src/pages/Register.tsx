@@ -916,15 +916,52 @@ const Register = () => {
 
     try {
       // Create user_app_roles entries (account already created)
+      // Try direct INSERT first, fallback to RPC function if recursion error
       const roleInserts = roleArray.map(role => ({
         user_id: userId,
         app_role: role,
         is_active: true,
       }));
 
-      const { error: rolesError } = await supabase
+      let rolesError = null;
+      
+      // Try direct INSERT first
+      const { error: directInsertError } = await supabase
         .from('user_app_roles')
         .insert(roleInserts);
+
+      // If we get infinite recursion error, use RPC function instead
+      if (directInsertError) {
+        console.warn("Direct INSERT failed, trying RPC function:", directInsertError);
+        
+        // Check if it's a recursion error
+        if (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion')) {
+          console.log("Infinite recursion detected, using RPC function to bypass RLS");
+          
+          // Use RPC function to insert roles (bypasses RLS)
+          try {
+            for (const role of roleArray) {
+              const { error: rpcError } = await supabase
+                .rpc('insert_user_app_role', {
+                  p_user_id: userId,
+                  p_app_role: role
+                });
+              
+              if (rpcError) {
+                console.error(`RPC error inserting role ${role}:`, rpcError);
+                rolesError = rpcError;
+                break;
+              }
+            }
+          } catch (rpcException) {
+            console.error("Exception using RPC function:", rpcException);
+            rolesError = rpcException as any;
+          }
+        } else {
+          // Other error, use it as-is
+          rolesError = directInsertError;
+        }
+      }
 
       if (rolesError) {
         console.error("Error creating roles:", rolesError);

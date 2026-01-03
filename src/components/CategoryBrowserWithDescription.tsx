@@ -659,14 +659,38 @@ export const CategoryBrowserWithDescription = () => {
                       const hasDiggerRole = existingRoles?.some(r => r.app_role === 'digger');
 
                       if (!hasDiggerRole) {
-                        const { error: roleError } = await supabase
+                        // Try direct INSERT first
+                        let roleError = null;
+                        const { error: directInsertError } = await supabase
                           .from('user_app_roles')
                           .insert({
                             user_id: user.id,
                             app_role: 'digger'
                           });
 
-                        if (roleError) throw roleError;
+                        // If we get infinite recursion error, use RPC function instead
+                        if (directInsertError) {
+                          if (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion')) {
+                            console.log("Infinite recursion detected, using RPC function to bypass RLS");
+                            // Use RPC function to insert role (bypasses RLS)
+                            const { error: rpcError } = await supabase
+                              .rpc('insert_user_app_role', {
+                                p_user_id: user.id,
+                                p_app_role: 'digger'
+                              });
+                            
+                            if (rpcError) {
+                              roleError = rpcError;
+                            }
+                          } else {
+                            roleError = directInsertError;
+                          }
+                        }
+
+                        if (roleError) {
+                          console.error("Error creating digger role:", roleError);
+                          throw roleError;
+                        }
                         toast.success("Registered as Digger!");
                       }
 
