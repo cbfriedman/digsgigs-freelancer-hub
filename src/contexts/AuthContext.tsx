@@ -101,14 +101,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           hint: error.hint
         });
         
-        // If it's a 500 error, try a simpler query without filters
+        // If it's a 500 error, try using the RPC function directly (bypasses RLS)
         if (error.code === '500' || error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
-          console.warn('500 error detected, trying simpler query...');
+          console.warn('500 error detected, trying RPC function get_user_app_roles_safe...');
           try {
+            // Try the safe RPC function which should bypass RLS
+            const { data: rpcData, error: rpcError } = await supabase
+              .rpc('get_user_app_roles_safe', { _user_id: userId });
+            
+            if (!rpcError && rpcData) {
+              const roles = (rpcData || []).map((r: any) => r.app_role as UserAppRole);
+              console.log('Fetched roles with RPC function:', roles);
+              setUserRoles(roles);
+              if (roles.length > 0) {
+                setActiveRole(roles[0]);
+              }
+              return;
+            }
+            
+            // If RPC also fails, try simplest possible query
+            console.warn('RPC function also failed, trying simplest query...');
             const { data: simpleData, error: simpleError } = await supabase
               .from('user_app_roles')
               .select('app_role')
-              .eq('user_id', userId);
+              .eq('user_id', userId)
+              .limit(10); // Add limit to prevent large queries
             
             if (!simpleError && simpleData) {
               const roles = (simpleData || []).map(r => r.app_role as UserAppRole);
@@ -119,8 +136,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               }
               return;
             }
-          } catch (simpleError) {
-            console.error('Simple query also failed:', simpleError);
+          } catch (fallbackError) {
+            console.error('All fallback queries failed:', fallbackError);
           }
         }
         

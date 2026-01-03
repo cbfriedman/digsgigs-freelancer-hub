@@ -1,15 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// CORS configuration - allow all origins for this function
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Max-Age": "86400", // 24 hours
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
+  // Handle CORS preflight - MUST return 200 OK
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
   }
 
   try {
@@ -86,9 +92,16 @@ serve(async (req) => {
   } catch (error) {
     console.error("Unexpected error in log-campaign-event:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    // Always return CORS headers even on error
     return new Response(
       JSON.stringify({ error: "Internal server error", details: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json" 
+        } 
+      }
     );
   }
 });
