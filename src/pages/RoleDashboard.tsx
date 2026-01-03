@@ -30,11 +30,12 @@ const roleConfig = {
 };
 
 export default function RoleDashboard() {
-  const { user, userRoles, activeRole, switchRole, loading: authLoading } = useAuth();
+  const { user, userRoles, activeRole, switchRole, loading: authLoading, refreshRoles } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [stats, setStats] = useState<RoleStats>({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isCheckingRoles, setIsCheckingRoles] = useState(false);
 
   useEffect(() => {
     // Wait for auth to finish loading before checking user
@@ -48,49 +49,74 @@ export default function RoleDashboard() {
       return;
     }
 
-    // If user has no roles, they need to complete registration
-    // But wait a bit for roles to load (they might be loading)
-    if (userRoles.length === 0) {
-      // Give it a moment for roles to load, then check again
+    // If user has no roles, wait for AuthContext to load them, then check
+    // Don't redirect immediately - give AuthContext time to fetch roles using RPC function
+    if (userRoles.length === 0 && !isCheckingRoles) {
+      setIsCheckingRoles(true);
+      
+      // Wait a bit for AuthContext to finish loading roles, then check
       const checkRolesTimeout = setTimeout(async () => {
         try {
-          const { data: roles, error: rolesError } = await supabase
-            .from('user_app_roles')
-            .select('app_role')
-            .eq('user_id', user.id)
-            .eq('is_active', true);
+          // First, try refreshing roles from AuthContext (uses RPC function that bypasses RLS)
+          await refreshRoles();
           
-          // Handle 500 errors gracefully
-          if (rolesError) {
-            console.error('Error checking roles:', rolesError);
-            // If it's a 500 error, don't redirect - user might have roles but query is failing
-            if (rolesError.code === '500' || rolesError.message?.includes('500') || rolesError.message?.includes('Internal Server Error')) {
-              console.warn('500 error checking roles - user may have roles but database query is failing');
-              // Don't redirect on 500 error - let user stay on page
-              return;
+          // Wait for state to potentially update
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // If still no roles after refresh, check database directly using RPC function
+          if (userRoles.length === 0) {
+            try {
+              // Use the safe RPC function that bypasses RLS completely
+              const { data: rpcRoles, error: rpcError } = await supabase
+                .rpc('get_user_app_roles_safe', { _user_id: user.id });
+              
+              if (rpcError) {
+                console.error('RPC function error (non-fatal):', rpcError);
+                // Don't redirect on error - might be temporary
+                setIsCheckingRoles(false);
+                return;
+              }
+              
+              if (!rpcRoles || rpcRoles.length === 0) {
+                // No roles found - user needs to complete registration
+                setIsCheckingRoles(false);
+                toast({
+                  title: "Complete Registration",
+                  description: "Please select your role(s) to continue.",
+                });
+                navigate("/register");
+              } else {
+                // Found roles via RPC - refresh AuthContext to update state
+                console.log('Found roles via RPC, refreshing AuthContext');
+                await refreshRoles();
+                setIsCheckingRoles(false);
+              }
+            } catch (err) {
+              console.error('Exception checking roles:', err);
+              setIsCheckingRoles(false);
+              // Don't redirect on exception - might be temporary error
             }
-          }
-          
-          if (!roles || roles.length === 0) {
-            // Still no roles - redirect to registration
-            toast({
-              title: "Complete Registration",
-              description: "Please select your role(s) to continue.",
-            });
-            navigate("/register");
+          } else {
+            // Roles loaded from AuthContext refresh
+            setIsCheckingRoles(false);
           }
         } catch (err) {
-          console.error('Exception checking roles:', err);
-          // On exception, don't redirect - might be temporary error
+          console.error('Error in role check:', err);
+          setIsCheckingRoles(false);
         }
-      }, 1000);
+      }, 2000); // Wait 2 seconds for AuthContext to load roles
       
-      return () => clearTimeout(checkRolesTimeout);
+      return () => {
+        clearTimeout(checkRolesTimeout);
+        setIsCheckingRoles(false);
+      };
     }
 
     // User has roles - fetch stats
-    fetchStats();
-  }, [user, navigate, userRoles, refreshKey, authLoading]);
+    if (userRoles.length > 0) {
+      fetchStats();
+    }
+  }, [user, navigate, userRoles, refreshKey, authLoading, isCheckingRoles, refreshRoles]);
 
   const fetchStats = async () => {
     if (!user || userRoles.length === 0) return;
@@ -211,6 +237,23 @@ export default function RoleDashboard() {
     await supabase.auth.signOut();
     navigate("/");
   };
+
+  // Show loading state while checking roles
+  if (isCheckingRoles || (authLoading && !user)) {
+    return (
+      <div className="min-h-screen relative">
+        <Navigation />
+        <div className="container mx-auto px-4 py-4 sm:py-8 relative z-0">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading your dashboard...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative">
