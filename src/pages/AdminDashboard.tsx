@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,7 @@ interface KeywordRequest {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { user, userRoles } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState<ReminderStats>({ total: 0, day3: 0, day7: 0, day14: 0 });
@@ -65,28 +67,65 @@ const AdminDashboard = () => {
 
   const checkAdminAccess = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         toast.error("Please sign in to access this page");
         navigate("/auth");
         return;
       }
 
-      // Check if user is admin (using correct table: user_app_roles)
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_app_roles")
-        .select("app_role")
-        .eq("user_id", user.id)
-        .eq("app_role", "admin")
-        .eq("is_active", true)
-        .maybeSingle();
+      // First check: Use userRoles from AuthContext (already loaded, no query needed)
+      if (userRoles.includes('admin')) {
+        setIsAdmin(true);
+        await loadDashboardData();
+        await loadKeywordRequests();
+        setLoading(false);
+        return;
+      }
+
+      // Fallback: Try using the safe RPC function (bypasses RLS)
+      let isAdminCheck = false;
+      let rolesError = null;
+
+      try {
+        const { data: functionData, error: functionError } = await supabase
+          .rpc('get_user_app_roles_safe', { _user_id: user.id });
+        
+        if (!functionError && functionData) {
+          // Check if admin role exists in the results
+          isAdminCheck = functionData.some((r: any) => r.app_role === 'admin');
+        } else {
+          // Fallback: Try using has_app_role function
+          const { data: hasAdmin, error: hasAdminError } = await supabase
+            .rpc('has_app_role', { _user_id: user.id, _role: 'admin' });
+          
+          if (!hasAdminError && hasAdmin) {
+            isAdminCheck = hasAdmin === true;
+          } else {
+            rolesError = hasAdminError || functionError;
+          }
+        }
+      } catch (rpcError) {
+        console.warn('RPC functions not available:', rpcError);
+        rolesError = rpcError as any;
+      }
 
       if (rolesError) {
         console.error("Error checking admin status:", rolesError);
+        // If RLS recursion error, trust AuthContext roles
+        if (rolesError.message?.includes('infinite recursion') || rolesError.code === '42P17') {
+          console.warn('RLS recursion detected - trusting AuthContext roles');
+          // If userRoles includes admin, allow access
+          if (userRoles.includes('admin')) {
+            setIsAdmin(true);
+            await loadDashboardData();
+            await loadKeywordRequests();
+            setLoading(false);
+            return;
+          }
+        }
       }
 
-      if (!roles) {
+      if (!isAdminCheck) {
         toast.error("Access denied. Admin privileges required.");
         navigate("/");
         return;
