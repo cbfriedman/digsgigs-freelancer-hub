@@ -170,6 +170,7 @@ export default function RoleDashboard() {
     }
 
     // If user has no roles, wait for AuthContext to load them, then check
+    // But don't redirect immediately - give it time and be defensive about errors
     if (userRoles.length === 0 && !isCheckingRoles) {
       setIsCheckingRoles(true);
       hasCheckedRolesRef.current = true;
@@ -181,10 +182,9 @@ export default function RoleDashboard() {
           await refreshRoles();
           
           // Wait for state to potentially update
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Check current userRoles (from closure, will be updated on next render)
-          // If still no roles, check database directly using RPC function
+          // Check database directly using RPC function
           try {
             // Use the safe RPC function that bypasses RLS completely
             const { data: rpcRoles, error: rpcError } = await supabase
@@ -192,33 +192,54 @@ export default function RoleDashboard() {
             
             if (rpcError) {
               console.error('RPC function error (non-fatal):', rpcError);
+              // Don't redirect on error - user might have roles but query is failing
+              // This could be due to migrations not being applied
+              console.warn('RPC function failed - this might mean migrations need to be applied');
               setIsCheckingRoles(false);
+              // Show a helpful message but don't redirect
+              toast({
+                title: "Loading Roles",
+                description: "Having trouble loading your roles. The page will still work.",
+                variant: "default",
+              });
               return;
             }
             
             if (!rpcRoles || rpcRoles.length === 0) {
-              // No roles found - user needs to complete registration
+              // No roles found - but DON'T redirect automatically
+              // Let user see the dashboard and choose to register if they want
+              // This is better UX than forcing a redirect
+              console.log('No roles found - showing dashboard with registration options');
               setIsCheckingRoles(false);
+              
+              // Show a helpful toast but don't redirect
               toast({
-                title: "Complete Registration",
-                description: "Please select your role(s) to continue.",
+                title: "No Roles Found",
+                description: "You can register for roles using the buttons below.",
+                variant: "default",
               });
-              navigate("/register");
             } else {
               // Found roles via RPC - refresh AuthContext to update state
-              console.log('Found roles via RPC, refreshing AuthContext');
+              console.log('Found roles via RPC, refreshing AuthContext:', rpcRoles);
               await refreshRoles();
               setIsCheckingRoles(false);
             }
           } catch (err) {
             console.error('Exception checking roles:', err);
+            // Don't redirect on exception - might be temporary error
             setIsCheckingRoles(false);
+            toast({
+              title: "Error Loading Roles",
+              description: "Please refresh the page. If the issue persists, contact support.",
+              variant: "destructive",
+            });
           }
         } catch (err) {
           console.error('Error in role check:', err);
           setIsCheckingRoles(false);
+          // Don't redirect on error
         }
-      }, 2000); // Wait 2 seconds for AuthContext to load roles
+      }, 3000); // Wait 3 seconds for AuthContext to load roles
       
       return () => {
         clearTimeout(checkRolesTimeout);
@@ -258,8 +279,9 @@ export default function RoleDashboard() {
     navigate("/");
   };
 
-  // Show loading state while checking roles
-  if (isCheckingRoles || (authLoading && !user)) {
+  // Show loading state only while auth is loading, not while checking roles
+  // Allow user to see dashboard even if role check is in progress
+  if (authLoading && !user) {
     return (
       <div className="min-h-screen relative">
         <Navigation />
@@ -274,12 +296,48 @@ export default function RoleDashboard() {
       </div>
     );
   }
+  
+  // Show a message if checking roles but don't block the page
+  const showRoleCheckMessage = isCheckingRoles && userRoles.length === 0;
 
   return (
     <div className="min-h-screen relative">
       <Navigation />
       <div className="container mx-auto px-4 py-4 sm:py-8 relative z-0">
       <EmailVerificationBanner />
+      
+      {/* Show helpful message if user has no roles (but don't block access) */}
+      {user && userRoles.length === 0 && !isCheckingRoles && (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
+                No roles assigned yet
+              </p>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                To get started, please select your role(s) by clicking the registration buttons below or visit the registration page.
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/register')}
+            >
+              Complete Registration
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Show loading message while checking roles */}
+      {showRoleCheckMessage && (
+        <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            Loading your roles... Please wait.
+          </p>
+        </div>
+      )}
+      
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">My Dashboard</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
