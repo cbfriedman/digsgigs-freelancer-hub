@@ -66,15 +66,28 @@ export const DiggerProfileSelector = () => {
 
     try {
       // First check if user has digger role - if not, skip query entirely
-      const { data: roles } = await supabase
-        .from('user_app_roles')
-        .select('app_role')
-        .eq('user_id', user.id)
-        .eq('app_role', 'digger')
-        .eq('is_active', true)
-        .limit(1);
+      // Use RPC function to bypass RLS and avoid 500 errors
+      let hasDiggerRole = false;
+      try {
+        const { data: hasRole, error: roleError } = await supabase
+          .rpc('has_app_role', { 
+            _user_id: user.id, 
+            _role: 'digger' 
+          });
+        
+        if (!roleError && hasRole === true) {
+          hasDiggerRole = true;
+        } else if (roleError) {
+          console.warn("DiggerProfileSelector: Error checking digger role (non-fatal):", roleError);
+          // On error, assume user doesn't have role to be safe
+          hasDiggerRole = false;
+        }
+      } catch (rpcException) {
+        console.warn("DiggerProfileSelector: RPC function not available, assuming no digger role:", rpcException);
+        hasDiggerRole = false;
+      }
 
-      if (!roles || roles.length === 0) {
+      if (!hasDiggerRole) {
         // User doesn't have digger role, no need to query profiles
         console.log("DiggerProfileSelector: User doesn't have digger role, skipping profile load");
         setProfiles([]);

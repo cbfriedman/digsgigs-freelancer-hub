@@ -304,11 +304,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 window.history.replaceState(null, '', window.location.pathname);
 
                 // Check if user has completed registration by checking for roles
-                const { data: roles, error: rolesError } = await supabase
-                  .from('user_app_roles')
-                  .select('app_role')
-                  .eq('user_id', session.user.id)
-                  .eq('is_active', true);
+                // Use RPC function to bypass RLS and avoid 500 errors
+                let roles = null;
+                let rolesError = null;
+                
+                try {
+                  const { data: rpcRoles, error: rpcError } = await supabase
+                    .rpc('get_user_app_roles_safe', { _user_id: session.user.id });
+                  
+                  if (!rpcError && rpcRoles) {
+                    roles = rpcRoles.map((r: any) => ({ app_role: r.app_role }));
+                  } else {
+                    rolesError = rpcError || new Error('RPC function not available');
+                  }
+                } catch (rpcException) {
+                  rolesError = rpcException as any;
+                }
 
                 if (rolesError) {
                   console.error('Error checking roles:', rolesError);
