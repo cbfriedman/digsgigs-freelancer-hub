@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Fetch user roles from user_app_roles table
   const fetchUserRoles = async (userId: string): Promise<void> => {
     try {
+      console.log('Fetching roles for user:', userId);
       const { data, error } = await supabase
         .from('user_app_roles')
         .select('app_role, last_used_at')
@@ -62,9 +63,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .eq('is_active', true)
         .order('last_used_at', { ascending: false, nullsFirst: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user roles:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        // Don't clear existing roles on error - keep what we have
+        // This prevents blocking users if there's a temporary error
+        return;
+      }
 
       const roles = (data || []).map(r => r.app_role as UserAppRole);
+      console.log('Fetched roles:', roles);
       setUserRoles(roles);
 
       // Set active role to the most recently used, or first role if none set
@@ -76,11 +89,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (roles.includes('digger')) {
           await checkSubscription();
         }
+      } else {
+        console.warn('No active roles found for user:', userId);
       }
     } catch (error) {
-      console.error('Error fetching user roles:', error);
-      setUserRoles([]);
-      setActiveRole(null);
+      console.error('Exception fetching user roles:', error);
+      // Don't clear existing roles on error - keep what we have
+      // This prevents blocking users if there's a temporary error
     }
   };
 

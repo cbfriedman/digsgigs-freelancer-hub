@@ -88,10 +88,20 @@ const Register = () => {
   const isInSignInOtpFlowRef = useRef(false); // Prevent redirect during sign-in OTP flow
   const hasInitializedSignInModeRef = useRef(false); // Track if we've initialized sign-in mode
   const isSendingOtpRef = useRef(false); // Prevent multiple simultaneous OTP requests
-  const { user, loading: authLoading } = useProtectedRoute({ 
+  const { user, loading: authLoading, userRoles } = useProtectedRoute({ 
     redirectIfAuthenticated: true,
     requireVerified: false // Allow unverified users to complete registration
   });
+  
+  // Immediate redirect for users with roles - don't wait for other checks
+  // This ensures users with roles (like admin) can access the platform immediately
+  useEffect(() => {
+    if (!authLoading && user && userRoles && userRoles.length > 0) {
+      console.log('User has roles, redirecting to dashboard:', userRoles);
+      // Use immediate redirect for users with roles
+      window.location.href = '/role-dashboard';
+    }
+  }, [authLoading, user, userRoles]);
   
   // Check if user is coming from gig posting flow (Craigslist model - no OTP required)
   const isFromGigPosting = new URLSearchParams(window.location.search).get('returnTo') === '/post-gig';

@@ -61,14 +61,28 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
       return;
     }
 
-    // For register page: only redirect verified users who ALREADY have roles
-    if (redirectIfAuthenticated && user && user.email_confirmed_at && hasCheckedRoles) {
-      if (userHasRoles) {
+    // For register page: check if user has roles (from AuthContext or direct check)
+    // Priority: userRoles from AuthContext > direct database check
+    if (redirectIfAuthenticated && user) {
+      // First check: If userRoles are already loaded from AuthContext, use them immediately
+      if (userRoles && userRoles.length > 0) {
+        console.log('User has roles from AuthContext, redirecting:', userRoles);
         navigate('/role-dashboard');
         return;
       }
-      // If verified but no roles, let them stay on register to complete role setup
-      return;
+      
+      // Second check: If email is verified and we've checked database
+      if (user.email_confirmed_at && hasCheckedRoles && userHasRoles) {
+        console.log('User has roles from database check, redirecting');
+        navigate('/role-dashboard');
+        return;
+      }
+      
+      // If verified but no roles found, let them stay on register to complete role setup
+      if (user.email_confirmed_at && hasCheckedRoles && !userHasRoles) {
+        // No roles - stay on register page
+        return;
+      }
     }
 
     // Allow unverified authenticated users to stay on register page for verification completion
@@ -156,5 +170,5 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     }
   }, [user, loading, navigate, requireVerified, redirectTo, redirectIfAuthenticated, hasCheckedRoles, userHasRoles, userRoles, hasCheckedDatabaseRoles]);
 
-  return { user, loading, isVerified: !!user?.email_confirmed_at };
+  return { user, loading, userRoles, isVerified: !!user?.email_confirmed_at };
 };
