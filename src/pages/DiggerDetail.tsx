@@ -11,6 +11,7 @@ import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loa
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { generateLocalBusinessSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -1343,6 +1344,7 @@ const DiggerDetail = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
