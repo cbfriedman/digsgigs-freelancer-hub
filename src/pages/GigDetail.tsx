@@ -15,6 +15,7 @@ import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
 import SEOHead from "@/components/SEOHead";
 import { generateJobPostingSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 
 interface Gig {
   id: string;
@@ -173,6 +174,17 @@ const GigDetail = () => {
     setGig(gigData);
     setIsOwner(session?.user?.id === gigData.consumer_id);
     setLoading(false);
+
+    // Track ViewContent event for Facebook Pixel
+    if (fbConfigured && gigData) {
+      trackFBEvent('ViewContent', {
+        content_name: gigData.title,
+        content_ids: [gigData.id],
+        content_type: 'gig',
+        value: gigData.budget_min || 0,
+        currency: 'USD',
+      });
+    }
   };
 
   const formatBudget = (min: number | null, max: number | null): string => {

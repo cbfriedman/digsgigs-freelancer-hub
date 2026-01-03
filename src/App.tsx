@@ -10,6 +10,7 @@ import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import { PageViewTracker } from "./components/PageViewTracker";
+import { GlobalAnalytics } from "./components/GlobalAnalytics";
 // Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
@@ -434,6 +435,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <GlobalAnalytics />
             <PresenceTracker />
             <RouterProvider router={router} />
           </TooltipProvider>

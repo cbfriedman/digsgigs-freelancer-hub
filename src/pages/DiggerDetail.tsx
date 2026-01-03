@@ -21,6 +21,7 @@ import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
 import { ProfileClickPricingCard } from "@/components/ProfileClickPricingCard";
 import { useProfileCallTracking } from "@/hooks/useProfileCallTracking";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 
 interface Reference {
   id: string;
@@ -203,6 +204,17 @@ const DiggerDetail = () => {
 
     setReferences(referencesData || []);
     setLoading(false);
+
+    // Track ViewContent event for Facebook Pixel
+    if (fbConfigured && diggerData) {
+      trackFBEvent('ViewContent', {
+        content_name: diggerData.business_name || diggerData.profession,
+        content_ids: [diggerData.id],
+        content_type: 'digger_profile',
+        value: diggerData.hourly_rate || diggerData.hourly_rate_min || 0,
+        currency: 'USD',
+      });
+    }
 
     // Load reference contact requests if user is logged in
     if (session?.user) {

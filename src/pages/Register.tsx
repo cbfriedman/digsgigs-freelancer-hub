@@ -984,6 +984,15 @@ const Register = () => {
           trackGAConversion(1);
         }
         
+        // Fire GA4 signup conversion event
+        if (typeof window !== 'undefined' && window.gtag) {
+          window.gtag('event', 'sign_up', {
+            method: conversionType,
+            value: 1,
+            currency: 'USD',
+          });
+        }
+        
         // Clear UTM data after successful conversion
         clearUTMData();
       } catch (trackingError) {

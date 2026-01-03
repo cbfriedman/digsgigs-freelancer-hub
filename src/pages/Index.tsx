@@ -50,6 +50,7 @@ import { DiggerOnboardingChoice } from "@/components/DiggerOnboardingChoice";
 
 import AIChatbot from "@/components/AIChatbot";
 import { usePlatformCounts } from "@/hooks/usePlatformCounts";
+import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -287,8 +288,14 @@ const Index = () => {
               </>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => navigate("/register?mode=signin")}>Sign In</Button>
-                <Button variant="hero" onClick={() => navigate("/register")}>Get Started</Button>
+                <Button variant="ghost" onClick={() => {
+                  trackButtonClick('Sign In', 'header');
+                  navigate("/register?mode=signin");
+                }}>Sign In</Button>
+                <Button variant="hero" onClick={() => {
+                  trackButtonClick('Get Started', 'header');
+                  navigate("/register");
+                }}>Get Started</Button>
               </>
             )}
           </div>
@@ -396,6 +403,7 @@ const Index = () => {
                       variant="ghost" 
                       className="justify-start" 
                       onClick={() => {
+                        trackButtonClick('Sign In', 'mobile-menu');
                         navigate("/register?mode=signin");
                         setMobileMenuOpen(false);
                       }}
@@ -405,6 +413,7 @@ const Index = () => {
                     <Button 
                       variant="hero" 
                       onClick={() => {
+                        trackButtonClick('Get Started', 'mobile-menu');
                         navigate("/register");
                         setMobileMenuOpen(false);
                       }}
