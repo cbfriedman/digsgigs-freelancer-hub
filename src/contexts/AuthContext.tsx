@@ -56,12 +56,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const fetchUserRoles = async (userId: string): Promise<void> => {
     try {
       console.log('Fetching roles for user:', userId);
-      const { data, error } = await supabase
-        .from('user_app_roles')
-        .select('app_role, last_used_at')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .order('last_used_at', { ascending: false, nullsFirst: false });
+      
+      // Try using the safe function first (if available)
+      // Fallback to direct query if function doesn't exist
+      let data, error;
+      
+      try {
+        const { data: functionData, error: functionError } = await supabase
+          .rpc('get_user_app_roles_safe', { _user_id: userId });
+        
+        if (!functionError && functionData) {
+          data = functionData;
+          error = null;
+        } else {
+          // Fallback to direct query (simplified to avoid 500 errors)
+          const result = await supabase
+            .from('user_app_roles')
+            .select('app_role, last_used_at')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .order('last_used_at', { ascending: false });
+          data = result.data;
+          error = result.error;
+        }
+      } catch (rpcError) {
+        // Function might not exist, use direct query (simplified)
+        console.warn('Safe function not available, using direct query:', rpcError);
+        const result = await supabase
+          .from('user_app_roles')
+          .select('app_role, last_used_at')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .order('last_used_at', { ascending: false });
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error('Error fetching user roles:', error);
@@ -71,6 +100,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           details: error.details,
           hint: error.hint
         });
+        
+        // If it's a 500 error, try a simpler query without filters
+        if (error.code === '500' || error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
+          console.warn('500 error detected, trying simpler query...');
+          try {
+            const { data: simpleData, error: simpleError } = await supabase
+              .from('user_app_roles')
+              .select('app_role')
+              .eq('user_id', userId);
+            
+            if (!simpleError && simpleData) {
+              const roles = (simpleData || []).map(r => r.app_role as UserAppRole);
+              console.log('Fetched roles with simple query:', roles);
+              setUserRoles(roles);
+              if (roles.length > 0) {
+                setActiveRole(roles[0]);
+              }
+              return;
+            }
+          } catch (simpleError) {
+            console.error('Simple query also failed:', simpleError);
+          }
+        }
+        
         // Don't clear existing roles on error - keep what we have
         // This prevents blocking users if there's a temporary error
         return;
