@@ -143,20 +143,15 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
               if (!rpcError && rpcRoles) {
                 roles = rpcRoles.map((r: any) => ({ app_role: r.app_role }));
               } else {
-                rolesError = rpcError;
+                // RPC function might not exist (migrations not applied)
+                // Don't fallback to direct query - it will cause 500 errors
+                console.warn('RPC function get_user_app_roles_safe not available. Please apply database migrations.');
+                rolesError = rpcError || new Error('RPC function not available');
               }
             } catch (rpcException) {
-              // RPC function might not exist, try direct query as last resort
-              console.warn('RPC function failed, trying direct query:', rpcException);
-              const result = await supabase
-                .from('user_app_roles')
-                .select('app_role')
-                .eq('user_id', user.id)
-                .eq('is_active', true)
-                .limit(1);
-              
-              roles = result.data;
-              rolesError = result.error;
+              // RPC function doesn't exist - don't try direct query (causes 500 errors)
+              console.warn('RPC function get_user_app_roles_safe failed. Migrations may not be applied:', rpcException);
+              rolesError = rpcException as any;
             }
             
             if (rolesError) {

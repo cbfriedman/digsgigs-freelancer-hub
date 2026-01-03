@@ -69,27 +69,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           data = functionData;
           error = null;
         } else {
-          // Fallback to direct query (simplified to avoid 500 errors)
-          const result = await supabase
-            .from('user_app_roles')
-            .select('app_role, last_used_at')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .order('last_used_at', { ascending: false });
-          data = result.data;
-          error = result.error;
+          // RPC function might not exist (migrations not applied)
+          // Don't fallback to direct query - it will cause 500 errors due to RLS recursion
+          console.warn('RPC function get_user_app_roles_safe not available. Please apply database migrations.');
+          data = null;
+          error = functionError || new Error('RPC function not available - migrations may not be applied');
         }
       } catch (rpcError) {
-        // Function might not exist, use direct query (simplified)
-        console.warn('Safe function not available, using direct query:', rpcError);
-        const result = await supabase
-          .from('user_app_roles')
-          .select('app_role, last_used_at')
-          .eq('user_id', userId)
-          .eq('is_active', true)
-          .order('last_used_at', { ascending: false });
-        data = result.data;
-        error = result.error;
+        // Function doesn't exist - don't try direct query (causes 500 errors)
+        console.warn('RPC function get_user_app_roles_safe failed. Migrations may not be applied:', rpcError);
+        data = null;
+        error = rpcError as any;
       }
 
       if (error) {
@@ -101,44 +91,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           hint: error.hint
         });
         
-        // If it's a 500 error, try using the RPC function directly (bypasses RLS)
-        if (error.code === '500' || error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
-          console.warn('500 error detected, trying RPC function get_user_app_roles_safe...');
-          try {
-            // Try the safe RPC function which should bypass RLS
-            const { data: rpcData, error: rpcError } = await supabase
-              .rpc('get_user_app_roles_safe', { _user_id: userId });
-            
-            if (!rpcError && rpcData) {
-              const roles = (rpcData || []).map((r: any) => r.app_role as UserAppRole);
-              console.log('Fetched roles with RPC function:', roles);
-              setUserRoles(roles);
-              if (roles.length > 0) {
-                setActiveRole(roles[0]);
-              }
-              return;
-            }
-            
-            // If RPC also fails, try simplest possible query
-            console.warn('RPC function also failed, trying simplest query...');
-            const { data: simpleData, error: simpleError } = await supabase
-              .from('user_app_roles')
-              .select('app_role')
-              .eq('user_id', userId)
-              .limit(10); // Add limit to prevent large queries
-            
-            if (!simpleError && simpleData) {
-              const roles = (simpleData || []).map(r => r.app_role as UserAppRole);
-              console.log('Fetched roles with simple query:', roles);
-              setUserRoles(roles);
-              if (roles.length > 0) {
-                setActiveRole(roles[0]);
-              }
-              return;
-            }
-          } catch (fallbackError) {
-            console.error('All fallback queries failed:', fallbackError);
-          }
+        // If RPC function doesn't exist, show helpful message
+        if (error.message?.includes('RPC function not available') || 
+            error.message?.includes('function') && error.message?.includes('does not exist')) {
+          console.error('⚠️ CRITICAL: Database migrations not applied!');
+          console.error('Please apply migrations: 20251230000004 and 20251230000005');
+          console.error('See: FIX_500_ERROR_USER_APP_ROLES.md for instructions');
         }
         
         // Don't clear existing roles on error - keep what we have
