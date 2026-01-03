@@ -22,6 +22,9 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
   const [hasCheckedRoles, setHasCheckedRoles] = useState(false);
   const [userHasRoles, setUserHasRoles] = useState(false);
   const [hasCheckedDatabaseRoles, setHasCheckedDatabaseRoles] = useState(false);
+  
+  // Check if user is completing registration (coming from dashboard with no roles)
+  const isCompletingRegistration = new URLSearchParams(window.location.search).get('complete') === 'true';
 
   // Check if user has roles (for register page logic)
   useEffect(() => {
@@ -75,7 +78,8 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
 
     // For register page: check if user has roles (from AuthContext or direct check)
     // Priority: userRoles from AuthContext > direct database check
-    if (redirectIfAuthenticated && user) {
+    // BUT: Skip redirect if user is completing registration (has no roles)
+    if (redirectIfAuthenticated && user && !isCompletingRegistration) {
       // First check: If userRoles are already loaded from AuthContext, use them immediately
       if (userRoles && userRoles.length > 0) {
         console.log('User has roles from AuthContext, redirecting:', userRoles);
@@ -98,8 +102,9 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     }
 
     // Allow unverified authenticated users to stay on register page for verification completion
-    if (redirectIfAuthenticated && user && !user.email_confirmed_at) {
-      // Don't redirect - let them complete verification
+    // OR if they're completing registration (coming from dashboard)
+    if (redirectIfAuthenticated && user && (!user.email_confirmed_at || isCompletingRegistration)) {
+      // Don't redirect - let them complete verification or registration
       return;
     }
 

@@ -321,7 +321,7 @@ export default function RoleDashboard() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/register?complete=true')}
             >
               Complete Registration
             </Button>

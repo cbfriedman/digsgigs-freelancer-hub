@@ -95,16 +95,20 @@ const Register = () => {
   
   // Immediate redirect for users with roles - don't wait for other checks
   // This ensures users with roles (like admin) can access the platform immediately
+  // BUT: Skip redirect if user is completing registration (has no roles)
   useEffect(() => {
-    if (!authLoading && user && userRoles && userRoles.length > 0) {
+    if (!authLoading && user && userRoles && userRoles.length > 0 && !isCompletingRegistration) {
       console.log('User has roles, redirecting to dashboard:', userRoles);
       // Use immediate redirect for users with roles
       window.location.href = '/role-dashboard';
     }
-  }, [authLoading, user, userRoles]);
+  }, [authLoading, user, userRoles, isCompletingRegistration]);
   
   // Check if user is coming from gig posting flow (Craigslist model - no OTP required)
   const isFromGigPosting = new URLSearchParams(window.location.search).get('returnTo') === '/post-gig';
+  
+  // Check if user is completing registration from dashboard (has no roles)
+  const isCompletingRegistration = new URLSearchParams(window.location.search).get('complete') === 'true';
   
   // Get gig title from sessionStorage for display
   const pendingGigData = isFromGigPosting ? JSON.parse(sessionStorage.getItem('pendingGigData') || '{}') : {};
