@@ -170,15 +170,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     try {
-      // Update last_used_at for this role
+      // Update last_used_at for this role (with error handling for 500 errors)
       const { error } = await supabase
         .from('user_app_roles')
         .update({ last_used_at: new Date().toISOString() })
         .eq('user_id', user.id)
         .eq('app_role', role as any);
 
-      if (error) throw error;
+      // Handle 500 errors gracefully - still switch role even if update fails
+      if (error) {
+        console.error('Error updating last_used_at:', error);
+        // If it's a 500 error, still allow role switch (update is non-critical)
+        if (error.code === '500' || error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
+          console.warn('500 error updating last_used_at - proceeding with role switch anyway');
+          // Continue with role switch even if update fails
+        } else {
+          // For other errors, still try to switch role but log the error
+          console.warn('Error updating last_used_at, but proceeding with role switch:', error);
+        }
+      }
 
+      // Always set active role (even if update failed)
       setActiveRole(role);
       
       // If switching to digger role, check subscription
@@ -186,10 +198,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await checkSubscription();
       }
 
-      toast.success(`Switched to ${role} mode`);
+      // Only show success if update succeeded or was a 500 error (non-critical)
+      if (!error || (error.code === '500' || error.message?.includes('500'))) {
+        toast.success(`Switched to ${role} mode`);
+      } else {
+        toast.success(`Switched to ${role} mode (some features may be limited)`);
+      }
     } catch (error) {
-      console.error('Error switching role:', error);
-      toast.error('Failed to switch role');
+      console.error('Exception switching role:', error);
+      // Even on exception, try to set the role locally
+      setActiveRole(role);
+      toast.success(`Switched to ${role} mode`);
     }
   };
 

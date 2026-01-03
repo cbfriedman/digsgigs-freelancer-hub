@@ -53,19 +53,35 @@ export default function RoleDashboard() {
     if (userRoles.length === 0) {
       // Give it a moment for roles to load, then check again
       const checkRolesTimeout = setTimeout(async () => {
-        const { data: roles } = await supabase
-          .from('user_app_roles')
-          .select('app_role')
-          .eq('user_id', user.id)
-          .eq('is_active', true);
-        
-        if (!roles || roles.length === 0) {
-          // Still no roles - redirect to registration
-          toast({
-            title: "Complete Registration",
-            description: "Please select your role(s) to continue.",
-          });
-          navigate("/register");
+        try {
+          const { data: roles, error: rolesError } = await supabase
+            .from('user_app_roles')
+            .select('app_role')
+            .eq('user_id', user.id)
+            .eq('is_active', true);
+          
+          // Handle 500 errors gracefully
+          if (rolesError) {
+            console.error('Error checking roles:', rolesError);
+            // If it's a 500 error, don't redirect - user might have roles but query is failing
+            if (rolesError.code === '500' || rolesError.message?.includes('500') || rolesError.message?.includes('Internal Server Error')) {
+              console.warn('500 error checking roles - user may have roles but database query is failing');
+              // Don't redirect on 500 error - let user stay on page
+              return;
+            }
+          }
+          
+          if (!roles || roles.length === 0) {
+            // Still no roles - redirect to registration
+            toast({
+              title: "Complete Registration",
+              description: "Please select your role(s) to continue.",
+            });
+            navigate("/register");
+          }
+        } catch (err) {
+          console.error('Exception checking roles:', err);
+          // On exception, don't redirect - might be temporary error
         }
       }, 1000);
       
@@ -365,39 +381,84 @@ export default function RoleDashboard() {
                 <Button onClick={async () => {
                   if (!user) return;
                   
-                  // Check if user already has gigger role
-                  const { data: existingRoles } = await supabase
-                    .from('user_app_roles')
-                    .select('app_role')
-                    .eq('user_id', user.id)
-                    .eq('app_role', 'gigger');
-                  
-                  if (existingRoles && existingRoles.length > 0) {
-                    // User already has gigger role, just switch to it
-                    await switchRole('gigger');
-                    navigate('/post-gig');
-                  } else {
-                    // User doesn't have gigger role, add it
-                    const { error: roleError } = await supabase
-                      .from('user_app_roles')
-                      .insert({ user_id: user.id, app_role: 'gigger', is_active: true });
-                    
-                    if (roleError) {
-                      toast({
-                        title: "Error",
-                        description: "Failed to add Gigger role. Please try again.",
-                        variant: "destructive",
-                      });
+                  try {
+                    // First check if user already has gigger role from AuthContext (avoid query if possible)
+                    if (userRoles.includes('gigger')) {
+                      await switchRole('gigger');
+                      navigate('/post-gig');
                       return;
                     }
                     
-                    // Switch to gigger role and navigate
-                    await switchRole('gigger');
+                    // Check if user already has gigger role (with error handling)
+                    const { data: existingRoles, error: checkError } = await supabase
+                      .from('user_app_roles')
+                      .select('app_role')
+                      .eq('user_id', user.id)
+                      .eq('app_role', 'gigger')
+                      .eq('is_active', true)
+                      .limit(1);
+                    
+                    // Handle 500 errors gracefully
+                    if (checkError) {
+                      console.error('Error checking gigger role:', checkError);
+                      if (checkError.code === '500' || checkError.message?.includes('500') || checkError.message?.includes('Internal Server Error')) {
+                        // On 500 error, try to proceed with insert (user might not have role)
+                        // But first check AuthContext as fallback
+                        if (userRoles.includes('gigger')) {
+                          await switchRole('gigger');
+                          navigate('/post-gig');
+                          return;
+                        }
+                        // If still no role, try to add it
+                        toast({
+                          title: "Warning",
+                          description: "Having trouble checking your role. Attempting to add Gigger role...",
+                        });
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Failed to check role. Please try again.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                    }
+                    
+                    if (existingRoles && existingRoles.length > 0) {
+                      // User already has gigger role, just switch to it
+                      await switchRole('gigger');
+                      navigate('/post-gig');
+                    } else {
+                      // User doesn't have gigger role, add it
+                      const { error: roleError } = await supabase
+                        .from('user_app_roles')
+                        .insert({ user_id: user.id, app_role: 'gigger', is_active: true });
+                      
+                      if (roleError) {
+                        console.error('Error adding gigger role:', roleError);
+                        toast({
+                          title: "Error",
+                          description: "Failed to add Gigger role. Please try again.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      // Switch to gigger role and navigate
+                      await switchRole('gigger');
+                      toast({
+                        title: "Success",
+                        description: "Gigger role added! You can now post gigs.",
+                      });
+                      navigate('/post-gig');
+                    }
+                  } catch (err) {
+                    console.error('Exception in gigger role check:', err);
                     toast({
-                      title: "Success",
-                      description: "Gigger role added! You can now post gigs.",
+                      title: "Error",
+                      description: "An error occurred. Please try again.",
+                      variant: "destructive",
                     });
-                    navigate('/post-gig');
                   }
                 }}>
                   Register as Gigger
