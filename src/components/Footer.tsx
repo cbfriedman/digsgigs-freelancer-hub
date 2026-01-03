@@ -23,22 +23,38 @@ export const Footer = () => {
             <h4 className="font-semibold mb-3">Platform</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <button onClick={() => navigate("/how-it-works")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/how-it-works")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   How It Works
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/browse-diggers")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/browse-diggers")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   Browse Freelancers
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/pricing")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/pricing")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   Pricing
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/post-gig")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/post-gig")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   Post a Project
                 </button>
               </li>
@@ -49,17 +65,29 @@ export const Footer = () => {
             <h4 className="font-semibold mb-3">Company</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <button onClick={() => navigate("/about")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/about")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   About
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/blog")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/blog")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   Blog
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/contact")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/contact")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   Contact
                 </button>
               </li>
@@ -70,17 +98,29 @@ export const Footer = () => {
             <h4 className="font-semibold mb-3">Legal</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <button onClick={() => navigate("/terms")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/terms")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   Terms of Service
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/privacy")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/privacy")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   Privacy Policy
                 </button>
               </li>
               <li>
-                <button onClick={() => navigate("/legal")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => navigate("/legal")} 
+                  className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
                   Legal Documents
                 </button>
               </li>

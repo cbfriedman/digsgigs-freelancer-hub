@@ -56,6 +56,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isDigger, signOut } = useAuth();
   const { showBrowseButtons } = usePlatformCounts();
+  const { trackButtonClick } = useGA4Tracking();
   const [showOnboardingChoice, setShowOnboardingChoice] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [userName, setUserName] = useState<string>("");
