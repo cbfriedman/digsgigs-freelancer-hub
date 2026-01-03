@@ -88,6 +88,13 @@ const Register = () => {
   const isInSignInOtpFlowRef = useRef(false); // Prevent redirect during sign-in OTP flow
   const hasInitializedSignInModeRef = useRef(false); // Track if we've initialized sign-in mode
   const isSendingOtpRef = useRef(false); // Prevent multiple simultaneous OTP requests
+  // Check if user is coming from gig posting flow (Craigslist model - no OTP required)
+  const isFromGigPosting = new URLSearchParams(window.location.search).get('returnTo') === '/post-gig';
+  
+  // Check if user is completing registration from dashboard (has no roles)
+  // MUST be declared before useProtectedRoute and useEffect that use it
+  const isCompletingRegistration = new URLSearchParams(window.location.search).get('complete') === 'true';
+  
   const { user, loading: authLoading, userRoles } = useProtectedRoute({ 
     redirectIfAuthenticated: true,
     requireVerified: false // Allow unverified users to complete registration
@@ -103,12 +110,6 @@ const Register = () => {
       window.location.href = '/role-dashboard';
     }
   }, [authLoading, user, userRoles, isCompletingRegistration]);
-  
-  // Check if user is coming from gig posting flow (Craigslist model - no OTP required)
-  const isFromGigPosting = new URLSearchParams(window.location.search).get('returnTo') === '/post-gig';
-  
-  // Check if user is completing registration from dashboard (has no roles)
-  const isCompletingRegistration = new URLSearchParams(window.location.search).get('complete') === 'true';
   
   // Get gig title from sessionStorage for display
   const pendingGigData = isFromGigPosting ? JSON.parse(sessionStorage.getItem('pendingGigData') || '{}') : {};
