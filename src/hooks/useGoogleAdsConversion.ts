@@ -38,9 +38,18 @@ export const useGoogleAdsConversion = () => {
     const script = document.createElement('script');
     script.async = true;
     script.src = `https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_CONVERSION_ID}`;
+    
+    script.onload = () => {
+      console.log('Google Ads: gtag.js script loaded successfully');
+    };
+
+    script.onerror = () => {
+      console.error('Google Ads: Failed to load gtag.js script');
+    };
+
     document.head.appendChild(script);
 
-    console.log('Google Ads tracking initialized');
+    console.log('Google Ads: Tracking initialized');
   }, []);
 
   // Track a conversion event
@@ -52,17 +61,20 @@ export const useGoogleAdsConversion = () => {
 
     const win = window as any;
     if (!win.gtag) {
-      console.warn('gtag not available');
+      console.warn('Google Ads: gtag not available - conversion not tracked');
       return;
     }
 
-    win.gtag('event', 'conversion', {
-      send_to: `${GOOGLE_ADS_CONVERSION_ID}/${GOOGLE_ADS_CONVERSION_LABEL}`,
-      value: value,
-      currency: currency,
-    });
-
-    console.log('Google Ads conversion tracked', { value, currency });
+    try {
+      win.gtag('event', 'conversion', {
+        send_to: `${GOOGLE_ADS_CONVERSION_ID}/${GOOGLE_ADS_CONVERSION_LABEL}`,
+        value: value,
+        currency: currency,
+      });
+      console.log('Google Ads: Conversion tracked', { value, currency });
+    } catch (error) {
+      console.error('Google Ads: Error tracking conversion', error);
+    }
   }, []);
 
   // Track page view

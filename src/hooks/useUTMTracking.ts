@@ -6,6 +6,7 @@ export interface UTMParams {
   utm_campaign: string | null;
   utm_content: string | null;
   utm_term: string | null;
+  gclid?: string | null; // Google Click ID
 }
 
 const UTM_STORAGE_KEY = 'utm_params';
@@ -25,9 +26,10 @@ export const useUTMTracking = () => {
                          searchParams.has('utm_medium') || 
                          searchParams.has('utm_campaign') ||
                          searchParams.has('utm_content') ||
-                         searchParams.has('utm_term');
+                         searchParams.has('utm_term') ||
+                         searchParams.has('gclid'); // Also capture Google Click ID
     
-    // Only store if UTM params are present (don't overwrite with empty data)
+    // Only store if UTM params or gclid are present (don't overwrite with empty data)
     if (hasUTMParams) {
       const utmParams: UTMParams = {
         utm_source: searchParams.get('utm_source'),
@@ -35,6 +37,7 @@ export const useUTMTracking = () => {
         utm_campaign: searchParams.get('utm_campaign'),
         utm_content: searchParams.get('utm_content'),
         utm_term: searchParams.get('utm_term'),
+        gclid: searchParams.get('gclid'), // Capture Google Click ID
       };
       
       sessionStorage.setItem(UTM_STORAGE_KEY, JSON.stringify(utmParams));
