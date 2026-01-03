@@ -12,6 +12,7 @@ import { DiggerAdvancedFilters } from "@/components/DiggerAdvancedFilters";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
 import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { generateBreadcrumbSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -453,6 +454,7 @@ const BrowseDiggers = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
