@@ -67,7 +67,30 @@ export const SignupAnalyticsDashboard = () => {
         .in("conversion_type", ["signup", "digger_registered", "gigger_registered", "signup_started", "signup_page_view"])
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      // Handle table not found error gracefully
+      if (error) {
+        // Check if it's a "table not found" error
+        if (error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('campaign_conversions')) {
+          console.warn("campaign_conversions table not found - migration may not have been applied");
+          // Set empty stats and show message
+          setStats({
+            today: 0,
+            last7Days: 0,
+            last30Days: 0,
+            allTime: 0,
+            bySource: {},
+            byRole: {},
+            byDevice: {},
+            byLandingPage: {},
+          });
+          setRecentSignups([]);
+          setLoading(false);
+          setRefreshing(false);
+          // Don't show error toast for missing table - it's expected if migration hasn't run
+          return;
+        }
+        throw error;
+      }
 
       const signupConversions = conversions?.filter(c => 
         ["signup", "digger_registered", "gigger_registered"].includes(c.conversion_type)
@@ -345,7 +368,19 @@ export const SignupAnalyticsDashboard = () => {
           <CardDescription>Latest tracked signup events with attribution data</CardDescription>
         </CardHeader>
         <CardContent>
-          {recentSignups.length === 0 ? (
+          {stats.allTime === 0 && recentSignups.length === 0 && !loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="font-medium mb-2">No signup tracking data available</p>
+              <p className="text-sm mt-2">
+                The campaign_conversions table may not be set up yet. 
+                Please ensure the database migration has been applied.
+              </p>
+              <p className="text-xs mt-2 text-muted-foreground">
+                Once tracking is enabled, signups will appear here with attribution data from your campaigns.
+              </p>
+            </div>
+          ) : recentSignups.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No signup events tracked yet</p>

@@ -15,6 +15,7 @@ import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
 import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
 import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Footer } from "@/components/Footer";
 interface ReminderStats {
   total: number;
   day3: number;
@@ -695,6 +696,7 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Footer />
     </div>
   );
 };
