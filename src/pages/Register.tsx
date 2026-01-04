@@ -106,8 +106,10 @@ const Register = () => {
   // Immediate redirect for users with roles - don't wait for other checks
   // This ensures users with roles (like admin) can access the platform immediately
   // BUT: Skip redirect if user is completing registration (has no roles) OR just registered
+  // ALSO: Skip if we're already on role-dashboard (prevents redirect loops)
   useEffect(() => {
-    if (!authLoading && user && userRoles && userRoles.length > 0 && !isCompletingRegistration && !justRegistered) {
+    const isOnDashboard = window.location.pathname === '/role-dashboard';
+    if (!authLoading && user && userRoles && userRoles.length > 0 && !isCompletingRegistration && !justRegistered && !isOnDashboard) {
       console.log('User has roles, redirecting to dashboard:', userRoles);
       // Use immediate redirect for users with roles
       window.location.href = '/role-dashboard';
@@ -1304,19 +1306,25 @@ const Register = () => {
       toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
       
       // Send welcome email in the background (non-blocking)
+      // Wrap in try-catch to prevent CORS errors from blocking registration
       const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
-      supabase.functions.invoke('send-welcome-email', {
-        body: {
-          userId: verifiedUserId,
-          email,
-          name: fullName,
-          role: primaryRole,
-          utmSource: getCampaignData()?.utm_source,
-          utmMedium: getCampaignData()?.utm_medium,
-          utmCampaign: getCampaignData()?.utm_campaign,
-        },
-      }).catch(err => {
-        console.warn('Welcome email failed (non-critical):', err);
+      Promise.resolve().then(async () => {
+        try {
+          await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              userId: verifiedUserId,
+              email,
+              name: fullName,
+              role: primaryRole,
+              utmSource: getCampaignData()?.utm_source,
+              utmMedium: getCampaignData()?.utm_medium,
+              utmCampaign: getCampaignData()?.utm_campaign,
+            },
+          });
+        } catch (err: any) {
+          // Silently handle CORS and other errors - don't block registration
+          console.warn('Welcome email failed (non-critical):', err?.message || err);
+        }
       });
       
       // Wait for roles to be created and verified, then refresh auth context and navigate
@@ -1326,7 +1334,7 @@ const Register = () => {
           // Verify roles were created by checking database directly
           let rolesVerified = false;
           let retryCount = 0;
-          const maxRetries = 5;
+          const maxRetries = 8; // Increased retries
           
           while (!rolesVerified && retryCount < maxRetries) {
             try {
@@ -1349,15 +1357,16 @@ const Register = () => {
             }
           }
           
-          // Redirect with a parameter to bypass role check temporarily
-          // This prevents the Register page from redirecting back
+          // Always redirect to dashboard, even if roles aren't verified yet
+          // The dashboard will handle refreshing roles via the ?registered=true parameter
+          console.log('Redirecting to dashboard (roles verified:', rolesVerified, ')');
           window.location.href = '/role-dashboard?registered=true';
         } catch (error) {
           console.error('Error during redirect preparation:', error);
-          // Fallback: redirect anyway
+          // Fallback: redirect anyway - dashboard will handle role refresh
           window.location.href = '/role-dashboard?registered=true';
         }
-      }, 2000); // Increased delay to 2 seconds
+      }, 1500); // Reduced delay slightly - dashboard will handle role refresh
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "An error occurred during registration");

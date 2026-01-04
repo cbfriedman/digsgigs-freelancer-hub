@@ -45,15 +45,19 @@ export default function RoleDashboard() {
   useEffect(() => {
     const justRegistered = searchParams.get('registered') === 'true';
     if (justRegistered && user?.id) {
-      // Remove the query parameter from URL
-      searchParams.delete('registered');
-      setSearchParams(searchParams, { replace: true });
+      console.log('User just registered, refreshing roles...');
       
       // Immediately refresh roles to ensure they're loaded
       refreshRoles().then(() => {
         console.log('Roles refreshed after registration');
+        // Remove the query parameter from URL after roles are refreshed
+        searchParams.delete('registered');
+        setSearchParams(searchParams, { replace: true });
       }).catch(err => {
         console.warn('Error refreshing roles after registration:', err);
+        // Still remove the parameter even if refresh fails
+        searchParams.delete('registered');
+        setSearchParams(searchParams, { replace: true });
       });
     }
   }, [user?.id, refreshRoles, searchParams, setSearchParams]);
