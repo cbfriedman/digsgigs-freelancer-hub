@@ -10,10 +10,12 @@ import { Mail, MessageSquare, Clock } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { Footer } from "@/components/Footer";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 
 const Contact = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { trackEvent, isConfigured } = useFacebookPixel();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -37,6 +39,18 @@ const Contact = () => {
     }
 
     setLoading(true);
+
+    // Track Lead event for Facebook Pixel
+    if (isConfigured) {
+      try {
+        trackEvent('Lead', {
+          content_name: 'Contact Form',
+          content_type: 'contact_form',
+        });
+      } catch (error) {
+        console.warn('Facebook Pixel: Error tracking Lead event', error);
+      }
+    }
 
     // Simulate form submission (you can replace this with actual API call)
     setTimeout(() => {

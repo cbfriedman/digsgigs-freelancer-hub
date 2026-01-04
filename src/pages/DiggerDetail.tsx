@@ -437,6 +437,22 @@ const DiggerDetail = () => {
         setHasViewAccess(true);
         toast.success(data.message || "Contact information unlocked! The digger has been charged.");
         
+        // Track custom event for contact reveal
+        if (fbConfigured) {
+          try {
+            const win = window as any;
+            if (win.fbq) {
+              win.fbq('trackCustom', 'ContactRevealed', {
+                digger_id: digger.id,
+                digger_profile_id: digger.id,
+                consumer_id: currentUser?.id,
+              });
+            }
+          } catch (error) {
+            console.warn('Facebook Pixel: Error tracking ContactRevealed event', error);
+          }
+        }
+        
         // Reload data to refresh view access
         await loadData();
       } else if (data.url) {

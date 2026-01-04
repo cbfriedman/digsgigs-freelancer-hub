@@ -20,9 +20,11 @@ import { GigCategorySelector } from "@/components/GigCategorySelector";
 import PostGigTrustBanner from "@/components/PostGigTrustBanner";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { getIndustryContentByName } from "@/config/industryContent";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 
 const PostGig = () => {
   const navigate = useNavigate();
+  const { trackEvent, isConfigured } = useFacebookPixel();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [detectingCategory, setDetectingCategory] = useState(false);
@@ -422,6 +424,21 @@ const PostGig = () => {
       }
 
       toast.success("Confirmation email sent! Please check your inbox to confirm your gig.");
+      
+      // Track Lead event for Facebook Pixel
+      if (isConfigured) {
+        try {
+          trackEvent('Lead', {
+            content_name: 'Gig Posted',
+            content_type: 'gig_post',
+            content_ids: [gigData.id],
+            value: estimatedBudget ? parseFloat(estimatedBudget.replace(/[^0-9.]/g, '')) : 0,
+            currency: 'USD',
+          });
+        } catch (error) {
+          console.warn('Facebook Pixel: Error tracking Lead event', error);
+        }
+      }
       
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'gig_submitted', {

@@ -16,12 +16,30 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { PRICE_LOCK_PERIOD_MONTHS, PRICE_LOCK_CLICK_THRESHOLD } from "@/config/subscriptionTiers";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 
 export default function SubscriptionSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const [showConfetti, setShowConfetti] = useState(false);
+  const { trackEvent, isConfigured } = useFacebookPixel();
+
+  useEffect(() => {
+    // Track Purchase event for subscription
+    if (isConfigured && sessionId) {
+      try {
+        trackEvent('Purchase', {
+          content_name: 'Subscription',
+          content_type: 'subscription',
+          value: 0, // Can be enhanced to fetch actual subscription value
+          currency: 'USD',
+        });
+      } catch (error) {
+        console.warn('Facebook Pixel: Error tracking Purchase event', error);
+      }
+    }
+  }, [isConfigured, sessionId, trackEvent]);
 
   useEffect(() => {
     // Trigger confetti on mount

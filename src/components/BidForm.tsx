@@ -98,6 +98,22 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
         description: "Your bid has been submitted successfully.",
       });
 
+      // Track custom event for bid submission
+      const win = window as any;
+      if (win.fbq) {
+        try {
+          win.fbq('trackCustom', 'SubmitBid', {
+            bid_id: (bidData as any)?.id,
+            gig_id: gigId,
+            digger_id: diggerId,
+            amount: validated.amount,
+            currency: 'USD',
+          });
+        } catch (error) {
+          console.warn('Facebook Pixel: Error tracking SubmitBid event', error);
+        }
+      }
+
       onSuccess();
     } catch (error: any) {
       console.error('Error submitting bid:', error);

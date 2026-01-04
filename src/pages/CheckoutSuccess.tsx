@@ -5,14 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function CheckoutSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { trackEvent, isConfigured } = useFacebookPixel();
 
   useEffect(() => {
     // Get the purchase type from URL params
     const type = searchParams.get("type");
+    const sessionId = searchParams.get("session_id");
     
     // Clear appropriate data from storage based on purchase type
     if (type === 'lead_credits') {
@@ -20,6 +24,26 @@ export default function CheckoutSuccess() {
     } else {
       localStorage.removeItem("checkoutData");
       localStorage.removeItem("profileCart");
+    }
+
+    // Track Purchase event for Facebook Pixel
+    if (isConfigured && sessionId) {
+      const trackPurchase = async () => {
+        try {
+          // Try to get purchase details from session storage or fetch from Stripe session
+          // For now, we'll track a generic purchase event
+          // You can enhance this by fetching actual purchase details from your backend
+          trackEvent('Purchase', {
+            content_name: type === 'lead_credits' ? 'Lead Credits' : 'Lead Purchase',
+            content_type: type === 'lead_credits' ? 'lead_credits' : 'lead_purchase',
+            value: 0, // Can be enhanced to fetch actual value
+            currency: 'USD',
+          });
+        } catch (error) {
+          console.warn('Facebook Pixel: Error tracking Purchase event', error);
+        }
+      };
+      trackPurchase();
     }
 
     // Trigger confetti celebration using canvas-confetti dynamically
