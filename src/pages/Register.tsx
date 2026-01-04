@@ -100,16 +100,19 @@ const Register = () => {
     requireVerified: false // Allow unverified users to complete registration
   });
   
+  // Check if user just completed registration (bypass role check temporarily)
+  const justRegistered = new URLSearchParams(window.location.search).get('registered') === 'true';
+  
   // Immediate redirect for users with roles - don't wait for other checks
   // This ensures users with roles (like admin) can access the platform immediately
-  // BUT: Skip redirect if user is completing registration (has no roles)
+  // BUT: Skip redirect if user is completing registration (has no roles) OR just registered
   useEffect(() => {
-    if (!authLoading && user && userRoles && userRoles.length > 0 && !isCompletingRegistration) {
+    if (!authLoading && user && userRoles && userRoles.length > 0 && !isCompletingRegistration && !justRegistered) {
       console.log('User has roles, redirecting to dashboard:', userRoles);
       // Use immediate redirect for users with roles
       window.location.href = '/role-dashboard';
     }
-  }, [authLoading, user, userRoles, isCompletingRegistration]);
+  }, [authLoading, user, userRoles, isCompletingRegistration, justRegistered]);
   
   // Get gig title from sessionStorage for display
   const pendingGigData = isFromGigPosting ? JSON.parse(sessionStorage.getItem('pendingGigData') || '{}') : {};
@@ -1277,12 +1280,45 @@ const Register = () => {
         console.warn('Welcome email failed (non-critical):', err);
       });
       
-      // Wait a moment for roles to be created, then refresh auth context and navigate
+      // Wait for roles to be created and verified, then refresh auth context and navigate
+      // Use a longer delay to ensure database operations complete
       setTimeout(async () => {
-        // Refresh the page to ensure auth context picks up the new roles
-        // This is more reliable than trying to manually refresh the context
-        window.location.href = '/role-dashboard';
-      }, 1500);
+        try {
+          // Verify roles were created by checking database directly
+          let rolesVerified = false;
+          let retryCount = 0;
+          const maxRetries = 5;
+          
+          while (!rolesVerified && retryCount < maxRetries) {
+            try {
+              const { data: rpcRoles, error: rpcError } = await (supabase
+                .rpc as any)('get_user_app_roles_safe', { _user_id: verifiedUserId });
+              
+              if (!rpcError && rpcRoles && (rpcRoles as any[]).length > 0) {
+                rolesVerified = true;
+                console.log('Roles verified, redirecting to dashboard');
+                break;
+              } else {
+                console.log(`Roles not found yet, retrying... (${retryCount + 1}/${maxRetries})`);
+                retryCount++;
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+            } catch (err) {
+              console.warn('Error verifying roles:', err);
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+          
+          // Redirect with a parameter to bypass role check temporarily
+          // This prevents the Register page from redirecting back
+          window.location.href = '/role-dashboard?registered=true';
+        } catch (error) {
+          console.error('Error during redirect preparation:', error);
+          // Fallback: redirect anyway
+          window.location.href = '/role-dashboard?registered=true';
+        }
+      }, 2000); // Increased delay to 2 seconds
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "An error occurred during registration");

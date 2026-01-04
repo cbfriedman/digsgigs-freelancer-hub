@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,12 +33,30 @@ const roleConfig = {
 export default function RoleDashboard() {
   const { user, userRoles, activeRole, switchRole, loading: authLoading, refreshRoles } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [stats, setStats] = useState<RoleStats>({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCheckingRoles, setIsCheckingRoles] = useState(false);
   const hasCheckedRolesRef = useRef(false);
   const hasFetchedStatsRef = useRef(false);
+  
+  // Check if user just completed registration - refresh roles immediately
+  useEffect(() => {
+    const justRegistered = searchParams.get('registered') === 'true';
+    if (justRegistered && user?.id) {
+      // Remove the query parameter from URL
+      searchParams.delete('registered');
+      setSearchParams(searchParams, { replace: true });
+      
+      // Immediately refresh roles to ensure they're loaded
+      refreshRoles().then(() => {
+        console.log('Roles refreshed after registration');
+      }).catch(err => {
+        console.warn('Error refreshing roles after registration:', err);
+      });
+    }
+  }, [user?.id, refreshRoles, searchParams, setSearchParams]);
 
   // Memoize fetchStats to prevent recreation on every render
   // Use user?.id instead of user object to prevent unnecessary recreations
