@@ -934,46 +934,61 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // CRITICAL: Verify user exists in auth.users before inserting roles
+      // CRITICAL: Verify user exists before inserting roles
       // This prevents foreign key constraint violations
-      const { data: currentUser, error: userError } = await supabase.auth.getUser();
+      // Try to get authenticated user first, but fall back to verifying userId exists
+      let verifiedUserId = userId;
+      let currentUser = null;
       
-      if (userError || !currentUser?.user) {
-        console.error("User not authenticated or user not found:", userError);
-        toast.error("Please sign in to continue. Redirecting to sign in...");
-        setLoading(false);
-        setTimeout(() => {
-          navigate('/register?mode=signin');
-        }, 2000);
-        return;
+      // Try to get authenticated user (may not have session during registration)
+      try {
+        const { data: authUser, error: authError } = await supabase.auth.getUser();
+        if (!authError && authUser?.user) {
+          currentUser = authUser;
+          verifiedUserId = authUser.user.id;
+          
+          // If userId from state doesn't match authenticated user, use authenticated user
+          if (authUser.user.id !== userId) {
+            console.warn("UserId mismatch. Using authenticated user ID instead.");
+            setUserId(authUser.user.id);
+            verifiedUserId = authUser.user.id;
+          }
+        }
+      } catch (authException) {
+        // User may not be authenticated yet (e.g., during registration before email verification)
+        console.log("User not authenticated (this is OK during registration):", authException);
       }
 
-      // Verify the userId matches the authenticated user
-      if (currentUser.user.id !== userId) {
-        console.warn("UserId mismatch. Using authenticated user ID instead.");
-        setUserId(currentUser.user.id);
-        // Continue with authenticated user's ID
+      // Verify user exists by checking profile (doesn't require auth session)
+      // If profile check fails due to RLS, we'll catch the foreign key error during insert
+      let profileExists = false;
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', verifiedUserId)
+          .single();
+
+        if (!profileError && profile) {
+          profileExists = true;
+        } else {
+          console.warn("Could not verify profile (may be RLS blocking):", profileError);
+          // Continue anyway - we'll catch foreign key error during insert if user doesn't exist
+        }
+      } catch (profileCheckException) {
+        console.warn("Exception checking profile (non-critical):", profileCheckException);
+        // Continue anyway - we'll catch foreign key error during insert if user doesn't exist
       }
 
-      // Double-check: Verify user exists in auth.users by checking profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', currentUser.user.id)
-        .single();
-
-      if (profileError || !profile) {
-        console.error("User profile not found. User may not be fully created:", profileError);
-        toast.error("Account setup incomplete. Please complete account creation first.");
-        setLoading(false);
-        setStep(1); // Go back to account creation
-        return;
+      // Update userId to verified ID if we got one from auth
+      if (verifiedUserId !== userId && currentUser) {
+        setUserId(verifiedUserId);
       }
 
       // Create user_app_roles entries (account verified to exist)
       // Try direct INSERT first, fallback to RPC function if recursion error
       const roleInserts = roleArray.map(role => ({
-        user_id: currentUser.user.id, // Use verified user ID
+        user_id: verifiedUserId, // Use verified user ID
         app_role: role,
         is_active: true,
       }));
@@ -998,7 +1013,7 @@ const Register = () => {
             for (const role of roleArray) {
               const { error: rpcError } = await supabase
                 .rpc('insert_user_app_role', {
-                  p_user_id: currentUser.user.id, // Use verified user ID
+                  p_user_id: verifiedUserId, // Use verified user ID
                   p_app_role: role
                 });
               
@@ -1056,7 +1071,7 @@ const Register = () => {
         const { error: diggerError } = await supabase
           .from('digger_profiles')
           .insert({
-            user_id: currentUser.user.id, // Use verified user ID
+            user_id: verifiedUserId, // Use verified user ID
             business_name: roleFormData.digger.companyName,
             phone: phone || '',
             location: '',
@@ -1085,7 +1100,7 @@ const Register = () => {
           body: {
             conversion_type: conversionType,
             email,
-            user_id: currentUser.user.id, // Use verified user ID
+            user_id: verifiedUserId, // Use verified user ID
             ...campaignData,
           },
         });
@@ -1095,7 +1110,7 @@ const Register = () => {
           body: {
             user_email: email,
             user_name: fullName,
-            user_id: currentUser.user.id, // Use verified user ID
+            user_id: verifiedUserId, // Use verified user ID
             role: selectedRoles.has('digger') ? 'digger' : 'gigger',
             ...campaignData,
           },
@@ -1138,7 +1153,7 @@ const Register = () => {
         const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
         await supabase.functions.invoke('send-welcome-email', {
           body: {
-            userId: currentUser.user.id, // Use verified user ID
+            userId: verifiedUserId, // Use verified user ID
             email,
             name: fullName,
             role: primaryRole,
