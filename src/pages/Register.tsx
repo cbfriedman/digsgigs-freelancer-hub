@@ -982,56 +982,68 @@ const Register = () => {
         console.log("User not authenticated (this is OK during registration):", authException);
       }
 
-      // Verify user exists by checking profile (doesn't require auth session)
+      // CRITICAL: Ensure user is authenticated before checking profile
+      // RLS policy requires authentication to read profiles
+      if (!currentUser) {
+        // User is not authenticated - sign them in first
+        if (!email || !password) {
+          console.error("Cannot authenticate: email or password missing");
+          toast.error("Session expired. Please sign in again.");
+          setLoading(false);
+          setStep(1);
+          return;
+        }
+
+        console.log("User not authenticated, signing in...");
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          console.error("Sign in error:", signInError);
+          toast.error("Unable to authenticate. Please try signing in again.");
+          setLoading(false);
+          setStep(1);
+          return;
+        }
+
+        if (!signInData.user) {
+          console.error("Sign in succeeded but no user returned");
+          toast.error("Authentication failed. Please try again.");
+          setLoading(false);
+          setStep(1);
+          return;
+        }
+
+        // Update verified user ID from sign-in
+        verifiedUserId = signInData.user.id;
+        setUserId(verifiedUserId);
+        currentUser = { user: signInData.user };
+        console.log("User authenticated successfully:", verifiedUserId);
+      }
+
+      // Verify user exists by checking profile
       // CRITICAL: digger_profiles.user_id references profiles(id), so profile MUST exist
       // Note: Profile is created automatically by trigger when user is created in auth.users
-      // But there might be a timing issue, so we check and wait if needed
-      let profileExists = false;
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (!profileExists && retryCount < maxRetries) {
-        try {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', verifiedUserId)
-            .single();
+      // Now that we're authenticated, RLS should allow us to read the profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', verifiedUserId)
+        .single();
 
-          if (!profileError && profile) {
-            profileExists = true;
-            break;
-          } else {
-            // Profile might not be created yet (timing issue with trigger)
-            if (retryCount < maxRetries - 1) {
-              console.log(`Profile not found, retrying... (${retryCount + 1}/${maxRetries})`);
-              // Wait a bit for trigger to complete
-              await new Promise(resolve => setTimeout(resolve, 500));
-              retryCount++;
-            } else {
-              console.error("Profile does not exist for user after retries:", verifiedUserId, profileError);
-              // Profile is required - cannot create digger_profile without it
-              toast.error("Account setup incomplete. Please complete account creation first.");
-              setLoading(false);
-              setStep(1); // Go back to account creation
-              return;
-            }
-          }
-        } catch (profileCheckException) {
-          if (retryCount < maxRetries - 1) {
-            console.log(`Profile check exception, retrying... (${retryCount + 1}/${maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            retryCount++;
-          } else {
-            console.error("Exception checking profile after retries:", profileCheckException);
-            // Profile check failed - cannot proceed
-            toast.error("Unable to verify account. Please try again.");
-            setLoading(false);
-            setStep(1);
-            return;
-          }
-        }
+      if (profileError || !profile) {
+        console.error("Profile does not exist for user:", verifiedUserId, profileError);
+        // Profile is required - cannot create digger_profile without it
+        // This should never happen if the trigger is working correctly
+        toast.error("Account setup incomplete. The profile was not created. Please contact support.");
+        setLoading(false);
+        setStep(1); // Go back to account creation
+        return;
       }
+
+      console.log("Profile verified successfully:", profile.id);
 
       // Update userId to verified ID if we got one from auth
       if (verifiedUserId !== userId && currentUser) {
@@ -1144,14 +1156,7 @@ const Register = () => {
       if (selectedRoles.has('digger') && roleFormData.digger) {
         try {
           // CRITICAL: digger_profiles.user_id references profiles(id), not auth.users(id)
-          // Profile should exist by now (created by trigger), but verify
-          if (!profileExists) {
-            console.error("Profile does not exist - cannot create digger profile");
-            toast.error("Account setup incomplete. Please complete account creation first.");
-            setLoading(false);
-            setStep(1);
-            return;
-          }
+          // Profile was already verified above - if we reach here, it exists
 
           // Prepare digger profile data with proper defaults and required fields
           const diggerProfileData: any = {
@@ -1376,6 +1381,7 @@ const Register = () => {
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
+    console.log("handleSignIn");
     e.preventDefault();
     
     // If OTP was already sent (shouldn't happen in normal flow, but handle it), verify the code instead
@@ -1449,7 +1455,7 @@ const Register = () => {
         window.location.href = '/role-dashboard';
       } else {
         // User doesn't have roles yet - complete registration
-        window.location.href = '/register';
+        // window.location.href = '/register';
       }
     } catch (error: any) {
       console.error("Sign in error caught:", error);
