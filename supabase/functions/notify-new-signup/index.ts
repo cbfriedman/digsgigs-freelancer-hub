@@ -10,7 +10,10 @@ const ADMIN_EMAILS = ["coby@cfcontracting.com", "webservicewang@gmail.com"];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
   }
 
   try {

@@ -1090,83 +1090,93 @@ const Register = () => {
 
       // Telemarketer role removed - feature discontinued
 
-      // Track campaign conversion for signup and notify admins
-      try {
-        const campaignData = getCampaignData();
-        const conversionType = selectedRoles.has('digger') ? 'digger_registered' : 'gigger_registered';
-        
+      // Track campaign conversion for signup and notify admins (non-blocking)
+      const campaignData = getCampaignData();
+      const conversionType = selectedRoles.has('digger') ? 'digger_registered' : 'gigger_registered';
+      
+      // Fire tracking events (non-blocking)
+      Promise.all([
         // Log to campaign_conversions table
-        await supabase.functions.invoke('log-campaign-event', {
+        supabase.functions.invoke('log-campaign-event', {
           body: {
             conversion_type: conversionType,
             email,
-            user_id: verifiedUserId, // Use verified user ID
+            user_id: verifiedUserId,
             ...campaignData,
           },
-        });
+        }).catch(err => console.warn('Campaign event logging failed (non-critical):', err)),
         
         // Notify admins of new signup
-        await supabase.functions.invoke('notify-new-signup', {
+        supabase.functions.invoke('notify-new-signup', {
           body: {
             user_email: email,
             user_name: fullName,
-            user_id: verifiedUserId, // Use verified user ID
+            user_id: verifiedUserId,
             role: selectedRoles.has('digger') ? 'digger' : 'gigger',
             ...campaignData,
           },
-        });
-        
-        // Fire Facebook Pixel CompleteRegistration event
-        if (fbConfigured) {
+        }).catch(err => console.warn('Admin notification failed (non-critical):', err)),
+      ]).catch(err => console.warn('Background tasks failed (non-critical):', err));
+      
+      // Fire Facebook Pixel CompleteRegistration event
+      if (fbConfigured) {
+        try {
           trackFBEvent('CompleteRegistration', {
             content_name: conversionType,
             value: 1,
             ...campaignData,
           });
+        } catch (err) {
+          console.warn('Facebook Pixel tracking failed (non-critical):', err);
         }
-        
-        // Fire Google Ads conversion
-        if (gaConfigured) {
+      }
+      
+      // Fire Google Ads conversion
+      if (gaConfigured) {
+        try {
           trackGAConversion(1);
+        } catch (err) {
+          console.warn('Google Ads tracking failed (non-critical):', err);
         }
-        
-        // Fire GA4 signup conversion event
-        if (typeof window !== 'undefined' && window.gtag) {
+      }
+      
+      // Fire GA4 signup conversion event
+      if (typeof window !== 'undefined' && window.gtag) {
+        try {
           window.gtag('event', 'sign_up', {
             method: conversionType,
             value: 1,
             currency: 'USD',
           });
+        } catch (err) {
+          console.warn('GA4 tracking failed (non-critical):', err);
         }
-        
-        // Clear UTM data after successful conversion
+      }
+      
+      // Clear UTM data after successful conversion
+      try {
         clearUTMData();
-      } catch (trackingError) {
-        // Don't fail registration if tracking fails
-        console.error("Campaign tracking error:", trackingError);
+      } catch (err) {
+        console.warn('UTM data clearing failed (non-critical):', err);
       }
 
       toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
       
-      // Send welcome email in the background
-      try {
-        const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
-        await supabase.functions.invoke('send-welcome-email', {
-          body: {
-            userId: verifiedUserId, // Use verified user ID
-            email,
-            name: fullName,
-            role: primaryRole,
-            utmSource: getCampaignData()?.utm_source,
-            utmMedium: getCampaignData()?.utm_medium,
-            utmCampaign: getCampaignData()?.utm_campaign,
-          },
-        });
-        console.log('Welcome email sent successfully');
-      } catch (welcomeEmailError) {
-        // Don't fail registration if welcome email fails
-        console.error("Welcome email error:", welcomeEmailError);
-      }
+      // Send welcome email in the background (non-blocking)
+      const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
+      supabase.functions.invoke('send-welcome-email', {
+        body: {
+          userId: verifiedUserId,
+          email,
+          name: fullName,
+          role: primaryRole,
+          utmSource: getCampaignData()?.utm_source,
+          utmMedium: getCampaignData()?.utm_medium,
+          utmCampaign: getCampaignData()?.utm_campaign,
+        },
+      }).catch(err => {
+        console.warn('Welcome email failed (non-critical):', err);
+      });
       
       // Wait a moment for roles to be created, then refresh auth context and navigate
       setTimeout(async () => {
