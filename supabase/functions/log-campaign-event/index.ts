@@ -19,11 +19,32 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Check environment variables
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing required environment variables");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const body = await req.json();
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Invalid request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     console.log("Logging campaign event:", JSON.stringify(body));
 
     const {
@@ -55,7 +76,7 @@ serve(async (req) => {
                        req.headers.get("x-real-ip") || 
                        "unknown";
 
-    // Insert campaign conversion record
+    // Insert campaign conversion record using service role (bypasses RLS)
     const { data, error } = await supabase
       .from("campaign_conversions")
       .insert({
@@ -77,24 +98,47 @@ serve(async (req) => {
       .single();
 
     if (error) {
-      console.error("Error inserting campaign conversion:", error);
+      console.error("Error inserting campaign conversion:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
+      
+      // Return error with more details for debugging
       return new Response(
-        JSON.stringify({ error: "Failed to log campaign event", details: error.message }),
+        JSON.stringify({ 
+          error: "Failed to log campaign event", 
+          details: error.message,
+          code: error.code,
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Campaign event logged successfully:", data.id);
+    console.log("Campaign event logged successfully:", data?.id);
     return new Response(
-      JSON.stringify({ success: true, id: data.id }),
+      JSON.stringify({ success: true, id: data?.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Unexpected error in log-campaign-event:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Log full error details
+    console.error("Error details:", {
+      message: errorMessage,
+      stack: errorStack,
+      error: error,
+    });
+    
     // Always return CORS headers even on error
     return new Response(
-      JSON.stringify({ error: "Internal server error", details: errorMessage }),
+      JSON.stringify({ 
+        error: "Internal server error", 
+        details: errorMessage 
+      }),
       { 
         status: 500, 
         headers: { 
