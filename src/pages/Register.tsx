@@ -340,13 +340,27 @@ const Register = () => {
       }
       
       // Check if user has roles
+      // Use RPC function to bypass RLS and avoid 500 errors
       const checkUserRoles = async () => {
-        const { data, error } = await supabase
-          .from('user_app_roles')
-          .select('id')
-          .eq('user_id', user.id);
+        let hasRoles = false;
+        let error = null;
         
-        if (!error && (!data || data.length === 0)) {
+        try {
+          const { data: rpcRoles, error: rpcError } = await supabase
+            .rpc('get_user_app_roles_safe', { _user_id: user.id });
+          
+          if (!rpcError && rpcRoles && rpcRoles.length > 0) {
+            hasRoles = true;
+          } else if (rpcError) {
+            console.warn('Error checking user roles (non-fatal):', rpcError);
+            error = rpcError;
+          }
+        } catch (rpcException) {
+          console.warn('RPC function not available:', rpcException);
+          error = rpcException as any;
+        }
+        
+        if (!error && !hasRoles) {
           // User is verified but has no roles - advance to role selection
           setUserId(user.id);
           setEmail(user.email || '');
