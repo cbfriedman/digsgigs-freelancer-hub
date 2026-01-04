@@ -207,22 +207,22 @@ const Register = () => {
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   const { trackConversion: trackGAConversion, isConfigured: gaConfigured } = useGoogleAdsConversion();
 
-  // Track page view for funnel analytics on mount
+  // Track page view for funnel analytics on mount (non-blocking)
   useEffect(() => {
-    const trackPageView = async () => {
-      try {
-        const campaignData = getCampaignData();
-        await supabase.functions.invoke('log-campaign-event', {
-          body: {
-            conversion_type: 'signup_page_view',
-            ...campaignData,
-          },
-        });
-      } catch (error) {
-        console.error("Failed to track signup page view:", error);
+    // Fire-and-forget: Don't await to avoid blocking page load
+    const campaignData = getCampaignData();
+    supabase.functions.invoke('log-campaign-event', {
+      body: {
+        conversion_type: 'signup_page_view',
+        ...campaignData,
+      },
+    }).catch(error => {
+      // Silently fail - don't log errors for missing functions to avoid console spam
+      // Only log if it's not a 404 (function not deployed)
+      if (error?.status !== 404 && error?.code !== '404') {
+        console.warn("Failed to track signup page view (non-critical):", error);
       }
-    };
-    trackPageView();
+    });
   }, []);
 
   // Handle expired password reset tokens - but delay check to allow Supabase to process token first
