@@ -397,6 +397,14 @@ const DiggerDetail = () => {
       });
 
       if (error) {
+        // Check if it's an access denied error
+        if (error.status === 403 || error.message?.includes('must post') || error.message?.includes('not related')) {
+          toast.error(error.message || "You can only view diggers related to your posted gigs.");
+          if (error.message?.includes('must post')) {
+            navigate("/post-gig");
+          }
+          return;
+        }
         // Check if it's a subscription requirement error
         if (error.status === 402 || error.message?.includes('subscription')) {
           setDiggerNeedsSubscription(true);
@@ -404,6 +412,18 @@ const DiggerDetail = () => {
           return;
         }
         throw error;
+      }
+
+      // Handle access denied responses
+      if (data.requiresGig) {
+        toast.error("You must post at least one gig before you can view digger profiles.");
+        navigate("/post-gig");
+        return;
+      }
+
+      if (data.notRelated) {
+        toast.error("You can only view diggers that are related to your posted gigs.");
+        return;
       }
 
       // Handle subscription requirement response
@@ -415,7 +435,7 @@ const DiggerDetail = () => {
 
       if (data.alreadyPaid || data.success) {
         setHasViewAccess(true);
-        toast.success(data.message || "Contact information unlocked!");
+        toast.success(data.message || "Contact information unlocked! The digger has been charged.");
         
         // Reload data to refresh view access
         await loadData();
@@ -430,8 +450,13 @@ const DiggerDetail = () => {
         console.error("Error unlocking contact:", error);
       }
       
-      // Check if it's a subscription requirement
-      if (error.status === 402 || error.message?.includes('subscription')) {
+      // Check if it's an access denied error
+      if (error.status === 403 || error.message?.includes('must post') || error.message?.includes('not related')) {
+        toast.error(error.message || "You can only view diggers related to your posted gigs.");
+        if (error.message?.includes('must post')) {
+          navigate("/post-gig");
+        }
+      } else if (error.status === 402 || error.message?.includes('subscription')) {
         setDiggerNeedsSubscription(true);
         toast.error("This digger needs to activate their subscription first.");
       } else {

@@ -87,6 +87,8 @@ const BrowseDiggers = () => {
   const [sortBy, setSortBy] = useState<string>("rating");
   const [activeView, setActiveView] = useState<"list" | "map">("list");
   const { onlineDiggers } = useDiggerPresence();
+  const [hasPostedGigs, setHasPostedGigs] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [filters, setFilters] = useState<DiggerFilters>({
     hourlyRateRange: [0, 500],
     selectedCategories: [],
@@ -103,8 +105,59 @@ const BrowseDiggers = () => {
   });
 
   useEffect(() => {
-    loadData();
-  }, [selectedCategory, sortBy, filters]);
+    checkUserAccess();
+  }, []);
+
+  useEffect(() => {
+    if (hasPostedGigs === true) {
+      loadData();
+    }
+  }, [selectedCategory, sortBy, filters, hasPostedGigs]);
+
+  const checkUserAccess = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setHasPostedGigs(false);
+        setLoading(false);
+        return;
+      }
+
+      // Check user role
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("user_type")
+        .eq("id", session.user.id)
+        .single();
+      
+      setUserRole(profile?.user_type || null);
+
+      // If user is a digger or admin, allow access (they can see all diggers)
+      if (profile?.user_type === "digger" || profile?.user_type === "admin") {
+        setHasPostedGigs(true);
+        return;
+      }
+
+      // For giggers, check if they have posted any gigs
+      const { data: userGigs, error: gigsError } = await supabase
+        .from("gigs")
+        .select("id")
+        .eq("consumer_id", session.user.id)
+        .limit(1);
+
+      if (gigsError) {
+        console.error("Error checking user gigs:", gigsError);
+        setHasPostedGigs(false);
+      } else {
+        setHasPostedGigs(userGigs && userGigs.length > 0);
+      }
+    } catch (error) {
+      console.error("Error checking user access:", error);
+      setHasPostedGigs(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -117,6 +170,60 @@ const BrowseDiggers = () => {
       .order("name");
 
     setCategories(categoriesData || []);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setDiggers([]);
+      setLoading(false);
+      return;
+    }
+
+    // Check user role - if digger or admin, show all diggers
+    // If gigger, only show diggers related to their posted gigs
+    let allowedDiggerIds: string[] | null = null;
+
+    if (userRole === "gigger") {
+      // Get all diggers related to this gigger's posted gigs
+      // This includes diggers who purchased leads or are in the exclusivity queue
+      const { data: userGigs } = await supabase
+        .from("gigs")
+        .select("id")
+        .eq("consumer_id", session.user.id);
+
+      if (!userGigs || userGigs.length === 0) {
+        setDiggers([]);
+        setLoading(false);
+        return;
+      }
+
+      const gigIds = userGigs.map(g => g.id);
+
+      // Get diggers from lead_purchases
+      const { data: purchases } = await supabase
+        .from("lead_purchases")
+        .select("digger_id")
+        .in("gig_id", gigIds);
+
+      // Get diggers from lead_exclusivity_queue
+      const { data: queue } = await supabase
+        .from("lead_exclusivity_queue")
+        .select("digger_id")
+        .in("gig_id", gigIds);
+
+      const purchaseDiggerIds = purchases?.map(p => p.digger_id) || [];
+      const queueDiggerIds = queue?.map(q => q.digger_id) || [];
+      
+      // Combine and deduplicate
+      const allDiggerIds = [...new Set([...purchaseDiggerIds, ...queueDiggerIds])];
+      
+      if (allDiggerIds.length === 0) {
+        setDiggers([]);
+        setLoading(false);
+        return;
+      }
+
+      allowedDiggerIds = allDiggerIds;
+    }
 
     let diggerIds: string[] | null = null;
 
@@ -153,8 +260,25 @@ const BrowseDiggers = () => {
         )
       `);
 
+    // Apply gigger restriction first
+    if (allowedDiggerIds) {
+      query = query.in("id", allowedDiggerIds);
+    }
+
+    // Then apply category filter if selected
     if (diggerIds) {
-      query = query.in("id", diggerIds);
+      if (allowedDiggerIds) {
+        // Intersect the two sets
+        const filteredIds = diggerIds.filter(id => allowedDiggerIds!.includes(id));
+        if (filteredIds.length === 0) {
+          setDiggers([]);
+          setLoading(false);
+          return;
+        }
+        query = query.in("id", filteredIds);
+      } else {
+        query = query.in("id", diggerIds);
+      }
     }
 
     // Apply advanced filters
@@ -311,6 +435,35 @@ const BrowseDiggers = () => {
     return handle.slice(0, 2).toUpperCase();
   };
 
+  // Show access denied message if gigger hasn't posted any gigs
+  if (hasPostedGigs === false && userRole === "gigger") {
+    return (
+      <div className="min-h-screen bg-background">
+        <SEOHead
+          title="Browse Service Professionals - Find Qualified Contractors"
+          description="Find skilled service professionals and contractors for your project."
+        />
+        <Navigation showBackButton backLabel="Back to Home" />
+        <div className="container mx-auto px-4 py-12">
+          <Card className="max-w-2xl mx-auto mt-12">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold mb-4">Access Restricted</h2>
+                <p className="text-muted-foreground mb-6">
+                  You must post at least one gig before you can browse and view digger profiles.
+                </p>
+                <Button onClick={() => navigate("/post-gig")}>
+                  Post Your First Gig
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
@@ -329,7 +482,11 @@ const BrowseDiggers = () => {
         
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Browse Talent</h1>
-          <p className="text-muted-foreground">Find the perfect freelancer for your project</p>
+          <p className="text-muted-foreground">
+            {userRole === "gigger" 
+              ? "View diggers related to your posted gigs. Clicking on a profile will charge the digger to reveal their contact information."
+              : "Find the perfect freelancer for your project"}
+          </p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 mb-8">

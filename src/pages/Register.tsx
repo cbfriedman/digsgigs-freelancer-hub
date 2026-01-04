@@ -75,6 +75,7 @@ interface RoleFormData {
   digger?: {
     companyName: string;
     selectedIndustries: string[];
+    allowGiggerContact?: boolean;
     businessInfo?: any;
   };
   gigger?: {
@@ -1069,11 +1070,15 @@ const Register = () => {
           const diggerProfileData: any = {
             user_id: verifiedUserId, // References profiles(id) - must match auth.uid() for RLS
             business_name: roleFormData.digger.companyName || 'Not specified',
+            profile_name: roleFormData.digger.companyName || 'My Profile', // Set profile name for display
             phone: phone || 'Not provided',
             location: 'Not specified', // Required field (NOT NULL), can't be empty string
             registration_status: roleFormData.digger.selectedIndustries && roleFormData.digger.selectedIndustries.length > 0 ? 'complete' : 'incomplete',
             subscription_tier: 'free',
             subscription_status: 'inactive',
+            allow_gigger_contact: roleFormData.digger.allowGiggerContact || false, // Save the opt-in preference
+            keywords: roleFormData.digger.selectedIndustries || [], // Save selected industries as keywords
+            is_primary: true, // Mark as primary profile (first profile created)
           };
 
           // Add profession if available (nullable field, but good to have)
@@ -1086,12 +1091,28 @@ const Register = () => {
             diggerProfileData.profession = 'General Services';
           }
 
+          // Before creating, check if user already has a profile and set is_primary accordingly
+          const { data: existingProfiles } = await supabase
+            .from('digger_profiles')
+            .select('id, is_primary')
+            .eq('user_id', verifiedUserId)
+            .limit(1);
+          
+          // If user already has a profile, don't set this one as primary
+          if (existingProfiles && existingProfiles.length > 0) {
+            diggerProfileData.is_primary = false;
+          } else {
+            // First profile - set as primary
+            diggerProfileData.is_primary = true;
+          }
+
           // Ensure user is authenticated for RLS policy (user_id = auth.uid())
           // If not authenticated, we'll get an RLS error which we'll handle
+          console.log("Creating digger profile with data:", diggerProfileData);
           const { data: diggerProfile, error: diggerError } = await supabase
             .from('digger_profiles')
             .insert(diggerProfileData)
-            .select('id')
+            .select('id, business_name, profession, keywords, profile_name')
             .single();
 
           if (diggerError) {
@@ -1106,9 +1127,31 @@ const Register = () => {
               setLoading(false);
               return;
             } else if (diggerError.code === '23505') {
-              // Unique constraint violation - profile already exists
-              console.warn("Digger profile already exists for this user - this is OK");
-              // This is OK - profile was already created, continue with registration
+              // Unique constraint violation - profile already exists, update it instead
+              console.warn("Digger profile already exists for this user - updating with new data");
+              
+              // Update the existing profile with the new data
+              const { data: updatedProfile, error: updateError } = await supabase
+                .from('digger_profiles')
+                .update({
+                  business_name: diggerProfileData.business_name,
+                  profile_name: diggerProfileData.profile_name,
+                  profession: diggerProfileData.profession,
+                  keywords: diggerProfileData.keywords,
+                  allow_gigger_contact: diggerProfileData.allow_gigger_contact,
+                  registration_status: diggerProfileData.registration_status,
+                  // Don't update is_primary if profile already exists (might have multiple profiles)
+                })
+                .eq('user_id', verifiedUserId)
+                .select('id')
+                .single();
+              
+              if (updateError) {
+                console.error("Error updating existing digger profile:", updateError);
+                toast.error("Failed to update profile. You can update it later from your dashboard.");
+              } else {
+                console.log("Digger profile updated successfully:", updatedProfile?.id);
+              }
             } else if (diggerError.message?.includes('permission denied') || diggerError.message?.includes('RLS')) {
               // RLS policy violation - user might not be authenticated
               console.error("RLS policy violation - user may not be authenticated:", diggerError);
@@ -1117,23 +1160,53 @@ const Register = () => {
               setStep(1);
               return;
             } else {
-              // Other error - log details but don't fail registration
+              // Other error - log details and show specific error
               console.error("Digger profile creation error details:", {
                 code: diggerError.code,
                 message: diggerError.message,
                 details: diggerError.details,
-                hint: diggerError.hint
+                hint: diggerError.hint,
+                data: diggerProfileData
               });
-              toast.error("Digger profile creation failed. You can create it later from your dashboard.");
-              // Continue with registration - don't block user
+              
+              // Show more specific error message
+              const errorMsg = diggerError.message || "Unknown error";
+              toast.error(`Profile creation failed: ${errorMsg}. Please try creating it from your dashboard.`, {
+                duration: 8000
+              });
+              
+              // Log to console for debugging
+              console.error("Failed to create digger profile. User can create it manually from dashboard.");
+              // Continue with registration - don't block user, but they'll need to create profile manually
             }
           } else if (diggerProfile && diggerProfile.id) {
             // Successfully created digger profile
             console.log("Digger profile created successfully:", diggerProfile.id);
+            console.log("Profile data saved:", {
+              id: diggerProfile.id,
+              business_name: diggerProfile.business_name || diggerProfileData.business_name,
+              profession: diggerProfile.profession || diggerProfileData.profession,
+              keywords: diggerProfile.keywords || diggerProfileData.keywords,
+              profile_name: diggerProfile.profile_name || diggerProfileData.profile_name,
+              allow_gigger_contact: diggerProfileData.allow_gigger_contact
+            });
             
-            // Note: keywords field doesn't exist in digger_profiles table
-            // Selected industries are stored in registration_status and profession
-            // User can add more details later in their profile
+            // Verify the profile can be queried (ensures RLS is working)
+            const { data: verifyProfile, error: verifyError } = await supabase
+              .from('digger_profiles')
+              .select('id, business_name, profession, keywords, profile_name')
+              .eq('id', diggerProfile.id)
+              .single();
+            
+            if (verifyError) {
+              console.warn("Warning: Profile created but cannot be verified:", verifyError);
+            } else {
+              console.log("Profile verified and accessible:", verifyProfile);
+            }
+          } else {
+            // Profile creation returned no data but no error - this shouldn't happen
+            console.error("Profile creation returned no data and no error - unexpected state");
+            toast.error("Profile creation may have failed. Please check your dashboard.");
           }
         } catch (diggerException) {
           console.error("Exception creating digger profile:", diggerException);

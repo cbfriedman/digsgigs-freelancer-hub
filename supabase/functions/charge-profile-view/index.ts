@@ -29,6 +29,10 @@ serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
+  const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    apiVersion: '2023-10-16',
+  });
+
   try {
     logStep("Function started");
 
@@ -50,10 +54,104 @@ serve(async (req) => {
 
     logStep("Request data", { diggerId });
 
-    // Get digger profile to check subscription status FIRST
-    const { data: diggerProfile, error: diggerError } = await supabaseClient
+    // CRITICAL: Check if user (gigger) has posted any gigs
+    const { data: userGigs, error: gigsError } = await supabaseServiceClient
+      .from('gigs')
+      .select('id')
+      .eq('consumer_id', user.id)
+      .limit(1);
+
+    if (gigsError) {
+      throw new Error(`Failed to check user gigs: ${gigsError.message}`);
+    }
+
+    if (!userGigs || userGigs.length === 0) {
+      logStep("User has no posted gigs - access denied");
+      return new Response(JSON.stringify({ 
+        error: "You must post at least one gig before you can view digger profiles.",
+        requiresGig: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
+    // CRITICAL: Check if this digger is related to any of the gigger's posted gigs
+    const { data: relatedGigs, error: relatedError } = await supabaseServiceClient
+      .from('gigs')
+      .select(`
+        id,
+        lead_purchases!inner(digger_id),
+        lead_exclusivity_queue!inner(digger_id)
+      `)
+      .eq('consumer_id', user.id)
+      .or(`lead_purchases.digger_id.eq.${diggerId},lead_exclusivity_queue.digger_id.eq.${diggerId}`)
+      .limit(1);
+
+    if (relatedError) {
+      // Try alternative query without joins
+      const { data: purchases } = await supabaseServiceClient
+        .from('lead_purchases')
+        .select('gig_id')
+        .eq('digger_id', diggerId)
+        .limit(1)
+        .single();
+
+      const { data: queue } = await supabaseServiceClient
+        .from('lead_exclusivity_queue')
+        .select('gig_id')
+        .eq('digger_id', diggerId)
+        .limit(1)
+        .single();
+
+      const gigIds = [
+        ...(purchases ? [purchases.gig_id] : []),
+        ...(queue ? [queue.gig_id] : [])
+      ];
+
+      if (gigIds.length === 0) {
+        logStep("Digger not related to gigger's gigs - access denied");
+        return new Response(JSON.stringify({ 
+          error: "You can only view diggers that are related to your posted gigs.",
+          notRelated: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+
+      const { data: gigCheck } = await supabaseServiceClient
+        .from('gigs')
+        .select('id')
+        .eq('consumer_id', user.id)
+        .in('id', gigIds)
+        .limit(1);
+
+      if (!gigCheck || gigCheck.length === 0) {
+        logStep("Digger not related to gigger's gigs - access denied");
+        return new Response(JSON.stringify({ 
+          error: "You can only view diggers that are related to your posted gigs.",
+          notRelated: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+    } else if (!relatedGigs || relatedGigs.length === 0) {
+      logStep("Digger not related to gigger's gigs - access denied");
+      return new Response(JSON.stringify({ 
+        error: "You can only view diggers that are related to your posted gigs.",
+        notRelated: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
+    // Get digger profile
+    const { data: diggerProfile, error: diggerError } = await supabaseServiceClient
       .from('digger_profiles')
-      .select('subscription_status, subscription_tier, business_name, user_id, id')
+      .select('subscription_status, subscription_tier, business_name, user_id, id, profession, stripe_customer_id')
       .eq('id', diggerId)
       .single();
 
@@ -66,64 +164,8 @@ serve(async (req) => {
       tier: diggerProfile.subscription_tier 
     });
 
-    // CRITICAL: Check if digger has active subscription
-    // If not subscribed, digger must subscribe before consumers can view contact info
-    if (diggerProfile.subscription_status !== 'active') {
-      logStep("Digger not subscribed - subscription required", { 
-        diggerId,
-        subscription_status: diggerProfile.subscription_status 
-      });
-      
-      return new Response(JSON.stringify({ 
-        requiresSubscription: true,
-        diggerId: diggerProfile.id,
-        message: "This digger needs to activate their subscription before consumers can view contact information."
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 402, // Payment Required
-      });
-    }
-
-    // Record click for subscribed digger (for price lock tracking)
-    try {
-      const now = new Date();
-      const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      
-      // Check if record exists for this month
-      const { data: existingClick } = await supabaseServiceClient
-        .from('digger_monthly_clicks')
-        .select('id, click_count')
-        .eq('digger_id', diggerId)
-        .eq('month_year', monthYear)
-        .single();
-
-      if (existingClick) {
-        // Update existing record
-        await supabaseServiceClient
-          .from('digger_monthly_clicks')
-          .update({ 
-            click_count: existingClick.click_count + 1,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingClick.id);
-      } else {
-        // Create new record
-        await supabaseServiceClient
-          .from('digger_monthly_clicks')
-          .insert({
-            digger_id: diggerId,
-            month_year: monthYear,
-            click_count: 1,
-          });
-      }
-      logStep("Click recorded for subscribed digger", { diggerId, monthYear });
-    } catch (clickError) {
-      // Don't fail the request if click recording fails, just log it
-      logStep("Warning: Failed to record click", { error: clickError });
-    }
-
     // Check if user has already viewed this profile
-    const { data: existingView } = await supabaseClient
+    const { data: existingView } = await supabaseServiceClient
       .from('profile_views')
       .select('*')
       .eq('consumer_id', user.id)
@@ -142,30 +184,123 @@ serve(async (req) => {
       });
     }
 
-    // For subscribed diggers, consumers can view contact info for free
-    // (Digger already paid subscription, so no additional charge to consumer)
-    logStep("Digger is subscribed - unlocking contact info for free", { diggerId });
+    // Calculate the price the digger will pay
+    // Call the calculate-profile-click-price function via HTTP
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    const priceResponse = await fetch(`${supabaseUrl}/functions/v1/calculate-profile-click-price`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({ digger_profile_id: diggerId, price_type: 'click' }),
+    });
 
-    // Record the profile view
-    const { error: viewError } = await supabaseClient
+    if (!priceResponse.ok) {
+      throw new Error(`Failed to calculate price: ${priceResponse.statusText}`);
+    }
+
+    const priceData = await priceResponse.json();
+    const costCents = priceData.costCents || 5000; // Default to $50 if calculation fails
+    logStep("Price calculated", { costCents });
+
+    // Get or create Stripe customer for digger
+    let customerId = diggerProfile.stripe_customer_id;
+    
+    if (!customerId) {
+      const { data: profile } = await supabaseServiceClient
+        .from('profiles')
+        .select('email')
+        .eq('id', diggerProfile.user_id)
+        .single();
+
+      if (!profile?.email) throw new Error('Digger email not found');
+
+      const customer = await stripe.customers.create({
+        email: profile.email,
+        metadata: {
+          user_id: diggerProfile.user_id,
+          digger_id: diggerProfile.id,
+        },
+      });
+
+      customerId = customer.id;
+
+      // Update digger profile with Stripe customer ID
+      await supabaseServiceClient
+        .from('digger_profiles')
+        .update({ stripe_customer_id: customerId })
+        .eq('id', diggerProfile.id);
+
+      logStep("Created new Stripe customer for digger", { customerId });
+    }
+
+    // Create payment intent to charge the digger
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: costCents,
+      currency: 'usd',
+      customer: customerId,
+      description: `Profile view charge - Gigger clicked your profile`,
+      metadata: {
+        digger_id: diggerProfile.id,
+        consumer_id: user.id,
+        charge_type: 'profile_view',
+        price_type: 'click',
+      },
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never',
+      },
+    });
+
+    logStep("Payment intent created", { 
+      paymentIntentId: paymentIntent.id,
+      amount: costCents 
+    });
+
+    // Record the profile click (for tracking)
+    const { error: clickError } = await supabaseServiceClient
+      .from('profile_clicks')
+      .insert({
+        digger_profile_id: diggerId,
+        consumer_id: user.id,
+        cost_cents: costCents,
+        keyword_matched: priceData.matchedKeyword || null,
+        google_avg_cpc_cents: priceData.baseCpc ? Math.round(priceData.baseCpc * 100) : null,
+      });
+
+    if (clickError) {
+      logStep("Warning: Failed to record profile click", { error: clickError });
+    }
+
+    // Record the profile view (unlocks contact info)
+    const { error: viewError } = await supabaseServiceClient
       .from('profile_views')
       .insert({
         consumer_id: user.id,
         digger_id: diggerId,
-        amount_charged: 0, // Free for subscribed diggers
+        amount_charged: costCents / 100, // Store in dollars
       });
 
     if (viewError) {
       throw new Error(`Failed to record profile view: ${viewError.message}`);
     }
 
-    logStep("Profile view recorded", { consumerId: user.id, diggerId });
+    logStep("Profile view recorded and digger charged", { 
+      consumerId: user.id, 
+      diggerId,
+      paymentIntentId: paymentIntent.id
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
-      charged: false,
-      alreadyPaid: true,
-      message: "Contact info unlocked (digger has active subscription)"
+      charged: true,
+      paymentIntentId: paymentIntent.id,
+      clientSecret: paymentIntent.client_secret,
+      amount: costCents / 100,
+      message: "Contact info unlocked - Digger has been charged"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

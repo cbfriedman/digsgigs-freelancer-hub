@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Users, Briefcase, DollarSign, MessageSquare, Zap } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { generateFAQSchema } from "@/components/StructuredData";
 
@@ -134,6 +135,8 @@ const HowItWorks = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

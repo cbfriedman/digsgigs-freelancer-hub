@@ -173,17 +173,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await checkSubscription();
       }
 
-      // Only show success if update succeeded or was a 500 error (non-critical)
-      if (!error || (error.code === '500' || error.message?.includes('500'))) {
-        toast.success(`Switched to ${role} mode`);
-      } else {
-        toast.success(`Switched to ${role} mode (some features may be limited)`);
+      // Role switch is silent - UI already shows active role, no need for overlay notification
+      // Only log errors for debugging
+      if (error && !(error.code === '500' || error.message?.includes('500'))) {
+        console.warn('Role switch completed but update had issues:', error);
       }
     } catch (error) {
       console.error('Exception switching role:', error);
       // Even on exception, try to set the role locally
       setActiveRole(role);
-      toast.success(`Switched to ${role} mode`);
+      // Silent switch - no toast notification
     }
   };
 
