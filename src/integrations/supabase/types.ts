@@ -4176,6 +4176,14 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_app_role"][]
       }
+      get_user_app_roles_safe: {
+        Args: { _user_id: string }
+        Returns: {
+          app_role: string
+          is_active: boolean
+          last_used_at: string
+        }[]
+      }
       gigger_has_access_to_digger: {
         Args: { _digger_profile_id: string; _gigger_user_id: string }
         Returns: boolean
@@ -4196,6 +4204,10 @@ export type Database = {
       }
       increment_blog_post_views: {
         Args: { post_slug: string }
+        Returns: undefined
+      }
+      insert_user_app_role: {
+        Args: { p_app_role: string; p_user_id: string }
         Returns: undefined
       }
       is_digger: { Args: { _user_id: string }; Returns: boolean }

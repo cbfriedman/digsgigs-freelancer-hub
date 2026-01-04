@@ -120,6 +120,7 @@ const DiggerDetail = () => {
   const [diggerNeedsSubscription, setDiggerNeedsSubscription] = useState(false);
   const { isOnline } = useDiggerPresence(id);
   const { recordCall, isRecording: isCallingDigger } = useProfileCallTracking();
+  const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   
   // Owner dashboard states
   const [leadPurchases, setLeadPurchases] = useState<LeadPurchase[]>([]);

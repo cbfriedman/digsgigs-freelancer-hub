@@ -62,8 +62,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       let data, error;
       
       try {
-        const { data: functionData, error: functionError } = await supabase
-          .rpc('get_user_app_roles_safe', { _user_id: userId });
+        const { data: functionData, error: functionError } = await (supabase
+          .rpc as any)('get_user_app_roles_safe', { _user_id: userId });
         
         if (!functionError && functionData) {
           data = functionData;
@@ -309,11 +309,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 let rolesError = null;
                 
                 try {
-                  const { data: rpcRoles, error: rpcError } = await supabase
-                    .rpc('get_user_app_roles_safe', { _user_id: session.user.id });
+                  const { data: rpcRoles, error: rpcError } = await (supabase
+                    .rpc as any)('get_user_app_roles_safe', { _user_id: session.user.id });
                   
                   if (!rpcError && rpcRoles) {
-                    roles = rpcRoles.map((r: any) => ({ app_role: r.app_role }));
+                    roles = (rpcRoles as any[]).map((r: any) => ({ app_role: r.app_role }));
                   } else {
                     rolesError = rpcError || new Error('RPC function not available');
                   }
