@@ -128,16 +128,21 @@ const Index = () => {
     
     setUserName(data?.full_name || data?.email || "User");
     
-    // Check if user is admin (using user_app_roles table - new system)
-    const { data: roles } = await supabase
-      .from("user_app_roles")
-      .select("app_role")
-      .eq("user_id", userId)
-      .eq("app_role", "admin")
-      .eq("is_active", true)
-      .maybeSingle();
-    
-    setIsAdmin(!!roles);
+    // Check if user is admin (using RPC function to avoid RLS recursion)
+    try {
+      const { data: rolesData, error: rolesError } = await (supabase
+        .rpc as any)('get_user_app_roles_safe', { _user_id: userId });
+      
+      if (!rolesError && rolesData) {
+        const isAdmin = (rolesData as any[]).some((r: any) => r.app_role === 'admin' && r.is_active);
+        setIsAdmin(isAdmin);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.warn('Error checking admin role:', error);
+      setIsAdmin(false);
+    }
     
     // Fetch digger profile for completion calculation
     if (isDigger) {

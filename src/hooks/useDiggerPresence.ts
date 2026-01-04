@@ -93,16 +93,27 @@ export const useTrackDiggerPresence = () => {
 
     const setupPresence = async () => {
       try {
-        // First check if user has digger role - if not, skip query entirely
-        const { data: roles } = await supabase
-          .from('user_app_roles')
-          .select('app_role')
-          .eq('user_id', user.id)
-          .eq('app_role', 'digger')
-          .eq('is_active', true)
-          .limit(1);
+        // First check if user has digger role - use RPC function to avoid RLS recursion
+        let hasDiggerRole = false;
+        
+        try {
+          const { data: rolesData, error: rolesError } = await (supabase
+            .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
+          
+          if (!rolesError && rolesData) {
+            hasDiggerRole = (rolesData as any[]).some((r: any) => r.app_role === 'digger' && r.is_active);
+          } else if (rolesError) {
+            // RPC function might not exist - fallback to checking userRoles from context
+            // But we can't access context here, so just skip presence tracking
+            console.warn('Could not check digger role for presence tracking:', rolesError);
+            return;
+          }
+        } catch (rpcError) {
+          console.warn('RPC function get_user_app_roles_safe failed:', rpcError);
+          return;
+        }
 
-        if (!roles || roles.length === 0) {
+        if (!hasDiggerRole) {
           // User doesn't have digger role, no need to query profiles
           return;
         }
