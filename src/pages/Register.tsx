@@ -934,10 +934,46 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Create user_app_roles entries (account already created)
+      // CRITICAL: Verify user exists in auth.users before inserting roles
+      // This prevents foreign key constraint violations
+      const { data: currentUser, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !currentUser?.user) {
+        console.error("User not authenticated or user not found:", userError);
+        toast.error("Please sign in to continue. Redirecting to sign in...");
+        setLoading(false);
+        setTimeout(() => {
+          navigate('/register?mode=signin');
+        }, 2000);
+        return;
+      }
+
+      // Verify the userId matches the authenticated user
+      if (currentUser.user.id !== userId) {
+        console.warn("UserId mismatch. Using authenticated user ID instead.");
+        setUserId(currentUser.user.id);
+        // Continue with authenticated user's ID
+      }
+
+      // Double-check: Verify user exists in auth.users by checking profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', currentUser.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error("User profile not found. User may not be fully created:", profileError);
+        toast.error("Account setup incomplete. Please complete account creation first.");
+        setLoading(false);
+        setStep(1); // Go back to account creation
+        return;
+      }
+
+      // Create user_app_roles entries (account verified to exist)
       // Try direct INSERT first, fallback to RPC function if recursion error
       const roleInserts = roleArray.map(role => ({
-        user_id: userId,
+        user_id: currentUser.user.id, // Use verified user ID
         app_role: role,
         is_active: true,
       }));
@@ -962,12 +998,22 @@ const Register = () => {
             for (const role of roleArray) {
               const { error: rpcError } = await supabase
                 .rpc('insert_user_app_role', {
-                  p_user_id: userId,
+                  p_user_id: currentUser.user.id, // Use verified user ID
                   p_app_role: role
                 });
               
               if (rpcError) {
                 console.error(`RPC error inserting role ${role}:`, rpcError);
+                
+                // Check if it's a foreign key constraint error
+                if (rpcError.code === '23503' || rpcError.message?.includes('foreign key constraint')) {
+                  console.error("User does not exist in auth.users. Account may not be fully created.");
+                  toast.error("Account setup incomplete. Please complete account creation first.");
+                  setLoading(false);
+                  setStep(1); // Go back to account creation
+                  return;
+                }
+                
                 rolesError = rpcError;
                 break;
               }
@@ -977,6 +1023,15 @@ const Register = () => {
             rolesError = rpcException as any;
           }
         } else {
+          // Check if it's a foreign key constraint error
+          if (directInsertError.code === '23503' || directInsertError.message?.includes('foreign key constraint')) {
+            console.error("User does not exist in auth.users. Account may not be fully created.");
+            toast.error("Account setup incomplete. Please complete account creation first.");
+            setLoading(false);
+            setStep(1); // Go back to account creation
+            return;
+          }
+          
           // Other error, use it as-is
           rolesError = directInsertError;
         }
@@ -984,7 +1039,14 @@ const Register = () => {
 
       if (rolesError) {
         console.error("Error creating roles:", rolesError);
-        toast.error("Roles setup failed. Please contact support.");
+        
+        // Provide more specific error message
+        if (rolesError.code === '23503') {
+          toast.error("Account setup incomplete. Please complete account creation first.");
+          setStep(1);
+        } else {
+          toast.error("Roles setup failed. Please contact support.");
+        }
         setLoading(false);
         return;
       }
@@ -994,7 +1056,7 @@ const Register = () => {
         const { error: diggerError } = await supabase
           .from('digger_profiles')
           .insert({
-            user_id: userId,
+            user_id: currentUser.user.id, // Use verified user ID
             business_name: roleFormData.digger.companyName,
             phone: phone || '',
             location: '',
@@ -1006,6 +1068,8 @@ const Register = () => {
 
         if (diggerError) {
           console.error("Error creating digger profile:", diggerError);
+          // Don't fail registration - user can create profile later
+          toast.error("Digger profile creation failed. You can create it later from your dashboard.");
         }
       }
 
@@ -1021,7 +1085,7 @@ const Register = () => {
           body: {
             conversion_type: conversionType,
             email,
-            user_id: userId,
+            user_id: currentUser.user.id, // Use verified user ID
             ...campaignData,
           },
         });
@@ -1031,7 +1095,7 @@ const Register = () => {
           body: {
             user_email: email,
             user_name: fullName,
-            user_id: userId,
+            user_id: currentUser.user.id, // Use verified user ID
             role: selectedRoles.has('digger') ? 'digger' : 'gigger',
             ...campaignData,
           },
@@ -1074,7 +1138,7 @@ const Register = () => {
         const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
         await supabase.functions.invoke('send-welcome-email', {
           body: {
-            userId,
+            userId: currentUser.user.id, // Use verified user ID
             email,
             name: fullName,
             role: primaryRole,
