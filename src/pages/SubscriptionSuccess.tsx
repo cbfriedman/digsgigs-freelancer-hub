@@ -15,7 +15,6 @@ import {
   Sparkles
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
-import confetti from "canvas-confetti";
 import { PRICE_LOCK_PERIOD_MONTHS, PRICE_LOCK_CLICK_THRESHOLD } from "@/config/subscriptionTiers";
 
 export default function SubscriptionSuccess() {
@@ -29,37 +28,43 @@ export default function SubscriptionSuccess() {
     if (!showConfetti) {
       setShowConfetti(true);
       
-      // Fire confetti
-      const duration = 3 * 1000;
-      const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+      // Load confetti dynamically for code splitting
+      import("canvas-confetti").then((confetti) => {
+        // Fire confetti
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-      function randomInRange(min: number, max: number) {
-        return Math.random() * (max - min) + min;
-      }
-
-      const interval: NodeJS.Timeout = setInterval(function() {
-        const timeLeft = animationEnd - Date.now();
-
-        if (timeLeft <= 0) {
-          return clearInterval(interval);
+        function randomInRange(min: number, max: number) {
+          return Math.random() * (max - min) + min;
         }
 
-        const particleCount = 50 * (timeLeft / duration);
-        
-        confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-        });
-        confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-        });
-      }, 250);
+        const interval: NodeJS.Timeout = setInterval(function() {
+          const timeLeft = animationEnd - Date.now();
 
-      return () => clearInterval(interval);
+          if (timeLeft <= 0) {
+            return clearInterval(interval);
+          }
+
+          const particleCount = 50 * (timeLeft / duration);
+          
+          confetti.default({
+            ...defaults,
+            particleCount,
+            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+          });
+          confetti.default({
+            ...defaults,
+            particleCount,
+            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+          });
+        }, 250);
+
+        // Return cleanup function
+        return () => clearInterval(interval);
+      }).catch((err) => {
+        console.warn("Failed to load confetti:", err);
+      });
     }
   }, [showConfetti]);
 

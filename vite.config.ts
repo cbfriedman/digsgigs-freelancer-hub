@@ -40,4 +40,29 @@ export default defineConfig(({ mode }) => ({
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip',
+          ],
+          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+          'map-vendor': ['mapbox-gl', '@turf/turf'],
+          'chart-vendor': ['recharts'],
+          'pdf-vendor': ['jspdf', 'jspdf-autotable'],
+          'stripe-vendor': ['@stripe/stripe-js'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Increase limit to 1MB (chunks will still be optimized)
+  },
 }));
