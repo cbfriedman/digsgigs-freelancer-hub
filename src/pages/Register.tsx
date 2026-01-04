@@ -346,10 +346,10 @@ const Register = () => {
         let error = null;
         
         try {
-          const { data: rpcRoles, error: rpcError } = await supabase
-            .rpc('get_user_app_roles_safe', { _user_id: user.id });
+          const { data: rpcRoles, error: rpcError } = await (supabase
+            .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
           
-          if (!rpcError && rpcRoles && rpcRoles.length > 0) {
+          if (!rpcError && rpcRoles && (rpcRoles as any[]).length > 0) {
             hasRoles = true;
           } else if (rpcError) {
             console.warn('Error checking user roles (non-fatal):', rpcError);
@@ -1011,8 +1011,8 @@ const Register = () => {
           // Use RPC function to insert roles (bypasses RLS)
           try {
             for (const role of roleArray) {
-              const { error: rpcError } = await supabase
-                .rpc('insert_user_app_role', {
+              const { error: rpcError } = await (supabase
+                .rpc as any)('insert_user_app_role', {
                   p_user_id: verifiedUserId, // Use verified user ID
                   p_app_role: role
                 });

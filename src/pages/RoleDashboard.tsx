@@ -187,8 +187,8 @@ export default function RoleDashboard() {
           // Check database directly using RPC function
           try {
             // Use the safe RPC function that bypasses RLS completely
-            const { data: rpcRoles, error: rpcError } = await supabase
-              .rpc('get_user_app_roles_safe', { _user_id: user.id });
+            const { data: rpcRoles, error: rpcError } = await (supabase
+              .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
             
             if (rpcError) {
               console.error('RPC function error (non-fatal):', rpcError);
@@ -205,7 +205,7 @@ export default function RoleDashboard() {
               return;
             }
             
-            if (!rpcRoles || rpcRoles.length === 0) {
+            if (!rpcRoles || (rpcRoles as any[]).length === 0) {
               // No roles found - but DON'T redirect automatically
               // Let user see the dashboard and choose to register if they want
               // This is better UX than forcing a redirect
@@ -556,8 +556,8 @@ export default function RoleDashboard() {
                         // If recursion error, use RPC function
                         if (directInsertError && (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion'))) {
                           console.log('Infinite recursion detected, using RPC function');
-                          const { error: rpcInsertError } = await supabase
-                            .rpc('insert_user_app_role', {
+                          const { error: rpcInsertError } = await (supabase
+                            .rpc as any)('insert_user_app_role', {
                               p_user_id: user.id,
                               p_app_role: 'gigger'
                             });

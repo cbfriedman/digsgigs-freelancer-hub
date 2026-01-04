@@ -52,6 +52,7 @@ const GigDetail = () => {
   const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'premium'>('free');
   const [canSeeBudget, setCanSeeBudget] = useState(false);
   const [hasLeadPurchase, setHasLeadPurchase] = useState(false);
+  const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
 
   useEffect(() => {
     loadData();

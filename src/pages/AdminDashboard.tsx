@@ -87,12 +87,12 @@ const AdminDashboard = () => {
       let rolesError = null;
 
       try {
-        const { data: functionData, error: functionError } = await supabase
-          .rpc('get_user_app_roles_safe', { _user_id: user.id });
+        const { data: functionData, error: functionError } = await (supabase
+          .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
         
         if (!functionError && functionData) {
           // Check if admin role exists in the results
-          isAdminCheck = functionData.some((r: any) => r.app_role === 'admin');
+          isAdminCheck = (functionData as any[]).some((r: any) => r.app_role === 'admin');
         } else {
           // Fallback: Try using has_app_role function
           const { data: hasAdmin, error: hasAdminError } = await supabase

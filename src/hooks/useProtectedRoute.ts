@@ -35,10 +35,10 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
           let hasRoles = false;
           
           try {
-            const { data: rpcRoles, error: rpcError } = await supabase
-              .rpc('get_user_app_roles_safe', { _user_id: user.id });
+            const { data: rpcRoles, error: rpcError } = await (supabase
+              .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
             
-            if (!rpcError && rpcRoles && rpcRoles.length > 0) {
+            if (!rpcError && rpcRoles && (rpcRoles as any[]).length > 0) {
               hasRoles = true;
             } else if (rpcError) {
               // On error, assume user has roles (safer than blocking access)
@@ -142,11 +142,11 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
             let rolesError = null;
             
             try {
-              const { data: rpcRoles, error: rpcError } = await supabase
-                .rpc('get_user_app_roles_safe', { _user_id: user.id });
+              const { data: rpcRoles, error: rpcError } = await (supabase
+                .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
               
               if (!rpcError && rpcRoles) {
-                roles = rpcRoles.map((r: any) => ({ app_role: r.app_role }));
+                roles = (rpcRoles as any[]).map((r: any) => ({ app_role: r.app_role }));
               } else {
                 // RPC function might not exist (migrations not applied)
                 // Don't fallback to direct query - it will cause 500 errors

@@ -673,8 +673,8 @@ export const CategoryBrowserWithDescription = () => {
                           if (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion')) {
                             console.log("Infinite recursion detected, using RPC function to bypass RLS");
                             // Use RPC function to insert role (bypasses RLS)
-                            const { error: rpcError } = await supabase
-                              .rpc('insert_user_app_role', {
+                            const { error: rpcError } = await (supabase
+                              .rpc as any)('insert_user_app_role', {
                                 p_user_id: user.id,
                                 p_app_role: 'digger'
                               });
