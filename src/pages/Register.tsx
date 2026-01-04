@@ -319,18 +319,36 @@ const Register = () => {
       // If coming from gig posting flow and already logged in, ensure gigger role and redirect
       if (isFromGigPosting) {
         const ensureGiggerRoleAndRedirect = async () => {
-          // Check if user already has gigger role
-          const { data: existingRoles } = await supabase
-            .from('user_app_roles')
-            .select('app_role')
-            .eq('user_id', user.id)
-            .eq('app_role', 'gigger');
+          // Check if user already has gigger role using RPC function
+          let hasGiggerRole = false;
+          try {
+            const { data: rpcRoles, error: rpcError } = await (supabase
+              .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
+            
+            if (!rpcError && rpcRoles) {
+              hasGiggerRole = (rpcRoles as any[]).some((r: any) => r.app_role === 'gigger');
+            }
+          } catch (rpcException) {
+            console.warn('RPC function not available:', rpcException);
+          }
           
-          // If no gigger role, create one
-          if (!existingRoles || existingRoles.length === 0) {
-            await supabase
-              .from('user_app_roles')
-              .insert({ user_id: user.id, app_role: 'gigger' });
+          // If no gigger role, create one using RPC function
+          if (!hasGiggerRole) {
+            try {
+              const { error: insertError } = await (supabase
+                .rpc as any)('insert_user_app_role', {
+                p_user_id: user.id,
+                p_app_role: 'gigger'
+              });
+              
+              if (insertError) {
+                console.error('Error creating gigger role:', insertError);
+                // Continue anyway - user can still post gig
+              }
+            } catch (rpcException) {
+              console.warn('RPC function not available:', rpcException);
+              // Continue anyway - user can still post gig
+            }
           }
           
           toast.success("You're ready to post your gig!");
@@ -1019,58 +1037,68 @@ const Register = () => {
       }
 
       // Create user_app_roles entries (account verified to exist)
-      // Try direct INSERT first, fallback to RPC function if recursion error
-      const roleInserts = roleArray.map(role => ({
-        user_id: verifiedUserId, // Use verified user ID
-        app_role: role,
-        is_active: true,
-      }));
-
+      // Use RPC function first to bypass RLS and prevent 500 errors
+      // Fallback to direct INSERT only if RPC function doesn't exist
       let rolesError = null;
       
-      // Try direct INSERT first
-      const { error: directInsertError } = await supabase
-        .from('user_app_roles')
-        .insert(roleInserts);
-
-      // If we get infinite recursion error, use RPC function instead
-      if (directInsertError) {
-        console.warn("Direct INSERT failed, trying RPC function:", directInsertError);
-        
-        // Check if it's a recursion error
-        if (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion')) {
-          console.log("Infinite recursion detected, using RPC function to bypass RLS");
+      // Try RPC function first (preferred method - bypasses RLS)
+      try {
+        for (const role of roleArray) {
+          const { error: rpcError } = await (supabase
+            .rpc as any)('insert_user_app_role', {
+            p_user_id: verifiedUserId, // Use verified user ID
+            p_app_role: role
+          });
           
-          // Use RPC function to insert roles (bypasses RLS)
-          try {
-            for (const role of roleArray) {
-              const { error: rpcError } = await (supabase
-                .rpc as any)('insert_user_app_role', {
-                  p_user_id: verifiedUserId, // Use verified user ID
-                  p_app_role: role
-                });
-              
-              if (rpcError) {
-                console.error(`RPC error inserting role ${role}:`, rpcError);
-                
-                // Check if it's a foreign key constraint error
-                if (rpcError.code === '23503' || rpcError.message?.includes('foreign key constraint')) {
-                  console.error("User does not exist in auth.users. Account may not be fully created.");
-                  toast.error("Account setup incomplete. Please complete account creation first.");
-                  setLoading(false);
-                  setStep(1); // Go back to account creation
-                  return;
-                }
-                
-                rolesError = rpcError;
-                break;
-              }
+          if (rpcError) {
+            console.error(`RPC error inserting role ${role}:`, rpcError);
+            
+            // Check if it's a foreign key constraint error
+            if (rpcError.code === '23503' || rpcError.message?.includes('foreign key constraint')) {
+              console.error("User does not exist in auth.users. Account may not be fully created.");
+              toast.error("Account setup incomplete. Please complete account creation first.");
+              setLoading(false);
+              setStep(1); // Go back to account creation
+              return;
             }
-          } catch (rpcException) {
-            console.error("Exception using RPC function:", rpcException);
-            rolesError = rpcException as any;
+            
+            // Check if RPC function doesn't exist (migrations not applied)
+            if (rpcError.code === '42883' || rpcError.message?.includes('does not exist') || rpcError.message?.includes('function')) {
+              console.warn("RPC function not available, falling back to direct INSERT");
+              // Fall through to direct INSERT fallback
+              rolesError = rpcError;
+              break;
+            }
+            
+            rolesError = rpcError;
+            break;
           }
-        } else {
+        }
+        
+        // If RPC succeeded, skip direct INSERT fallback
+        if (!rolesError) {
+          console.log("Roles created successfully using RPC function");
+        }
+      } catch (rpcException) {
+        console.warn("RPC function not available, falling back to direct INSERT:", rpcException);
+        // Fall through to direct INSERT fallback
+        rolesError = rpcException as any;
+      }
+      
+      // Fallback: Try direct INSERT only if RPC function doesn't exist
+      if (rolesError && (rolesError.code === '42883' || rolesError.message?.includes('does not exist') || rolesError.message?.includes('function'))) {
+        console.warn("Using direct INSERT as fallback (RPC function not available)");
+        const roleInserts = roleArray.map(role => ({
+          user_id: verifiedUserId,
+          app_role: role,
+          is_active: true,
+        }));
+        
+        const { error: directInsertError } = await supabase
+          .from('user_app_roles')
+          .insert(roleInserts);
+        
+        if (directInsertError) {
           // Check if it's a foreign key constraint error
           if (directInsertError.code === '23503' || directInsertError.message?.includes('foreign key constraint')) {
             console.error("User does not exist in auth.users. Account may not be fully created.");
@@ -1080,8 +1108,19 @@ const Register = () => {
             return;
           }
           
-          // Other error, use it as-is
+          // Check if it's a recursion error
+          if (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion')) {
+            console.error("Infinite recursion error - RPC function must be used. Please apply database migrations.");
+            toast.error("Database configuration error. Please contact support.");
+            setLoading(false);
+            return;
+          }
+          
           rolesError = directInsertError;
+        } else {
+          // Direct INSERT succeeded
+          rolesError = null;
+          console.log("Roles created successfully using direct INSERT (fallback)");
         }
       }
 
@@ -1365,12 +1404,23 @@ const Register = () => {
       // User authenticated successfully - sign them in immediately
       // No OTP required for regular sign-ins (only for sign-up)
       
-      // Check if user has roles to determine where to redirect
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_app_roles')
-        .select('app_role')
-        .eq('user_id', signInData.user.id)
-        .eq('is_active', true);
+      // Check if user has roles to determine where to redirect using RPC function
+      let roles: any[] = [];
+      let rolesError = null;
+      
+      try {
+        const { data: rpcRoles, error: rpcError } = await (supabase
+          .rpc as any)('get_user_app_roles_safe', { _user_id: signInData.user.id });
+        
+        if (!rpcError && rpcRoles) {
+          roles = (rpcRoles as any[]).map((r: any) => ({ app_role: r.app_role }));
+        } else {
+          rolesError = rpcError || new Error('RPC function not available');
+        }
+      } catch (rpcException) {
+        console.warn('RPC function not available:', rpcException);
+        rolesError = rpcException as any;
+      }
 
       if (rolesError) {
         console.error("Error checking roles:", rolesError);
@@ -1484,12 +1534,23 @@ const Register = () => {
             // Wait longer for auth state and roles to update
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            // Check if user has roles
-            const { data: roles, error: rolesError } = await supabase
-              .from('user_app_roles')
-              .select('app_role')
-              .eq('user_id', signInData.user.id)
-              .eq('is_active', true);
+            // Check if user has roles using RPC function
+            let roles: any[] = [];
+            let rolesError = null;
+            
+            try {
+              const { data: rpcRoles, error: rpcError } = await (supabase
+                .rpc as any)('get_user_app_roles_safe', { _user_id: signInData.user.id });
+              
+              if (!rpcError && rpcRoles) {
+                roles = (rpcRoles as any[]).map((r: any) => ({ app_role: r.app_role }));
+              } else {
+                rolesError = rpcError || new Error('RPC function not available');
+              }
+            } catch (rpcException) {
+              console.warn('RPC function not available:', rpcException);
+              rolesError = rpcException as any;
+            }
             
             if (rolesError) {
               console.error("Error checking roles:", rolesError);
