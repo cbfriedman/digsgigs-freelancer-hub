@@ -63,6 +63,6 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    chunkSizeWarningLimit: 1000, // Increase limit to 1MB (chunks will still be optimized)
+    chunkSizeWarningLimit: 2000, // Set limit to 2MB to suppress warnings for optimized chunks
   },
 }));
