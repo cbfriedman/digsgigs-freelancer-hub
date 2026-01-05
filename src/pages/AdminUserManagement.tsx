@@ -61,36 +61,20 @@ const AdminUserManagement = () => {
         return;
       }
 
-      // Use is_admin RPC function to avoid RLS recursion (bypasses RLS)
-      const { data: isAdminResult, error: adminError } = await supabase
-        .rpc('is_admin', { _user_id: user.id });
+      // Use get_user_app_roles_safe RPC function to check admin status
+      const { data: rolesData, error: adminError } = await (supabase.rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
 
       if (adminError) {
         console.error("Error checking admin status:", adminError);
-        // If RLS recursion error, try alternative method
-        if (adminError.code === '42P17' || adminError.message?.includes('infinite recursion')) {
-          console.warn('RLS recursion detected - trying alternative check');
-          // Try using get_user_app_roles_safe as fallback
-          try {
-            const { data: rolesData } = await (supabase.rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
-            if (rolesData && Array.isArray(rolesData)) {
-              const hasAdmin = rolesData.some((r: any) => r.app_role === 'admin');
-              if (hasAdmin) {
-                setIsAdmin(true);
-                await loadUsers();
-                return;
-              }
-            }
-          } catch (fallbackError) {
-            console.error("Fallback check also failed:", fallbackError);
-          }
-        }
         toast.error("Access denied. Admin privileges required.");
         navigate("/");
         return;
       }
 
-      if (!isAdminResult) {
+      // Check if user has admin role
+      const hasAdmin = rolesData && Array.isArray(rolesData) && rolesData.some((r: any) => r.app_role === 'admin');
+      
+      if (!hasAdmin) {
         toast.error("Access denied. Admin privileges required.");
         navigate("/");
         return;
