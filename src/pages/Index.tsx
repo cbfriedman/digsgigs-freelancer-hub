@@ -485,7 +485,7 @@ const Index = () => {
                       variant="default" 
                       size="lg" 
                       className="text-base w-full sm:w-auto"
-                      onClick={() => navigate("/register?type=digger")}
+                      onClick={() => navigate("/apply-digger")}
                     >
                       Apply as a Freelancer
                     </Button>
@@ -568,7 +568,7 @@ const Index = () => {
               variant="hero" 
               size="lg" 
               className="text-base"
-              onClick={() => navigate("/register?type=digger")}
+              onClick={() => navigate("/apply-digger")}
             >
               Apply as a Digger <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
@@ -636,7 +636,7 @@ const Index = () => {
             {/* For Freelancers */}
             <div 
               className="space-y-8 p-8 rounded-2xl border border-border/50 bg-card cursor-pointer transition-all hover:shadow-lg hover:border-accent/50 hover:-translate-y-1"
-              onClick={() => navigate("/register?type=digger")}
+              onClick={() => navigate("/apply-digger")}
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -659,7 +659,7 @@ const Index = () => {
                   </div>
                 ))}
               </div>
-              <Button className="w-full" size="lg" variant="default" onClick={(e) => { e.stopPropagation(); navigate("/register?type=digger"); }}>
+              <Button className="w-full" size="lg" variant="default" onClick={(e) => { e.stopPropagation(); navigate("/apply-digger"); }}>
                 Apply as a Digger <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </div>
@@ -746,7 +746,7 @@ const Index = () => {
                 variant="hero" 
                 size="lg" 
                 className="w-full text-base"
-                onClick={() => navigate("/register?type=digger")}
+                onClick={() => navigate("/apply-digger")}
               >
                 Apply as a Digger <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -885,7 +885,7 @@ const Index = () => {
                   variant="hero" 
                   size="lg" 
                   className="text-base"
-                  onClick={() => navigate("/register?type=digger")}
+                  onClick={() => navigate("/apply-digger")}
                 >
                   Apply as a Digger <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>

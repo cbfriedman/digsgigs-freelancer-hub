@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import SEOHead from "@/components/SEOHead";
+import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useUTMTracking } from "@/hooks/useUTMTracking";
@@ -48,18 +50,7 @@ const ApplyDigger = () => {
       />
 
       <div className="min-h-screen bg-background">
-        {/* Minimal Header */}
-        <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container mx-auto px-4 py-4">
-            <Link to="/" className="inline-block">
-              <img 
-                src="/digsandgigs-logo-horizontal.svg" 
-                alt="Digs & Gigs" 
-                className="h-8 sm:h-10"
-              />
-            </Link>
-          </div>
-        </header>
+        <Navigation />
 
         {/* Hero Section */}
         <section className="py-16 md:py-24 lg:py-32">
@@ -78,13 +69,13 @@ const ApplyDigger = () => {
                 onClick={handleCTAClick}
               >
                 <Link to={registrationUrl}>
-                  Create your free Digger account
+                  Get Early Access
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-4">
-              30-day free trial • Cancel anytime
+              Free to join. Takes 2 minutes. No commissions — ever.
             </p>
           </div>
         </section>
@@ -375,28 +366,8 @@ const ApplyDigger = () => {
           </div>
         </section>
 
-        {/* Minimal Footer */}
-        <footer className="py-8 border-t border-border/40">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <Link to="/" className="inline-block">
-                <img 
-                  src="/digsandgigs-logo-horizontal.svg" 
-                  alt="Digs & Gigs" 
-                  className="h-6"
-                />
-              </Link>
-              <div className="flex gap-6 text-sm text-muted-foreground">
-                <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-                <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-                <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                © {new Date().getFullYear()} Digs & Gigs
-              </p>
-            </div>
-          </div>
-        </footer>
+        <Footer />
+
 
         {/* Mobile Sticky CTA */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border md:hidden z-50">
@@ -406,9 +377,12 @@ const ApplyDigger = () => {
             onClick={handleCTAClick}
           >
             <Link to={registrationUrl}>
-              Create your free Digger account
+              Get Early Access
             </Link>
           </Button>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Free to join. Takes 2 minutes. No commissions — ever.
+          </p>
         </div>
       </div>
     </>
