@@ -8,8 +8,6 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400", // 24 hours
 };
 
-const ADMIN_EMAILS = ["coby@cfcontracting.com", "webservicewang@gmail.com"];
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { 
@@ -27,6 +25,57 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Get Supabase client to fetch admin emails dynamically
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Supabase credentials not configured");
+      return new Response(
+        JSON.stringify({ error: "Database service not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get all admin users dynamically from database
+    const { data: adminRoles, error: adminError } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin');
+
+    if (adminError) {
+      console.error('Error fetching admins:', adminError);
+      // Fallback to hardcoded emails if database query fails
+      console.warn('Falling back to hardcoded admin emails');
+    }
+
+    let adminEmails: string[] = [];
+
+    if (adminRoles && adminRoles.length > 0) {
+      // Get admin emails from profiles
+      const { data: adminProfiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .in('id', adminRoles.map(r => r.user_id))
+        .not('email', 'is', null);
+
+      if (profileError) {
+        console.error('Error fetching admin profiles:', profileError);
+      } else if (adminProfiles) {
+        adminEmails = adminProfiles.map(p => p.email).filter((email): email is string => !!email);
+      }
+    }
+
+    // Fallback to hardcoded emails if no admins found in database
+    if (adminEmails.length === 0) {
+      console.warn('No admin emails found in database, using fallback list');
+      adminEmails = ["coby@cfcontracting.com", "webservicewang@gmail.com", "frostwebdev@gmail.com"];
+    }
+
+    console.log(`Notifying ${adminEmails.length} admin(s): ${adminEmails.join(', ')}`);
 
     const body = await req.json();
     console.log("New signup notification request:", JSON.stringify(body));
@@ -139,7 +188,7 @@ serve(async (req) => {
 
     // Send email to all admins
     let emailsSent = 0;
-    for (const adminEmail of ADMIN_EMAILS) {
+    for (const adminEmail of adminEmails) {
       try {
         const emailRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -167,7 +216,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Signup notification completed: ${emailsSent}/${ADMIN_EMAILS.length} emails sent`);
+    console.log(`Signup notification completed: ${emailsSent}/${adminEmails.length} emails sent`);
     
     return new Response(
       JSON.stringify({ success: true, emailsSent }),
