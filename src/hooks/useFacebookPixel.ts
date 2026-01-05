@@ -2,6 +2,7 @@ import { useEffect, useCallback, useState } from 'react';
 
 const FB_PIXEL_ID = import.meta.env.VITE_FB_PIXEL_ID;
 
+
 export const useFacebookPixel = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -50,7 +51,23 @@ export const useFacebookPixel = () => {
         };
 
         script.onerror = () => {
-          console.error('Facebook Pixel script failed to load');
+          console.warn('Facebook Pixel script failed to load. This is usually caused by:', {
+            reason: 'ERR_BLOCKED_BY_CLIENT',
+            possibleCauses: [
+              'Ad blocker extension (uBlock Origin, AdBlock Plus, etc.)',
+              'Privacy extension (Privacy Badger, Ghostery, etc.)',
+              'Browser privacy settings',
+              'Corporate firewall or network restrictions'
+            ],
+            solutions: [
+              'Disable ad blockers for this site',
+              'Add site to ad blocker whitelist',
+              'Test in incognito/private mode',
+              'Try a different browser',
+              'Check browser extension settings'
+            ]
+          });
+          console.warn('To test Facebook Pixel, disable ad blockers or use Facebook Events Manager Test Events mode');
         };
 
         document.head.appendChild(script);
