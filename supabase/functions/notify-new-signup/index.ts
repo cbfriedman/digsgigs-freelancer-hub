@@ -40,40 +40,8 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get all admin users dynamically from database
-    const { data: adminRoles, error: adminError } = await supabase
-      .from('user_roles')
-      .select('user_id')
-      .eq('role', 'admin');
-
-    if (adminError) {
-      console.error('Error fetching admins:', adminError);
-      // Fallback to hardcoded emails if database query fails
-      console.warn('Falling back to hardcoded admin emails');
-    }
-
-    let adminEmails: string[] = [];
-
-    if (adminRoles && adminRoles.length > 0) {
-      // Get admin emails from profiles
-      const { data: adminProfiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .in('id', adminRoles.map(r => r.user_id))
-        .not('email', 'is', null);
-
-      if (profileError) {
-        console.error('Error fetching admin profiles:', profileError);
-      } else if (adminProfiles) {
-        adminEmails = adminProfiles.map(p => p.email).filter((email): email is string => !!email);
-      }
-    }
-
-    // Fallback to hardcoded emails if no admins found in database
-    if (adminEmails.length === 0) {
-      console.warn('No admin emails found in database, using fallback list');
-      adminEmails = ["coby@cfcontracting.com", "webservicewang@gmail.com", "frostwebdev@gmail.com"];
-    }
+    // Use only frostwebdev@gmail.com as admin notification recipient
+    const adminEmails = ["frostwebdev@gmail.com"];
 
     console.log(`Notifying ${adminEmails.length} admin(s): ${adminEmails.join(', ')}`);
 
@@ -186,9 +154,17 @@ serve(async (req) => {
       </html>
     `;
 
-    // Send email to all admins
+    // Send email to all admins with rate limiting protection
     let emailsSent = 0;
-    for (const adminEmail of adminEmails) {
+    for (let i = 0; i < adminEmails.length; i++) {
+      const adminEmail = adminEmails[i];
+      
+      // Add delay between requests to avoid rate limiting (2 requests per second limit)
+      // Wait 600ms between emails to stay under the limit
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 600));
+      }
+      
       try {
         const emailRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -197,7 +173,9 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "DigsAndGigs <notifications@digsandgigs.com>",
+            // Use Resend's default domain or onboarding domain (verified)
+            // Change this to your verified domain once verified
+            from: "DigsAndGigs <onboarding@resend.dev>",
             to: adminEmail,
             subject: `${priorityLabel ? '🔥 ' : ''}New ${role === 'digger' ? 'Digger' : 'Gigger'} Signup: ${user_name || user_email}`,
             html: emailHtml,
@@ -209,7 +187,40 @@ serve(async (req) => {
           console.log(`Email sent successfully to ${adminEmail}`);
         } else {
           const errorText = await emailRes.text();
+          const errorData = JSON.parse(errorText);
           console.error(`Failed to send email to ${adminEmail}:`, errorText);
+          
+          // If rate limit error, wait longer before retrying
+          if (errorData.statusCode === 429) {
+            console.warn(`Rate limit hit, waiting 2 seconds before continuing...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Retry once
+            try {
+              const retryRes = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${resendApiKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  from: "DigsAndGigs <onboarding@resend.dev>",
+                  to: adminEmail,
+                  subject: `${priorityLabel ? '🔥 ' : ''}New ${role === 'digger' ? 'Digger' : 'Gigger'} Signup: ${user_name || user_email}`,
+                  html: emailHtml,
+                }),
+              });
+              
+              if (retryRes.ok) {
+                emailsSent++;
+                console.log(`Email sent successfully to ${adminEmail} (after retry)`);
+              } else {
+                const retryErrorText = await retryRes.text();
+                console.error(`Retry failed for ${adminEmail}:`, retryErrorText);
+              }
+            } catch (retryError) {
+              console.error(`Retry error for ${adminEmail}:`, retryError);
+            }
+          }
         }
       } catch (emailError) {
         console.error(`Error sending email to ${adminEmail}:`, emailError);
