@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "allowJs": true,
-    "lib": ["ES2022", "deno.window"],
+    "lib": ["ES2022"],
     "strict": false,
     "skipLibCheck": true,
     "noEmit": true

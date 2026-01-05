@@ -40,8 +40,9 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Use only frostwebdev@gmail.com as admin notification recipient
-    const adminEmails = ["frostwebdev@gmail.com"];
+    // Use account owner's email (required for Resend free/testing accounts)
+    // Free Resend accounts can only send to the account owner's email
+    const adminEmails = ["coby@cfcontracting.com"];
 
     console.log(`Notifying ${adminEmails.length} admin(s): ${adminEmails.join(', ')}`);
 
