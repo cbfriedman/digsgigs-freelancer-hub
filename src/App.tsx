@@ -86,6 +86,8 @@ import ColdEmailDocs from "./pages/ColdEmailDocs";
 import FoundingDigger from "./pages/FoundingDigger";
 import About from "./pages/About";
 import ApplyDigger from "./pages/ApplyDigger";
+import PaymentMethods from "./pages/PaymentMethods";
+import GiveawayTerms from "./pages/GiveawayTerms";
 
 const queryClient = new QueryClient();
 
@@ -158,6 +160,10 @@ const router = createBrowserRouter([
   {
     path: "/checkout-success",
     element: <ProtectedRoute><CheckoutSuccess /></ProtectedRoute>,
+  },
+  {
+    path: "/payment-methods",
+    element: <ProtectedRoute requireVerified={true}><PaymentMethods /></ProtectedRoute>,
   },
   {
     path: "/browse-diggers",
@@ -415,14 +421,18 @@ const router = createBrowserRouter([
     path: "/about",
     element: <About />,
   },
-  {
-    path: "/apply-digger",
-    element: <ApplyDigger />,
-  },
-  {
-    path: "*",
-    element: <NotFound />,
-  },
+      {
+        path: "/apply-digger",
+        element: <ApplyDigger />,
+      },
+      {
+        path: "/giveaway-terms",
+        element: <GiveawayTerms />,
+      },
+      {
+        path: "*",
+        element: <NotFound />,
+      },
     ],
   },
 ]);

@@ -15,6 +15,7 @@ import { MarketingEmailsTab } from "@/components/admin/MarketingEmailsTab";
 import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
 import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
 import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
+import { GiveawayReportTab } from "@/components/admin/GiveawayReportTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Footer } from "@/components/Footer";
 interface ReminderStats {
@@ -400,6 +401,10 @@ const AdminDashboard = () => {
               <Database className="h-3 w-3" />
               CPC Data
             </TabsTrigger>
+            <TabsTrigger value="giveaway" className="flex items-center gap-1">
+              <Crown className="h-3 w-3" />
+              Giveaway Report
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="signup-analytics">
@@ -732,6 +737,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="founding-diggers">
             <FoundingDiggerTab />
+          </TabsContent>
+
+          <TabsContent value="giveaway">
+            <GiveawayReportTab />
           </TabsContent>
         </Tabs>
       </div>

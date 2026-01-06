@@ -80,6 +80,51 @@ const ApplyDigger = () => {
           </div>
         </section>
 
+        {/* Giveaway Banner */}
+        <section className="py-8 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-y border-primary/20">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <div className="bg-background/95 backdrop-blur-sm rounded-lg border border-primary/20 p-6 md:p-8 shadow-lg">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2 flex items-center justify-center gap-2">
+                  <span className="text-2xl">🎉</span>
+                  Early-Access Freelancer Grant Giveaway
+                </h2>
+                <p className="text-lg text-muted-foreground">
+                  Become one of the first 500 approved Diggers and you'll be automatically entered to win one of <strong>FOUR launch grants</strong> (up to $500).
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
+                <div className="flex items-center gap-2 justify-center md:justify-start">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">Free to join</span>
+                </div>
+                <div className="flex items-center gap-2 justify-center md:justify-start">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">Takes ~2 minutes</span>
+                </div>
+                <div className="flex items-center gap-2 justify-center md:justify-start">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">No commissions — ever</span>
+                </div>
+              </div>
+              
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Eligible after your profile is fully completed and approved.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  No purchase necessary. Void where prohibited.{" "}
+                  <Link to="/giveaway-terms" className="text-primary hover:underline">
+                    Full details coming soon
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Trust Indicators */}
         <section className="py-8 border-y border-border/40 bg-muted/30">
           <div className="container mx-auto px-4">
