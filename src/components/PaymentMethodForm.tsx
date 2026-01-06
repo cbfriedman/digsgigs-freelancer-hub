@@ -12,7 +12,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, CreditCard } from "lucide-react";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+// Only initialize Stripe if the key is available
+const getStripePromise = () => {
+  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  if (!publishableKey) {
+    return null;
+  }
+  return loadStripe(publishableKey);
+};
 
 interface PaymentMethodFormProps {
   onSuccess?: () => void;
@@ -182,7 +189,9 @@ const PaymentMethodFormInner = ({ onSuccess, onCancel }: PaymentMethodFormProps)
 };
 
 export const PaymentMethodForm = (props: PaymentMethodFormProps) => {
-  if (!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) {
+  const stripePromise = getStripePromise();
+  
+  if (!stripePromise) {
     return (
       <Card>
         <CardContent className="pt-6">

@@ -44,9 +44,17 @@ BEGIN
   WHERE id = _digger_profile_id;
   
   -- 1. Check email verification
-  SELECT email_confirmed_at IS NOT NULL INTO _email_verified
+  SELECT (email_confirmed_at IS NOT NULL) INTO _email_verified
   FROM auth.users
   WHERE id = _user_id;
+  
+  -- If user not found in auth.users, set to false
+  IF NOT FOUND THEN
+    _email_verified := false;
+  END IF;
+  
+  -- Ensure boolean (not NULL)
+  _email_verified := COALESCE(_email_verified, false);
   
   -- 2. Check profile completeness (required fields)
   _profile_complete := (

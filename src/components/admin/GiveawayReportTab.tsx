@@ -63,13 +63,13 @@ export const GiveawayReportTab = () => {
         (userProfiles || []).map(p => [p.id, p])
       );
 
-      // Transform the data
-      const transformed = (diggerProfiles || []).map((profile: any) => {
+      // Transform the data with proper typing
+      const transformed: EligibleDigger[] = (diggerProfiles || []).map((profile) => {
         const userProfile = profileMap.get(profile.user_id);
         return {
           id: profile.id,
           user_id: profile.user_id,
-          business_name: profile.business_name,
+          business_name: profile.business_name || "",
           email: userProfile?.email || "N/A",
           full_name: userProfile?.full_name || null,
           giveaway_qualified_at: profile.giveaway_qualified_at,

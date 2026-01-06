@@ -98,6 +98,20 @@ serve(async (req) => {
       .single();
 
     if (error) {
+      // Handle case where table doesn't exist (migration not applied yet)
+      if (error.code === 'PGRST205' || error.message?.includes('Could not find the table') || error.message?.includes('campaign_conversions')) {
+        console.warn("campaign_conversions table not found - migration may not have been applied. This is non-critical.");
+        // Return success since this is a non-critical tracking feature
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            warning: "Table not found - migration may need to be applied",
+            skipped: true 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       console.error("Error inserting campaign conversion:", {
         message: error.message,
         code: error.code,
@@ -105,14 +119,15 @@ serve(async (req) => {
         hint: error.hint,
       });
       
-      // Return error with more details for debugging
+      // For other errors, still return success since this is non-critical
+      // but log the error for debugging
       return new Response(
         JSON.stringify({ 
-          error: "Failed to log campaign event", 
-          details: error.message,
-          code: error.code,
+          success: true,
+          warning: "Failed to log campaign event (non-critical)",
+          error: error.message 
         }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
