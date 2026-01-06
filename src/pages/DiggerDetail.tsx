@@ -137,6 +137,31 @@ const DiggerDetail = () => {
     const { data: { session } } = await supabase.auth.getSession();
     setCurrentUser(session?.user || null);
 
+    // Check if user is a digger trying to view another digger's profile
+    if (session?.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("user_type")
+        .eq("id", session.user.id)
+        .single();
+      
+      // If user is a digger, check if they're viewing their own profile
+      if (profile?.user_type === "digger") {
+        const { data: diggerProfile } = await supabase
+          .from("digger_profiles")
+          .select("user_id")
+          .eq("id", id)
+          .single();
+        
+        // Block if digger is trying to view another digger's profile
+        if (diggerProfile && diggerProfile.user_id !== session.user.id) {
+          toast.error("Diggers cannot view other Diggers' profiles. The marketplace is currently closed and curated.");
+          navigate("/");
+          return;
+        }
+      }
+    }
+
     // Fetch digger data first
     const { data: diggerData, error: diggerError } = await supabase
       .from("digger_profiles")
@@ -152,7 +177,7 @@ const DiggerDetail = () => {
 
     if (diggerError || !diggerData) {
       toast.error("Digger not found");
-      navigate("/browse-diggers");
+      navigate("/");
       return;
     }
 

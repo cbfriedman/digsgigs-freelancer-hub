@@ -59,7 +59,8 @@ const ApplyDigger = () => {
               Freelancing — without the platform tax
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-              Join a curated marketplace where clients find you — and you keep 100% of what you earn. No commissions. No bidding wars. No games.
+              Join a curated marketplace where clients find you — and you keep 100% of what you earn.
+              No commissions. No bidding wars. No race-to-the-bottom pricing.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
@@ -80,45 +81,37 @@ const ApplyDigger = () => {
           </div>
         </section>
 
-        {/* Giveaway Banner */}
-        <section className="py-8 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-y border-primary/20">
+        {/* Promo Box */}
+        <section className="py-8">
           <div className="container mx-auto px-4 max-w-4xl">
-            <div className="bg-background/95 backdrop-blur-sm rounded-lg border border-primary/20 p-6 md:p-8 shadow-lg">
+            <div className="bg-muted/50 rounded-lg border border-border/50 p-6 md:p-8">
               <div className="text-center mb-6">
-                <h2 className="text-2xl md:text-3xl font-bold mb-2 flex items-center justify-center gap-2">
-                  <span className="text-2xl">🎉</span>
-                  Early-Access Freelancer Grant Giveaway
+                <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                  🎉 Early-Access Freelancer Grant Giveaway
                 </h2>
                 <p className="text-lg text-muted-foreground">
-                  Become one of the first 500 approved Diggers and you'll be automatically entered to win one of <strong>FOUR launch grants</strong> (up to $500).
+                  Become one of the first 300 approved Diggers and you'll automatically receive free job-lead access for 3 months during our Early-Access launch.
                 </p>
               </div>
               
               <div className="grid md:grid-cols-3 gap-4 mb-6">
                 <div className="flex items-center gap-2 justify-center md:justify-start">
-                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-lg">✅</span>
                   <span className="text-sm font-medium">Free to join</span>
                 </div>
                 <div className="flex items-center gap-2 justify-center md:justify-start">
-                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                  <span className="text-sm font-medium">Takes ~2 minutes</span>
+                  <span className="text-lg">⏱</span>
+                  <span className="text-sm font-medium">Takes 2 minutes</span>
                 </div>
                 <div className="flex items-center gap-2 justify-center md:justify-start">
-                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-lg">💜</span>
                   <span className="text-sm font-medium">No commissions — ever</span>
                 </div>
               </div>
               
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Eligible after your profile is fully completed and approved.
-                </p>
+              <div className="text-center">
                 <p className="text-xs text-muted-foreground">
-                  No purchase necessary. Void where prohibited.{" "}
-                  <Link to="/giveaway-terms" className="text-primary hover:underline">
-                    Full details coming soon
-                  </Link>
-                  .
+                  Eligibility applies after your profile is fully completed and approved. Lead access does not guarantee work. Terms apply.
                 </p>
               </div>
             </div>
@@ -187,6 +180,23 @@ const ApplyDigger = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Secondary CTA */}
+        <section className="py-12">
+          <div className="container mx-auto px-4 max-w-4xl text-center">
+            <Button 
+              asChild 
+              size="lg" 
+              className="text-lg px-8 py-6 h-auto w-full md:w-auto"
+              onClick={handleCTAClick}
+            >
+              <Link to={registrationUrl}>
+                👉 Apply Now
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
         </section>
 
@@ -401,7 +411,7 @@ const ApplyDigger = () => {
               onClick={handleCTAClick}
             >
               <Link to={registrationUrl}>
-                Create your free Digger account
+                Apply for Early Access
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
@@ -422,7 +432,7 @@ const ApplyDigger = () => {
             onClick={handleCTAClick}
           >
             <Link to={registrationUrl}>
-              Get Early Access
+              Apply for Early Access
             </Link>
           </Button>
           <p className="text-xs text-muted-foreground text-center mt-2">

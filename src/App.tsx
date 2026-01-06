@@ -87,7 +87,6 @@ import FoundingDigger from "./pages/FoundingDigger";
 import About from "./pages/About";
 import ApplyDigger from "./pages/ApplyDigger";
 import PaymentMethods from "./pages/PaymentMethods";
-import GiveawayTerms from "./pages/GiveawayTerms";
 
 const queryClient = new QueryClient();
 
@@ -424,10 +423,6 @@ const router = createBrowserRouter([
       {
         path: "/apply-digger",
         element: <ApplyDigger />,
-      },
-      {
-        path: "/giveaway-terms",
-        element: <GiveawayTerms />,
       },
       {
         path: "*",

@@ -132,9 +132,16 @@ const BrowseDiggers = () => {
       
       setUserRole(profile?.user_type || null);
 
-      // If user is a digger or admin, allow access (they can see all diggers)
-      if (profile?.user_type === "digger" || profile?.user_type === "admin") {
+      // Only admins can browse all diggers
+      if (profile?.user_type === "admin") {
         setHasPostedGigs(true);
+        return;
+      }
+
+      // Diggers cannot browse other diggers - marketplace is closed/curated
+      if (profile?.user_type === "digger") {
+        setHasPostedGigs(false);
+        setLoading(false);
         return;
       }
 
@@ -434,6 +441,35 @@ const BrowseDiggers = () => {
     if (!handle) return "DG";
     return handle.slice(0, 2).toUpperCase();
   };
+
+  // Show access denied message if digger tries to browse other diggers
+  if (hasPostedGigs === false && userRole === "digger") {
+    return (
+      <div className="min-h-screen bg-background">
+        <SEOHead
+          title="Browse Service Professionals - Find Qualified Contractors"
+          description="Find skilled service professionals and contractors for your project."
+        />
+        <Navigation showBackButton backLabel="Back to Home" />
+        <div className="container mx-auto px-4 py-12">
+          <Card className="max-w-2xl mx-auto mt-12">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold mb-4">Access Restricted</h2>
+                <p className="text-muted-foreground mb-6">
+                  Diggers cannot browse other Diggers. The marketplace is currently closed and curated. You can only view and manage your own profile.
+                </p>
+                <Button onClick={() => navigate("/")}>
+                  Go to Home
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   // Show access denied message if gigger hasn't posted any gigs
   if (hasPostedGigs === false && userRole === "gigger") {
