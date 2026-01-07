@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useUTMTracking } from "@/hooks/useUTMTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   CheckCircle, 
   DollarSign, 
@@ -28,9 +29,28 @@ const ApplyDigger = () => {
 
   // Track page view on mount
   useEffect(() => {
+    // Track in Google Ads
     trackPageView('/apply-digger');
+    
+    // Track in Facebook Pixel
     trackEvent('ViewContent', { content_name: 'Digger Landing Page' });
-  }, [trackPageView, trackEvent]);
+    
+    // Log page view to campaign_conversions table for admin dashboard tracking
+    const campaignData = getCampaignData();
+    supabase.functions.invoke('log-campaign-event', {
+      body: {
+        conversion_type: 'page_view',
+        landing_page: '/apply-digger',
+        ...campaignData,
+      },
+    }).catch(error => {
+      // Silently fail - don't log errors for missing functions to avoid console spam
+      // Only log if it's not a 404 (function not deployed) or table not found
+      if (error?.status !== 404 && error?.code !== '404' && error?.code !== 'PGRST205') {
+        console.warn("Failed to track page view (non-critical):", error);
+      }
+    });
+  }, [trackPageView, trackEvent, getCampaignData]);
 
   const handleCTAClick = () => {
     const campaignData = getCampaignData();

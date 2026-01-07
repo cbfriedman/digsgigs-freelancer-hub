@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -16,7 +16,20 @@ import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
 import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
 import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
 import { GiveawayReportTab } from "@/components/admin/GiveawayReportTab";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { Footer } from "@/components/Footer";
 interface ReminderStats {
   total: number;
@@ -54,6 +67,7 @@ const AdminDashboard = () => {
   const { user, userRoles } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState("signup-analytics");
   const [stats, setStats] = useState<ReminderStats>({ total: 0, day3: 0, day7: 0, day14: 0 });
   const [recentReminders, setRecentReminders] = useState<ReminderRecord[]>([]);
   const [triggeringJob, setTriggeringJob] = useState(false);
@@ -336,82 +350,177 @@ const AdminDashboard = () => {
     return null;
   }
 
+  const menuItems = [
+    { id: "signup-analytics", label: "Signup Analytics", icon: TrendingUp },
+    { id: "reminders", label: "Profile Reminders", icon: Mail },
+    { id: "founding-diggers", label: "Founding Diggers", icon: Crown },
+    { id: "marketing", label: "Marketing Emails", icon: Megaphone },
+    { id: "cold-outreach", label: "Cold Outreach", icon: MailPlus },
+    { id: "keywords", label: "Keyword Analytics", icon: Search },
+    { id: "requests", label: "Keyword Requests", icon: Lightbulb },
+    { id: "cpc-data", label: "CPC Data", icon: Database },
+    { id: "giveaway", label: "Giveaway Report", icon: Crown },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-          <div className="text-center space-x-4">
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage reminders and analytics</p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/users")}
-            >
-              <Shield className="mr-2 h-4 w-4" />
-              User Management
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/notifications")}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Notification Settings
-            </Button>
-            <Button
-              variant="default"
-              onClick={() => navigate("/admin/lead-distribution-test")}
-            >
-              <FlaskConical className="mr-2 h-4 w-4" />
-              Lead Distribution Test
-            </Button>
-          </div>
-        </div>
+    <SidebarProvider>
+      <div className="min-h-screen bg-background flex flex-col w-full">
+        <div className="flex flex-1 w-full">
+          <Sidebar variant="inset" collapsible="icon" className="!bg-[hsl(240_5%_94%)] dark:!bg-[hsl(240_10%_15%)] border-r-2 border-sidebar-border shadow-xl">
+          <SidebarHeader className="border-b bg-[hsl(240_5%_96%)] dark:bg-[hsl(240_10%_18%)]">
+            <div className="flex items-center gap-2 px-2 py-4">
+              <Shield className="h-6 w-6 text-primary" />
+              <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+                <p className="text-xs text-muted-foreground">Management Portal</p>
+              </div>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Analytics</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.slice(0, 3).map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          onClick={() => setActiveTab(item.id)}
+                          isActive={activeTab === item.id}
+                          tooltip={item.label}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Marketing</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.slice(3, 5).map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          onClick={() => setActiveTab(item.id)}
+                          isActive={activeTab === item.id}
+                          tooltip={item.label}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Keywords</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.slice(5, 7).map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          onClick={() => setActiveTab(item.id)}
+                          isActive={activeTab === item.id}
+                          tooltip={item.label}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Data & Reports</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {menuItems.slice(7).map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          onClick={() => setActiveTab(item.id)}
+                          isActive={activeTab === item.id}
+                          tooltip={item.label}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset>
+          <div className="flex flex-col h-full">
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+              <SidebarTrigger />
+              <div className="flex items-center gap-2 flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/")}
+                  className="gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back to Home</span>
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/admin/users")}
+                  className="gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden lg:inline">User Management</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/admin/notifications")}
+                  className="gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden lg:inline">Settings</span>
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => navigate("/admin/lead-distribution-test")}
+                  className="gap-2"
+                >
+                  <FlaskConical className="h-4 w-4" />
+                  <span className="hidden lg:inline">Lead Test</span>
+                </Button>
+              </div>
+            </header>
+            <main className="flex-1 overflow-auto p-6">
+              <div className="max-w-7xl mx-auto space-y-6">
 
-        <Tabs defaultValue="signup-analytics" className="w-full">
-          <TabsList className="mb-6 flex-wrap">
-            <TabsTrigger value="signup-analytics" className="flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              Signup Analytics
-            </TabsTrigger>
-            <TabsTrigger value="reminders">Profile Reminders</TabsTrigger>
-            <TabsTrigger value="founding-diggers" className="flex items-center gap-1">
-              <Crown className="h-3 w-3" />
-              Founding Diggers
-            </TabsTrigger>
-            <TabsTrigger value="marketing" className="flex items-center gap-1">
-              <Megaphone className="h-3 w-3" />
-              Marketing Emails
-            </TabsTrigger>
-            <TabsTrigger value="cold-outreach" className="flex items-center gap-1">
-              <MailPlus className="h-3 w-3" />
-              Cold Outreach
-            </TabsTrigger>
-            <TabsTrigger value="keywords">Keyword Analytics</TabsTrigger>
-            <TabsTrigger value="requests">Keyword Requests</TabsTrigger>
-            <TabsTrigger value="cpc-data" className="flex items-center gap-1">
-              <Database className="h-3 w-3" />
-              CPC Data
-            </TabsTrigger>
-            <TabsTrigger value="giveaway" className="flex items-center gap-1">
-              <Crown className="h-3 w-3" />
-              Giveaway Report
-            </TabsTrigger>
-          </TabsList>
+                {activeTab === "signup-analytics" && (
+                  <SignupAnalyticsDashboard />
+                )}
 
-          <TabsContent value="signup-analytics">
-            <SignupAnalyticsDashboard />
-          </TabsContent>
-
-          <TabsContent value="reminders" className="space-y-6">
+                {activeTab === "reminders" && (
+                  <div className="space-y-6">
             <div className="flex justify-end">
               <Button
                 onClick={triggerReminderJob}
@@ -557,21 +666,23 @@ const AdminDashboard = () => {
             </div>
           </CardContent>
         </Card>
-          </TabsContent>
+                  </div>
+                )}
 
-          <TabsContent value="marketing">
-            <MarketingEmailsTab />
-          </TabsContent>
+                {activeTab === "marketing" && (
+                  <MarketingEmailsTab />
+                )}
 
-          <TabsContent value="cold-outreach">
-            <ColdOutreachTab />
-          </TabsContent>
+                {activeTab === "cold-outreach" && (
+                  <ColdOutreachTab />
+                )}
 
-          <TabsContent value="keywords">
-            <KeywordAnalyticsDashboard />
-          </TabsContent>
+                {activeTab === "keywords" && (
+                  <KeywordAnalyticsDashboard />
+                )}
 
-          <TabsContent value="requests" className="space-y-6">
+                {activeTab === "requests" && (
+                  <div className="space-y-6">
             <Card>
                <CardHeader>
                 <div className="flex items-center justify-between">
@@ -729,23 +840,28 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+                  </div>
+                )}
 
-          <TabsContent value="cpc-data">
-            <CpcDataUploader />
-          </TabsContent>
+                {activeTab === "cpc-data" && (
+                  <CpcDataUploader />
+                )}
 
-          <TabsContent value="founding-diggers">
-            <FoundingDiggerTab />
-          </TabsContent>
+                {activeTab === "founding-diggers" && (
+                  <FoundingDiggerTab />
+                )}
 
-          <TabsContent value="giveaway">
-            <GiveawayReportTab />
-          </TabsContent>
-        </Tabs>
+                {activeTab === "giveaway" && (
+                  <GiveawayReportTab />
+                )}
+              </div>
+            </main>
+          </div>
+        </SidebarInset>
+        </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
+    </SidebarProvider>
   );
 };
 
