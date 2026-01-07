@@ -58,7 +58,7 @@ const ApplyDigger = () => {
     trackEvent('Lead', { content_name: 'Digger Signup CTA' });
   };
 
-  const registrationUrl = "/register?mode=signup&type=digger";
+  const registrationUrl = "/register?mode=signup&role=digger";
 
   return (
     <>
@@ -86,7 +86,7 @@ const ApplyDigger = () => {
               <Button 
                 asChild 
                 size="lg" 
-                className="text-lg px-8 py-6 h-auto"
+                className="text-xl px-10 py-7 h-auto"
                 onClick={handleCTAClick}
               >
                 <Link to={registrationUrl}>
@@ -96,45 +96,57 @@ const ApplyDigger = () => {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-4">
-              Free to join. Takes 2 minutes. No commissions — ever.
+              Free to join. Takes about 2 minutes. No commissions — ever.
             </p>
           </div>
         </section>
 
-        {/* Promo Box */}
+        {/* Early-Access Launch Benefit */}
         <section className="py-8">
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="bg-muted/50 rounded-lg border border-border/50 p-6 md:p-8">
               <div className="text-center mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                  🎉 Early-Access Freelancer Grant Giveaway
+                  Early-Access Launch Benefit
                 </h2>
                 <p className="text-lg text-muted-foreground">
-                  Become one of the first 300 approved Diggers and you'll automatically receive free job-lead access for 3 months during our Early-Access launch.
+                  Be one of the first 300 approved Diggers and receive
+                  FREE job-lead access for 3 months during our launch period.
                 </p>
               </div>
               
-              <div className="grid md:grid-cols-3 gap-4 mb-6">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div className="flex items-center gap-2 justify-center md:justify-start">
                   <span className="text-lg">✅</span>
                   <span className="text-sm font-medium">Free to join</span>
                 </div>
                 <div className="flex items-center gap-2 justify-center md:justify-start">
                   <span className="text-lg">⏱</span>
-                  <span className="text-sm font-medium">Takes 2 minutes</span>
+                  <span className="text-sm font-medium">Takes ~2 minutes</span>
                 </div>
                 <div className="flex items-center gap-2 justify-center md:justify-start">
                   <span className="text-lg">💜</span>
                   <span className="text-sm font-medium">No commissions — ever</span>
                 </div>
               </div>
-              
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">
-                  Eligibility applies after your profile is fully completed and approved. Lead access does not guarantee work. Terms apply.
-                </p>
-              </div>
             </div>
+          </div>
+        </section>
+
+        {/* Secondary CTA */}
+        <section className="py-8">
+          <div className="container mx-auto px-4 max-w-4xl text-center">
+            <Button 
+              asChild 
+              size="lg" 
+              className="text-lg px-8 py-6 h-auto w-full md:w-auto"
+              onClick={handleCTAClick}
+            >
+              <Link to={registrationUrl}>
+                Apply Now
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
         </section>
 
@@ -203,22 +215,6 @@ const ApplyDigger = () => {
           </div>
         </section>
 
-        {/* Secondary CTA */}
-        <section className="py-12">
-          <div className="container mx-auto px-4 max-w-4xl text-center">
-            <Button 
-              asChild 
-              size="lg" 
-              className="text-lg px-8 py-6 h-auto w-full md:w-auto"
-              onClick={handleCTAClick}
-            >
-              <Link to={registrationUrl}>
-                👉 Apply Now
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-          </div>
-        </section>
 
         {/* Value Propositions */}
         <section className="py-16 md:py-24 bg-muted/30">
@@ -448,15 +444,16 @@ const ApplyDigger = () => {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border md:hidden z-50">
           <Button 
             asChild 
-            className="w-full"
+            size="lg"
+            className="w-full text-lg"
             onClick={handleCTAClick}
           >
             <Link to={registrationUrl}>
-              Apply for Early Access
+              Apply Now
             </Link>
           </Button>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Free to join. Takes 2 minutes. No commissions — ever.
+            Free to join. Takes about 2 minutes. No commissions — ever.
           </p>
         </div>
       </div>

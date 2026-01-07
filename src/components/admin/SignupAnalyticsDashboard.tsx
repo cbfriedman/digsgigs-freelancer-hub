@@ -244,6 +244,50 @@ export const SignupAnalyticsDashboard = () => {
     loadAnalytics();
   };
 
+  const handleTestTracking = async () => {
+    try {
+      toast.loading("Testing tracking system...", { id: "test-tracking" });
+      
+      const testData = {
+        conversion_type: 'page_view',
+        landing_page: '/apply-digger',
+        utm_source: 'test',
+        utm_medium: 'diagnostic',
+        utm_campaign: 'system_test',
+        utm_content: 'admin_dashboard_test',
+        device_type: 'desktop',
+        browser: 'chrome',
+      };
+
+      const { data, error } = await supabase.functions.invoke('log-campaign-event', {
+        body: testData,
+      });
+
+      if (error) {
+        toast.error(`Test failed: ${error.message}`, { id: "test-tracking" });
+        console.error('Test tracking error:', error);
+        
+        // Provide specific guidance based on error
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+          toast.error("Edge Function 'log-campaign-event' not deployed. Please deploy it from supabase/functions/log-campaign-event/", { duration: 8000 });
+        } else if (error.message?.includes('PGRST205') || error.message?.includes('table')) {
+          toast.error("campaign_conversions table not found. Please apply the database migration.", { duration: 8000 });
+        }
+        return;
+      }
+
+      toast.success('✅ Test event logged successfully! Refreshing data...', { id: "test-tracking" });
+      
+      // Wait a moment for the database to update, then refresh
+      setTimeout(() => {
+        handleRefresh();
+      }, 1500);
+    } catch (error: any) {
+      toast.error(`Test failed: ${error.message}`, { id: "test-tracking" });
+      console.error('Test tracking error:', error);
+    }
+  };
+
   const getSourceIcon = (source: string) => {
     const s = source.toLowerCase();
     if (s === "facebook" || s === "meta" || s === "fb") return <Facebook className="h-4 w-4" />;
@@ -275,10 +319,15 @@ export const SignupAnalyticsDashboard = () => {
           <h2 className="text-2xl font-bold">Signup Analytics</h2>
           <p className="text-muted-foreground">Track signups from your ad campaigns</p>
         </div>
-        <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleTestTracking} variant="secondary" size="sm">
+            Test Tracking
+          </Button>
+          <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Funnel Overview */}
@@ -523,9 +572,24 @@ export const SignupAnalyticsDashboard = () => {
                 The campaign_conversions table may not be set up yet. 
                 Please ensure the database migration has been applied.
               </p>
-              <p className="text-xs mt-2 text-muted-foreground">
+              <p className="text-xs mt-2 text-muted-foreground mb-4">
                 Once tracking is enabled, signups will appear here with attribution data from your campaigns.
               </p>
+              <div className="flex flex-col gap-2 items-center">
+                <p className="text-xs font-medium mb-2">Quick Diagnostics:</p>
+                <Button 
+                  onClick={handleTestTracking} 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs"
+                >
+                  Test Tracking System
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2 max-w-md text-center">
+                  Click "Test Tracking System" to verify the Edge Function and database are working. 
+                  If successful, a test event will appear in the table above.
+                </p>
+              </div>
             </div>
           ) : recentSignups.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
