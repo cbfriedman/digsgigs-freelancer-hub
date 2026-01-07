@@ -107,10 +107,11 @@ const RootLayout = () => {
 };
 
 // Create router with all routes - forcing fresh registration
-const router = createBrowserRouter([
-  {
-    element: <RootLayout />,
-    children: [
+const router = createBrowserRouter(
+  [
+    {
+      element: <RootLayout />,
+      children: [
       {
         path: "/",
         element: <Index />,
@@ -430,7 +431,13 @@ const router = createBrowserRouter([
       },
     ],
   },
-]);
+  ],
+  {
+    future: {
+      v7_startTransition: true,
+    },
+  }
+);
 
 const App = () => {
   return (

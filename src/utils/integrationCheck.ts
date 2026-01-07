@@ -59,7 +59,9 @@ export const logIntegrationStatus = async () => {
     });
   }
 
-  if (warnings.length > 0) {
+  // Only log optional integration warnings in development mode
+  // This prevents console noise in production for optional features like Mapbox
+  if (warnings.length > 0 && import.meta.env.DEV) {
     console.warn('⚠️ Optional integrations not configured:');
     warnings.forEach(s => {
       console.warn(`  - ${s.name}: ${s.error}`);
