@@ -743,8 +743,9 @@ export const SignupAnalyticsDashboard = () => {
               <p className="text-sm mt-2">Signups will appear here once users register through your campaigns</p>
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
+            <div className="rounded-md border overflow-x-auto w-full">
+              <div className="min-w-max">
+                <Table className="min-w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">No</TableHead>
@@ -865,6 +866,7 @@ export const SignupAnalyticsDashboard = () => {
                   })()}
                 </TableBody>
               </Table>
+              </div>
               
               {/* Pagination Controls */}
               {(() => {
