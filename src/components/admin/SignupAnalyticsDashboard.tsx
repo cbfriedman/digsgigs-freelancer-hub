@@ -97,6 +97,13 @@ export const SignupAnalyticsDashboard = () => {
         ])
         .order("created_at", { ascending: false })) as { data: SignupData[] | null; error: any };
 
+      // Debug logging
+      console.log("📊 Analytics Query Results:", {
+        totalRecords: conversions?.length || 0,
+        error: error?.message,
+        sampleRecords: conversions?.slice(0, 3),
+      });
+
       // Handle table not found error gracefully
       if (error) {
         // Check if it's a "table not found" error
@@ -134,9 +141,19 @@ export const SignupAnalyticsDashboard = () => {
       // Separate landing page views and signups
       const allEvents = conversions || [];
       
+      // Debug: Log what we're filtering
+      console.log("🔍 Filtering Events:", {
+        totalEvents: allEvents.length,
+        pageViews: allEvents.filter(c => c.conversion_type === "page_view").length,
+        signupPageViews: allEvents.filter(c => c.conversion_type === "signup_page_view").length,
+        signups: allEvents.filter(c => ["signup", "digger_registered", "gigger_registered"].includes(c.conversion_type)).length,
+      });
+      
       // Landing page views (from /apply-digger)
+      // Note: Also include page_view events that might not have landing_page set
       const landingPageViews = allEvents.filter(c => 
-        c.conversion_type === "page_view" && c.landing_page === "/apply-digger"
+        c.conversion_type === "page_view" && 
+        (c.landing_page === "/apply-digger" || c.landing_page === "apply-digger" || !c.landing_page)
       );
       
       // Signup page views (from /register)
@@ -263,6 +280,8 @@ export const SignupAnalyticsDashboard = () => {
         body: testData,
       });
 
+      console.log("🔍 Test Tracking - Edge Function Response:", { data, error });
+
       if (error) {
         toast.error(`Test failed: ${error.message}`, { id: "test-tracking" });
         console.error('Test tracking error:', error);
@@ -276,7 +295,16 @@ export const SignupAnalyticsDashboard = () => {
         return;
       }
 
-      toast.success('✅ Test event logged successfully! Refreshing data...', { id: "test-tracking" });
+      // Check if the response indicates success or warning
+      if (data?.warning || data?.skipped) {
+        toast.warning(`⚠️ ${data.warning || 'Event may not have been logged'}. Check console for details.`, { id: "test-tracking", duration: 8000 });
+        console.warn("Edge Function returned warning:", data);
+      } else if (data?.success && data?.id) {
+        toast.success('✅ Test event logged successfully! ID: ' + data.id, { id: "test-tracking" });
+      } else {
+        toast.warning('⚠️ Edge Function responded but may not have inserted data. Check console.', { id: "test-tracking", duration: 8000 });
+        console.warn("Edge Function response unclear:", data);
+      }
       
       // Wait a moment for the database to update, then refresh
       setTimeout(() => {
@@ -285,6 +313,88 @@ export const SignupAnalyticsDashboard = () => {
     } catch (error: any) {
       toast.error(`Test failed: ${error.message}`, { id: "test-tracking" });
       console.error('Test tracking error:', error);
+    }
+  };
+
+  const handleDiagnoseData = async () => {
+    try {
+      toast.loading("Diagnosing data issue...", { id: "diagnose" });
+      
+      // Check 1: Can we query the table at all?
+      const { data: allData, error: queryError } = await (supabase
+        .from("campaign_conversions" as any)
+        .select("*")
+        .limit(10)) as { data: any[] | null; error: any };
+
+      console.log("🔍 Diagnostic Check 1 - Raw Query:", {
+        recordCount: allData?.length || 0,
+        error: queryError?.message,
+        sampleRecord: allData?.[0],
+      });
+
+      // Check 2: Query with conversion_type filter
+      const { data: filteredData, error: filterError } = await (supabase
+        .from("campaign_conversions" as any)
+        .select("*")
+        .in("conversion_type", ["page_view", "signup_page_view", "digger_registered", "gigger_registered"])
+        .limit(10)) as { data: any[] | null; error: any };
+
+      console.log("🔍 Diagnostic Check 2 - Filtered Query:", {
+        recordCount: filteredData?.length || 0,
+        error: filterError?.message,
+        conversionTypes: filteredData?.map(d => d.conversion_type),
+      });
+
+      // Check 3: Count total records
+      const { count, error: countError } = await (supabase
+        .from("campaign_conversions" as any)
+        .select("*", { count: 'exact', head: true })) as { count: number | null; error: any };
+
+      console.log("🔍 Diagnostic Check 3 - Total Count:", {
+        totalRecords: count,
+        error: countError?.message,
+      });
+
+      // Check 4: Try direct insert to verify table works
+      console.log("🔍 Diagnostic Check 4 - Testing Direct Insert...");
+      const { data: insertData, error: insertError } = await (supabase
+        .from("campaign_conversions" as any)
+        .insert({
+          conversion_type: 'page_view',
+          landing_page: '/apply-digger',
+          utm_source: 'diagnostic_direct_insert',
+          utm_medium: 'test',
+          utm_campaign: 'diagnostic_test',
+        })
+        .select()) as { data: any[] | null; error: any };
+
+      console.log("🔍 Diagnostic Check 4 - Direct Insert Result:", {
+        success: !insertError,
+        insertedRecord: insertData?.[0],
+        error: insertError?.message,
+        errorCode: insertError?.code,
+      });
+
+      // Show results
+      if (queryError) {
+        toast.error(`Query Error: ${queryError.message}`, { id: "diagnose", duration: 10000 });
+      } else if (insertError) {
+        toast.error(`Insert Error: ${insertError.message} (Code: ${insertError.code})`, { id: "diagnose", duration: 10000 });
+        console.error("Insert error details:", insertError);
+      } else if (count === 0 && !insertError) {
+        toast.warning(`No records found. Direct insert test ${insertData ? 'succeeded' : 'failed'}. Check console.`, { id: "diagnose", duration: 8000 });
+      } else {
+        toast.success(`Found ${count} total records. Direct insert test passed.`, { id: "diagnose", duration: 5000 });
+      }
+
+      // Refresh dashboard after diagnosis
+      setTimeout(() => {
+        handleRefresh();
+      }, 1000);
+
+    } catch (error: any) {
+      toast.error(`Diagnosis failed: ${error.message}`, { id: "diagnose" });
+      console.error('Diagnosis error:', error);
     }
   };
 
@@ -322,6 +432,9 @@ export const SignupAnalyticsDashboard = () => {
         <div className="flex gap-2">
           <Button onClick={handleTestTracking} variant="secondary" size="sm">
             Test Tracking
+          </Button>
+          <Button onClick={handleDiagnoseData} variant="secondary" size="sm">
+            Diagnose Data
           </Button>
           <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
