@@ -4,9 +4,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Users, TrendingUp, Smartphone, Monitor, Globe, Facebook, Search, Mail, Eye, Target } from "lucide-react";
+import { RefreshCw, Users, TrendingUp, Smartphone, Monitor, Globe, Facebook, Search, Mail, Eye, Target, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { toast } from "sonner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SignupData {
   id: string;
@@ -17,9 +33,12 @@ interface SignupData {
   utm_medium: string | null;
   utm_campaign: string | null;
   utm_content: string | null;
+  utm_term: string | null;
   landing_page: string | null;
+  referrer: string | null;
   device_type: string | null;
   browser: string | null;
+  ip_address: string | null;
   created_at: string;
 }
 
@@ -50,6 +69,8 @@ interface SignupStats {
 export const SignupAnalyticsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   const [stats, setStats] = useState<SignupStats>({
     today: 0,
     last7Days: 0,
@@ -84,6 +105,7 @@ export const SignupAnalyticsDashboard = () => {
 
       // Fetch ALL campaign conversions (page views, signup page views, and signups)
       // Note: campaign_conversions table may not be in TypeScript types yet, so we use type assertion
+      // Use service role client if available, or try with current user's session
       const { data: conversions, error } = await (supabase
         .from("campaign_conversions" as any)
         .select("*")
@@ -96,6 +118,16 @@ export const SignupAnalyticsDashboard = () => {
           "signup_started"
         ])
         .order("created_at", { ascending: false })) as { data: SignupData[] | null; error: any };
+
+      // If query returns empty but we know data exists, check RLS
+      if (!error && (!conversions || conversions.length === 0)) {
+        console.warn("⚠️ Query returned 0 records. Possible RLS issue. Checking admin access...");
+        // Try a simple count query to see if RLS is blocking
+        const { count, error: countError } = await (supabase
+          .from("campaign_conversions" as any)
+          .select("*", { count: 'exact', head: true })) as { count: number | null; error: any };
+        console.log("🔍 Count query result:", { count, countError: countError?.message });
+      }
 
       // Debug logging
       console.log("📊 Analytics Query Results:", {
@@ -241,11 +273,11 @@ export const SignupAnalyticsDashboard = () => {
         byLandingPage,
       });
 
-      // Set recent events (last 50) - show all funnel events
+      // Set all relevant events - show all funnel events (we'll paginate in the render)
       const allRelevantEvents = allEvents.filter(c => 
         ["page_view", "signup_page_view", "signup", "digger_registered", "gigger_registered"].includes(c.conversion_type)
       );
-      setRecentSignups(allRelevantEvents.slice(0, 50));
+      setRecentSignups(allRelevantEvents);
 
     } catch (error) {
       console.error("Error loading signup analytics:", error);
@@ -715,23 +747,59 @@ export const SignupAnalyticsDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">No</TableHead>
                     <TableHead>Time</TableHead>
+                    <TableHead>ID</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>User ID</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Source</TableHead>
+                    <TableHead>Medium</TableHead>
                     <TableHead>Campaign</TableHead>
-                    <TableHead>Device</TableHead>
+                    <TableHead>Content</TableHead>
+                    <TableHead>Term</TableHead>
                     <TableHead>Landing Page</TableHead>
+                    <TableHead>Referrer</TableHead>
+                    <TableHead>Device</TableHead>
+                    <TableHead>Browser</TableHead>
+                    <TableHead>IP Address</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentSignups.map((signup) => (
-                    <TableRow key={signup.id}>
+                  {(() => {
+                    // Calculate pagination
+                    const totalItems = recentSignups.length;
+                    const totalPages = Math.ceil(totalItems / itemsPerPage);
+                    const startIndex = (currentPage - 1) * itemsPerPage;
+                    const endIndex = startIndex + itemsPerPage;
+                    const paginatedData = recentSignups.slice(startIndex, endIndex);
+                    
+                    return paginatedData.map((signup, index) => (
+                      <TableRow key={signup.id}>
+                        <TableCell className="text-center text-muted-foreground font-medium">
+                          {startIndex + index + 1}
+                        </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {format(new Date(signup.created_at), "MMM d, h:mm a")}
                       </TableCell>
-                      <TableCell className="max-w-[150px] truncate" title={signup.email || ""}>
-                        {signup.email || "—"}
+                      <TableCell className="max-w-[100px] truncate font-mono text-xs" title={signup.id}>
+                        <span className="text-muted-foreground">{signup.id.substring(0, 8)}...</span>
+                      </TableCell>
+                      <TableCell className="max-w-[180px]">
+                        {signup.email ? (
+                          <span className="text-sm font-medium truncate block" title={signup.email}>
+                            {signup.email}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-[100px] truncate font-mono text-xs" title={signup.user_id || "No user ID"}>
+                        {signup.user_id ? (
+                          <span className="text-muted-foreground">{signup.user_id.substring(0, 8)}...</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={
@@ -751,25 +819,183 @@ export const SignupAnalyticsDashboard = () => {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {signup.utm_source && getSourceIcon(signup.utm_source)}
-                          <span className="capitalize">{signup.utm_source || "Direct"}</span>
+                          <span className="capitalize text-sm">{signup.utm_source || "Direct"}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-[120px] truncate" title={signup.utm_campaign || ""}>
+                      <TableCell className="max-w-[100px] truncate text-sm" title={signup.utm_medium || ""}>
+                        {signup.utm_medium || "—"}
+                      </TableCell>
+                      <TableCell className="max-w-[120px] truncate text-sm" title={signup.utm_campaign || ""}>
                         {signup.utm_campaign || "—"}
+                      </TableCell>
+                      <TableCell className="max-w-[100px] truncate text-sm" title={signup.utm_content || ""}>
+                        {signup.utm_content || "—"}
+                      </TableCell>
+                      <TableCell className="max-w-[100px] truncate text-sm" title={signup.utm_term || ""}>
+                        {signup.utm_term || "—"}
+                      </TableCell>
+                      <TableCell className="max-w-[100px] truncate text-sm" title={signup.landing_page || ""}>
+                        {signup.landing_page?.replace(/^\//, "") || "—"}
+                      </TableCell>
+                      <TableCell className="max-w-[150px] truncate text-xs" title={signup.referrer || "No referrer"}>
+                        {signup.referrer ? (
+                          <span className="text-muted-foreground truncate block">{signup.referrer}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {signup.device_type === "mobile" ? <Smartphone className="h-3 w-3" /> : <Monitor className="h-3 w-3" />}
-                          <span className="capitalize">{signup.device_type || "—"}</span>
+                          <span className="capitalize text-sm">{signup.device_type || "—"}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-[100px] truncate" title={signup.landing_page || ""}>
-                        {signup.landing_page?.replace(/^\//, "") || "—"}
+                      <TableCell className="max-w-[100px] truncate text-sm capitalize" title={signup.browser || "No browser"}>
+                        {signup.browser || "—"}
+                      </TableCell>
+                      <TableCell className="max-w-[120px] truncate font-mono text-xs" title={signup.ip_address || "No IP"}>
+                        {signup.ip_address ? (
+                          <span className="text-muted-foreground">{signup.ip_address}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    ));
+                  })()}
                 </TableBody>
               </Table>
+              
+              {/* Pagination Controls */}
+              {(() => {
+                const totalItems = recentSignups.length;
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+                
+                if (totalPages <= 1) return null;
+                
+                // Calculate page numbers to show
+                const getPageNumbers = () => {
+                  const pages: (number | string)[] = [];
+                  const maxVisible = 7;
+                  
+                  if (totalPages <= maxVisible) {
+                    // Show all pages if total is less than max
+                    for (let i = 1; i <= totalPages; i++) {
+                      pages.push(i);
+                    }
+                  } else {
+                    // Always show first page
+                    pages.push(1);
+                    
+                    if (currentPage > 3) {
+                      pages.push('ellipsis-start');
+                    }
+                    
+                    // Show pages around current page
+                    const start = Math.max(2, currentPage - 1);
+                    const end = Math.min(totalPages - 1, currentPage + 1);
+                    
+                    for (let i = start; i <= end; i++) {
+                      pages.push(i);
+                    }
+                    
+                    if (currentPage < totalPages - 2) {
+                      pages.push('ellipsis-end');
+                    }
+                    
+                    // Always show last page
+                    pages.push(totalPages);
+                  }
+                  
+                  return pages;
+                };
+                
+                return (
+                  <div className="flex items-center justify-between px-2 py-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-muted-foreground">
+                        Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+                        <span className="font-medium">{endIndex}</span> of{" "}
+                        <span className="font-medium">{totalItems}</span> events
+                      </p>
+                      <Select
+                        value={itemsPerPage.toString()}
+                        onValueChange={(value) => {
+                          setItemsPerPage(Number(value));
+                          setCurrentPage(1); // Reset to first page when changing items per page
+                        }}
+                      >
+                        <SelectTrigger className="h-8 w-[70px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm text-muted-foreground">per page</span>
+                    </div>
+                    
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage > 1) {
+                                setCurrentPage(currentPage - 1);
+                              }
+                            }}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {getPageNumbers().map((page, idx) => {
+                          if (page === 'ellipsis-start' || page === 'ellipsis-end') {
+                            return (
+                              <PaginationItem key={`ellipsis-${idx}`}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            );
+                          }
+                          
+                          const pageNum = page as number;
+                          return (
+                            <PaginationItem key={pageNum}>
+                              <PaginationLink
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setCurrentPage(pageNum);
+                                }}
+                                isActive={currentPage === pageNum}
+                                className="cursor-pointer"
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+                        
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage < totalPages) {
+                                setCurrentPage(currentPage + 1);
+                              }
+                            }}
+                            className={currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </CardContent>
