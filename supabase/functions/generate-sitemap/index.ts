@@ -213,6 +213,16 @@ Deno.serve(async (req) => {
       xml += '  </url>\n';
     });
 
+    // Add city pages (top 100 cities)
+    SEO_CITIES.slice(0, 100).forEach(city => {
+      xml += '  <url>\n';
+      xml += `    <loc>${baseUrl}/contractors-in/${city.slug}</loc>\n`;
+      xml += `    <lastmod>${now}</lastmod>\n`;
+      xml += '    <changefreq>weekly</changefreq>\n';
+      xml += '    <priority>0.8</priority>\n';
+      xml += '  </url>\n';
+    });
+
     // Add programmatic service index pages
     const allServices: string[] = [];
     for (const [industry, specialties] of Object.entries(INDUSTRY_SPECIALTIES)) {
@@ -284,13 +294,15 @@ Deno.serve(async (req) => {
     xml += '</urlset>';
 
     // Calculate stats
+    const cityPageCount = Math.min(SEO_CITIES.length, 100);
     const servicePageCount = allServices.length;
     const locationPageCount = allServices.length * SEO_CITIES.length;
-    const totalUrls = staticPages.length + servicePageCount + locationPageCount + 
+    const totalUrls = staticPages.length + cityPageCount + servicePageCount + locationPageCount + 
       (blogPosts?.length || 0) + Math.min(gigs?.length || 0, 1000) + Math.min(diggers?.length || 0, 1000);
 
     console.log(`Sitemap generated with ${totalUrls} URLs`);
     console.log(`- Static pages: ${staticPages.length}`);
+    console.log(`- City pages: ${cityPageCount}`);
     console.log(`- Service index pages: ${servicePageCount}`);
     console.log(`- Service+Location pages: ${locationPageCount}`);
     console.log(`- Blog posts: ${blogPosts?.length || 0}`);

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SEO_CITIES } from "@/config/seoCities";
+import { INDUSTRY_SPECIALTIES } from "@/utils/industrySpecialties";
 
 const Sitemap = () => {
   const [, setSitemapGenerated] = useState(false);
@@ -57,6 +59,40 @@ const Sitemap = () => {
           xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
           xml += `    <priority>${page.priority}</priority>\n`;
           xml += '  </url>\n';
+        });
+
+        // Add city pages
+        SEO_CITIES.slice(0, 100).forEach(city => {
+          xml += '  <url>\n';
+          xml += `    <loc>${baseUrl}/contractors-in/${city.slug}</loc>\n`;
+          xml += '    <changefreq>weekly</changefreq>\n';
+          xml += '    <priority>0.8</priority>\n';
+          xml += '  </url>\n';
+        });
+
+        // Add service pages
+        Object.values(INDUSTRY_SPECIALTIES).flat().forEach(service => {
+          const serviceSlug = service.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+          xml += '  <url>\n';
+          xml += `    <loc>${baseUrl}/services/${serviceSlug}</loc>\n`;
+          xml += '    <changefreq>weekly</changefreq>\n';
+          xml += '    <priority>0.8</priority>\n';
+          xml += '  </url>\n';
+        });
+
+        // Add service+city combination pages (top 20 cities × top 10 services)
+        const topCities = SEO_CITIES.slice(0, 20);
+        const topServices = Object.values(INDUSTRY_SPECIALTIES).flat().slice(0, 10);
+
+        topCities.forEach(city => {
+          topServices.forEach(service => {
+            const serviceSlug = service.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            xml += '  <url>\n';
+            xml += `    <loc>${baseUrl}/services/${serviceSlug}/${city.slug}</loc>\n`;
+            xml += '    <changefreq>weekly</changefreq>\n';
+            xml += '    <priority>0.7</priority>\n';
+            xml += '  </url>\n';
+          });
         });
 
         // Add blog posts

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -222,9 +222,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Hire Skilled Freelancers — No Commissions | Digs & Gigs"
-        description="Digs & Gigs connects clients with experienced freelancers across design, development, writing, marketing, and more — without platform commissions. Freelancers keep 100% of what they earn."
-        keywords="hire freelancers, no commissions, freelance marketplace, design freelancers, development freelancers, marketing freelancers, business services, writing freelancers"
+        title="Find Contractors & Freelancers Near You | Digs and Gigs"
+        description="Connect with verified contractors and freelancers in your area. Browse profiles, compare quotes, and hire skilled professionals for plumbing, electrical, HVAC, home improvement, and more. Available in 100+ cities. Free to post projects."
+        keywords="find contractors near me, hire freelancers online, contractor marketplace, local service providers, find plumber, electrician near me"
         structuredData={{
           "@context": "https://schema.org",
           "@graph": [
@@ -525,6 +525,108 @@ const Index = () => {
                 priority
                 className="relative rounded-2xl shadow-2xl w-full"
               />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SEO Content Section */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <h2 className="text-3xl font-bold text-center mb-8">
+              Find Trusted Contractors and Freelancers in Your Area
+            </h2>
+            
+            <div className="prose prose-lg max-w-none space-y-4">
+              <p className="text-lg">
+                Digs and Gigs is the premier online marketplace connecting homeowners and businesses 
+                with skilled contractors, freelancers, and service professionals across the United States. 
+                Whether you need a <strong>plumber in New York</strong>, an <strong>electrician in Los Angeles</strong>, 
+                or a <strong>home improvement contractor in Chicago</strong>, we make it easy to find, compare, 
+                and hire the best local professionals.
+              </p>
+              
+              <p className="text-lg">
+                Our platform features thousands of verified professionals across <strong>100+ US cities</strong>, 
+                offering services in over 50 categories including plumbing, electrical work, HVAC, roofing, 
+                landscaping, home improvement, and general contracting. Post your project for <strong>free</strong> 
+                and receive multiple quotes from qualified professionals in your area.
+              </p>
+              
+              <h3 className="text-2xl font-semibold mt-8 mb-4">
+                Why Choose Digs and Gigs?
+              </h3>
+              
+              <ul className="list-disc pl-6 space-y-2">
+                <li><strong>Verified Professionals:</strong> All contractors are vetted for quality and reliability</li>
+                <li><strong>Transparent Pricing:</strong> Compare quotes from multiple professionals</li>
+                <li><strong>Real Reviews:</strong> Read authentic reviews from satisfied customers</li>
+                <li><strong>Easy Communication:</strong> Direct messaging with professionals</li>
+                <li><strong>Secure Payments:</strong> Safe and secure transaction processing</li>
+              </ul>
+              
+              <h3 className="text-2xl font-semibold mt-8 mb-4">
+                Popular Services We Offer
+              </h3>
+              
+              <div className="grid md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <Link to="/services/plumbing" className="text-primary hover:underline">
+                    Plumbing Contractors →
+                  </Link>
+                </div>
+                <div>
+                  <Link to="/services/electrical" className="text-primary hover:underline">
+                    Electrical Contractors →
+                  </Link>
+                </div>
+                <div>
+                  <Link to="/services/hvac" className="text-primary hover:underline">
+                    HVAC Contractors →
+                  </Link>
+                </div>
+                <div>
+                  <Link to="/services/home-improvement" className="text-primary hover:underline">
+                    Home Improvement →
+                  </Link>
+                </div>
+                <div>
+                  <Link to="/services/roofing" className="text-primary hover:underline">
+                    Roofing Contractors →
+                  </Link>
+                </div>
+                <div>
+                  <Link to="/services/landscaping" className="text-primary hover:underline">
+                    Landscaping Services →
+                  </Link>
+                </div>
+              </div>
+              
+              <h3 className="text-2xl font-semibold mt-8 mb-4">
+                Find Contractors in Major Cities
+              </h3>
+              
+              <div className="grid md:grid-cols-3 gap-3 mt-4">
+                <Link to="/contractors-in/new-york" className="text-primary hover:underline">
+                  Contractors in New York →
+                </Link>
+                <Link to="/contractors-in/los-angeles" className="text-primary hover:underline">
+                  Contractors in Los Angeles →
+                </Link>
+                <Link to="/contractors-in/chicago" className="text-primary hover:underline">
+                  Contractors in Chicago →
+                </Link>
+                <Link to="/contractors-in/houston" className="text-primary hover:underline">
+                  Contractors in Houston →
+                </Link>
+                <Link to="/contractors-in/phoenix" className="text-primary hover:underline">
+                  Contractors in Phoenix →
+                </Link>
+                <Link to="/contractors-in/dallas" className="text-primary hover:underline">
+                  Contractors in Dallas →
+                </Link>
+              </div>
             </div>
           </div>
         </div>

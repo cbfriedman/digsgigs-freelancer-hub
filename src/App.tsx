@@ -75,6 +75,7 @@ import Unsubscribe from "./pages/Unsubscribe";
 import UnsubscribeCold from "./pages/UnsubscribeCold";
 import ServiceLocationPage from "./pages/ServiceLocationPage";
 import ServiceIndexPage from "./pages/ServiceIndexPage";
+import CityLandingPage from "./pages/CityLandingPage";
 import FAQHub from "./pages/FAQHub";
 import FAQCategory from "./pages/FAQCategory";
 import CompareHub from "./pages/CompareHub";
@@ -117,310 +118,306 @@ const router = createBrowserRouter(
         element: <Index />,
       },
       {
+        path: "/contractors-in/:city",
+        element: <CityLandingPage />,
+      },
+      {
         path: "/register",
         element: <Register />,
         errorElement: <div>Register route error</div>,
       },
-  {
-    path: "/logout",
-    element: <Logout />,
-  },
-  {
-    path: "/auth",
-    element: <Navigate to="/register" replace />,
-  },
-  {
-    path: "/pre-demo-registration",
-    element: <ProtectedRoute><PreDemoRegistration /></ProtectedRoute>,
-  },
-  {
-    path: "/role-dashboard",
-    element: <ProtectedRoute><RoleDashboard /></ProtectedRoute>,
-  },
-  {
-    path: "/digger-registration",
-    element: <ProtectedRoute><DiggerRegistration /></ProtectedRoute>,
-  },
-  {
-    path: "/digger-subscription",
-    element: <ProtectedRoute><DiggerSubscription /></ProtectedRoute>,
-  },
-  {
-    path: "/subscription",
-    element: <ProtectedRoute requireVerified={true}><Subscription /></ProtectedRoute>,
-  },
-  {
-    path: "/subscription-success",
-    element: <ProtectedRoute><SubscriptionSuccess /></ProtectedRoute>,
-  },
-  {
-    path: "/checkout",
-    element: <ProtectedRoute requireVerified={true}><Checkout /></ProtectedRoute>,
-  },
-  {
-    path: "/checkout-success",
-    element: <ProtectedRoute><CheckoutSuccess /></ProtectedRoute>,
-  },
-  {
-    path: "/payment-methods",
-    element: <ProtectedRoute requireVerified={true}><PaymentMethods /></ProtectedRoute>,
-  },
-  {
-    path: "/browse-diggers",
-    element: <ProtectedRoute><BrowseDiggers /></ProtectedRoute>,
-  },
-  {
-    path: "/browse-gigs",
-    element: <ProtectedRoute><BrowseGigs /></ProtectedRoute>,
-  },
-  {
-    path: "/my-profiles",
-    element: <ProtectedRoute><MyProfiles /></ProtectedRoute>,
-  },
-  {
-    path: "/my-profiles/:profileId/dashboard",
-    element: <ProtectedRoute><ProfileDashboard /></ProtectedRoute>,
-  },
-  {
-    path: "/edit-digger-profile/:id",
-    element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
-  },
-  {
-    path: "/edit-digger-profile",
-    element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
-  },
-  {
-    path: "/profile-completion",
-    element: <ProtectedRoute><ProfileCompletion /></ProtectedRoute>,
-  },
-  {
-    path: "/post-gig",
-    element: <PostGig />,  // No auth required - Craigslist model
-  },
-  {
-    path: "/get-free-quote",
-    element: <GetFreeQuote />,  // PEWC landing page - no auth required
-  },
-  {
-    path: "/my-gigs",
-    element: <ProtectedRoute><MyGigs /></ProtectedRoute>,
-  },
-  {
-    path: "/my-bids",
-    element: <ProtectedRoute><MyBids /></ProtectedRoute>,
-  },
-  {
-    path: "/my-leads",
-    element: <ProtectedRoute><MyLeads /></ProtectedRoute>,
-  },
-  {
-    path: "/messages",
-    element: <ProtectedRoute><Messages /></ProtectedRoute>,
-  },
-  {
-    path: "/transactions",
-    element: <ProtectedRoute><Transactions /></ProtectedRoute>,
-  },
-  {
-    path: "/notifications",
-    element: <ProtectedRoute><Notifications /></ProtectedRoute>,
-  },
-  {
-    path: "/gig/:id",
-    element: <ProtectedRoute><GigDetail /></ProtectedRoute>,
-  },
-  {
-    path: "/digger/:id",
-    element: <ProtectedRoute><DiggerDetail /></ProtectedRoute>,
-  },
-  {
-    path: "/gig-confirmed",
-    element: <GigConfirmed />,
-  },
-  {
-    path: "/how-it-works",
-    element: <HowItWorks />,
-  },
-  {
-    path: "/pricing",
-    element: <Pricing />,
-  },
-  {
-    path: "/keyword-summary",
-    element: <ProtectedRoute><KeywordSummary /></ProtectedRoute>,
-  },
-  {
-    path: "/pricing-strategy",
-    element: <PricingStrategy />,
-  },
-  {
-    path: "/lead-limits",
-    element: <LeadLimits />,
-  },
-  {
-    path: "/faq",
-    element: <FAQ />,
-  },
-  {
-    path: "/contact",
-    element: <Contact />,
-  },
-  {
-    path: "/blog",
-    element: <Blog />,
-  },
-  {
-    path: "/blog/:slug",
-    element: <BlogPost />,
-  },
-  {
-    path: "/digger-guide",
-    element: <DiggerGuide />,
-  },
-  {
-    path: "/terms",
-    element: <TermsOfService />,
-  },
-  {
-    path: "/privacy",
-    element: <PrivacyPolicy />,
-  },
-  {
-    path: "/legal",
-    element: <LegalDocuments />,
-  },
-  {
-    path: "/brand",
-    element: <BrandAssets />,
-  },
-  {
-    path: "/sitemap",
-    element: <Sitemap />,
-  },
-  {
-    path: "/sitemap.xml",
-    element: <SitemapXML />,
-  },
-  {
-    path: "/saved-searches",
-    element: <ProtectedRoute><SavedSearches /></ProtectedRoute>,
-  },
-  {
-    path: "/email-preferences",
-    element: <ProtectedRoute><EmailPreferences /></ProtectedRoute>,
-  },
-  {
-    path: "/escrow-dashboard",
-    element: <ProtectedRoute><EscrowDashboard /></ProtectedRoute>,
-  },
-  {
-    path: "/telemarketer-dashboard",
-    element: <ProtectedRoute><TelemarketerDashboard /></ProtectedRoute>,
-  },
-  {
-    path: "/admin",
-    element: <ProtectedRoute><AdminDashboard /></ProtectedRoute>,
-  },
-  {
-    path: "/admin/users",
-    element: <ProtectedRoute><AdminUserManagement /></ProtectedRoute>,
-  },
-  {
-    path: "/admin/blog",
-    element: <ProtectedRoute><AdminBlog /></ProtectedRoute>,
-  },
-  {
-    path: "/admin/notifications",
-    element: <ProtectedRoute><AdminNotificationPreferences /></ProtectedRoute>,
-  },
-  {
-    path: "/admin/lead-distribution-test",
-    element: <ProtectedRoute><AdminLeadDistributionTest /></ProtectedRoute>,
-  },
-  {
-    path: "/test/ai-matching",
-    element: <ProtectedRoute><TestAIMatching /></ProtectedRoute>,
-  },
-  {
-    path: "/e2e-test-suite",
-    element: <ProtectedRoute><E2ETestSuite /></ProtectedRoute>,
-  },
-  {
-    path: "/demo/profile-creation",
-    element: <ProfileCreationDemo />,
-  },
-  {
-    path: "/demo/digger-registration",
-    element: <DiggerRegistrationDemo />,
-  },
-  {
-    path: "/demo/gig-registration",
-    element: <GigRegistrationDemo />,
-  },
-  {
-    path: "/logo-generator",
-    element: <LogoGeneratorPage />,
-  },
-  {
-    path: "/get-free-quote",
-    element: <GetFreeQuote />,
-  },
-  {
-    path: "/email",
-    element: <EmailLanding />,
-  },
-  {
-    path: "/unsubscribe",
-    element: <Unsubscribe />,
-  },
-  {
-    path: "/unsubscribe-cold",
-    element: <UnsubscribeCold />,
-  },
-  {
-    path: "/services/:service",
-    element: <ServiceIndexPage />,
-  },
-  {
-    path: "/services/:service/:city",
-    element: <ServiceLocationPage />,
-  },
-  {
-    path: "/faq",
-    element: <FAQHub />,
-  },
-  {
-    path: "/faq/:category",
-    element: <FAQCategory />,
-  },
-  {
-    path: "/compare",
-    element: <CompareHub />,
-  },
-  {
-    path: "/compare/:competitor",
-    element: <CompareDetail />,
-  },
-  {
-    path: "/advertiser",
-    element: <AdvertiserPortal />,
-  },
-  {
-    path: "/business-plan",
-    element: <BusinessPlan />,
-  },
-  {
-    path: "/cold-email-docs",
-    element: <ColdEmailDocs />,
-  },
-  {
-    path: "/founding-digger",
-    element: <FoundingDigger />,
-  },
-  {
-    path: "/about",
-    element: <About />,
-  },
+      {
+        path: "/logout",
+        element: <Logout />,
+      },
+      {
+        path: "/auth",
+        element: <Navigate to="/register" replace />,
+      },
+      {
+        path: "/pre-demo-registration",
+        element: <ProtectedRoute><PreDemoRegistration /></ProtectedRoute>,
+      },
+      {
+        path: "/role-dashboard",
+        element: <ProtectedRoute><RoleDashboard /></ProtectedRoute>,
+      },
+      {
+        path: "/digger-registration",
+        element: <ProtectedRoute><DiggerRegistration /></ProtectedRoute>,
+      },
+      {
+        path: "/digger-subscription",
+        element: <ProtectedRoute><DiggerSubscription /></ProtectedRoute>,
+      },
+      {
+        path: "/subscription",
+        element: <ProtectedRoute requireVerified={true}><Subscription /></ProtectedRoute>,
+      },
+      {
+        path: "/subscription-success",
+        element: <ProtectedRoute><SubscriptionSuccess /></ProtectedRoute>,
+      },
+      {
+        path: "/checkout",
+        element: <ProtectedRoute requireVerified={true}><Checkout /></ProtectedRoute>,
+      },
+      {
+        path: "/checkout-success",
+        element: <ProtectedRoute><CheckoutSuccess /></ProtectedRoute>,
+      },
+      {
+        path: "/payment-methods",
+        element: <ProtectedRoute requireVerified={true}><PaymentMethods /></ProtectedRoute>,
+      },
+      {
+        path: "/browse-diggers",
+        element: <ProtectedRoute><BrowseDiggers /></ProtectedRoute>,
+      },
+      {
+        path: "/browse-gigs",
+        element: <ProtectedRoute><BrowseGigs /></ProtectedRoute>,
+      },
+      {
+        path: "/my-profiles",
+        element: <ProtectedRoute><MyProfiles /></ProtectedRoute>,
+      },
+      {
+        path: "/my-profiles/:profileId/dashboard",
+        element: <ProtectedRoute><ProfileDashboard /></ProtectedRoute>,
+      },
+      {
+        path: "/edit-digger-profile/:id",
+        element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
+      },
+      {
+        path: "/edit-digger-profile",
+        element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
+      },
+      {
+        path: "/profile-completion",
+        element: <ProtectedRoute><ProfileCompletion /></ProtectedRoute>,
+      },
+      {
+        path: "/post-gig",
+        element: <PostGig />,  // No auth required - Craigslist model
+      },
+      {
+        path: "/get-free-quote",
+        element: <GetFreeQuote />,  // PEWC landing page - no auth required
+      },
+      {
+        path: "/my-gigs",
+        element: <ProtectedRoute><MyGigs /></ProtectedRoute>,
+      },
+      {
+        path: "/my-bids",
+        element: <ProtectedRoute><MyBids /></ProtectedRoute>,
+      },
+      {
+        path: "/my-leads",
+        element: <ProtectedRoute><MyLeads /></ProtectedRoute>,
+      },
+      {
+        path: "/messages",
+        element: <ProtectedRoute><Messages /></ProtectedRoute>,
+      },
+      {
+        path: "/transactions",
+        element: <ProtectedRoute><Transactions /></ProtectedRoute>,
+      },
+      {
+        path: "/notifications",
+        element: <ProtectedRoute><Notifications /></ProtectedRoute>,
+      },
+      {
+        path: "/gig/:id",
+        element: <ProtectedRoute><GigDetail /></ProtectedRoute>,
+      },
+      {
+        path: "/digger/:id",
+        element: <ProtectedRoute><DiggerDetail /></ProtectedRoute>,
+      },
+      {
+        path: "/gig-confirmed",
+        element: <GigConfirmed />,
+      },
+      {
+        path: "/how-it-works",
+        element: <HowItWorks />,
+      },
+      {
+        path: "/pricing",
+        element: <Pricing />,
+      },
+      {
+        path: "/keyword-summary",
+        element: <ProtectedRoute><KeywordSummary /></ProtectedRoute>,
+      },
+      {
+        path: "/pricing-strategy",
+        element: <PricingStrategy />,
+      },
+      {
+        path: "/lead-limits",
+        element: <LeadLimits />,
+      },
+      {
+        path: "/faq",
+        element: <FAQ />,
+      },
+      {
+        path: "/contact",
+        element: <Contact />,
+      },
+      {
+        path: "/blog",
+        element: <Blog />,
+      },
+      {
+        path: "/blog/:slug",
+        element: <BlogPost />,
+      },
+      {
+        path: "/digger-guide",
+        element: <DiggerGuide />,
+      },
+      {
+        path: "/terms",
+        element: <TermsOfService />,
+      },
+      {
+        path: "/privacy",
+        element: <PrivacyPolicy />,
+      },
+      {
+        path: "/legal",
+        element: <LegalDocuments />,
+      },
+      {
+        path: "/brand",
+        element: <BrandAssets />,
+      },
+      {
+        path: "/sitemap",
+        element: <Sitemap />,
+      },
+      {
+        path: "/sitemap.xml",
+        element: <SitemapXML />,
+      },
+      {
+        path: "/saved-searches",
+        element: <ProtectedRoute><SavedSearches /></ProtectedRoute>,
+      },
+      {
+        path: "/email-preferences",
+        element: <ProtectedRoute><EmailPreferences /></ProtectedRoute>,
+      },
+      {
+        path: "/escrow-dashboard",
+        element: <ProtectedRoute><EscrowDashboard /></ProtectedRoute>,
+      },
+      {
+        path: "/telemarketer-dashboard",
+        element: <ProtectedRoute><TelemarketerDashboard /></ProtectedRoute>,
+      },
+      {
+        path: "/admin",
+        element: <ProtectedRoute><AdminDashboard /></ProtectedRoute>,
+      },
+      {
+        path: "/admin/users",
+        element: <ProtectedRoute><AdminUserManagement /></ProtectedRoute>,
+      },
+      {
+        path: "/admin/blog",
+        element: <ProtectedRoute><AdminBlog /></ProtectedRoute>,
+      },
+      {
+        path: "/admin/notifications",
+        element: <ProtectedRoute><AdminNotificationPreferences /></ProtectedRoute>,
+      },
+      {
+        path: "/admin/lead-distribution-test",
+        element: <ProtectedRoute><AdminLeadDistributionTest /></ProtectedRoute>,
+      },
+      {
+        path: "/test/ai-matching",
+        element: <ProtectedRoute><TestAIMatching /></ProtectedRoute>,
+      },
+      {
+        path: "/e2e-test-suite",
+        element: <ProtectedRoute><E2ETestSuite /></ProtectedRoute>,
+      },
+      {
+        path: "/demo/profile-creation",
+        element: <ProfileCreationDemo />,
+      },
+      {
+        path: "/demo/digger-registration",
+        element: <DiggerRegistrationDemo />,
+      },
+      {
+        path: "/demo/gig-registration",
+        element: <GigRegistrationDemo />,
+      },
+      {
+        path: "/logo-generator",
+        element: <LogoGeneratorPage />,
+      },
+      {
+        path: "/email",
+        element: <EmailLanding />,
+      },
+      {
+        path: "/unsubscribe",
+        element: <Unsubscribe />,
+      },
+      {
+        path: "/unsubscribe-cold",
+        element: <UnsubscribeCold />,
+      },
+      {
+        path: "/services/:service",
+        element: <ServiceIndexPage />,
+      },
+      {
+        path: "/services/:service/:city",
+        element: <ServiceLocationPage />,
+      },
+      {
+        path: "/faq/:category",
+        element: <FAQCategory />,
+      },
+      {
+        path: "/compare",
+        element: <CompareHub />,
+      },
+      {
+        path: "/compare/:competitor",
+        element: <CompareDetail />,
+      },
+      {
+        path: "/advertiser",
+        element: <AdvertiserPortal />,
+      },
+      {
+        path: "/business-plan",
+        element: <BusinessPlan />,
+      },
+      {
+        path: "/cold-email-docs",
+        element: <ColdEmailDocs />,
+      },
+      {
+        path: "/founding-digger",
+        element: <FoundingDigger />,
+      },
+      {
+        path: "/about",
+        element: <About />,
+      },
       {
         path: "/apply-digger",
         element: <ApplyDigger />,
@@ -431,12 +428,7 @@ const router = createBrowserRouter(
       },
     ],
   },
-  ],
-  {
-    future: {
-      v7_startTransition: true,
-    },
-  }
+  ]
 );
 
 const App = () => {
