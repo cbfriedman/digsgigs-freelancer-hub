@@ -87,6 +87,7 @@ import ColdEmailDocs from "./pages/ColdEmailDocs";
 import FoundingDigger from "./pages/FoundingDigger";
 import About from "./pages/About";
 import ApplyDigger from "./pages/ApplyDigger";
+import ApplyLanding from "./pages/ApplyLanding";
 import PaymentMethods from "./pages/PaymentMethods";
 
 const queryClient = new QueryClient();
@@ -245,6 +246,14 @@ const router = createBrowserRouter(
       {
         path: "/how-it-works",
         element: <HowItWorks />,
+      },
+      {
+        path: "/apply",
+        element: <ApplyLanding />,
+      },
+      {
+        path: "/freelancers",
+        element: <ApplyLanding />,
       },
       {
         path: "/pricing",
