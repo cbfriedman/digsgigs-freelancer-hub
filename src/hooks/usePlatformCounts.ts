@@ -12,19 +12,27 @@ export function usePlatformCounts() {
     const checkCounts = async () => {
       try {
         // Check digger count
-        const { count: diggerCount } = await supabase
+        const { count: diggerCount, error: diggerError } = await supabase
           .from("digger_profiles")
           .select("", { count: "exact", head: true });
 
         // Check gig count
-        const { count: gigCount } = await supabase
+        const { count: gigCount, error: gigError } = await supabase
           .from("gigs")
           .select("", { count: "exact", head: true });
 
-        setHasEnoughDiggers((diggerCount ?? 0) >= MINIMUM_COUNT);
-        setHasEnoughGigs((gigCount ?? 0) >= MINIMUM_COUNT);
+        // Only set counts if queries succeeded
+        if (!diggerError) {
+          setHasEnoughDiggers((diggerCount ?? 0) >= MINIMUM_COUNT);
+        }
+        if (!gigError) {
+          setHasEnoughGigs((gigCount ?? 0) >= MINIMUM_COUNT);
+        }
       } catch (error) {
         console.error("Error checking platform counts:", error);
+        // Set defaults on error to prevent UI breaking
+        setHasEnoughDiggers(false);
+        setHasEnoughGigs(false);
       } finally {
         setLoading(false);
       }
