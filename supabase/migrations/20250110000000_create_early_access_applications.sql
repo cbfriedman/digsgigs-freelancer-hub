@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS public.early_access_applications (
 -- Enable RLS
 ALTER TABLE public.early_access_applications ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for idempotency)
+DROP POLICY IF EXISTS "Anyone can create early access applications" ON public.early_access_applications;
+DROP POLICY IF EXISTS "Admins can view all early access applications" ON public.early_access_applications;
+DROP POLICY IF EXISTS "Admins can update early access applications" ON public.early_access_applications;
+
 -- RLS Policies: Allow anonymous inserts (for landing page form)
 CREATE POLICY "Anyone can create early access applications"
   ON public.early_access_applications
@@ -47,15 +52,15 @@ CREATE POLICY "Admins can update early access applications"
   TO authenticated
   USING (has_role(auth.uid(), 'admin'::app_role));
 
--- Create indexes for better query performance
-CREATE INDEX idx_early_access_applications_email ON public.early_access_applications(email);
-CREATE INDEX idx_early_access_applications_status ON public.early_access_applications(status);
-CREATE INDEX idx_early_access_applications_created_at ON public.early_access_applications(created_at DESC);
-CREATE INDEX idx_early_access_applications_source ON public.early_access_applications(source);
+-- Create indexes for better query performance (IF NOT EXISTS for idempotency)
+CREATE INDEX IF NOT EXISTS idx_early_access_applications_email ON public.early_access_applications(email);
+CREATE INDEX IF NOT EXISTS idx_early_access_applications_status ON public.early_access_applications(status);
+CREATE INDEX IF NOT EXISTS idx_early_access_applications_created_at ON public.early_access_applications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_early_access_applications_source ON public.early_access_applications(source);
 -- Indexes for UTM tracking (filter by utm_source to separate YouTube vs Facebook)
-CREATE INDEX idx_early_access_applications_utm_source ON public.early_access_applications(utm_source);
-CREATE INDEX idx_early_access_applications_utm_campaign ON public.early_access_applications(utm_campaign);
-CREATE INDEX idx_early_access_applications_utm_medium ON public.early_access_applications(utm_medium);
+CREATE INDEX IF NOT EXISTS idx_early_access_applications_utm_source ON public.early_access_applications(utm_source);
+CREATE INDEX IF NOT EXISTS idx_early_access_applications_utm_campaign ON public.early_access_applications(utm_campaign);
+CREATE INDEX IF NOT EXISTS idx_early_access_applications_utm_medium ON public.early_access_applications(utm_medium);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.update_early_access_applications_updated_at()
@@ -65,6 +70,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Drop trigger if it exists (for idempotency)
+DROP TRIGGER IF EXISTS update_early_access_applications_updated_at ON public.early_access_applications;
 
 -- Create trigger to automatically update updated_at
 CREATE TRIGGER update_early_access_applications_updated_at
