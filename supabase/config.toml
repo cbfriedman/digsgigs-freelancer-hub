@@ -254,3 +254,12 @@ verify_jwt = false
 
 [functions.notify-new-signup]
 verify_jwt = false
+
+[functions.blast-lead-to-diggers]
+verify_jwt = false
+
+[functions.create-lead-unlock-checkout]
+verify_jwt = true
+
+[functions.stripe-webhook-lead-unlock]
+verify_jwt = false

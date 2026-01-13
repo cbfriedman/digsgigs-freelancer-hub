@@ -158,7 +158,7 @@ const ApplyLanding = () => {
       trackPageView('/apply?conversion=application_submitted');
 
       // Store application in database with UTM tracking
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from("early_access_applications")
         .insert({
           name: data.name,
