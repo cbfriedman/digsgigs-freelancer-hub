@@ -8,6 +8,16 @@ CREATE TABLE IF NOT EXISTS public.early_access_applications (
   portfolio_linkedin TEXT,
   location TEXT NOT NULL,
   source TEXT DEFAULT 'youtube_landing',
+  -- UTM tracking fields for campaign attribution
+  utm_source TEXT,
+  utm_medium TEXT,
+  utm_campaign TEXT,
+  utm_content TEXT,
+  utm_term TEXT,
+  referrer TEXT,
+  landing_page TEXT,
+  device_type TEXT,
+  browser TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'contacted')),
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
@@ -42,6 +52,10 @@ CREATE INDEX idx_early_access_applications_email ON public.early_access_applicat
 CREATE INDEX idx_early_access_applications_status ON public.early_access_applications(status);
 CREATE INDEX idx_early_access_applications_created_at ON public.early_access_applications(created_at DESC);
 CREATE INDEX idx_early_access_applications_source ON public.early_access_applications(source);
+-- Indexes for UTM tracking (filter by utm_source to separate YouTube vs Facebook)
+CREATE INDEX idx_early_access_applications_utm_source ON public.early_access_applications(utm_source);
+CREATE INDEX idx_early_access_applications_utm_campaign ON public.early_access_applications(utm_campaign);
+CREATE INDEX idx_early_access_applications_utm_medium ON public.early_access_applications(utm_medium);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.update_early_access_applications_updated_at()

@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { useUTMTracking } from "@/hooks/useUTMTracking";
+import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,6 +98,9 @@ const yearsOfExperience = [
 const ApplyLanding = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { getCampaignData } = useUTMTracking();
+  const { trackEvent, trackCustomEvent } = useFacebookPixel();
+  const { trackPageView } = useGoogleAdsConversion();
 
   const {
     register,
@@ -112,11 +118,46 @@ const ApplyLanding = () => {
   const skillCategory = watch("skillCategory");
   const yearsExperience = watch("yearsExperience");
 
+  // Track page view on mount
+  useEffect(() => {
+    // Track in Google Ads
+    trackPageView('/apply');
+    
+    // Track in Facebook Pixel
+    trackEvent('ViewContent', { content_name: 'Apply Landing Page' });
+    
+    // Log page view to campaign_conversions table for admin dashboard tracking
+    const campaignData = getCampaignData();
+    supabase.functions.invoke('log-campaign-event', {
+      body: {
+        conversion_type: 'page_view',
+        landing_page: '/apply',
+        ...campaignData,
+      },
+    }).catch(error => {
+      // Silently fail - don't log errors for missing functions to avoid console spam
+      // Only log if it's not a 404 (function not deployed) or table not found
+      if (error?.status !== 404 && error?.code !== '404' && error?.code !== 'PGRST205') {
+        console.warn("Failed to track page view (non-critical):", error);
+      }
+    });
+  }, [trackPageView, trackEvent, getCampaignData]);
+
   const onSubmit = async (data: ApplicationFormData) => {
     setIsSubmitting(true);
     
     try {
-      // Store application in database (we'll create a table for this or use existing)
+      // Get UTM tracking data
+      const campaignData = getCampaignData();
+      
+      // Track conversion in Facebook Pixel
+      trackCustomEvent('EarlyAccessApplication', campaignData);
+      trackEvent('Lead', { content_name: 'Early Access Application' });
+      
+      // Track conversion in Google Ads
+      trackPageView('/apply?conversion=application_submitted');
+
+      // Store application in database with UTM tracking
       const { error: insertError } = await supabase
         .from("early_access_applications")
         .insert({
@@ -127,6 +168,16 @@ const ApplyLanding = () => {
           portfolio_linkedin: data.portfolioLinkedIn || null,
           location: data.location,
           source: "youtube_landing",
+          // UTM tracking fields
+          utm_source: campaignData.utm_source || null,
+          utm_medium: campaignData.utm_medium || null,
+          utm_campaign: campaignData.utm_campaign || null,
+          utm_content: campaignData.utm_content || null,
+          utm_term: campaignData.utm_term || null,
+          referrer: campaignData.referrer || null,
+          landing_page: campaignData.landing_page || '/apply',
+          device_type: campaignData.device_type || null,
+          browser: campaignData.browser || null,
           created_at: new Date().toISOString(),
         });
 
@@ -135,6 +186,21 @@ const ApplyLanding = () => {
         // For now, log it and show success anyway
         console.warn("Could not save to database:", insertError);
       }
+
+      // Log conversion to campaign_conversions table
+      supabase.functions.invoke('log-campaign-event', {
+        body: {
+          conversion_type: 'early_access_application',
+          email: data.email,
+          landing_page: '/apply',
+          ...campaignData,
+        },
+      }).catch(error => {
+        // Silently fail - non-critical tracking
+        if (error?.status !== 404 && error?.code !== '404' && error?.code !== 'PGRST205') {
+          console.warn("Failed to track conversion (non-critical):", error);
+        }
+      });
 
       toast.success("Application submitted successfully! 🎉");
       
