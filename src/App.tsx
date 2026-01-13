@@ -68,6 +68,7 @@ import RoleDashboard from "./pages/RoleDashboard";
 import Logout from "./pages/Logout";
 import KeywordSummary from "./pages/KeywordSummary";
 import GigConfirmed from "./pages/GigConfirmed";
+import LeadUnlock from "./pages/LeadUnlock";
 import LogoGeneratorPage from "./pages/LogoGeneratorPage";
 import BrandAssets from "./pages/BrandAssets";
 import GetFreeQuote from "./pages/GetFreeQuote";
@@ -242,6 +243,10 @@ const router = createBrowserRouter(
       {
         path: "/gig-confirmed",
         element: <GigConfirmed />,
+      },
+      {
+        path: "/lead/:id/unlock",
+        element: <LeadUnlock />,
       },
       {
         path: "/how-it-works",
