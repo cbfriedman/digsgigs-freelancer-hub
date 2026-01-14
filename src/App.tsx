@@ -90,6 +90,7 @@ import About from "./pages/About";
 import ApplyDigger from "./pages/ApplyDigger";
 import ApplyLanding from "./pages/ApplyLanding";
 import PaymentMethods from "./pages/PaymentMethods";
+import ProfileCategoryBrowser from "./pages/ProfileCategoryBrowser";
 
 const queryClient = new QueryClient();
 
@@ -263,6 +264,10 @@ const router = createBrowserRouter(
       {
         path: "/pricing",
         element: <Pricing />,
+      },
+      {
+        path: "/profile-categories",
+        element: <ProtectedRoute><ProfileCategoryBrowser /></ProtectedRoute>,
       },
       {
         path: "/keyword-summary",

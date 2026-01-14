@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export const MultiCategorySubcategorySelector = ({
   required = true,
 }: MultiCategorySubcategorySelectorProps) => {
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const isUpdatingRef = useRef(false);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => 
@@ -45,29 +46,51 @@ export const MultiCategorySubcategorySelector = ({
   };
 
   const toggleSubcategory = (categoryId: string, categoryName: string, subcategory: Subcategory) => {
+    if (!subcategory?.slug || isUpdatingRef.current) return;
+    
     const isSelected = isSubcategorySelected(categoryId, subcategory.slug);
     
+    // Early return if trying to add when already selected or remove when not selected
+    // This prevents unnecessary state updates
     if (isSelected) {
       // Remove the selection
-      onSelectionChange(
-        selectedItems.filter(
-          item => !(item.categoryId === categoryId && item.subcategorySlug === subcategory.slug)
-        )
+      const filtered = selectedItems.filter(
+        item => !(item.categoryId === categoryId && item.subcategorySlug === subcategory.slug)
       );
+      // Only update if the array actually changed
+      if (filtered.length !== selectedItems.length) {
+        isUpdatingRef.current = true;
+        onSelectionChange(filtered);
+        // Reset flag after React processes the update
+        requestAnimationFrame(() => {
+          isUpdatingRef.current = false;
+        });
+      }
     } else {
       // Add the selection if under max
       if (selectedItems.length >= maxSelections) {
         return; // Don't add more than max
       }
-      onSelectionChange([
-        ...selectedItems,
-        {
-          categoryId,
-          categoryName,
-          subcategorySlug: subcategory.slug,
-          subcategoryName: subcategory.name,
-        },
-      ]);
+      // Check if already exists (prevent duplicates)
+      const exists = selectedItems.some(
+        item => item.categoryId === categoryId && item.subcategorySlug === subcategory.slug
+      );
+      if (!exists) {
+        isUpdatingRef.current = true;
+        onSelectionChange([
+          ...selectedItems,
+          {
+            categoryId,
+            categoryName,
+            subcategorySlug: subcategory.slug,
+            subcategoryName: subcategory.name,
+          },
+        ]);
+        // Reset flag after React processes the update
+        requestAnimationFrame(() => {
+          isUpdatingRef.current = false;
+        });
+      }
     }
   };
 
@@ -163,17 +186,32 @@ export const MultiCategorySubcategorySelector = ({
                     return (
                       <div
                         key={sub.slug}
-                        className={`flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer ${
+                        className={`flex items-center gap-2 p-2 rounded-md hover:bg-muted ${
                           isDisabled ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
-                        onClick={() => !isDisabled && toggleSubcategory(category.id, category.name, sub)}
                       >
                         <Checkbox
+                          id={`checkbox-${category.id}-${sub.slug}`}
                           checked={isSelected}
                           disabled={isDisabled}
-                          onCheckedChange={() => toggleSubcategory(category.id, category.name, sub)}
+                          onCheckedChange={(checked) => {
+                            // Prevent infinite loops - only toggle if state actually changed
+                            if (checked === isSelected || isUpdatingRef.current) {
+                              return;
+                            }
+                            toggleSubcategory(category.id, category.name, sub);
+                          }}
+                          onClick={(e) => {
+                            // Prevent the click from bubbling up to parent elements
+                            e.stopPropagation();
+                          }}
                         />
-                        <span className="text-sm">{sub.name}</span>
+                        <label 
+                          htmlFor={`checkbox-${category.id}-${sub.slug}`}
+                          className="text-sm flex-1 cursor-pointer select-none"
+                        >
+                          {sub.name}
+                        </label>
                       </div>
                     );
                   })}

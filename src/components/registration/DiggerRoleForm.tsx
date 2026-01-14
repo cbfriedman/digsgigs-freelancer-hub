@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,11 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
   const [companyName, setCompanyName] = useState("");
   const [selectedServices, setSelectedServices] = useState<CategorySelection[]>([]);
   const [skillsSummary, setSkillsSummary] = useState("");
+
+  // Memoize the callback to prevent infinite loops
+  const handleSelectionChange = useCallback((items: CategorySelection[]) => {
+    setSelectedServices(items);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +86,7 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
       {/* Multi-Select Category & Subcategory Selector */}
       <MultiCategorySubcategorySelector
         selectedItems={selectedServices}
-        onSelectionChange={setSelectedServices}
+        onSelectionChange={handleSelectionChange}
         maxSelections={5}
         required
       />
