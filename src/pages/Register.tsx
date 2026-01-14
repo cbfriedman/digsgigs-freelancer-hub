@@ -318,7 +318,8 @@ const Register = () => {
       return;
     }
     
-    if (!authLoading && !isSignInMode && !isPasswordResetMode && user && user.email_confirmed_at && step === 1) {
+    // FIXED: Also run for step 2 (OTP verification) - verified users should skip OTP and go straight to role selection
+    if (!authLoading && !isSignInMode && !isPasswordResetMode && user && user.email_confirmed_at && (step === 1 || step === 2)) {
       // If coming from gig posting flow and already logged in, ensure gigger role and redirect
       if (isFromGigPosting) {
         const ensureGiggerRoleAndRedirect = async () => {
@@ -385,12 +386,12 @@ const Register = () => {
         }
         
         if (!error && !hasRoles) {
-          // User is verified but has no roles - advance to role selection
+          // User is verified but has no roles - advance to role selection (Step 3)
           setUserId(user.id);
           setEmail(user.email || '');
           setFullName(user.user_metadata?.full_name || '');
           setPhone(user.user_metadata?.phone || '');
-          setStep(2); // Jump to role selection
+          setStep(3); // Jump to role selection (skip OTP for verified users)
           toast.info("Please select your role(s) to complete registration");
         }
       };
@@ -410,7 +411,8 @@ const Register = () => {
   }
 
   const roleArray = Array.from(selectedRoles);
-  const totalSteps = 1 + roleArray.length + 1; // Basic Info + Role Selection + Role Forms
+  // Steps: 1=Basic Info, 2=OTP Verification, 3=Role Selection, 4+=Role Forms
+  const totalSteps = 3 + roleArray.length; // Basic Info + OTP + Role Selection + Role Forms
   const progressPercentage = (step / totalSteps) * 100;
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
@@ -833,8 +835,8 @@ const Register = () => {
       return;
     }
 
-    // Move directly to first role form (step 3)
-    setStep(3);
+    // Move directly to first role form (step 4)
+    setStep(4);
     setCurrentRoleIndex(0);
   };
 
@@ -2456,8 +2458,8 @@ const Register = () => {
               </div>
             )}
 
-            {/* Step 3+: Role-specific Forms */}
-            {!isPasswordResetMode && step > 2 && currentRole && (
+            {/* Step 4+: Role-specific Forms */}
+            {!isPasswordResetMode && step > 3 && currentRole && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
                   <Badge>
@@ -2478,7 +2480,7 @@ const Register = () => {
                         const roleIndex = roleArray.indexOf(value as UserAppRole);
                         if (roleIndex !== -1) {
                           setCurrentRoleIndex(roleIndex);
-                          setStep(3 + roleIndex);
+                          setStep(4 + roleIndex);
                         }
                       }}
                     >
@@ -2501,7 +2503,7 @@ const Register = () => {
                     onComplete={(data) => handleRoleFormComplete('digger', data)}
                     onBack={() => {
                       if (currentRoleIndex === 0) {
-                        setStep(2); // Back to role selection
+                        setStep(3); // Back to role selection
                       } else {
                         setCurrentRoleIndex(currentRoleIndex - 1);
                         setStep(step - 1);
@@ -2515,7 +2517,7 @@ const Register = () => {
                     onComplete={(data) => handleRoleFormComplete('gigger', data)}
                     onBack={() => {
                       if (currentRoleIndex === 0) {
-                        setStep(2); // Back to role selection
+                        setStep(3); // Back to role selection
                       } else {
                         setCurrentRoleIndex(currentRoleIndex - 1);
                         setStep(step - 1);
