@@ -21,9 +21,9 @@ import { Helmet } from "react-helmet-async";
 
 // Dynamic pricing examples
 const PRICING_EXAMPLES = [
-  { budget: "$200–$400", average: 300, price: 9, note: "(minimum)" },
-  { budget: "$1,000–$2,000", average: 1500, price: 45, note: "" },
-  { budget: "$5,000–$10,000", average: 7500, price: 49, note: "(cap)" },
+  { budget: "$1,000–$1,500", average: 1250, price: 35, note: "(minimum)" },
+  { budget: "$1,500–$2,500", average: 2000, price: 50, note: "" },
+  { budget: "$5,000–$10,000", average: 7500, price: 65, note: "(cap)" },
 ];
 
 export default function Pricing() {
@@ -33,7 +33,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Lead price = 3% of project's average budget. $9 minimum, $49 maximum. No subscriptions, no commissions. Bogus leads are fully refundable." />
+        <meta name="description" content="Lead price = 3% of project's average budget. $35 minimum, $65 maximum. No subscriptions, no commissions. Bogus leads are fully refundable." />
       </Helmet>
       
       <Navigation />
@@ -85,11 +85,11 @@ export default function Pricing() {
 
                   <div className="flex justify-center gap-8">
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">$9</div>
+                      <div className="text-3xl font-bold text-primary">$35</div>
                       <div className="text-sm text-muted-foreground">Minimum</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">$49</div>
+                      <div className="text-3xl font-bold text-primary">$65</div>
                       <div className="text-sm text-muted-foreground">Maximum</div>
                     </div>
                   </div>

@@ -55,10 +55,10 @@ const PostGig = () => {
   const calculateLeadPrice = (): number => {
     const min = parseCurrency(budgetMin);
     const max = parseCurrency(budgetMax);
-    if (!min && !max) return 9;
+    if (!min && !max) return 35;
     const avg = (min + max) / 2;
     const price = Math.round(avg * 0.03);
-    return Math.max(9, Math.min(49, price));
+    return Math.max(35, Math.min(65, price));
   };
 
   const validateForm = (): boolean => {
@@ -351,7 +351,7 @@ const PostGig = () => {
                   </div>
                   <div className="text-2xl font-bold text-primary">${leadPrice}</div>
                   <div className="text-xs text-muted-foreground">
-                    3% of average budget (min $9, max $49)
+                    3% of average budget (min $35, max $65)
                   </div>
                 </div>
               )}
