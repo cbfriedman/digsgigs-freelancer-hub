@@ -1426,17 +1426,12 @@ const Register = () => {
         return;
       }
 
-      // Successfully signed in - redirect to appropriate page
+      // Successfully signed in - redirect to dashboard
       toast.success("Welcome back!");
       
       // Use full page refresh to ensure AuthContext picks up updated session and roles
-      if (roles && roles.length > 0) {
-        // User has roles - registration complete, go to dashboard
-        window.location.href = '/role-dashboard';
-      } else {
-        // User doesn't have roles yet - complete registration
-        // window.location.href = '/register';
-      }
+      // Always redirect to dashboard after successful sign-in
+      window.location.href = '/role-dashboard';
     } catch (error: any) {
       console.error("Sign in error caught:", error);
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");

@@ -113,6 +113,15 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2 lg:gap-4 overflow-visible">
+            {/* Home Button */}
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="font-semibold text-sm px-3"
+            >
+              HOME
+            </Button>
+
             {/* My Dashboard Button - only for authenticated users */}
             {user && (
               <Button
@@ -308,8 +317,20 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <SheetTitle>Menu</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-4 mt-6">
-                  {/* My Dashboard Button - only for authenticated users */}
+                  {/* Home Button */}
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => {
+                      navigate("/");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    Home
+                  </Button>
 
+                  {/* My Dashboard Button - only for authenticated users */}
                   {user && (
                     <Button
                       variant="ghost"
