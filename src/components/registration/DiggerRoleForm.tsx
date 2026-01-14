@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { CategorySubcategorySelector } from "@/components/CategorySubcategorySelector";
+import { MultiCategorySubcategorySelector, CategorySelection } from "@/components/MultiCategorySubcategorySelector";
 
 const diggerSchema = z.object({
   companyName: z.string()
@@ -22,8 +22,7 @@ interface DiggerRoleFormProps {
 
 const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
   const [companyName, setCompanyName] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [selectedSubcategorySlug, setSelectedSubcategorySlug] = useState("");
+  const [selectedServices, setSelectedServices] = useState<CategorySelection[]>([]);
   const [skillsSummary, setSkillsSummary] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -32,15 +31,14 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
     try {
       diggerSchema.parse({ companyName });
 
-      if (!selectedCategoryId || !selectedSubcategorySlug) {
-        toast.error("Please select your primary category and subcategory");
+      if (selectedServices.length === 0) {
+        toast.error("Please select at least one service category");
         return;
       }
 
       onComplete({
         companyName,
-        selectedCategoryId,
-        selectedSubcategorySlug,
+        selectedServices,
         skillsSummary,
       });
     } catch (error: any) {
@@ -75,14 +73,11 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
         />
       </div>
 
-      {/* Category & Subcategory Selector */}
-      <CategorySubcategorySelector
-        selectedCategoryId={selectedCategoryId}
-        selectedSubcategorySlug={selectedSubcategorySlug}
-        onCategoryChange={setSelectedCategoryId}
-        onSubcategoryChange={setSelectedSubcategorySlug}
-        categoryLabel="Primary Category *"
-        subcategoryLabel="Primary Subcategory *"
+      {/* Multi-Select Category & Subcategory Selector */}
+      <MultiCategorySubcategorySelector
+        selectedItems={selectedServices}
+        onSelectionChange={setSelectedServices}
+        maxSelections={5}
         required
       />
 
