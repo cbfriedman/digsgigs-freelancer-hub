@@ -38,35 +38,24 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (updateError) throw updateError;
 
-    // Trigger digger matching now that gig is confirmed
-    console.log("Matching diggers for confirmed gig:", gigId);
+    // Blast to diggers now that gig is confirmed
+    console.log("Blasting lead to diggers for confirmed gig:", gigId);
     try {
-      const { data: matchData } = await supabase.functions.invoke("match-diggers-semantic", {
-        body: {
-          gig_title: gig.title,
-          gig_description: gig.description,
-          gig_category: gig.category_id,
-        },
+      await supabase.functions.invoke("blast-lead-to-diggers", {
+        body: { leadId: gigId }
       });
+    } catch (blastError) {
+      console.error("Error blasting to diggers:", blastError);
+    }
 
-      if (matchData?.matches && matchData.matches.length > 0) {
-        for (const match of matchData.matches) {
-          await supabase.rpc('create_notification', {
-            p_user_id: match.user_id,
-            p_title: 'New Confirmed Gig Match',
-            p_message: `${match.business_name}, we found a confirmed gig that matches your expertise! "${gig.title}"`,
-            p_type: 'new_gig',
-            p_link: `/gig/${gigId}`,
-            p_metadata: {
-              gig_id: gigId,
-              confidence: match.confidence,
-              is_confirmed: true,
-            }
-          });
-        }
-      }
-    } catch (matchError) {
-      console.error("Error matching diggers:", matchError);
+    // Send management email with edit/cancel links
+    console.log("Sending management email for gig:", gigId);
+    try {
+      await supabase.functions.invoke("send-gig-management-email", {
+        body: { gigId }
+      });
+    } catch (mgmtError) {
+      console.error("Error sending management email:", mgmtError);
     }
 
     // Redirect to frontend success page

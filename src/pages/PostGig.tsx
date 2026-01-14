@@ -139,26 +139,35 @@ const PostGig = () => {
           consumer_email: clientEmail.trim(),
           consumer_phone: clientPhone.trim() || null,
           category: category?.name || null,
-          status: "open",
-          confirmation_status: "confirmed",
-          is_confirmed_lead: true,
+          status: "pending",
+          confirmation_status: "pending",
+          is_confirmed_lead: false,
         })
         .select()
         .single();
 
       if (gigError) throw gigError;
 
-      // Trigger email blast
-      await supabase.functions.invoke("blast-lead-to-diggers", {
-        body: { leadId: gigData.id }
-      }).catch(err => console.error("Blast error:", err));
+      // Send confirmation email instead of blasting immediately
+      await supabase.functions.invoke("send-gig-confirmation", {
+        body: {
+          gigId: gigData.id,
+          email: clientEmail.trim(),
+          gigTitle: title,
+          gigDescription: description.trim(),
+          location: "Remote",
+          budgetMin: parseCurrency(budgetMin),
+          budgetMax: parseCurrency(budgetMax),
+          keywords: category?.name ? [category.name] : [],
+        }
+      }).catch(err => console.error("Confirmation email error:", err));
 
       if (isConfigured) {
         trackEvent('Lead', { content_name: 'Gig Posted', content_ids: [gigData.id] });
       }
 
-      toast.success("Your project has been posted! Freelancers are being notified.");
-      navigate(`/gig-confirmed?gigId=${gigData.id}`);
+      toast.success("Check your email to confirm your project!");
+      navigate(`/gig-pending?gigId=${gigData.id}&email=${encodeURIComponent(clientEmail.trim())}`);
     } catch (error: any) {
       console.error("Error posting gig:", error);
       toast.error("Failed to post project. Please try again.");
