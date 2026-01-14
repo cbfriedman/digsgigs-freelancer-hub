@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-// CORS configuration - restrict to allowed origins
+// CORS configuration
+// NOTE: OTP endpoints must be callable from the Lovable preview domain as well as production.
 const ALLOWED_ORIGINS = [
   "https://digsgigs-freelancer-hub.vercel.app",
   "https://digsandgigs.com",
@@ -12,10 +13,22 @@ const ALLOWED_ORIGINS = [
   "http://localhost:5173",
 ];
 
+function isLovablePreviewOrigin(origin: string): boolean {
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (protocol !== "http:" && protocol !== "https:") return false;
+    return hostname.endsWith(".lovable.app") || hostname.endsWith(".lovable.dev");
+  } catch {
+    return false;
+  }
+}
+
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
-    ? origin
-    : ALLOWED_ORIGINS[0];
+  const allowedOrigin =
+    origin && (ALLOWED_ORIGINS.includes(origin) || isLovablePreviewOrigin(origin))
+      ? origin
+      : ALLOWED_ORIGINS[0];
+
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
