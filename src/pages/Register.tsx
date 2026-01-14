@@ -390,7 +390,7 @@ const Register = () => {
           setEmail(user.email || '');
           setFullName(user.user_metadata?.full_name || '');
           setPhone(user.user_metadata?.phone || '');
-          setStep(3); // Jump to role selection
+          setStep(2); // Jump to role selection
           toast.info("Please select your role(s) to complete registration");
         }
       };
@@ -410,7 +410,7 @@ const Register = () => {
   }
 
   const roleArray = Array.from(selectedRoles);
-  const totalSteps = 2 + roleArray.length; // Basic Info + Role Selection + Role Forms (skip verification)
+  const totalSteps = 1 + roleArray.length + 1; // Basic Info + Role Selection + Role Forms
   const progressPercentage = (step / totalSteps) * 100;
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
@@ -833,8 +833,8 @@ const Register = () => {
       return;
     }
 
-    // Move directly to first role form (step 4) - no email verification needed
-    setStep(4);
+    // Move directly to first role form (step 3)
+    setStep(3);
     setCurrentRoleIndex(0);
   };
 
@@ -2439,7 +2439,7 @@ const Register = () => {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(1)}
                     className="flex-1"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -2456,8 +2456,8 @@ const Register = () => {
               </div>
             )}
 
-            {/* Step 4+: Role-specific Forms */}
-            {!isPasswordResetMode && step > 3 && currentRole && (
+            {/* Step 3+: Role-specific Forms */}
+            {!isPasswordResetMode && step > 2 && currentRole && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
                   <Badge>
@@ -2478,7 +2478,7 @@ const Register = () => {
                         const roleIndex = roleArray.indexOf(value as UserAppRole);
                         if (roleIndex !== -1) {
                           setCurrentRoleIndex(roleIndex);
-                          setStep(4 + roleIndex);
+                          setStep(3 + roleIndex);
                         }
                       }}
                     >
@@ -2501,7 +2501,7 @@ const Register = () => {
                     onComplete={(data) => handleRoleFormComplete('digger', data)}
                     onBack={() => {
                       if (currentRoleIndex === 0) {
-                        setStep(3); // Back to role selection
+                        setStep(2); // Back to role selection
                       } else {
                         setCurrentRoleIndex(currentRoleIndex - 1);
                         setStep(step - 1);
@@ -2515,7 +2515,7 @@ const Register = () => {
                     onComplete={(data) => handleRoleFormComplete('gigger', data)}
                     onBack={() => {
                       if (currentRoleIndex === 0) {
-                        setStep(3); // Back to role selection
+                        setStep(2); // Back to role selection
                       } else {
                         setCurrentRoleIndex(currentRoleIndex - 1);
                         setStep(step - 1);
