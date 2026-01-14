@@ -3,11 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from "react-router-dom";
-import { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
@@ -447,19 +447,21 @@ const router = createBrowserRouter(
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CartProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <GlobalAnalytics />
-            <PresenceTracker />
-            <RouterProvider router={router} />
-          </TooltipProvider>
-        </CartProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <GlobalAnalytics />
+              <PresenceTracker />
+              <RouterProvider router={router} />
+            </TooltipProvider>
+          </CartProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 };
 
