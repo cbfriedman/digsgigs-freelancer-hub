@@ -6,28 +6,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
-import { geocodeAddress } from "@/utils/geocoding";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
-import { CategorySubcategorySelector } from "@/components/CategorySubcategorySelector";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
+import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping } from "@/config/giggerProblems";
 
 const PostGig = () => {
   const navigate = useNavigate();
   const { trackEvent, isConfigured } = useFacebookPixel();
   const [loading, setLoading] = useState(false);
   
-  // Form fields
-  const [title, setTitle] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [selectedSubcategorySlug, setSelectedSubcategorySlug] = useState("");
+  // Form fields - Problem-based approach
+  const [selectedProblemId, setSelectedProblemId] = useState("");
+  const [clarifyingAnswer, setClarifyingAnswer] = useState("");
   const [description, setDescription] = useState("");
-  const [requirements, setRequirements] = useState("");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [timeline, setTimeline] = useState("");
@@ -38,6 +36,9 @@ const PostGig = () => {
   // High-risk warning state
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
+
+  // Get current problem option for clarifying question
+  const selectedProblem = getProblemById(selectedProblemId);
 
   const formatCurrency = (value: string): string => {
     const numericValue = value.replace(/[^0-9]/g, '');
@@ -61,28 +62,24 @@ const PostGig = () => {
   };
 
   const validateForm = (): boolean => {
-    if (!title.trim()) {
-      toast.error("Please enter a project title");
+    if (!selectedProblemId) {
+      toast.error("Please select what you're trying to do");
       return false;
     }
-    if (!selectedCategoryId) {
-      toast.error("Please select a category");
-      return false;
-    }
-    if (!selectedSubcategorySlug) {
-      toast.error("Please select a subcategory");
+    if (!clarifyingAnswer) {
+      toast.error("Please answer the follow-up question");
       return false;
     }
     if (!description.trim()) {
-      toast.error("Please describe your project");
-      return false;
-    }
-    if (!requirements.trim()) {
-      toast.error("Please enter project requirements");
+      toast.error("Please describe what you want done");
       return false;
     }
     if (!budgetMin.trim() || !budgetMax.trim()) {
       toast.error("Please enter your budget range (min and max)");
+      return false;
+    }
+    if (!timeline) {
+      toast.error("Please select a timeline");
       return false;
     }
     if (!clientName.trim()) {
@@ -101,7 +98,7 @@ const PostGig = () => {
     if (!validateForm()) return;
 
     // Check for high-risk keywords
-    const textToCheck = `${title} ${description} ${requirements}`;
+    const textToCheck = description;
     const riskCheck = checkHighRiskKeywords(textToCheck);
     
     if (riskCheck.hasRisk) {
@@ -118,19 +115,25 @@ const PostGig = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const consumerId = session?.user?.id || null;
 
-      const category = TECH_CATEGORIES.find(c => c.id === selectedCategoryId);
-      const subcategory = category?.subcategories.find(s => s.slug === selectedSubcategorySlug);
+      // Get internal mapping from problem selection
+      const mapping = getInternalMapping(selectedProblemId);
+      const category = TECH_CATEGORIES.find(c => c.id === mapping?.categoryId);
+      
+      // Build title from problem + clarifying answer
+      const problem = getProblemById(selectedProblemId);
+      const clarifyingOption = problem?.clarifyingOptions.find(o => o.value === clarifyingAnswer);
+      const title = `${problem?.label || 'Project'} - ${clarifyingOption?.label || ''}`.trim();
 
       const { data: gigData, error: gigError } = await supabase
         .from("gigs")
         .insert({
           consumer_id: consumerId,
-          title: title.trim(),
+          title: title,
           description: description.trim(),
-          requirements: requirements.trim(),
+          requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingOption?.label}`,
           budget_min: parseCurrency(budgetMin),
           budget_max: parseCurrency(budgetMax),
-          timeline: timeline.trim() || null,
+          timeline: TIMELINE_OPTIONS.find(t => t.value === timeline)?.label || timeline,
           location: "Remote",
           client_name: clientName.trim(),
           consumer_email: clientEmail.trim(),
@@ -164,6 +167,11 @@ const PostGig = () => {
     }
   };
 
+  const handleProblemChange = (value: string) => {
+    setSelectedProblemId(value);
+    setClarifyingAnswer(""); // Reset clarifying answer when problem changes
+  };
+
   const leadPrice = calculateLeadPrice();
 
   return (
@@ -180,105 +188,130 @@ const PostGig = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Post Your Project</CardTitle>
             <CardDescription>
-              Your project will be emailed to all Diggers instantly
+              Tell us what you need — we'll match you with the right freelancers
             </CardDescription>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={handleSubmitCheck} className="space-y-6">
-              {/* Project Title */}
+              
+              {/* Step 1: Problem Selection */}
               <div className="space-y-2">
-                <Label htmlFor="title">Project Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., Website Redesign, Logo Design, App Development"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                />
+                <Label htmlFor="problem">
+                  What are you trying to do? <span className="text-destructive">*</span>
+                </Label>
+                <Select value={selectedProblemId} onValueChange={handleProblemChange}>
+                  <SelectTrigger id="problem" className="w-full">
+                    <SelectValue placeholder="Select an option..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROBLEM_OPTIONS.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Category & Subcategory */}
-              <CategorySubcategorySelector
-                selectedCategoryId={selectedCategoryId}
-                selectedSubcategorySlug={selectedSubcategorySlug}
-                onCategoryChange={setSelectedCategoryId}
-                onSubcategoryChange={setSelectedSubcategorySlug}
-              />
+              {/* Step 2: Clarifying Question (Conditional) */}
+              {selectedProblem && (
+                <div className="space-y-2 animate-in fade-in-50 duration-300">
+                  <Label htmlFor="clarifying">
+                    {selectedProblem.clarifyingQuestion} <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={clarifyingAnswer} onValueChange={setClarifyingAnswer}>
+                    <SelectTrigger id="clarifying" className="w-full">
+                      <SelectValue placeholder="Select an option..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedProblem.clarifyingOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-              {/* Description */}
+              {/* Step 3: Description */}
               <div className="space-y-2">
-                <Label htmlFor="description">Project Description *</Label>
+                <Label htmlFor="description">
+                  Describe what you want done <span className="text-destructive">*</span>
+                </Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe what you need done..."
+                  placeholder="No technical terms needed. Just explain the goal..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                   required
                 />
+                <p className="text-xs text-muted-foreground">
+                  No technical terms needed. Just explain the goal.
+                </p>
               </div>
 
-              {/* Requirements */}
+              {/* Step 4: Budget Range */}
               <div className="space-y-2">
-                <Label htmlFor="requirements">Requirements *</Label>
-                <Textarea
-                  id="requirements"
-                  placeholder="Specific requirements, skills needed, or deliverables..."
-                  value={requirements}
-                  onChange={(e) => setRequirements(e.target.value)}
-                  rows={3}
-                  required
-                />
-              </div>
-
-              {/* Budget & Timeline */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="budgetMin">Min Budget *</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="budgetMin"
-                      placeholder="1,000"
-                      value={budgetMin}
-                      onChange={(e) => setBudgetMin(formatCurrency(e.target.value))}
-                      className="pl-7"
-                      required
-                    />
+                <Label>Budget Range <span className="text-destructive">*</span></Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="budgetMin" className="text-xs text-muted-foreground">Minimum ($)</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <Input
+                        id="budgetMin"
+                        placeholder="1,000"
+                        value={budgetMin}
+                        onChange={(e) => setBudgetMin(formatCurrency(e.target.value))}
+                        className="pl-7"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="budgetMax">Max Budget *</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="budgetMax"
-                      placeholder="2,500"
-                      value={budgetMax}
-                      onChange={(e) => setBudgetMax(formatCurrency(e.target.value))}
-                      className="pl-7"
-                      required
-                    />
+                  <div className="space-y-1">
+                    <Label htmlFor="budgetMax" className="text-xs text-muted-foreground">Maximum ($)</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                      <Input
+                        id="budgetMax"
+                        placeholder="2,500"
+                        value={budgetMax}
+                        onChange={(e) => setBudgetMax(formatCurrency(e.target.value))}
+                        className="pl-7"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
+              {/* Step 5: Timeline */}
               <div className="space-y-2">
-                <Label htmlFor="timeline">Timeline / Start Date</Label>
-                <Input
-                  id="timeline"
-                  placeholder="e.g., ASAP, Within 2 weeks"
-                  value={timeline}
-                  onChange={(e) => setTimeline(e.target.value)}
-                />
+                <Label htmlFor="timeline">
+                  Timeline <span className="text-destructive">*</span>
+                </Label>
+                <Select value={timeline} onValueChange={setTimeline}>
+                  <SelectTrigger id="timeline" className="w-full">
+                    <SelectValue placeholder="When do you need this done?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIMELINE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Contact Info */}
+              {/* Step 6: Contact Information */}
               <div className="space-y-4 pt-4 border-t">
                 <h3 className="font-semibold">Your Contact Information</h3>
                 <div className="space-y-2">
-                  <Label htmlFor="clientName">Your Name *</Label>
+                  <Label htmlFor="clientName">Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="clientName"
                     placeholder="John Smith"
@@ -288,7 +321,7 @@ const PostGig = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clientEmail">Email Address *</Label>
+                  <Label htmlFor="clientEmail">Email <span className="text-destructive">*</span></Label>
                   <Input
                     id="clientEmail"
                     type="email"
@@ -299,7 +332,7 @@ const PostGig = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clientPhone">Phone Number (Optional)</Label>
+                  <Label htmlFor="clientPhone">Phone (optional)</Label>
                   <Input
                     id="clientPhone"
                     type="tel"
@@ -329,7 +362,7 @@ const PostGig = () => {
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    Your project is emailed to all Diggers instantly
+                    Your project is emailed to freelancers instantly
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
