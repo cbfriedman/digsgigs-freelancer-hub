@@ -14,7 +14,7 @@ import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
-import { checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
+import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping } from "@/config/giggerProblems";
 
 const PostGig = () => {
@@ -118,6 +118,33 @@ const PostGig = () => {
       // Get internal mapping from problem selection
       const mapping = getInternalMapping(selectedProblemId);
       const category = TECH_CATEGORIES.find(c => c.id === mapping?.categoryId);
+      const categoryNameForGig = category
+        ? {
+            [CATEGORY_IDS.SOFTWARE_WEB]: "Web Development",
+            [CATEGORY_IDS.DESIGN_CREATIVE]: "Graphic Design",
+            [CATEGORY_IDS.MARKETING_GROWTH]: "Digital Marketing",
+            [CATEGORY_IDS.CONTENT_MEDIA]: "Content Writing",
+          }[category.id] ?? category.name
+        : null;
+
+      let categoryId: string | null = null;
+      if (categoryNameForGig) {
+        try {
+          const { data: categoryRow, error: categoryLookupError } = await supabase
+            .from("categories")
+            .select("id")
+            .eq("name", categoryNameForGig)
+            .maybeSingle();
+
+          if (!categoryLookupError && categoryRow?.id) {
+            categoryId = categoryRow.id;
+          } else if (categoryLookupError) {
+            console.warn("Category lookup failed, continuing without category_id:", categoryLookupError);
+          }
+        } catch (lookupException) {
+          console.warn("Category lookup exception, continuing without category_id:", lookupException);
+        }
+      }
       
       // Build title from problem + clarifying answer
       const problem = getProblemById(selectedProblemId);
@@ -130,7 +157,7 @@ const PostGig = () => {
           consumer_id: consumerId,
           title: title,
           description: description.trim(),
-          requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingOption?.label}`,
+          requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingOption?.label}\nCategory: ${category?.name || "Not specified"}`,
           budget_min: parseCurrency(budgetMin),
           budget_max: parseCurrency(budgetMax),
           timeline: TIMELINE_OPTIONS.find(t => t.value === timeline)?.label || timeline,
@@ -138,7 +165,7 @@ const PostGig = () => {
           client_name: clientName.trim(),
           consumer_email: clientEmail.trim(),
           consumer_phone: clientPhone.trim() || null,
-          category: category?.name || null,
+          category_id: categoryId,
           status: "open",
           confirmation_status: "confirmed",
           is_confirmed_lead: true,

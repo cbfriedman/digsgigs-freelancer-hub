@@ -15,7 +15,6 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DiggerRoleForm from "@/components/registration/DiggerRoleForm";
-import GiggerRoleForm from "@/components/registration/GiggerRoleForm";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useUTMTracking } from "@/hooks/useUTMTracking";
@@ -332,7 +331,8 @@ const Register = () => {
       // If a role was preselected via URL (?type=digger), jump straight to the role form.
       if (selectedRoles.size > 0) {
         setCurrentRoleIndex(0);
-        setStep(4);
+        const profileRoles = Array.from(selectedRoles).filter(role => role === 'digger');
+        setStep(profileRoles.length > 0 ? 4 : 3);
       } else {
         setStep(3);
       }
@@ -436,8 +436,9 @@ const Register = () => {
   }
 
   const roleArray = Array.from(selectedRoles);
+  const profileSetupRoles = roleArray.filter(role => role === 'digger');
   // Steps: 1=Basic Info, 2=OTP Verification, 3=Role Selection, 4+=Role Forms
-  const totalSteps = 3 + roleArray.length; // Basic Info + OTP + Role Selection + Role Forms
+  const totalSteps = 3 + profileSetupRoles.length; // Basic Info + OTP + Role Selection + Role Forms
   const progressPercentage = (step / totalSteps) * 100;
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
@@ -857,6 +858,11 @@ const Register = () => {
   const handleRoleSelection = async () => {
     if (selectedRoles.size === 0) {
       toast.error("Please select at least one role");
+      return;
+    }
+
+    if (profileSetupRoles.length === 0) {
+      completeRegistration();
       return;
     }
 
@@ -1705,7 +1711,7 @@ const Register = () => {
     setSelectedRoles(newRoles);
   };
 
-  const currentRole = roleArray[currentRoleIndex];
+  const currentRole = profileSetupRoles[currentRoleIndex];
 
   return (
     <>
@@ -2488,7 +2494,7 @@ const Register = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
                   <Badge>
-                    {currentRoleIndex + 1} of {roleArray.length}
+                    {currentRoleIndex + 1} of {profileSetupRoles.length}
                   </Badge>
                   <span className="text-sm font-medium">
                     Setting up your {currentRole} profile
@@ -2496,13 +2502,13 @@ const Register = () => {
                 </div>
 
                 {/* Skip to dropdown when multiple roles selected */}
-                {roleArray.length > 1 && (
+                {profileSetupRoles.length > 1 && (
                   <div className="flex items-center gap-3 p-3 border rounded-lg bg-background">
                     <Label className="text-sm font-medium whitespace-nowrap">Skip to:</Label>
                     <Select
                       value={currentRole}
                       onValueChange={(value) => {
-                        const roleIndex = roleArray.indexOf(value as UserAppRole);
+                        const roleIndex = profileSetupRoles.indexOf(value as UserAppRole);
                         if (roleIndex !== -1) {
                           setCurrentRoleIndex(roleIndex);
                           setStep(4 + roleIndex);
@@ -2513,7 +2519,7 @@ const Register = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {roleArray.map((role) => (
+                        {profileSetupRoles.map((role) => (
                           <SelectItem key={role} value={role}>
                             {role === 'digger' ? '🔧 Digger Profile' : '📋 Gigger Profile'}
                           </SelectItem>
@@ -2526,20 +2532,6 @@ const Register = () => {
                 {currentRole === 'digger' && (
                   <DiggerRoleForm
                     onComplete={(data) => handleRoleFormComplete('digger', data)}
-                    onBack={() => {
-                      if (currentRoleIndex === 0) {
-                        setStep(3); // Back to role selection
-                      } else {
-                        setCurrentRoleIndex(currentRoleIndex - 1);
-                        setStep(step - 1);
-                      }
-                    }}
-                  />
-                )}
-
-                {currentRole === 'gigger' && (
-                  <GiggerRoleForm
-                    onComplete={(data) => handleRoleFormComplete('gigger', data)}
                     onBack={() => {
                       if (currentRoleIndex === 0) {
                         setStep(3); // Back to role selection
