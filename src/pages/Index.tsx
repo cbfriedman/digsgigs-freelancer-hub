@@ -141,9 +141,9 @@ const Index = () => {
                   navigate("/register?mode=signin");
                 }}>Sign In</Button>
                 <Button variant="hero" onClick={() => {
-                  trackButtonClick('Become a Digger', 'header');
-                  navigate("/register?mode=signup&type=digger");
-                }}>Become a Digger</Button>
+                  trackButtonClick('Post your Project', 'header');
+                  navigate("/post-gig");
+                }}>Post your Project</Button>
               </>
             )}
           </div>
@@ -223,11 +223,11 @@ const Index = () => {
                     <Button 
                       variant="hero" 
                       onClick={() => {
-                        navigate("/register?mode=signup&type=digger");
+                        navigate("/post-gig");
                         setMobileMenuOpen(false);
                       }}
                     >
-                      Become a Digger
+                      Post your Project
                     </Button>
                   </>
                 )}
@@ -287,23 +287,22 @@ const Index = () => {
                 size="lg" 
                 className="text-lg px-8"
                 onClick={() => {
-                  trackButtonClick('Become a Digger', 'hero');
-                  navigate("/register?mode=signup&type=digger");
-                }}
-              >
-                Become a Digger
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="text-lg px-8"
-                onClick={() => {
                   trackButtonClick('Post a Project', 'hero');
                   navigate("/post-gig");
                 }}
               >
                 Post a Project
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button 
+                size="lg" 
+                className="text-lg px-8 bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  trackButtonClick('Become a Digger', 'hero');
+                  navigate("/register?mode=signup&type=digger");
+                }}
+              >
+                Become a Digger
               </Button>
             </div>
 
