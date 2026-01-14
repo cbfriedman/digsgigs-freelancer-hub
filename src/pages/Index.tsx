@@ -141,9 +141,9 @@ const Index = () => {
                   navigate("/register?mode=signin");
                 }}>Sign In</Button>
                 <Button variant="hero" onClick={() => {
-                  trackButtonClick('Post your Project', 'header');
+                  trackButtonClick('Get Started', 'header');
                   navigate("/post-gig");
-                }}>Post your Project</Button>
+                }}>Get Started</Button>
               </>
             )}
           </div>
@@ -227,7 +227,7 @@ const Index = () => {
                         setMobileMenuOpen(false);
                       }}
                     >
-                      Post your Project
+                      Get Started
                     </Button>
                   </>
                 )}
