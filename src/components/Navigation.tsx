@@ -317,7 +317,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <SheetTitle>Menu</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-4 mt-6">
-                  {/* Navigation Links */}
+                  {/* Home Button */}
                   <Button
                     variant="ghost"
                     className="justify-start"
@@ -330,6 +330,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     Home
                   </Button>
 
+                  {/* My Dashboard Button - only for authenticated users */}
                   {user && (
                     <Button
                       variant="ghost"

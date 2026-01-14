@@ -3,11 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from "react-router-dom";
-import { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
@@ -68,6 +68,7 @@ import RoleDashboard from "./pages/RoleDashboard";
 import Logout from "./pages/Logout";
 import KeywordSummary from "./pages/KeywordSummary";
 import GigConfirmed from "./pages/GigConfirmed";
+import LeadUnlock from "./pages/LeadUnlock";
 import LogoGeneratorPage from "./pages/LogoGeneratorPage";
 import BrandAssets from "./pages/BrandAssets";
 import GetFreeQuote from "./pages/GetFreeQuote";
@@ -242,6 +243,10 @@ const router = createBrowserRouter(
       {
         path: "/gig-confirmed",
         element: <GigConfirmed />,
+      },
+      {
+        path: "/lead/:id/unlock",
+        element: <LeadUnlock />,
       },
       {
         path: "/how-it-works",
@@ -442,19 +447,21 @@ const router = createBrowserRouter(
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CartProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <GlobalAnalytics />
-            <PresenceTracker />
-            <RouterProvider router={router} />
-          </TooltipProvider>
-        </CartProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <GlobalAnalytics />
+              <PresenceTracker />
+              <RouterProvider router={router} />
+            </TooltipProvider>
+          </CartProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 };
 

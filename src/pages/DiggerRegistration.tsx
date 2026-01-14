@@ -76,13 +76,13 @@ const getCountryFlag = (country: string): string => {
   return flags[country] || "🌍";
 };
 
-// Component disabled - not applicable to exclusivity-based pricing
+// Legacy route kept for backwards compatibility.
+// Registration now happens in the unified /register flow.
 const DiggerRegistration = () => {
   const navigate = useNavigate();
-  
+
   useEffect(() => {
-    toast.info("This registration page is being updated for the new pricing model.");
-    navigate("/pricing");
+    navigate("/register?complete=true&type=digger", { replace: true });
   }, [navigate]);
 
   return (

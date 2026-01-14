@@ -311,39 +311,58 @@ const Register = () => {
     }
   }, [isSignInMode]);
 
-  // Auto-advance verified users without roles to role selection, or redirect to post-gig if coming from gig posting
+  // Auto-advance logged-in users who are completing registration from the dashboard.
+  // Key rule: If you're already authenticated, we should never force OTP/email re-verification just to add roles.
+  // (New signups still go through OTP verification before roles.)
   useEffect(() => {
     // Don't run redirect logic if we're in the middle of sign-in OTP flow
-    if (isInSignInOtpFlowRef.current) {
+    if (isInSignInOtpFlowRef.current) return;
+
+    if (authLoading || isSignInMode || isPasswordResetMode || !user) return;
+
+    // If user is logged in and came from the dashboard completion flow, skip OTP entirely.
+    // This fixes cases where email_confirmed_at may be null (custom OTP / legacy users),
+    // but the user is already authenticated and should be allowed to finish role setup.
+    if (isCompletingRegistration && (step === 1 || step === 2)) {
+      setUserId(user.id);
+      setEmail(user.email || '');
+      setFullName(user.user_metadata?.full_name || '');
+      setPhone(user.user_metadata?.phone || '');
+
+      // If a role was preselected via URL (?type=digger), jump straight to the role form.
+      if (selectedRoles.size > 0) {
+        setCurrentRoleIndex(0);
+        setStep(4);
+      } else {
+        setStep(3);
+      }
       return;
     }
-    
-    if (!authLoading && !isSignInMode && !isPasswordResetMode && user && user.email_confirmed_at && step === 1) {
+
+    // Verified users (email_confirmed_at set) without roles should skip OTP and go to role selection.
+    if (user.email_confirmed_at && (step === 1 || step === 2)) {
       // If coming from gig posting flow and already logged in, ensure gigger role and redirect
       if (isFromGigPosting) {
         const ensureGiggerRoleAndRedirect = async () => {
           // Check if user already has gigger role using RPC function
           let hasGiggerRole = false;
           try {
-            const { data: rpcRoles, error: rpcError } = await (supabase
-              .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
-            
+            const { data: rpcRoles, error: rpcError } = await (supabase.rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
             if (!rpcError && rpcRoles) {
               hasGiggerRole = (rpcRoles as any[]).some((r: any) => r.app_role === 'gigger');
             }
           } catch (rpcException) {
             console.warn('RPC function not available:', rpcException);
           }
-          
+
           // If no gigger role, create one using RPC function
           if (!hasGiggerRole) {
             try {
-              const { error: insertError } = await (supabase
-                .rpc as any)('insert_user_app_role', {
+              const { error: insertError } = await (supabase.rpc as any)('insert_user_app_role', {
                 p_user_id: user.id,
-                p_app_role: 'gigger'
+                p_app_role: 'gigger',
               });
-              
+
               if (insertError) {
                 console.error('Error creating gigger role:', insertError);
                 // Continue anyway - user can still post gig
@@ -353,26 +372,24 @@ const Register = () => {
               // Continue anyway - user can still post gig
             }
           }
-          
+
           toast.success("You're ready to post your gig!");
           isNavigatingRef.current = true;
           navigate('/post-gig');
         };
-        
+
         ensureGiggerRoleAndRedirect();
         return;
       }
-      
-      // Check if user has roles
-      // Use RPC function to bypass RLS and avoid 500 errors
+
+      // Check if user has roles (via RPC to bypass RLS)
       const checkUserRoles = async () => {
         let hasRoles = false;
         let error = null;
-        
+
         try {
-          const { data: rpcRoles, error: rpcError } = await (supabase
-            .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
-          
+          const { data: rpcRoles, error: rpcError } = await (supabase.rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
+
           if (!rpcError && rpcRoles && (rpcRoles as any[]).length > 0) {
             hasRoles = true;
           } else if (rpcError) {
@@ -383,21 +400,30 @@ const Register = () => {
           console.warn('RPC function not available:', rpcException);
           error = rpcException as any;
         }
-        
+
         if (!error && !hasRoles) {
-          // User is verified but has no roles - advance to role selection
           setUserId(user.id);
           setEmail(user.email || '');
           setFullName(user.user_metadata?.full_name || '');
           setPhone(user.user_metadata?.phone || '');
-          setStep(3); // Jump to role selection
-          toast.info("Please select your role(s) to complete registration");
+          setStep(3);
+          toast.info('Please select your role(s) to complete registration');
         }
       };
-      
+
       checkUserRoles();
     }
-  }, [authLoading, isSignInMode, isPasswordResetMode, user, step, isFromGigPosting, navigate]);
+  }, [
+    authLoading,
+    isSignInMode,
+    isPasswordResetMode,
+    user,
+    step,
+    isFromGigPosting,
+    isCompletingRegistration,
+    selectedRoles,
+    navigate,
+  ]);
 
 
   // Don't show loading spinner in password reset mode - show the form immediately
@@ -410,7 +436,8 @@ const Register = () => {
   }
 
   const roleArray = Array.from(selectedRoles);
-  const totalSteps = 2 + roleArray.length; // Basic Info + Role Selection + Role Forms (skip verification)
+  // Steps: 1=Basic Info, 2=OTP Verification, 3=Role Selection, 4+=Role Forms
+  const totalSteps = 3 + roleArray.length; // Basic Info + OTP + Role Selection + Role Forms
   const progressPercentage = (step / totalSteps) * 100;
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
@@ -833,7 +860,7 @@ const Register = () => {
       return;
     }
 
-    // Move directly to first role form (step 4) - no email verification needed
+    // Move directly to first role form (step 4)
     setStep(4);
     setCurrentRoleIndex(0);
   };
@@ -1426,17 +1453,12 @@ const Register = () => {
         return;
       }
 
-      // Successfully signed in - redirect to appropriate page
+      // Successfully signed in - redirect to dashboard
       toast.success("Welcome back!");
       
       // Use full page refresh to ensure AuthContext picks up updated session and roles
-      if (roles && roles.length > 0) {
-        // User has roles - registration complete, go to dashboard
-        window.location.href = '/role-dashboard';
-      } else {
-        // User doesn't have roles yet - complete registration
-        // window.location.href = '/register';
-      }
+      // Always redirect to dashboard after successful sign-in
+      window.location.href = '/role-dashboard';
     } catch (error: any) {
       console.error("Sign in error caught:", error);
       toast.error(error.message || "Failed to sign in. Please check your credentials and try again.");
@@ -2444,7 +2466,7 @@ const Register = () => {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(1)}
                     className="flex-1"
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />

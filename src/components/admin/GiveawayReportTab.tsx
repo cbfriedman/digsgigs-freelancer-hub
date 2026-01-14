@@ -32,7 +32,7 @@ export const GiveawayReportTab = () => {
       setLoading(true);
       
       // Get all eligible digger profiles
-      const { data: diggerProfiles, error: diggerError } = await supabase
+      const { data: diggerProfiles, error: diggerError } = await (supabase as any)
         .from("digger_profiles")
         .select(`
           id,

@@ -26,7 +26,7 @@ const checkIntakeTablesExist = async (): Promise<boolean> => {
   tableCheckPromise = (async () => {
     try {
       // Try a simple query to check if table exists
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('intake_form_templates')
         .select('id')
         .limit(1);
@@ -105,7 +105,7 @@ export const DynamicIntakeForm = ({
       }
 
       // Get template ID for industry
-      const { data: template, error: templateError } = await supabase
+      const { data: template, error: templateError } = await (supabase as any)
         .from('intake_form_templates')
         .select('id')
         .eq('industry_name', industryName)
@@ -136,7 +136,7 @@ export const DynamicIntakeForm = ({
       }
 
       // Get questions for template
-      const { data: questionsData, error: questionsError } = await supabase
+      const { data: questionsData, error: questionsError } = await (supabase as any)
         .from('intake_form_questions')
         .select('*')
         .eq('template_id', template.id)
