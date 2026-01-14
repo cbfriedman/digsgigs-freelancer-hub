@@ -38,6 +38,11 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
 
       onComplete({
         companyName,
+        // Backwards-compatible field name used by Register.tsx + backend writes
+        selectedIndustries: selectedServices.map(
+          (s) => `${s.categoryName}: ${s.subcategoryName}`
+        ),
+        // Keep full structured selection for future use
         selectedServices,
         skillsSummary,
       });

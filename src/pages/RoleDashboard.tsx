@@ -447,7 +447,7 @@ export default function RoleDashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Register as a Digger to find work opportunities</p>
-                <Button onClick={() => navigate('/digger-registration')}>
+                <Button onClick={() => navigate('/register?complete=true&type=digger')}>
                   Register as Digger
                 </Button>
               </div>
