@@ -84,8 +84,8 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Freelance Leads, Delivered Instantly | Digs & Gigs"
-        description="Get freelance leads emailed directly to you. Pay only for leads you want. No subscriptions, no commissions. Dynamic pricing based on project size."
-        keywords="freelance leads, pay per lead, freelancer marketplace, no commission freelancing"
+        description="Get freelance leads emailed directly to you. Pay only for leads you want. No subscriptions. Dynamic pricing based on project size."
+        keywords="freelance leads, pay per lead, freelancer marketplace"
         structuredData={{
           "@context": "https://schema.org",
           "@graph": [
@@ -275,7 +275,7 @@ const Index = () => {
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              No subscriptions. No commissions. Every new project is emailed directly to you.
+              No subscriptions. Every new project is emailed directly to you.
             </p>
 
             {/* Value Props */}
@@ -378,23 +378,36 @@ const Index = () => {
       {/* PRICING PREVIEW */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
+          <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Simple, Fair Pricing
+              Two Ways to Engage
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Lead price = 3% of project's average budget
-              <br />
-              <span className="text-sm">$49 maximum</span>
+              Choose the pricing model that fits your workflow
             </p>
 
-            <div className="grid sm:grid-cols-3 gap-4 mb-8">
-              {pricingExamples.map((example, i) => (
-                <Card key={i} className="p-4">
-                  <div className="text-sm text-muted-foreground mb-1">{example.budget}</div>
-                  <div className="text-2xl font-bold text-primary">{example.price}</div>
-                </Card>
-              ))}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              {/* Non-Exclusive */}
+              <Card className="p-6 border-primary/30 text-left">
+                <Badge className="mb-3 bg-primary/10 text-primary border-primary/20">Pay Per Lead</Badge>
+                <h3 className="text-xl font-semibold mb-2">Non-Exclusive Access</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Pay once to unlock client contact details. Other pros may also engage.
+                </p>
+                <div className="text-2xl font-bold text-primary mb-2">3% of budget</div>
+                <div className="text-sm text-muted-foreground">$49 maximum</div>
+              </Card>
+
+              {/* Exclusive */}
+              <Card className="p-6 border-accent/30 text-left">
+                <Badge className="mb-3 bg-accent/10 text-accent border-accent/20">Pay on Acceptance</Badge>
+                <h3 className="text-xl font-semibold mb-2">Exclusive Job Award</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Submit a bid at no cost. Pay only when awarded and ready to start.
+                </p>
+                <div className="text-2xl font-bold text-accent mb-2">2% referral fee</div>
+                <div className="text-sm text-muted-foreground">$100 min – $249 max</div>
+              </Card>
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 mb-8">
@@ -404,11 +417,11 @@ const Index = () => {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>No commissions</span>
+                <span>Bogus leads refunded</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>Bogus leads refunded</span>
+                <span>Transparent pricing</span>
               </div>
             </div>
 
@@ -437,9 +450,9 @@ const Index = () => {
                     <DollarSign className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">Keep 100% of Your Earnings</h3>
+                    <h3 className="font-semibold mb-1">Transparent Pricing</h3>
                     <p className="text-sm text-muted-foreground">
-                      No platform commissions. Pay once for the lead, keep everything you earn.
+                      Know exactly what you'll pay before you commit. No hidden fees.
                     </p>
                   </div>
                 </div>
