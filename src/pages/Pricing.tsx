@@ -36,7 +36,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Lead price = 3% of project's average budget. $49 maximum. No subscriptions, no commissions. Bogus leads are fully refundable." />
+        <meta name="description" content="Two pricing options: Pay-per-lead (3% of budget, $49 max) or exclusive jobs (2% referral fee, $100-$249). No subscriptions. Bogus leads refundable." />
       </Helmet>
       
       <Navigation />
@@ -60,7 +60,7 @@ export default function Pricing() {
               </h1>
               
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                No subscriptions. No commissions. Pick the engagement type that fits your workflow.
+                No subscriptions. Pick the engagement type that fits your workflow.
               </p>
             </div>
           </div>
