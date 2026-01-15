@@ -2741,6 +2741,77 @@ export type Database = {
           },
         ]
       }
+      message_violations: {
+        Row: {
+          bid_id: string | null
+          conversation_id: string | null
+          created_at: string
+          gig_id: string | null
+          id: string
+          original_message: string
+          risk_score: number | null
+          sender_type: string | null
+          user_id: string | null
+          violation_details: Json | null
+          violations: string[]
+        }
+        Insert: {
+          bid_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          gig_id?: string | null
+          id?: string
+          original_message: string
+          risk_score?: number | null
+          sender_type?: string | null
+          user_id?: string | null
+          violation_details?: Json | null
+          violations: string[]
+        }
+        Update: {
+          bid_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          gig_id?: string | null
+          id?: string
+          original_message?: string
+          risk_score?: number | null
+          sender_type?: string | null
+          user_id?: string | null
+          violation_details?: Json | null
+          violations?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_violations_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_violations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "pre_award_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_violations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_violations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -2976,6 +3047,97 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      pre_award_conversations: {
+        Row: {
+          bid_id: string
+          consumer_id: string
+          created_at: string
+          digger_id: string
+          gig_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          bid_id: string
+          consumer_id: string
+          created_at?: string
+          digger_id: string
+          gig_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          bid_id?: string
+          consumer_id?: string
+          created_at?: string
+          digger_id?: string
+          gig_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_award_conversations_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_award_conversations_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_award_conversations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_award_conversations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pre_award_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message: string
+          sender_type: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message: string
+          sender_type: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_award_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "pre_award_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profession_requests: {
         Row: {

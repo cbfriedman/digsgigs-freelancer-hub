@@ -48,6 +48,7 @@ interface AnonymizedBidCardProps {
   isOwner: boolean;
   onAccept?: () => void;
   onConfirmHire?: () => void;
+  onAskQuestion?: () => void;
   acceptingId?: string | null;
   children?: React.ReactNode;
 }
@@ -61,6 +62,7 @@ export const AnonymizedBidCard = ({
   isOwner,
   onAccept,
   onConfirmHire,
+  onAskQuestion,
   acceptingId,
   children,
 }: AnonymizedBidCardProps) => {

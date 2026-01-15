@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -16,6 +16,7 @@ import { ColdOutreachTab } from "@/components/admin/ColdOutreachTab";
 import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
 import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
 import { GiveawayReportTab } from "@/components/admin/GiveawayReportTab";
+import { MessageViolationsDashboard } from "@/components/admin/MessageViolationsDashboard";
 import {
   Sidebar,
   SidebarContent,
@@ -356,6 +357,7 @@ const AdminDashboard = () => {
     { id: "founding-diggers", label: "Founding Diggers", icon: Crown },
     { id: "marketing", label: "Marketing Emails", icon: Megaphone },
     { id: "cold-outreach", label: "Cold Outreach", icon: MailPlus },
+    { id: "message-violations", label: "Message Violations", icon: ShieldAlert },
     { id: "keywords", label: "Keyword Analytics", icon: Search },
     { id: "requests", label: "Keyword Requests", icon: Lightbulb },
     { id: "cpc-data", label: "CPC Data", icon: Database },
