@@ -287,11 +287,10 @@ const PostGig = () => {
                         className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors cursor-pointer"
                         onClick={() => handleClarifyingToggle(option.value, !clarifyingAnswers.includes(option.value))}
                       >
-                        <Checkbox
-                          id={`clarifying-${option.value}`}
-                          checked={clarifyingAnswers.includes(option.value)}
-                          onCheckedChange={(checked) => handleClarifyingToggle(option.value, checked === true)}
-                        />
+                    <Checkbox
+                      id={`clarifying-${option.value}`}
+                      checked={clarifyingAnswers.includes(option.value)}
+                    />
                         <label
                           htmlFor={`clarifying-${option.value}`}
                           className="flex-1 text-sm cursor-pointer"
