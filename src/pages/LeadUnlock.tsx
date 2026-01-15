@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -21,7 +23,9 @@ import {
   ArrowLeft,
   Mail,
   Phone,
-  User
+  User,
+  Percent,
+  CreditCard
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -41,6 +45,12 @@ interface Lead {
   consumer_phone: string | null;
 }
 
+type PricingOption = "pay_per_lead" | "success_based";
+
+// Referral fee configuration - must match edge function
+const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_CAP = 249; // $249 cap
+
 export default function LeadUnlock() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -50,6 +60,7 @@ export default function LeadUnlock() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [diggerId, setDiggerId] = useState<string | null>(null);
+  const [selectedPricing, setSelectedPricing] = useState<PricingOption>("pay_per_lead");
 
   useEffect(() => {
     loadData();
@@ -126,7 +137,21 @@ export default function LeadUnlock() {
     const max = lead?.budget_max || min;
     const avg = (min + max) / 2;
     const price = Math.round(avg * 0.03);
-    return Math.max(9, Math.min(49, price));
+    return Math.max(35, Math.min(65, price));
+  };
+
+  const getEstimatedReferralFee = (): { min: number; max: number } => {
+    const min = lead?.budget_min || 0;
+    const max = lead?.budget_max || min;
+    
+    // 2% of bid range, capped at $249
+    const minFee = Math.min(min * REFERRAL_FEE_RATE, REFERRAL_FEE_CAP);
+    const maxFee = Math.min(max * REFERRAL_FEE_RATE, REFERRAL_FEE_CAP);
+    
+    return { 
+      min: Math.round(minFee), 
+      max: Math.round(maxFee) 
+    };
   };
 
   const handleUnlock = async () => {
@@ -163,6 +188,23 @@ export default function LeadUnlock() {
     }
   };
 
+  const handleSuccessBasedBid = () => {
+    if (!currentUser) {
+      toast.error("Please sign in to bid on leads");
+      navigate(`/register?returnTo=/gig/${id}`);
+      return;
+    }
+
+    if (!diggerId) {
+      toast.error("Please complete your Digger profile first");
+      navigate("/register?mode=signup&type=digger");
+      return;
+    }
+
+    // Navigate to gig detail page with success_based pricing pre-selected
+    navigate(`/gig/${id}?pricing=success_based`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -174,6 +216,7 @@ export default function LeadUnlock() {
   if (!lead) return null;
 
   const leadPrice = getLeadPrice();
+  const estimatedFee = getEstimatedReferralFee();
 
   return (
     <div className="min-h-screen bg-background">
@@ -298,44 +341,131 @@ export default function LeadUnlock() {
                 </div>
               </div>
             ) : (
-              <div className="bg-muted/50 border border-border rounded-lg p-6 text-center">
-                <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">Client Contact Hidden</h3>
-                <p className="text-muted-foreground mb-6">
-                  Unlock this lead to see the client's name, email, and phone number.
-                </p>
-                
-                <div className="bg-primary/10 rounded-lg p-4 mb-6">
-                  <div className="text-3xl font-bold text-primary mb-1">
-                    ${leadPrice.toFixed(0)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    One-time payment • No commissions
-                  </div>
+              <div className="space-y-6">
+                <div className="bg-muted/50 border border-border rounded-lg p-6 text-center">
+                  <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold text-lg mb-2">Choose Your Pricing Option</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Select how you'd like to access this lead and submit your bid.
+                  </p>
+
+                  <RadioGroup
+                    value={selectedPricing}
+                    onValueChange={(value) => setSelectedPricing(value as PricingOption)}
+                    className="grid gap-4"
+                  >
+                    {/* Option A: Pay Per Lead */}
+                    <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                      selectedPricing === "pay_per_lead" 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border hover:border-primary/50"
+                    }`}>
+                      <Label 
+                        htmlFor="pay_per_lead" 
+                        className="flex items-start gap-4 cursor-pointer"
+                      >
+                        <RadioGroupItem value="pay_per_lead" id="pay_per_lead" className="mt-1" />
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="w-5 h-5 text-primary" />
+                              <span className="font-semibold text-lg">Pay Per Lead</span>
+                            </div>
+                            <span className="text-2xl font-bold text-primary">${leadPrice}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Pay once to unlock this lead. No fees later. Full client contact info revealed immediately.
+                          </p>
+                          <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
+                            <CheckCircle className="w-3 h-3" />
+                            <span>Instant access to contact info</span>
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+
+                    {/* Option B: Success-Based */}
+                    <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                      selectedPricing === "success_based" 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border hover:border-primary/50"
+                    }`}>
+                      <Label 
+                        htmlFor="success_based" 
+                        className="flex items-start gap-4 cursor-pointer"
+                      >
+                        <RadioGroupItem value="success_based" id="success_based" className="mt-1" />
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Percent className="w-5 h-5 text-orange-500" />
+                              <span className="font-semibold text-lg">Success-Based Fee (2%)</span>
+                            </div>
+                            <span className="text-2xl font-bold text-orange-500">$0</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Pay nothing upfront. A one-time 2% referral fee is charged only if you're selected for this job.
+                          </p>
+                          {lead.budget_min && lead.budget_max && (
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              Estimated fee if selected: ${estimatedFee.min} - ${estimatedFee.max}
+                              {estimatedFee.max >= REFERRAL_FEE_CAP && (
+                                <span className="ml-1">(capped at ${REFERRAL_FEE_CAP})</span>
+                              )}
+                            </div>
+                          )}
+                          <div className="mt-2 flex items-center gap-2 text-xs text-orange-600">
+                            <CheckCircle className="w-3 h-3" />
+                            <span>No payment unless you win the job</span>
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
-                <Button 
-                  size="lg" 
-                  className="w-full"
-                  onClick={handleUnlock}
-                  disabled={unlocking}
-                >
-                  {unlocking ? (
+                {/* Action Button */}
+                <div className="space-y-3">
+                  {selectedPricing === "pay_per_lead" ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
+                      <Button 
+                        size="lg" 
+                        className="w-full"
+                        onClick={handleUnlock}
+                        disabled={unlocking}
+                      >
+                        {unlocking ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="w-4 h-4 mr-2" />
+                            Unlock Lead – ${leadPrice}
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Bogus leads are fully refundable. No questions asked.
+                      </p>
                     </>
                   ) : (
                     <>
-                      <Unlock className="w-4 h-4 mr-2" />
-                      Unlock for ${leadPrice.toFixed(0)}
+                      <Button 
+                        size="lg" 
+                        className="w-full bg-orange-500 hover:bg-orange-600"
+                        onClick={handleSuccessBasedBid}
+                      >
+                        <Percent className="w-4 h-4 mr-2" />
+                        Bid with Success-Based Fee (2%)
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center">
+                        You'll submit your bid on the next page. Fee charged only if selected.
+                      </p>
                     </>
                   )}
-                </Button>
-
-                <p className="text-xs text-muted-foreground mt-4">
-                  Bogus leads are fully refundable. No questions asked.
-                </p>
+                </div>
               </div>
             )}
           </CardContent>

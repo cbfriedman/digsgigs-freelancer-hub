@@ -145,7 +145,12 @@ export type Database = {
           digger_id: string
           gig_id: string
           id: string
+          pricing_model: string | null
           proposal: string
+          referral_fee_cap_cents: number | null
+          referral_fee_cents: number | null
+          referral_fee_charged_at: string | null
+          referral_fee_rate: number | null
           status: string
           timeline: string
           updated_at: string
@@ -162,7 +167,12 @@ export type Database = {
           digger_id: string
           gig_id: string
           id?: string
+          pricing_model?: string | null
           proposal: string
+          referral_fee_cap_cents?: number | null
+          referral_fee_cents?: number | null
+          referral_fee_charged_at?: string | null
+          referral_fee_rate?: number | null
           status?: string
           timeline: string
           updated_at?: string
@@ -179,7 +189,12 @@ export type Database = {
           digger_id?: string
           gig_id?: string
           id?: string
+          pricing_model?: string | null
           proposal?: string
+          referral_fee_cap_cents?: number | null
+          referral_fee_cents?: number | null
+          referral_fee_charged_at?: string | null
+          referral_fee_rate?: number | null
           status?: string
           timeline?: string
           updated_at?: string
@@ -3495,6 +3510,95 @@ export type Database = {
             columns: ["digger_id"]
             isOneToOne: false
             referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_payments: {
+        Row: {
+          amount_cents: number
+          bid_amount: number
+          bid_id: string
+          charged_at: string | null
+          created_at: string
+          digger_id: string
+          failed_at: string | null
+          failure_reason: string | null
+          fee_cap_cents: number | null
+          fee_rate: number
+          gig_id: string
+          id: string
+          refund_reason: string | null
+          refunded_at: string | null
+          status: string
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          bid_amount: number
+          bid_id: string
+          charged_at?: string | null
+          created_at?: string
+          digger_id: string
+          failed_at?: string | null
+          failure_reason?: string | null
+          fee_cap_cents?: number | null
+          fee_rate?: number
+          gig_id: string
+          id?: string
+          refund_reason?: string | null
+          refunded_at?: string | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          bid_amount?: number
+          bid_id?: string
+          charged_at?: string | null
+          created_at?: string
+          digger_id?: string
+          failed_at?: string | null
+          failure_reason?: string | null
+          fee_cap_cents?: number | null
+          fee_rate?: number
+          gig_id?: string
+          id?: string
+          refund_reason?: string | null
+          refunded_at?: string | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_payments_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_payments_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_payments_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_payments_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]

@@ -158,6 +158,16 @@ serve(async (req) => {
 
     // Update bid if this is a bid-based award
     if (bidId) {
+      const { data: bidData, error: bidFetchError } = await supabaseClient
+        .from("bids")
+        .select("pricing_model, amount")
+        .eq("id", bidId)
+        .single();
+
+      if (bidFetchError) {
+        logStep("Warning: Could not fetch bid details", { error: bidFetchError.message });
+      }
+
       const { error: bidError } = await supabaseClient
         .from("bids")
         .update({
@@ -173,6 +183,33 @@ serve(async (req) => {
       }
 
       logStep("Bid updated", { bidId });
+
+      // Charge referral fee for success-based bids
+      if (bidData?.pricing_model === "success_based") {
+        logStep("Charging referral fee for success-based bid", { 
+          bidId, 
+          amount: bidData.amount 
+        });
+
+        try {
+          const { data: feeResult, error: feeError } = await supabaseClient.functions.invoke(
+            "charge-referral-fee",
+            {
+              body: { bidId, gigId, diggerId }
+            }
+          );
+
+          if (feeError) {
+            logStep("Warning: Referral fee charge failed", { error: feeError.message });
+          } else {
+            logStep("Referral fee charge result", feeResult);
+          }
+        } catch (feeErr) {
+          logStep("Warning: Error invoking charge-referral-fee", { 
+            error: feeErr instanceof Error ? feeErr.message : String(feeErr) 
+          });
+        }
+      }
     }
 
     // Update gig with award information
