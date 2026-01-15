@@ -68,7 +68,7 @@ const gigPostingSchema = z.object({
     .or(z.literal("")),
 });
 
-type UserAppRole = 'digger' | 'gigger';
+type UserAppRole = 'digger' | 'gigger' | 'admin';
 
 interface RoleFormData {
   digger?: {
@@ -436,7 +436,7 @@ const Register = () => {
   }
 
   const roleArray = Array.from(selectedRoles);
-  const profileSetupRoles = roleArray.filter(role => role === 'digger');
+  const profileSetupRoles: UserAppRole[] = roleArray.filter((role): role is UserAppRole => role === 'digger' || role === 'gigger');
   // Steps: 1=Basic Info, 2=OTP Verification, 3=Role Selection, 4+=Role Forms
   const totalSteps = 3 + profileSetupRoles.length; // Basic Info + OTP + Role Selection + Role Forms
   const progressPercentage = (step / totalSteps) * 100;
