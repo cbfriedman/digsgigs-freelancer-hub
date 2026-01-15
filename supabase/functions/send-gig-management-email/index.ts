@@ -37,10 +37,20 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (gigError || !gig) {
+      console.error("[send-gig-management-email] Gig fetch error:", gigError);
       throw new Error(`Could not find gig: ${gigError?.message || "Not found"}`);
     }
 
+    console.log("[send-gig-management-email] Gig found:", {
+      id: gig.id,
+      title: gig.title,
+      consumer_email: gig.consumer_email,
+      confirmation_status: gig.confirmation_status,
+      status: gig.status
+    });
+
     if (!gig.consumer_email) {
+      console.error("[send-gig-management-email] No consumer_email in gig:", gig);
       throw new Error("No email address found for this gig");
     }
 
@@ -58,6 +68,9 @@ const handler = async (req: Request): Promise<Response> => {
     const viewUrl = `${siteUrl}/gig/${gigId}`;
     const editUrl = `${siteUrl}/gig/${gigId}/edit`;
     const cancelUrl = `${siteUrl}/gig/${gigId}/cancel`;
+    const myGigsUrl = `${siteUrl}/my-gigs`;
+
+    console.log("[send-gig-management-email] Sending email to:", gig.consumer_email);
 
     const emailResponse = await resend.emails.send({
       from: "Digs and Gigs <noreply@digsandgigs.net>",
@@ -183,10 +196,32 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
               
               <div class="content">
-                <p>Great news! Your project has been confirmed and is now visible to qualified freelancers in our network.</p>
+                <p>Great news! Your project "<strong>${gig.title || "Your Project"}</strong>" has been confirmed and is now live on Digs and Gigs.</p>
+                
+                <p>You can manage your project at any time using the links below:</p>
+                
+                <div class="actions">
+                  <a href="${editUrl}" class="action-button secondary-button">
+                    ✏️ Edit Project Details
+                  </a>
+                  <a href="${cancelUrl}" class="action-button danger-button">
+                    ❌ Cancel This Project
+                  </a>
+                  <a href="${viewUrl}" class="action-button primary-button">
+                    👁️ View Your Project
+                  </a>
+                  <a href="${myGigsUrl}" class="action-button secondary-button" style="background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb;">
+                    📋 View All My Projects
+                  </a>
+                </div>
                 
                 <div class="project-card">
-                  <div class="project-title">${gig.title || "Your Project"}</div>
+                  <div class="project-title">Project Summary</div>
+                  
+                  <div class="detail-row">
+                    <span class="detail-label">Title:</span>
+                    <span class="detail-value">${gig.title || "Your Project"}</span>
+                  </div>
                   
                   <div class="detail-row">
                     <span class="detail-label">Budget:</span>
@@ -207,24 +242,9 @@ const handler = async (req: Request): Promise<Response> => {
                 <div class="info-box">
                   <strong>📬 What happens next?</strong>
                   <p style="margin: 10px 0 0 0;">
-                    Interested freelancers will pay to unlock your contact information. 
-                    They'll reach out to you directly via email or phone to discuss your project 
-                    and provide quotes.
+                    Qualified freelancers will be notified about your project and can unlock your contact information to reach out directly. 
+                    You'll receive inquiries via email or phone with quotes and proposals.
                   </p>
-                </div>
-                
-                <p><strong>Manage your project:</strong></p>
-                
-                <div class="actions">
-                  <a href="${viewUrl}" class="action-button primary-button">
-                    👁️ View Your Project
-                  </a>
-                  <a href="${editUrl}" class="action-button secondary-button">
-                    ✏️ Edit Project Details
-                  </a>
-                  <a href="${cancelUrl}" class="action-button danger-button">
-                    ❌ Cancel Project
-                  </a>
                 </div>
                 
                 <p style="color: #6b7280; font-size: 14px;">
@@ -246,9 +266,14 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("[send-gig-management-email] Email sent successfully:", emailResponse);
+    if (emailResponse.error) {
+      console.error("[send-gig-management-email] Resend API error:", emailResponse.error);
+      throw new Error(`Failed to send email: ${emailResponse.error.message || JSON.stringify(emailResponse.error)}`);
+    }
 
-    return new Response(JSON.stringify({ success: true, emailResponse }), {
+    console.log("[send-gig-management-email] Email sent successfully. Email ID:", emailResponse.data?.id);
+
+    return new Response(JSON.stringify({ success: true, emailId: emailResponse.data?.id }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

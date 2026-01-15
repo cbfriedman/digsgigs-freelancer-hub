@@ -64,11 +64,19 @@ const handler = async (req: Request): Promise<Response> => {
     // Send management email with edit/cancel links
     console.log("Sending management email for gig:", gigId);
     try {
-      await supabase.functions.invoke("send-gig-management-email", {
+      const { data: mgmtData, error: mgmtError } = await supabase.functions.invoke("send-gig-management-email", {
         body: { gigId }
       });
+      
+      if (mgmtError) {
+        console.error("Error sending management email:", mgmtError);
+        // Log the error but don't fail the confirmation
+      } else {
+        console.log("Management email sent successfully:", mgmtData);
+      }
     } catch (mgmtError) {
-      console.error("Error sending management email:", mgmtError);
+      console.error("Exception sending management email:", mgmtError);
+      // Log the error but don't fail the confirmation
     }
 
     // Return success response (frontend will handle redirect)
