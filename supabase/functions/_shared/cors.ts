@@ -17,14 +17,24 @@ const ALLOWED_ORIGINS = [
   "http://127.0.0.1:5173",
 ];
 
+function isLovablePreviewOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    return url.hostname.endsWith(".lovable.app") || url.hostname.endsWith(".lovable.dev");
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Get CORS headers based on request origin
  */
 export function getCorsHeaders(origin: string | null): Record<string, string> {
-  // Default to first allowed origin if no origin provided
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
-    ? origin
-    : ALLOWED_ORIGINS[0]; // Default to production URL
+  // Allow Lovable preview domains so function calls work inside the preview iframe.
+  const allowedOrigin =
+    (origin && (ALLOWED_ORIGINS.includes(origin) || isLovablePreviewOrigin(origin)))
+      ? origin
+      : ALLOWED_ORIGINS[0]; // Default to production URL
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
