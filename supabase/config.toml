@@ -269,3 +269,9 @@ verify_jwt = false
 
 [functions.charge-referral-fee]
 verify_jwt = true
+
+[functions.screen-message]
+verify_jwt = false
+
+[functions.send-anonymous-question]
+verify_jwt = true
