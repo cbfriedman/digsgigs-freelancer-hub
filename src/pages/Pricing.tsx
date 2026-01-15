@@ -399,7 +399,7 @@ export default function Pricing() {
                 Our Promise to You
               </h2>
               
-              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid sm:grid-cols-3 gap-6">
                 <div className="text-center">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <Check className="h-6 w-6 text-primary" />
@@ -407,16 +407,6 @@ export default function Pricing() {
                   <div className="font-semibold mb-1">No Subscriptions</div>
                   <div className="text-sm text-muted-foreground">
                     Pay only for leads you want
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <Check className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="font-semibold mb-1">No Commissions</div>
-                  <div className="text-sm text-muted-foreground">
-                    Keep 100% of what you earn
                   </div>
                 </div>
                 
