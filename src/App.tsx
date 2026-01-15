@@ -68,6 +68,9 @@ import RoleDashboard from "./pages/RoleDashboard";
 import Logout from "./pages/Logout";
 import KeywordSummary from "./pages/KeywordSummary";
 import GigConfirmed from "./pages/GigConfirmed";
+import GigPendingConfirmation from "./pages/GigPendingConfirmation";
+import GigEdit from "./pages/GigEdit";
+import GigCancel from "./pages/GigCancel";
 import LeadUnlock from "./pages/LeadUnlock";
 import LogoGeneratorPage from "./pages/LogoGeneratorPage";
 import BrandAssets from "./pages/BrandAssets";
@@ -244,6 +247,18 @@ const router = createBrowserRouter(
       {
         path: "/gig-confirmed",
         element: <GigConfirmed />,
+      },
+      {
+        path: "/gig-pending",
+        element: <GigPendingConfirmation />,
+      },
+      {
+        path: "/gig/:id/edit",
+        element: <GigEdit />,
+      },
+      {
+        path: "/gig/:id/cancel",
+        element: <GigCancel />,
       },
       {
         path: "/lead/:id/unlock",
