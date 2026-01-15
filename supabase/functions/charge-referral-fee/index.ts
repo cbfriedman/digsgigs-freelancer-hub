@@ -14,6 +14,7 @@ const logStep = (step: string, details?: any) => {
 
 // Fee configuration
 const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_MIN_CENTS = 10000; // $100 minimum
 const REFERRAL_FEE_CAP_CENTS = 24900; // $249 cap
 
 serve(async (req) => {
@@ -86,16 +87,18 @@ serve(async (req) => {
       );
     }
 
-    // Calculate the referral fee
+    // Calculate the referral fee (2% with $100 min, $249 cap)
     const bidAmountCents = Math.round(bid.amount * 100);
     const calculatedFeeCents = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
-    const feeCents = Math.min(calculatedFeeCents, REFERRAL_FEE_CAP_CENTS);
+    // Apply minimum and maximum constraints
+    const feeCents = Math.max(REFERRAL_FEE_MIN_CENTS, Math.min(calculatedFeeCents, REFERRAL_FEE_CAP_CENTS));
 
     logStep("Fee calculated", {
       bidAmount: bid.amount,
       bidAmountCents,
       calculatedFeeCents,
       feeCents,
+      minApplied: calculatedFeeCents < REFERRAL_FEE_MIN_CENTS,
       capApplied: calculatedFeeCents > REFERRAL_FEE_CAP_CENTS
     });
 

@@ -49,6 +49,7 @@ type PricingOption = "pay_per_lead" | "success_based";
 
 // Referral fee configuration - must match edge function
 const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_MIN = 100; // $100 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
 
 export default function LeadUnlock() {
@@ -144,9 +145,11 @@ export default function LeadUnlock() {
     const min = lead?.budget_min || 0;
     const max = lead?.budget_max || min;
     
-    // 2% of bid range, capped at $249
-    const minFee = Math.min(min * REFERRAL_FEE_RATE, REFERRAL_FEE_CAP);
-    const maxFee = Math.min(max * REFERRAL_FEE_RATE, REFERRAL_FEE_CAP);
+    // 2% of bid range, with $100 min and $249 cap
+    const calcMinFee = min * REFERRAL_FEE_RATE;
+    const calcMaxFee = max * REFERRAL_FEE_RATE;
+    const minFee = Math.max(REFERRAL_FEE_MIN, Math.min(calcMinFee, REFERRAL_FEE_CAP));
+    const maxFee = Math.max(REFERRAL_FEE_MIN, Math.min(calcMaxFee, REFERRAL_FEE_CAP));
     
     return { 
       min: Math.round(minFee), 
@@ -344,9 +347,9 @@ export default function LeadUnlock() {
               <div className="space-y-6">
                 <div className="bg-muted/50 border border-border rounded-lg p-6 text-center">
                   <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-lg mb-2">Choose Your Pricing Option</h3>
+                  <h3 className="font-semibold text-lg mb-2">Choose Your Engagement Type</h3>
                   <p className="text-muted-foreground mb-6">
-                    Select how you'd like to access this lead and submit your bid.
+                    Select how you'd like to engage with this lead.
                   </p>
 
                   <RadioGroup
@@ -354,7 +357,7 @@ export default function LeadUnlock() {
                     onValueChange={(value) => setSelectedPricing(value as PricingOption)}
                     className="grid gap-4"
                   >
-                    {/* Option A: Pay Per Lead */}
+                    {/* Option 1: Non-Exclusive Access */}
                     <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
                       selectedPricing === "pay_per_lead" 
                         ? "border-primary bg-primary/5" 
@@ -369,26 +372,30 @@ export default function LeadUnlock() {
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <CreditCard className="w-5 h-5 text-primary" />
-                              <span className="font-semibold text-lg">Pay Per Lead</span>
+                              <span className="font-semibold text-lg">Non-Exclusive Access</span>
                             </div>
                             <span className="text-2xl font-bold text-primary">${leadPrice}</span>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Pay once to unlock this lead. No fees later. Full client contact info revealed immediately.
+                            Contact the client. Other professionals may also engage.
                           </p>
                           <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
                             <CheckCircle className="w-3 h-3" />
                             <span>Instant access to contact info</span>
                           </div>
+                          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                            <CheckCircle className="w-3 h-3" />
+                            <span>No additional fees</span>
+                          </div>
                         </div>
                       </Label>
                     </div>
 
-                    {/* Option B: Success-Based */}
+                    {/* Option 2: Exclusive (Pay on Acceptance) */}
                     <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
                       selectedPricing === "success_based" 
-                        ? "border-primary bg-primary/5" 
-                        : "border-border hover:border-primary/50"
+                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20" 
+                        : "border-border hover:border-orange-500/50"
                     }`}>
                       <Label 
                         htmlFor="success_based" 
@@ -399,24 +406,25 @@ export default function LeadUnlock() {
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <Percent className="w-5 h-5 text-orange-500" />
-                              <span className="font-semibold text-lg">Success-Based Fee (2%)</span>
+                              <span className="font-semibold text-lg">Exclusive (Pay on Acceptance)</span>
                             </div>
                             <span className="text-2xl font-bold text-orange-500">$0</span>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Pay nothing upfront. A one-time 2% referral fee is charged only if you're selected for this job.
+                            Pay nothing upfront. A one-time 2% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) applies only if you're awarded and ready to start.
                           </p>
                           {lead.budget_min && lead.budget_max && (
                             <div className="mt-2 text-xs text-muted-foreground">
-                              Estimated fee if selected: ${estimatedFee.min} - ${estimatedFee.max}
-                              {estimatedFee.max >= REFERRAL_FEE_CAP && (
-                                <span className="ml-1">(capped at ${REFERRAL_FEE_CAP})</span>
-                              )}
+                              Estimated fee if awarded: ${estimatedFee.min} – ${estimatedFee.max}
                             </div>
                           )}
                           <div className="mt-2 flex items-center gap-2 text-xs text-orange-600">
                             <CheckCircle className="w-3 h-3" />
-                            <span>No payment unless you win the job</span>
+                            <span>Exclusivity — no competition once awarded</span>
+                          </div>
+                          <div className="mt-1 flex items-center gap-2 text-xs text-orange-600">
+                            <CheckCircle className="w-3 h-3" />
+                            <span>Near-certainty of winning the project</span>
                           </div>
                         </div>
                       </Label>
@@ -442,7 +450,7 @@ export default function LeadUnlock() {
                         ) : (
                           <>
                             <Unlock className="w-4 h-4 mr-2" />
-                            Unlock Lead – ${leadPrice}
+                            Unlock Lead — ${leadPrice}
                           </>
                         )}
                       </Button>
@@ -458,10 +466,10 @@ export default function LeadUnlock() {
                         onClick={handleSuccessBasedBid}
                       >
                         <Percent className="w-4 h-4 mr-2" />
-                        Bid with Success-Based Fee (2%)
+                        Bid for Exclusive Award
                       </Button>
                       <p className="text-xs text-muted-foreground text-center">
-                        You'll submit your bid on the next page. Fee charged only if selected.
+                        Submit your bid on the next page. Fee charged only when you accept the award and are ready to start.
                       </p>
                     </>
                   )}

@@ -29,6 +29,7 @@ const bidSchema = z.object({
 
 // Referral fee configuration - must match edge function
 const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_MIN = 100; // $100 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
 
 interface BidFormProps {
@@ -49,7 +50,8 @@ export const BidForm = ({ gigId, diggerId, onSuccess, initialPricingModel = "pay
 
   const calculateReferralFee = (bidAmount: number): number => {
     const fee = bidAmount * REFERRAL_FEE_RATE;
-    return Math.min(fee, REFERRAL_FEE_CAP);
+    // Apply $100 min and $249 cap
+    return Math.max(REFERRAL_FEE_MIN, Math.min(fee, REFERRAL_FEE_CAP));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,12 +180,12 @@ export const BidForm = ({ gigId, diggerId, onSuccess, initialPricingModel = "pay
           {pricingModel === "success_based" ? (
             <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
               <Percent className="w-3 h-3 mr-1" />
-              Success-Based (2%)
+              Exclusive (Pay on Acceptance)
             </Badge>
           ) : (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
               <CreditCard className="w-3 h-3 mr-1" />
-              Lead Unlocked
+              Non-Exclusive
             </Badge>
           )}
         </div>
@@ -195,11 +197,11 @@ export const BidForm = ({ gigId, diggerId, onSuccess, initialPricingModel = "pay
               <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
                 <p className="font-medium text-orange-800 dark:text-orange-200 mb-1">
-                  Success-Based Pricing Selected
+                  Exclusive Engagement Selected
                 </p>
                 <p className="text-orange-700 dark:text-orange-300">
-                  You pay nothing upfront. If you're awarded this job, a one-time 2% referral fee 
-                  will be charged based on your bid amount (capped at ${REFERRAL_FEE_CAP}).
+                  You pay nothing upfront. A one-time 2% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) 
+                  will be charged only if you're awarded and accept the job.
                 </p>
               </div>
             </div>
@@ -288,7 +290,7 @@ export const BidForm = ({ gigId, diggerId, onSuccess, initialPricingModel = "pay
 
           {pricingModel === "success_based" && (
             <p className="text-xs text-center text-muted-foreground">
-              By submitting, you agree to pay a 2% referral fee (max ${REFERRAL_FEE_CAP}) if you're awarded this job.
+              By submitting, you agree to pay a 2% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) if you're awarded and accept this job.
             </p>
           )}
         </form>

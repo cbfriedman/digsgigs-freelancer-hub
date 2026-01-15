@@ -184,31 +184,13 @@ serve(async (req) => {
 
       logStep("Bid updated", { bidId });
 
-      // Charge referral fee for success-based bids
+      // NOTE: For success-based (exclusive) bids, the referral fee is NOT charged here.
+      // It will be charged when the Digger accepts the award via digger-accept-award function.
       if (bidData?.pricing_model === "success_based") {
-        logStep("Charging referral fee for success-based bid", { 
+        logStep("Success-based bid awarded - fee will be charged on Digger acceptance", { 
           bidId, 
           amount: bidData.amount 
         });
-
-        try {
-          const { data: feeResult, error: feeError } = await supabaseClient.functions.invoke(
-            "charge-referral-fee",
-            {
-              body: { bidId, gigId, diggerId }
-            }
-          );
-
-          if (feeError) {
-            logStep("Warning: Referral fee charge failed", { error: feeError.message });
-          } else {
-            logStep("Referral fee charge result", feeResult);
-          }
-        } catch (feeErr) {
-          logStep("Warning: Error invoking charge-referral-fee", { 
-            error: feeErr instanceof Error ? feeErr.message : String(feeErr) 
-          });
-        }
       }
     }
 
