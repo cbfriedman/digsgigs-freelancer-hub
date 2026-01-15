@@ -116,11 +116,15 @@ const PostGig = () => {
   };
 
   const handleClarifyingToggle = (value: string, checked: boolean) => {
-    if (checked) {
-      setClarifyingAnswers(prev => [...prev, value]);
-    } else {
-      setClarifyingAnswers(prev => prev.filter(v => v !== value));
-    }
+    setClarifyingAnswers(prev => {
+      const alreadySelected = prev.includes(value);
+      if (checked && !alreadySelected) {
+        return [...prev, value];
+      } else if (!checked && alreadySelected) {
+        return prev.filter(v => v !== value);
+      }
+      return prev; // No change needed - prevents unnecessary re-renders
+    });
   };
 
   // Submit gig with form data
@@ -281,24 +285,23 @@ const PostGig = () => {
                     <span className="text-xs text-muted-foreground ml-2">(Select all that apply)</span>
                   </Label>
                   <div className="grid gap-2">
-                    {selectedProblem.clarifyingOptions.map((option) => (
-                      <div
-                        key={option.value}
-                        className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => handleClarifyingToggle(option.value, !clarifyingAnswers.includes(option.value))}
-                      >
-                    <Checkbox
-                      id={`clarifying-${option.value}`}
-                      checked={clarifyingAnswers.includes(option.value)}
-                    />
+                    {selectedProblem.clarifyingOptions.map((option) => {
+                      const isChecked = clarifyingAnswers.includes(option.value);
+                      return (
                         <label
+                          key={option.value}
                           htmlFor={`clarifying-${option.value}`}
-                          className="flex-1 text-sm cursor-pointer"
+                          className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors cursor-pointer"
                         >
-                          {option.label}
+                          <Checkbox
+                            id={`clarifying-${option.value}`}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => handleClarifyingToggle(option.value, checked === true)}
+                          />
+                          <span className="flex-1 text-sm">{option.label}</span>
                         </label>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
