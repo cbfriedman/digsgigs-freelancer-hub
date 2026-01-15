@@ -15,7 +15,10 @@ import {
   Calendar,
   Shield,
   Eye,
-  Zap
+  Zap,
+  Award,
+  Lock,
+  Users
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
@@ -45,33 +48,142 @@ export default function Pricing() {
             <div className="max-w-4xl mx-auto text-center">
               <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1">
                 <DollarSign className="h-3 w-3 mr-1" />
-                Pay Per Lead
+                Two Ways to Engage
               </Badge>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                Simple, fair pricing —
+                Choose your pricing model —
                 <br />
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  based on project size
+                  pay per lead or per job
                 </span>
               </h1>
               
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                No subscriptions. No commissions. One-time payment per lead.
+                No subscriptions. No commissions. Pick the engagement type that fits your workflow.
               </p>
             </div>
           </div>
         </section>
 
-        {/* PRICING FORMULA */}
+        {/* TWO PRICING MODELS */}
         <section className="py-16">
           <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl font-bold text-center mb-12">Two Engagement Options</h2>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Non-Exclusive */}
+                <Card className="border-2 border-primary shadow-lg relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <Users className="h-6 w-6 text-primary" />
+                    </div>
+                    <Badge className="mb-2 bg-primary/10 text-primary border-primary/20">
+                      Pay Per Lead
+                    </Badge>
+                    <CardTitle className="text-2xl">Non-Exclusive Access</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <p className="text-center text-muted-foreground">
+                      Pay once to unlock client contact details. Other professionals may also engage.
+                    </p>
+                    
+                    <div className="bg-muted/50 rounded-xl p-4">
+                      <div className="text-sm text-center mb-2 text-muted-foreground">Pricing Formula</div>
+                      <div className="text-center font-mono font-bold text-primary">
+                        3% of average budget
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center gap-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">$49</div>
+                        <div className="text-xs text-muted-foreground">Maximum</div>
+                      </div>
+                    </div>
+
+                    <ul className="space-y-2">
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>Instant access to client contact</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>Pay only for leads you want</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>First to respond often wins</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                {/* Exclusive */}
+                <Card className="border-2 border-accent shadow-lg relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
+                      <Award className="h-6 w-6 text-accent" />
+                    </div>
+                    <Badge className="mb-2 bg-accent/10 text-accent border-accent/20">
+                      Pay on Acceptance
+                    </Badge>
+                    <CardTitle className="text-2xl">Exclusive Job Award</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <p className="text-center text-muted-foreground">
+                      Submit a bid at no cost. Pay only when you're awarded and ready to start.
+                    </p>
+                    
+                    <div className="bg-muted/50 rounded-xl p-4">
+                      <div className="text-sm text-center mb-2 text-muted-foreground">One-Time Referral Fee</div>
+                      <div className="text-center font-mono font-bold text-accent">
+                        2% of your bid amount
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center gap-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-accent">$100</div>
+                        <div className="text-xs text-muted-foreground">Minimum</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-accent">$249</div>
+                        <div className="text-xs text-muted-foreground">Maximum</div>
+                      </div>
+                    </div>
+
+                    <ul className="space-y-2">
+                      <li className="flex items-center gap-2 text-sm">
+                        <Lock className="h-4 w-4 text-accent flex-shrink-0" />
+                        <span>Job is locked to you only</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>No competition after award</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span>Pay nothing until you accept</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* NON-EXCLUSIVE PRICING FORMULA */}
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
-              <Card className="border-2 border-primary shadow-lg">
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-2xl">How Lead Pricing Works</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center space-y-6">
+              <h2 className="text-2xl font-bold text-center mb-8">Non-Exclusive Pricing Details</h2>
+              <Card className="border-primary/30">
+                <CardContent className="pt-6 text-center space-y-6">
                   <div className="bg-muted/50 rounded-xl p-6">
                     <div className="text-lg mb-4">
                       <span className="font-mono font-bold text-primary">
@@ -79,14 +191,7 @@ export default function Pricing() {
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Rounded to the nearest dollar
-                    </div>
-                  </div>
-
-                  <div className="flex justify-center gap-8">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">$49</div>
-                      <div className="text-sm text-muted-foreground">Maximum</div>
+                      Rounded to the nearest dollar • $49 maximum
                     </div>
                   </div>
                 </CardContent>
@@ -95,11 +200,12 @@ export default function Pricing() {
           </div>
         </section>
 
-        {/* EXAMPLES */}
-        <section className="py-16 bg-muted/30">
+        {/* NON-EXCLUSIVE EXAMPLES */}
+        <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl font-bold text-center mb-8">Pricing Examples</h2>
+              <h2 className="text-2xl font-bold text-center mb-2">Non-Exclusive Examples</h2>
+              <p className="text-center text-muted-foreground mb-8">Pay-per-lead pricing based on project budget</p>
               
               <div className="grid md:grid-cols-3 gap-6">
                 {PRICING_EXAMPLES.map((example, i) => (
@@ -128,6 +234,42 @@ export default function Pricing() {
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+
+              {/* EXCLUSIVE EXAMPLES */}
+              <h2 className="text-2xl font-bold text-center mt-16 mb-2">Exclusive Examples</h2>
+              <p className="text-center text-muted-foreground mb-8">Pay-on-acceptance referral fee based on your bid</p>
+              
+              <div className="grid md:grid-cols-3 gap-6">
+                <Card className="text-center border-accent/30">
+                  <CardContent className="pt-6">
+                    <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
+                    <div className="text-lg font-semibold mb-4">$3,000</div>
+                    <div className="text-sm text-muted-foreground mb-1">2% = $60</div>
+                    <div className="text-sm text-muted-foreground mb-4">Below minimum</div>
+                    <div className="text-4xl font-bold text-accent">$100</div>
+                    <div className="text-sm text-muted-foreground mt-1">(minimum)</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-accent/30">
+                  <CardContent className="pt-6">
+                    <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
+                    <div className="text-lg font-semibold mb-4">$7,500</div>
+                    <div className="text-sm text-muted-foreground mb-1">× 2%</div>
+                    <div className="text-sm text-muted-foreground mb-4">= $150</div>
+                    <div className="text-4xl font-bold text-accent">$150</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-accent/30">
+                  <CardContent className="pt-6">
+                    <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
+                    <div className="text-lg font-semibold mb-4">$20,000+</div>
+                    <div className="text-sm text-muted-foreground mb-1">2% = $400+</div>
+                    <div className="text-sm text-muted-foreground mb-4">Above maximum</div>
+                    <div className="text-4xl font-bold text-accent">$249</div>
+                    <div className="text-sm text-muted-foreground mt-1">(cap)</div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
