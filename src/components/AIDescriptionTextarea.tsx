@@ -51,7 +51,9 @@ export function AIDescriptionTextarea({
 
       if (error) {
         console.error("Enhancement error:", error);
-        toast.error("Failed to enhance. Please try again.");
+        // Show more actionable error message
+        const errorMsg = error.message || "Failed to enhance";
+        toast.error(`Enhancement failed: ${errorMsg}`);
         return;
       }
 
@@ -59,11 +61,14 @@ export function AIDescriptionTextarea({
         onChange(data.enhancedDescription);
         toast.success("Description enhanced!");
       } else if (data?.error) {
+        // Show the specific backend error message
         toast.error(data.error);
+      } else {
+        toast.error("No enhanced description received");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Enhancement error:", err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(err?.message || "Something went wrong. Please try again.");
     } finally {
       setIsEnhancing(false);
     }

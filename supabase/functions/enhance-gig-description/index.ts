@@ -10,6 +10,9 @@ interface EnhanceDescriptionRequest {
 const handler = async (req: Request): Promise<Response> => {
   const origin = req.headers.get("origin");
   
+  // Version fingerprint for deployment verification
+  console.log("enhance-gig-description v2026-01-15 using LOVABLE_API_KEY");
+  
   if (req.method === "OPTIONS") {
     return handleOptionsRequest(origin);
   }
@@ -28,6 +31,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const hasLovableKey = !!LOVABLE_API_KEY;
+    console.log(`Environment check: hasLovableKey=${hasLovableKey}`);
+    
     if (!LOVABLE_API_KEY) {
       console.warn("LOVABLE_API_KEY not configured");
       return new Response(
