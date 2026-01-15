@@ -137,6 +137,8 @@ export type Database = {
       bids: {
         Row: {
           amount: number
+          amount_max: number | null
+          amount_min: number | null
           award_method: string | null
           awarded: boolean | null
           awarded_at: string | null
@@ -159,6 +161,8 @@ export type Database = {
         }
         Insert: {
           amount: number
+          amount_max?: number | null
+          amount_min?: number | null
           award_method?: string | null
           awarded?: boolean | null
           awarded_at?: string | null
@@ -181,6 +185,8 @@ export type Database = {
         }
         Update: {
           amount?: number
+          amount_max?: number | null
+          amount_min?: number | null
           award_method?: string | null
           awarded?: boolean | null
           awarded_at?: string | null

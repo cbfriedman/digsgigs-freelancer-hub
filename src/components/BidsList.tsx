@@ -1,18 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
 import { EscrowContractDialog } from "@/components/EscrowContractDialog";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
-import { Loader2, Star, Percent, CreditCard } from "lucide-react";
+import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
+import { Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Bid {
   id: string;
   amount: number;
+  amount_min?: number;
+  amount_max?: number;
   timeline: string;
   proposal: string;
   status: string;
@@ -27,7 +29,20 @@ interface Bid {
     profile_image_url: string;
     average_rating: number;
     total_ratings: number;
+    years_experience?: number;
+    completion_rate?: number;
+    response_time_hours?: number;
+    verified?: boolean;
+    is_insured?: boolean;
+    is_bonded?: boolean;
+    is_licensed?: string;
+    skills?: string[];
+    certifications?: string[];
+    city?: string;
+    state?: string;
+    offers_free_estimates?: boolean;
   };
+  reference_count?: number;
 }
 
 interface BidsListProps {
@@ -57,14 +72,39 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
             profession,
             profile_image_url,
             average_rating,
-            total_ratings
+            total_ratings,
+            years_experience,
+            completion_rate,
+            response_time_hours,
+            verified,
+            is_insured,
+            is_bonded,
+            is_licensed,
+            skills,
+            certifications,
+            city,
+            state,
+            offers_free_estimates
           )
         `)
         .eq('gig_id', gigId)
         .order('amount', { ascending: true }); // Race to the bottom - lowest bids first
 
       if (error) throw error;
-      setBids((data as any) || []);
+      
+      // Fetch reference counts for each digger
+      const bidsWithRefs = await Promise.all(
+        ((data as any) || []).map(async (bid: any) => {
+          const { count } = await supabase
+            .from('references')
+            .select('*', { count: 'exact', head: true })
+            .eq('digger_id', bid.digger_profiles.id)
+            .eq('is_verified', true);
+          return { ...bid, reference_count: count || 0 };
+        })
+      );
+      
+      setBids(bidsWithRefs);
     } catch (error) {
       console.error('Error loading bids:', error);
     } finally {
@@ -148,10 +188,6 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
     }
   };
 
-  const getInitials = (handle: string) => {
-    return handle?.slice(0, 2).toUpperCase() || '??';
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -164,148 +200,85 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          No bids yet. Be the first to bid on this gig!
+          No proposals yet. Check back soon!
         </CardContent>
       </Card>
     );
   }
 
+  // Get lowest bid for display
+  const lowestBid = bids[0];
+  const lowestAmount = lowestBid.amount_min || lowestBid.amount;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h3 className="text-xl font-semibold">
-            Bids ({bids.length})
+            Proposals ({bids.length})
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Race to the bottom auction - Lowest bid shown first
+            Proposals are anonymous until you accept or unlock contact info
           </p>
         </div>
         {bids.length > 0 && (
           <Badge variant="secondary" className="text-lg px-4 py-2">
-            Lowest: ${bids[0].amount.toLocaleString()}
+            Lowest: ${lowestAmount.toLocaleString()}
           </Badge>
         )}
       </div>
       
       {bids.map((bid, index) => (
-        <Card 
+        <AnonymizedBidCard
           key={bid.id}
-          className={index === 0 ? "border-primary border-2 shadow-lg" : ""}
+          bid={bid}
+          bidderNumber={index + 1}
+          diggerProfile={bid.digger_profiles}
+          referenceCount={bid.reference_count}
+          isLowestBid={index === 0}
+          isOwner={isOwner}
+          acceptingId={accepting}
         >
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={bid.digger_profiles.profile_image_url} />
-                  <AvatarFallback>{getInitials(bid.digger_profiles.handle)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">{bid.digger_profiles.handle}</CardTitle>
-                    {index === 0 && bid.status === 'pending' && (
-                      <Badge variant="default" className="bg-primary">
-                        Lowest Bid
-                      </Badge>
-                    )}
-                  </div>
-                  <CardDescription>{bid.digger_profiles.profession}</CardDescription>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star className="w-4 h-4 fill-accent text-accent" />
-                    <span className="text-sm font-semibold">{bid.digger_profiles.average_rating || 0}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({bid.digger_profiles.total_ratings || 0} reviews)
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className={`text-2xl font-bold ${index === 0 ? 'text-primary' : 'text-foreground'}`}>
-                  ${bid.amount.toLocaleString()}
-                </div>
-                <div className="text-sm text-muted-foreground">{bid.timeline}</div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h4 className="font-semibold mb-2">Proposal</h4>
-              <p className="text-muted-foreground whitespace-pre-wrap">{bid.proposal}</p>
-            </div>
+          {/* Action Buttons */}
+          {isOwner && bid.status === 'pending' && (
+            <Button
+              onClick={() => handleAcceptBid(bid.id)}
+              disabled={accepting === bid.id}
+            >
+              {accepting === bid.id ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Accepting...
+                </>
+              ) : (
+                'Accept Proposal'
+              )}
+            </Button>
+          )}
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant={
-                  bid.status === 'accepted' ? 'default' :
-                  bid.status === 'rejected' ? 'destructive' :
-                  bid.status === 'completed' ? 'default' :
-                  bid.status === 'withdrawn' ? 'outline' :
-                  'secondary'
-                }>
-                  {bid.status}
-                </Badge>
-                {bid.pricing_model === 'success_based' ? (
-                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
-                    <Percent className="w-3 h-3 mr-1" />
-                    Success-based (2% fee)
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                    <CreditCard className="w-3 h-3 mr-1" />
-                    Paid lead
-                  </Badge>
-                )}
-              </div>
+          {isOwner && bid.status === 'accepted' && !bid.awarded && (
+            <ConfirmHireDialog
+              bidId={bid.id}
+              gigId={gigId}
+              diggerId={bid.digger_profiles.id}
+              diggerName={`Bidder #${index + 1}`}
+              bidAmount={bid.amount}
+              gigTitle={gigTitle}
+              pricingModel={bid.pricing_model}
+              onConfirm={loadBids}
+            />
+          )}
 
-              <div className="flex gap-2">
-                {isOwner && bid.status === 'pending' && (
-                  <Button
-                    onClick={() => handleAcceptBid(bid.id)}
-                    disabled={accepting === bid.id}
-                  >
-                    {accepting === bid.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Accepting...
-                      </>
-                    ) : (
-                      'Accept Bid'
-                    )}
-                  </Button>
-                )}
-
-                {isOwner && bid.status === 'accepted' && !bid.awarded && (
-                  <ConfirmHireDialog
-                    bidId={bid.id}
-                    gigId={gigId}
-                    diggerId={bid.digger_profiles.id}
-                    diggerName={bid.digger_profiles.handle}
-                    bidAmount={bid.amount}
-                    gigTitle={gigTitle}
-                    pricingModel={bid.pricing_model}
-                    onConfirm={loadBids}
-                  />
-                )}
-
-                {isOwner && bid.awarded && (
-                  <Badge variant="default" className="bg-green-600">
-                    Hired ✓
-                  </Badge>
-                )}
-
-                {isOwner && bid.status === 'accepted' && !isFixedPrice && bid.awarded && (
-                  <CompleteWorkDialog
-                    bidId={bid.id}
-                    bidAmount={bid.amount}
-                    diggerId={bid.digger_profiles.id}
-                    gigTitle={gigTitle}
-                    onComplete={loadBids}
-                  />
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {isOwner && bid.status === 'accepted' && !isFixedPrice && bid.awarded && (
+            <CompleteWorkDialog
+              bidId={bid.id}
+              bidAmount={bid.amount}
+              diggerId={bid.digger_profiles.id}
+              gigTitle={gigTitle}
+              onComplete={loadBids}
+            />
+          )}
+        </AnonymizedBidCard>
       ))}
 
       {selectedBid && (
