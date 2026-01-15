@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { ArrowLeft, DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { BidForm } from "@/components/BidForm";
+import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
 import { BidsList } from "@/components/BidsList";
 import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
 import SEOHead from "@/components/SEOHead";
@@ -557,38 +557,17 @@ const GigDetail = () => {
             {/* Bid Form */}
             {isDigger && diggerId && gig.status === 'open' && !existingBid && (
               <div id="bid">
-                <Card className="border-2 border-primary/20 bg-primary/5">
-                  <CardHeader>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      <Award className="w-5 h-5 text-primary" />
-                      Ready to Bid?
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      This project is open for bidding. Submit your proposal to get started!
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="w-full mb-4"
-                      onClick={handleSendMessage}
-                    >
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Send Message to Client
-                    </Button>
-                    <BidForm
-                      gigId={id!}
-                      diggerId={diggerId}
-                      onSuccess={() => {
-                        toast({
-                          title: "Bid submitted!",
-                          description: "The client will review your bid.",
-                        });
-                        loadData();
-                      }}
-                    />
-                  </CardContent>
-                </Card>
+                <BidSubmissionTemplate
+                  gigId={id!}
+                  diggerId={diggerId}
+                  onSuccess={() => {
+                    toast({
+                      title: "Proposal submitted!",
+                      description: "The client will review your proposal.",
+                    });
+                    loadData();
+                  }}
+                />
               </div>
             )}
 
