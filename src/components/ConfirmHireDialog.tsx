@@ -20,6 +20,7 @@ interface ConfirmHireDialogProps {
   diggerName: string;
   bidAmount: number;
   gigTitle: string;
+  pricingModel?: string;
   onConfirm?: () => void;
 }
 
@@ -30,8 +31,11 @@ export function ConfirmHireDialog({
   diggerName,
   bidAmount,
   gigTitle,
+  pricingModel = "pay_per_lead",
   onConfirm,
 }: ConfirmHireDialogProps) {
+  const isSuccessBased = pricingModel === "success_based";
+  const referralFee = isSuccessBased ? Math.min(bidAmount * 0.02, 249) : 0;
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -81,7 +85,12 @@ export function ConfirmHireDialog({
         <DialogHeader>
           <DialogTitle>Confirm Hire</DialogTitle>
           <DialogDescription>
-            Are you ready to officially award this lead to {diggerName}?
+            Are you ready to officially award this job to {diggerName}?
+            {isSuccessBased && (
+              <span className="block mt-2 text-orange-600 font-medium">
+                A one-time 2% referral fee (${referralFee.toFixed(2)}) will be charged to {diggerName}.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 

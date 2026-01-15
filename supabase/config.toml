@@ -266,3 +266,6 @@ verify_jwt = false
 
 [functions.send-otp]
 verify_jwt = false
+
+[functions.charge-referral-fee]
+verify_jwt = true

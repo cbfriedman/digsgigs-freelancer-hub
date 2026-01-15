@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
 import { EscrowContractDialog } from "@/components/EscrowContractDialog";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
-import { Loader2, Star } from "lucide-react";
+import { Loader2, Star, Percent, CreditCard } from "lucide-react";
 
 interface Bid {
   id: string;
@@ -19,6 +19,7 @@ interface Bid {
   created_at: string;
   awarded: boolean;
   awarded_at: string | null;
+  pricing_model?: string;
   digger_profiles: {
     id: string;
     handle: string;
@@ -233,15 +234,28 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
             </div>
 
             <div className="flex items-center justify-between">
-              <Badge variant={
-                bid.status === 'accepted' ? 'default' :
-                bid.status === 'rejected' ? 'destructive' :
-                bid.status === 'completed' ? 'default' :
-                bid.status === 'withdrawn' ? 'outline' :
-                'secondary'
-              }>
-                {bid.status}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant={
+                  bid.status === 'accepted' ? 'default' :
+                  bid.status === 'rejected' ? 'destructive' :
+                  bid.status === 'completed' ? 'default' :
+                  bid.status === 'withdrawn' ? 'outline' :
+                  'secondary'
+                }>
+                  {bid.status}
+                </Badge>
+                {bid.pricing_model === 'success_based' ? (
+                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                    <Percent className="w-3 h-3 mr-1" />
+                    Success-based (2% fee)
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                    <CreditCard className="w-3 h-3 mr-1" />
+                    Paid lead
+                  </Badge>
+                )}
+              </div>
 
               <div className="flex gap-2">
                 {isOwner && bid.status === 'pending' && (
@@ -268,6 +282,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
                     diggerName={bid.digger_profiles.handle}
                     bidAmount={bid.amount}
                     gigTitle={gigTitle}
+                    pricingModel={bid.pricing_model}
                     onConfirm={loadBids}
                   />
                 )}

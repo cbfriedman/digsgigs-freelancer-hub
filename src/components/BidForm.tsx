@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Info } from "lucide-react";
+import { Loader2, Info, Percent, CreditCard, AlertCircle } from "lucide-react";
 import { z } from "zod";
 
 // SECURITY: Input validation schema
@@ -26,19 +27,30 @@ const bidSchema = z.object({
     .max(5000, "Proposal must be less than 5000 characters"),
 });
 
+// Referral fee configuration - must match edge function
+const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_CAP = 249; // $249 cap
+
 interface BidFormProps {
   gigId: string;
   diggerId: string;
   onSuccess: () => void;
+  initialPricingModel?: "pay_per_lead" | "success_based";
 }
 
-export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
+export const BidForm = ({ gigId, diggerId, onSuccess, initialPricingModel = "pay_per_lead" }: BidFormProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const [timeline, setTimeline] = useState("");
   const [proposal, setProposal] = useState("");
   const [includesEscrowCost, setIncludesEscrowCost] = useState(false);
+  const [pricingModel] = useState<"pay_per_lead" | "success_based">(initialPricingModel);
+
+  const calculateReferralFee = (bidAmount: number): number => {
+    const fee = bidAmount * REFERRAL_FEE_RATE;
+    return Math.min(fee, REFERRAL_FEE_CAP);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,15 +74,24 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
         proposal: proposal,
       });
 
-      const { data: bidData, error } = await supabase
+      const bidData: any = {
+        gig_id: gigId,
+        digger_id: diggerId,
+        amount: validated.amount,
+        timeline: validated.timeline,
+        proposal: validated.proposal,
+        pricing_model: pricingModel,
+      };
+
+      // Add referral fee info for success-based bids
+      if (pricingModel === "success_based") {
+        bidData.referral_fee_rate = REFERRAL_FEE_RATE;
+        bidData.referral_fee_cap_cents = REFERRAL_FEE_CAP * 100;
+      }
+
+      const { data: insertedBid, error } = await supabase
         .from('bids' as any)
-        .insert({
-          gig_id: gigId,
-          digger_id: diggerId,
-          amount: validated.amount,
-          timeline: validated.timeline,
-          proposal: validated.proposal,
-        } as any)
+        .insert(bidData)
         .select()
         .single();
 
@@ -81,11 +102,12 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
         await supabase.functions.invoke('send-bid-notification', {
           body: {
             type: 'submitted',
-            bidId: (bidData as any)?.id,
+            bidId: (insertedBid as any)?.id,
             gigId,
             diggerId,
             amount: validated.amount,
             timeline: validated.timeline,
+            pricingModel,
           },
         });
       } catch (emailError) {
@@ -95,7 +117,9 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
 
       toast({
         title: "Bid submitted!",
-        description: "Your bid has been submitted successfully.",
+        description: pricingModel === "success_based"
+          ? "Your bid has been submitted. A 2% referral fee will be charged only if you're selected."
+          : "Your bid has been submitted successfully.",
       });
 
       // Track custom event for bid submission
@@ -103,11 +127,12 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
       if (win.fbq) {
         try {
           win.fbq('trackCustom', 'SubmitBid', {
-            bid_id: (bidData as any)?.id,
+            bid_id: (insertedBid as any)?.id,
             gig_id: gigId,
             digger_id: diggerId,
             amount: validated.amount,
             currency: 'USD',
+            pricing_model: pricingModel,
           });
         } catch (error) {
           console.warn('Facebook Pixel: Error tracking SubmitBid event', error);
@@ -137,15 +162,50 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
     }
   };
 
+  const parsedAmount = parseFloat(amount) || 0;
+  const estimatedFee = calculateReferralFee(parsedAmount);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Submit Your Bid</CardTitle>
-        <CardDescription>
-          Enter your proposal details to bid on this gig
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Submit Your Bid</CardTitle>
+            <CardDescription>
+              Enter your proposal details to bid on this gig
+            </CardDescription>
+          </div>
+          {pricingModel === "success_based" ? (
+            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+              <Percent className="w-3 h-3 mr-1" />
+              Success-Based (2%)
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <CreditCard className="w-3 h-3 mr-1" />
+              Lead Unlocked
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
+        {pricingModel === "success_based" && (
+          <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-orange-800 dark:text-orange-200 mb-1">
+                  Success-Based Pricing Selected
+                </p>
+                <p className="text-orange-700 dark:text-orange-300">
+                  You pay nothing upfront. If you're awarded this job, a one-time 2% referral fee 
+                  will be charged based on your bid amount (capped at ${REFERRAL_FEE_CAP}).
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="amount">Your Bid Amount ($)</Label>
@@ -159,6 +219,12 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
               onChange={(e) => setAmount(e.target.value)}
               required
             />
+            {pricingModel === "success_based" && parsedAmount > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Referral fee if selected: ${estimatedFee.toFixed(2)}
+                {estimatedFee >= REFERRAL_FEE_CAP && " (capped)"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -188,24 +254,26 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
             </p>
           </div>
 
-          <div className="space-y-3 pt-2 pb-2">
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="includesEscrowCost"
-                checked={includesEscrowCost}
-                onCheckedChange={(checked) => setIncludesEscrowCost(checked as boolean)}
-              />
-              <div className="flex-1">
-                <Label htmlFor="includesEscrowCost" className="cursor-pointer leading-relaxed">
-                  My bid includes escrow costs (if applicable)
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <Info className="inline-block h-3 w-3 mr-1" />
-                  If the gigger requests escrow protection, an 8% fee will apply. Check this if you've added that cost to your bid amount.
-                </p>
+          {pricingModel === "pay_per_lead" && (
+            <div className="space-y-3 pt-2 pb-2">
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="includesEscrowCost"
+                  checked={includesEscrowCost}
+                  onCheckedChange={(checked) => setIncludesEscrowCost(checked as boolean)}
+                />
+                <div className="flex-1">
+                  <Label htmlFor="includesEscrowCost" className="cursor-pointer leading-relaxed">
+                    My bid includes escrow costs (if applicable)
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <Info className="inline-block h-3 w-3 mr-1" />
+                    If the gigger requests escrow protection, an 8% fee will apply. Check this if you've added that cost to your bid amount.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
@@ -217,6 +285,12 @@ export const BidForm = ({ gigId, diggerId, onSuccess }: BidFormProps) => {
               'Submit Bid'
             )}
           </Button>
+
+          {pricingModel === "success_based" && (
+            <p className="text-xs text-center text-muted-foreground">
+              By submitting, you agree to pay a 2% referral fee (max ${REFERRAL_FEE_CAP}) if you're awarded this job.
+            </p>
+          )}
         </form>
       </CardContent>
     </Card>
