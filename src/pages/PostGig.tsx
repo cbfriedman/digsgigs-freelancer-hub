@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, MessageSquare, FileText } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -17,14 +16,11 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping } from "@/config/giggerProblems";
-import { GigAssistant } from "@/components/GigAssistant";
-import { GigData } from "@/hooks/useGigAssistant";
 
 const PostGig = () => {
   const navigate = useNavigate();
   const { trackEvent, isConfigured } = useFacebookPixel();
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<"chat" | "form">("chat");
   
   // Form fields - Problem-based approach
   const [selectedProblemId, setSelectedProblemId] = useState("");
@@ -40,8 +36,6 @@ const PostGig = () => {
   // High-risk warning state
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
-  const [pendingAssistantData, setPendingAssistantData] = useState<GigData | null>(null);
-  const [pendingProblemId, setPendingProblemId] = useState<string | null>(null);
 
   // Get current problem option for clarifying question
   const selectedProblem = getProblemById(selectedProblemId);
@@ -115,79 +109,24 @@ const PostGig = () => {
     }
   };
 
-  const submitGig = async () => {
-    await submitGigWithData();
-  };
-
   const handleProblemChange = (value: string) => {
     setSelectedProblemId(value);
     setClarifyingAnswer(""); // Reset clarifying answer when problem changes
   };
 
-  // Map assistant problem IDs to form problem IDs
-  const mapAssistantProblemId = (assistantProblemId: string): string => {
-    const mapping: Record<string, string> = {
-      "build-website": "build-website",
-      "build-webapp": "build-webapp",
-      "design": "design-something",
-      "marketing": "get-customers",
-      "content": "create-content",
-      "automation": "automate-ai",
-      "business-systems": "business-systems",
-      "other": "build-website", // Default fallback
-    };
-    return mapping[assistantProblemId] || assistantProblemId;
-  };
-
-  // Handle data from GigAssistant component
-  const handleAssistantSubmit = async (data: GigData) => {
-    // Map assistant data to form fields
-    const mappedProblemId = mapAssistantProblemId(data.problemId);
-    setSelectedProblemId(mappedProblemId);
-    setClarifyingAnswer(data.clarifyingAnswer || "");
-    setDescription(data.description || "");
-    setBudgetMin(data.budgetMin?.toString() || "");
-    setBudgetMax(data.budgetMax?.toString() || "");
-    setTimeline(data.timeline || "");
-    setClientName(data.clientName || "");
-    setClientEmail(data.clientEmail || "");
-    setClientPhone(data.clientPhone || "");
-
-    // Validate and check for high-risk keywords
-    if (!data.description) {
-      toast.error("Description is required");
-      return;
-    }
-
-    const riskCheck = checkHighRiskKeywords(data.description);
-    
-    if (riskCheck.hasRisk) {
-      setMatchedKeywords(riskCheck.matchedKeywords);
-      setPendingAssistantData(data);
-      setPendingProblemId(mappedProblemId);
-      setShowWarningDialog(true);
-      // Store the data to submit after warning is handled
-      return;
-    }
-
-    // If all good, submit immediately
-    await submitGigWithData(data, mappedProblemId);
-  };
-
-  // Submit gig with data (can be called from form or assistant)
-  const submitGigWithData = async (data?: GigData, problemIdOverride?: string) => {
+  // Submit gig with form data
+  const submitGig = async () => {
     setLoading(true);
     try {
-      // Use provided data or form state
-      const finalProblemId = problemIdOverride || selectedProblemId;
-      const finalDescription = data?.description || description;
-      const finalBudgetMin = data?.budgetMin || parseCurrency(budgetMin);
-      const finalBudgetMax = data?.budgetMax || parseCurrency(budgetMax);
-      const finalTimeline = data?.timeline || timeline;
-      const finalClientName = data?.clientName || clientName;
-      const finalClientEmail = data?.clientEmail || clientEmail;
-      const finalClientPhone = data?.clientPhone || clientPhone;
-      const finalClarifyingAnswer = data?.clarifyingAnswer || clarifyingAnswer;
+      const finalProblemId = selectedProblemId;
+      const finalDescription = description;
+      const finalBudgetMin = parseCurrency(budgetMin);
+      const finalBudgetMax = parseCurrency(budgetMax);
+      const finalTimeline = timeline;
+      const finalClientName = clientName;
+      const finalClientEmail = clientEmail;
+      const finalClientPhone = clientPhone;
+      const finalClarifyingAnswer = clarifyingAnswer;
 
       // No authentication required - allow anonymous posting (Craigslist model)
       const consumerId = null;
@@ -301,27 +240,7 @@ const PostGig = () => {
           </CardHeader>
 
           <CardContent className="pt-6">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "chat" | "form")} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="chat" className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Chat with AI
-                </TabsTrigger>
-                <TabsTrigger value="form" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Fill Form
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="chat" className="mt-0">
-                <GigAssistant 
-                  onSubmit={handleAssistantSubmit}
-                  onSwitchToForm={() => setViewMode("form")}
-                />
-              </TabsContent>
-
-              <TabsContent value="form" className="mt-0">
-                <form onSubmit={handleSubmitCheck} className="space-y-6">
+            <form onSubmit={handleSubmitCheck} className="space-y-6">
               
               {/* Step 1: Problem Selection */}
               <div className="space-y-2">
@@ -517,8 +436,6 @@ const PostGig = () => {
                 )}
               </Button>
             </form>
-              </TabsContent>
-            </Tabs>
           </CardContent>
         </Card>
       </main>
@@ -532,20 +449,10 @@ const PostGig = () => {
         matchedKeywords={matchedKeywords}
         onContinue={async () => {
           setShowWarningDialog(false);
-          if (pendingAssistantData && pendingProblemId) {
-            // Submit with assistant data
-            await submitGigWithData(pendingAssistantData, pendingProblemId);
-            setPendingAssistantData(null);
-            setPendingProblemId(null);
-          } else {
-            // Submit with form data
-            await submitGig();
-          }
+          await submitGig();
         }}
         onCancel={() => {
           setShowWarningDialog(false);
-          setPendingAssistantData(null);
-          setPendingProblemId(null);
         }}
       />
     </div>
