@@ -4,9 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Eye, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Eye, Info, MessageCircle, CheckCircle, Award, Loader2 } from "lucide-react";
 import { BidSubmissionTemplateDemo } from "@/components/BidSubmissionTemplateDemo";
 import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
+import { AskQuestionDialog } from "@/components/AskQuestionDialog";
+import { useToast } from "@/hooks/use-toast";
 
 // Sample bid data for demonstration
 const sampleBids = [
@@ -125,11 +128,39 @@ const sampleBids = [
 ];
 
 export default function BidTemplatePreview() {
+  const { toast } = useToast();
   const [pricingModel, setPricingModel] = useState<"non_exclusive" | "exclusive">("exclusive");
   const [bidStatus, setBidStatus] = useState("pending");
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [askQuestionOpen, setAskQuestionOpen] = useState(false);
+  const [selectedBidder, setSelectedBidder] = useState<number>(1);
 
   // Find the lowest bid for badge display
   const lowestBidAmount = Math.min(...sampleBids.map((b) => b.amountMin));
+
+  // Demo action handlers
+  const handleAcceptProposal = (bidId: string, bidderNumber: number) => {
+    setAcceptingId(bidId);
+    setTimeout(() => {
+      setAcceptingId(null);
+      toast({
+        title: "Demo Mode",
+        description: `Would accept proposal from Bidder #${bidderNumber}. In production, this triggers the award flow.`,
+      });
+    }, 1000);
+  };
+
+  const handleAwardJob = (bidId: string, bidderNumber: number) => {
+    toast({
+      title: "Demo Mode",
+      description: `Would award job to Bidder #${bidderNumber}. In production, this initiates the exclusive engagement.`,
+    });
+  };
+
+  const handleAskQuestion = (bidderNumber: number) => {
+    setSelectedBidder(bidderNumber);
+    setAskQuestionOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -218,46 +249,121 @@ export default function BidTemplatePreview() {
                 Showing {sampleBids.length} sample bids
               </div>
               
-              <div className="grid gap-4">
-                {sampleBids.map((bid) => (
-                  <AnonymizedBidCard
-                    key={bid.id}
-                    bid={{
-                      id: bid.id,
-                      amount: (bid.amountMin + bid.amountMax) / 2,
-                      amount_min: bid.amountMin,
-                      amount_max: bid.amountMax,
-                      timeline: bid.timeline,
-                      proposal: bid.proposal,
-                      status: bidStatus === "all" ? bid.status : bidStatus,
-                      pricing_model: bid.pricingModel,
-                      created_at: new Date().toISOString(),
-                    }}
-                    diggerProfile={{
-                      id: bid.id,
-                      profession: bid.profile.profession,
-                      years_experience: bid.profile.years_experience,
-                      average_rating: bid.profile.average_rating,
-                      total_ratings: bid.profile.total_ratings,
-                      completion_rate: bid.profile.completion_rate,
-                      response_time_hours: bid.profile.response_time_hours,
-                      verified: bid.profile.verified,
-                      is_insured: bid.profile.is_insured,
-                      is_bonded: bid.profile.is_bonded,
-                      is_licensed: bid.profile.is_licensed,
-                      skills: bid.profile.skills,
-                      certifications: bid.profile.certifications,
-                      city: bid.profile.city,
-                      state: bid.profile.state,
-                      offers_free_estimates: bid.profile.offers_free_estimates,
-                    }}
-                    bidderNumber={bid.bidderNumber}
-                    referenceCount={bid.profile.reference_count}
-                    isLowestBid={bid.amountMin === lowestBidAmount}
-                    isOwner={false}
-                  />
-                ))}
+            <div className="grid gap-4">
+                {sampleBids.map((bid) => {
+                  const currentStatus = bidStatus === "all" ? bid.status : bidStatus;
+                  const isExclusive = bid.pricingModel === "exclusive";
+                  const isPending = currentStatus === "pending";
+                  const isAccepted = currentStatus === "accepted";
+                  
+                  return (
+                    <AnonymizedBidCard
+                      key={bid.id}
+                      bid={{
+                        id: bid.id,
+                        amount: (bid.amountMin + bid.amountMax) / 2,
+                        amount_min: bid.amountMin,
+                        amount_max: bid.amountMax,
+                        timeline: bid.timeline,
+                        proposal: bid.proposal,
+                        status: currentStatus,
+                        pricing_model: bid.pricingModel,
+                        created_at: new Date().toISOString(),
+                      }}
+                      diggerProfile={{
+                        id: bid.id,
+                        profession: bid.profile.profession,
+                        years_experience: bid.profile.years_experience,
+                        average_rating: bid.profile.average_rating,
+                        total_ratings: bid.profile.total_ratings,
+                        completion_rate: bid.profile.completion_rate,
+                        response_time_hours: bid.profile.response_time_hours,
+                        verified: bid.profile.verified,
+                        is_insured: bid.profile.is_insured,
+                        is_bonded: bid.profile.is_bonded,
+                        is_licensed: bid.profile.is_licensed,
+                        skills: bid.profile.skills,
+                        certifications: bid.profile.certifications,
+                        city: bid.profile.city,
+                        state: bid.profile.state,
+                        offers_free_estimates: bid.profile.offers_free_estimates,
+                      }}
+                      bidderNumber={bid.bidderNumber}
+                      referenceCount={bid.profile.reference_count}
+                      isLowestBid={bid.amountMin === lowestBidAmount}
+                      isOwner={true}
+                    >
+                      {/* Ask Question Button - always visible for owners */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAskQuestion(bid.bidderNumber)}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                        Ask Question
+                      </Button>
+
+                      {/* Accept Proposal - for non-exclusive pending bids */}
+                      {!isExclusive && isPending && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAcceptProposal(bid.id, bid.bidderNumber)}
+                          disabled={acceptingId === bid.id}
+                        >
+                          {acceptingId === bid.id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              Accepting...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Accept Proposal
+                            </>
+                          )}
+                        </Button>
+                      )}
+
+                      {/* Award Job - for exclusive pending bids */}
+                      {isExclusive && isPending && (
+                        <Button
+                          size="sm"
+                          className="bg-orange-600 hover:bg-orange-700"
+                          onClick={() => handleAwardJob(bid.id, bid.bidderNumber)}
+                        >
+                          <Award className="h-4 w-4 mr-1" />
+                          Award Job
+                        </Button>
+                      )}
+
+                      {/* Confirm Hire - for accepted bids */}
+                      {isAccepted && (
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => toast({
+                            title: "Demo Mode",
+                            description: `Would confirm hire for Bidder #${bid.bidderNumber}. In production, this finalizes the engagement.`,
+                          })}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Confirm Hire
+                        </Button>
+                      )}
+                    </AnonymizedBidCard>
+                  );
+                })}
               </div>
+
+              {/* Ask Question Dialog */}
+              <AskQuestionDialog
+                open={askQuestionOpen}
+                onOpenChange={setAskQuestionOpen}
+                bidderNumber={selectedBidder}
+                gigId="demo-gig-id"
+                bidId="demo-bid-id"
+                diggerId="demo-digger-id"
+              />
             </div>
 
             <Separator className="my-8" />
