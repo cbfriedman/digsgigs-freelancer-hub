@@ -19,7 +19,8 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 
 interface Gig {
   id: string;
-  consumer_id: string;
+  consumer_id: string | null;
+  client_name: string | null;
   title: string;
   description: string;
   budget_min: number | null;
@@ -34,7 +35,7 @@ interface Gig {
   } | null;
   profiles: {
     full_name: string | null;
-  };
+  } | null;
 }
 
 const GigDetail = () => {
@@ -227,6 +228,17 @@ const GigDetail = () => {
     }
 
     try {
+      // For anonymous gigs (consumer_id is null), we can't create conversations
+      // Diggers should contact via email/phone instead
+      if (!gig.consumer_id) {
+        toast({
+          title: "Contact Information",
+          description: "This is an anonymous posting. Please use the contact information provided when you unlock the lead.",
+          variant: "default",
+        });
+        return;
+      }
+
       // Check if conversation already exists
       const { data: existingConv } = await supabase
         .from("conversations" as any)
@@ -405,7 +417,7 @@ const GigDetail = () => {
                 <div>
                   <div className="font-semibold mb-2">Posted by</div>
                   <div className="text-muted-foreground">
-                    {gig.profiles.full_name || 'Anonymous'}
+                    {gig.profiles?.full_name || gig.client_name || 'Anonymous'}
                   </div>
                 </div>
               </CardContent>
