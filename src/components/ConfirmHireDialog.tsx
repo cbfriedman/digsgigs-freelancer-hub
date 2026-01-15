@@ -11,7 +11,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle, Lock, AlertTriangle } from "lucide-react";
+
+// Referral fee configuration
+const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_MIN = 100; // $100 minimum
+const REFERRAL_FEE_CAP = 249; // $249 cap
 
 interface ConfirmHireDialogProps {
   bidId: string;
@@ -34,8 +39,11 @@ export function ConfirmHireDialog({
   pricingModel = "pay_per_lead",
   onConfirm,
 }: ConfirmHireDialogProps) {
-  const isSuccessBased = pricingModel === "success_based";
-  const referralFee = isSuccessBased ? Math.min(bidAmount * 0.02, 249) : 0;
+  const isExclusive = pricingModel === "success_based";
+  const calculatedFee = bidAmount * REFERRAL_FEE_RATE;
+  const referralFee = isExclusive 
+    ? Math.max(REFERRAL_FEE_MIN, Math.min(calculatedFee, REFERRAL_FEE_CAP)) 
+    : 0;
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -55,8 +63,10 @@ export function ConfirmHireDialog({
       if (error) throw error;
 
       toast({
-        title: "Hire Confirmed!",
-        description: `${diggerName} has been awarded the lead. They can now start work.`,
+        title: isExclusive ? "Exclusive Award Confirmed!" : "Hire Confirmed!",
+        description: isExclusive 
+          ? `${diggerName} has been exclusively awarded this job. They'll be notified to accept and start.`
+          : `${diggerName} has been awarded the lead. They can now start work.`,
       });
 
       setOpen(false);
@@ -78,18 +88,26 @@ export function ConfirmHireDialog({
       <DialogTrigger asChild>
         <Button variant="default" size="sm" className="gap-2">
           <CheckCircle className="h-4 w-4" />
-          Confirm Hire
+          {isExclusive ? "Award Job (Exclusive)" : "Confirm Hire"}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Confirm Hire</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {isExclusive && <Lock className="h-5 w-5 text-orange-500" />}
+            {isExclusive ? "Confirm Exclusive Award" : "Confirm Hire"}
+          </DialogTitle>
           <DialogDescription>
-            Are you ready to officially award this job to {diggerName}?
-            {isSuccessBased && (
-              <span className="block mt-2 text-orange-600 font-medium">
-                A one-time 2% referral fee (${referralFee.toFixed(2)}) will be charged to {diggerName}.
+            {isExclusive ? (
+              <span className="block mt-2">
+                You are awarding this job to <strong>{diggerName}</strong>.
+                <br />
+                <span className="text-orange-600 font-medium mt-2 block">
+                  This job will become exclusive and cannot be awarded to any other professional.
+                </span>
               </span>
+            ) : (
+              `Are you ready to officially award this job to ${diggerName}?`
             )}
           </DialogDescription>
         </DialogHeader>
@@ -110,31 +128,48 @@ export function ConfirmHireDialog({
             </div>
           </div>
 
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p>✅ The digger will be notified immediately</p>
-            <p>✅ This lead will be marked as awarded</p>
-            <p>✅ Other diggers will no longer have access</p>
-            <p>✅ A 48-hour lock period will begin</p>
-            {bidAmount > 0 && (
-              <p className="text-xs pt-2 border-t">
-                Note: If this was a telemarketing-sourced lead, the telemarketer will receive their commission.
-              </p>
-            )}
-          </div>
+          {isExclusive ? (
+            <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 p-4 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm space-y-2">
+                  <p className="font-medium text-orange-800 dark:text-orange-200">
+                    Exclusive Award Terms
+                  </p>
+                  <ul className="text-orange-700 dark:text-orange-300 space-y-1">
+                    <li>• This job will become exclusive to {diggerName}</li>
+                    <li>• No other professionals can be awarded this job</li>
+                    <li>• The selected Digger will pay a one-time referral fee (${referralFee.toFixed(0)}) when they accept and are ready to start</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>✅ The digger will be notified immediately</p>
+              <p>✅ This lead will be marked as awarded</p>
+              <p>✅ Other diggers will no longer have access</p>
+              <p>✅ A 48-hour lock period will begin</p>
+            </div>
+          )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => setOpen(false)} disabled={confirming}>
             Cancel
           </Button>
-          <Button onClick={handleConfirmHire} disabled={confirming}>
+          <Button 
+            onClick={handleConfirmHire} 
+            disabled={confirming}
+            className={isExclusive ? "bg-orange-500 hover:bg-orange-600" : ""}
+          >
             {confirming ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Confirming...
               </>
             ) : (
-              "Confirm Hire"
+              isExclusive ? "Confirm Award" : "Confirm Hire"
             )}
           </Button>
         </DialogFooter>
