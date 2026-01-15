@@ -75,9 +75,9 @@ const Index = () => {
 
   // Pricing examples for the homepage
   const pricingExamples = [
-    { budget: "$1,200 project", price: "$35" },
-    { budget: "$2,000 project", price: "$50" },
-    { budget: "$5,000+ project", price: "$65 (cap)" },
+    { budget: "$500 project", price: "$15" },
+    { budget: "$1,500 project", price: "$45" },
+    { budget: "$2,000+ project", price: "$49 (cap)" },
   ];
 
   return (
@@ -385,7 +385,7 @@ const Index = () => {
             <p className="text-lg text-muted-foreground mb-8">
               Lead price = 3% of project's average budget
               <br />
-              <span className="text-sm">$35 minimum, $65 maximum</span>
+              <span className="text-sm">$49 maximum</span>
             </p>
 
             <div className="grid sm:grid-cols-3 gap-4 mb-8">
