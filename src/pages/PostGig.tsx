@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
@@ -24,7 +25,7 @@ const PostGig = () => {
   
   // Form fields - Problem-based approach
   const [selectedProblemId, setSelectedProblemId] = useState("");
-  const [clarifyingAnswer, setClarifyingAnswer] = useState("");
+  const [clarifyingAnswers, setClarifyingAnswers] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
@@ -66,8 +67,8 @@ const PostGig = () => {
       toast.error("Please select what you're trying to do");
       return false;
     }
-    if (!clarifyingAnswer) {
-      toast.error("Please answer the follow-up question");
+    if (clarifyingAnswers.length === 0) {
+      toast.error("Please select at least one option for the follow-up question");
       return false;
     }
     if (!description.trim()) {
@@ -111,7 +112,15 @@ const PostGig = () => {
 
   const handleProblemChange = (value: string) => {
     setSelectedProblemId(value);
-    setClarifyingAnswer(""); // Reset clarifying answer when problem changes
+    setClarifyingAnswers([]); // Reset clarifying answers when problem changes
+  };
+
+  const handleClarifyingToggle = (value: string, checked: boolean) => {
+    if (checked) {
+      setClarifyingAnswers(prev => [...prev, value]);
+    } else {
+      setClarifyingAnswers(prev => prev.filter(v => v !== value));
+    }
   };
 
   // Submit gig with form data
@@ -126,7 +135,7 @@ const PostGig = () => {
       const finalClientName = clientName;
       const finalClientEmail = clientEmail;
       const finalClientPhone = clientPhone;
-      const finalClarifyingAnswer = clarifyingAnswer;
+      const finalClarifyingAnswers = clarifyingAnswers;
 
       // No authentication required - allow anonymous posting (Craigslist model)
       const consumerId = null;
@@ -162,10 +171,13 @@ const PostGig = () => {
         }
       }
       
-      // Build title from problem + clarifying answer
+      // Build title from problem + clarifying answers
       const problem = getProblemById(finalProblemId);
-      const clarifyingOption = problem?.clarifyingOptions.find(o => o.value === finalClarifyingAnswer);
-      const title = `${problem?.label || 'Project'} - ${clarifyingOption?.label || ''}`.trim();
+      const clarifyingLabels = finalClarifyingAnswers
+        .map(answer => problem?.clarifyingOptions.find(o => o.value === answer)?.label)
+        .filter(Boolean)
+        .join(', ');
+      const title = `${problem?.label || 'Project'}${clarifyingLabels ? ` - ${clarifyingLabels}` : ''}`.trim();
 
       const { data: gigData, error: gigError } = await supabase
         .from("gigs")
@@ -173,7 +185,7 @@ const PostGig = () => {
           consumer_id: consumerId,
           title: title,
           description: finalDescription.trim(),
-          requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingOption?.label}\nCategory: ${category?.name || "Not specified"}`,
+          requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingLabels || 'Not specified'}\nCategory: ${category?.name || "Not specified"}`,
           budget_min: finalBudgetMin,
           budget_max: finalBudgetMax,
           timeline: TIMELINE_OPTIONS.find(t => t.value === finalTimeline)?.label || finalTimeline,
@@ -261,24 +273,34 @@ const PostGig = () => {
                 </Select>
               </div>
 
-              {/* Step 2: Clarifying Question (Conditional) */}
+              {/* Step 2: Clarifying Question (Conditional) - Multi-select */}
               {selectedProblem && (
-                <div className="space-y-2 animate-in fade-in-50 duration-300">
-                  <Label htmlFor="clarifying">
+                <div className="space-y-3 animate-in fade-in-50 duration-300">
+                  <Label>
                     {selectedProblem.clarifyingQuestion} <span className="text-destructive">*</span>
+                    <span className="text-xs text-muted-foreground ml-2">(Select all that apply)</span>
                   </Label>
-                  <Select value={clarifyingAnswer} onValueChange={setClarifyingAnswer}>
-                    <SelectTrigger id="clarifying" className="w-full">
-                      <SelectValue placeholder="Select an option..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedProblem.clarifyingOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
+                  <div className="grid gap-2">
+                    {selectedProblem.clarifyingOptions.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => handleClarifyingToggle(option.value, !clarifyingAnswers.includes(option.value))}
+                      >
+                        <Checkbox
+                          id={`clarifying-${option.value}`}
+                          checked={clarifyingAnswers.includes(option.value)}
+                          onCheckedChange={(checked) => handleClarifyingToggle(option.value, checked === true)}
+                        />
+                        <label
+                          htmlFor={`clarifying-${option.value}`}
+                          className="flex-1 text-sm cursor-pointer"
+                        >
                           {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -292,7 +314,10 @@ const PostGig = () => {
                   value={description}
                   onChange={setDescription}
                   problemLabel={selectedProblem?.label}
-                  clarifyingLabel={selectedProblem?.clarifyingOptions.find(o => o.value === clarifyingAnswer)?.label}
+                  clarifyingLabel={clarifyingAnswers
+                    .map(answer => selectedProblem?.clarifyingOptions.find(o => o.value === answer)?.label)
+                    .filter(Boolean)
+                    .join(', ')}
                   required
                 />
               </div>
