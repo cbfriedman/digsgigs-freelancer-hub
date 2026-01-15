@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
@@ -287,17 +287,14 @@ const PostGig = () => {
                 <Label htmlFor="description">
                   Describe what you want done <span className="text-destructive">*</span>
                 </Label>
-                <Textarea
+                <AIDescriptionTextarea
                   id="description"
-                  placeholder="No technical terms needed. Just explain the goal..."
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
+                  onChange={setDescription}
+                  problemLabel={selectedProblem?.label}
+                  clarifyingLabel={selectedProblem?.clarifyingOptions.find(o => o.value === clarifyingAnswer)?.label}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  No technical terms needed. Just explain the goal.
-                </p>
               </div>
 
               {/* Step 4: Budget Range */}

@@ -3,8 +3,8 @@ import { getCorsHeaders, handleOptionsRequest } from "../_shared/cors.ts";
 
 interface EnhanceDescriptionRequest {
   description: string;
-  title: string;
-  category: string;
+  problemLabel?: string;
+  clarifyingLabel?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -15,16 +15,23 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { description, title, category }: EnhanceDescriptionRequest = await req.json();
+    const { description, problemLabel, clarifyingLabel }: EnhanceDescriptionRequest = await req.json();
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      console.warn("OPENAI_API_KEY not configured - AI enhancement disabled");
+    if (!description?.trim()) {
       return new Response(
-        JSON.stringify({ 
-          error: "AI enhancement is not available. OPENAI_API_KEY is not configured. Please configure it in Supabase Dashboard → Settings → Edge Functions → Secrets to enable AI features.",
-          requiresApiKey: true
-        }),
+        JSON.stringify({ error: "Description is required" }),
+        {
+          status: 400,
+          headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.warn("LOVABLE_API_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "AI enhancement is not available" }),
         {
           status: 503,
           headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
@@ -32,44 +39,42 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const contextInfo = [
+      problemLabel ? `Project Type: ${problemLabel}` : null,
+      clarifyingLabel ? `Specifics: ${clarifyingLabel}` : null,
+    ].filter(Boolean).join('\n');
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "system",
-            content: `You are a professional gig description writer. Your job is to enhance user-provided gig descriptions to make them more comprehensive, professional, and appealing to service providers.
+            content: `You are a helpful assistant that improves project descriptions for a freelance marketplace. 
+Your job is to take a basic description and make it clearer, more professional, and more detailed.
 
 Guidelines:
 - Expand on the user's basic description with relevant details
-- Include what the project involves, expected outcomes, and any specific requirements
-- Mention timeline expectations and project scope
-- Add details about work environment or location context if relevant
-- Keep the tone professional but approachable
-- Maintain the core intent of the original description
-- Make it 2-3 paragraphs (150-250 words)
-- Focus on clarity and completeness
-
-Do NOT:
-- Change the fundamental nature of the project
-- Add fictional requirements not implied by the original
-- Use overly flowery or sales-heavy language
-- Include budget information (that's separate)`,
+- Keep it concise but comprehensive (100-200 words)
+- Maintain the user's original intent and voice
+- Use clear, professional language
+- Include what outcomes are expected
+- Do NOT add fictional requirements not implied by the original
+- Do NOT include budget, timeline, or contact information
+- Return ONLY the enhanced description, no additional commentary or formatting`,
           },
           {
             role: "user",
-            content: `Enhance this gig description:
+            content: `Improve this project description:
 
-Title: ${title}
-Category: ${category}
-Original Description: ${description}
+${contextInfo ? contextInfo + '\n\n' : ''}Original Description: ${description}
 
-Return ONLY the enhanced description text, no additional commentary.`,
+Return only the improved description text.`,
           },
         ],
       }),
@@ -78,11 +83,25 @@ Return ONLY the enhanced description text, no additional commentary.`,
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "AI service is busy. Please try again in a moment." }),
+          { status: 429, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits required. Please try again later." }),
+          { status: 402, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
+        );
+      }
+      
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const data = await response.json();
-    const enhancedDescription = data.choices?.[0]?.message?.content;
+    const enhancedDescription = data.choices?.[0]?.message?.content?.trim();
 
     if (!enhancedDescription) {
       throw new Error("No enhanced description received from AI");
@@ -94,16 +113,13 @@ Return ONLY the enhanced description text, no additional commentary.`,
       JSON.stringify({ enhancedDescription }),
       {
         status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...getCorsHeaders(origin),
-        },
+        headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
       }
     );
   } catch (error: any) {
     console.error("Error enhancing description:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to enhance description. Please try again." }),
+      JSON.stringify({ error: error.message || "Failed to enhance description" }),
       {
         status: 500,
         headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
