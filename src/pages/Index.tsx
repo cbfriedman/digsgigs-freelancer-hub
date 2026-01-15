@@ -21,8 +21,10 @@ import {
   User,
   LogOut,
   ChevronDown,
-  HelpCircle
+  HelpCircle,
+  MessageSquare
 } from "lucide-react";
+import AIChatbot from "@/components/AIChatbot";
 import {
   Sheet,
   SheetContent,
@@ -45,6 +47,7 @@ const Index = () => {
   const { trackButtonClick } = useGA4Tracking();
   const [userName, setUserName] = useState<string>("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -115,6 +118,10 @@ const Index = () => {
               <HelpCircle className="mr-2 h-4 w-4" />
               How It Works
             </Button>
+            <Button variant="default" onClick={() => setChatOpen(true)} className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Chat with us
+            </Button>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -181,6 +188,17 @@ const Index = () => {
                 >
                   <HelpCircle className="mr-2 h-4 w-4" />
                   How It Works
+                </Button>
+                <Button 
+                  variant="default" 
+                  className="justify-start" 
+                  onClick={() => {
+                    setChatOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Chat with us
                 </Button>
                 <div className="border-t border-border my-4" />
                 {user ? (
@@ -500,6 +518,7 @@ const Index = () => {
       </section>
 
       <Footer />
+      <AIChatbot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 };
