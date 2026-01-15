@@ -112,8 +112,8 @@ const PostGig = () => {
   const submitGig = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const consumerId = session?.user?.id || null;
+      // No authentication required - allow anonymous posting (Craigslist model)
+      const consumerId = null;
 
       // Get internal mapping from problem selection
       const mapping = getInternalMapping(selectedProblemId);
@@ -398,15 +398,15 @@ const PostGig = () => {
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    Your project is emailed to freelancers instantly
+                    Check your email to confirm your project
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    Interested freelancers unlock your contact info
+                    After confirmation, your project goes live
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    They reach out to you directly
+                    Freelancers unlock your contact info and reach out
                   </li>
                 </ul>
               </div>
