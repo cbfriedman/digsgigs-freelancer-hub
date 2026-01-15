@@ -95,6 +95,7 @@ import ApplyDigger from "./pages/ApplyDigger";
 import ApplyLanding from "./pages/ApplyLanding";
 import PaymentMethods from "./pages/PaymentMethods";
 import ProfileCategoryBrowser from "./pages/ProfileCategoryBrowser";
+import BidTemplatePreview from "./pages/BidTemplatePreview";
 
 const queryClient = new QueryClient();
 
@@ -400,6 +401,10 @@ const router = createBrowserRouter(
       {
         path: "/demo/gig-registration",
         element: <GigRegistrationDemo />,
+      },
+      {
+        path: "/bid-template-preview",
+        element: <BidTemplatePreview />,
       },
       {
         path: "/logo-generator",
