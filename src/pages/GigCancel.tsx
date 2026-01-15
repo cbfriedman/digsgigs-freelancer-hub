@@ -86,14 +86,15 @@ const GigCancel = () => {
         setAuthorized(true);
         setGigTitle(gig.title || "Untitled Project");
 
-        // Check for lead unlocks
-        const unlockResult = await supabase
-          .from("lead_unlocks")
+        // Check for lead unlocks - use contact_reveals table
+        const gigIdToCheck: string = id;
+        const { data: unlockData } = await supabase
+          .from("contact_reveals")
           .select("id")
-          .eq("gig_id", id as string)
+          .eq("gig_id", gigIdToCheck)
           .limit(100);
         
-        const unlockCountNum = (unlockResult.data || []).length;
+        const unlockCountNum = (unlockData || []).length;
 
         if (unlockCountNum > 0) {
           setHasUnlocks(true);
