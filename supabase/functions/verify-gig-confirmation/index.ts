@@ -12,11 +12,24 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Support both GET (query params) and POST (body) requests
     const url = new URL(req.url);
-    const gigId = url.searchParams.get("gigId");
+    let gigId = url.searchParams.get("gigId");
+    
+    // If not in query params, try to get from body
+    if (!gigId && req.method === "POST") {
+      const body = await req.json().catch(() => ({}));
+      gigId = body.gigId;
+    }
 
     if (!gigId) {
-      return new Response("Missing gig ID", { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "Missing gig ID" }),
+        { 
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -58,18 +71,34 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error sending management email:", mgmtError);
     }
 
-    // Redirect to frontend success page
-    const siteUrl = Deno.env.get("SITE_URL") || "https://www.digsandgigs.net";
-    const redirectUrl = `${siteUrl}/gig-confirmed?gigId=${gigId}`;
+    // Return success response (frontend will handle redirect)
+    // If called via GET (email link), redirect. If POST (button click), return JSON
+    const isGetRequest = req.method === "GET";
     
-    console.log("Redirecting to:", redirectUrl);
+    if (isGetRequest) {
+      // Redirect for email link clicks
+      const siteUrl = Deno.env.get("SITE_URL") || "https://www.digsandgigs.net";
+      const redirectUrl = `${siteUrl}/gig-confirmed?gigId=${gigId}`;
+      
+      console.log("Redirecting to:", redirectUrl);
 
-    return new Response(null, {
-      status: 302,
-      headers: {
-        "Location": redirectUrl,
-      },
-    });
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": redirectUrl,
+          ...corsHeaders,
+        },
+      });
+    } else {
+      // Return JSON for API calls
+      return new Response(
+        JSON.stringify({ success: true, gigId }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
   } catch (error: any) {
     console.error("Error confirming gig:", error);
     return new Response(

@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, MessageSquare, FileText } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -17,14 +16,11 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping } from "@/config/giggerProblems";
-import { GigAssistant } from "@/components/GigAssistant";
-import { GigData } from "@/hooks/useGigAssistant";
 
 const PostGig = () => {
   const navigate = useNavigate();
   const { trackEvent, isConfigured } = useFacebookPixel();
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"ai" | "form">("ai");
   
   // Form fields - Problem-based approach
   const [selectedProblemId, setSelectedProblemId] = useState("");
@@ -212,111 +208,6 @@ const PostGig = () => {
     setClarifyingAnswer(""); // Reset clarifying answer when problem changes
   };
 
-  // Handle AI assistant submission
-  const handleAISubmit = async (data: GigData) => {
-    // Check for high-risk keywords in description
-    const riskCheck = checkHighRiskKeywords(data.description);
-    if (riskCheck.hasRisk) {
-      setMatchedKeywords(riskCheck.matchedKeywords);
-      // Store the AI data for submission after warning
-      setSelectedProblemId(data.problemId);
-      setClarifyingAnswer(data.clarifyingAnswer);
-      setDescription(data.description);
-      setBudgetMin(data.budgetMin?.toString() || "");
-      setBudgetMax(data.budgetMax?.toString() || "");
-      setTimeline(data.timeline);
-      setClientName(data.clientName);
-      setClientEmail(data.clientEmail);
-      setClientPhone(data.clientPhone);
-      setShowWarningDialog(true);
-      return;
-    }
-    
-    // Submit directly from AI data
-    await submitGigFromAI(data);
-  };
-
-  const submitGigFromAI = async (data: GigData) => {
-    setLoading(true);
-    try {
-      const consumerId = null;
-
-      // Map problemId to category
-      const problemIdToCategory: Record<string, string> = {
-        "build-website": "Web Development",
-        "build-webapp": "Web Development",
-        "design": "Graphic Design",
-        "marketing": "Digital Marketing",
-        "content": "Content Writing",
-        "automation": "AI & Automation",
-        "business-systems": "Business Systems",
-        "other": "Other",
-      };
-      const categoryName = problemIdToCategory[data.problemId] || null;
-
-      let categoryId: string | null = null;
-      if (categoryName) {
-        const { data: categoryRow } = await supabase
-          .from("categories")
-          .select("id")
-          .eq("name", categoryName)
-          .maybeSingle();
-        if (categoryRow?.id) categoryId = categoryRow.id;
-      }
-
-      const title = `${data.clarifyingAnswer || data.problemId}`.trim();
-
-      const { data: gigData, error: gigError } = await supabase
-        .from("gigs")
-        .insert({
-          consumer_id: consumerId,
-          title,
-          description: data.description,
-          requirements: `Category: ${categoryName || "Not specified"}\nDetails: ${data.clarifyingAnswer}`,
-          budget_min: data.budgetMin,
-          budget_max: data.budgetMax,
-          timeline: data.timeline,
-          location: "Remote",
-          client_name: data.clientName,
-          consumer_email: data.clientEmail,
-          consumer_phone: data.clientPhone || null,
-          category_id: categoryId,
-          status: "pending_confirmation",
-          confirmation_status: "pending",
-          is_confirmed_lead: false,
-        })
-        .select()
-        .single();
-
-      if (gigError) throw gigError;
-
-      await supabase.functions.invoke("send-gig-confirmation", {
-        body: {
-          gigId: gigData.id,
-          email: data.clientEmail,
-          gigTitle: title,
-          gigDescription: data.description,
-          location: "Remote",
-          budgetMin: data.budgetMin,
-          budgetMax: data.budgetMax,
-          keywords: categoryName ? [categoryName] : [],
-        }
-      }).catch(err => console.error("Confirmation email error:", err));
-
-      if (isConfigured) {
-        trackEvent('Lead', { content_name: 'Gig Posted via AI', content_ids: [gigData.id] });
-      }
-
-      toast.success("Check your email to confirm your project!");
-      navigate(`/gig-pending?gigId=${gigData.id}&email=${encodeURIComponent(data.clientEmail)}`);
-    } catch (error: any) {
-      console.error("Error posting gig:", error);
-      toast.error("Failed to post project. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const leadPrice = calculateLeadPrice();
 
   return (
@@ -328,36 +219,14 @@ const PostGig = () => {
       />
       <Navigation showBackButton backLabel="Back" />
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Mode Toggle */}
-        <div className="max-w-4xl mx-auto mb-6">
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "ai" | "form")} className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-              <TabsTrigger value="ai" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Chat with AI
-              </TabsTrigger>
-              <TabsTrigger value="form" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Fill out Form
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="ai" className="mt-6">
-              <GigAssistant 
-                onSubmit={handleAISubmit} 
-                onSwitchToForm={() => setMode("form")}
-              />
-            </TabsContent>
-
-            <TabsContent value="form" className="mt-6">
-              <Card className="shadow-lg max-w-2xl mx-auto">
-                <CardHeader className="text-center">
-                  <CardTitle className="text-2xl">Post Your Project</CardTitle>
-                  <CardDescription>
-                    Tell us what you need — we'll match you with the right freelancers
-                  </CardDescription>
-                </CardHeader>
+      <main className="container mx-auto px-4 py-8 max-w-2xl">
+        <Card className="shadow-lg">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Post Your Project</CardTitle>
+            <CardDescription>
+              Tell us what you need — we'll match you with the right freelancers
+            </CardDescription>
+          </CardHeader>
 
           <CardContent>
             <form onSubmit={handleSubmitCheck} className="space-y-6">
@@ -558,9 +427,6 @@ const PostGig = () => {
             </form>
           </CardContent>
         </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
       </main>
 
       <Footer />

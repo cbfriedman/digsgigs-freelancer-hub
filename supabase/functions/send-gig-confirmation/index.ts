@@ -33,7 +33,8 @@ const handler = async (req: Request): Promise<Response> => {
       keywords,
     }: GigConfirmationRequest = await req.json();
 
-    const confirmationUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/verify-gig-confirmation?gigId=${gigId}`;
+    const siteUrl = Deno.env.get("SITE_URL") || "https://www.digsandgigs.net";
+    const confirmationUrl = `${siteUrl}/review-gig?gigId=${gigId}`;
     
     const budgetText = estimatedBudget 
       ? `$${estimatedBudget.toLocaleString()}`
