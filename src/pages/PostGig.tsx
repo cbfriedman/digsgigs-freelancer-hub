@@ -166,7 +166,7 @@ const PostGig = () => {
           consumer_email: clientEmail.trim(),
           consumer_phone: clientPhone.trim() || null,
           category_id: categoryId,
-          status: "pending",
+          status: "pending_confirmation",
           confirmation_status: "pending",
           is_confirmed_lead: false,
         })
