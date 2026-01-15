@@ -137,7 +137,7 @@ export default function LeadUnlock() {
     const max = lead?.budget_max || min;
     const avg = (min + max) / 2;
     const price = Math.round(avg * 0.03);
-    return Math.max(35, Math.min(65, price));
+    return Math.min(49, Math.max(1, price)); // No minimum, $49 cap
   };
 
   const getEstimatedReferralFee = (): { min: number; max: number } => {

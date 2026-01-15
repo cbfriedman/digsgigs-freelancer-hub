@@ -87,15 +87,15 @@ serve(async (req) => {
     let priceCents = lead.calculated_price_cents;
     
     if (!priceCents && lead.budget_min && lead.budget_max) {
-      // Calculate 3% of average, $35-$65 bounds
+      // Calculate 3% of average, $49 cap, no minimum
       const avgBudget = (lead.budget_min + lead.budget_max) / 2;
       priceCents = Math.round(avgBudget * 0.03 * 100);
       priceCents = Math.round(priceCents / 100) * 100; // Round to nearest dollar
-      priceCents = Math.max(3500, Math.min(6500, priceCents)); // $35-$65 bounds
+      priceCents = Math.min(4900, Math.max(100, priceCents)); // No minimum, $49 cap
     }
 
     if (!priceCents) {
-      priceCents = 3500; // Default minimum $35
+      priceCents = 100; // Default $1 (no minimum)
     }
 
     console.log(`[create-lead-unlock-checkout] Price: ${priceCents} cents`);
