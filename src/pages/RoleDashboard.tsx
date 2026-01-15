@@ -42,30 +42,15 @@ export default function RoleDashboard() {
   const hasFetchedStatsRef = useRef(false);
   
   // Check if user just completed registration - refresh roles immediately
-  useEffect(() => {
-    const justRegistered = searchParams.get('registered') === 'true';
-    if (justRegistered && user?.id) {
-      console.log('User just registered, refreshing roles...');
-      
-      // Immediately refresh roles to ensure they're loaded
-      refreshRoles().then(() => {
-        console.log('Roles refreshed after registration');
-        // Remove the query parameter from URL after roles are refreshed
-        searchParams.delete('registered');
-        setSearchParams(searchParams, { replace: true });
-      }).catch(err => {
-        console.warn('Error refreshing roles after registration:', err);
-        // Still remove the parameter even if refresh fails
-        searchParams.delete('registered');
-        setSearchParams(searchParams, { replace: true });
-      });
-    }
-  }, [user?.id, refreshRoles, searchParams, setSearchParams]);
+  // NOTE: This useEffect is moved after fetchStats definition to avoid initialization error
 
   // Memoize fetchStats to prevent recreation on every render
   // Use user?.id instead of user object to prevent unnecessary recreations
-  const fetchStats = useCallback(async () => {
-    if (!user || userRoles.length === 0 || hasFetchedStatsRef.current) return;
+  const fetchStats = useCallback(async (forceRefresh = false) => {
+    if (!user || userRoles.length === 0) return;
+    
+    // Allow force refresh to bypass the flag
+    if (hasFetchedStatsRef.current && !forceRefresh) return;
     
     hasFetchedStatsRef.current = true;
     
@@ -173,6 +158,34 @@ export default function RoleDashboard() {
       hasFetchedStatsRef.current = false; // Allow retry on error
     }
   }, [user?.id, userRoles]); // Need userRoles array to check includes()
+
+  // Check if user just completed registration - refresh roles immediately
+  // Moved here after fetchStats is defined to avoid initialization error
+  useEffect(() => {
+    const justRegistered = searchParams.get('registered') === 'true';
+    if (justRegistered && user?.id) {
+      console.log('User just registered, refreshing roles and stats...');
+      
+      // Immediately refresh roles to ensure they're loaded
+      refreshRoles().then(async () => {
+        console.log('Roles refreshed after registration');
+        // Reset the stats fetch flag to allow stats to be fetched again
+        hasFetchedStatsRef.current = false;
+        // Wait a moment for roles to propagate
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Force fetch stats again with updated roles
+        await fetchStats(true);
+        // Remove the query parameter from URL after roles are refreshed
+        searchParams.delete('registered');
+        setSearchParams(searchParams, { replace: true });
+      }).catch(err => {
+        console.warn('Error refreshing roles after registration:', err);
+        // Still remove the parameter even if refresh fails
+        searchParams.delete('registered');
+        setSearchParams(searchParams, { replace: true });
+      });
+    }
+  }, [user?.id, refreshRoles, searchParams, setSearchParams, fetchStats]);
 
   // Check roles only once when component mounts or user changes
   useEffect(() => {
@@ -436,7 +449,7 @@ export default function RoleDashboard() {
                     className="w-full text-sm sm:text-base"
                     onClick={() => {
                       handleSwitchRole('digger');
-                      navigate('/pricing?create=true');
+                      navigate('/profile-categories');
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />

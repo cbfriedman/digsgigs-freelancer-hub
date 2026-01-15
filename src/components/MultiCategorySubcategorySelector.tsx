@@ -161,7 +161,7 @@ export const MultiCategorySubcategorySelector = ({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="w-full justify-between font-medium hover:bg-muted"
+                    className="w-full justify-between font-medium hover:bg-orange-100 hover:text-orange-700 dark:hover:bg-orange-900/30 dark:hover:text-orange-400 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       {isExpanded ? (
@@ -186,7 +186,7 @@ export const MultiCategorySubcategorySelector = ({
                     return (
                       <div
                         key={sub.slug}
-                        className={`flex items-center gap-2 p-2 rounded-md hover:bg-muted ${
+                        className={`flex items-center gap-2 p-2 rounded-md hover:bg-orange-100 hover:text-orange-700 dark:hover:bg-orange-900/30 dark:hover:text-orange-400 transition-colors ${
                           isDisabled ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >

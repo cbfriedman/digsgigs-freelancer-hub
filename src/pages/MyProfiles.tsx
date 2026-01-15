@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Star, Edit, Trash2 } from "lucide-react";
+import { Plus, Star, Edit, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/utils/retryWithBackoff";
 
@@ -30,6 +30,7 @@ interface ProfileWithStats {
 export default function MyProfiles() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profiles, setProfiles] = useState<ProfileWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; profileId: string | null }>({
@@ -38,8 +39,8 @@ export default function MyProfiles() {
   });
 
   const handleCreateNewProfile = () => {
-    // Navigate to pricing page with create flag to show profile creation form
-    navigate("/pricing?create=true");
+    // Navigate to profile category browser for creating a new profile
+    navigate("/profile-categories");
   };
 
   useEffect(() => {
@@ -48,11 +49,94 @@ export default function MyProfiles() {
     }
   }, [user]);
 
-  const loadProfiles = async () => {
-    if (!user) return;
+  // Refresh profiles if coming from registration
+  useEffect(() => {
+    const justRegistered = searchParams.get('registered') === 'true';
+    if (justRegistered && user) {
+      console.log('Just registered, refreshing profiles...');
+      // Reset loading state to show loading indicator
+      setLoading(true);
+      
+      // Retry loading profiles with increasing delays to handle timing issues
+      const retryLoadProfiles = async (attempt = 1, maxAttempts = 3) => {
+        try {
+          await loadProfiles();
+          
+          // Check if profiles were loaded by querying again after a short delay
+          setTimeout(async () => {
+            const { data: checkProfiles } = await supabase
+              .from("digger_profiles")
+              .select("id")
+              .eq("user_id", user.id)
+              .limit(1);
+            
+            if ((!checkProfiles || checkProfiles.length === 0) && attempt < maxAttempts) {
+              console.log(`No profiles found, retrying... (attempt ${attempt + 1}/${maxAttempts})`);
+              setTimeout(() => retryLoadProfiles(attempt + 1, maxAttempts), 1000 * attempt);
+            } else {
+              // Remove query parameter after refresh
+              searchParams.delete('registered');
+              setSearchParams(searchParams, { replace: true });
+            }
+          }, 500);
+        } catch (error) {
+          console.error('Error loading profiles after registration:', error);
+          if (attempt < maxAttempts) {
+            setTimeout(() => retryLoadProfiles(attempt + 1, maxAttempts), 1000 * attempt);
+          } else {
+            // Remove query parameter even on failure
+            searchParams.delete('registered');
+            setSearchParams(searchParams, { replace: true });
+          }
+        }
+      };
+      
+      // Initial delay to ensure profile is committed
+      setTimeout(() => {
+        retryLoadProfiles();
+      }, 800);
+    }
+  }, [user, searchParams, setSearchParams]);
 
+  // Refresh profiles when page becomes visible (handles case where profile was just created)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        console.log("MyProfiles: Page became visible, refreshing profiles");
+        loadProfiles();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
+
+  const loadProfiles = async () => {
+    if (!user) {
+      console.log("MyProfiles: No user, cannot load profiles");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     try {
-      console.log("Loading profiles for user:", user.id);
+      console.log("MyProfiles: Loading profiles for user:", user.id);
+      console.log("MyProfiles: User object:", { id: user.id, email: user.email });
+      
+      // First, verify the user has a profile entry (required for foreign key)
+      const { data: profileCheck, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .single();
+      
+      if (profileError) {
+        console.error("MyProfiles: Error checking profiles table:", profileError);
+        console.error("MyProfiles: This might indicate the user profile doesn't exist in profiles table");
+      } else {
+        console.log("MyProfiles: User profile exists in profiles table:", profileCheck);
+      }
+      
       const { data: profilesData, error } = await retryWithBackoff(
         async () => {
           const result = await supabase
@@ -62,15 +146,33 @@ export default function MyProfiles() {
             .order("is_primary", { ascending: false })
             .order("created_at", { ascending: true });
           
-          if (result.error) throw result.error;
+          console.log("MyProfiles: Query result:", { 
+            data: result.data, 
+            error: result.error,
+            count: result.data?.length 
+          });
+          
+          if (result.error) {
+            console.error("MyProfiles: Query error details:", {
+              code: result.error.code,
+              message: result.error.message,
+              details: result.error.details,
+              hint: result.error.hint
+            });
+            throw result.error;
+          }
           return result;
         },
         { maxAttempts: 3, initialDelay: 1000 }
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error("MyProfiles: Error after retries:", error);
+        throw error;
+      }
 
-      console.log("Profiles loaded:", profilesData);
+      console.log("MyProfiles: Profiles loaded successfully:", profilesData);
+      console.log("MyProfiles: Number of profiles found:", profilesData?.length || 0);
       if (profilesData) {
         // Fetch stats for each profile with retry logic
         const profilesWithStats = await Promise.all(
@@ -198,10 +300,22 @@ export default function MyProfiles() {
             <h1 className="text-4xl font-bold mb-2">My Profiles</h1>
             <p className="text-muted-foreground">Manage your digger profiles and view statistics</p>
           </div>
-          <Button onClick={handleCreateNewProfile} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create New Profile
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={loadProfiles} 
+              disabled={loading}
+              className="gap-2"
+              title="Refresh profiles"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button onClick={handleCreateNewProfile} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create New Profile
+            </Button>
+          </div>
         </div>
 
         {/* Info Banner */}

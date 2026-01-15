@@ -26,7 +26,13 @@ export const useFacebookPixel = () => {
 
       // If initialization is in progress, wait for it
       if (pixelInitPromise) {
-        pixelInitPromise.then(() => setIsInitialized(true));
+        pixelInitPromise
+          .then(() => setIsInitialized(true))
+          .catch(() => {
+            // Pixel initialization failed (e.g., blocked by ad blocker)
+            // This is expected behavior, so we silently handle it
+            setIsInitialized(false);
+          });
         return;
       }
 
@@ -89,7 +95,11 @@ export const useFacebookPixel = () => {
               ]
             });
             console.warn('To test Facebook Pixel, disable ad blockers or use Facebook Events Manager Test Events mode');
-            reject(new Error('Script load failed'));
+            // Resolve instead of reject to prevent uncaught promise rejection
+            // This is expected behavior when ad blockers are present
+            win.fbq.loaded = false;
+            pixelInitPromise = null;
+            resolve();
           };
 
           document.head.appendChild(script);
