@@ -418,7 +418,7 @@ export default function LeadUnlock() {
                             <span className="text-2xl font-bold text-orange-500">${estimatedFee.midpoint}</span>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            2.5% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Gigger pays 5% deposit when you accept.
+                            3% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Fee paid from Gigger's 5% down-payment.
                           </p>
                           {lead.budget_min && lead.budget_max && (
                             <div className="mt-2 text-xs text-muted-foreground">

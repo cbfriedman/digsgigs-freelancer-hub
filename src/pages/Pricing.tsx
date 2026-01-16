@@ -139,7 +139,7 @@ export default function Pricing() {
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <p className="text-center text-muted-foreground">
-                      Submit a bid and pay 3% when awarded. Gigger pays deposit when you accept.
+                      3% referral fee when awarded. Fee comes from Gigger's 5% deposit (your down-payment).
                     </p>
                     
                     <div className="bg-muted/50 rounded-xl p-4">
@@ -161,8 +161,9 @@ export default function Pricing() {
                     </div>
                     
                     <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <div className="text-xs text-muted-foreground mb-1">Gigger Deposit on Acceptance</div>
+                      <div className="text-xs text-muted-foreground mb-1">Gigger Deposit (Down-Payment)</div>
                       <div className="text-sm font-medium">Higher of (5% + lead cost) or $249</div>
+                      <div className="text-xs text-muted-foreground mt-1">Deducted from total owed to Digger</div>
                     </div>
 
                     <ul className="space-y-2">

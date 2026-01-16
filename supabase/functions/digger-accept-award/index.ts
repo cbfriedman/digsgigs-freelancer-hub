@@ -162,14 +162,14 @@ serve(async (req) => {
       .single();
 
     if (deposit && !depositError) {
-      // Calculate the 5% portion to release to Digger
+      // Calculate the 5% portion to release to Digger as down-payment/advance
       const bidAmount = bid.amount || ((bid.amount_min || 0) + (bid.amount_max || 0)) / 2;
-      const fivePercentBonus = Math.round(bidAmount * 0.05 * 100); // in cents
+      const fivePercentAdvance = Math.round(bidAmount * 0.05 * 100); // in cents
 
-      logStep("Releasing 5% deposit to Digger", {
+      logStep("Releasing 5% down-payment to Digger as advance", {
         depositId: deposit.id,
         bidAmount,
-        fivePercentBonus: fivePercentBonus / 100,
+        fivePercentAdvance: fivePercentAdvance / 100,
       });
 
       // Update deposit status to released
@@ -178,16 +178,16 @@ serve(async (req) => {
         .update({
           status: "released",
           released_at: new Date().toISOString(),
-          released_to_digger_cents: fivePercentBonus,
+          released_to_digger_cents: fivePercentAdvance,
           updated_at: new Date().toISOString(),
         })
         .eq("id", deposit.id);
 
-      // TODO: If using Stripe Connect, transfer fivePercentBonus to Digger's connected account
+      // TODO: If using Stripe Connect, transfer fivePercentAdvance to Digger's connected account
       // For now, we just record it - actual transfer would require Stripe Connect setup
-      logStep("Deposit released successfully", {
+      logStep("Down-payment released to Digger as advance", {
         depositId: deposit.id,
-        releasedAmount: fivePercentBonus / 100,
+        releasedAmount: fivePercentAdvance / 100,
       });
     }
 

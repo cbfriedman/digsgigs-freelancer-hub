@@ -177,7 +177,7 @@ export function BidSubmissionTemplateDemo({
     const diggerFee = calculateReferralFee();
     
     toast.success("Proposal Accepted! (Demo)", {
-      description: `Gigger deposit: $${giggerDeposit.toFixed(0)} (higher of 5%+lead cost or $249). Digger pays 3% fee ($${diggerFee.toFixed(0)}).`,
+      description: `Gigger pays $${giggerDeposit.toFixed(0)} down-payment. Digger receives 5% advance; 3% referral fee ($${diggerFee.toFixed(0)}) deducted.`,
     });
     onAcceptProposal?.();
   };
@@ -350,7 +350,7 @@ export function BidSubmissionTemplateDemo({
                     Fee range: ${REFERRAL_FEE_MIN} minimum – ${REFERRAL_FEE_CAP} cap
                   </p>
                   <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 font-medium">
-                    Gigger pays 5% deposit (${giggerDeposit.toFixed(0)}) when {isDiggerView ? "you accept" : "accepting"} the award.
+                    Gigger's 5% down-payment (${giggerDeposit.toFixed(0)}) is released to {isDiggerView ? "you" : "Digger"} as an advance toward the total award.
                   </p>
                 </div>
               </div>
