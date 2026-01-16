@@ -96,6 +96,7 @@ import ApplyLanding from "./pages/ApplyLanding";
 import PaymentMethods from "./pages/PaymentMethods";
 import ProfileCategoryBrowser from "./pages/ProfileCategoryBrowser";
 import BidTemplatePreview from "./pages/BidTemplatePreview";
+import LeadUnlockPreview from "./pages/LeadUnlockPreview";
 
 const queryClient = new QueryClient();
 
@@ -405,6 +406,10 @@ const router = createBrowserRouter(
       {
         path: "/bid-template-preview",
         element: <BidTemplatePreview />,
+      },
+      {
+        path: "/lead-unlock-preview",
+        element: <LeadUnlockPreview />,
       },
       {
         path: "/logo-generator",
