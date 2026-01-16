@@ -385,14 +385,6 @@ export const CategoryBrowserWithDescription = () => {
                     >
                       {isSelected && <span>✓</span>}
                       <span>{keyword}</span>
-                      {cpc !== null && (
-                        <span className="text-xs opacity-75">
-                          <span className="text-muted-foreground">CPC: ${cpc}</span>
-                          {leadCost !== null && (
-                            <span className="ml-1 text-emerald-600 dark:text-emerald-400">• Our cost: ${leadCost.toFixed(2)}</span>
-                          )}
-                        </span>
-                      )}
                       <button
                         className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
                         onClick={(e) => {

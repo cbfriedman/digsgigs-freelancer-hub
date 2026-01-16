@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone } from "lucide-react";
+import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -23,6 +23,9 @@ import { LeadReturnDialog } from "@/components/LeadReturnDialog";
 import { ProfileClickPricingCard } from "@/components/ProfileClickPricingCard";
 import { useProfileCallTracking } from "@/hooks/useProfileCallTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
+import { BioGenerator } from "@/components/BioGenerator";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Reference {
   id: string;
@@ -695,12 +698,25 @@ const DiggerDetail = () => {
             <Card>
               <CardContent className="p-8">
                 <div className="flex items-start gap-6 mb-6">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={digger.profile_image_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                      {getInitials(digger.handle)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src={digger.profile_image_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                        {getInitials(digger.handle)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {isOwnProfile && !digger.profile_image_url && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                        onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
+                        title="Add profile photo"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl font-bold">
@@ -787,15 +803,28 @@ const DiggerDetail = () => {
                   </div>
                 </div>
 
-                {digger.bio && (
-                  <>
-                    <Separator className="my-6" />
-                    <div>
-                      <h2 className="text-lg font-semibold mb-3">About My Services</h2>
-                      <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{digger.bio}</p>
+                {/* Bio Section - Show for all, with edit option for owners */}
+                <Separator className="my-6" />
+                <div>
+                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    About My Services
+                  </h2>
+                  {digger.bio ? (
+                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{digger.bio}</p>
+                  ) : isOwnProfile ? (
+                    <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
+                      <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                      <p className="text-muted-foreground mb-4">Add a professional bio to help clients learn about your services</p>
+                      <Button onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Add Bio with AI Assistance
+                      </Button>
                     </div>
-                  </>
-                )}
+                  ) : (
+                    <p className="text-muted-foreground italic">No bio provided yet.</p>
+                  )}
+                </div>
 
                 <Separator className="my-6" />
                 <div>
@@ -914,6 +943,44 @@ const DiggerDetail = () => {
                     </div>
                   </>
                 )}
+
+                {/* References Section */}
+                <Separator className="my-6" />
+                <div>
+                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    📋 Prior Job References
+                  </h2>
+                  {references.length > 0 ? (
+                    <div className="space-y-3">
+                      {references.map((ref) => (
+                        <div key={ref.id} className="p-4 rounded-lg border bg-card">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium">{ref.reference_name}</p>
+                              {ref.project_description && (
+                                <p className="text-sm text-muted-foreground mt-1">{ref.project_description}</p>
+                              )}
+                            </div>
+                            {ref.is_verified && (
+                              <Badge variant="secondary" className="bg-green-500/10 text-green-600">
+                                ✓ Verified
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : isOwnProfile ? (
+                    <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
+                      <p className="text-muted-foreground mb-4">Add references from past clients to build trust</p>
+                      <Button variant="outline" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
+                        Add References
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground italic">No references provided yet.</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -931,6 +998,60 @@ const DiggerDetail = () => {
             {isOwnProfile ? (
               /* Owner Dashboard */
               <div className="space-y-6">
+                {/* Profile Actions Card - Prominent Edit/View buttons */}
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">Your Profile</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {!digger.bio || !digger.profile_image_url ? 
+                            'Complete your profile to attract more clients' : 
+                            'Your profile is looking great!'}
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <Button 
+                          variant="outline"
+                          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        >
+                          View Profile
+                        </Button>
+                        <Button onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Profile
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Profile completion prompts */}
+                    {(!digger.bio || !digger.profile_image_url || (references.length === 0)) && (
+                      <div className="mt-4 pt-4 border-t border-primary/10">
+                        <p className="text-sm font-medium mb-3">Complete your profile:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {!digger.profile_image_url && (
+                            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
+                              <Camera className="h-3 w-3 mr-1" />
+                              Add Photo
+                            </Badge>
+                          )}
+                          {!digger.bio && (
+                            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              Add Bio
+                            </Badge>
+                          )}
+                          {references.length === 0 && (
+                            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
+                              📋 Add References
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {/* Stats Summary - Clickable */}
                 <Card className="bg-card">
                   <CardHeader>
