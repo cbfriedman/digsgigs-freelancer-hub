@@ -21,6 +21,7 @@ import {
   Percent,
   CreditCard
 } from "lucide-react";
+import { BidSubmissionTemplateDemo } from "@/components/BidSubmissionTemplateDemo";
 
 type PricingOption = "pay_per_lead" | "success_based";
 
@@ -46,6 +47,7 @@ const sampleLead = {
 
 export default function LeadUnlockPreview() {
   const [selectedPricing, setSelectedPricing] = useState<PricingOption>("pay_per_lead");
+  const [showBidForm, setShowBidForm] = useState(false);
 
   const formatBudget = (min: number | null, max: number | null): string => {
     if (!min && !max) return "Budget not specified";
@@ -96,9 +98,11 @@ export default function LeadUnlockPreview() {
   };
 
   const handleSuccessBasedBid = () => {
-    toast.info("Demo Mode: This would navigate to bid submission page", {
-      description: "You would submit your proposal for exclusive consideration"
-    });
+    setShowBidForm(true);
+  };
+  
+  const handleBackToOptions = () => {
+    setShowBidForm(false);
   };
 
   const leadPrice = getLeadPrice();
@@ -121,18 +125,55 @@ export default function LeadUnlockPreview() {
             Preview Mode
           </div>
           <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
-            This is a demo of what Diggers see when they click a lead notification email link.
+            {showBidForm 
+              ? "This is a demo of the Exclusive Bid Submission form."
+              : "This is a demo of what Diggers see when they click a lead notification email link."}
           </p>
         </div>
 
         <Button
           variant="ghost"
-          onClick={() => window.history.back()}
+          onClick={showBidForm ? handleBackToOptions : () => window.history.back()}
           className="mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          {showBidForm ? "Back to Lead Details" : "Back"}
         </Button>
+        
+        {/* Exclusive Bid Submission Form */}
+        {showBidForm ? (
+          <div className="space-y-6">
+            {/* Lead Summary */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Badge className="bg-orange-500">Exclusive Bid</Badge>
+                  <Badge variant="outline">
+                    {formatBudget(sampleLead.budget_min, sampleLead.budget_max)}
+                  </Badge>
+                </div>
+                <CardTitle className="text-xl mt-2">{sampleLead.title}</CardTitle>
+                <CardDescription className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  {sampleLead.location}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {sampleLead.description}
+                </p>
+              </CardContent>
+            </Card>
+            
+            {/* Bid Submission Form */}
+            <BidSubmissionTemplateDemo 
+              pricingModel="exclusive" 
+              budgetMin={sampleLead.budget_min}
+              budgetMax={sampleLead.budget_max}
+            />
+          </div>
+        ) : (
+          /* Lead Details and Pricing Options */
 
         <Card className="shadow-lg">
           <CardHeader>
@@ -320,6 +361,7 @@ export default function LeadUnlockPreview() {
             </div>
           </CardContent>
         </Card>
+        )}
       </main>
 
       <Footer />

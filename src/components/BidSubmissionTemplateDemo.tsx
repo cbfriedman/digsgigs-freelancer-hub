@@ -12,7 +12,14 @@ import { toast } from "sonner";
 
 interface BidSubmissionTemplateDemoProps {
   pricingModel: "non_exclusive" | "exclusive";
+  budgetMin?: number;
+  budgetMax?: number;
 }
+
+// Referral fee configuration
+const REFERRAL_FEE_RATE = 0.025; // 2.5%
+const REFERRAL_FEE_MIN = 100; // $100 minimum
+const REFERRAL_FEE_CAP = 249; // $249 cap
 
 const sampleDiggerProfile = {
   profession: "Full-Stack Developer",
@@ -32,9 +39,9 @@ const sampleDiggerProfile = {
   offers_free_estimates: true,
 };
 
-export function BidSubmissionTemplateDemo({ pricingModel }: BidSubmissionTemplateDemoProps) {
-  const [amountMin, setAmountMin] = useState("2500");
-  const [amountMax, setAmountMax] = useState("4000");
+export function BidSubmissionTemplateDemo({ pricingModel, budgetMin, budgetMax }: BidSubmissionTemplateDemoProps) {
+  const [amountMin, setAmountMin] = useState(budgetMin ? String(budgetMin) : "2500");
+  const [amountMax, setAmountMax] = useState(budgetMax ? String(budgetMax) : "4000");
   const [timeline, setTimeline] = useState("2-3 weeks");
   const [proposal, setProposal] = useState(
     "I have extensive experience building similar applications and can deliver a high-quality solution within your timeline. My approach includes thorough planning, regular communication, and comprehensive testing."
@@ -42,11 +49,8 @@ export function BidSubmissionTemplateDemo({ pricingModel }: BidSubmissionTemplat
   const [showPreview, setShowPreview] = useState(false);
 
   const calculateReferralFee = (amount: number) => {
-    const feeRate = 0.02;
-    const minFee = 100;
-    const maxFee = 249;
-    const fee = amount * feeRate;
-    return Math.min(Math.max(fee, minFee), maxFee);
+    const fee = amount * REFERRAL_FEE_RATE;
+    return Math.min(Math.max(fee, REFERRAL_FEE_MIN), REFERRAL_FEE_CAP);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,20 +129,23 @@ export function BidSubmissionTemplateDemo({ pricingModel }: BidSubmissionTemplat
 
           {/* Referral Fee Info (Exclusive only) */}
           {pricingModel === "exclusive" && minAmount > 0 && (
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <div className="rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900 p-4">
               <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-primary mt-0.5" />
+                <Info className="h-5 w-5 text-orange-500 mt-0.5" />
                 <div>
-                  <p className="font-medium text-sm">Referral Fee (2%)</p>
+                  <p className="font-medium text-sm text-orange-700 dark:text-orange-400">Referral Fee (2.5%)</p>
                   <p className="text-sm text-muted-foreground">
-                    If awarded, you'll pay a referral fee of{" "}
+                    If awarded and you accept, you'll pay a referral fee of{" "}
                     <span className="font-semibold text-foreground">
-                      ${minFee.toFixed(2)} – ${maxFee.toFixed(2)}
+                      ${minFee.toFixed(0)} – ${maxFee.toFixed(0)}
                     </span>{" "}
-                    based on your final bid amount.
+                    based on the midpoint of your bid range.
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Fee is capped at $249 maximum
+                    Fee range: ${REFERRAL_FEE_MIN} minimum – ${REFERRAL_FEE_CAP} cap
+                  </p>
+                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
+                    Gigger pays 5% deposit when you accept the award.
                   </p>
                 </div>
               </div>
