@@ -403,7 +403,7 @@ const Index = () => {
                 <Badge className="mb-3 bg-accent/10 text-accent border-accent/20">Pay on Award</Badge>
                 <h3 className="text-xl font-semibold mb-2">Exclusive Job Award</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Submit a bid and pay 3% referral fee when awarded. Gigger pays deposit when you accept.
+                  3% referral fee when awarded the job. Referral fee is paid out of Gigger's initial 5% deposit.
                 </p>
                 <div className="text-2xl font-bold text-accent mb-2">3% referral fee</div>
                 <div className="text-sm text-muted-foreground">$10 min – $249 max</div>
