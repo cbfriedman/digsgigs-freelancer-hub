@@ -253,10 +253,10 @@ export const SafeProfessionSelector = ({
           </div>
 
           {/* Footer */}
-          {selectedProfessionIds.length > 0 && (
-            <>
-              <Separator />
-              <div className="p-3 bg-muted/30 flex items-center justify-between">
+          <Separator />
+          <div className="p-3 bg-muted/30 space-y-3">
+            {selectedProfessionIds.length > 0 && (
+              <div className="flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
                   Selected: {selectedProfessionIds.length}/{maxSelections}
                 </div>
@@ -269,8 +269,17 @@ export const SafeProfessionSelector = ({
                   Clear all
                 </Button>
               </div>
-            </>
-          )}
+            )}
+            <Button
+              className="w-full"
+              onClick={() => setOpen(false)}
+              disabled={selectedProfessionIds.length === 0}
+            >
+              {selectedProfessionIds.length === 0 
+                ? "Select at least one profession" 
+                : `Select and Continue (${selectedProfessionIds.length})`}
+            </Button>
+          </div>
         </PopoverContent>
       </Popover>
 
