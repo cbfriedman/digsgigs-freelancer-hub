@@ -48,6 +48,7 @@ const sampleLead = {
 export default function LeadUnlockPreview() {
   const [selectedPricing, setSelectedPricing] = useState<PricingOption>("pay_per_lead");
   const [showBidForm, setShowBidForm] = useState(false);
+  const [viewAsGigger, setViewAsGigger] = useState(false);
 
   const formatBudget = (min: number | null, max: number | null): string => {
     if (!min && !max) return "Budget not specified";
@@ -103,6 +104,21 @@ export default function LeadUnlockPreview() {
   
   const handleBackToOptions = () => {
     setShowBidForm(false);
+    setViewAsGigger(false);
+  };
+
+  const handleToggleGiggerView = () => {
+    setViewAsGigger(!viewAsGigger);
+  };
+
+  const handleAcceptProposal = () => {
+    toast.success("Proposal Accepted! (Demo)", {
+      description: "Gigger charged 5% deposit. Digger notified and will pay 2.5% fee.",
+    });
+  };
+
+  const handleAskQuestion = () => {
+    toast.info("Question dialog would open here (Demo)");
   };
 
   const leadPrice = getLeadPrice();
@@ -164,12 +180,35 @@ export default function LeadUnlockPreview() {
                 </p>
               </CardContent>
             </Card>
+
+            {/* View Toggle */}
+            <div className="flex justify-center">
+              <div className="inline-flex rounded-lg border p-1 bg-muted/50">
+                <Button
+                  variant={!viewAsGigger ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewAsGigger(false)}
+                >
+                  Digger View (Submit)
+                </Button>
+                <Button
+                  variant={viewAsGigger ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewAsGigger(true)}
+                >
+                  Gigger View (Review)
+                </Button>
+              </div>
+            </div>
             
             {/* Bid Submission Form */}
             <BidSubmissionTemplateDemo 
               pricingModel="exclusive" 
               budgetMin={sampleLead.budget_min}
               budgetMax={sampleLead.budget_max}
+              viewMode={viewAsGigger ? "gigger" : "digger"}
+              onAcceptProposal={handleAcceptProposal}
+              onAskQuestion={handleAskQuestion}
             />
           </div>
         ) : (
