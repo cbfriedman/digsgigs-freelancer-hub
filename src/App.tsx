@@ -46,6 +46,7 @@ import AdminLeadDistributionTest from "./pages/AdminLeadDistributionTest";
 import Notifications from "./pages/Notifications";
 import TestAIMatching from "./pages/TestAIMatching";
 import E2ETestSuite from "./pages/E2ETestSuite";
+import TestResultsDashboard from "./pages/admin/TestResultsDashboard";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import AdminBlog from "./pages/AdminBlog";
@@ -382,6 +383,10 @@ const router = createBrowserRouter(
       {
         path: "/admin/lead-distribution-test",
         element: <ProtectedRoute><AdminLeadDistributionTest /></ProtectedRoute>,
+      },
+      {
+        path: "/admin/test-results",
+        element: <ProtectedRoute><TestResultsDashboard /></ProtectedRoute>,
       },
       {
         path: "/test/ai-matching",
