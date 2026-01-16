@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Loader2, MapPin, X } from "lucide-react";
+import { Target, Loader2, MapPin, X, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -108,6 +108,7 @@ export const CategoryBrowserWithDescription = () => {
   const [country, setCountry] = useState("");
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [city, setCity] = useState("");
+  const [isEnhancingDescription, setIsEnhancingDescription] = useState(false);
 
   // Reset state when country changes
   useEffect(() => {
@@ -210,6 +211,41 @@ export const CategoryBrowserWithDescription = () => {
     return `Describe your expertise in ${selectedProfessions.join(', ')}...`;
   };
 
+  // AI-powered description enhancement
+  const handleEnhanceDescription = async () => {
+    if (!description.trim() || description.trim().length < 10) {
+      toast.error("Please enter at least 10 characters to enhance");
+      return;
+    }
+
+    setIsEnhancingDescription(true);
+    try {
+      const selectedProfessionNames = selectedProfessionIds
+        .map(id => getProfessionById(id))
+        .filter(Boolean)
+        .map(p => p!.name);
+
+      const { data, error } = await supabase.functions.invoke('enhance-gig-description', {
+        body: { 
+          description: description,
+          labels: selectedProfessionNames.join(', ')
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.enhancedDescription) {
+        setDescription(data.enhancedDescription);
+        toast.success("Description enhanced with AI!");
+      }
+    } catch (error: any) {
+      console.error("Failed to enhance description:", error);
+      toast.error("Failed to enhance description. Please try again.");
+    } finally {
+      setIsEnhancingDescription(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -254,27 +290,51 @@ export const CategoryBrowserWithDescription = () => {
               placeholder={getDescriptionPlaceholder()}
               className="min-h-[150px] bg-background"
             />
-            <p className="text-sm text-muted-foreground">
-              Be specific about your services and expertise in your selected professions
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Be specific about your services and expertise in your selected professions
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleEnhanceDescription}
+                disabled={isEnhancingDescription || !description.trim() || description.trim().length < 10}
+                className="shrink-0"
+              >
+                {isEnhancingDescription ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enhancing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Enhance with AI
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
-        {/* Info Box and Continue Button */}
-        {selectedProfessionIds.length > 0 && description && !suggestedKeywords.length && (
+        {/* Save and Continue Button - Always visible when professions selected */}
+        {selectedProfessionIds.length > 0 && !suggestedKeywords.length && (
           <div className="space-y-4">
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-              <h4 className="font-semibold mb-2">Next Steps</h4>
-              <p className="text-sm text-muted-foreground">
-                Your description will be used to match you with relevant leads for your selected professions.
-                The more specific you are, the better your matches will be.
-              </p>
-            </div>
+            {description && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-2">Next Steps</h4>
+                <p className="text-sm text-muted-foreground">
+                  Your description will be used to match you with relevant leads for your selected professions.
+                  The more specific you are, the better your matches will be.
+                </p>
+              </div>
+            )}
             <Button 
               className="w-full" 
               size="lg"
               onClick={handleContinue}
-              disabled={isProcessing}
+              disabled={isProcessing || !description.trim()}
             >
               {isProcessing ? (
                 <>
@@ -282,9 +342,14 @@ export const CategoryBrowserWithDescription = () => {
                   Processing your specialties...
                 </>
               ) : (
-                'Continue to Keyword Selection'
+                'Save and Continue'
               )}
             </Button>
+            {!description.trim() && (
+              <p className="text-xs text-muted-foreground text-center">
+                Please describe your specialties above to continue
+              </p>
+            )}
           </div>
         )}
 
