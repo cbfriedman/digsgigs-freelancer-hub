@@ -394,8 +394,8 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Pay once to unlock client contact details. Other pros may also engage.
                 </p>
-                <div className="text-2xl font-bold text-primary mb-2">3% of budget</div>
-                <div className="text-sm text-muted-foreground">$49 maximum</div>
+                <div className="text-2xl font-bold text-primary mb-2">2% of budget</div>
+                <div className="text-sm text-muted-foreground">$3 min – $49 max</div>
               </Card>
 
               {/* Exclusive */}
@@ -403,10 +403,10 @@ const Index = () => {
                 <Badge className="mb-3 bg-accent/10 text-accent border-accent/20">Pay on Award</Badge>
                 <h3 className="text-xl font-semibold mb-2">Exclusive Job Award</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Submit a bid and pay 2.5% referral fee when awarded. Gigger pays 5% deposit when you accept.
+                  Submit a bid and pay 3% referral fee when awarded. Gigger pays deposit when you accept.
                 </p>
-                <div className="text-2xl font-bold text-accent mb-2">2.5% referral fee</div>
-                <div className="text-sm text-muted-foreground">$100 min – $249 max + 5% Gigger deposit</div>
+                <div className="text-2xl font-bold text-accent mb-2">3% referral fee</div>
+                <div className="text-sm text-muted-foreground">$10 min – $249 max • Deposit: 5%+lead cost or $249</div>
               </Card>
             </div>
 

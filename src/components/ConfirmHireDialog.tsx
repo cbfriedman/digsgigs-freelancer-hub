@@ -13,11 +13,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, Lock, AlertTriangle } from "lucide-react";
 
-// Referral fee configuration
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN = 100; // $100 minimum
+// Referral fee configuration - must match edge function
+const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
-const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
+// Non-exclusive pricing for deposit calculation
+const NON_EXCLUSIVE_RATE = 0.02; // 2%
+const NON_EXCLUSIVE_MIN = 3; // $3 minimum
+const NON_EXCLUSIVE_MAX = 49; // $49 maximum
+// Deposit: higher of (5% + non-exclusive cost) or $249
+const DEPOSIT_BASE_RATE = 0.05; // 5% base
+const DEPOSIT_MIN = 249; // $249 minimum deposit
+
+// Calculate non-exclusive lead cost for deposit formula
+const calculateNonExclusiveCost = (bidAmount: number): number => {
+  const percentageCost = bidAmount * NON_EXCLUSIVE_RATE;
+  return Math.min(NON_EXCLUSIVE_MAX, Math.max(NON_EXCLUSIVE_MIN, percentageCost));
+};
+
+// Calculate Gigger deposit: higher of (5% + non-exclusive cost) or $249
+const calculateGiggerDeposit = (bidAmount: number): number => {
+  const nonExclusiveCost = calculateNonExclusiveCost(bidAmount);
+  const percentageDeposit = (bidAmount * DEPOSIT_BASE_RATE) + nonExclusiveCost;
+  return Math.max(DEPOSIT_MIN, percentageDeposit);
+};
 
 interface ConfirmHireDialogProps {
   bidId: string;

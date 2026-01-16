@@ -20,11 +20,17 @@ interface BidSubmissionTemplateDemoProps {
   onAskQuestion?: () => void;
 }
 
-// Referral fee configuration
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN = 100; // $100 minimum
+// Referral fee configuration - must match edge function
+const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
-const GIGGER_DEPOSIT_RATE = 0.05; // 5% deposit
+// Non-exclusive pricing for deposit calculation
+const NON_EXCLUSIVE_RATE = 0.02; // 2%
+const NON_EXCLUSIVE_MIN = 3; // $3 minimum
+const NON_EXCLUSIVE_MAX = 49; // $49 maximum
+// Deposit: higher of (5% + non-exclusive cost) or $249
+const DEPOSIT_BASE_RATE = 0.05; // 5% base
+const DEPOSIT_MIN = 249; // $249 minimum deposit
 
 const sampleDiggerProfile = {
   profession: "Full-Stack Developer",
@@ -75,6 +81,19 @@ export function BidSubmissionTemplateDemo({
     return Math.min(Math.max(fee, REFERRAL_FEE_MIN), REFERRAL_FEE_CAP);
   };
 
+  // Calculate non-exclusive lead cost for deposit formula
+  const calculateNonExclusiveCost = (amount: number): number => {
+    const percentageCost = amount * NON_EXCLUSIVE_RATE;
+    return Math.min(NON_EXCLUSIVE_MAX, Math.max(NON_EXCLUSIVE_MIN, percentageCost));
+  };
+
+  // Calculate Gigger deposit: higher of (5% + non-exclusive cost) or $249
+  const calculateGiggerDeposit = (amount: number): number => {
+    const nonExclusiveCost = calculateNonExclusiveCost(amount);
+    const percentageDeposit = (amount * DEPOSIT_BASE_RATE) + nonExclusiveCost;
+    return Math.max(DEPOSIT_MIN, percentageDeposit);
+  };
+
   // Update max when min changes (enforce 20% constraint)
   const handleMinChange = (value: string) => {
     setAmountMin(value);
@@ -94,11 +113,11 @@ export function BidSubmissionTemplateDemo({
 
   const handleAcceptProposal = () => {
     const rangeAverage = (parseFloat(amountMin) + parseFloat(amountMax)) / 2;
-    const giggerDeposit = rangeAverage * GIGGER_DEPOSIT_RATE;
+    const giggerDeposit = calculateGiggerDeposit(rangeAverage);
     const diggerFee = calculateReferralFee();
     
     toast.success("Proposal Accepted! (Demo)", {
-      description: `Gigger charged 5% deposit ($${giggerDeposit.toFixed(0)}). Digger pays 2.5% fee ($${diggerFee.toFixed(0)}).`,
+      description: `Gigger deposit: $${giggerDeposit.toFixed(0)} (higher of 5%+lead cost or $249). Digger pays 3% fee ($${diggerFee.toFixed(0)}).`,
     });
     onAcceptProposal?.();
   };
@@ -117,7 +136,7 @@ export function BidSubmissionTemplateDemo({
   const maxAmount = parseFloat(amountMax) || 0;
   const rangeAverage = (minAmount + maxAmount) / 2;
   const referralFee = calculateReferralFee();
-  const giggerDeposit = rangeAverage * GIGGER_DEPOSIT_RATE;
+  const giggerDeposit = calculateGiggerDeposit(rangeAverage);
 
   const isDiggerView = viewMode === "digger";
   const isGiggerView = viewMode === "gigger";
