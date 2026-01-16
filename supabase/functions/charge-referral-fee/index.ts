@@ -13,10 +13,18 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Fee configuration
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN_CENTS = 10000; // $100 minimum
+const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_MIN_CENTS = 1000; // $10 minimum
 const REFERRAL_FEE_CAP_CENTS = 24900; // $249 cap
-const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
+
+// Non-exclusive pricing for deposit calculation
+const NON_EXCLUSIVE_RATE = 0.02; // 2%
+const NON_EXCLUSIVE_MIN_CENTS = 300; // $3 minimum
+const NON_EXCLUSIVE_MAX_CENTS = 4900; // $49 maximum
+
+// Deposit configuration: higher of (5% + non-exclusive cost) or $249
+const DEPOSIT_BASE_RATE = 0.05; // 5% base
+const DEPOSIT_MIN_CENTS = 24900; // $249 minimum deposit
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -88,11 +96,17 @@ serve(async (req) => {
       );
     }
 
-    // Calculate the referral fee (2.5% with $100 min, $249 cap)
+    // Calculate the referral fee (3% with $10 min, $249 cap)
     const bidAmountCents = Math.round(bid.amount * 100);
     const calculatedFeeCents = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
     // Apply minimum and maximum constraints
     const feeCents = Math.max(REFERRAL_FEE_MIN_CENTS, Math.min(calculatedFeeCents, REFERRAL_FEE_CAP_CENTS));
+
+    // Calculate Gigger deposit: higher of (5% + non-exclusive cost) or $249
+    const nonExclusivePercentageCents = Math.round(bidAmountCents * NON_EXCLUSIVE_RATE);
+    const nonExclusiveCostCents = Math.max(NON_EXCLUSIVE_MIN_CENTS, Math.min(nonExclusivePercentageCents, NON_EXCLUSIVE_MAX_CENTS));
+    const percentageDepositCents = Math.round(bidAmountCents * DEPOSIT_BASE_RATE) + nonExclusiveCostCents;
+    const depositCents = Math.max(DEPOSIT_MIN_CENTS, percentageDepositCents);
 
     logStep("Fee calculated", {
       bidAmount: bid.amount,
@@ -100,7 +114,9 @@ serve(async (req) => {
       calculatedFeeCents,
       feeCents,
       minApplied: calculatedFeeCents < REFERRAL_FEE_MIN_CENTS,
-      capApplied: calculatedFeeCents > REFERRAL_FEE_CAP_CENTS
+      capApplied: calculatedFeeCents > REFERRAL_FEE_CAP_CENTS,
+      nonExclusiveCostCents,
+      depositCents
     });
 
     // Get the digger's profile to find their Stripe customer ID
