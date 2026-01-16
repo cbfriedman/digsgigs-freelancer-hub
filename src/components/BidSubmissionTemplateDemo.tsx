@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { DollarSign, Clock, FileText, Eye, Info, MessageCircle, CheckCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, Clock, FileText, Eye, Info, MessageCircle, CheckCircle, Plus, Trash2, CreditCard, Calendar } from "lucide-react";
 import { AnonymizedDiggerCard } from "./AnonymizedDiggerCard";
 import { toast } from "sonner";
 
@@ -20,11 +22,44 @@ interface BidSubmissionTemplateDemoProps {
   onAskQuestion?: () => void;
 }
 
-// Referral fee configuration
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN = 100; // $100 minimum
+// Referral fee configuration - must match edge function
+const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
-const GIGGER_DEPOSIT_RATE = 0.05; // 5% deposit
+// Non-exclusive pricing for deposit calculation
+const NON_EXCLUSIVE_RATE = 0.02; // 2%
+const NON_EXCLUSIVE_MIN = 3; // $3 minimum
+const NON_EXCLUSIVE_MAX = 49; // $49 maximum
+// Deposit: higher of (5% + non-exclusive cost) or $249
+const DEPOSIT_BASE_RATE = 0.05; // 5% base
+const DEPOSIT_MIN = 249; // $249 minimum deposit
+
+// Payment method options
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "credit_card", label: "Credit Card" },
+  { value: "bank_transfer", label: "Bank Transfer / ACH" },
+  { value: "check", label: "Check" },
+  { value: "cash", label: "Cash" },
+  { value: "paypal", label: "PayPal" },
+  { value: "venmo", label: "Venmo" },
+  { value: "zelle", label: "Zelle" },
+  { value: "crypto", label: "Cryptocurrency" },
+];
+
+// Payment terms options
+const PAYMENT_TERMS_OPTIONS = [
+  { value: "upfront", label: "100% Upfront" },
+  { value: "50_50", label: "50% Upfront, 50% on Completion" },
+  { value: "milestone", label: "Per Milestone" },
+  { value: "net_15", label: "Net 15 Days" },
+  { value: "net_30", label: "Net 30 Days" },
+  { value: "on_completion", label: "On Completion" },
+];
+
+interface Milestone {
+  description: string;
+  amount: string;
+}
 
 const sampleDiggerProfile = {
   profession: "Full-Stack Developer",
@@ -67,12 +102,56 @@ export function BidSubmissionTemplateDemo({
   );
   const [showPreview, setShowPreview] = useState(false);
   const [clarificationQuestion, setClarificationQuestion] = useState("");
+  
+  // Milestone, payment methods, and payment terms state
+  const [milestones, setMilestones] = useState<Milestone[]>([
+    { description: "Project setup and initial development", amount: String(Math.round(effectiveBudgetMin * 0.3)) },
+    { description: "Core features implementation", amount: String(Math.round(effectiveBudgetMin * 0.5)) },
+    { description: "Testing and final delivery", amount: String(Math.round(effectiveBudgetMin * 0.2)) },
+  ]);
+  const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>(["credit_card", "bank_transfer"]);
+  const [paymentTerms, setPaymentTerms] = useState("milestone");
+
+  const addMilestone = () => {
+    setMilestones([...milestones, { description: "", amount: "" }]);
+  };
+
+  const removeMilestone = (index: number) => {
+    setMilestones(milestones.filter((_, i) => i !== index));
+  };
+
+  const updateMilestone = (index: number, field: keyof Milestone, value: string) => {
+    const updated = [...milestones];
+    updated[index][field] = value;
+    setMilestones(updated);
+  };
+
+  const togglePaymentMethod = (method: string) => {
+    setAcceptedPaymentMethods(prev =>
+      prev.includes(method)
+        ? prev.filter(m => m !== method)
+        : [...prev, method]
+    );
+  };
 
   // Calculate referral fee based on range average (not fixed price)
   const calculateReferralFee = () => {
     const rangeAverage = (parseFloat(amountMin) + parseFloat(amountMax)) / 2;
     const fee = rangeAverage * REFERRAL_FEE_RATE;
     return Math.min(Math.max(fee, REFERRAL_FEE_MIN), REFERRAL_FEE_CAP);
+  };
+
+  // Calculate non-exclusive lead cost for deposit formula
+  const calculateNonExclusiveCost = (amount: number): number => {
+    const percentageCost = amount * NON_EXCLUSIVE_RATE;
+    return Math.min(NON_EXCLUSIVE_MAX, Math.max(NON_EXCLUSIVE_MIN, percentageCost));
+  };
+
+  // Calculate Gigger deposit: higher of (5% + non-exclusive cost) or $249
+  const calculateGiggerDeposit = (amount: number): number => {
+    const nonExclusiveCost = calculateNonExclusiveCost(amount);
+    const percentageDeposit = (amount * DEPOSIT_BASE_RATE) + nonExclusiveCost;
+    return Math.max(DEPOSIT_MIN, percentageDeposit);
   };
 
   // Update max when min changes (enforce 20% constraint)
@@ -94,11 +173,11 @@ export function BidSubmissionTemplateDemo({
 
   const handleAcceptProposal = () => {
     const rangeAverage = (parseFloat(amountMin) + parseFloat(amountMax)) / 2;
-    const giggerDeposit = rangeAverage * GIGGER_DEPOSIT_RATE;
+    const giggerDeposit = calculateGiggerDeposit(rangeAverage);
     const diggerFee = calculateReferralFee();
     
     toast.success("Proposal Accepted! (Demo)", {
-      description: `Gigger charged 5% deposit ($${giggerDeposit.toFixed(0)}). Digger pays 2.5% fee ($${diggerFee.toFixed(0)}).`,
+      description: `Gigger deposit: $${giggerDeposit.toFixed(0)} (higher of 5%+lead cost or $249). Digger pays 3% fee ($${diggerFee.toFixed(0)}).`,
     });
     onAcceptProposal?.();
   };
@@ -117,7 +196,7 @@ export function BidSubmissionTemplateDemo({
   const maxAmount = parseFloat(amountMax) || 0;
   const rangeAverage = (minAmount + maxAmount) / 2;
   const referralFee = calculateReferralFee();
-  const giggerDeposit = rangeAverage * GIGGER_DEPOSIT_RATE;
+  const giggerDeposit = calculateGiggerDeposit(rangeAverage);
 
   const isDiggerView = viewMode === "digger";
   const isGiggerView = viewMode === "gigger";
@@ -312,6 +391,126 @@ export function BidSubmissionTemplateDemo({
                 {proposal.length} characters (minimum 50)
               </p>
             )}
+          </div>
+
+          {/* Milestones Section */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Project Milestones
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Break down your project into milestones with descriptions and amounts
+            </p>
+            <div className="space-y-3">
+              {milestones.map((milestone, index) => (
+                <div key={index} className="flex gap-2 items-start">
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      placeholder="Milestone description"
+                      value={milestone.description}
+                      onChange={(e) => updateMilestone(index, "description", e.target.value)}
+                      disabled={isGiggerView}
+                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        $
+                      </span>
+                      <Input
+                        type="number"
+                        placeholder="Amount"
+                        value={milestone.amount}
+                        onChange={(e) => updateMilestone(index, "amount", e.target.value)}
+                        className="pl-7"
+                        disabled={isGiggerView}
+                      />
+                    </div>
+                  </div>
+                  {isDiggerView && milestones.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeMilestone(index)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {isDiggerView && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addMilestone}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Milestone
+                </Button>
+              )}
+              {milestones.length > 0 && (
+                <div className="text-sm text-muted-foreground text-right">
+                  Total: ${milestones.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0).toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Accepted Payment Methods */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Accepted Payment Methods
+            </Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {PAYMENT_METHOD_OPTIONS.map((method) => (
+                <div
+                  key={method.value}
+                  className={`flex items-center space-x-2 p-2 rounded border cursor-pointer transition-colors ${
+                    acceptedPaymentMethods.includes(method.value)
+                      ? "bg-primary/10 border-primary"
+                      : "hover:bg-muted"
+                  } ${isGiggerView ? "pointer-events-none" : ""}`}
+                  onClick={() => !isGiggerView && togglePaymentMethod(method.value)}
+                >
+                  <Checkbox
+                    id={`demo-payment-${method.value}`}
+                    checked={acceptedPaymentMethods.includes(method.value)}
+                    disabled={isGiggerView}
+                    onCheckedChange={() => togglePaymentMethod(method.value)}
+                  />
+                  <label
+                    htmlFor={`demo-payment-${method.value}`}
+                    className="text-sm cursor-pointer"
+                  >
+                    {method.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment Terms */}
+          <div className="space-y-3">
+            <Label htmlFor="demo-payment-terms">Payment Terms</Label>
+            <Select
+              value={paymentTerms}
+              onValueChange={setPaymentTerms}
+              disabled={isGiggerView}
+            >
+              <SelectTrigger id="demo-payment-terms">
+                <SelectValue placeholder="Select payment terms" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_TERMS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Preview Toggle (Digger view only) */}

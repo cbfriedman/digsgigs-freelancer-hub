@@ -22,11 +22,11 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
-// Dynamic pricing examples
+// Dynamic pricing examples (2% formula with $3 min, $49 max)
 const PRICING_EXAMPLES = [
-  { budget: "$500–$1,000", average: 750, price: 23, note: "" },
-  { budget: "$1,000–$2,000", average: 1500, price: 45, note: "" },
-  { budget: "$2,000+", average: 3000, price: 49, note: "(cap)" },
+  { budget: "$150–$300", average: 225, price: 5, note: "" },
+  { budget: "$500–$1,000", average: 750, price: 15, note: "" },
+  { budget: "$2,500+", average: 3000, price: 49, note: "(cap)" },
 ];
 
 export default function Pricing() {
@@ -36,7 +36,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Two pricing options: Pay-per-lead (3% of budget, $49 max) or exclusive jobs (2% referral fee, $100-$249). No subscriptions. Bogus leads refundable." />
+        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $3-$49) or exclusive jobs (3% referral fee, $10-$249). No subscriptions. Bogus leads refundable." />
       </Helmet>
       
       <Navigation />
@@ -93,11 +93,15 @@ export default function Pricing() {
                     <div className="bg-muted/50 rounded-xl p-4">
                       <div className="text-sm text-center mb-2 text-muted-foreground">Pricing Formula</div>
                       <div className="text-center font-mono font-bold text-primary">
-                        3% of average budget
+                        Higher of 2% or $3
                       </div>
                     </div>
 
                     <div className="flex justify-center gap-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">$3</div>
+                        <div className="text-xs text-muted-foreground">Minimum</div>
+                      </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-primary">$49</div>
                         <div className="text-xs text-muted-foreground">Maximum</div>
@@ -135,25 +139,30 @@ export default function Pricing() {
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <p className="text-center text-muted-foreground">
-                      Submit a bid and pay 2.5% when awarded. Gigger pays 5% deposit when you accept.
+                      Submit a bid and pay 3% when awarded. Gigger pays deposit when you accept.
                     </p>
                     
                     <div className="bg-muted/50 rounded-xl p-4">
-                      <div className="text-sm text-center mb-2 text-muted-foreground">One-Time Referral Fee</div>
+                      <div className="text-sm text-center mb-2 text-muted-foreground">Referral Fee</div>
                       <div className="text-center font-mono font-bold text-accent">
-                        2.5% of your bid amount
+                        Higher of 3% or $10
                       </div>
                     </div>
 
                     <div className="flex justify-center gap-6">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-accent">$100</div>
+                        <div className="text-2xl font-bold text-accent">$10</div>
                         <div className="text-xs text-muted-foreground">Minimum</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-accent">$249</div>
                         <div className="text-xs text-muted-foreground">Maximum</div>
                       </div>
+                    </div>
+                    
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <div className="text-xs text-muted-foreground mb-1">Gigger Deposit on Acceptance</div>
+                      <div className="text-sm font-medium">Higher of (5% + lead cost) or $249</div>
                     </div>
 
                     <ul className="space-y-2">
@@ -187,7 +196,7 @@ export default function Pricing() {
                   <div className="bg-muted/50 rounded-xl p-6">
                     <div className="text-lg mb-4">
                       <span className="font-mono font-bold text-primary">
-                        Lead Price = (Min Budget + Max Budget) ÷ 2 × 3%
+                        Lead Price = Higher of [ (Budget Avg × 2%) ] or [ $3 ]
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground">

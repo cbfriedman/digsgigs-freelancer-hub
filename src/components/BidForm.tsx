@@ -28,10 +28,16 @@ const bidSchema = z.object({
 });
 
 // Referral fee configuration - must match edge function
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN = 100; // $100 minimum
+const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
-const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
+// Non-exclusive pricing for deposit calculation
+const NON_EXCLUSIVE_RATE = 0.02; // 2%
+const NON_EXCLUSIVE_MIN = 3; // $3 minimum
+const NON_EXCLUSIVE_MAX = 49; // $49 maximum
+// Deposit: higher of (5% + non-exclusive cost) or $249
+const DEPOSIT_BASE_RATE = 0.05; // 5% base
+const DEPOSIT_MIN = 249; // $249 minimum deposit
 
 interface BidFormProps {
   gigId: string;

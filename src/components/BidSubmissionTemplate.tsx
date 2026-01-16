@@ -9,9 +9,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Info, Percent, CreditCard, AlertCircle, DollarSign, Eye } from "lucide-react";
+import { Loader2, Info, Percent, CreditCard, AlertCircle, DollarSign, Eye, Plus, Trash2, Milestone } from "lucide-react";
 import { z } from "zod";
 import { AnonymizedDiggerCard } from "./AnonymizedDiggerCard";
+
+// Milestone interface
+interface MilestoneItem {
+  id: string;
+  description: string;
+  amount: string;
+}
 
 // SECURITY: Input validation schema
 const bidSchema = z.object({
@@ -35,10 +42,28 @@ const bidSchema = z.object({
 });
 
 // Referral fee configuration - must match edge function
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN = 100; // $100 minimum
+const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
-const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
+// Non-exclusive pricing for deposit calculation
+const NON_EXCLUSIVE_RATE = 0.02; // 2%
+const NON_EXCLUSIVE_MIN = 3; // $3 minimum
+const NON_EXCLUSIVE_MAX = 49; // $49 maximum
+// Deposit: higher of (5% + non-exclusive cost) or $249
+const DEPOSIT_BASE_RATE = 0.05; // 5% base
+const DEPOSIT_MIN = 249; // $249 minimum deposit
+
+// Available payment methods
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "credit_card", label: "Credit Card" },
+  { value: "bank_transfer", label: "Bank Transfer (ACH)" },
+  { value: "check", label: "Check" },
+  { value: "paypal", label: "PayPal" },
+  { value: "venmo", label: "Venmo" },
+  { value: "zelle", label: "Zelle" },
+  { value: "cash", label: "Cash" },
+  { value: "crypto", label: "Cryptocurrency" },
+];
 
 interface DiggerProfile {
   id: string;
@@ -84,6 +109,11 @@ export const BidSubmissionTemplate = ({
   const [diggerProfile, setDiggerProfile] = useState<DiggerProfile | null>(null);
   const [referenceCount, setReferenceCount] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  
+  // New fields for milestones, payment methods, and payment terms
+  const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
+  const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>([]);
+  const [paymentTerms, setPaymentTerms] = useState("");
 
   // Fetch digger profile for preview
   useEffect(() => {
@@ -167,6 +197,14 @@ export const BidSubmissionTemplate = ({
       // Calculate midpoint for the main amount field
       const midpointAmount = (validated.amountMin + validated.amountMax) / 2;
 
+      // Prepare milestones data
+      const milestonesData = milestones
+        .filter(m => m.description.trim() && m.amount.trim())
+        .map(m => ({
+          description: m.description.trim(),
+          amount: parseFloat(m.amount) || 0,
+        }));
+
       const bidData: any = {
         gig_id: gigId,
         digger_id: diggerId,
@@ -176,6 +214,9 @@ export const BidSubmissionTemplate = ({
         timeline: validated.timeline,
         proposal: validated.proposal,
         pricing_model: pricingModel,
+        milestones: milestonesData.length > 0 ? milestonesData : null,
+        accepted_payment_methods: acceptedPaymentMethods.length > 0 ? acceptedPaymentMethods : null,
+        payment_terms: paymentTerms.trim() || null,
       };
 
       // Add referral fee info for success-based bids
@@ -388,6 +429,123 @@ export const BidSubmissionTemplate = ({
               />
               <p className="text-xs text-muted-foreground">
                 {proposal.length}/5000 characters
+              </p>
+            </div>
+
+            {/* Milestones Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <Milestone className="w-4 h-4 text-primary" />
+                  Payment Milestones (Optional)
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMilestones([...milestones, { id: crypto.randomUUID(), description: "", amount: "" }])}
+                  className="gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Milestone
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Break down your project into payment milestones. Clients appreciate knowing when payments are due.
+              </p>
+              {milestones.map((milestone, index) => (
+                <div key={milestone.id} className="flex gap-3 items-start p-3 bg-muted/50 rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      placeholder={`Milestone ${index + 1} description (e.g., "Design completion")`}
+                      value={milestone.description}
+                      onChange={(e) => {
+                        const updated = [...milestones];
+                        updated[index].description = e.target.value;
+                        setMilestones(updated);
+                      }}
+                    />
+                  </div>
+                  <div className="w-28">
+                    <Input
+                      type="number"
+                      placeholder="Amount"
+                      value={milestone.amount}
+                      onChange={(e) => {
+                        const updated = [...milestones];
+                        updated[index].amount = e.target.value;
+                        setMilestones(updated);
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setMilestones(milestones.filter(m => m.id !== milestone.id))}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              {milestones.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Total milestones: ${milestones.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0).toLocaleString()}
+                </div>
+              )}
+            </div>
+
+            {/* Accepted Payment Methods */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-primary" />
+                Accepted Payment Methods
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Select the payment methods you accept for this project.
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {PAYMENT_METHOD_OPTIONS.map((method) => (
+                  <label
+                    key={method.value}
+                    className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                      acceptedPaymentMethods.includes(method.value)
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={acceptedPaymentMethods.includes(method.value)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setAcceptedPaymentMethods([...acceptedPaymentMethods, method.value]);
+                        } else {
+                          setAcceptedPaymentMethods(acceptedPaymentMethods.filter(v => v !== method.value));
+                        }
+                      }}
+                    />
+                    <span className="text-sm">{method.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Terms */}
+            <div className="space-y-2">
+              <Label htmlFor="paymentTerms" className="text-base font-semibold">
+                Payment Terms
+              </Label>
+              <Textarea
+                id="paymentTerms"
+                placeholder="Describe your payment terms (e.g., 50% upfront, 50% on completion; Net 30; etc.)"
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms(e.target.value)}
+                rows={3}
+                maxLength={1000}
+              />
+              <p className="text-xs text-muted-foreground">
+                {paymentTerms.length}/1000 characters
               </p>
             </div>
 

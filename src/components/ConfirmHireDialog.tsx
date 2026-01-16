@@ -13,11 +13,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, Lock, AlertTriangle } from "lucide-react";
 
-// Referral fee configuration
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN = 100; // $100 minimum
+// Referral fee configuration - must match edge function
+const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
-const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
+// Non-exclusive pricing for deposit calculation
+const NON_EXCLUSIVE_RATE = 0.02; // 2%
+const NON_EXCLUSIVE_MIN = 3; // $3 minimum
+const NON_EXCLUSIVE_MAX = 49; // $49 maximum
+// Deposit: higher of (5% + non-exclusive cost) or $249
+const DEPOSIT_BASE_RATE = 0.05; // 5% base
+const DEPOSIT_MIN = 249; // $249 minimum deposit
+
+// Calculate non-exclusive lead cost for deposit formula
+const calculateNonExclusiveCost = (bidAmount: number): number => {
+  const percentageCost = bidAmount * NON_EXCLUSIVE_RATE;
+  return Math.min(NON_EXCLUSIVE_MAX, Math.max(NON_EXCLUSIVE_MIN, percentageCost));
+};
+
+// Calculate Gigger deposit: higher of (5% + non-exclusive cost) or $249
+const calculateGiggerDeposit = (bidAmount: number): number => {
+  const nonExclusiveCost = calculateNonExclusiveCost(bidAmount);
+  const percentageDeposit = (bidAmount * DEPOSIT_BASE_RATE) + nonExclusiveCost;
+  return Math.max(DEPOSIT_MIN, percentageDeposit);
+};
 
 interface ConfirmHireDialogProps {
   bidId: string;
@@ -45,6 +64,7 @@ export function ConfirmHireDialog({
   const referralFee = isExclusive 
     ? Math.max(REFERRAL_FEE_MIN, Math.min(calculatedFee, REFERRAL_FEE_CAP)) 
     : 0;
+  const giggerDeposit = isExclusive ? calculateGiggerDeposit(bidAmount) : 0;
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -52,21 +72,48 @@ export function ConfirmHireDialog({
   const handleConfirmHire = async () => {
     setConfirming(true);
     try {
-      const { error } = await supabase.functions.invoke("award-lead", {
-        body: {
-          gigId,
-          diggerId,
-          bidId,
-          awardMethod: "consumer_hire",
-        },
-      });
+      // For exclusive bids, redirect to deposit payment first
+      if (isExclusive) {
+        const { data, error } = await supabase.functions.invoke("charge-gigger-deposit", {
+          body: {
+            gigId,
+            bidId,
+            giggerId: (await supabase.auth.getUser()).data.user?.id,
+            diggerId,
+            origin: window.location.origin,
+          },
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+
+        if (data?.requiresPayment && data?.checkoutUrl) {
+          // Redirect to Stripe checkout
+          window.open(data.checkoutUrl, "_blank");
+          toast({
+            title: "Complete Payment",
+            description: "Please complete the deposit payment in the new tab to finalize the award.",
+          });
+          setOpen(false);
+          return;
+        }
+      } else {
+        // Non-exclusive: proceed with normal award
+        const { error } = await supabase.functions.invoke("award-lead", {
+          body: {
+            gigId,
+            diggerId,
+            bidId,
+            awardMethod: "consumer_hire",
+          },
+        });
+
+        if (error) throw error;
+      }
 
       toast({
         title: isExclusive ? "Exclusive Award Confirmed!" : "Hire Confirmed!",
         description: isExclusive 
-          ? `${diggerName} has been exclusively awarded this job. They'll be notified to accept and start.`
+          ? `${diggerName} has been exclusively awarded this job. They'll be notified to accept within 24 hours.`
           : `${diggerName} has been awarded the lead. They can now start work.`,
       });
 
@@ -140,7 +187,10 @@ export function ConfirmHireDialog({
                   <ul className="text-orange-700 dark:text-orange-300 space-y-1">
                     <li>• This job will become exclusive to {diggerName}</li>
                     <li>• No other professionals can be awarded this job</li>
-                    <li>• The selected Digger will pay a one-time referral fee (${referralFee.toFixed(0)}) when they accept and are ready to start</li>
+                    <li>• <strong>You will pay a deposit of ${giggerDeposit.toFixed(0)} now</strong> (higher of 5% + lead cost or $249)</li>
+                    <li>• If {diggerName} accepts within 24 hours, the 5% portion is released to them</li>
+                    <li>• If they don't accept in 24 hours, your deposit is refunded</li>
+                    <li>• The Digger will pay a referral fee (${referralFee.toFixed(0)}) if they don't accept in time</li>
                   </ul>
                 </div>
               </div>

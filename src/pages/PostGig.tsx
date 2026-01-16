@@ -56,10 +56,12 @@ const PostGig = () => {
   const calculateLeadPrice = (): number => {
     const min = parseCurrency(budgetMin);
     const max = parseCurrency(budgetMax);
-    if (!min && !max) return 1;
+    if (!min && !max) return 3; // $3 minimum
     const avg = (min + max) / 2;
-    const price = Math.round(avg * 0.03);
-    return Math.min(49, Math.max(1, price)); // No minimum, $49 cap
+    const percentagePrice = avg * 0.02; // 2% of average
+    // Higher of 2% or $3, capped at $49
+    const price = Math.max(3, Math.round(percentagePrice));
+    return Math.min(49, price);
   };
 
   const validateForm = (): boolean => {
