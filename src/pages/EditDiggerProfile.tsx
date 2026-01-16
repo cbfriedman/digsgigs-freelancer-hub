@@ -629,6 +629,8 @@ const EditDiggerProfile = () => {
                     onChange={(e) => setCountry(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   >
+                    <option value="">Select a country...</option>
+                    <option value="All Countries">🌐 All Countries</option>
                     <option value="United States">🇺🇸 United States</option>
                     <option value="Canada">🇨🇦 Canada</option>
                     <option value="United Kingdom">🇬🇧 United Kingdom</option>
@@ -644,7 +646,7 @@ const EditDiggerProfile = () => {
                 </div>
 
                 {/* State/Province Multi-Select - Always visible for supported countries */}
-                {country && country !== "Other" && availableRegions.length > 0 && (
+                {country && country !== "Other" && country !== "All Countries" && country !== "" && availableRegions.length > 0 && (
                   <div className="space-y-2 border-l-4 border-primary pl-4 bg-primary/5 p-4 rounded-r-lg">
                     <Label className="text-base font-semibold flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-primary" />
