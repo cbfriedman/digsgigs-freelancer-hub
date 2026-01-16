@@ -94,6 +94,7 @@ import FoundingDigger from "./pages/FoundingDigger";
 import About from "./pages/About";
 import ApplyDigger from "./pages/ApplyDigger";
 import FBDiggerLanding from "./pages/FBDiggerLanding";
+import ApplyDiggerFB from "./pages/ApplyDiggerFB";
 import ApplyLanding from "./pages/ApplyLanding";
 import PaymentMethods from "./pages/PaymentMethods";
 import ProfileCategoryBrowser from "./pages/ProfileCategoryBrowser";
@@ -480,6 +481,10 @@ const router = createBrowserRouter(
       {
         path: "/fb-digger",
         element: <FBDiggerLanding />,
+      },
+      {
+        path: "/apply-digger-fb",
+        element: <ApplyDiggerFB />,
       },
       {
         path: "*",
