@@ -153,6 +153,44 @@ serve(async (req) => {
       })
       .eq("id", gigId);
 
+    // Release 5% deposit to Digger if there's a paid deposit
+    const { data: deposit, error: depositError } = await supabaseClient
+      .from("gigger_deposits")
+      .select("*")
+      .eq("bid_id", bidId)
+      .eq("status", "paid")
+      .single();
+
+    if (deposit && !depositError) {
+      // Calculate the 5% portion to release to Digger
+      const bidAmount = bid.amount || ((bid.amount_min || 0) + (bid.amount_max || 0)) / 2;
+      const fivePercentBonus = Math.round(bidAmount * 0.05 * 100); // in cents
+
+      logStep("Releasing 5% deposit to Digger", {
+        depositId: deposit.id,
+        bidAmount,
+        fivePercentBonus: fivePercentBonus / 100,
+      });
+
+      // Update deposit status to released
+      await supabaseClient
+        .from("gigger_deposits")
+        .update({
+          status: "released",
+          released_at: new Date().toISOString(),
+          released_to_digger_cents: fivePercentBonus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", deposit.id);
+
+      // TODO: If using Stripe Connect, transfer fivePercentBonus to Digger's connected account
+      // For now, we just record it - actual transfer would require Stripe Connect setup
+      logStep("Deposit released successfully", {
+        depositId: deposit.id,
+        releasedAmount: fivePercentBonus / 100,
+      });
+    }
+
     logStep("Award accepted successfully", { bidId, gigId });
 
     // Notify the client
