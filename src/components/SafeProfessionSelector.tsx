@@ -92,10 +92,6 @@ export const SafeProfessionSelector = ({
     );
   };
 
-  const getLeadPrice = (tier: 'low' | 'mid' | 'high') => {
-    const prices = { low: 10, mid: 15, high: 25 };
-    return prices[tier];
-  };
 
   if (loading) {
     return (
@@ -175,21 +171,6 @@ export const SafeProfessionSelector = ({
               />
             </div>
             
-            {/* Pricing Legend */}
-            <div className="mt-3 pt-3 border-t flex flex-wrap gap-3 text-xs">
-              <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="bg-green-100 text-green-800 px-1.5 py-0">LV</Badge>
-                <span className="text-muted-foreground">$10/lead</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-1.5 py-0">MV</Badge>
-                <span className="text-muted-foreground">$15/lead</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="bg-purple-100 text-purple-800 px-1.5 py-0">HV</Badge>
-                <span className="text-muted-foreground">$25/lead</span>
-              </div>
-            </div>
           </div>
 
           {/* Categories List */}
@@ -247,12 +228,7 @@ export const SafeProfessionSelector = ({
                               >
                                 {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                               </div>
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-sm">{profession.name}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  ${getLeadPrice(profession.lead_tier)}/lead
-                                </span>
-                              </div>
+                              <span className="text-sm">{profession.name}</span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               {getTierBadge(profession.lead_tier)}
@@ -310,7 +286,6 @@ export const SafeProfessionSelector = ({
                 className="px-2 py-1 flex items-center gap-1"
               >
                 {profession.name}
-                <span className="text-xs text-muted-foreground">(${getLeadPrice(profession.lead_tier)})</span>
                 <X 
                   className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
                   onClick={() => removeProfession(profession.id)}
