@@ -137,7 +137,7 @@ serve(async (req) => {
             user_id: diggerProfile.user_id,
             type: "lead_awarded_exclusive",
             title: "🎉 Exclusive Job Award!",
-            message: `You've been exclusively awarded "${gig?.title || 'a project'}". Accept within 24 hours to receive the $${((deposit?.base_rate_amount_cents || 0) / 100).toFixed(0)} deposit bonus!`,
+            message: `You've been exclusively awarded "${gig?.title || 'a project'}". Accept within 24 hours to receive the $${((deposit?.base_rate_amount_cents || 0) / 100).toFixed(0)} down-payment as an advance!`,
             link: `/gig/${gigId}`,
             metadata: {
               gig_id: gigId,

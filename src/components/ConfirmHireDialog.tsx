@@ -187,10 +187,11 @@ export function ConfirmHireDialog({
                   <ul className="text-orange-700 dark:text-orange-300 space-y-1">
                     <li>• This job will become exclusive to {diggerName}</li>
                     <li>• No other professionals can be awarded this job</li>
-                    <li>• <strong>You will pay a deposit of ${giggerDeposit.toFixed(0)} now</strong> (higher of 5% + lead cost or $249)</li>
-                    <li>• If {diggerName} accepts within 24 hours, the 5% portion is released to them</li>
+                    <li>• <strong>You will pay a 5% down-payment of ${giggerDeposit.toFixed(0)} now</strong> (higher of 5% + lead cost or $249)</li>
+                    <li>• This down-payment is deducted from the total you owe {diggerName} at job completion</li>
+                    <li>• If {diggerName} accepts within 24 hours, the 5% is released to them as an advance</li>
                     <li>• If they don't accept in 24 hours, your deposit is refunded</li>
-                    <li>• The Digger will pay a referral fee (${referralFee.toFixed(0)}) if they don't accept in time</li>
+                    <li>• The 3% referral fee (${referralFee.toFixed(0)}) is paid out of your down-payment</li>
                   </ul>
                 </div>
               </div>
