@@ -136,6 +136,7 @@ export type Database = {
       }
       bids: {
         Row: {
+          accepted_payment_methods: string[] | null
           amount: number
           amount_max: number | null
           amount_min: number | null
@@ -147,6 +148,8 @@ export type Database = {
           digger_id: string
           gig_id: string
           id: string
+          milestones: Json | null
+          payment_terms: string | null
           pricing_model: string | null
           proposal: string
           referral_fee_cap_cents: number | null
@@ -160,6 +163,7 @@ export type Database = {
           withdrawn_at: string | null
         }
         Insert: {
+          accepted_payment_methods?: string[] | null
           amount: number
           amount_max?: number | null
           amount_min?: number | null
@@ -171,6 +175,8 @@ export type Database = {
           digger_id: string
           gig_id: string
           id?: string
+          milestones?: Json | null
+          payment_terms?: string | null
           pricing_model?: string | null
           proposal: string
           referral_fee_cap_cents?: number | null
@@ -184,6 +190,7 @@ export type Database = {
           withdrawn_at?: string | null
         }
         Update: {
+          accepted_payment_methods?: string[] | null
           amount?: number
           amount_max?: number | null
           amount_min?: number | null
@@ -195,6 +202,8 @@ export type Database = {
           digger_id?: string
           gig_id?: string
           id?: string
+          milestones?: Json | null
+          payment_terms?: string | null
           pricing_model?: string | null
           proposal?: string
           referral_fee_cap_cents?: number | null
@@ -1743,6 +1752,101 @@ export type Database = {
           },
           {
             foreignKeyName: "escrow_contracts_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gigger_deposits: {
+        Row: {
+          acceptance_deadline: string
+          base_rate_amount_cents: number
+          bid_id: string
+          created_at: string
+          deposit_amount_cents: number
+          digger_id: string
+          gig_id: string
+          gigger_id: string
+          id: string
+          lead_cost_amount_cents: number
+          paid_at: string | null
+          refund_reason: string | null
+          refunded_at: string | null
+          released_at: string | null
+          released_to_digger_cents: number | null
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          acceptance_deadline: string
+          base_rate_amount_cents: number
+          bid_id: string
+          created_at?: string
+          deposit_amount_cents: number
+          digger_id: string
+          gig_id: string
+          gigger_id: string
+          id?: string
+          lead_cost_amount_cents: number
+          paid_at?: string | null
+          refund_reason?: string | null
+          refunded_at?: string | null
+          released_at?: string | null
+          released_to_digger_cents?: number | null
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acceptance_deadline?: string
+          base_rate_amount_cents?: number
+          bid_id?: string
+          created_at?: string
+          deposit_amount_cents?: number
+          digger_id?: string
+          gig_id?: string
+          gigger_id?: string
+          id?: string
+          lead_cost_amount_cents?: number
+          paid_at?: string | null
+          refund_reason?: string | null
+          refunded_at?: string | null
+          released_at?: string | null
+          released_to_digger_cents?: number | null
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gigger_deposits_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigger_deposits_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigger_deposits_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigger_deposits_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "safe_public_gigs"
