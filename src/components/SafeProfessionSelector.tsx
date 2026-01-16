@@ -83,14 +83,7 @@ export const SafeProfessionSelector = ({
     return null;
   }, [selectedProfessions, categoriesWithProfessions]);
 
-  const getTierBadge = (tier: 'low' | 'mid' | 'high') => {
-    const labels = { low: 'LV', mid: 'MV', high: 'HV' };
-    return (
-      <Badge variant="secondary" className={`text-xs px-1.5 py-0 ${getLeadTierBadgeColor(tier)}`}>
-        {labels[tier]}
-      </Badge>
-    );
-  };
+  // Tier badges removed - lead pricing is now determined at project level based on budget
 
 
   if (loading) {
@@ -231,7 +224,6 @@ export const SafeProfessionSelector = ({
                               <span className="text-sm">{profession.name}</span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              {getTierBadge(profession.lead_tier)}
                               <Button
                                 size="sm"
                                 variant={isSelected ? "secondary" : "default"}
