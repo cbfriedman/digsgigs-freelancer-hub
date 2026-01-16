@@ -28,9 +28,10 @@ const bidSchema = z.object({
 });
 
 // Referral fee configuration - must match edge function
-const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_RATE = 0.025; // 2.5%
 const REFERRAL_FEE_MIN = 100; // $100 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
+const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
 interface BidFormProps {
   gigId: string;
@@ -180,7 +181,7 @@ export const BidForm = ({ gigId, diggerId, onSuccess, initialPricingModel = "pay
           {pricingModel === "success_based" ? (
             <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
               <Percent className="w-3 h-3 mr-1" />
-              Exclusive (Pay on Acceptance)
+              Exclusive (Pay on Award)
             </Badge>
           ) : (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">

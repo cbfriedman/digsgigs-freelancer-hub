@@ -400,13 +400,13 @@ const Index = () => {
 
               {/* Exclusive */}
               <Card className="p-6 border-accent/30 text-left">
-                <Badge className="mb-3 bg-accent/10 text-accent border-accent/20">Pay on Acceptance</Badge>
+                <Badge className="mb-3 bg-accent/10 text-accent border-accent/20">Pay on Award</Badge>
                 <h3 className="text-xl font-semibold mb-2">Exclusive Job Award</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Submit a bid at no cost. Pay only when awarded and ready to start.
+                  Submit a bid and pay 2.5% referral fee when awarded. Gigger pays 5% deposit when you accept.
                 </p>
-                <div className="text-2xl font-bold text-accent mb-2">2% referral fee</div>
-                <div className="text-sm text-muted-foreground">$100 min – $249 max</div>
+                <div className="text-2xl font-bold text-accent mb-2">2.5% referral fee</div>
+                <div className="text-sm text-muted-foreground">$100 min – $249 max + 5% Gigger deposit</div>
               </Card>
             </div>
 

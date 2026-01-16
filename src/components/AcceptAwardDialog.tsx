@@ -14,9 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertTriangle, CreditCard } from "lucide-react";
 
 // Referral fee configuration
-const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_RATE = 0.025; // 2.5%
 const REFERRAL_FEE_MIN = 100; // $100 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
+const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
 interface AcceptAwardDialogProps {
   bidId: string;

@@ -48,9 +48,10 @@ interface Lead {
 type PricingOption = "pay_per_lead" | "success_based";
 
 // Referral fee configuration - must match edge function
-const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_RATE = 0.025; // 2.5%
 const REFERRAL_FEE_MIN = 100; // $100 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
+const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
 export default function LeadUnlock() {
   const navigate = useNavigate();
@@ -141,11 +142,16 @@ export default function LeadUnlock() {
     return Math.min(49, Math.max(1, price)); // No minimum, $49 cap
   };
 
-  const getEstimatedReferralFee = (): { min: number; max: number } => {
+  const getEstimatedReferralFee = (): { min: number; max: number; midpoint: number } => {
     const min = lead?.budget_min || 0;
     const max = lead?.budget_max || min;
+    const midpoint = (min + max) / 2;
     
-    // 2% of bid range, with $100 min and $249 cap
+    // 2.5% of midpoint, with $100 min and $249 cap
+    const calcMidpointFee = midpoint * REFERRAL_FEE_RATE;
+    const midpointFee = Math.max(REFERRAL_FEE_MIN, Math.min(calcMidpointFee, REFERRAL_FEE_CAP));
+    
+    // Also calculate range for display
     const calcMinFee = min * REFERRAL_FEE_RATE;
     const calcMaxFee = max * REFERRAL_FEE_RATE;
     const minFee = Math.max(REFERRAL_FEE_MIN, Math.min(calcMinFee, REFERRAL_FEE_CAP));
@@ -153,7 +159,8 @@ export default function LeadUnlock() {
     
     return { 
       min: Math.round(minFee), 
-      max: Math.round(maxFee) 
+      max: Math.round(maxFee),
+      midpoint: Math.round(midpointFee)
     };
   };
 
@@ -391,7 +398,7 @@ export default function LeadUnlock() {
                       </Label>
                     </div>
 
-                    {/* Option 2: Exclusive (Pay on Acceptance) */}
+                    {/* Option 2: Exclusive (Pay on Award) */}
                     <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
                       selectedPricing === "success_based" 
                         ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20" 
@@ -406,16 +413,16 @@ export default function LeadUnlock() {
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <Percent className="w-5 h-5 text-orange-500" />
-                              <span className="font-semibold text-lg">Exclusive (Pay on Acceptance)</span>
+                              <span className="font-semibold text-lg">Exclusive (Pay on Award)</span>
                             </div>
-                            <span className="text-2xl font-bold text-orange-500">$0</span>
+                            <span className="text-2xl font-bold text-orange-500">${estimatedFee.midpoint}</span>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Pay nothing upfront. A one-time 2% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) applies only if you're awarded and ready to start.
+                            2.5% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Gigger pays 5% deposit when you accept.
                           </p>
                           {lead.budget_min && lead.budget_max && (
                             <div className="mt-2 text-xs text-muted-foreground">
-                              Estimated fee if awarded: ${estimatedFee.min} – ${estimatedFee.max}
+                              Based on midpoint of ${((lead.budget_min + lead.budget_max) / 2).toLocaleString()} budget
                             </div>
                           )}
                           <div className="mt-2 flex items-center gap-2 text-xs text-orange-600">
