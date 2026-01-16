@@ -406,7 +406,7 @@ const Index = () => {
                   Submit a bid and pay 3% referral fee when awarded. Gigger pays deposit when you accept.
                 </p>
                 <div className="text-2xl font-bold text-accent mb-2">3% referral fee</div>
-                <div className="text-sm text-muted-foreground">$10 min – $249 max • Deposit: 5%+lead cost or $249</div>
+                <div className="text-sm text-muted-foreground">$10 min – $249 max</div>
               </Card>
             </div>
 

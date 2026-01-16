@@ -64,6 +64,7 @@ export function ConfirmHireDialog({
   const referralFee = isExclusive 
     ? Math.max(REFERRAL_FEE_MIN, Math.min(calculatedFee, REFERRAL_FEE_CAP)) 
     : 0;
+  const giggerDeposit = isExclusive ? calculateGiggerDeposit(bidAmount) : 0;
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -159,7 +160,8 @@ export function ConfirmHireDialog({
                   <ul className="text-orange-700 dark:text-orange-300 space-y-1">
                     <li>• This job will become exclusive to {diggerName}</li>
                     <li>• No other professionals can be awarded this job</li>
-                    <li>• The selected Digger will pay a one-time referral fee (${referralFee.toFixed(0)}) when they accept and are ready to start</li>
+                    <li>• The selected Digger will pay a one-time referral fee (${referralFee.toFixed(0)}) when they accept</li>
+                    <li>• <strong>You will pay a deposit of ${giggerDeposit.toFixed(0)}</strong> (higher of 5% + lead cost or $249) when the Digger accepts</li>
                   </ul>
                 </div>
               </div>
