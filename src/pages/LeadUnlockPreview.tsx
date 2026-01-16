@@ -40,7 +40,7 @@ const sampleLead = {
   timeline: "2-4 weeks",
   location: "San Francisco, CA",
   created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-  calculated_price_cents: 2250, // $22.50 (3% of $7,500 midpoint)
+  calculated_price_cents: 4900, // $49 (3% of $7,500 = $225, capped at $49)
 };
 
 export default function LeadUnlockPreview() {
