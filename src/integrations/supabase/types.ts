@@ -14,129 +14,8 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_call_logs: {
-        Row: {
-          ai_agent_id: string | null
-          ai_agent_version: string | null
-          appointment_datetime: string | null
-          appointment_scheduled: boolean | null
-          call_connected_at: string | null
-          call_duration_seconds: number | null
-          call_ended_at: string | null
-          call_initiated_at: string
-          call_outcome: string | null
-          consent_record_id: string
-          conversation_id: string | null
-          created_at: string
-          dnc_scrub_id: string | null
-          gig_created: boolean | null
-          gig_id: string | null
-          id: string
-          lead_qualified: boolean | null
-          opted_out_during_call: boolean | null
-          recipient_local_time: string | null
-          recipient_timezone: string | null
-          recording_storage_path: string | null
-          recording_url: string | null
-          telemarketer_id: string | null
-          timezone_compliant: boolean
-          transcription: string | null
-        }
-        Insert: {
-          ai_agent_id?: string | null
-          ai_agent_version?: string | null
-          appointment_datetime?: string | null
-          appointment_scheduled?: boolean | null
-          call_connected_at?: string | null
-          call_duration_seconds?: number | null
-          call_ended_at?: string | null
-          call_initiated_at?: string
-          call_outcome?: string | null
-          consent_record_id: string
-          conversation_id?: string | null
-          created_at?: string
-          dnc_scrub_id?: string | null
-          gig_created?: boolean | null
-          gig_id?: string | null
-          id?: string
-          lead_qualified?: boolean | null
-          opted_out_during_call?: boolean | null
-          recipient_local_time?: string | null
-          recipient_timezone?: string | null
-          recording_storage_path?: string | null
-          recording_url?: string | null
-          telemarketer_id?: string | null
-          timezone_compliant?: boolean
-          transcription?: string | null
-        }
-        Update: {
-          ai_agent_id?: string | null
-          ai_agent_version?: string | null
-          appointment_datetime?: string | null
-          appointment_scheduled?: boolean | null
-          call_connected_at?: string | null
-          call_duration_seconds?: number | null
-          call_ended_at?: string | null
-          call_initiated_at?: string
-          call_outcome?: string | null
-          consent_record_id?: string
-          conversation_id?: string | null
-          created_at?: string
-          dnc_scrub_id?: string | null
-          gig_created?: boolean | null
-          gig_id?: string | null
-          id?: string
-          lead_qualified?: boolean | null
-          opted_out_during_call?: boolean | null
-          recipient_local_time?: string | null
-          recipient_timezone?: string | null
-          recording_storage_path?: string | null
-          recording_url?: string | null
-          telemarketer_id?: string | null
-          timezone_compliant?: boolean
-          transcription?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ai_call_logs_consent_record_id_fkey"
-            columns: ["consent_record_id"]
-            isOneToOne: false
-            referencedRelation: "consent_records"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_call_logs_dnc_scrub_id_fkey"
-            columns: ["dnc_scrub_id"]
-            isOneToOne: false
-            referencedRelation: "dnc_scrub_results"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_call_logs_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_call_logs_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_call_logs_telemarketer_id_fkey"
-            columns: ["telemarketer_id"]
-            isOneToOne: false
-            referencedRelation: "telemarketer_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       bids: {
         Row: {
-          accepted_payment_methods: string[] | null
           amount: number
           amount_max: number | null
           amount_min: number | null
@@ -148,8 +27,6 @@ export type Database = {
           digger_id: string
           gig_id: string
           id: string
-          milestones: Json | null
-          payment_terms: string | null
           pricing_model: string | null
           proposal: string
           referral_fee_cap_cents: number | null
@@ -163,7 +40,6 @@ export type Database = {
           withdrawn_at: string | null
         }
         Insert: {
-          accepted_payment_methods?: string[] | null
           amount: number
           amount_max?: number | null
           amount_min?: number | null
@@ -175,8 +51,6 @@ export type Database = {
           digger_id: string
           gig_id: string
           id?: string
-          milestones?: Json | null
-          payment_terms?: string | null
           pricing_model?: string | null
           proposal: string
           referral_fee_cap_cents?: number | null
@@ -190,7 +64,6 @@ export type Database = {
           withdrawn_at?: string | null
         }
         Update: {
-          accepted_payment_methods?: string[] | null
           amount?: number
           amount_max?: number | null
           amount_min?: number | null
@@ -202,8 +75,6 @@ export type Database = {
           digger_id?: string
           gig_id?: string
           id?: string
-          milestones?: Json | null
-          payment_terms?: string | null
           pricing_model?: string | null
           proposal?: string
           referral_fee_cap_cents?: number | null
@@ -229,13 +100,6 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bids_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -447,13 +311,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "blog_posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "blog_posts_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -482,86 +339,6 @@ export type Database = {
           slug?: string
         }
         Relationships: []
-      }
-      callable_leads_queue: {
-        Row: {
-          attempt_count: number | null
-          consent_record_id: string
-          created_at: string
-          dnc_scrub_id: string
-          id: string
-          last_attempt_at: string | null
-          last_call_log_id: string | null
-          max_attempts: number | null
-          next_attempt_at: string | null
-          priority: number | null
-          scheduled_call_time: string | null
-          status: string
-          telemarketer_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          attempt_count?: number | null
-          consent_record_id: string
-          created_at?: string
-          dnc_scrub_id: string
-          id?: string
-          last_attempt_at?: string | null
-          last_call_log_id?: string | null
-          max_attempts?: number | null
-          next_attempt_at?: string | null
-          priority?: number | null
-          scheduled_call_time?: string | null
-          status?: string
-          telemarketer_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          attempt_count?: number | null
-          consent_record_id?: string
-          created_at?: string
-          dnc_scrub_id?: string
-          id?: string
-          last_attempt_at?: string | null
-          last_call_log_id?: string | null
-          max_attempts?: number | null
-          next_attempt_at?: string | null
-          priority?: number | null
-          scheduled_call_time?: string | null
-          status?: string
-          telemarketer_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "callable_leads_queue_consent_record_id_fkey"
-            columns: ["consent_record_id"]
-            isOneToOne: false
-            referencedRelation: "consent_records"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "callable_leads_queue_dnc_scrub_id_fkey"
-            columns: ["dnc_scrub_id"]
-            isOneToOne: false
-            referencedRelation: "dnc_scrub_results"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "callable_leads_queue_last_call_log_id_fkey"
-            columns: ["last_call_log_id"]
-            isOneToOne: false
-            referencedRelation: "ai_call_logs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "callable_leads_queue_telemarketer_id_fkey"
-            columns: ["telemarketer_id"]
-            isOneToOne: false
-            referencedRelation: "telemarketer_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       campaign_conversions: {
         Row: {
@@ -682,7 +459,6 @@ export type Database = {
           email: string
           first_name: string | null
           id: string
-          industry: string | null
           last_name: string | null
           lead_type: string
           source: string | null
@@ -694,7 +470,6 @@ export type Database = {
           email: string
           first_name?: string | null
           id?: string
-          industry?: string | null
           last_name?: string | null
           lead_type: string
           source?: string | null
@@ -706,7 +481,6 @@ export type Database = {
           email?: string
           first_name?: string | null
           id?: string
-          industry?: string | null
           last_name?: string | null
           lead_type?: string
           source?: string | null
@@ -774,156 +548,6 @@ export type Database = {
           },
         ]
       }
-      consent_records: {
-        Row: {
-          consent_given_at: string
-          consent_revoked: boolean | null
-          consent_text: string
-          consent_version: string
-          created_at: string
-          email: string | null
-          full_name: string | null
-          id: string
-          ip_address: string
-          page_url: string
-          phone: string
-          phone_hash: string | null
-          property_address: string | null
-          raw_data_source: string | null
-          revocation_method: string | null
-          revoked_at: string | null
-          sms_verification_code: string | null
-          sms_verified: boolean | null
-          sms_verified_at: string | null
-          telemarketer_id: string | null
-          updated_at: string
-          user_agent: string | null
-          utm_campaign: string | null
-          utm_medium: string | null
-          utm_source: string | null
-        }
-        Insert: {
-          consent_given_at?: string
-          consent_revoked?: boolean | null
-          consent_text: string
-          consent_version?: string
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          ip_address: string
-          page_url: string
-          phone: string
-          phone_hash?: string | null
-          property_address?: string | null
-          raw_data_source?: string | null
-          revocation_method?: string | null
-          revoked_at?: string | null
-          sms_verification_code?: string | null
-          sms_verified?: boolean | null
-          sms_verified_at?: string | null
-          telemarketer_id?: string | null
-          updated_at?: string
-          user_agent?: string | null
-          utm_campaign?: string | null
-          utm_medium?: string | null
-          utm_source?: string | null
-        }
-        Update: {
-          consent_given_at?: string
-          consent_revoked?: boolean | null
-          consent_text?: string
-          consent_version?: string
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          ip_address?: string
-          page_url?: string
-          phone?: string
-          phone_hash?: string | null
-          property_address?: string | null
-          raw_data_source?: string | null
-          revocation_method?: string | null
-          revoked_at?: string | null
-          sms_verification_code?: string | null
-          sms_verified?: boolean | null
-          sms_verified_at?: string | null
-          telemarketer_id?: string | null
-          updated_at?: string
-          user_agent?: string | null
-          utm_campaign?: string | null
-          utm_medium?: string | null
-          utm_source?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "consent_records_telemarketer_id_fkey"
-            columns: ["telemarketer_id"]
-            isOneToOne: false
-            referencedRelation: "telemarketer_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      contact_reveals: {
-        Row: {
-          cost_cents: number
-          created_at: string
-          digger_id: string
-          gig_id: string
-          id: string
-          industry_category: string | null
-          revealed_at: string
-          subscription_tier: string | null
-          used_free_click: boolean | null
-        }
-        Insert: {
-          cost_cents: number
-          created_at?: string
-          digger_id: string
-          gig_id: string
-          id?: string
-          industry_category?: string | null
-          revealed_at?: string
-          subscription_tier?: string | null
-          used_free_click?: boolean | null
-        }
-        Update: {
-          cost_cents?: number
-          created_at?: string
-          digger_id?: string
-          gig_id?: string
-          id?: string
-          industry_category?: string | null
-          revealed_at?: string
-          subscription_tier?: string | null
-          used_free_click?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_reveals_digger_id_fkey"
-            columns: ["digger_id"]
-            isOneToOne: false
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_reveals_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_reveals_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       conversations: {
         Row: {
           consumer_id: string
@@ -962,13 +586,6 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversations_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -1072,41 +689,6 @@ export type Database = {
             foreignKeyName: "digger_lead_balance_digger_id_fkey"
             columns: ["digger_id"]
             isOneToOne: true
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      digger_monthly_clicks: {
-        Row: {
-          click_count: number | null
-          created_at: string | null
-          digger_id: string
-          id: string
-          month_year: string
-          updated_at: string | null
-        }
-        Insert: {
-          click_count?: number | null
-          created_at?: string | null
-          digger_id: string
-          id?: string
-          month_year: string
-          updated_at?: string | null
-        }
-        Update: {
-          click_count?: number | null
-          created_at?: string | null
-          digger_id?: string
-          id?: string
-          month_year?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "digger_monthly_clicks_digger_id_fkey"
-            columns: ["digger_id"]
-            isOneToOne: false
             referencedRelation: "digger_profiles"
             referencedColumns: ["id"]
           },
@@ -1250,15 +832,11 @@ export type Database = {
       }
       digger_profiles: {
         Row: {
-          accumulated_free_clicks: number | null
-          allow_gigger_contact: boolean | null
           availability: string | null
           average_rating: number | null
-          billing_cycle: string | null
           bio: string | null
           business_name: string
           certifications: string[] | null
-          city: string | null
           company_name: string | null
           completion_rate: number | null
           country: string | null
@@ -1266,16 +844,14 @@ export type Database = {
           custom_occupation_title: string | null
           expected_lead_period: string | null
           expected_lead_volume: number | null
-          founding_digger_number: number | null
-          geographic_tier: string | null
+          giveaway_qualified_at: string | null
           handle: string | null
           hourly_rate: number | null
           hourly_rate_max: number | null
           hourly_rate_min: number | null
           id: string
-          industry_type: string | null
           is_bonded: boolean | null
-          is_founding_digger: boolean | null
+          is_giveaway_eligible: boolean | null
           is_insured: boolean | null
           is_licensed: string | null
           is_primary: boolean | null
@@ -1284,7 +860,6 @@ export type Database = {
           lead_limit: number | null
           lead_limit_enabled: boolean | null
           lead_limit_period: string | null
-          lead_price_lock_expires_at: string | null
           lead_tier_description: string | null
           location: string
           location_lat: number | null
@@ -1292,13 +867,9 @@ export type Database = {
           monthly_lead_count: number | null
           naics_code: string[] | null
           offers_free_estimates: boolean | null
-          original_price_cents: number | null
           phone: string
           portfolio_url: string | null
           portfolio_urls: string[] | null
-          price_lock_notified_30d: boolean | null
-          price_lock_notified_7d: boolean | null
-          price_locked: boolean | null
           pricing_model: string | null
           primary_profession_index: number | null
           profession: string | null
@@ -1312,15 +883,11 @@ export type Database = {
           service_zip_codes: string[] | null
           sic_code: string[] | null
           skills: string[] | null
-          state: string | null
           stripe_connect_account_id: string | null
           stripe_connect_charges_enabled: boolean | null
           stripe_connect_onboarded: boolean | null
           stripe_customer_id: string | null
-          stripe_subscription_id: string | null
           subscription_end_date: string | null
-          subscription_lapsed_at: string | null
-          subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
           tagline: string | null
@@ -1332,15 +899,11 @@ export type Database = {
           years_experience: number | null
         }
         Insert: {
-          accumulated_free_clicks?: number | null
-          allow_gigger_contact?: boolean | null
           availability?: string | null
           average_rating?: number | null
-          billing_cycle?: string | null
           bio?: string | null
           business_name: string
           certifications?: string[] | null
-          city?: string | null
           company_name?: string | null
           completion_rate?: number | null
           country?: string | null
@@ -1348,16 +911,14 @@ export type Database = {
           custom_occupation_title?: string | null
           expected_lead_period?: string | null
           expected_lead_volume?: number | null
-          founding_digger_number?: number | null
-          geographic_tier?: string | null
+          giveaway_qualified_at?: string | null
           handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
           hourly_rate_min?: number | null
           id?: string
-          industry_type?: string | null
           is_bonded?: boolean | null
-          is_founding_digger?: boolean | null
+          is_giveaway_eligible?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
           is_primary?: boolean | null
@@ -1366,7 +927,6 @@ export type Database = {
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
-          lead_price_lock_expires_at?: string | null
           lead_tier_description?: string | null
           location: string
           location_lat?: number | null
@@ -1374,13 +934,9 @@ export type Database = {
           monthly_lead_count?: number | null
           naics_code?: string[] | null
           offers_free_estimates?: boolean | null
-          original_price_cents?: number | null
           phone: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
-          price_lock_notified_30d?: boolean | null
-          price_lock_notified_7d?: boolean | null
-          price_locked?: boolean | null
           pricing_model?: string | null
           primary_profession_index?: number | null
           profession?: string | null
@@ -1394,15 +950,11 @@ export type Database = {
           service_zip_codes?: string[] | null
           sic_code?: string[] | null
           skills?: string[] | null
-          state?: string | null
           stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_onboarded?: boolean | null
           stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           subscription_end_date?: string | null
-          subscription_lapsed_at?: string | null
-          subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           tagline?: string | null
@@ -1414,15 +966,11 @@ export type Database = {
           years_experience?: number | null
         }
         Update: {
-          accumulated_free_clicks?: number | null
-          allow_gigger_contact?: boolean | null
           availability?: string | null
           average_rating?: number | null
-          billing_cycle?: string | null
           bio?: string | null
           business_name?: string
           certifications?: string[] | null
-          city?: string | null
           company_name?: string | null
           completion_rate?: number | null
           country?: string | null
@@ -1430,16 +978,14 @@ export type Database = {
           custom_occupation_title?: string | null
           expected_lead_period?: string | null
           expected_lead_volume?: number | null
-          founding_digger_number?: number | null
-          geographic_tier?: string | null
+          giveaway_qualified_at?: string | null
           handle?: string | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
           hourly_rate_min?: number | null
           id?: string
-          industry_type?: string | null
           is_bonded?: boolean | null
-          is_founding_digger?: boolean | null
+          is_giveaway_eligible?: boolean | null
           is_insured?: boolean | null
           is_licensed?: string | null
           is_primary?: boolean | null
@@ -1448,7 +994,6 @@ export type Database = {
           lead_limit?: number | null
           lead_limit_enabled?: boolean | null
           lead_limit_period?: string | null
-          lead_price_lock_expires_at?: string | null
           lead_tier_description?: string | null
           location?: string
           location_lat?: number | null
@@ -1456,13 +1001,9 @@ export type Database = {
           monthly_lead_count?: number | null
           naics_code?: string[] | null
           offers_free_estimates?: boolean | null
-          original_price_cents?: number | null
           phone?: string
           portfolio_url?: string | null
           portfolio_urls?: string[] | null
-          price_lock_notified_30d?: boolean | null
-          price_lock_notified_7d?: boolean | null
-          price_locked?: boolean | null
           pricing_model?: string | null
           primary_profession_index?: number | null
           profession?: string | null
@@ -1476,15 +1017,11 @@ export type Database = {
           service_zip_codes?: string[] | null
           sic_code?: string[] | null
           skills?: string[] | null
-          state?: string | null
           stripe_connect_account_id?: string | null
           stripe_connect_charges_enabled?: boolean | null
           stripe_connect_onboarded?: boolean | null
           stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           subscription_end_date?: string | null
-          subscription_lapsed_at?: string | null
-          subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           tagline?: string | null
@@ -1501,13 +1038,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "digger_profiles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1547,73 +1077,74 @@ export type Database = {
           },
         ]
       }
-      dnc_scrub_results: {
+      early_access_applications: {
         Row: {
-          block_reason: string | null
-          callable_until: string | null
-          consent_record_id: string
+          browser: string | null
           created_at: string
-          federal_dnc_checked_at: string | null
-          federal_dnc_listed: boolean | null
+          device_type: string | null
+          email: string
           id: string
-          internal_dnc_listed: boolean | null
-          is_callable: boolean | null
-          phone: string
-          rnd_checked_at: string | null
-          rnd_disconnect_date: string | null
-          rnd_reassigned: boolean | null
-          state_dnc_checked_at: string | null
-          state_dnc_listed: boolean | null
-          state_dnc_states_checked: string[] | null
+          landing_page: string | null
+          location: string
+          name: string
+          portfolio_linkedin: string | null
+          referrer: string | null
+          skill_category: string
+          source: string | null
+          status: string | null
           updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          years_experience: string
         }
         Insert: {
-          block_reason?: string | null
-          callable_until?: string | null
-          consent_record_id: string
+          browser?: string | null
           created_at?: string
-          federal_dnc_checked_at?: string | null
-          federal_dnc_listed?: boolean | null
+          device_type?: string | null
+          email: string
           id?: string
-          internal_dnc_listed?: boolean | null
-          is_callable?: boolean | null
-          phone: string
-          rnd_checked_at?: string | null
-          rnd_disconnect_date?: string | null
-          rnd_reassigned?: boolean | null
-          state_dnc_checked_at?: string | null
-          state_dnc_listed?: boolean | null
-          state_dnc_states_checked?: string[] | null
+          landing_page?: string | null
+          location: string
+          name: string
+          portfolio_linkedin?: string | null
+          referrer?: string | null
+          skill_category: string
+          source?: string | null
+          status?: string | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          years_experience: string
         }
         Update: {
-          block_reason?: string | null
-          callable_until?: string | null
-          consent_record_id?: string
+          browser?: string | null
           created_at?: string
-          federal_dnc_checked_at?: string | null
-          federal_dnc_listed?: boolean | null
+          device_type?: string | null
+          email?: string
           id?: string
-          internal_dnc_listed?: boolean | null
-          is_callable?: boolean | null
-          phone?: string
-          rnd_checked_at?: string | null
-          rnd_disconnect_date?: string | null
-          rnd_reassigned?: boolean | null
-          state_dnc_checked_at?: string | null
-          state_dnc_listed?: boolean | null
-          state_dnc_states_checked?: string[] | null
+          landing_page?: string | null
+          location?: string
+          name?: string
+          portfolio_linkedin?: string | null
+          referrer?: string | null
+          skill_category?: string
+          source?: string | null
+          status?: string | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          years_experience?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "dnc_scrub_results_consent_record_id_fkey"
-            columns: ["consent_record_id"]
-            isOneToOne: false
-            referencedRelation: "consent_records"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       email_preferences: {
         Row: {
@@ -1730,13 +1261,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "escrow_contracts_consumer_id_fkey"
-            columns: ["consumer_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "escrow_contracts_digger_id_fkey"
             columns: ["digger_id"]
             isOneToOne: false
@@ -1748,108 +1272,6 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "escrow_contracts_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gigger_deposits: {
-        Row: {
-          acceptance_deadline: string
-          base_rate_amount_cents: number
-          bid_id: string
-          created_at: string
-          deposit_amount_cents: number
-          digger_id: string
-          gig_id: string
-          gigger_id: string
-          id: string
-          lead_cost_amount_cents: number
-          paid_at: string | null
-          refund_reason: string | null
-          refunded_at: string | null
-          released_at: string | null
-          released_to_digger_cents: number | null
-          status: string
-          stripe_checkout_session_id: string | null
-          stripe_payment_intent_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          acceptance_deadline: string
-          base_rate_amount_cents: number
-          bid_id: string
-          created_at?: string
-          deposit_amount_cents: number
-          digger_id: string
-          gig_id: string
-          gigger_id: string
-          id?: string
-          lead_cost_amount_cents: number
-          paid_at?: string | null
-          refund_reason?: string | null
-          refunded_at?: string | null
-          released_at?: string | null
-          released_to_digger_cents?: number | null
-          status?: string
-          stripe_checkout_session_id?: string | null
-          stripe_payment_intent_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          acceptance_deadline?: string
-          base_rate_amount_cents?: number
-          bid_id?: string
-          created_at?: string
-          deposit_amount_cents?: number
-          digger_id?: string
-          gig_id?: string
-          gigger_id?: string
-          id?: string
-          lead_cost_amount_cents?: number
-          paid_at?: string | null
-          refund_reason?: string | null
-          refunded_at?: string | null
-          released_at?: string | null
-          released_to_digger_cents?: number | null
-          status?: string
-          stripe_checkout_session_id?: string | null
-          stripe_payment_intent_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gigger_deposits_bid_id_fkey"
-            columns: ["bid_id"]
-            isOneToOne: false
-            referencedRelation: "bids"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigger_deposits_digger_id_fkey"
-            columns: ["digger_id"]
-            isOneToOne: false
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigger_deposits_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigger_deposits_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -1870,7 +1292,7 @@ export type Database = {
           confirmation_status: string | null
           confirmed_at: string | null
           consumer_email: string | null
-          consumer_id: string
+          consumer_id: string | null
           consumer_phone: string | null
           contact_preferences: string | null
           created_at: string
@@ -1881,7 +1303,6 @@ export type Database = {
           id: string
           images: string[] | null
           is_confirmed_lead: boolean | null
-          lead_number: string | null
           lead_source: string | null
           location: string
           location_lat: number | null
@@ -1912,7 +1333,7 @@ export type Database = {
           confirmation_status?: string | null
           confirmed_at?: string | null
           consumer_email?: string | null
-          consumer_id: string
+          consumer_id?: string | null
           consumer_phone?: string | null
           contact_preferences?: string | null
           created_at?: string
@@ -1923,7 +1344,6 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_confirmed_lead?: boolean | null
-          lead_number?: string | null
           lead_source?: string | null
           location: string
           location_lat?: number | null
@@ -1954,7 +1374,7 @@ export type Database = {
           confirmation_status?: string | null
           confirmed_at?: string | null
           consumer_email?: string | null
-          consumer_id?: string
+          consumer_id?: string | null
           consumer_phone?: string | null
           contact_preferences?: string | null
           created_at?: string
@@ -1965,7 +1385,6 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_confirmed_lead?: boolean | null
-          lead_number?: string | null
           lead_source?: string | null
           location?: string
           location_lat?: number | null
@@ -2008,13 +1427,6 @@ export type Database = {
             columns: ["consumer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigs_consumer_id_fkey"
-            columns: ["consumer_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2088,175 +1500,6 @@ export type Database = {
           title?: string
         }
         Relationships: []
-      }
-      intake_form_questions: {
-        Row: {
-          conditional_logic: Json | null
-          created_at: string | null
-          display_order: number
-          id: string
-          is_required: boolean | null
-          options: Json | null
-          question_text: string
-          question_type: string
-          template_id: string
-        }
-        Insert: {
-          conditional_logic?: Json | null
-          created_at?: string | null
-          display_order: number
-          id?: string
-          is_required?: boolean | null
-          options?: Json | null
-          question_text: string
-          question_type: string
-          template_id: string
-        }
-        Update: {
-          conditional_logic?: Json | null
-          created_at?: string | null
-          display_order?: number
-          id?: string
-          is_required?: boolean | null
-          options?: Json | null
-          question_text?: string
-          question_type?: string
-          template_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "intake_form_questions_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "intake_form_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      intake_form_responses: {
-        Row: {
-          answer_options: Json | null
-          answer_text: string | null
-          created_at: string | null
-          gig_id: string
-          id: string
-          question_id: string
-        }
-        Insert: {
-          answer_options?: Json | null
-          answer_text?: string | null
-          created_at?: string | null
-          gig_id: string
-          id?: string
-          question_id: string
-        }
-        Update: {
-          answer_options?: Json | null
-          answer_text?: string | null
-          created_at?: string | null
-          gig_id?: string
-          id?: string
-          question_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "intake_form_responses_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "intake_form_responses_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "intake_form_responses_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "intake_form_questions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      intake_form_templates: {
-        Row: {
-          category_id: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          industry_name: string
-          is_active: boolean | null
-          updated_at: string | null
-        }
-        Insert: {
-          category_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          industry_name: string
-          is_active?: boolean | null
-          updated_at?: string | null
-        }
-        Update: {
-          category_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          industry_name?: string
-          is_active?: boolean | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "intake_form_templates_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      internal_dnc_list: {
-        Row: {
-          added_at: string
-          added_reason: string
-          consent_record_id: string | null
-          id: string
-          phone: string
-          phone_hash: string | null
-          source: string | null
-        }
-        Insert: {
-          added_at?: string
-          added_reason: string
-          consent_record_id?: string | null
-          id?: string
-          phone: string
-          phone_hash?: string | null
-          source?: string | null
-        }
-        Update: {
-          added_at?: string
-          added_reason?: string
-          consent_record_id?: string | null
-          id?: string
-          phone?: string
-          phone_hash?: string | null
-          source?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "internal_dnc_list_consent_record_id_fkey"
-            columns: ["consent_record_id"]
-            isOneToOne: false
-            referencedRelation: "consent_records"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       keyword_analytics: {
         Row: {
@@ -2545,13 +1788,6 @@ export type Database = {
             referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "lead_exclusivity_queue_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
-            referencedColumns: ["id"]
-          },
         ]
       }
       lead_issues: {
@@ -2691,13 +1927,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lead_purchases_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "lead_purchases_telemarketer_id_fkey"
             columns: ["telemarketer_id"]
             isOneToOne: false
@@ -2762,13 +1991,6 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lead_unlocks_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -2881,13 +2103,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "marketing_email_log_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       message_violations: {
@@ -2950,13 +2165,6 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "message_violations_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -3120,80 +2328,36 @@ export type Database = {
         }
         Relationships: []
       }
-      pending_lead_purchases: {
+      otp_verification_attempts: {
         Row: {
-          completed_at: string | null
+          attempt_count: number
           created_at: string
-          digger_profile_id: string | null
-          discount_amount: number
-          final_amount: number
+          email: string | null
           id: string
-          original_amount: number
-          selections: Json
-          status: string
-          stripe_session_id: string | null
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          digger_profile_id?: string | null
-          discount_amount?: number
-          final_amount: number
-          id?: string
-          original_amount: number
-          selections: Json
-          status?: string
-          stripe_session_id?: string | null
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          digger_profile_id?: string | null
-          discount_amount?: number
-          final_amount?: number
-          id?: string
-          original_amount?: number
-          selections?: Json
-          status?: string
-          stripe_session_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pending_lead_purchases_digger_profile_id_fkey"
-            columns: ["digger_profile_id"]
-            isOneToOne: false
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      platform_settings: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          key: string
+          last_attempt_at: string | null
+          locked_until: string | null
+          phone: string | null
           updated_at: string
-          value: Json
         }
         Insert: {
+          attempt_count?: number
           created_at?: string
-          description?: string | null
+          email?: string | null
           id?: string
-          key: string
+          last_attempt_at?: string | null
+          locked_until?: string | null
+          phone?: string | null
           updated_at?: string
-          value?: Json
         }
         Update: {
+          attempt_count?: number
           created_at?: string
-          description?: string | null
+          email?: string | null
           id?: string
-          key?: string
+          last_attempt_at?: string | null
+          locked_until?: string | null
+          phone?: string | null
           updated_at?: string
-          value?: Json
         }
         Relationships: []
       }
@@ -3245,13 +2409,6 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pre_award_conversations_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -3424,91 +2581,6 @@ export type Database = {
           },
         ]
       }
-      profile_calls: {
-        Row: {
-          call_duration_seconds: number | null
-          called_at: string
-          consumer_id: string
-          cost_cents: number
-          created_at: string
-          digger_profile_id: string
-          google_high_cpc_cents: number | null
-          id: string
-          keyword_matched: string | null
-        }
-        Insert: {
-          call_duration_seconds?: number | null
-          called_at?: string
-          consumer_id: string
-          cost_cents: number
-          created_at?: string
-          digger_profile_id: string
-          google_high_cpc_cents?: number | null
-          id?: string
-          keyword_matched?: string | null
-        }
-        Update: {
-          call_duration_seconds?: number | null
-          called_at?: string
-          consumer_id?: string
-          cost_cents?: number
-          created_at?: string
-          digger_profile_id?: string
-          google_high_cpc_cents?: number | null
-          id?: string
-          keyword_matched?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_calls_digger_profile_id_fkey"
-            columns: ["digger_profile_id"]
-            isOneToOne: false
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profile_clicks: {
-        Row: {
-          clicked_at: string
-          consumer_id: string
-          cost_cents: number
-          created_at: string
-          digger_profile_id: string
-          google_avg_cpc_cents: number | null
-          id: string
-          keyword_matched: string | null
-        }
-        Insert: {
-          clicked_at?: string
-          consumer_id: string
-          cost_cents: number
-          created_at?: string
-          digger_profile_id: string
-          google_avg_cpc_cents?: number | null
-          id?: string
-          keyword_matched?: string | null
-        }
-        Update: {
-          clicked_at?: string
-          consumer_id?: string
-          cost_cents?: number
-          created_at?: string
-          digger_profile_id?: string
-          google_avg_cpc_cents?: number | null
-          id?: string
-          keyword_matched?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_clicks_digger_profile_id_fkey"
-            columns: ["digger_profile_id"]
-            isOneToOne: false
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profile_completion_reminders: {
         Row: {
           created_at: string
@@ -3538,44 +2610,6 @@ export type Database = {
           {
             foreignKeyName: "profile_completion_reminders_digger_id_fkey"
             columns: ["digger_id"]
-            isOneToOne: false
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profile_emails: {
-        Row: {
-          consumer_id: string
-          cost_cents: number
-          created_at: string
-          digger_profile_id: string
-          google_avg_cpc_cents: number | null
-          id: string
-          keyword_matched: string | null
-        }
-        Insert: {
-          consumer_id: string
-          cost_cents?: number
-          created_at?: string
-          digger_profile_id: string
-          google_avg_cpc_cents?: number | null
-          id?: string
-          keyword_matched?: string | null
-        }
-        Update: {
-          consumer_id?: string
-          cost_cents?: number
-          created_at?: string
-          digger_profile_id?: string
-          google_avg_cpc_cents?: number | null
-          id?: string
-          keyword_matched?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_emails_digger_profile_id_fkey"
-            columns: ["digger_profile_id"]
             isOneToOne: false
             referencedRelation: "digger_profiles"
             referencedColumns: ["id"]
@@ -3644,36 +2678,6 @@ export type Database = {
         }
         Relationships: []
       }
-      proxy_emails: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean | null
-          proxy_address: string
-          real_email: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          proxy_address: string
-          real_email: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          proxy_address?: string
-          real_email?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       ratings: {
         Row: {
           consumer_id: string
@@ -3717,13 +2721,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ratings_consumer_id_fkey"
-            columns: ["consumer_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "ratings_digger_id_fkey"
             columns: ["digger_id"]
             isOneToOne: false
@@ -3735,13 +2732,6 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ratings_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
@@ -3911,13 +2901,6 @@ export type Database = {
             referencedRelation: "gigs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "referral_payments_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
-            referencedColumns: ["id"]
-          },
         ]
       }
       saved_search_alerts: {
@@ -3991,6 +2974,69 @@ export type Database = {
         }
         Relationships: []
       }
+      sender_addresses: {
+        Row: {
+          created_at: string | null
+          daily_sent_count: number | null
+          email_address: string
+          id: number
+          is_active: boolean | null
+          last_reset_date: string | null
+          total_sent_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          daily_sent_count?: number | null
+          email_address: string
+          id?: number
+          is_active?: boolean | null
+          last_reset_date?: string | null
+          total_sent_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          daily_sent_count?: number | null
+          email_address?: string
+          id?: number
+          is_active?: boolean | null
+          last_reset_date?: string | null
+          total_sent_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sms_logs: {
+        Row: {
+          id: string
+          phone_hash: string | null
+          sent_at: string
+          status: string
+          template_id: string | null
+          twilio_sid: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          phone_hash?: string | null
+          sent_at?: string
+          status?: string
+          template_id?: string | null
+          twilio_sid?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          phone_hash?: string | null
+          sent_at?: string
+          status?: string
+          template_id?: string | null
+          twilio_sid?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       specialty_requests: {
         Row: {
           admin_notes: string | null
@@ -4030,45 +3076,6 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      subscription_pricing: {
-        Row: {
-          annual_price_cents: number
-          created_at: string | null
-          geographic_tier: string
-          id: string
-          industry_type: string
-          is_active: boolean | null
-          monthly_price_cents: number
-          stripe_price_id_annual: string | null
-          stripe_price_id_monthly: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          annual_price_cents: number
-          created_at?: string | null
-          geographic_tier: string
-          id?: string
-          industry_type: string
-          is_active?: boolean | null
-          monthly_price_cents: number
-          stripe_price_id_annual?: string | null
-          stripe_price_id_monthly?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          annual_price_cents?: number
-          created_at?: string | null
-          geographic_tier?: string
-          id?: string
-          industry_type?: string
-          is_active?: boolean | null
-          monthly_price_cents?: number
-          stripe_price_id_annual?: string | null
-          stripe_price_id_monthly?: string | null
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -4127,13 +3134,6 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "telemarketer_commissions_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
           {
@@ -4277,13 +3277,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_consumer_id_fkey"
-            columns: ["consumer_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "transactions_digger_id_fkey"
             columns: ["digger_id"]
             isOneToOne: false
@@ -4302,13 +3295,6 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
           {
@@ -4372,28 +3358,34 @@ export type Database = {
         Row: {
           code: string
           created_at: string
-          email: string
+          email: string | null
           expires_at: string
           id: string
+          phone: string | null
           user_id: string | null
+          verification_type: string
           verified: boolean
         }
         Insert: {
           code: string
           created_at?: string
-          email: string
+          email?: string | null
           expires_at: string
           id?: string
+          phone?: string | null
           user_id?: string | null
+          verification_type?: string
           verified?: boolean
         }
         Update: {
           code?: string
           created_at?: string
-          email?: string
+          email?: string | null
           expires_at?: string
           id?: string
+          phone?: string | null
           user_id?: string | null
+          verification_type?: string
           verified?: boolean
         }
         Relationships: []
@@ -4448,200 +3440,63 @@ export type Database = {
       }
     }
     Views: {
-      safe_public_gigs: {
+      sender_addresses_status: {
         Row: {
-          ai_matched_codes: boolean | null
-          awarded_at: string | null
-          awarded_bid_id: string | null
-          awarded_digger_id: string | null
-          budget_max: number | null
-          budget_min: number | null
-          category_id: string | null
-          confirmation_method_preference: string | null
-          confirmation_sent_at: string | null
-          confirmation_status: string | null
-          confirmed_at: string | null
-          consumer_email: string | null
-          consumer_id: string | null
-          consumer_phone: string | null
-          contact_preferences: string | null
           created_at: string | null
-          deadline: string | null
-          description: string | null
-          documents: string[] | null
-          escrow_requested_by_consumer: boolean | null
-          id: string | null
-          images: string[] | null
-          is_confirmed_lead: boolean | null
-          lead_number: string | null
-          lead_source: string | null
-          location: string | null
-          location_lat: number | null
-          location_lng: number | null
-          naics_codes: string[] | null
-          purchase_count: number | null
-          sic_codes: string[] | null
+          daily_sent_count: number | null
+          email_address: string | null
+          id: number | null
+          is_active: boolean | null
+          last_reset_date: string | null
           status: string | null
-          telemarketer_id: string | null
-          timeline: string | null
-          title: string | null
-          updated_at: string | null
-          uploaded_by_telemarketer: boolean | null
-        }
-        Insert: {
-          ai_matched_codes?: boolean | null
-          awarded_at?: string | null
-          awarded_bid_id?: string | null
-          awarded_digger_id?: string | null
-          budget_max?: number | null
-          budget_min?: number | null
-          category_id?: string | null
-          confirmation_method_preference?: string | null
-          confirmation_sent_at?: string | null
-          confirmation_status?: string | null
-          confirmed_at?: string | null
-          consumer_email?: never
-          consumer_id?: string | null
-          consumer_phone?: never
-          contact_preferences?: string | null
-          created_at?: string | null
-          deadline?: string | null
-          description?: string | null
-          documents?: string[] | null
-          escrow_requested_by_consumer?: boolean | null
-          id?: string | null
-          images?: string[] | null
-          is_confirmed_lead?: boolean | null
-          lead_number?: string | null
-          lead_source?: string | null
-          location?: string | null
-          location_lat?: number | null
-          location_lng?: number | null
-          naics_codes?: string[] | null
-          purchase_count?: number | null
-          sic_codes?: string[] | null
-          status?: string | null
-          telemarketer_id?: string | null
-          timeline?: string | null
-          title?: string | null
-          updated_at?: string | null
-          uploaded_by_telemarketer?: boolean | null
-        }
-        Update: {
-          ai_matched_codes?: boolean | null
-          awarded_at?: string | null
-          awarded_bid_id?: string | null
-          awarded_digger_id?: string | null
-          budget_max?: number | null
-          budget_min?: number | null
-          category_id?: string | null
-          confirmation_method_preference?: string | null
-          confirmation_sent_at?: string | null
-          confirmation_status?: string | null
-          confirmed_at?: string | null
-          consumer_email?: never
-          consumer_id?: string | null
-          consumer_phone?: never
-          contact_preferences?: string | null
-          created_at?: string | null
-          deadline?: string | null
-          description?: string | null
-          documents?: string[] | null
-          escrow_requested_by_consumer?: boolean | null
-          id?: string | null
-          images?: string[] | null
-          is_confirmed_lead?: boolean | null
-          lead_number?: string | null
-          lead_source?: string | null
-          location?: string | null
-          location_lat?: number | null
-          location_lng?: number | null
-          naics_codes?: string[] | null
-          purchase_count?: number | null
-          sic_codes?: string[] | null
-          status?: string | null
-          telemarketer_id?: string | null
-          timeline?: string | null
-          title?: string | null
-          updated_at?: string | null
-          uploaded_by_telemarketer?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gigs_awarded_bid_id_fkey"
-            columns: ["awarded_bid_id"]
-            isOneToOne: false
-            referencedRelation: "bids"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigs_awarded_digger_id_fkey"
-            columns: ["awarded_digger_id"]
-            isOneToOne: false
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigs_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigs_consumer_id_fkey"
-            columns: ["consumer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigs_consumer_id_fkey"
-            columns: ["consumer_id"]
-            isOneToOne: false
-            referencedRelation: "safe_public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gigs_telemarketer_id_fkey"
-            columns: ["telemarketer_id"]
-            isOneToOne: false
-            referencedRelation: "telemarketer_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      safe_public_profiles: {
-        Row: {
-          created_at: string | null
-          full_name: string | null
-          id: string | null
-          user_type: string | null
+          total_sent_count: number | null
         }
         Insert: {
           created_at?: string | null
-          full_name?: string | null
-          id?: string | null
-          user_type?: string | null
+          daily_sent_count?: number | null
+          email_address?: string | null
+          id?: number | null
+          is_active?: boolean | null
+          last_reset_date?: string | null
+          status?: never
+          total_sent_count?: number | null
         }
         Update: {
           created_at?: string | null
-          full_name?: string | null
-          id?: string | null
-          user_type?: string | null
+          daily_sent_count?: number | null
+          email_address?: string | null
+          id?: number | null
+          is_active?: boolean | null
+          last_reset_date?: string | null
+          status?: never
+          total_sent_count?: number | null
         }
         Relationships: []
       }
     }
     Functions: {
-      add_monthly_free_clicks: { Args: never; Returns: undefined }
+      add_user_app_role_safe: {
+        Args: {
+          _app_role: Database["public"]["Enums"]["user_app_role"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
       calculate_lead_price: {
         Args: { gig_budget_max: number; gig_budget_min: number }
         Returns: number
       }
-      can_access_conversation: {
-        Args: { _conversation_id: string; _user_id: string }
+      can_manage_gig: {
+        Args: { _email: string; _gig_id: string }
         Returns: boolean
+      }
+      check_giveaway_eligibility: {
+        Args: { _digger_profile_id: string }
+        Returns: boolean
+      }
+      check_otp_attempt_limit: {
+        Args: { _email?: string; _phone?: string }
+        Returns: Json
       }
       check_rate_limit: {
         Args: {
@@ -4665,12 +3520,8 @@ export type Database = {
         }
         Returns: string
       }
-      expire_grace_period_clicks: { Args: never; Returns: undefined }
-      generate_proxy_email: { Args: { p_user_id: string }; Returns: string }
-      get_founding_digger_pricing: {
-        Args: { p_digger_id: string }
-        Returns: Json
-      }
+      get_giveaway_stats: { Args: never; Returns: Json }
+      get_next_sender_address: { Args: never; Returns: string }
       get_tier_for_lead_count: { Args: { lead_count: number }; Returns: string }
       get_user_app_roles: {
         Args: { _user_id: string }
@@ -4687,6 +3538,10 @@ export type Database = {
       gigger_has_access_to_digger: {
         Args: { _digger_profile_id: string; _gigger_user_id: string }
         Returns: boolean
+      }
+      grant_admin_role_by_email: {
+        Args: { p_email: string }
+        Returns: undefined
       }
       has_app_role: {
         Args: {
@@ -4706,24 +3561,45 @@ export type Database = {
         Args: { post_slug: string }
         Returns: undefined
       }
+      increment_sender_count: {
+        Args: { sender_email: string }
+        Returns: undefined
+      }
       insert_user_app_role: {
         Args: { p_app_role: string; p_user_id: string }
         Returns: undefined
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_digger: { Args: { _user_id: string }; Returns: boolean }
       is_gig_owner: {
         Args: { _gig_id: string; _user_id: string }
         Returns: boolean
       }
-      is_gig_participant: { Args: { gig_id: string }; Returns: boolean }
-      register_founding_digger: { Args: { p_digger_id: string }; Returns: Json }
+      manual_check_giveaway_eligibility: {
+        Args: { _digger_profile_id: string }
+        Returns: Json
+      }
+      recheck_all_giveaway_eligibility: { Args: never; Returns: Json }
+      record_otp_failed_attempt: {
+        Args: { _email?: string; _phone?: string }
+        Returns: undefined
+      }
+      reset_daily_email_counts: { Args: never; Returns: undefined }
       reset_monthly_lead_counts: { Args: never; Returns: undefined }
+      reset_otp_attempts: {
+        Args: { _email?: string; _phone?: string }
+        Returns: undefined
+      }
       track_keyword_usage: {
         Args: {
           p_category_name?: string
           p_keyword: string
           p_profession?: string
         }
+        Returns: undefined
+      }
+      update_giveaway_eligibility: {
+        Args: { _digger_profile_id: string }
         Returns: undefined
       }
     }

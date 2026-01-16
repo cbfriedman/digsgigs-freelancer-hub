@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "gen:types": "cross-env NODE_OPTIONS=--no-warnings npx supabase gen types typescript --project-id njpjxasfesdapxukvyth > src/integrations/supabase/types.ts",
     "cap:sync": "npx cap sync",
     "cap:copy": "npx cap copy",
     "cap:update": "npx cap update",
