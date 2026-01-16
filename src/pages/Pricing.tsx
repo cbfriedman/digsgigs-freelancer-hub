@@ -129,19 +129,19 @@ export default function Pricing() {
                       <Award className="h-6 w-6 text-accent" />
                     </div>
                     <Badge className="mb-2 bg-accent/10 text-accent border-accent/20">
-                      Pay on Acceptance
+                      Pay on Award
                     </Badge>
                     <CardTitle className="text-2xl">Exclusive Job Award</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <p className="text-center text-muted-foreground">
-                      Submit a bid at no cost. Pay only when you're awarded and ready to start.
+                      Submit a bid and pay 2.5% when awarded. Gigger pays 5% deposit when you accept.
                     </p>
                     
                     <div className="bg-muted/50 rounded-xl p-4">
                       <div className="text-sm text-center mb-2 text-muted-foreground">One-Time Referral Fee</div>
                       <div className="text-center font-mono font-bold text-accent">
-                        2% of your bid amount
+                        2.5% of your bid amount
                       </div>
                     </div>
 

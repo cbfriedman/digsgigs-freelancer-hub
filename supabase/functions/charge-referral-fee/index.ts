@@ -13,9 +13,10 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Fee configuration
-const REFERRAL_FEE_RATE = 0.02; // 2%
+const REFERRAL_FEE_RATE = 0.025; // 2.5%
 const REFERRAL_FEE_MIN_CENTS = 10000; // $100 minimum
 const REFERRAL_FEE_CAP_CENTS = 24900; // $249 cap
+const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -87,7 +88,7 @@ serve(async (req) => {
       );
     }
 
-    // Calculate the referral fee (2% with $100 min, $249 cap)
+    // Calculate the referral fee (2.5% with $100 min, $249 cap)
     const bidAmountCents = Math.round(bid.amount * 100);
     const calculatedFeeCents = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
     // Apply minimum and maximum constraints

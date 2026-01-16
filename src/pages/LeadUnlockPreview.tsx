@@ -24,10 +24,11 @@ import {
 
 type PricingOption = "pay_per_lead" | "success_based";
 
-// Referral fee configuration - matches edge function
-const REFERRAL_FEE_RATE = 0.02; // 2%
+// Referral fee configuration
+const REFERRAL_FEE_RATE = 0.025; // 2.5%
 const REFERRAL_FEE_MIN = 100; // $100 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
+const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
 // Sample lead data for demo
 const sampleLead = {
@@ -64,9 +65,14 @@ export default function LeadUnlockPreview() {
     return Math.min(49, Math.max(1, price));
   };
 
-  const getEstimatedReferralFee = (): { min: number; max: number } => {
+  const getEstimatedReferralFee = (): { min: number; max: number; midpoint: number } => {
     const min = sampleLead.budget_min || 0;
     const max = sampleLead.budget_max || min;
+    const midpoint = (min + max) / 2;
+    
+    // 2.5% of midpoint, with $100 min and $249 cap
+    const calcMidpointFee = midpoint * REFERRAL_FEE_RATE;
+    const midpointFee = Math.max(REFERRAL_FEE_MIN, Math.min(calcMidpointFee, REFERRAL_FEE_CAP));
     
     const calcMinFee = min * REFERRAL_FEE_RATE;
     const calcMaxFee = max * REFERRAL_FEE_RATE;
@@ -75,9 +81,13 @@ export default function LeadUnlockPreview() {
     
     return { 
       min: Math.round(minFee), 
-      max: Math.round(maxFee) 
+      max: Math.round(maxFee),
+      midpoint: Math.round(midpointFee)
     };
   };
+  
+  // Calculate exclusive fee based on midpoint
+  const exclusiveFee = getEstimatedReferralFee().midpoint;
 
   const handleUnlock = () => {
     toast.info("Demo Mode: This would redirect to Stripe checkout for payment", {
@@ -236,7 +246,7 @@ export default function LeadUnlockPreview() {
                     </Label>
                   </div>
 
-                  {/* Option 2: Exclusive (Pay on Acceptance) */}
+                  {/* Option 2: Exclusive (Pay on Award) */}
                   <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
                     selectedPricing === "success_based" 
                       ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20" 
@@ -251,12 +261,12 @@ export default function LeadUnlockPreview() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <Percent className="w-5 h-5 text-orange-500" />
-                            <span className="font-semibold text-lg">Exclusive (Pay on Acceptance)</span>
+                            <span className="font-semibold text-lg">Exclusive (Pay on Award)</span>
                           </div>
-                          <span className="text-2xl font-bold text-orange-500">$0</span>
+                          <span className="text-2xl font-bold text-orange-500">${exclusiveFee.toFixed(0)}</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Pay nothing upfront. A one-time 2% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) applies only if you're awarded and ready to start.
+                          2.5% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Gigger pays 5% deposit when you accept.
                         </p>
                         <div className="mt-2 text-xs text-muted-foreground">
                           Estimated fee if awarded: ${estimatedFee.min} – ${estimatedFee.max}
