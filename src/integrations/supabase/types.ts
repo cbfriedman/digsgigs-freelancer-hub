@@ -2693,6 +2693,51 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_test_results: {
+        Row: {
+          created_at: string
+          environment: string
+          id: string
+          notes: string | null
+          screenshot_url: string | null
+          status: string
+          test_category: string
+          test_id: string
+          test_name: string
+          tested_at: string | null
+          tester_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          id?: string
+          notes?: string | null
+          screenshot_url?: string | null
+          status?: string
+          test_category: string
+          test_id: string
+          test_name: string
+          tested_at?: string | null
+          tester_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          id?: string
+          notes?: string | null
+          screenshot_url?: string | null
+          status?: string
+          test_category?: string
+          test_id?: string
+          test_name?: string
+          tested_at?: string | null
+          tester_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       marketing_email_log: {
         Row: {
           campaign_name: string | null

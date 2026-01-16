@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -362,6 +362,7 @@ const AdminDashboard = () => {
     { id: "requests", label: "Keyword Requests", icon: Lightbulb },
     { id: "cpc-data", label: "CPC Data", icon: Database },
     { id: "giveaway", label: "Giveaway Report", icon: Crown },
+    { id: "test-results", label: "QA Test Results", icon: ClipboardCheck },
   ];
 
   return (
@@ -449,7 +450,7 @@ const AdminDashboard = () => {
               <SidebarGroupLabel>Data & Reports</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {menuItems.slice(7).map((item) => {
+                  {menuItems.slice(7, 10).map((item) => {
                     const Icon = item.icon;
                     return (
                       <SidebarMenuItem key={item.id}>
@@ -464,6 +465,31 @@ const AdminDashboard = () => {
                       </SidebarMenuItem>
                     );
                   })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Testing</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate("/admin/test-results")}
+                      tooltip="QA Test Results"
+                    >
+                      <ClipboardCheck className="h-4 w-4" />
+                      <span>QA Test Results</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate("/e2e-test-suite")}
+                      tooltip="E2E Tests"
+                    >
+                      <FlaskConical className="h-4 w-4" />
+                      <span>E2E Tests</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
