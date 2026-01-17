@@ -268,14 +268,16 @@ const Index = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
               Where{" "}
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                talent meets opportunity.
+                tech talent
               </span>
-              <br />
-              No commissions. No hassle.
+              {" "}meets{" "}
+              <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                opportunity.
+              </span>
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Clients post projects for free. Freelancers get leads delivered instantly.
+              Connect with top software developers, designers, and digital experts. Post projects or find leads instantly.
             </p>
 
             {/* Dual Value Props */}
