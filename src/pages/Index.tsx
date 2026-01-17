@@ -266,35 +266,56 @@ const Index = () => {
             </Badge>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Freelance leads,{" "}
+              Where{" "}
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                delivered instantly.
+                talent meets opportunity.
               </span>
               <br />
-              Pay only if you want them.
+              No commissions. No hassle.
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              No subscriptions. Every new project is emailed directly to you.
+              Clients post projects for free. Freelancers get leads delivered instantly.
             </p>
 
-            {/* Value Props */}
-            <div className="flex flex-wrap justify-center gap-4 mb-10">
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>Leads sent instantly</span>
+            {/* Dual Value Props */}
+            <div className="grid md:grid-cols-2 gap-6 mb-10 max-w-3xl mx-auto text-left">
+              {/* For Clients */}
+              <div className="bg-accent/5 rounded-lg p-4 border border-accent/20">
+                <h3 className="font-semibold text-accent mb-2">For Clients</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span>Post projects for free</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span>Receive multiple proposals</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span>No platform fees on projects</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>Unlock only what you want</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>Price scales with project</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>Same opportunity, fair access</span>
+              
+              {/* For Freelancers */}
+              <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+                <h3 className="font-semibold text-primary mb-2">For Freelancers</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span>Leads emailed instantly</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span>Pay only for leads you want</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span>Keep 100% of your earnings</span>
+                  </div>
+                </div>
               </div>
             </div>
 
