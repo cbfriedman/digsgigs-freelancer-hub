@@ -5,7 +5,7 @@
  * Optimized for FB ad messaging:
  * - "Bid for Exclusive Jobs — Pay Only if Selected"
  * - Two-path structure: Non-Exclusive Leads vs Exclusive Awards
- * - Clear pricing: $3-$49 leads, 3% referral fee from client's 5% deposit
+ * - Clear pricing: $10-$49 leads, 3% referral fee from client's 5% deposit
  */
 
 import { useEffect, useRef } from 'react';
@@ -123,7 +123,7 @@ const ApplyDiggerFB = () => {
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Get vetted leads emailed to you. Unlock what you want from <strong>$3</strong> — or bid for exclusive jobs and pay only when selected.
+              Get vetted leads emailed to you. Unlock what you want from <strong>$10</strong> — or bid for exclusive jobs and pay only when selected.
             </p>
 
             <Link to={getRegistrationUrl()} onClick={() => handleCTAClick('Hero')}>
@@ -163,7 +163,7 @@ const ApplyDiggerFB = () => {
                     {[
                       'Leads emailed to you in real time',
                       'Pay only for the leads you unlock',
-                      '$3–$49 based on project budget',
+                      '$10–$49 based on project budget',
                       'Other professionals may also engage'
                     ].map((item, index) => (
                       <li key={index} className="flex items-start gap-3">
@@ -242,7 +242,7 @@ const ApplyDiggerFB = () => {
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-3">Leads</h3>
                   <div className="text-3xl font-bold text-foreground mb-3">
-                    From $3 <span className="text-lg font-normal text-muted-foreground">— Max $49</span>
+                    From $10 <span className="text-lg font-normal text-muted-foreground">— Max $49</span>
                   </div>
                   <p className="text-muted-foreground">
                     Pay only for the leads you choose to unlock.
