@@ -582,15 +582,6 @@ const EditDiggerProfile = () => {
                   </div>
                 </div>
               )}
-              
-              {/* Keyword Suggestions - Budget Friendly & Premium Keywords */}
-              {selectedProfessionIds.length > 0 && (
-                <KeywordSuggestions
-                  currentKeywords={keywords}
-                  onAddKeyword={handleAddKeyword}
-                  profession={getProfessionById(selectedProfessionIds[0])?.name || ''}
-                />
-              )}
             </div>
 
             <div className="space-y-2">
@@ -796,64 +787,6 @@ const EditDiggerProfile = () => {
               )}
             </div>
 
-            <div className="space-y-4 p-4 rounded-lg border bg-card">
-              <div>
-                <Label className="text-base font-semibold">Lead Volume Planning</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Help us understand your capacity so we can show you the right pricing tier
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="expectedLeadVolume">Expected Leads</Label>
-                  <Input
-                    id="expectedLeadVolume"
-                    type="number"
-                    min="0"
-                    value={expectedLeadVolume || ''}
-                    onChange={(e) => setExpectedLeadVolume(e.target.value ? parseInt(e.target.value) : null)}
-                    placeholder="e.g., 25"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="expectedLeadPeriod">Time Period</Label>
-                  <select
-                    id="expectedLeadPeriod"
-                    value={expectedLeadPeriod}
-                    onChange={(e) => setExpectedLeadPeriod(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <option value="daily">Per Day</option>
-                    <option value="weekly">Per Week</option>
-                    <option value="monthly">Per Month</option>
-                  </select>
-                </div>
-              </div>
-
-              {expectedLeadVolume && expectedLeadPeriod && (
-                <div className="p-3 bg-accent/30 rounded-md">
-                  <p className="text-sm">
-                    <span className="font-semibold">Your Expected Tier:</span>{' '}
-                    {expectedLeadVolume < 10 ? (
-                      <span className="text-blue-600">Free Tier (Standard pricing)</span>
-                    ) : expectedLeadVolume < 50 ? (
-                      <span className="text-purple-600">Pro Tier (Volume discount)</span>
-                    ) : (
-                      <span className="text-amber-600">Premium Tier (Best bulk pricing)</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {expectedLeadPeriod === 'monthly' 
-                      ? 'Based on your monthly volume'
-                      : expectedLeadPeriod === 'weekly'
-                      ? `~${Math.ceil(expectedLeadVolume * 4.33)} leads per month`
-                      : `~${Math.ceil(expectedLeadVolume * 30)} leads per month`}
-                  </p>
-                </div>
-              )}
-            </div>
 
             {/* AI-Powered Bio Generator - Above About Your Services */}
             <Card className="p-4 border-2 border-primary/30 bg-primary/5">

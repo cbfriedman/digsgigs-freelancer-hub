@@ -720,7 +720,18 @@ const DiggerDetail = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl font-bold">
-                        {digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business Name"}
+                        {isOwnProfile 
+                          ? (digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business Name")
+                          : (() => {
+                              // Abbreviate business name for non-owners to conceal identity
+                              const name = digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business";
+                              const words = name.split(' ');
+                              if (words.length === 1) {
+                                return name.length > 3 ? name.substring(0, 3) + '...' : name;
+                              }
+                              return words.map(w => w.charAt(0)).join('.') + '.';
+                            })()
+                        }
                       </h1>
                       <div className="flex items-center gap-1.5 bg-background border border-border/50 px-3 py-1 rounded-full">
                         <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
@@ -826,54 +837,6 @@ const DiggerDetail = () => {
                   )}
                 </div>
 
-                <Separator className="my-6" />
-                <div>
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Pricing & Work Options
-                  </h2>
-                  <div className="space-y-3">
-                    {digger.pricing_model === 'fixed' && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                        <div className="mt-0.5">
-                          <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
-                            <div className="h-2 w-2 rounded-full bg-primary" />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-medium">Fixed Price Contracts</p>
-                          <p className="text-sm text-muted-foreground mt-1">I work on a project basis with fixed pricing agreed upfront</p>
-                        </div>
-                      </div>
-                    )}
-                    {(digger.pricing_model === 'hourly' || digger.pricing_model === 'both') && formatHourlyRate() && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                        <div className="mt-0.5">
-                          <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
-                            <div className="h-2 w-2 rounded-full bg-primary" />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-medium">Hourly Rate: {formatHourlyRate()}</p>
-                          <p className="text-sm text-muted-foreground mt-1">Available for time and materials projects billed by the hour</p>
-                        </div>
-                      </div>
-                    )}
-                    {digger.offers_free_estimates && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/10">
-                        <div className="mt-0.5">
-                          <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                            <div className="h-2 w-2 rounded-full bg-green-600" />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-medium text-green-700 dark:text-green-400">Free Estimates Available</p>
-                          <p className="text-sm text-muted-foreground mt-1">Get a no-obligation project estimate and consultation at no cost</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
                 {(digger.digger_categories?.length ?? 0) > 0 && (
                   <>
@@ -960,9 +923,7 @@ const DiggerDetail = () => {
                   ) : isOwnProfile ? (
                     <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
                       <p className="text-muted-foreground mb-4">Add references from past clients to build trust</p>
-                      <Button variant="outline" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
-                        Add References
-                      </Button>
+                      <p className="text-sm text-muted-foreground">Reference management coming soon</p>
                     </div>
                   ) : (
                     <p className="text-muted-foreground italic">No references provided yet.</p>
@@ -1032,11 +993,6 @@ const DiggerDetail = () => {
                             <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
                               <Sparkles className="h-3 w-3 mr-1" />
                               Add Bio
-                            </Badge>
-                          )}
-                          {references.length === 0 && (
-                            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
-                              📋 Add References
                             </Badge>
                           )}
                         </div>
