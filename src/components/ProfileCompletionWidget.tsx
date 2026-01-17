@@ -59,21 +59,14 @@ export const ProfileCompletionWidget = ({
       label: "Work Samples (3+ photos)",
       completed: !!profile.work_photos && profile.work_photos.length >= 3,
       weight: 12,
-      section: "photos"
-    },
-    {
-      name: "pricing",
-      label: "Pricing Options",
-      completed: !!profile.pricing_model && profile.pricing_model !== "commission",
-      weight: 10,
-      section: "pricing"
+      section: "work-samples"
     },
     {
       name: "hourly_rate",
       label: "Hourly Rate Range",
       completed: !!profile.hourly_rate_min && !!profile.hourly_rate_max,
       weight: 8,
-      section: "pricing"
+      section: "hourly-rate"
     },
     {
       name: "certifications",
@@ -81,48 +74,6 @@ export const ProfileCompletionWidget = ({
       completed: !!profile.certifications && profile.certifications.length > 0,
       weight: 10,
       section: "certifications"
-    },
-    {
-      name: "experience",
-      label: "Years of Experience",
-      completed: !!profile.years_experience && profile.years_experience > 0,
-      weight: 8,
-      section: "experience"
-    },
-    {
-      name: "insurance",
-      label: "Insurance Status",
-      completed: profile.is_insured === true || profile.is_bonded === true,
-      weight: 10,
-      section: "credentials"
-    },
-    {
-      name: "license",
-      label: "License Information",
-      completed: !!profile.is_licensed && profile.is_licensed !== "not_required",
-      weight: 7,
-      section: "credentials"
-    },
-    {
-      name: "keywords",
-      label: "Keywords (5+ terms)",
-      completed: !!profile.keywords && profile.keywords.length >= 5,
-      weight: 8,
-      section: "keywords"
-    },
-    {
-      name: "skills",
-      label: "Skills List",
-      completed: !!profile.skills && profile.skills.length >= 3,
-      weight: 7,
-      section: "skills"
-    },
-    {
-      name: "portfolio",
-      label: "Portfolio Website",
-      completed: !!profile.portfolio_url,
-      weight: 5,
-      section: "portfolio"
     }
   ], [profile]);
 
