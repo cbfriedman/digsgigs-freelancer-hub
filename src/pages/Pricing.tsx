@@ -22,9 +22,9 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
-// Dynamic pricing examples (2% formula with $3 min, $49 max)
+// Dynamic pricing examples (2% formula with $10 min, $49 max)
 const PRICING_EXAMPLES = [
-  { budget: "$150–$300", average: 225, price: 5, note: "" },
+  { budget: "$150–$500", average: 325, price: 10, note: "(minimum)" },
   { budget: "$500–$1,000", average: 750, price: 15, note: "" },
   { budget: "$2,500+", average: 3000, price: 49, note: "(cap)" },
 ];
@@ -36,7 +36,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $3-$49) or exclusive jobs (3% referral fee, $10-$249). No subscriptions. Bogus leads refundable." />
+        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (3% referral fee, $50-$249). No subscriptions. Bogus leads refundable. Prices subject to change." />
       </Helmet>
       
       <Navigation />
@@ -145,13 +145,13 @@ export default function Pricing() {
                     <div className="bg-muted/50 rounded-xl p-4">
                       <div className="text-sm text-center mb-2 text-muted-foreground">Referral Fee</div>
                       <div className="text-center font-mono font-bold text-accent">
-                        Higher of 3% or $10
+                        Higher of 3% or $50
                       </div>
                     </div>
 
                     <div className="flex justify-center gap-6">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-accent">$10</div>
+                        <div className="text-2xl font-bold text-accent">$50</div>
                         <div className="text-xs text-muted-foreground">Minimum</div>
                       </div>
                       <div className="text-center">
@@ -197,11 +197,14 @@ export default function Pricing() {
                   <div className="bg-muted/50 rounded-xl p-6">
                     <div className="text-lg mb-4">
                       <span className="font-mono font-bold text-primary">
-                        Lead Price = Higher of [ (Budget Avg × 2%) ] or [ $3 ]
+                        Lead Price = Higher of [ (Budget Avg × 2%) ] or [ $10 ]
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Rounded to the nearest dollar • $49 maximum
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2 italic">
+                      * Prices are subject to change at any time
                     </div>
                   </div>
                 </CardContent>
@@ -231,7 +234,7 @@ export default function Pricing() {
                         Average: ${example.average.toLocaleString()}
                       </div>
                       <div className="text-sm text-muted-foreground mb-4">
-                        × 3% = ${Math.round(example.average * 0.03)}
+                        × 2% = ${Math.round(example.average * 0.02)}
                       </div>
                       <div className="text-4xl font-bold text-primary">
                         ${example.price}
@@ -254,18 +257,18 @@ export default function Pricing() {
                 <Card className="text-center border-accent/30">
                   <CardContent className="pt-6">
                     <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
-                    <div className="text-lg font-semibold mb-4">$3,000</div>
-                    <div className="text-sm text-muted-foreground mb-1">2% = $60</div>
+                    <div className="text-lg font-semibold mb-4">$1,500</div>
+                    <div className="text-sm text-muted-foreground mb-1">3% = $45</div>
                     <div className="text-sm text-muted-foreground mb-4">Below minimum</div>
-                    <div className="text-4xl font-bold text-accent">$100</div>
+                    <div className="text-4xl font-bold text-accent">$50</div>
                     <div className="text-sm text-muted-foreground mt-1">(minimum)</div>
                   </CardContent>
                 </Card>
                 <Card className="text-center border-accent/30">
                   <CardContent className="pt-6">
                     <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
-                    <div className="text-lg font-semibold mb-4">$7,500</div>
-                    <div className="text-sm text-muted-foreground mb-1">× 2%</div>
+                    <div className="text-lg font-semibold mb-4">$5,000</div>
+                    <div className="text-sm text-muted-foreground mb-1">× 3%</div>
                     <div className="text-sm text-muted-foreground mb-4">= $150</div>
                     <div className="text-4xl font-bold text-accent">$150</div>
                   </CardContent>
@@ -273,14 +276,18 @@ export default function Pricing() {
                 <Card className="text-center border-accent/30">
                   <CardContent className="pt-6">
                     <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
-                    <div className="text-lg font-semibold mb-4">$20,000+</div>
-                    <div className="text-sm text-muted-foreground mb-1">2% = $400+</div>
+                    <div className="text-lg font-semibold mb-4">$10,000+</div>
+                    <div className="text-sm text-muted-foreground mb-1">3% = $300+</div>
                     <div className="text-sm text-muted-foreground mb-4">Above maximum</div>
                     <div className="text-4xl font-bold text-accent">$249</div>
                     <div className="text-sm text-muted-foreground mt-1">(cap)</div>
                   </CardContent>
                 </Card>
               </div>
+              
+              <p className="text-xs text-muted-foreground text-center mt-6 italic">
+                * Prices are subject to change at any time
+              </p>
             </div>
           </div>
         </section>
