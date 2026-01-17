@@ -93,13 +93,13 @@ export default function Pricing() {
                     <div className="bg-muted/50 rounded-xl p-4">
                       <div className="text-sm text-center mb-2 text-muted-foreground">Pricing Formula</div>
                       <div className="text-center font-mono font-bold text-primary">
-                        Higher of 2% or $3
+                        Higher of 2% or $10
                       </div>
                     </div>
 
                     <div className="flex justify-center gap-6">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">$3</div>
+                        <div className="text-2xl font-bold text-primary">$10</div>
                         <div className="text-xs text-muted-foreground">Minimum</div>
                       </div>
                       <div className="text-center">
