@@ -13,8 +13,7 @@ import { toast } from "sonner";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles, DollarSign, Award, Camera } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { KeywordSuggestions } from "@/components/KeywordSuggestions";
-import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
+import { KeywordSelector } from "@/components/KeywordSelector";
 // Note: Using native radio inputs for pricing model selection to ensure stable controlled component behavior
 import { BioGenerator } from "@/components/BioGenerator";
 import { ProfileCompletionWidget } from "@/components/ProfileCompletionWidget";
@@ -219,7 +218,20 @@ const EditDiggerProfile = () => {
         }
         
         setLocation(profile.location || "");
-        setPhone(profile.phone || "");
+        
+        // Load phone - if not set or "Not specified", try to get from profiles table
+        let phoneToUse = profile.phone || "";
+        if (!phoneToUse || phoneToUse.toLowerCase().includes('not specified')) {
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('phone')
+            .eq('id', user.id)
+            .single();
+          if (userProfile?.phone) {
+            phoneToUse = userProfile.phone;
+          }
+        }
+        setPhone(phoneToUse);
         setBio(profile.bio || "");
         
         // Load location preferences
@@ -586,25 +598,21 @@ const EditDiggerProfile = () => {
                 <div className="space-y-2 mt-4">
                   <Label className="text-sm font-medium text-muted-foreground">Selected Keywords ({keywords.length})</Label>
                   <div className="flex flex-wrap gap-2">
-                    {keywords.map((keyword, index) => {
-                      const leadCost = getLeadCostForIndustry(keyword, 'non-exclusive', false, '');
-                      return (
-                        <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
-                          <span>{keyword}</span>
-                          <span className="text-xs text-green-600 ml-1">${leadCost.toFixed(2)}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newKeywords = keywords.filter((_, i) => i !== index);
-                              setKeywordsInput(newKeywords.join(', '));
-                            }}
-                            className="ml-1 hover:text-destructive"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      );
-                    })}
+                    {keywords.map((keyword, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                        <span>{keyword}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newKeywords = keywords.filter((_, i) => i !== index);
+                            setKeywordsInput(newKeywords.join(', '));
+                          }}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               )}
@@ -830,22 +838,6 @@ const EditDiggerProfile = () => {
               />
             </Card>
 
-            <div className="space-y-3" id="bio">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="bio">About Your Services</Label>
-                <Badge variant="outline" className="gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  AI Available
-                </Badge>
-              </div>
-              <Textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about your experience and expertise..."
-                rows={4}
-              />
-            </div>
 
             <div id="pricing">
               <Label className="text-base font-semibold">Available for *</Label>
@@ -988,17 +980,6 @@ const EditDiggerProfile = () => {
               
             </div>
 
-            {/* Hourly Upcharge Display */}
-            {(hourlyRateMin || hourlyRateMax) && (
-              <div className="mt-6">
-                <HourlyUpchargeDisplay
-                  hourlyRateMin={hourlyRateMin}
-                  hourlyRateMax={hourlyRateMax}
-                  subscriptionTier={subscriptionTier}
-                  variant="default"
-                />
-              </div>
-            )}
 
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? (
