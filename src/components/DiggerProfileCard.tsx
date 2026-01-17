@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, User, Briefcase } from "lucide-react";
+import { Star, User, Briefcase } from "lucide-react";
 
 interface DiggerProfileCardProps {
   photoUrl?: string;
@@ -28,10 +28,10 @@ export const DiggerProfileCard = ({
       <CardHeader className="pb-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Briefcase className="h-5 w-5 text-primary" />
-          Profile Preview
+          About Us
         </h3>
         <p className="text-sm text-muted-foreground">
-          This is how your profile will appear to potential clients
+          Your business summary
         </p>
       </CardHeader>
       <CardContent>
@@ -53,12 +53,6 @@ export const DiggerProfileCard = ({
               </h4>
               {profession && (
                 <p className="text-sm text-muted-foreground mt-1">{profession}</p>
-              )}
-              {location && (
-                <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
-                  <MapPin className="h-4 w-4" />
-                  {location}
-                </div>
               )}
               <div className="flex items-center gap-1 mt-2">
                 {[1, 2, 3, 4, 5].map((star) => (

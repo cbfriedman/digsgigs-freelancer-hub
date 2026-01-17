@@ -932,15 +932,6 @@ const DiggerDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Hourly Upcharge Display */}
-            {(digger.hourly_rate_min || digger.hourly_rate_max) && (
-              <HourlyUpchargeDisplay
-                hourlyRateMin={digger.hourly_rate_min}
-                hourlyRateMax={digger.hourly_rate_max}
-                subscriptionTier={digger.subscription_tier}
-                variant="default"
-              />
-            )}
 
             {/* Conditional Content Based on Profile Ownership */}
             {isOwnProfile ? (
@@ -1104,33 +1095,6 @@ const DiggerDetail = () => {
                   </Card>
                 )}
 
-                {/* Quick Actions */}
-                <Card className="bg-card border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-primary" />
-                      Quick Actions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button 
-                      className="w-full"
-                      size="lg"
-                      onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
-                    >
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Manage Keywords & Buy Leads
-                    </Button>
-                    <Button 
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Profile
-                    </Button>
-                  </CardContent>
-                </Card>
 
                 {/* Pending Purchases */}
                 <div id="pending-purchases-section">

@@ -109,6 +109,23 @@ export const CategoryBrowserWithDescription = () => {
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [isEnhancingDescription, setIsEnhancingDescription] = useState(false);
+  const [userPhone, setUserPhone] = useState<string | null>(null);
+
+  // Fetch phone from profiles table on mount
+  useEffect(() => {
+    const fetchUserPhone = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('id', user.id)
+        .single();
+      if (!error && data?.phone) {
+        setUserPhone(data.phone);
+      }
+    };
+    fetchUserPhone();
+  }, [user]);
 
   // Reset state when country changes
   useEffect(() => {
@@ -774,7 +791,7 @@ export const CategoryBrowserWithDescription = () => {
                           profile_name: profileName.trim(),
                           keywords: selected,
                           location: locationString,
-                          phone: 'Not specified',
+                          phone: userPhone || 'Not specified',
                           is_primary: false, // All profiles use is_primary=false in new system
                           service_zip_codes: zipCodesArray,
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
