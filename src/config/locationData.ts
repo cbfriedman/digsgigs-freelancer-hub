@@ -80,6 +80,162 @@ export const BRAZIL_STATES = [
   "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"
 ];
 
+export const INDIA_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Delhi", "Jammu and Kashmir", "Ladakh", "Puducherry"
+];
+
+export const JAPAN_PREFECTURES = [
+  "Hokkaido", "Aomori", "Iwate", "Miyagi", "Akita", "Yamagata", "Fukushima",
+  "Ibaraki", "Tochigi", "Gunma", "Saitama", "Chiba", "Tokyo", "Kanagawa",
+  "Niigata", "Toyama", "Ishikawa", "Fukui", "Yamanashi", "Nagano",
+  "Gifu", "Shizuoka", "Aichi", "Mie", "Shiga", "Kyoto", "Osaka", "Hyogo",
+  "Nara", "Wakayama", "Tottori", "Shimane", "Okayama", "Hiroshima", "Yamaguchi",
+  "Tokushima", "Kagawa", "Ehime", "Kochi", "Fukuoka", "Saga", "Nagasaki",
+  "Kumamoto", "Oita", "Miyazaki", "Kagoshima", "Okinawa"
+];
+
+export const CHINA_PROVINCES = [
+  "Anhui", "Beijing", "Chongqing", "Fujian", "Gansu", "Guangdong",
+  "Guangxi", "Guizhou", "Hainan", "Hebei", "Heilongjiang", "Henan",
+  "Hong Kong", "Hubei", "Hunan", "Inner Mongolia", "Jiangsu", "Jiangxi",
+  "Jilin", "Liaoning", "Macau", "Ningxia", "Qinghai", "Shaanxi",
+  "Shandong", "Shanghai", "Shanxi", "Sichuan", "Taiwan", "Tianjin",
+  "Tibet", "Xinjiang", "Yunnan", "Zhejiang"
+];
+
+export const NETHERLANDS_PROVINCES = [
+  "Drenthe", "Flevoland", "Friesland", "Gelderland", "Groningen",
+  "Limburg", "North Brabant", "North Holland", "Overijssel",
+  "South Holland", "Utrecht", "Zeeland"
+];
+
+export const BELGIUM_REGIONS = [
+  "Brussels-Capital Region", "Flemish Region", "Walloon Region"
+];
+
+export const SWITZERLAND_CANTONS = [
+  "Aargau", "Appenzell Ausserrhoden", "Appenzell Innerrhoden", "Basel-Landschaft",
+  "Basel-Stadt", "Bern", "Fribourg", "Geneva", "Glarus", "Graubünden",
+  "Jura", "Lucerne", "Neuchâtel", "Nidwalden", "Obwalden", "Schaffhausen",
+  "Schwyz", "Solothurn", "St. Gallen", "Thurgau", "Ticino", "Uri",
+  "Valais", "Vaud", "Zug", "Zürich"
+];
+
+export const AUSTRIA_STATES = [
+  "Burgenland", "Carinthia", "Lower Austria", "Upper Austria",
+  "Salzburg", "Styria", "Tyrol", "Vorarlberg", "Vienna"
+];
+
+export const PORTUGAL_DISTRICTS = [
+  "Aveiro", "Beja", "Braga", "Bragança", "Castelo Branco", "Coimbra",
+  "Évora", "Faro", "Guarda", "Leiria", "Lisbon", "Portalegre",
+  "Porto", "Santarém", "Setúbal", "Viana do Castelo", "Vila Real", "Viseu",
+  "Azores", "Madeira"
+];
+
+export const IRELAND_PROVINCES = [
+  "Connacht", "Leinster", "Munster", "Ulster"
+];
+
+export const ARGENTINA_PROVINCES = [
+  "Buenos Aires", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes",
+  "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza",
+  "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis",
+  "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tierra del Fuego",
+  "Tucumán", "Ciudad Autónoma de Buenos Aires"
+];
+
+export const SOUTH_AFRICA_PROVINCES = [
+  "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo",
+  "Mpumalanga", "Northern Cape", "North West", "Western Cape"
+];
+
+export const NEW_ZEALAND_REGIONS = [
+  "Northland", "Auckland", "Waikato", "Bay of Plenty", "Gisborne",
+  "Hawke's Bay", "Taranaki", "Manawatū-Whanganui", "Wellington",
+  "Tasman", "Nelson", "Marlborough", "West Coast", "Canterbury",
+  "Otago", "Southland"
+];
+
+export const PHILIPPINES_REGIONS = [
+  "Metro Manila", "Cordillera", "Ilocos Region", "Cagayan Valley",
+  "Central Luzon", "Calabarzon", "Mimaropa", "Bicol Region",
+  "Western Visayas", "Central Visayas", "Eastern Visayas",
+  "Zamboanga Peninsula", "Northern Mindanao", "Davao Region",
+  "Soccsksargen", "Caraga", "Bangsamoro"
+];
+
+// All countries with flag emojis
+export const ALL_COUNTRIES = [
+  { name: "United States", flag: "🇺🇸" },
+  { name: "Canada", flag: "🇨🇦" },
+  { name: "United Kingdom", flag: "🇬🇧" },
+  { name: "Australia", flag: "🇦🇺" },
+  { name: "Germany", flag: "🇩🇪" },
+  { name: "France", flag: "🇫🇷" },
+  { name: "Spain", flag: "🇪🇸" },
+  { name: "Italy", flag: "🇮🇹" },
+  { name: "Mexico", flag: "🇲🇽" },
+  { name: "Brazil", flag: "🇧🇷" },
+  { name: "India", flag: "🇮🇳" },
+  { name: "Japan", flag: "🇯🇵" },
+  { name: "China", flag: "🇨🇳" },
+  { name: "Netherlands", flag: "🇳🇱" },
+  { name: "Belgium", flag: "🇧🇪" },
+  { name: "Switzerland", flag: "🇨🇭" },
+  { name: "Austria", flag: "🇦🇹" },
+  { name: "Portugal", flag: "🇵🇹" },
+  { name: "Ireland", flag: "🇮🇪" },
+  { name: "Argentina", flag: "🇦🇷" },
+  { name: "South Africa", flag: "🇿🇦" },
+  { name: "New Zealand", flag: "🇳🇿" },
+  { name: "Philippines", flag: "🇵🇭" },
+  { name: "Singapore", flag: "🇸🇬" },
+  { name: "South Korea", flag: "🇰🇷" },
+  { name: "Indonesia", flag: "🇮🇩" },
+  { name: "Malaysia", flag: "🇲🇾" },
+  { name: "Thailand", flag: "🇹🇭" },
+  { name: "Vietnam", flag: "🇻🇳" },
+  { name: "Poland", flag: "🇵🇱" },
+  { name: "Sweden", flag: "🇸🇪" },
+  { name: "Norway", flag: "🇳🇴" },
+  { name: "Denmark", flag: "🇩🇰" },
+  { name: "Finland", flag: "🇫🇮" },
+  { name: "Czech Republic", flag: "🇨🇿" },
+  { name: "Romania", flag: "🇷🇴" },
+  { name: "Hungary", flag: "🇭🇺" },
+  { name: "Greece", flag: "🇬🇷" },
+  { name: "Turkey", flag: "🇹🇷" },
+  { name: "Israel", flag: "🇮🇱" },
+  { name: "United Arab Emirates", flag: "🇦🇪" },
+  { name: "Saudi Arabia", flag: "🇸🇦" },
+  { name: "Egypt", flag: "🇪🇬" },
+  { name: "Nigeria", flag: "🇳🇬" },
+  { name: "Kenya", flag: "🇰🇪" },
+  { name: "Colombia", flag: "🇨🇴" },
+  { name: "Chile", flag: "🇨🇱" },
+  { name: "Peru", flag: "🇵🇪" },
+  { name: "Venezuela", flag: "🇻🇪" },
+  { name: "Ukraine", flag: "🇺🇦" },
+  { name: "Russia", flag: "🇷🇺" },
+  { name: "Pakistan", flag: "🇵🇰" },
+  { name: "Bangladesh", flag: "🇧🇩" },
+  { name: "Sri Lanka", flag: "🇱🇰" },
+  { name: "Nepal", flag: "🇳🇵" },
+  { name: "Taiwan", flag: "🇹🇼" },
+  { name: "Hong Kong", flag: "🇭🇰" },
+  { name: "Morocco", flag: "🇲🇦" },
+  { name: "Tunisia", flag: "🇹🇳" },
+  { name: "Ghana", flag: "🇬🇭" },
+  { name: "Other", flag: "🌍" }
+];
+
 export const getRegionsForCountry = (country: string): string[] => {
   switch (country) {
     case "United States":
@@ -102,6 +258,32 @@ export const getRegionsForCountry = (country: string): string[] => {
       return MEXICO_STATES;
     case "Brazil":
       return BRAZIL_STATES;
+    case "India":
+      return INDIA_STATES;
+    case "Japan":
+      return JAPAN_PREFECTURES;
+    case "China":
+      return CHINA_PROVINCES;
+    case "Netherlands":
+      return NETHERLANDS_PROVINCES;
+    case "Belgium":
+      return BELGIUM_REGIONS;
+    case "Switzerland":
+      return SWITZERLAND_CANTONS;
+    case "Austria":
+      return AUSTRIA_STATES;
+    case "Portugal":
+      return PORTUGAL_DISTRICTS;
+    case "Ireland":
+      return IRELAND_PROVINCES;
+    case "Argentina":
+      return ARGENTINA_PROVINCES;
+    case "South Africa":
+      return SOUTH_AFRICA_PROVINCES;
+    case "New Zealand":
+      return NEW_ZEALAND_REGIONS;
+    case "Philippines":
+      return PHILIPPINES_REGIONS;
     default:
       return [];
   }
@@ -129,6 +311,32 @@ export const getRegionLabel = (country: string): string => {
       return "State";
     case "Brazil":
       return "State";
+    case "India":
+      return "State/Territory";
+    case "Japan":
+      return "Prefecture";
+    case "China":
+      return "Province/Region";
+    case "Netherlands":
+      return "Province";
+    case "Belgium":
+      return "Region";
+    case "Switzerland":
+      return "Canton";
+    case "Austria":
+      return "State";
+    case "Portugal":
+      return "District";
+    case "Ireland":
+      return "Province";
+    case "Argentina":
+      return "Province";
+    case "South Africa":
+      return "Province";
+    case "New Zealand":
+      return "Region";
+    case "Philippines":
+      return "Region";
     default:
       return "State/Province";
   }
