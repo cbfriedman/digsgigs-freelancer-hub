@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
-import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles } from "lucide-react";
+import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles, DollarSign, Award, Camera } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { KeywordSuggestions } from "@/components/KeywordSuggestions";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
@@ -28,6 +28,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
 import { SafeProfessionSelector } from "@/components/SafeProfessionSelector";
 import { useProfessions } from "@/hooks/useProfessions";
+import { WorkSamplesUpload } from "@/components/WorkSamplesUpload";
+import { CertificationsInput } from "@/components/CertificationsInput";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -83,6 +85,8 @@ const EditDiggerProfile = () => {
   const [country, setCountry] = useState("United States");
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [isUpdating, setIsUpdating] = useState(false); // Flag to prevent reload after update
+  const [workPhotos, setWorkPhotos] = useState<string[]>([]);
+  const [certifications, setCertifications] = useState<string[]>([]);
 
   // Memoize regions for the selected country to avoid repeated lookups
   const availableRegions = useMemo(() => {
@@ -261,6 +265,8 @@ const EditDiggerProfile = () => {
         setPhotoUrl(profile.profile_image_url || "");
         setTitle(profile.custom_occupation_title || "");
         setTagline(profile.tagline || "");
+        setWorkPhotos(profile.work_photos || []);
+        setCertifications(profile.certifications || []);
         setProfileData(profile);
         
         // Load subscription tier from profile as fallback
@@ -369,6 +375,10 @@ const EditDiggerProfile = () => {
           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
           country: country,
+          work_photos: workPhotos.length > 0 ? workPhotos : null,
+          certifications: certifications.length > 0 ? certifications : null,
+          hourly_rate_min: hourlyRateMin,
+          hourly_rate_max: hourlyRateMax,
           // Note: state field removed - not in database schema. State info is included in location field.
         })
         .eq("id", profileId);
@@ -502,12 +512,28 @@ const EditDiggerProfile = () => {
             {/* Main Form */}
             <div className="lg:col-span-2 space-y-6">
               {/* Profile Photo Section */}
-              <Card className="p-6">
+              <Card className="p-6" id="photos">
                 <h2 className="text-xl font-bold mb-4">Profile Photo</h2>
                 <ProfilePhotoUpload
                   currentPhotoUrl={photoUrl}
                   onPhotoChange={setPhotoUrl}
                   companyName={businessName}
+                />
+              </Card>
+
+              {/* Work Samples Section */}
+              <Card className="p-6" id="work-samples">
+                <div className="flex items-center gap-2 mb-4">
+                  <Camera className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-bold">Work Samples</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Showcase your best work with photos of completed projects. Add at least 3 photos to complete this section.
+                </p>
+                <WorkSamplesUpload
+                  currentPhotos={workPhotos}
+                  onPhotosChange={setWorkPhotos}
+                  maxPhotos={10}
                 />
               </Card>
 
@@ -877,6 +903,56 @@ const EditDiggerProfile = () => {
                 </label>
               </div>
 
+            </div>
+
+            {/* Hourly Rate Range Section */}
+            <div className="space-y-4" id="hourly-rate">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-primary" />
+                <Label className="text-base font-semibold">Hourly Rate Range</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Set your hourly rate range to display on your profile
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hourlyRateMin">Minimum Rate ($)</Label>
+                  <Input
+                    id="hourlyRateMin"
+                    type="number"
+                    min="0"
+                    value={hourlyRateMin || ''}
+                    onChange={(e) => setHourlyRateMin(e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="e.g., 50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hourlyRateMax">Maximum Rate ($)</Label>
+                  <Input
+                    id="hourlyRateMax"
+                    type="number"
+                    min="0"
+                    value={hourlyRateMax || ''}
+                    onChange={(e) => setHourlyRateMax(e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="e.g., 150"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Certifications Section */}
+            <div className="space-y-4" id="certifications">
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-primary" />
+                <Label className="text-base font-semibold">Certifications & Credentials</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Add your professional certifications to build trust with potential clients
+              </p>
+              <CertificationsInput
+                certifications={certifications}
+                onCertificationsChange={setCertifications}
+              />
             </div>
 
             <div className="space-y-2" id="keywords">
