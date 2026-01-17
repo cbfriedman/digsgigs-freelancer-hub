@@ -278,7 +278,7 @@ const FBDiggerLanding = () => {
                       <p className="font-semibold text-lg">Non-Exclusive Leads</p>
                       <p className="text-sm text-muted-foreground">Pay per lead you unlock</p>
                     </div>
-                    <p className="text-2xl font-bold text-primary">$3–$49</p>
+                    <p className="text-2xl font-bold text-primary">$10–$49</p>
                   </div>
                   
                   <div className="flex justify-between items-center pb-4 border-b">
@@ -351,7 +351,7 @@ const FBDiggerLanding = () => {
               <AccordionItem value="cost">
                 <AccordionTrigger className="text-left">How much do leads cost?</AccordionTrigger>
                 <AccordionContent>
-                  Non-exclusive leads range from $3 to $49 depending on the project size (2% of the project midpoint, min $3, max $49). For exclusive awards, there's a 3% referral fee ($10-$249) that comes from the client's deposit—not your pocket.
+                  Non-exclusive leads range from $10 to $49 depending on the project size (2% of the project midpoint, min $10, max $49). For exclusive awards, there's a 3% referral fee ($50-$249) that comes from the client's deposit—not your pocket.
                 </AccordionContent>
               </AccordionItem>
               
