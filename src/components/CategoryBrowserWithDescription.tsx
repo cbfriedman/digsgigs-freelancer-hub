@@ -353,13 +353,13 @@ export const CategoryBrowserWithDescription = () => {
           </div>
         )}
 
-        {/* Suggested Keywords Display */}
+        {/* Selected Keywords Display */}
         {suggestedKeywords.length > 0 && (
           <div className="space-y-4">
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-              <h4 className="font-semibold mb-3">Suggested Keywords ({suggestedKeywords.length})</h4>
+              <h4 className="font-semibold mb-3">Selected Keywords ({suggestedKeywords.length})</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Click keywords to select/deselect them. Selected keywords have a checkmark and colored background. Click the X to remove them entirely.
+                Click keywords to deselect them. Selected keywords have a checkmark and colored background. Click the X to remove them entirely.
               </p>
               <div className="flex flex-wrap gap-2">
                 {suggestedKeywords.map((keyword, index) => {
@@ -452,6 +452,7 @@ export const CategoryBrowserWithDescription = () => {
                     className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background ${!country ? 'border-destructive/50' : 'border-input'}`}
                   >
                     <option value="">Select a country...</option>
+                    <option value="All Countries">🌐 All Countries</option>
                     <option value="United States">🇺🇸 United States</option>
                     <option value="Canada">🇨🇦 Canada</option>
                     <option value="United Kingdom">🇬🇧 United Kingdom</option>
@@ -466,8 +467,8 @@ export const CategoryBrowserWithDescription = () => {
                   </select>
                 </div>
 
-                {/* State/Province - Required (when country has regions) */}
-                {country && getRegionsForCountry(country).length > 0 && (
+                {/* State/Province - Required (when country has regions and not "All Countries") */}
+                {country && country !== "All Countries" && getRegionsForCountry(country).length > 0 && (
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1">
                       {getRegionLabel(country)} <span className="text-destructive font-semibold">*</span>
