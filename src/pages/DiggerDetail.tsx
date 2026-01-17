@@ -859,19 +859,6 @@ const DiggerDetail = () => {
                         </div>
                       </div>
                     )}
-                    {digger.pricing_model === 'both' && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                        <div className="mt-0.5">
-                          <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
-                            <div className="h-2 w-2 rounded-full bg-primary" />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-medium">Fixed Price Contracts Also Available</p>
-                          <p className="text-sm text-muted-foreground mt-1">Flexible pricing options - choose what works best for your project</p>
-                        </div>
-                      </div>
-                    )}
                     {digger.offers_free_estimates && (
                       <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/10">
                         <div className="mt-0.5">
@@ -1016,6 +1003,12 @@ const DiggerDetail = () => {
                           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                         >
                           View Profile
+                        </Button>
+                        <Button 
+                          variant="secondary"
+                          onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
+                        >
+                          Save and Continue
                         </Button>
                         <Button onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
                           <Edit className="h-4 w-4 mr-2" />

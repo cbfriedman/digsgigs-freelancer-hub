@@ -299,13 +299,14 @@ const EditDiggerProfile = () => {
     e.preventDefault();
     if (!user || !profileId) return;
 
-    if (!businessName || selectedProfessionIds.length === 0 || !location || !phone) {
-      toast.error("Please fill in all required fields");
+    // Only business name and phone are truly required - allow incomplete profiles
+    if (!businessName) {
+      toast.error("Please enter your business name");
       return;
     }
 
-    // Validate phone number format
-    if (!isValidPhoneNumber(phone)) {
+    // Validate phone number format only if provided
+    if (phone && !isValidPhoneNumber(phone)) {
       toast.error("Please enter a valid phone number (10-15 digits)");
       return;
     }
@@ -316,11 +317,6 @@ const EditDiggerProfile = () => {
       .filter(Boolean)
       .map(p => p!.name);
     const professionString = professionNames.join(', ');
-
-    if (!pricingModel) {
-      toast.error("Please select a pricing option (Fixed Price, Hourly, or Both Models)");
-      return;
-    }
 
     setLoading(true);
     setIsUpdating(true); // Set flag to prevent useEffect from reloading
@@ -645,7 +641,7 @@ const EditDiggerProfile = () => {
                   </select>
                 </div>
 
-                {/* State/Province Multi-Select - Always visible for supported countries */}
+                {/* State/Province Multi-Select - Always visible for supported countries, but not for "All Countries" */}
                 {country && country !== "Other" && country !== "All Countries" && country !== "" && availableRegions.length > 0 && (
                   <div className="space-y-2 border-l-4 border-primary pl-4 bg-primary/5 p-4 rounded-r-lg">
                     <Label className="text-base font-semibold flex items-center gap-2">
