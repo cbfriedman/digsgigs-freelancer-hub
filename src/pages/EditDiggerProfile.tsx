@@ -24,7 +24,7 @@ import { ProfileTitleTaglineEditor } from "@/components/ProfileTitleTaglineEdito
 import { DiggerProfileCard } from "@/components/DiggerProfileCard";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
+import { getRegionsForCountry, getRegionLabel, ALL_COUNTRIES } from "@/config/locationData";
 import { SafeProfessionSelector } from "@/components/SafeProfessionSelector";
 import { useProfessions } from "@/hooks/useProfessions";
 import { WorkSamplesUpload } from "@/components/WorkSamplesUpload";
@@ -86,11 +86,17 @@ const EditDiggerProfile = () => {
   const [isUpdating, setIsUpdating] = useState(false); // Flag to prevent reload after update
   const [workPhotos, setWorkPhotos] = useState<string[]>([]);
   const [certifications, setCertifications] = useState<string[]>([]);
+  const [stateProvince, setStateProvince] = useState<string>("");
 
-  // Memoize regions for the selected country to avoid repeated lookups
+  // Memoize regions for the selected country (service area)
   const availableRegions = useMemo(() => {
     return getRegionsForCountry(country);
   }, [country]);
+
+  // Memoize regions for business location country
+  const businessLocationRegions = useMemo(() => {
+    return getRegionsForCountry(location);
+  }, [location]);
 
   // Parse keywords from input
   const keywords = keywordsInput
@@ -217,7 +223,29 @@ const EditDiggerProfile = () => {
           setSelectedProfessionIds(professionIds);
         }
         
-        setLocation(profile.location || "");
+        // Parse location - it may be stored as "State, Country" format
+        const storedLocation = profile.location || "";
+        // Check if the stored location matches a known country
+        const knownCountry = ALL_COUNTRIES.find(c => 
+          storedLocation === c.name || storedLocation.endsWith(`, ${c.name}`)
+        );
+        
+        if (knownCountry && storedLocation.includes(', ')) {
+          // Location is in "State, Country" format
+          const parts = storedLocation.split(', ');
+          const countryPart = parts[parts.length - 1];
+          const statePart = parts.slice(0, -1).join(', ');
+          setLocation(countryPart);
+          setStateProvince(statePart);
+        } else if (knownCountry) {
+          // Location is just a country name
+          setLocation(storedLocation);
+          setStateProvince("");
+        } else {
+          // Legacy location format or free-text
+          setLocation(storedLocation);
+          setStateProvince("");
+        }
         
         // Load phone - if not set or "Not specified", try to get from profiles table
         let phoneToUse = profile.phone || "";
@@ -348,22 +376,14 @@ const EditDiggerProfile = () => {
         ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
         : null;
 
-      // Include state info in location field since state column doesn't exist in database
-      // Only append states if they're not already in the location string
-      let finalLocation = location;
-      if (selectedStates.length > 0 && location && location !== 'Not specified') {
-        const statesString = selectedStates.join(', ');
-        // Check if state info is already in location
-        const hasStateInfo = selectedStates.some(state => 
-          location.toLowerCase().includes(state.toLowerCase())
-        );
-        if (!hasStateInfo) {
-          finalLocation = `${location}, ${statesString}`;
-        }
-      } else if (selectedStates.length > 0 && (!location || location === 'Not specified')) {
-        // If no location but states selected, use states as location
-        finalLocation = selectedStates.join(', ');
+      // Build business location string - include state/province if selected
+      let businessLocation = location;
+      if (stateProvince && location && location !== "Other") {
+        businessLocation = `${stateProvince}, ${location}`;
       }
+
+      // Service area states for the state column
+      const serviceAreaStates = selectedStates.length > 0 ? selectedStates.join(', ') : null;
 
       const { error } = await supabase
         .from("digger_profiles")
@@ -371,7 +391,7 @@ const EditDiggerProfile = () => {
           business_name: businessName,
           company_name: businessName,
           profession: professionString,
-          location: finalLocation,
+          location: businessLocation,
           phone,
           bio: bio || null,
           keywords: keywords.length > 0 ? keywords : null,
@@ -387,11 +407,11 @@ const EditDiggerProfile = () => {
           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
           country: country,
+          state: serviceAreaStates,
           work_photos: workPhotos.length > 0 ? workPhotos : null,
           certifications: certifications.length > 0 ? certifications : null,
           hourly_rate_min: hourlyRateMin,
           hourly_rate_max: hourlyRateMax,
-          // Note: state field removed - not in database schema. State info is included in location field.
         })
         .eq("id", profileId);
 
@@ -623,27 +643,44 @@ const EditDiggerProfile = () => {
               <select
                 id="location"
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setStateProvince(""); // Clear state when country changes
+                }}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 required
               >
                 <option value="">Select your country...</option>
-                <option value="United States">🇺🇸 United States</option>
-                <option value="Canada">🇨🇦 Canada</option>
-                <option value="United Kingdom">🇬🇧 United Kingdom</option>
-                <option value="Australia">🇦🇺 Australia</option>
-                <option value="Germany">🇩🇪 Germany</option>
-                <option value="France">🇫🇷 France</option>
-                <option value="Spain">🇪🇸 Spain</option>
-                <option value="Italy">🇮🇹 Italy</option>
-                <option value="Mexico">🇲🇽 Mexico</option>
-                <option value="Brazil">🇧🇷 Brazil</option>
-                <option value="Other">🌍 Other</option>
+                {ALL_COUNTRIES.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.flag} {c.name}
+                  </option>
+                ))}
               </select>
               <p className="text-xs text-muted-foreground">
                 This is the country where your business is registered
               </p>
             </div>
+
+            {/* State/Province Field - Shows when country has regions */}
+            {location && location !== "Other" && businessLocationRegions.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="stateProvince">{getRegionLabel(location)}</Label>
+                <select
+                  id="stateProvince"
+                  value={stateProvince}
+                  onChange={(e) => setStateProvince(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                >
+                  <option value="">Select {getRegionLabel(location).toLowerCase()}...</option>
+                  {businessLocationRegions.map((region) => (
+                    <option key={region} value={region}>
+                      {region}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Location Preferences Section */}
             <Card className="p-4 border-2 border-primary/20 bg-primary/5">
@@ -663,22 +700,19 @@ const EditDiggerProfile = () => {
                   <select
                     id="country"
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    onChange={(e) => {
+                      setCountry(e.target.value);
+                      setSelectedStates([]); // Clear states when country changes
+                    }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   >
                     <option value="">Select a country...</option>
                     <option value="All Countries">🌐 All Countries</option>
-                    <option value="United States">🇺🇸 United States</option>
-                    <option value="Canada">🇨🇦 Canada</option>
-                    <option value="United Kingdom">🇬🇧 United Kingdom</option>
-                    <option value="Australia">🇦🇺 Australia</option>
-                    <option value="Germany">🇩🇪 Germany</option>
-                    <option value="France">🇫🇷 France</option>
-                    <option value="Spain">🇪🇸 Spain</option>
-                    <option value="Italy">🇮🇹 Italy</option>
-                    <option value="Mexico">🇲🇽 Mexico</option>
-                    <option value="Brazil">🇧🇷 Brazil</option>
-                    <option value="Other">🌍 Other</option>
+                    {ALL_COUNTRIES.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.flag} {c.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
