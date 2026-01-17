@@ -409,7 +409,19 @@ const Index = () => {
               Choose the pricing model that fits your workflow
             </p>
 
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
+            {/* Limited Time Offer Banner */}
+            <div className="mb-8 p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg">
+              <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                <Zap className="h-5 w-5" />
+                <span className="font-semibold">Limited Time Offer:</span>
+                <span>Zero Digger's Setup Fee</span>
+                <Badge variant="outline" className="ml-2 bg-green-500/20 text-green-600 border-green-500/30">
+                  $199 Value
+                </Badge>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
               {/* Non-Exclusive */}
               <Card className="p-6 border-primary/30 text-left">
                 <Badge className="mb-3 bg-primary/10 text-primary border-primary/20">Pay Per Lead</Badge>
@@ -418,7 +430,7 @@ const Index = () => {
                   Pay once to unlock client contact details. Other pros may also engage.
                 </p>
                 <div className="text-2xl font-bold text-primary mb-2">2% of budget</div>
-                <div className="text-sm text-muted-foreground">$3 min – $49 max</div>
+                <div className="text-sm text-muted-foreground">$10 min – $49 max</div>
               </Card>
 
               {/* Exclusive */}
@@ -429,9 +441,14 @@ const Index = () => {
                   3% referral fee when awarded the job. Referral fee is paid out of Gigger's initial 5% deposit.
                 </p>
                 <div className="text-2xl font-bold text-accent mb-2">3% referral fee</div>
-                <div className="text-sm text-muted-foreground">$10 min – $249 max</div>
+                <div className="text-sm text-muted-foreground">$50 min – $249 max</div>
               </Card>
             </div>
+
+            {/* Pricing disclaimer */}
+            <p className="text-xs text-muted-foreground mb-6 italic">
+              * Prices are subject to change at any time
+            </p>
 
             <div className="flex flex-wrap justify-center gap-4 mb-8">
               <div className="flex items-center gap-2 text-sm">
