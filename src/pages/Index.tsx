@@ -555,9 +555,8 @@ const Index = () => {
               Join Digs & Gigs and start receiving leads today. Free to join.
             </p>
             <Button 
-              variant="hero" 
               size="lg" 
-              className="text-lg px-8"
+              className="text-lg px-8 bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => {
                 trackButtonClick('Become a Digger', 'final-cta');
                 navigate("/register?mode=signup&type=digger");
