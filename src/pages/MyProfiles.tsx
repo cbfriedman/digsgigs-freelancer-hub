@@ -327,20 +327,16 @@ export default function MyProfiles() {
                 <h3 className="font-semibold">Why Multiple Profiles?</h3>
                 <p className="text-sm text-muted-foreground">
                   Create multiple profiles to organize your services, target different locations, or market separate specializations. 
-                  Each profile can include keywords from any value tier—you only pay based on the specific keywords you select.
+                  Lead pricing is based on project budget—you only pay when you unlock leads.
                 </p>
                 <div className="flex gap-4 text-xs mt-2 flex-wrap">
                   <div className="flex items-center gap-1">
-                    <span className="text-green-600">💼 Low-Value:</span>
-                    <span className="font-medium">$8-24/lead</span>
+                    <span className="text-green-600">📋 Non-Exclusive:</span>
+                    <span className="font-medium">$10-$49/lead</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-blue-600">🏗️ Mid-Value:</span>
-                    <span className="font-medium">$40-120/lead</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-purple-600">⭐ High-Value:</span>
-                    <span className="font-medium">$250-750/lead</span>
+                    <span className="text-blue-600">⭐ Exclusive:</span>
+                    <span className="font-medium">$50-$249/lead</span>
                   </div>
                 </div>
               </div>
