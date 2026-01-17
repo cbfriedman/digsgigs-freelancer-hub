@@ -619,14 +619,30 @@ const EditDiggerProfile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location *</Label>
-              <Input
+              <Label htmlFor="location">Business Location (Country) *</Label>
+              <select
                 id="location"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="City, State"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                 required
-              />
+              >
+                <option value="">Select your country...</option>
+                <option value="United States">🇺🇸 United States</option>
+                <option value="Canada">🇨🇦 Canada</option>
+                <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                <option value="Australia">🇦🇺 Australia</option>
+                <option value="Germany">🇩🇪 Germany</option>
+                <option value="France">🇫🇷 France</option>
+                <option value="Spain">🇪🇸 Spain</option>
+                <option value="Italy">🇮🇹 Italy</option>
+                <option value="Mexico">🇲🇽 Mexico</option>
+                <option value="Brazil">🇧🇷 Brazil</option>
+                <option value="Other">🌍 Other</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                This is the country where your business is registered
+              </p>
             </div>
 
             {/* Location Preferences Section */}
