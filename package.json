@@ -16,7 +16,20 @@
     "cap:add:android": "npx cap add android",
     "cap:add:ios": "npx cap add ios",
     "cap:open:android": "npx cap open android",
-    "cap:open:ios": "npx cap open ios"
+    "cap:open:ios": "npx cap open ios",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:functional": "playwright test e2e/functional",
+    "test:e2e:visual": "playwright test e2e/visual-regression",
+    "test:report": "playwright show-report",
+    "test:all": "npm run test && npm run test:e2e",
+    "test:smoke": "playwright test e2e/functional/auth-flow.spec.ts e2e/functional/digger-flow.spec.ts e2e/functional/gig-flow.spec.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
