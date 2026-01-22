@@ -100,7 +100,7 @@ const ApplyDiggerFB = () => {
     <>
       <SEOHead
         title="Bid for Exclusive Jobs — Pay Only if Selected | Digs & Gigs"
-        description="Get vetted leads emailed to you from $3. Bid for exclusive jobs and pay only when selected. No subscriptions, no platform fees. Join free today."
+        description="Get vetted leads emailed to you from $10. Bid for exclusive jobs and pay only when selected. No subscriptions, no platform fees. Join free today."
         canonical="/apply-digger-fb"
         noindex={true}
       />
@@ -352,33 +352,45 @@ const ApplyDiggerFB = () => {
           </div>
         </section>
 
-        {/* SECTION 6: Social Proof */}
+        {/* SECTION 6: Launch & Trust Section */}
         <section className="py-16 px-4 bg-muted/30">
           <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Zap className="h-4 w-4" />
+              Launching 2025
+            </div>
+            
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Trusted by Independent Professionals
+              Be a Founding Member
             </h2>
-            <p className="text-muted-foreground mb-10">
-              Join hundreds of freelancers using Digs & Gigs.
+            <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Join early and lock in founding member rates. No setup fees during launch.
             </p>
 
-            {/* Placeholder testimonial cards */}
-            <div className="grid md:grid-cols-3 gap-6">
-              {[1, 2, 3].map((_, index) => (
-                <Card key={index} className="border border-border bg-card">
-                  <CardContent className="p-6">
-                    <div className="flex justify-center mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className="text-yellow-400">★</span>
-                      ))}
-                    </div>
-                    <p className="text-muted-foreground text-sm italic mb-4">
-                      "Testimonial coming soon..."
-                    </p>
-                    <div className="w-10 h-10 rounded-full bg-muted mx-auto"></div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="grid sm:grid-cols-3 gap-6">
+              <Card className="border border-border bg-card">
+                <CardContent className="p-6 text-center">
+                  <DollarSign className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <h3 className="font-semibold text-foreground mb-2">$0 Setup Fee</h3>
+                  <p className="text-sm text-muted-foreground">No joining costs during launch</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border border-border bg-card">
+                <CardContent className="p-6 text-center">
+                  <Shield className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <h3 className="font-semibold text-foreground mb-2">Price Lock</h3>
+                  <p className="text-sm text-muted-foreground">Lock in current rates as a founder</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border border-border bg-card">
+                <CardContent className="p-6 text-center">
+                  <Users className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <h3 className="font-semibold text-foreground mb-2">Early Access</h3>
+                  <p className="text-sm text-muted-foreground">First to receive leads in your area</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
