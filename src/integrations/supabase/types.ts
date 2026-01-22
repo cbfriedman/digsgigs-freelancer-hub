@@ -4033,6 +4033,123 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriber_lead_purchases: {
+        Row: {
+          gig_id: string
+          id: string
+          purchase_price_cents: number
+          purchased_at: string | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          subscriber_id: string
+        }
+        Insert: {
+          gig_id: string
+          id?: string
+          purchase_price_cents: number
+          purchased_at?: string | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          subscriber_id: string
+        }
+        Update: {
+          gig_id?: string
+          id?: string
+          purchase_price_cents?: number
+          purchased_at?: string | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          subscriber_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriber_lead_purchases_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriber_lead_purchases_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriber_lead_purchases_subscriber_id_fkey"
+            columns: ["subscriber_id"]
+            isOneToOne: false
+            referencedRelation: "subscribers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscribers: {
+        Row: {
+          categories: string[] | null
+          converted_to_digger_id: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          source: string | null
+          stripe_customer_id: string | null
+          unsubscribed: boolean | null
+          updated_at: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          categories?: string[] | null
+          converted_to_digger_id?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          source?: string | null
+          stripe_customer_id?: string | null
+          unsubscribed?: boolean | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          categories?: string[] | null
+          converted_to_digger_id?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          source?: string | null
+          stripe_customer_id?: string | null
+          unsubscribed?: boolean | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscribers_converted_to_digger_id_fkey"
+            columns: ["converted_to_digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_pricing: {
         Row: {
           annual_price_cents: number

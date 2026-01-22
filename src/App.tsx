@@ -100,6 +100,8 @@ import PaymentMethods from "./pages/PaymentMethods";
 import ProfileCategoryBrowser from "./pages/ProfileCategoryBrowser";
 import BidTemplatePreview from "./pages/BidTemplatePreview";
 import LeadUnlockPreview from "./pages/LeadUnlockPreview";
+import Subscribe from "./pages/Subscribe";
+import ImportSubscribers from "./pages/admin/ImportSubscribers";
 
 const queryClient = new QueryClient();
 
@@ -391,6 +393,10 @@ const router = createBrowserRouter(
         element: <ProtectedRoute><TestResultsDashboard /></ProtectedRoute>,
       },
       {
+        path: "/admin/import-subscribers",
+        element: <ProtectedRoute><ImportSubscribers /></ProtectedRoute>,
+      },
+      {
         path: "/test/ai-matching",
         element: <ProtectedRoute><TestAIMatching /></ProtectedRoute>,
       },
@@ -425,6 +431,10 @@ const router = createBrowserRouter(
       {
         path: "/email",
         element: <EmailLanding />,
+      },
+      {
+        path: "/subscribe",
+        element: <Subscribe />,
       },
       {
         path: "/unsubscribe",
