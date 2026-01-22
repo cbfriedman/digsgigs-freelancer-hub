@@ -73,17 +73,27 @@ serve(async (req) => {
       throw new Error(`Error fetching diggers: ${diggersError.message}`);
     }
 
-    console.log(`[blast-lead-to-diggers] Found ${diggers?.length || 0} diggers`);
+    // Get all subscribers who haven't unsubscribed
+    const { data: subscribers, error: subscribersError } = await supabase
+      .from("subscribers")
+      .select("id, email, full_name")
+      .eq("unsubscribed", false);
 
-    if (!diggers || diggers.length === 0) {
+    if (subscribersError) {
+      console.error(`[blast-lead-to-diggers] Error fetching subscribers: ${subscribersError.message}`);
+    }
+
+    console.log(`[blast-lead-to-diggers] Found ${diggers?.length || 0} diggers, ${subscribers?.length || 0} subscribers`);
+
+    if ((!diggers || diggers.length === 0) && (!subscribers || subscribers.length === 0)) {
       return new Response(
-        JSON.stringify({ success: true, message: "No diggers to notify", emailsSent: 0 }),
+        JSON.stringify({ success: true, message: "No diggers or subscribers to notify", emailsSent: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Check email preferences for each digger
-    const diggerUserIds = diggers.map(d => d.user_id);
+    const diggerUserIds = (diggers || []).map(d => d.user_id);
     const { data: emailPrefs } = await supabase
       .from("email_preferences")
       .select("user_id, lead_notifications_enabled, enabled")
@@ -95,7 +105,7 @@ serve(async (req) => {
     );
 
     // Filter diggers who want lead notifications (default to true if no preference)
-    const eligibleDiggers = diggers.filter(d => prefsMap.get(d.user_id) !== false);
+    const eligibleDiggers = (diggers || []).filter(d => prefsMap.get(d.user_id) !== false);
 
     console.log(`[blast-lead-to-diggers] Eligible diggers after filtering: ${eligibleDiggers.length}`);
 
@@ -184,6 +194,83 @@ serve(async (req) => {
       }
     }
 
+    // Also send to subscribers (non-authenticated users)
+    const eligibleSubscribers = subscribers || [];
+    for (const subscriber of eligibleSubscribers) {
+      const email = subscriber.email;
+      const name = subscriber.full_name || "there";
+
+      if (!email) continue;
+
+      // Skip if we already sent to this email (might be both a digger and subscriber)
+      const alreadySent = eligibleDiggers.some((d: any) => d.profiles?.email?.toLowerCase() === email.toLowerCase());
+      if (alreadySent) continue;
+
+      try {
+        // Use subscriber-specific unlock link
+        const subscriberUnlockUrl = `${baseUrl}/lead/${leadId}/unlock?sub=${subscriber.id}`;
+
+        await resend.emails.send({
+          from: "Digs & Gigs <leads@digsandgigs.net>",
+          to: [email],
+          subject: `🎯 New Lead: ${lead.title}`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>New Lead Available</title>
+            </head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #5b21b6; margin: 0;">🎯 New Lead Available</h1>
+              </div>
+              
+              <p>Hi ${name},</p>
+              
+              <p>A new project has just been posted on Digs & Gigs:</p>
+              
+              <div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;">
+                <h2 style="margin: 0 0 16px 0; color: #111827;">${lead.title}</h2>
+                
+                <p style="margin: 0 0 12px 0;"><strong>Description:</strong><br>${shortDescription}</p>
+                
+                ${lead.requirements ? `<p style="margin: 0 0 12px 0;"><strong>Requirements:</strong><br>${lead.requirements}</p>` : ''}
+                
+                <p style="margin: 0 0 12px 0;"><strong>Budget Range:</strong> ${budgetRange}</p>
+                
+                <p style="margin: 0 0 12px 0;"><strong>Timeline:</strong> ${lead.timeline || "Flexible"}</p>
+                
+                <p style="margin: 0 0 12px 0;"><strong>Location:</strong> ${lead.location || "Not specified"}</p>
+              </div>
+              
+              <div style="text-align: center; margin: 32px 0;">
+                <p style="font-size: 24px; font-weight: bold; color: #5b21b6; margin: 0 0 16px 0;">
+                  Lead Price: $${priceDollars}
+                </p>
+                <a href="${subscriberUnlockUrl}" style="display: inline-block; background: linear-gradient(135deg, #5b21b6, #7c3aed); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 18px;">
+                  Unlock This Lead – $${priceDollars}
+                </a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 32px;">
+                You're receiving this because you subscribed to Digs & Gigs lead notifications.<br>
+                <a href="${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&type=leads" style="color: #5b21b6;">Unsubscribe from lead notifications</a>
+              </p>
+            </body>
+            </html>
+          `,
+        });
+
+        emailsSent++;
+        console.log(`[blast-lead-to-diggers] Email sent to subscriber ${email}`);
+      } catch (emailError: any) {
+        console.error(`[blast-lead-to-diggers] Failed to send to subscriber ${email}:`, emailError);
+        errors.push(`${email}: ${emailError.message}`);
+      }
+    }
+
     console.log(`[blast-lead-to-diggers] Complete. Sent ${emailsSent} emails, ${errors.length} errors`);
 
     return new Response(
@@ -191,6 +278,7 @@ serve(async (req) => {
         success: true, 
         emailsSent,
         totalDiggers: eligibleDiggers.length,
+        totalSubscribers: eligibleSubscribers.length,
         errors: errors.length > 0 ? errors : undefined
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
