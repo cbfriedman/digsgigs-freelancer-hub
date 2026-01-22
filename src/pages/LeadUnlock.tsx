@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -56,6 +56,7 @@ const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 export default function LeadUnlock() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [unlocking, setUnlocking] = useState(false);
@@ -63,16 +64,47 @@ export default function LeadUnlock() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [diggerId, setDiggerId] = useState<string | null>(null);
   const [selectedPricing, setSelectedPricing] = useState<PricingOption>("pay_per_lead");
+  
+  // Subscriber flow - no auth needed
+  const subscriberId = searchParams.get("sub");
+  const [subscriber, setSubscriber] = useState<{ id: string; email: string; full_name: string | null } | null>(null);
+  const [subscriberPurchased, setSubscriberPurchased] = useState(false);
 
   useEffect(() => {
     loadData();
-  }, [id]);
+  }, [id, subscriberId]);
 
   const loadData = async () => {
     if (!id) return;
 
     try {
-      // Check authentication
+      // If subscriber ID provided, load subscriber info (no auth needed)
+      if (subscriberId) {
+        const { data: subscriberData } = await supabase
+          .from("subscribers")
+          .select("id, email, full_name")
+          .eq("id", subscriberId)
+          .single();
+
+        if (subscriberData) {
+          setSubscriber(subscriberData);
+
+          // Check if subscriber already purchased this lead
+          const { data: existingPurchase } = await supabase
+            .from("subscriber_lead_purchases")
+            .select("id, status")
+            .eq("subscriber_id", subscriberId)
+            .eq("gig_id", id)
+            .eq("status", "completed")
+            .single();
+
+          if (existingPurchase) {
+            setSubscriberPurchased(true);
+          }
+        }
+      }
+
+      // Check authentication for regular users
       const { data: { session } } = await supabase.auth.getSession();
       setCurrentUser(session?.user || null);
 
@@ -164,7 +196,37 @@ export default function LeadUnlock() {
     };
   };
 
+  // Subscriber checkout - no auth required
+  const handleSubscriberUnlock = async () => {
+    if (!subscriber || !id) return;
+
+    setUnlocking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("subscriber-lead-checkout", {
+        body: { subscriberId: subscriber.id, leadId: id }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error: any) {
+      console.error("Subscriber unlock error:", error);
+      toast.error(error.message || "Failed to start checkout");
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
   const handleUnlock = async () => {
+    // If subscriber flow, use subscriber checkout
+    if (subscriber) {
+      return handleSubscriberUnlock();
+    }
+
     if (!currentUser) {
       toast.error("Please sign in to unlock leads");
       navigate(`/register?returnTo=/lead/${id}/unlock`);
@@ -227,6 +289,11 @@ export default function LeadUnlock() {
 
   const leadPrice = getLeadPrice();
   const estimatedFee = getEstimatedReferralFee();
+  
+  // Determine if this is a subscriber or authenticated digger flow
+  const isSubscriberFlow = !!subscriber;
+  const canPurchase = isSubscriberFlow || (currentUser && diggerId);
+  const alreadyPurchased = isUnlocked || subscriberPurchased;
 
   return (
     <div className="min-h-screen bg-background">
@@ -253,8 +320,8 @@ export default function LeadUnlock() {
               <Badge variant="outline" className="text-sm">
                 Posted {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
               </Badge>
-              {isUnlocked ? (
-                <Badge className="bg-green-500 text-white">
+              {alreadyPurchased ? (
+                <Badge className="bg-primary text-primary-foreground">
                   <Unlock className="w-3 h-3 mr-1" />
                   Unlocked
                 </Badge>
@@ -319,22 +386,22 @@ export default function LeadUnlock() {
             <Separator />
 
             {/* Client Contact - Locked or Unlocked */}
-            {isUnlocked ? (
-              <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-green-700 dark:text-green-400">
+            {alreadyPurchased ? (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-6">
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-primary">
                   <CheckCircle className="w-5 h-5" />
                   Client Contact Information
                 </h3>
                 <div className="space-y-3">
                   {lead.client_name && (
                     <div className="flex items-center gap-3">
-                      <User className="w-4 h-4 text-green-600" />
+                      <User className="w-4 h-4 text-primary" />
                       <span className="font-medium">{lead.client_name}</span>
                     </div>
                   )}
                   {lead.consumer_email && (
                     <div className="flex items-center gap-3">
-                      <Mail className="w-4 h-4 text-green-600" />
+                      <Mail className="w-4 h-4 text-primary" />
                       <a href={`mailto:${lead.consumer_email}`} className="text-primary hover:underline">
                         {lead.consumer_email}
                       </a>
@@ -342,107 +409,56 @@ export default function LeadUnlock() {
                   )}
                   {lead.consumer_phone && (
                     <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-green-600" />
+                      <Phone className="w-4 h-4 text-primary" />
                       <a href={`tel:${lead.consumer_phone}`} className="text-primary hover:underline">
                         {lead.consumer_phone}
                       </a>
                     </div>
                   )}
                 </div>
+                
+                {/* Subscriber upgrade prompt */}
+                {isSubscriberFlow && (
+                  <div className="mt-6 pt-4 border-t border-primary/20">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Want more features? Create a free profile to get listed in our directory and attract clients directly.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate("/register?mode=signup&type=digger")}
+                    >
+                      Create Your Profile
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
                 <div className="bg-muted/50 border border-border rounded-lg p-6 text-center">
                   <Lock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-lg mb-2">Choose Your Engagement Type</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Select how you'd like to engage with this lead.
-                  </p>
-
-                  <RadioGroup
-                    value={selectedPricing}
-                    onValueChange={(value) => setSelectedPricing(value as PricingOption)}
-                    className="grid gap-4"
-                  >
-                    {/* Option 1: Non-Exclusive Access */}
-                    <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                      selectedPricing === "pay_per_lead" 
-                        ? "border-primary bg-primary/5" 
-                        : "border-border hover:border-primary/50"
-                    }`}>
-                      <Label 
-                        htmlFor="pay_per_lead" 
-                        className="flex items-start gap-4 cursor-pointer"
-                      >
-                        <RadioGroupItem value="pay_per_lead" id="pay_per_lead" className="mt-1" />
-                        <div className="flex-1 text-left">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <CreditCard className="w-5 h-5 text-primary" />
-                              <span className="font-semibold text-lg">Non-Exclusive Access</span>
-                            </div>
-                            <span className="text-2xl font-bold text-primary">${leadPrice}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Contact the client. Other professionals may also engage.
-                          </p>
-                          <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
-                            <CheckCircle className="w-3 h-3" />
-                            <span>Instant access to contact info</span>
-                          </div>
-                          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                            <CheckCircle className="w-3 h-3" />
-                            <span>No additional fees</span>
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-
-                    {/* Option 2: Exclusive (Pay on Award) */}
-                    <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                      selectedPricing === "success_based" 
-                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20" 
-                        : "border-border hover:border-orange-500/50"
-                    }`}>
-                      <Label 
-                        htmlFor="success_based" 
-                        className="flex items-start gap-4 cursor-pointer"
-                      >
-                        <RadioGroupItem value="success_based" id="success_based" className="mt-1" />
-                        <div className="flex-1 text-left">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Percent className="w-5 h-5 text-orange-500" />
-                              <span className="font-semibold text-lg">Exclusive (Pay on Award)</span>
-                            </div>
-                            <span className="text-2xl font-bold text-orange-500">${estimatedFee.midpoint}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            3% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Fee paid from Gigger's 5% down-payment.
-                          </p>
-                          {lead.budget_min && lead.budget_max && (
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              Based on midpoint of ${((lead.budget_min + lead.budget_max) / 2).toLocaleString()} budget
-                            </div>
-                          )}
-                          <div className="mt-2 flex items-center gap-2 text-xs text-orange-600">
-                            <CheckCircle className="w-3 h-3" />
-                            <span>Exclusivity — no competition once awarded</span>
-                          </div>
-                          <div className="mt-1 flex items-center gap-2 text-xs text-orange-600">
-                            <CheckCircle className="w-3 h-3" />
-                            <span>Near-certainty of winning the project</span>
-                          </div>
-                        </div>
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {/* Action Button */}
-                <div className="space-y-3">
-                  {selectedPricing === "pay_per_lead" ? (
+                  
+                  {/* Subscriber simplified flow */}
+                  {isSubscriberFlow ? (
                     <>
+                      <h3 className="font-semibold text-lg mb-2">Unlock This Lead</h3>
+                      <p className="text-muted-foreground mb-6">
+                        Pay once to get the client's contact information.
+                      </p>
+                      
+                      <div className="bg-card border rounded-lg p-4 text-left mb-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="w-5 h-5 text-primary" />
+                            <span className="font-semibold">Lead Access</span>
+                          </div>
+                          <span className="text-2xl font-bold text-primary">${leadPrice}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Get instant access to client contact info. No additional fees.
+                        </p>
+                      </div>
+                      
                       <Button 
                         size="lg" 
                         className="w-full"
@@ -461,23 +477,138 @@ export default function LeadUnlock() {
                           </>
                         )}
                       </Button>
-                      <p className="text-xs text-muted-foreground text-center">
+                      <p className="text-xs text-muted-foreground text-center mt-3">
                         Bogus leads are fully refundable. No questions asked.
                       </p>
                     </>
                   ) : (
                     <>
-                      <Button 
-                        size="lg" 
-                        className="w-full bg-orange-500 hover:bg-orange-600"
-                        onClick={handleSuccessBasedBid}
-                      >
-                        <Percent className="w-4 h-4 mr-2" />
-                        Bid for Exclusive Award
-                      </Button>
-                      <p className="text-xs text-muted-foreground text-center">
-                        Submit your bid on the next page. Fee charged only when you accept the award and are ready to start.
+                      <h3 className="font-semibold text-lg mb-2">Choose Your Engagement Type</h3>
+                      <p className="text-muted-foreground mb-6">
+                        Select how you'd like to engage with this lead.
                       </p>
+
+                      <RadioGroup
+                        value={selectedPricing}
+                        onValueChange={(value) => setSelectedPricing(value as PricingOption)}
+                        className="grid gap-4"
+                      >
+                        {/* Option 1: Non-Exclusive Access */}
+                        <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                          selectedPricing === "pay_per_lead" 
+                            ? "border-primary bg-primary/5" 
+                            : "border-border hover:border-primary/50"
+                        }`}>
+                          <Label 
+                            htmlFor="pay_per_lead" 
+                            className="flex items-start gap-4 cursor-pointer"
+                          >
+                            <RadioGroupItem value="pay_per_lead" id="pay_per_lead" className="mt-1" />
+                            <div className="flex-1 text-left">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <CreditCard className="w-5 h-5 text-primary" />
+                                  <span className="font-semibold text-lg">Non-Exclusive Access</span>
+                                </div>
+                                <span className="text-2xl font-bold text-primary">${leadPrice}</span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                Contact the client. Other professionals may also engage.
+                              </p>
+                              <div className="mt-2 flex items-center gap-2 text-xs text-primary">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Instant access to contact info</span>
+                              </div>
+                              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>No additional fees</span>
+                              </div>
+                            </div>
+                          </Label>
+                        </div>
+
+                        {/* Option 2: Exclusive (Pay on Award) */}
+                        <div className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                          selectedPricing === "success_based" 
+                            ? "border-accent bg-accent/10" 
+                            : "border-border hover:border-accent/50"
+                        }`}>
+                          <Label 
+                            htmlFor="success_based" 
+                            className="flex items-start gap-4 cursor-pointer"
+                          >
+                            <RadioGroupItem value="success_based" id="success_based" className="mt-1" />
+                            <div className="flex-1 text-left">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Percent className="w-5 h-5 text-accent-foreground" />
+                                  <span className="font-semibold text-lg">Exclusive (Pay on Award)</span>
+                                </div>
+                                <span className="text-2xl font-bold text-accent-foreground">${estimatedFee.midpoint}</span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                3% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Fee paid from Gigger's 5% down-payment.
+                              </p>
+                              {lead.budget_min && lead.budget_max && (
+                                <div className="mt-2 text-xs text-muted-foreground">
+                                  Based on midpoint of ${((lead.budget_min + lead.budget_max) / 2).toLocaleString()} budget
+                                </div>
+                              )}
+                              <div className="mt-2 flex items-center gap-2 text-xs text-accent-foreground">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Exclusivity — no competition once awarded</span>
+                              </div>
+                              <div className="mt-1 flex items-center gap-2 text-xs text-accent-foreground">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Near-certainty of winning the project</span>
+                              </div>
+                            </div>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                      
+                      {/* Action Button for authenticated users */}
+                      <div className="space-y-3 mt-6">
+                        {selectedPricing === "pay_per_lead" ? (
+                          <>
+                            <Button 
+                              size="lg" 
+                              className="w-full"
+                              onClick={handleUnlock}
+                              disabled={unlocking}
+                            >
+                              {unlocking ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <Unlock className="w-4 h-4 mr-2" />
+                                  Unlock Lead — ${leadPrice}
+                                </>
+                              )}
+                            </Button>
+                            <p className="text-xs text-muted-foreground text-center">
+                              Bogus leads are fully refundable. No questions asked.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <Button 
+                              size="lg" 
+                              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                              onClick={handleSuccessBasedBid}
+                            >
+                              <Percent className="w-4 h-4 mr-2" />
+                              Bid for Exclusive Award
+                            </Button>
+                            <p className="text-xs text-muted-foreground text-center">
+                              Submit your bid on the next page. Fee charged only when you accept the award and are ready to start.
+                            </p>
+                          </>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>

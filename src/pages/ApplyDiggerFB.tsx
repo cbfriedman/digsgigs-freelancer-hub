@@ -150,12 +150,20 @@ const ApplyDiggerFB = () => {
               Get vetted project requests sent to your inbox. Browse what you want from <strong>$10</strong> — or bid for exclusive jobs and pay only when selected.
             </p>
 
-            <Link to={getRegistrationUrl()} onClick={() => handleCTAClick('Hero')}>
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 h-auto font-semibold">
-                Create Your Free Profile
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to={getRegistrationUrl()} onClick={() => handleCTAClick('Hero')}>
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 h-auto font-semibold">
+                  Create Your Free Profile
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              
+              <Link to="/subscribe?source=fb_landing" onClick={() => handleCTAClick('Hero-Subscribe')}>
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6 h-auto">
+                  Just Get Lead Emails
+                </Button>
+              </Link>
+            </div>
 
             <p className="text-sm text-muted-foreground mt-4">
               Free to join • No credit card required
