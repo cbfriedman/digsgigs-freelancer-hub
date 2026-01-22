@@ -352,19 +352,14 @@ const ApplyDiggerFB = () => {
           </div>
         </section>
 
-        {/* SECTION 6: Launch & Trust Section */}
+        {/* SECTION 6: Trust Section */}
         <section className="py-16 px-4 bg-muted/30">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <Zap className="h-4 w-4" />
-              Launching 2025
-            </div>
-            
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Be a Founding Member
+              Why Join Today
             </h2>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join early and lock in founding member rates. No setup fees during launch.
+              Simple pricing, no commitments. Start getting leads instantly.
             </p>
 
             <div className="grid sm:grid-cols-3 gap-6">
@@ -372,23 +367,23 @@ const ApplyDiggerFB = () => {
                 <CardContent className="p-6 text-center">
                   <DollarSign className="h-8 w-8 text-primary mx-auto mb-3" />
                   <h3 className="font-semibold text-foreground mb-2">$0 Setup Fee</h3>
-                  <p className="text-sm text-muted-foreground">No joining costs during launch</p>
+                  <p className="text-sm text-muted-foreground">Save $199 when you join today</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border border-border bg-card">
+                <CardContent className="p-6 text-center">
+                  <Target className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <h3 className="font-semibold text-foreground mb-2">Pay Per Lead</h3>
+                  <p className="text-sm text-muted-foreground">$10–$49 per lead, nothing more</p>
                 </CardContent>
               </Card>
               
               <Card className="border border-border bg-card">
                 <CardContent className="p-6 text-center">
                   <Shield className="h-8 w-8 text-primary mx-auto mb-3" />
-                  <h3 className="font-semibold text-foreground mb-2">Price Lock</h3>
-                  <p className="text-sm text-muted-foreground">Lock in current rates as a founder</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="border border-border bg-card">
-                <CardContent className="p-6 text-center">
-                  <Users className="h-8 w-8 text-primary mx-auto mb-3" />
-                  <h3 className="font-semibold text-foreground mb-2">Early Access</h3>
-                  <p className="text-sm text-muted-foreground">First to receive leads in your area</p>
+                  <h3 className="font-semibold text-foreground mb-2">No Contracts</h3>
+                  <p className="text-sm text-muted-foreground">Cancel anytime, no commitments</p>
                 </CardContent>
               </Card>
             </div>
