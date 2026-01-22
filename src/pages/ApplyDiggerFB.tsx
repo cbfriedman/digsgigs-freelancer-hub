@@ -31,15 +31,18 @@ import SEOHead from '@/components/SEOHead';
 import { useFacebookPixel } from '@/hooks/useFacebookPixel';
 import { useGoogleAdsConversion } from '@/hooks/useGoogleAdsConversion';
 import { useUTMTracking } from '@/hooks/useUTMTracking';
+import { useRedditPixel } from '@/hooks/useRedditPixel';
 
 const ApplyDiggerFB = () => {
   const { trackEvent, trackCustomEvent } = useFacebookPixel();
+  const { trackEvent: trackRedditEvent } = useRedditPixel();
   const { trackPageView } = useGoogleAdsConversion();
   const { getCampaignData } = useUTMTracking();
   const [searchParams] = useSearchParams();
   
   // Scroll tracking refs
   const scrollTracked = useRef({ 25: false, 50: false, 75: false });
+  const redditScrollTracked = useRef({ 50: false });
 
   // Track page view on mount
   useEffect(() => {
@@ -49,7 +52,13 @@ const ApplyDiggerFB = () => {
       source: 'facebook_ads'
     });
     trackPageView('/apply-digger-fb');
-  }, [trackEvent, trackPageView]);
+    
+    // Reddit Pixel: Track PageVisit with page metadata
+    trackRedditEvent('PageVisit', {
+      page: 'apply-digger-fb',
+      content_category: 'landing_page'
+    });
+  }, [trackEvent, trackPageView, trackRedditEvent]);
 
   // Scroll depth tracking
   useEffect(() => {
@@ -63,6 +72,15 @@ const ApplyDiggerFB = () => {
       if (scrollPercent >= 50 && !scrollTracked.current[50]) {
         scrollTracked.current[50] = true;
         trackCustomEvent('FB_ApplyDigger_50_Scroll');
+        
+        // Reddit Pixel: Track ViewContent at 50% scroll
+        if (!redditScrollTracked.current[50]) {
+          redditScrollTracked.current[50] = true;
+          trackRedditEvent('ViewContent', {
+            page: 'apply-digger-fb',
+            scroll_depth: 50
+          });
+        }
       }
       if (scrollPercent >= 75 && !scrollTracked.current[75]) {
         scrollTracked.current[75] = true;
@@ -72,7 +90,7 @@ const ApplyDiggerFB = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [trackCustomEvent]);
+  }, [trackCustomEvent, trackRedditEvent]);
 
   const handleCTAClick = (ctaLocation: string) => {
     const campaignData = getCampaignData();
@@ -80,6 +98,12 @@ const ApplyDiggerFB = () => {
       content_name: `Apply Digger FB - ${ctaLocation}`,
       source: 'facebook_ads',
       ...campaignData
+    });
+    
+    // Reddit Pixel: Track Lead event on CTA click
+    trackRedditEvent('Lead', {
+      content_name: `Apply Digger FB - ${ctaLocation}`,
+      source: 'reddit_ads'
     });
   };
 

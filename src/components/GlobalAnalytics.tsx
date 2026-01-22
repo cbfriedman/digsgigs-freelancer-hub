@@ -1,16 +1,21 @@
 /**
  * Global Analytics Component
- * Initializes Facebook Pixel globally for all pages
+ * Initializes Facebook Pixel and Reddit Pixel globally for all pages
  * Adds scroll depth tracking for GA4
  */
 
 import { useEffect } from 'react';
 import { useFacebookPixel } from '@/hooks/useFacebookPixel';
+import { useRedditPixel } from '@/hooks/useRedditPixel';
 
 export const GlobalAnalytics = () => {
   // Initialize Facebook Pixel globally
   // This hook will set up the pixel if VITE_FB_PIXEL_ID is configured
   useFacebookPixel();
+  
+  // Initialize Reddit Pixel globally
+  // This hook will set up the pixel if VITE_REDDIT_PIXEL_ID is configured
+  useRedditPixel();
 
   // Track scroll depth for GA4
   useEffect(() => {

@@ -20,6 +20,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useUTMTracking } from "@/hooks/useUTMTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
+import { useRedditPixel } from "@/hooks/useRedditPixel";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { Footer } from "@/components/Footer";
 
@@ -211,6 +212,7 @@ const Register = () => {
   const { getCampaignData, clearUTMData } = useUTMTracking();
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   const { trackConversion: trackGAConversion, isConfigured: gaConfigured } = useGoogleAdsConversion();
+  const { trackEvent: trackRedditEvent, isConfigured: redditConfigured } = useRedditPixel();
 
   // Track page view for funnel analytics on mount (non-blocking)
   useEffect(() => {
@@ -1353,6 +1355,18 @@ const Register = () => {
           });
         } catch (err) {
           console.warn('GA4 tracking failed (non-critical):', err);
+        }
+      }
+      
+      // Fire Reddit Pixel SignUp conversion event
+      if (redditConfigured) {
+        try {
+          trackRedditEvent('SignUp', {
+            currency: 'USD',
+            value: 1,
+          });
+        } catch (err) {
+          console.warn('Reddit Pixel tracking failed (non-critical):', err);
         }
       }
       
