@@ -116,7 +116,7 @@ const FBDiggerLanding = () => {
     {
       name: "Sarah K.",
       role: "Marketing Consultant",
-      quote: "No more racing to the bottom. I only pay for leads I actually want.",
+      quote: "No more racing to the bottom. I only pay for project requests I actually want.",
       rating: 5,
       joined: "3 weeks ago"
     },
@@ -133,7 +133,7 @@ const FBDiggerLanding = () => {
     <>
       <SEOHead
         title="Join Digs & Gigs | Keep 100% of Your Freelance Earnings"
-        description="Stop paying 20% platform fees. Join a freelance marketplace with zero commissions, no bidding wars, and leads delivered directly to you."
+        description="Stop paying 20% platform fees. Join a freelance marketplace with zero commissions, no bidding wars, and project requests delivered directly to you."
         canonical="/fb-digger"
         keywords="freelancer no commission, keep 100% earnings, freelance leads, no bidding"
         noindex={true}
@@ -408,7 +408,7 @@ const FBDiggerLanding = () => {
               Ready to Keep 100%?
             </h2>
             <p className="text-xl text-muted-foreground mb-8">
-              Join now and get 3 free project unlocks in your first month.
+              Join now and get 3 free project credits in your first month.
             </p>
             
             <Link to={getRegistrationUrl()} onClick={handleCTAClick}>
