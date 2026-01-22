@@ -206,12 +206,12 @@ const FBDiggerLanding = () => {
                 {
                   icon: Target,
                   title: "No Bidding Wars",
-                  description: "Leads come directly to you. No racing against dozens of competitors."
+                  description: "Projects come directly to you. No racing against dozens of competitors."
                 },
                 {
                   icon: Zap,
-                  title: "Leads Delivered to You",
-                  description: "Matching projects land in your inbox. You choose which ones to pursue."
+                  title: "Projects Delivered to You",
+                  description: "Matching opportunities land in your inbox. You choose which ones to pursue."
                 },
                 {
                   icon: Shield,
@@ -247,8 +247,8 @@ const FBDiggerLanding = () => {
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 { step: "1", title: "Create Free Profile", desc: "Takes 2 minutes. Tell us your skills and service area." },
-                { step: "2", title: "Receive Matching Leads", desc: "Projects matching your skills are delivered to your inbox." },
-                { step: "3", title: "Unlock Leads You Want", desc: "Pay only for leads you choose. Keep 100% of earnings." }
+                { step: "2", title: "Receive Matching Projects", desc: "Opportunities matching your skills are delivered to your inbox." },
+                { step: "3", title: "Choose Projects You Want", desc: "Pay only for projects you choose. Keep 100% of earnings." }
               ].map((item, index) => (
                 <div key={index} className="text-center">
                   <div className="w-14 h-14 rounded-full bg-primary text-primary-foreground text-2xl font-bold flex items-center justify-center mx-auto mb-4">
@@ -275,8 +275,8 @@ const FBDiggerLanding = () => {
                 <div className="space-y-6">
                   <div className="flex justify-between items-center pb-4 border-b">
                     <div>
-                      <p className="font-semibold text-lg">Non-Exclusive Leads</p>
-                      <p className="text-sm text-muted-foreground">Pay per lead you unlock</p>
+                      <p className="font-semibold text-lg">Non-Exclusive Projects</p>
+                      <p className="text-sm text-muted-foreground">Pay per project you choose</p>
                     </div>
                     <p className="text-2xl font-bold text-primary">$10–$49</p>
                   </div>
@@ -344,14 +344,14 @@ const FBDiggerLanding = () => {
               <AccordionItem value="free">
                 <AccordionTrigger className="text-left">Is it really free to join?</AccordionTrigger>
                 <AccordionContent>
-                  Yes, 100% free. Create your profile, get matched with leads, and only pay when you choose to unlock a lead you're interested in. No monthly fees, no subscriptions.
+                  Yes, 100% free. Create your profile, get matched with projects, and only pay when you choose a project you're interested in. No monthly fees, no subscriptions.
                 </AccordionContent>
               </AccordionItem>
               
               <AccordionItem value="cost">
-                <AccordionTrigger className="text-left">How much do leads cost?</AccordionTrigger>
+                <AccordionTrigger className="text-left">How much do projects cost?</AccordionTrigger>
                 <AccordionContent>
-                  Non-exclusive leads range from $10 to $49 depending on the project size (2% of the project midpoint, min $10, max $49). For exclusive awards, there's a 3% referral fee ($50-$249) that comes from the client's deposit—not your pocket.
+                  Non-exclusive projects range from $10 to $49 depending on the project size (2% of the project midpoint, min $10, max $49). For exclusive awards, there's a 3% referral fee ($50-$249) that comes from the client's deposit—not your pocket.
                 </AccordionContent>
               </AccordionItem>
               
@@ -363,9 +363,9 @@ const FBDiggerLanding = () => {
               </AccordionItem>
               
               <AccordionItem value="bogus">
-                <AccordionTrigger className="text-left">What if a lead is bogus?</AccordionTrigger>
+                <AccordionTrigger className="text-left">What if a project is bogus?</AccordionTrigger>
                 <AccordionContent>
-                  We offer full refunds for bogus leads. If you unlock a lead and the client is unreachable, fake, or the project doesn't match the description, contact us and we'll credit your account.
+                  We offer full refunds for bogus projects. If you choose a project and the client is unreachable, fake, or the project doesn't match the description, contact us and we'll credit your account.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -384,7 +384,7 @@ const FBDiggerLanding = () => {
               Ready to Keep 100%?
             </h2>
             <p className="text-xl text-muted-foreground mb-8">
-              Join now and get 3 free lead unlocks in your first month.
+              Join now and get 3 free project unlocks in your first month.
             </p>
             
             <Link to={getRegistrationUrl()} onClick={handleCTAClick}>

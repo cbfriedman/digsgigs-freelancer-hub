@@ -100,7 +100,7 @@ const ApplyDiggerFB = () => {
     <>
       <SEOHead
         title="Bid for Exclusive Jobs — Pay Only if Selected | Digs & Gigs"
-        description="Get vetted leads emailed to you from $10. Bid for exclusive jobs and pay only when selected. No subscriptions, no platform fees. Join free today."
+        description="Get vetted project requests from $10. Bid for exclusive jobs and pay only when selected. No subscriptions, no platform fees. Join free today."
         canonical="/apply-digger-fb"
         noindex={true}
       />
@@ -123,7 +123,7 @@ const ApplyDiggerFB = () => {
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Get vetted leads emailed to you. Unlock what you want from <strong>$10</strong> — or bid for exclusive jobs and pay only when selected.
+              Get vetted project requests sent to your inbox. Browse what you want from <strong>$10</strong> — or bid for exclusive jobs and pay only when selected.
             </p>
 
             <Link to={getRegistrationUrl()} onClick={() => handleCTAClick('Hero')}>
@@ -155,14 +155,14 @@ const ApplyDiggerFB = () => {
                       <Mail className="h-6 w-6 text-secondary-foreground" />
                     </div>
                     <h3 className="text-xl font-bold text-foreground">
-                      Unlock Leads (Non-Exclusive)
+                      Browse Projects (Non-Exclusive)
                     </h3>
                   </div>
 
                   <ul className="space-y-4 mb-8">
                     {[
-                      'Leads emailed to you in real time',
-                      'Pay only for the leads you unlock',
+                      'Project requests sent to your inbox in real time',
+                      'Pay only for the projects you choose',
                       '$10–$49 based on project budget',
                       'Other professionals may also engage'
                     ].map((item, index) => (
@@ -173,9 +173,9 @@ const ApplyDiggerFB = () => {
                     ))}
                   </ul>
 
-                  <Link to={getRegistrationUrl()} onClick={() => handleCTAClick('Leads Path')}>
+                  <Link to={getRegistrationUrl()} onClick={() => handleCTAClick('Projects Path')}>
                     <Button variant="outline" className="w-full text-base py-5">
-                      Get Leads
+                      Browse Projects
                     </Button>
                   </Link>
                 </CardContent>
@@ -234,18 +234,18 @@ const ApplyDiggerFB = () => {
             </h2>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Box 1: Leads */}
+              {/* Box 1: Project Requests */}
               <Card className="border border-border bg-card">
                 <CardContent className="p-6 text-center">
                   <div className="p-3 rounded-full bg-secondary/50 w-fit mx-auto mb-4">
                     <Mail className="h-6 w-6 text-secondary-foreground" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-3">Leads</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-3">Project Requests</h3>
                   <div className="text-3xl font-bold text-foreground mb-3">
                     From $10 <span className="text-lg font-normal text-muted-foreground">— Max $49</span>
                   </div>
                   <p className="text-muted-foreground">
-                    Pay only for the leads you choose to unlock.
+                    Pay only for the projects you choose to pursue.
                   </p>
                 </CardContent>
               </Card>
@@ -292,14 +292,14 @@ const ApplyDiggerFB = () => {
                 {
                   icon: Mail,
                   step: '2',
-                  title: 'Get leads by email',
-                  desc: 'Projects delivered straight to your inbox.'
+                  title: 'Get project requests by email',
+                  desc: 'Opportunities delivered straight to your inbox.'
                 },
                 {
                   icon: Target,
                   step: '3',
                   title: 'Choose your path',
-                  desc: 'Unlock leads or bid for exclusive awards.'
+                  desc: 'Browse projects or bid for exclusive awards.'
                 },
                 {
                   icon: Handshake,
@@ -359,7 +359,7 @@ const ApplyDiggerFB = () => {
               Why Join Today
             </h2>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Simple pricing, no commitments. Start getting leads instantly.
+              Simple pricing, no commitments. Start receiving project requests instantly.
             </p>
 
             <div className="grid sm:grid-cols-3 gap-6">
@@ -374,8 +374,8 @@ const ApplyDiggerFB = () => {
               <Card className="border border-border bg-card">
                 <CardContent className="p-6 text-center">
                   <Target className="h-8 w-8 text-primary mx-auto mb-3" />
-                  <h3 className="font-semibold text-foreground mb-2">Pay Per Lead</h3>
-                  <p className="text-sm text-muted-foreground">$10–$49 per lead, nothing more</p>
+                  <h3 className="font-semibold text-foreground mb-2">Pay Per Project</h3>
+                  <p className="text-sm text-muted-foreground">$10–$49 per project, nothing more</p>
                 </CardContent>
               </Card>
               
