@@ -172,12 +172,20 @@ const FBDiggerLanding = () => {
               No commissions. No bidding wars. Ever.
             </p>
             
-            <Link to={getRegistrationUrl()} onClick={handleCTAClick}>
-              <Button size="lg" className="bg-[hsl(var(--hero-orange))] hover:bg-[hsl(var(--hero-orange))]/90 text-white text-lg px-8 py-6 h-auto">
-                Get Early Access
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to={getRegistrationUrl()} onClick={handleCTAClick}>
+                <Button size="lg" className="bg-[hsl(var(--hero-orange))] hover:bg-[hsl(var(--hero-orange))]/90 text-white text-lg px-8 py-6 h-auto">
+                  Get Early Access
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              
+              <Link to="/subscribe?source=fb_digger" onClick={handleCTAClick}>
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6 h-auto">
+                  Just Get Lead Emails
+                </Button>
+              </Link>
+            </div>
             
             <div className="flex flex-wrap justify-center gap-4 md:gap-6 mt-6 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
