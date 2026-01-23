@@ -220,10 +220,10 @@ export const Footer = () => {
               <div className="flex items-start gap-3 text-sm text-muted-foreground justify-start">
                 <Mail className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
                 <a 
-                  href="mailto:support@digsandgigs.net" 
+                  href="mailto:info@digsandgigs.net" 
                   className="hover:text-foreground transition-colors break-words"
                 >
-                  support@digsandgigs.net
+                  info@digsandgigs.net
                 </a>
               </div>
             </div>
