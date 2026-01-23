@@ -135,7 +135,7 @@ const FBDiggerLanding = () => {
         title="Join Digs & Gigs | Keep 100% of Your Freelance Earnings"
         description="Stop paying 20% platform fees. Join a freelance marketplace with zero commissions, no bidding wars, and project requests delivered directly to you."
         canonical="/fb-digger"
-        keywords="freelancer no commission, keep 100% earnings, freelance leads, no bidding"
+        keywords="freelancer no commission, keep 100% earnings, freelance projects, no bidding"
         noindex={true}
       />
       
@@ -162,9 +162,7 @@ const FBDiggerLanding = () => {
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Stop Giving Away{' '}
-              <span className="text-primary">20%</span>{' '}
-              of Your Earnings
+              Keep <span className="text-primary">More</span> of What You Earn
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -182,7 +180,7 @@ const FBDiggerLanding = () => {
               
               <Link to="/subscribe?source=fb_digger" onClick={handleCTAClick}>
                 <Button size="lg" variant="outline" className="text-lg px-8 py-6 h-auto">
-                  Just Get Lead Emails
+                  Get Project Updates
                 </Button>
               </Link>
             </div>
