@@ -160,7 +160,7 @@ const ApplyDiggerFB = () => {
               
               <Link to="/subscribe?source=fb_landing" onClick={() => handleCTAClick('Hero-Subscribe')}>
                 <Button size="lg" variant="outline" className="text-lg px-8 py-6 h-auto">
-                  Just Get Lead Emails
+                  Get Project Updates
                 </Button>
               </Link>
             </div>
