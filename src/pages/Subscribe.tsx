@@ -13,25 +13,7 @@ import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 import { useUTMTracking } from "@/hooks/useUTMTracking";
 import { Mail, CheckCircle2, Zap, DollarSign, Users } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
-
-const PROFESSION_OPTIONS = [
-  "Plumber",
-  "Electrician", 
-  "HVAC Technician",
-  "General Contractor",
-  "Handyman",
-  "Painter",
-  "Landscaper",
-  "Roofer",
-  "Carpenter",
-  "Web Developer",
-  "Graphic Designer",
-  "Marketing Consultant",
-  "Photographer",
-  "Videographer",
-  "Virtual Assistant",
-  "Other"
-];
+import { TECH_CATEGORIES } from "@/config/techCategories";
 
 export default function Subscribe() {
   const navigate = useNavigate();
@@ -240,20 +222,20 @@ export default function Subscribe() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>What services do you offer? (optional)</Label>
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-                    {PROFESSION_OPTIONS.map((profession) => (
-                      <div key={profession} className="flex items-center space-x-2">
+                  <Label>What type of work do you do? (optional)</Label>
+                  <div className="grid grid-cols-1 gap-2 border rounded-lg p-3">
+                    {TECH_CATEGORIES.map((category) => (
+                      <div key={category.id} className="flex items-center space-x-2">
                         <Checkbox
-                          id={profession}
-                          checked={selectedCategories.includes(profession)}
-                          onCheckedChange={() => handleCategoryToggle(profession)}
+                          id={category.id}
+                          checked={selectedCategories.includes(category.name)}
+                          onCheckedChange={() => handleCategoryToggle(category.name)}
                         />
                         <label
-                          htmlFor={profession}
+                          htmlFor={category.id}
                           className="text-sm cursor-pointer"
                         >
-                          {profession}
+                          {category.name}
                         </label>
                       </div>
                     ))}
