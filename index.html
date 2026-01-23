@@ -53,6 +53,14 @@
       fbq('track', 'PageView');
     </script>
     <!-- End Meta Pixel Code -->
+    
+    <!-- Reddit Pixel Code -->
+    <script>
+      !function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js",t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);
+      rdt('init','a2_ie3vghbfsz2a');
+      rdt('track', 'PageVisit');
+    </script>
+    <!-- End Reddit Pixel Code -->
   </head>
 
   <body>
@@ -60,6 +68,12 @@
     <noscript>
       <img height="1" width="1" style="display:none"
         src="https://www.facebook.com/tr?id=896692799777748&ev=PageView&noscript=1"
+      />
+    </noscript>
+    <!-- Reddit Pixel Noscript Fallback -->
+    <noscript>
+      <img height="1" width="1" style="display:none"
+        src="https://alb.reddit.com/snoo.gif?q=CAAHAAABAAoACQAAAAACJXH7Og%3D%3D&s=a2_ie3vghbfsz2a"
       />
     </noscript>
     <div id="root"></div>
