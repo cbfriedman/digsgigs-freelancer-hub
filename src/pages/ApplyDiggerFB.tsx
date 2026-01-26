@@ -290,7 +290,7 @@ const ApplyDiggerFB = () => {
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-3">Exclusive Awards</h3>
                   <div className="text-3xl font-bold text-foreground mb-3">
-                    3% <span className="text-lg font-normal text-muted-foreground">referral fee (up to $249)</span>
+                    8% <span className="text-lg font-normal text-muted-foreground">referral fee ($50–$249)</span>
                   </div>
                   <p className="text-muted-foreground">
                     Deducted from the client's 5% deposit when you're ready to start.
