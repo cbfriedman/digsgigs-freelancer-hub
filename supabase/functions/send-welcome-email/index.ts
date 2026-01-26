@@ -239,8 +239,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Welcome email sent successfully:", { 
       emailId: emailResponse.data?.id, 
-      email: email,
-      to: emailResponse.data?.to 
+      email: email
     });
 
     // Log to marketing_email_log database
