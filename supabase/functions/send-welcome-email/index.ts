@@ -52,30 +52,30 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate tracked URLs
     const postGigUrl = addUTM('https://digsandgigs.net/post-gig', 'email', 'welcome', 'first_project');
-    const browseGigsUrl = addUTM('https://digsandgigs.net/browse-gigs', 'email', 'welcome', 'browse_jobs');
+    const dashboardUrl = addUTM('https://digsandgigs.net/role-dashboard', 'email', 'welcome', 'dashboard');
     const profileUrl = addUTM('https://digsandgigs.net/my-profiles', 'email', 'welcome', 'complete_profile');
     const howItWorksUrl = addUTM('https://digsandgigs.net/how-it-works', 'email', 'welcome', 'learn_more');
 
-    // Different content for Diggers vs Giggers
+    // Different content for Diggers vs Giggers - Updated for pay-per-lead model
     const subject = isDigger 
-      ? `🎉 Welcome to Digs and Gigs, ${firstName}! Start Getting Leads`
-      : `🎉 Welcome to Digs and Gigs, ${firstName}! Your First Project is Waiting`;
+      ? `🎉 Welcome to Digs & Gigs, ${firstName}! Projects Are Coming`
+      : `🎉 Welcome to Digs & Gigs, ${firstName}! Let's Find You a Pro`;
 
     const headline = isDigger 
-      ? "You're in! Time to grow your business."
+      ? "You're in! Projects are on the way."
       : "You're in! Let's find you a pro.";
 
-    const heroCtaUrl = isDigger ? browseGigsUrl : postGigUrl;
-    const heroCtaText = isDigger ? "Browse Available Jobs →" : "Post Your First Project →";
+    const heroCtaUrl = isDigger ? dashboardUrl : postGigUrl;
+    const heroCtaText = isDigger ? "Check Your Inbox for Leads →" : "Post Your First Project →";
 
-    // Step content based on role
+    // Step content based on role - Updated for pay-per-lead model
     const steps = isDigger ? [
-      { number: "1", title: "Complete Your Profile", description: "Add your skills, photos, and service area to stand out." },
-      { number: "2", title: "Browse Jobs", description: "Find projects that match your expertise in your area." },
-      { number: "3", title: "Win Work", description: "Submit quotes and get hired. We only charge when you win." },
+      { number: "1", title: "Receive Project Emails", description: "We send matching projects directly to your inbox." },
+      { number: "2", title: "Unlock Leads You Want", description: "Pay a small fee ($10-$49) to reveal client contact info." },
+      { number: "3", title: "Win Work & Keep 100%", description: "Reach out directly. No commissions on your earnings." },
     ] : [
       { number: "1", title: "Post Your Project", description: "Describe what you need — big or small. Takes 2 minutes." },
-      { number: "2", title: "Get Free Quotes", description: "Verified pros in your area will send you competitive quotes." },
+      { number: "2", title: "Get Free Quotes", description: "Verified pros in your area will reach out with quotes." },
       { number: "3", title: "Hire & Relax", description: "Compare quotes, check reviews, and hire with confidence." },
     ];
 
@@ -90,6 +90,19 @@ const handler = async (req: Request): Promise<Response> => {
         </td>
       </tr>
     `).join('');
+
+    // Benefits section for Diggers
+    const diggerBenefits = isDigger ? `
+      <div style="background: #f0f9ff; border-left: 4px solid #667eea; padding: 20px; margin: 25px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #667eea;">🎁 Your Welcome Benefits:</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li style="margin-bottom: 8px;"><strong>$0 setup fee</strong> (normally $199)</li>
+          <li style="margin-bottom: 8px;"><strong>Dynamic lead pricing</strong> starting at just $10</li>
+          <li style="margin-bottom: 8px;"><strong>Full refund</strong> on any bogus leads</li>
+          <li><strong>Keep 100%</strong> of your project earnings</li>
+        </ul>
+      </div>
+    ` : '';
 
     const emailResponse = await resend.emails.send({
       from: "Digs and Gigs <hello@digsandgigs.net>",
@@ -107,7 +120,7 @@ const handler = async (req: Request): Promise<Response> => {
             <!-- Header -->
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
               <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">${headline}</h1>
-              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Welcome to the easiest way to ${isDigger ? 'find work' : 'hire pros'}.</p>
+              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Welcome to the easiest way to ${isDigger ? 'get leads' : 'hire pros'}.</p>
             </div>
             
             <div style="padding: 30px; background: #ffffff;">
@@ -116,10 +129,12 @@ const handler = async (req: Request): Promise<Response> => {
               
               <p style="font-size: 16px; margin: 0 0 25px 0;">
                 ${isDigger 
-                  ? "Thanks for joining our network of trusted professionals! You're now connected to homeowners looking for your services."
-                  : "Thanks for signing up! You're now connected to our network of verified, reviewed professionals ready to help."
+                  ? "Thanks for joining! You're now set up to receive project leads directly in your inbox. No browsing, no bidding wars — just relevant projects delivered to you."
+                  : "Thanks for signing up! You're now connected to our network of verified professionals ready to help with your project."
                 }
               </p>
+              
+              ${diggerBenefits}
               
               <!-- Hero CTA -->
               <div style="text-align: center; margin: 30px 0;">
@@ -141,11 +156,10 @@ const handler = async (req: Request): Promise<Response> => {
               
               <!-- Trust signals -->
               <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f0f4ff; border-radius: 8px;">
-                <p style="margin: 0 0 10px 0; font-size: 14px;">
-                  ⭐⭐⭐⭐⭐ <strong>Trusted by 2,340+ homeowners</strong>
-                </p>
                 <p style="margin: 0; font-size: 14px; color: #666;">
-                  ${isDigger ? 'Average pro earns $3,200/month on our platform' : '96% of projects receive quotes within 24 hours'}
+                  ${isDigger 
+                    ? 'Unlike other platforms that take 15-20%, we charge a small upfront fee and you keep everything you earn.' 
+                    : '96% of projects receive responses within 24 hours'}
                 </p>
               </div>
               
@@ -160,16 +174,16 @@ const handler = async (req: Request): Promise<Response> => {
             <!-- Footer -->
             <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                Thanks for joining Digs and Gigs!<br>
-                <em>— The Digs and Gigs Team</em>
+                Thanks for joining Digs & Gigs!<br>
+                <em>— The Digs & Gigs Team</em>
               </p>
               <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
-                <a href="https://digsandgigs.net" style="color: #667eea; text-decoration: none;">Digs and Gigs</a> | 
+                <a href="https://digsandgigs.net" style="color: #667eea; text-decoration: none;">Digs & Gigs</a> | 
                 <a href="https://digsandgigs.net/faq" style="color: #667eea; text-decoration: none;">FAQ</a> | 
                 <a href="https://digsandgigs.net/email-preferences" style="color: #667eea; text-decoration: none;">Email Preferences</a> |
                 <a href="https://digsandgigs.net/unsubscribe?email=${encodeURIComponent(email)}" style="color: #667eea; text-decoration: none;">Unsubscribe</a>
               </p>
-              <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">© 2025 Digs and Gigs. All rights reserved.</p>
+              <p style="margin: 10px 0 0 0; color: #999; font-size: 11px;">© 2026 Digs & Gigs. All rights reserved.</p>
             </div>
           </body>
         </html>
