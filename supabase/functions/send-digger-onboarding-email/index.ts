@@ -26,14 +26,14 @@ const addUTM = (url: string, step: number): string => {
   return `${url}${separator}utm_source=email&utm_medium=onboarding&utm_campaign=digger_onboarding_step_${step}`;
 };
 
-// Email templates for each step
+// Email templates for each step - Updated for pay-per-lead model
 const getEmailContent = (step: number, firstName: string, email: string) => {
   const baseUrl = 'https://digsandgigs.net';
   
   const emails: Record<number, { subject: string; html: string }> = {
-    // STEP 1: Welcome (Value + Activation)
+    // STEP 1: Welcome - Pay-Per-Lead Model
     1: {
-      subject: `🎉 Welcome to Digs & Gigs, ${firstName}! Your Founder Journey Starts Now`,
+      subject: `🎉 Welcome to Digs & Gigs, ${firstName}! Projects Are Coming`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -45,37 +45,45 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
             
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
               <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Welcome to Digs & Gigs!</h1>
-              <p style="margin: 0; font-size: 16px; opacity: 0.9;">You're one of the first 500 Founding Diggers 👑</p>
+              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Get ready to receive project leads in your inbox 📬</p>
             </div>
             
             <div style="padding: 30px; background: #ffffff;">
               <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
               
               <p style="font-size: 16px; margin: 0 0 20px 0;">
-                <strong>Congratulations!</strong> You've just joined a freelance marketplace built differently — one where you keep 100% of what you earn, with no bidding wars, no commissions, and no racing to the bottom.
+                <strong>You're in!</strong> Get ready to receive project requests delivered straight to your inbox.
               </p>
               
+              <h3 style="margin: 25px 0 15px 0; color: #333;">Here's how Digs & Gigs works:</h3>
+              
+              <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                <p style="margin: 0 0 12px 0;"><strong>1.</strong> Clients post projects — we email them directly to you</p>
+                <p style="margin: 0 0 12px 0;"><strong>2.</strong> You see the details (scope, budget, timeline)</p>
+                <p style="margin: 0 0 12px 0;"><strong>3.</strong> Pay a small fee to unlock client contact info (starting at $10)</p>
+                <p style="margin: 0;"><strong>4.</strong> Connect directly and win the work — no platform commission on your earnings</p>
+              </div>
+              
               <div style="background: #f0f9ff; border-left: 4px solid #667eea; padding: 20px; margin: 25px 0;">
-                <h3 style="margin: 0 0 15px 0; color: #667eea;">🎁 Your Founder Benefits (Locked In):</h3>
+                <h3 style="margin: 0 0 15px 0; color: #667eea;">🎁 Your Welcome Benefits:</h3>
                 <ul style="margin: 0; padding-left: 20px;">
-                  <li style="margin-bottom: 8px;"><strong>$19/month subscription</strong> — locked for life</li>
-                  <li style="margin-bottom: 8px;"><strong>$10 standard leads / $25 high-value leads</strong> — for your entire first year</li>
-                  <li style="margin-bottom: 8px;"><strong>Priority ranking</strong> in client searches</li>
-                  <li style="margin-bottom: 8px;"><strong>Founding Digger badge</strong> on your profile</li>
-                  <li><strong>60 days free</strong> to try everything</li>
+                  <li style="margin-bottom: 8px;"><strong>$0 setup fee</strong> (normally $199)</li>
+                  <li style="margin-bottom: 8px;"><strong>Dynamic lead pricing</strong> starting at just $10</li>
+                  <li style="margin-bottom: 8px;"><strong>Full refund</strong> on any bogus leads</li>
+                  <li><strong>Non-exclusive leads</strong> — pursue as many as you want</li>
                 </ul>
               </div>
               
               <p style="font-size: 16px; margin: 0 0 25px 0;">
-                These are the lowest prices we will ever offer. New freelancers who join after the first 500 spots are filled won't get these rates.
+                Unlike other platforms that take 15-20% of every project, we charge a small upfront fee and you keep everything you earn.
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${addUTM(baseUrl + '/my-profiles', 1)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Complete Your Profile →</a>
+                <a href="${addUTM(baseUrl + '/role-dashboard', 1)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Check Your Inbox for Leads →</a>
               </div>
               
               <p style="font-size: 14px; color: #666; text-align: center;">
-                Over the next few days, I'll send you everything you need to succeed on Digs & Gigs.
+                Over the next few days, I'll share tips to help you win more projects.
               </p>
             </div>
             
@@ -95,9 +103,9 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
       `
     },
     
-    // STEP 2: How Matching Works
+    // STEP 2: How Lead Emails Work
     2: {
-      subject: `🎯 How Digs & Gigs Finds You Clients (No Bidding Required)`,
+      subject: `📬 How Project Emails Work (So You Don't Miss Out)`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -108,65 +116,69 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8f9fa;">
             
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">How Matching Works</h1>
-              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Clients find you. You choose who to contact.</p>
+              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">How Lead Emails Work</h1>
+              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Projects delivered directly to your inbox</p>
             </div>
             
             <div style="padding: 30px; background: #ffffff;">
               <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
               
               <p style="font-size: 16px; margin: 0 0 25px 0;">
-                On most platforms, you're stuck in bidding wars, racing to submit the lowest price. Not here.
+                On Digs & Gigs, we don't make you compete in bidding wars. Instead, we deliver projects directly to your inbox.
               </p>
               
-              <h3 style="margin: 25px 0 15px 0; color: #333;">Here's how Digs & Gigs works:</h3>
+              <h3 style="margin: 25px 0 15px 0; color: #333;">How it works:</h3>
               
               <div style="background: #f8f9fa; border-radius: 12px; padding: 25px; margin: 20px 0;">
-                <div style="display: flex; margin-bottom: 20px;">
-                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 36px; height: 36px; border-radius: 50%; text-align: center; line-height: 36px; font-weight: bold; flex-shrink: 0;">1</div>
-                  <div style="margin-left: 15px;">
-                    <p style="margin: 0 0 4px 0; font-weight: bold;">A client posts a project</p>
-                    <p style="margin: 0; font-size: 14px; color: #666;">They describe what they need — design, development, marketing, whatever.</p>
-                  </div>
+                <div style="margin-bottom: 20px;">
+                  <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: bold; margin-right: 12px;">1</div>
+                  <span style="font-weight: bold;">A client posts what they need</span>
+                  <p style="margin: 5px 0 0 44px; font-size: 14px; color: #666;">Design, development, marketing, etc.</p>
                 </div>
                 
-                <div style="display: flex; margin-bottom: 20px;">
-                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 36px; height: 36px; border-radius: 50%; text-align: center; line-height: 36px; font-weight: bold; flex-shrink: 0;">2</div>
-                  <div style="margin-left: 15px;">
-                    <p style="margin: 0 0 4px 0; font-weight: bold;">We match them with freelancers like you</p>
-                    <p style="margin: 0; font-size: 14px; color: #666;">Our system pairs projects with Diggers whose skills and categories match.</p>
-                  </div>
+                <div style="margin-bottom: 20px;">
+                  <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: bold; margin-right: 12px;">2</div>
+                  <span style="font-weight: bold;">We email the project to matching freelancers</span>
+                  <p style="margin: 5px 0 0 44px; font-size: 14px; color: #666;">Based on your skills and preferences.</p>
                 </div>
                 
-                <div style="display: flex; margin-bottom: 20px;">
-                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 36px; height: 36px; border-radius: 50%; text-align: center; line-height: 36px; font-weight: bold; flex-shrink: 0;">3</div>
-                  <div style="margin-left: 15px;">
-                    <p style="margin: 0 0 4px 0; font-weight: bold;">You decide if you want to pursue it</p>
-                    <p style="margin: 0; font-size: 14px; color: #666;">See project details, budget, and timeline — then choose whether to reveal the client's contact info.</p>
-                  </div>
+                <div style="margin-bottom: 20px;">
+                  <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: bold; margin-right: 12px;">3</div>
+                  <span style="font-weight: bold;">Review the details</span>
+                  <p style="margin: 5px 0 0 44px; font-size: 14px; color: #666;">Scope, budget, location, timeline.</p>
                 </div>
                 
-                <div style="display: flex;">
-                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 36px; height: 36px; border-radius: 50%; text-align: center; line-height: 36px; font-weight: bold; flex-shrink: 0;">4</div>
-                  <div style="margin-left: 15px;">
-                    <p style="margin: 0 0 4px 0; font-weight: bold;">Connect, pitch, and win</p>
-                    <p style="margin: 0; font-size: 14px; color: #666;">Reach out directly. No middleman. No commission on your earnings.</p>
-                  </div>
+                <div style="margin-bottom: 20px;">
+                  <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: bold; margin-right: 12px;">4</div>
+                  <span style="font-weight: bold;">Pay a small fee to unlock client contact info</span>
+                  <p style="margin: 5px 0 0 44px; font-size: 14px; color: #666;">If interested, reveal who the client is.</p>
                 </div>
+                
+                <div>
+                  <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: bold; margin-right: 12px;">5</div>
+                  <span style="font-weight: bold;">Reach out directly</span>
+                  <p style="margin: 5px 0 0 44px; font-size: 14px; color: #666;">No middleman, no commission on your work.</p>
+                </div>
+              </div>
+              
+              <div style="background: #f0f9ff; border-left: 4px solid #667eea; padding: 20px; margin: 25px 0;">
+                <h4 style="margin: 0 0 10px 0; color: #667eea;">📊 Lead Pricing:</h4>
+                <p style="margin: 0 0 8px 0;"><strong>Non-exclusive leads:</strong> 2% of project budget (min $10, max $49)</p>
+                <p style="margin: 0;"><strong>Exclusive jobs:</strong> 3% referral fee (only if selected, paid from client deposit)</p>
               </div>
               
               <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
-                <p style="margin: 0; font-size: 14px;"><strong>💡 Pro Tip:</strong> The more complete your profile, the better your match quality. Add your portfolio, skills, and categories today.</p>
+                <p style="margin: 0; font-size: 14px;"><strong>💡 Pro Tip:</strong> Keep an eye on your inbox! Projects move fast.</p>
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${addUTM(baseUrl + '/browse-gigs', 2)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Browse Available Projects →</a>
+                <a href="${addUTM(baseUrl + '/my-profiles', 2)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Make Sure You're Set Up →</a>
               </div>
             </div>
             
             <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                Tomorrow: How lead pricing works (and why it's better than commissions).<br>
+                Tomorrow: Why flat-fee beats commissions (with real math).<br>
                 <em>— The Digs & Gigs Team</em>
               </p>
               <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
@@ -179,9 +191,9 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
       `
     },
     
-    // STEP 3: How Lead Pricing Works (Founders Edition)
+    // STEP 3: Why Flat-Fee Beats Commissions
     3: {
-      subject: `💰 $10 Leads vs. 20% Commissions — Here's Why You'll Love This`,
+      subject: `💰 Keep More of What You Earn — Here's the Math`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -192,46 +204,46 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8f9fa;">
             
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Lead Pricing Explained</h1>
-              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Why flat-rate beats commissions every time</p>
+              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Why Flat-Fee Wins</h1>
+              <p style="margin: 0; font-size: 16px; opacity: 0.9;">The math that puts more money in your pocket</p>
             </div>
             
             <div style="padding: 30px; background: #ffffff;">
               <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
               
               <p style="font-size: 16px; margin: 0 0 20px 0;">
-                Most freelance platforms take <strong>15-20% of every project</strong> you complete. Win a $5,000 job? Hand over $750-$1,000 to the platform.
+                Let's talk about why Digs & Gigs is built differently.
               </p>
               
               <p style="font-size: 16px; margin: 0 0 25px 0;">
-                Digs & Gigs works differently. We never touch your earnings.
+                Most platforms take <strong>15-20% of every project</strong> you win:
               </p>
               
-              <h3 style="margin: 25px 0 15px 0; color: #333;">Your Founder Lead Pricing (First Year):</h3>
-              
-              <div style="display: flex; gap: 20px; margin: 20px 0;">
-                <div style="flex: 1; background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; text-align: center;">
-                  <p style="margin: 0 0 5px 0; font-size: 32px; font-weight: bold; color: #22c55e;">$10</p>
-                  <p style="margin: 0; font-weight: bold;">Standard Leads</p>
-                  <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">Design · Writing · Marketing · Video · Admin · General Freelance</p>
-                </div>
-                <div style="flex: 1; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; text-align: center;">
-                  <p style="margin: 0 0 5px 0; font-size: 32px; font-weight: bold; color: #f59e0b;">$25</p>
-                  <p style="margin: 0; font-weight: bold;">High-Value Leads</p>
-                  <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">Development · SEO · Consulting · Legal · Finance · Accounting</p>
-                </div>
+              <div style="background: #fef2f2; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <p style="margin: 0 0 8px 0;">❌ Win a $5,000 project? Hand over $750-$1,000.</p>
+                <p style="margin: 0;">❌ Over a year, that adds up to thousands lost.</p>
               </div>
               
-              <h3 style="margin: 30px 0 15px 0; color: #333;">Let's Do the Math:</h3>
+              <h3 style="margin: 30px 0 15px 0; color: #333;">On Digs & Gigs:</h3>
               
-              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <p style="margin: 0 0 10px 0;"><strong>Scenario:</strong> You win a $3,000 project</p>
-                <p style="margin: 0 0 5px 0;">❌ Other platforms: You keep $2,400 (they take $600)</p>
-                <p style="margin: 0;">✅ Digs & Gigs: You keep <strong>$3,000</strong> (lead cost: $10-$25)</p>
+              <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <p style="margin: 0 0 8px 0;">✅ Pay a small upfront fee to unlock the lead ($10-$49)</p>
+                <p style="margin: 0 0 8px 0;">✅ Keep 100% of your non-exclusive project earnings</p>
+                <p style="margin: 0;">✅ For exclusive jobs: just 3% referral fee (and the client pays it upfront as a deposit to you)</p>
               </div>
               
-              <div style="background: #f0f9ff; border-left: 4px solid #667eea; padding: 15px 20px; margin: 25px 0;">
-                <p style="margin: 0;"><strong>🔒 Founder Guarantee:</strong> These lead prices are locked for your entire first year. After that, pricing may adjust — but as a Founder, you'll always get better rates than new members.</p>
+              <h3 style="margin: 30px 0 15px 0; color: #333;">Example:</h3>
+              
+              <div style="background: #f8f9fa; border-radius: 12px; padding: 25px; margin: 20px 0; border-left: 4px solid #22c55e;">
+                <p style="margin: 0 0 10px 0;"><strong>You unlock a $3,000 project lead for $10.</strong></p>
+                <p style="margin: 0 0 10px 0;">You win the job.</p>
+                <p style="margin: 0 0 15px 0; font-size: 24px; color: #22c55e;"><strong>You keep: $3,000</strong> <span style="font-size: 14px; color: #666;">(minus your $10 unlock cost)</span></p>
+                <p style="margin: 0; font-size: 14px; color: #666;">On Upwork/Fiverr: You'd keep ~$2,400.</p>
+                <p style="margin: 10px 0 0 0; font-size: 18px; color: #22c55e;"><strong>That's $590 more in your pocket — per project.</strong></p>
+              </div>
+              
+              <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
+                <p style="margin: 0; font-size: 14px;"><strong>🎁 Bonus:</strong> Bogus leads? Full refund, no questions asked.</p>
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
@@ -241,7 +253,7 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
             
             <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                Tomorrow: How to build a profile that wins clients.<br>
+                Tomorrow: How to write outreach that wins clients.<br>
                 <em>— The Digs & Gigs Team</em>
               </p>
               <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
@@ -254,84 +266,8 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
       `
     },
     
-    // STEP 4: Build a High-Converting Profile
+    // STEP 4: How to Win Clients
     4: {
-      subject: `✨ 5 Profile Tweaks That Get You More Clients`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8f9fa;">
-            
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Build a Winning Profile</h1>
-              <p style="margin: 0; font-size: 16px; opacity: 0.9;">5 things top freelancers always do</p>
-            </div>
-            
-            <div style="padding: 30px; background: #ffffff;">
-              <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
-              
-              <p style="font-size: 16px; margin: 0 0 25px 0;">
-                Your profile is your storefront. Here's what separates freelancers who get hired from those who don't:
-              </p>
-              
-              <div style="margin: 25px 0;">
-                <div style="border-bottom: 1px solid #e0e0e0; padding: 15px 0;">
-                  <p style="margin: 0 0 5px 0;"><strong>1. Use a professional photo</strong></p>
-                  <p style="margin: 0; font-size: 14px; color: #666;">Profiles with photos get 3x more responses. Use a clear headshot with good lighting.</p>
-                </div>
-                
-                <div style="border-bottom: 1px solid #e0e0e0; padding: 15px 0;">
-                  <p style="margin: 0 0 5px 0;"><strong>2. Write a benefit-focused headline</strong></p>
-                  <p style="margin: 0; font-size: 14px; color: #666;">Not "Web Developer" — try "I Build Websites That Convert Visitors Into Customers"</p>
-                </div>
-                
-                <div style="border-bottom: 1px solid #e0e0e0; padding: 15px 0;">
-                  <p style="margin: 0 0 5px 0;"><strong>3. Show your best work first</strong></p>
-                  <p style="margin: 0; font-size: 14px; color: #666;">Upload 3-5 portfolio pieces that represent the work you want more of.</p>
-                </div>
-                
-                <div style="border-bottom: 1px solid #e0e0e0; padding: 15px 0;">
-                  <p style="margin: 0 0 5px 0;"><strong>4. Be specific about what you do</strong></p>
-                  <p style="margin: 0; font-size: 14px; color: #666;">"I help e-commerce brands increase sales with email marketing" beats "Marketing expert"</p>
-                </div>
-                
-                <div style="padding: 15px 0;">
-                  <p style="margin: 0 0 5px 0;"><strong>5. Add all relevant categories</strong></p>
-                  <p style="margin: 0; font-size: 14px; color: #666;">More categories = more matches. Don't limit yourself to just one skill.</p>
-                </div>
-              </div>
-              
-              <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
-                <p style="margin: 0 0 10px 0; font-size: 24px;">👑</p>
-                <p style="margin: 0; font-size: 14px;"><strong>Founder Perk:</strong> Your "Founding Digger" badge automatically appears on your profile, building instant trust with clients.</p>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${addUTM(baseUrl + '/my-profiles', 4)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Optimize Your Profile Now →</a>
-              </div>
-            </div>
-            
-            <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
-              <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                Tomorrow: How to write proposals that win clients.<br>
-                <em>— The Digs & Gigs Team</em>
-              </p>
-              <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
-                <a href="${baseUrl}" style="color: #667eea; text-decoration: none;">Digs & Gigs</a> | 
-                <a href="${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}" style="color: #667eea; text-decoration: none;">Unsubscribe</a>
-              </p>
-            </div>
-          </body>
-        </html>
-      `
-    },
-    
-    // STEP 5: How to Win Clients on Digs & Gigs
-    5: {
       subject: `🏆 The Message Template That Wins 40% More Clients`,
       html: `
         <!DOCTYPE html>
@@ -351,11 +287,11 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
               <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
               
               <p style="font-size: 16px; margin: 0 0 20px 0;">
-                You found a project that's perfect for you. You revealed the client's contact info. Now what?
+                You found a project that's perfect for you. You unlocked the client's contact info. Now what?
               </p>
               
               <p style="font-size: 16px; margin: 0 0 25px 0;">
-                Here's the outreach formula our most successful Diggers use:
+                Here's the outreach formula our most successful freelancers use:
               </p>
               
               <div style="background: #f8f9fa; border-radius: 12px; padding: 25px; margin: 25px 0; border-left: 4px solid #667eea;">
@@ -383,13 +319,13 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${addUTM(baseUrl + '/browse-gigs', 5)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Find Projects to Pitch →</a>
+                <a href="${addUTM(baseUrl + '/role-dashboard', 4)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Check Your Lead Inbox →</a>
               </div>
             </div>
             
             <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                Tomorrow: How to stand out even more with Boosted Profiles.<br>
+                Tomorrow: Make sure you're not missing leads.<br>
                 <em>— The Digs & Gigs Team</em>
               </p>
               <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
@@ -402,9 +338,9 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
       `
     },
     
-    // STEP 6: Upsell - Boosted Profile & Featured Badge
-    6: {
-      subject: `⚡ Want to Show Up First in Client Searches?`,
+    // STEP 5: Check Your Inbox Nudge
+    5: {
+      subject: `👋 Have You Checked Your Project Emails?`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -415,65 +351,117 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8f9fa;">
             
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Get Seen First</h1>
-              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Optional add-ons for freelancers who want more visibility</p>
+              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Don't Miss Leads!</h1>
+              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Make sure project emails aren't going to spam</p>
             </div>
             
             <div style="padding: 30px; background: #ffffff;">
               <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
               
-              <p style="font-size: 16px; margin: 0 0 20px 0;">
-                As a Founding Digger, you already get priority ranking. But if you want even more visibility, we offer optional add-ons:
+              <p style="font-size: 16px; margin: 0 0 25px 0;">
+                Just checking in! Have you had a chance to review any project emails yet?
               </p>
               
-              <div style="border: 2px solid #667eea; border-radius: 12px; padding: 25px; margin: 25px 0;">
-                <h3 style="margin: 0 0 10px 0; color: #667eea;">⚡ Boosted Profile — $20/month</h3>
-                <p style="margin: 0 0 15px 0; font-size: 14px; color: #666;">
-                  Appear at the top of search results in your categories. Clients see you first.
-                </p>
-                <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-                  <li>Top placement in category searches</li>
-                  <li>Highlighted listing</li>
-                  <li>Average 2.5x more profile views</li>
+              <div style="background: #f0f9ff; border-left: 4px solid #667eea; padding: 20px; margin: 25px 0;">
+                <h4 style="margin: 0 0 15px 0; color: #667eea;">Remember:</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                  <li style="margin-bottom: 8px;">Projects come straight to your inbox — no logging in to browse</li>
+                  <li style="margin-bottom: 8px;">You choose which leads to pursue (no obligation)</li>
+                  <li style="margin-bottom: 8px;">Unlock fees start at just $10</li>
+                  <li>Bogus leads? Full refund, no questions asked.</li>
                 </ul>
               </div>
               
-              <div style="border: 2px solid #f59e0b; border-radius: 12px; padding: 25px; margin: 25px 0;">
-                <h3 style="margin: 0 0 10px 0; color: #f59e0b;">⭐ Featured Digger Badge — $10/month</h3>
-                <p style="margin: 0 0 15px 0; font-size: 14px; color: #666;">
-                  A visual badge that increases trust and click-through rates.
-                </p>
-                <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-                  <li>"Featured" badge on your profile</li>
-                  <li>Signals quality and commitment</li>
-                  <li>Average 35% higher response rate</li>
+              <div style="background: #fef3c7; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h4 style="margin: 0 0 15px 0; color: #92400e;">⚠️ If you haven't received any project emails yet:</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                  <li style="margin-bottom: 8px;">✓ Check your spam/promotions folder</li>
+                  <li style="margin-bottom: 8px;">✓ Add <strong>hello@digsandgigs.net</strong> to your contacts</li>
+                  <li>✓ Make sure your profile categories match projects you want</li>
                 </ul>
               </div>
               
-              <div style="border: 2px solid #22c55e; border-radius: 12px; padding: 25px; margin: 25px 0;">
-                <h3 style="margin: 0 0 10px 0; color: #22c55e;">🏆 Category Dominance — $49/month</h3>
-                <p style="margin: 0 0 15px 0; font-size: 14px; color: #666;">
-                  Be showcased as a top expert in your chosen category.
-                </p>
-                <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-                  <li>Featured in category spotlight section</li>
-                  <li>"Top Expert" designation</li>
-                  <li>Maximum visibility for serious freelancers</li>
-                </ul>
-              </div>
-              
-              <div style="background: #f0f9ff; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
-                <p style="margin: 0; font-size: 14px;"><strong>Note:</strong> These are 100% optional. Your Founder benefits already give you a competitive edge.</p>
-              </div>
+              <p style="font-size: 16px; margin: 25px 0;">
+                Questions? Just reply to this email — we're here to help!
+              </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${addUTM(baseUrl + '/pricing', 6)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Explore Add-Ons →</a>
+                <a href="${addUTM(baseUrl + '/email-preferences', 5)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Update Your Preferences →</a>
               </div>
             </div>
             
             <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                Tomorrow: Important reminder about your Founder benefits.<br>
+                We're rooting for you, ${firstName}!<br>
+                <em>— The Digs & Gigs Team</em>
+              </p>
+              <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
+                <a href="${baseUrl}" style="color: #667eea; text-decoration: none;">Digs & Gigs</a> | 
+                <a href="${baseUrl}/faq" style="color: #667eea; text-decoration: none;">FAQ</a> | 
+                <a href="${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}" style="color: #667eea; text-decoration: none;">Unsubscribe</a>
+              </p>
+            </div>
+          </body>
+        </html>
+      `
+    },
+    
+    // STEP 6: Refund Policy & Trust
+    6: {
+      subject: `🛡️ Our Guarantee: Bad Leads = Full Refund`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8f9fa;">
+            
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Our Lead Guarantee</h1>
+              <p style="margin: 0; font-size: 16px; opacity: 0.9;">We stand behind every lead we send you</p>
+            </div>
+            
+            <div style="padding: 30px; background: #ffffff;">
+              <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
+              
+              <p style="font-size: 16px; margin: 0 0 25px 0;">
+                We know you're investing real money to unlock leads. That's why we have a straightforward guarantee:
+              </p>
+              
+              <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
+                <h3 style="margin: 0 0 15px 0; color: #22c55e; font-size: 24px;">🛡️ Full Refund on Bogus Leads</h3>
+                <p style="margin: 0; font-size: 16px;">If a lead turns out to be fake, spam, or completely unresponsive — we'll refund your unlock fee. No questions asked.</p>
+              </div>
+              
+              <h3 style="margin: 30px 0 15px 0; color: #333;">What qualifies for a refund:</h3>
+              
+              <ul style="margin: 0; padding-left: 20px;">
+                <li style="margin-bottom: 10px;">Client provided fake contact information</li>
+                <li style="margin-bottom: 10px;">Phone number disconnected or email bounces</li>
+                <li style="margin-bottom: 10px;">Client never responds after multiple attempts</li>
+                <li style="margin-bottom: 10px;">Project details were completely misrepresented</li>
+                <li>Any other situation where the lead was clearly invalid</li>
+              </ul>
+              
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <p style="margin: 0 0 10px 0;"><strong>How to request a refund:</strong></p>
+                <p style="margin: 0; font-size: 14px; color: #666;">Simply reply to any of our emails with your lead details and what happened. Our team reviews refund requests within 24-48 hours.</p>
+              </div>
+              
+              <p style="font-size: 16px; margin: 25px 0;">
+                We succeed when you succeed. That's why we're committed to sending you quality leads worth your time and money.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${addUTM(baseUrl + '/role-dashboard', 6)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Start Winning Projects →</a>
+              </div>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
+                Tomorrow: Final tips to maximize your success.<br>
                 <em>— The Digs & Gigs Team</em>
               </p>
               <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
@@ -486,9 +474,9 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
       `
     },
     
-    // STEP 7: Urgency - Your Founders Benefits Start Now
+    // STEP 7: Final Summary & Next Steps
     7: {
-      subject: `⏰ ${firstName}, Your 60-Day Free Trial Has Started — Here's What Happens Next`,
+      subject: `🎯 ${firstName}, You're Ready to Start Winning Projects`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -498,66 +486,68 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
           </head>
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8f9fa;">
             
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Your Founder Clock is Ticking</h1>
-              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Important: What happens after 60 days</p>
+            <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">You're All Set!</h1>
+              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Here's everything you need to succeed</p>
             </div>
             
             <div style="padding: 30px; background: #ffffff;">
               <p style="font-size: 16px; margin: 0 0 20px 0;">Hey ${firstName},</p>
               
-              <p style="font-size: 16px; margin: 0 0 20px 0;">
-                This is the last email in your welcome series, and it's an important one.
-              </p>
-              
               <p style="font-size: 16px; margin: 0 0 25px 0;">
-                <strong>Your 60-day free trial started when you signed up.</strong> Here's what you need to know:
+                This is the last email in your welcome series. Here's a quick recap of everything you need to know:
               </p>
               
-              <div style="background: #fef2f2; border: 2px solid #dc2626; border-radius: 12px; padding: 25px; margin: 25px 0;">
-                <h3 style="margin: 0 0 15px 0; color: #dc2626;">⚠️ If You Don't Complete Your Profile:</h3>
+              <div style="background: #f8f9fa; border-radius: 12px; padding: 25px; margin: 25px 0;">
+                <h3 style="margin: 0 0 20px 0; color: #333;">📋 Quick Reference:</h3>
+                
+                <div style="border-bottom: 1px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px;">
+                  <p style="margin: 0;"><strong>How leads arrive:</strong> Directly to your inbox</p>
+                </div>
+                
+                <div style="border-bottom: 1px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px;">
+                  <p style="margin: 0;"><strong>Lead pricing:</strong> 2% of budget (min $10, max $49)</p>
+                </div>
+                
+                <div style="border-bottom: 1px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px;">
+                  <p style="margin: 0;"><strong>What you keep:</strong> 100% of your project earnings</p>
+                </div>
+                
+                <div style="border-bottom: 1px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px;">
+                  <p style="margin: 0;"><strong>Bad leads:</strong> Full refund, no questions asked</p>
+                </div>
+                
+                <div>
+                  <p style="margin: 0;"><strong>Exclusive jobs:</strong> 3% referral fee (paid from client deposit)</p>
+                </div>
+              </div>
+              
+              <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 20px; margin: 25px 0;">
+                <h4 style="margin: 0 0 15px 0; color: #22c55e;">✅ Your Checklist:</h4>
                 <ul style="margin: 0; padding-left: 20px;">
-                  <li style="margin-bottom: 8px;">You won't receive project matches</li>
-                  <li style="margin-bottom: 8px;">Clients won't be able to find you</li>
-                  <li>Your 60 days will pass without results</li>
+                  <li style="margin-bottom: 8px;">Add hello@digsandgigs.net to your contacts</li>
+                  <li style="margin-bottom: 8px;">Check spam/promotions folders for leads</li>
+                  <li style="margin-bottom: 8px;">Respond quickly when you unlock a lead</li>
+                  <li>Use our outreach template to win more jobs</li>
                 </ul>
               </div>
               
-              <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 25px; margin: 25px 0;">
-                <h3 style="margin: 0 0 15px 0; color: #22c55e;">✅ What to Do Right Now:</h3>
-                <ol style="margin: 0; padding-left: 20px;">
-                  <li style="margin-bottom: 8px;"><strong>Complete your profile</strong> (takes 10 minutes)</li>
-                  <li style="margin-bottom: 8px;"><strong>Add your categories & skills</strong></li>
-                  <li style="margin-bottom: 8px;"><strong>Upload portfolio samples</strong></li>
-                  <li><strong>Start browsing projects</strong> — and reveal your first lead</li>
-                </ol>
-              </div>
-              
-              <h3 style="margin: 30px 0 15px 0; color: #333;">Your Founder Benefits (Reminder):</h3>
-              
-              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <p style="margin: 0 0 8px 0;">👑 <strong>$19/month subscription</strong> — locked for life</p>
-                <p style="margin: 0 0 8px 0;">💰 <strong>$10/$25 leads</strong> — guaranteed for 12 months</p>
-                <p style="margin: 0 0 8px 0;">🎖️ <strong>Founding Digger badge</strong> — permanent</p>
-                <p style="margin: 0;">⬆️ <strong>Priority ranking</strong> — always</p>
-              </div>
-              
-              <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
-                <p style="margin: 0; font-size: 14px;"><strong>⚠️ Important:</strong> If you cancel or let your subscription lapse, you permanently lose the $19/month lifetime guarantee. You won't get it back.</p>
-              </div>
+              <p style="font-size: 16px; margin: 25px 0;">
+                Questions? Just reply to any of our emails. We're always here to help you succeed.
+              </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${addUTM(baseUrl + '/my-profiles', 7)}" style="display: inline-block; background: #dc2626; color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Complete Your Profile Now →</a>
+                <a href="${addUTM(baseUrl + '/role-dashboard', 7)}" style="display: inline-block; background: #22c55e; color: white; padding: 18px 50px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">View Your Lead Dashboard →</a>
               </div>
               
               <p style="font-size: 14px; color: #666; text-align: center; margin-top: 25px;">
-                Questions? Just reply to this email. We're here to help you succeed.
+                You've got this, ${firstName}! 🚀
               </p>
             </div>
             
             <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                You've got this, ${firstName}!<br>
+                We'll keep sending you leads as they come in.<br>
                 <em>— The Digs & Gigs Team</em>
               </p>
               <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
@@ -609,58 +599,36 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if record exists
     const { data: existingRecord } = await supabase
       .from('digger_onboarding_emails')
-      .select('*')
+      .select('id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (existingRecord) {
       // Update existing record
-      const updateData: Record<string, any> = {
-        [stepField]: new Date().toISOString(),
-        current_step: step,
-        updated_at: new Date().toISOString(),
-      };
-      
-      if (step === 7) {
-        updateData.completed = true;
-      }
-
       await supabase
         .from('digger_onboarding_emails')
-        .update(updateData)
-        .eq('id', existingRecord.id);
+        .update({
+          current_step: step,
+          [stepField]: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          completed: step >= 7,
+        })
+        .eq('user_id', userId);
     } else {
       // Create new record
-      const insertData: Record<string, any> = {
-        user_id: userId,
-        email: email,
-        digger_profile_id: diggerProfileId,
-        current_step: step,
-        [stepField]: new Date().toISOString(),
-        completed: step === 7,
-      };
-
       await supabase
         .from('digger_onboarding_emails')
-        .insert(insertData);
+        .insert({
+          user_id: userId,
+          email: email,
+          current_step: step,
+          [stepField]: new Date().toISOString(),
+          digger_profile_id: diggerProfileId,
+          completed: step >= 7,
+        });
     }
 
-    // Also log to marketing_email_log
-    await supabase
-      .from('marketing_email_log')
-      .insert({
-        email,
-        email_type: 'onboarding',
-        campaign_name: `digger_onboarding_step_${step}`,
-        user_id: userId,
-        reason: `onboarding_step_${step}`,
-      });
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      step,
-      emailResponse 
-    }), {
+    return new Response(JSON.stringify({ success: true, emailResponse }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
