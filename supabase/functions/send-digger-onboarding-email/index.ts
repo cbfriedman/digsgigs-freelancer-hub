@@ -376,7 +376,7 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
                 <h4 style="margin: 0 0 15px 0; color: #92400e;">⚠️ If you haven't received any project emails yet:</h4>
                 <ul style="margin: 0; padding-left: 20px;">
                   <li style="margin-bottom: 8px;">✓ Check your spam/promotions folder</li>
-                  <li style="margin-bottom: 8px;">✓ Add <strong>hello@digsandgigs.net</strong> to your contacts</li>
+                  <li style="margin-bottom: 8px;">✓ Add <strong>info@digsandgigs.net</strong> to your contacts</li>
                   <li>✓ Make sure your profile categories match projects you want</li>
                 </ul>
               </div>
