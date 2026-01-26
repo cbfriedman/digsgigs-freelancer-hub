@@ -164,7 +164,7 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
               <div style="background: #f0f9ff; border-left: 4px solid #667eea; padding: 20px; margin: 25px 0;">
                 <h4 style="margin: 0 0 10px 0; color: #667eea;">📊 Lead Pricing:</h4>
                 <p style="margin: 0 0 8px 0;"><strong>Non-exclusive leads:</strong> 2% of project budget (min $10, max $49)</p>
-                <p style="margin: 0;"><strong>Exclusive jobs:</strong> 3% referral fee (only if selected, paid from client deposit)</p>
+                <p style="margin: 0;"><strong>Exclusive jobs:</strong> 8% referral fee (only if selected, paid from client deposit)</p>
               </div>
               
               <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
@@ -229,7 +229,7 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
               <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 20px 0;">
                 <p style="margin: 0 0 8px 0;">✅ Pay a small upfront fee to unlock the lead ($10-$49)</p>
                 <p style="margin: 0 0 8px 0;">✅ Keep 100% of your non-exclusive project earnings</p>
-                <p style="margin: 0;">✅ For exclusive jobs: just 3% referral fee (and the client pays it upfront as a deposit to you)</p>
+                <p style="margin: 0;">✅ For exclusive jobs: just 8% referral fee (and the client pays it upfront as a deposit to you)</p>
               </div>
               
               <h3 style="margin: 30px 0 15px 0; color: #333;">Example:</h3>
@@ -511,7 +511,7 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
                 </div>
                 
                 <div>
-                  <p style="margin: 0;"><strong>Exclusive jobs:</strong> 3% referral fee (paid from client deposit)</p>
+                  <p style="margin: 0;"><strong>Exclusive jobs:</strong> 8% referral fee (paid from client deposit)</p>
                 </div>
               </div>
               

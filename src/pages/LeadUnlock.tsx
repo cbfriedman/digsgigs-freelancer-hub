@@ -48,8 +48,8 @@ interface Lead {
 type PricingOption = "pay_per_lead" | "success_based";
 
 // Referral fee configuration - must match edge function
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN = 100; // $100 minimum
+const REFERRAL_FEE_RATE = 0.08; // 8%
+const REFERRAL_FEE_MIN = 50; // $50 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
 const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
@@ -170,7 +170,7 @@ export default function LeadUnlock() {
     const min = lead?.budget_min || 0;
     const max = lead?.budget_max || min;
     const avg = (min + max) / 2;
-    const price = Math.round(avg * 0.03);
+    const price = Math.round(avg * 0.08);
     return Math.min(49, Math.max(1, price)); // No minimum, $49 cap
   };
 
@@ -547,7 +547,7 @@ export default function LeadUnlock() {
                                 <span className="text-2xl font-bold text-accent-foreground">${estimatedFee.midpoint}</span>
                               </div>
                               <p className="text-sm text-muted-foreground">
-                                3% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Fee paid from Gigger's 5% down-payment.
+                                8% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Fee paid from Gigger's 5% down-payment.
                               </p>
                               {lead.budget_min && lead.budget_max && (
                                 <div className="mt-2 text-xs text-muted-foreground">

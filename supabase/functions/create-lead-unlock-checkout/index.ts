@@ -87,9 +87,9 @@ serve(async (req) => {
     let priceCents = lead.calculated_price_cents;
     
     if (!priceCents && lead.budget_min && lead.budget_max) {
-      // Calculate 3% of average, $49 cap, no minimum
+      // Calculate 8% of average, $49 cap, no minimum
       const avgBudget = (lead.budget_min + lead.budget_max) / 2;
-      priceCents = Math.round(avgBudget * 0.03 * 100);
+      priceCents = Math.round(avgBudget * 0.08 * 100);
       priceCents = Math.round(priceCents / 100) * 100; // Round to nearest dollar
       priceCents = Math.min(4900, Math.max(100, priceCents)); // No minimum, $49 cap
     }
