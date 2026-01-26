@@ -89,6 +89,141 @@ export const SafeProfessionSelector = ({
 
   // Tier badges removed - lead pricing is now determined at project level based on budget
 
+  const pickerContent = (
+    <>
+      {/* Search Header - Always visible at top */}
+      <div className="flex-shrink-0 bg-background border-b p-3 z-10">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search professions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+            autoFocus={!isMobile}
+          />
+        </div>
+      </div>
+
+      {/* Categories List - Scrollable area */}
+      <div
+        className="flex-1 overflow-y-auto overscroll-contain min-h-0"
+        style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth" }}
+      >
+        {filteredCategories.length === 0 ? (
+          <div className="px-4 py-6 text-center space-y-3">
+            <div className="text-sm text-muted-foreground">
+              No professions found matching "{searchQuery}"
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Can't find your profession? Use the "Request New Profession" form to submit a request.
+            </p>
+          </div>
+        ) : (
+          filteredCategories.map((category) => (
+            <div key={category.id} className="border-b last:border-b-0">
+              {/* Category Header */}
+              <button
+                className="w-full px-3 sm:px-4 py-3 sm:py-3 flex items-center justify-between hover:bg-accent/50 active:bg-accent transition-colors touch-manipulation min-h-[44px]"
+                onClick={() => toggleCategory(category.id)}
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {expandedCategories.has(category.id) ? (
+                    <ChevronDown className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 shrink-0" />
+                  )}
+                  <span className="font-semibold text-sm truncate">{category.name}</span>
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                  {category.professions.length} professions
+                </span>
+              </button>
+
+              {/* Professions List */}
+              {expandedCategories.has(category.id) && (
+                <div className="bg-accent/5 divide-y">
+                  {category.professions.map((profession) => {
+                    const isSelected = selectedProfessionIds.includes(profession.id);
+                    const isDisabled = !isSelected && selectedProfessionIds.length >= maxSelections;
+
+                    return (
+                      <div
+                        key={profession.id}
+                        className={`px-3 sm:px-4 py-3 sm:py-2 pl-8 sm:pl-10 flex items-center justify-between gap-2 sm:gap-3 transition-colors touch-manipulation ${
+                          isDisabled ? "opacity-50" : "hover:bg-accent/50 active:bg-accent"
+                        }`}
+                        onClick={() => !isDisabled && toggleProfession(profession.id)}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div
+                            className={`w-5 h-5 sm:w-4 sm:h-4 rounded border-2 flex items-center justify-center shrink-0 cursor-pointer touch-manipulation ${
+                              isSelected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isDisabled) toggleProfession(profession.id);
+                            }}
+                          >
+                            {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                          </div>
+                          <span className="text-sm sm:text-sm break-words">{profession.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            variant={isSelected ? "secondary" : "default"}
+                            className="h-8 sm:h-7 px-3 text-xs touch-manipulation"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleProfession(profession.id);
+                            }}
+                            disabled={isDisabled}
+                          >
+                            {isSelected ? "Selected" : "Select"}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Footer - Always visible at bottom */}
+      <Separator className="flex-shrink-0" />
+      <div className="flex-shrink-0 p-3 sm:p-3 bg-muted/30 space-y-3 bg-background border-t">
+        {selectedProfessionIds.length > 0 && (
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-muted-foreground">
+              Selected: {selectedProfessionIds.length}/{maxSelections}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 sm:h-7 text-xs touch-manipulation min-h-[44px] sm:min-h-0"
+              onClick={() => onProfessionsChange([])}
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
+        <Button
+          className="w-full min-h-[44px] sm:min-h-0 touch-manipulation"
+          onClick={() => setOpen(false)}
+          disabled={selectedProfessionIds.length === 0}
+        >
+          {selectedProfessionIds.length === 0
+            ? "Select at least one profession"
+            : `Select and Continue (${selectedProfessionIds.length})`}
+        </Button>
+      </div>
+    </>
+  );
+
 
   if (loading) {
     return (
@@ -119,218 +254,102 @@ export const SafeProfessionSelector = ({
         </AlertDescription>
       </Alert>
 
-      {/* Trigger Button */}
-      <Button
-        variant="outline"
-        role="combobox"
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-        className="w-full h-auto min-h-12 justify-between hover:bg-accent touch-manipulation"
-      >
-        <div className="flex flex-wrap gap-1.5 flex-1">
-          {selectedProfessions.length === 0 ? (
-            <span className="text-muted-foreground">Select professions...</span>
-          ) : (
-            selectedProfessions.slice(0, 3).map(profession => (
-              <Badge
-                key={profession.id}
-                variant="secondary"
-                className="px-2 py-0.5 text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeProfession(profession.id);
-                }}
-              >
-                {profession.name}
-                <X className="h-3 w-3 ml-1" />
-              </Badge>
-            ))
-          )}
-          {selectedProfessions.length > 3 && (
-            <Badge variant="outline" className="px-2 py-0.5 text-xs">
-              +{selectedProfessions.length - 3} more
-            </Badge>
-          )}
-        </div>
-        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-      </Button>
-
-      {/* Picker Content - Shared between Sheet (mobile) and Popover (desktop) */}
-      {(() => {
-        const pickerContent = (
-          <>
-            {/* Search Header - Always visible at top */}
-            <div className="flex-shrink-0 bg-background border-b p-3 z-10">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search professions..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                  autoFocus={!isMobile}
-                />
-              </div>
-            </div>
-
-            {/* Categories List - Scrollable area */}
-            <div className="flex-1 overflow-y-auto overscroll-contain min-h-0" style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}>
-              {filteredCategories.length === 0 ? (
-                <div className="px-4 py-6 text-center space-y-3">
-                  <div className="text-sm text-muted-foreground">
-                    No professions found matching "{searchQuery}"
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Can't find your profession? Use the "Request New Profession" form to submit a request.
-                  </p>
-                </div>
+      {/* Trigger + Picker */}
+      {isMobile ? (
+        <>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+            className="w-full h-auto min-h-12 justify-between hover:bg-accent touch-manipulation"
+          >
+            <div className="flex flex-wrap gap-1.5 flex-1">
+              {selectedProfessions.length === 0 ? (
+                <span className="text-muted-foreground">Select professions...</span>
               ) : (
-                filteredCategories.map((category) => (
-                  <div key={category.id} className="border-b last:border-b-0">
-                    {/* Category Header */}
-                    <button
-                      className="w-full px-3 sm:px-4 py-3 sm:py-3 flex items-center justify-between hover:bg-accent/50 active:bg-accent transition-colors touch-manipulation min-h-[44px]"
-                      onClick={() => toggleCategory(category.id)}
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {expandedCategories.has(category.id) ? (
-                          <ChevronDown className="h-4 w-4 shrink-0" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0" />
-                        )}
-                        <span className="font-semibold text-sm truncate">{category.name}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                        {category.professions.length} professions
-                      </span>
-                    </button>
-
-                    {/* Professions List */}
-                    {expandedCategories.has(category.id) && (
-                      <div className="bg-accent/5 divide-y">
-                        {category.professions.map((profession) => {
-                          const isSelected = selectedProfessionIds.includes(profession.id);
-                          const isDisabled = !isSelected && selectedProfessionIds.length >= maxSelections;
-                          
-                          return (
-                            <div
-                              key={profession.id}
-                              className={`px-3 sm:px-4 py-3 sm:py-2 pl-8 sm:pl-10 flex items-center justify-between gap-2 sm:gap-3 transition-colors touch-manipulation ${
-                                isDisabled ? 'opacity-50' : 'hover:bg-accent/50 active:bg-accent'
-                              }`}
-                              onClick={() => !isDisabled && toggleProfession(profession.id)}
-                            >
-                              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                                <div 
-                                  className={`w-5 h-5 sm:w-4 sm:h-4 rounded border-2 flex items-center justify-center shrink-0 cursor-pointer touch-manipulation ${
-                                    isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!isDisabled) toggleProfession(profession.id);
-                                  }}
-                                >
-                                  {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                                </div>
-                                <span className="text-sm sm:text-sm break-words">{profession.name}</span>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Button
-                                  size="sm"
-                                  variant={isSelected ? "secondary" : "default"}
-                                  className="h-8 sm:h-7 px-3 text-xs touch-manipulation"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleProfession(profession.id);
-                                  }}
-                                  disabled={isDisabled}
-                                >
-                                  {isSelected ? "Selected" : "Select"}
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                selectedProfessions.slice(0, 3).map((profession) => (
+                  <Badge
+                    key={profession.id}
+                    variant="secondary"
+                    className="px-2 py-0.5 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeProfession(profession.id);
+                    }}
+                  >
+                    {profession.name}
+                    <X className="h-3 w-3 ml-1" />
+                  </Badge>
                 ))
               )}
-            </div>
-
-            {/* Footer - Always visible at bottom */}
-            <Separator className="flex-shrink-0" />
-            <div className="flex-shrink-0 p-3 sm:p-3 bg-muted/30 space-y-3 bg-background border-t">
-              {selectedProfessionIds.length > 0 && (
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">
-                    Selected: {selectedProfessionIds.length}/{maxSelections}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 sm:h-7 text-xs touch-manipulation min-h-[44px] sm:min-h-0"
-                    onClick={() => onProfessionsChange([])}
-                  >
-                    Clear all
-                  </Button>
-                </div>
+              {selectedProfessions.length > 3 && (
+                <Badge variant="outline" className="px-2 py-0.5 text-xs">
+                  +{selectedProfessions.length - 3} more
+                </Badge>
               )}
-              <Button
-                className="w-full min-h-[44px] sm:min-h-0 touch-manipulation"
-                onClick={() => setOpen(false)}
-                disabled={selectedProfessionIds.length === 0}
-              >
-                {selectedProfessionIds.length === 0 
-                  ? "Select at least one profession" 
-                  : `Select and Continue (${selectedProfessionIds.length})`}
-              </Button>
             </div>
-          </>
-        );
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
 
-        // Mobile: Use Sheet (bottom drawer) for better UX
-        if (isMobile) {
-          return (
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetContent 
-                side="bottom" 
-                className="h-[85vh] flex flex-col p-0 rounded-t-xl"
-              >
-                <SheetHeader className="flex-shrink-0 p-4 pb-0 border-b">
-                  <SheetTitle>Select Professions</SheetTitle>
-                </SheetHeader>
-                <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                  {pickerContent}
-                </div>
-              </SheetContent>
-            </Sheet>
-          );
-        }
-
-        // Desktop: Use Popover (controlled, no trigger needed since button handles open state)
-        if (!open) return null;
-        
-        return (
-          <Popover open={open} onOpenChange={setOpen} modal={true}>
-            <PopoverTrigger asChild>
-              <span className="sr-only">Open profession selector</span>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-[95vw] max-w-[600px] p-0 z-50 max-h-[70vh] flex flex-col overflow-hidden" 
-              align="start"
-              sideOffset={8}
-              side="bottom"
-              avoidCollisions={true}
-              collisionPadding={8}
-              onOpenAutoFocus={(e) => e.preventDefault()}
-              onInteractOutside={() => setOpen(false)}
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetContent side="bottom" className="h-[85vh] flex flex-col p-0 rounded-t-xl">
+              <SheetHeader className="flex-shrink-0 p-4 pb-0 border-b">
+                <SheetTitle>Select Professions</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden">{pickerContent}</div>
+            </SheetContent>
+          </Sheet>
+        </>
+      ) : (
+        <Popover open={open} onOpenChange={setOpen} modal>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full h-auto min-h-12 justify-between hover:bg-accent touch-manipulation"
             >
-              {pickerContent}
-            </PopoverContent>
-          </Popover>
-        );
-      })()}
+              <div className="flex flex-wrap gap-1.5 flex-1">
+                {selectedProfessions.length === 0 ? (
+                  <span className="text-muted-foreground">Select professions...</span>
+                ) : (
+                  selectedProfessions.slice(0, 3).map((profession) => (
+                    <Badge
+                      key={profession.id}
+                      variant="secondary"
+                      className="px-2 py-0.5 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeProfession(profession.id);
+                      }}
+                    >
+                      {profession.name}
+                      <X className="h-3 w-3 ml-1" />
+                    </Badge>
+                  ))
+                )}
+                {selectedProfessions.length > 3 && (
+                  <Badge variant="outline" className="px-2 py-0.5 text-xs">
+                    +{selectedProfessions.length - 3} more
+                  </Badge>
+                )}
+              </div>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-[var(--radix-popover-trigger-width)] max-w-[600px] p-0 z-50 max-h-[70vh] flex flex-col overflow-hidden"
+            align="start"
+            sideOffset={8}
+            side="bottom"
+            avoidCollisions
+            collisionPadding={8}
+          >
+            {pickerContent}
+          </PopoverContent>
+        </Popover>
+      )}
 
       {/* Selected Professions Display */}
       {selectedProfessions.length > 0 && (
