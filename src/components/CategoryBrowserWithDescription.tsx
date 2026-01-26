@@ -816,6 +816,19 @@ export const CategoryBrowserWithDescription = () => {
 
                       if (insertAssignmentsError) throw insertAssignmentsError;
                       
+                      // Send first onboarding email (non-blocking)
+                      supabase.functions.invoke('send-digger-onboarding-email', {
+                        body: {
+                          userId: user.id,
+                          email: user.email || '',
+                          name: user.user_metadata?.full_name || '',
+                          step: 1,
+                          diggerProfileId: newProfile.id,
+                        },
+                      }).catch(err => {
+                        console.warn('Failed to send onboarding email (non-critical):', err);
+                      });
+                      
                       // Clear sessionStorage after successful profile creation
                       sessionStorage.removeItem('newProfileName');
                       

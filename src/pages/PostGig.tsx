@@ -223,6 +223,21 @@ const PostGig = () => {
         }
       }).catch(err => console.error("Confirmation email error:", err));
 
+      // Send first consumer onboarding email (non-blocking)
+      // This will be sent when the gig is confirmed, but we prepare it here
+      const projectLink = `${window.location.origin}/gig/${gigData.id}`;
+      supabase.functions.invoke("send-consumer-onboarding-email", {
+        body: {
+          email: finalClientEmail.trim(),
+          firstName: finalClientName.trim().split(' ')[0] || 'there',
+          step: 1,
+          projectLink: projectLink,
+          projectName: title,
+        },
+      }).catch(err => {
+        console.warn("Failed to send consumer onboarding email (non-critical):", err);
+      });
+
       if (isConfigured) {
         trackEvent('Lead', { content_name: 'Gig Posted', content_ids: [gigData.id] });
       }
