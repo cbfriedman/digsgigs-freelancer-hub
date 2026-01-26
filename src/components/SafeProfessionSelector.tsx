@@ -308,9 +308,11 @@ export const SafeProfessionSelector = ({
           );
         }
 
-        // Desktop: Use Popover
+        // Desktop: Use Popover (controlled, no trigger needed since button handles open state)
+        if (!open) return null;
+        
         return (
-          <Popover open={open} onOpenChange={setOpen} modal={false}>
+          <Popover open={open} onOpenChange={setOpen} modal={true}>
             <PopoverTrigger asChild>
               <span className="sr-only">Open profession selector</span>
             </PopoverTrigger>
@@ -321,6 +323,8 @@ export const SafeProfessionSelector = ({
               side="bottom"
               avoidCollisions={true}
               collisionPadding={8}
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onInteractOutside={() => setOpen(false)}
             >
               {pickerContent}
             </PopoverContent>
