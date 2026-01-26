@@ -216,7 +216,7 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
               </p>
               
               <p style="font-size: 16px; margin: 0 0 25px 0;">
-                Most platforms take <strong>15-20% of every project</strong> you win:
+                Most platforms take <strong>15-20% of every project</strong> you complete:
               </p>
               
               <div style="background: #fef2f2; border-radius: 8px; padding: 20px; margin: 20px 0;">
@@ -235,19 +235,15 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
               <h3 style="margin: 30px 0 15px 0; color: #333;">Example:</h3>
               
               <div style="background: #f8f9fa; border-radius: 12px; padding: 25px; margin: 20px 0; border-left: 4px solid #22c55e;">
-                <p style="margin: 0 0 10px 0;"><strong>You unlock a $3,000 project lead for $10.</strong></p>
+                <p style="margin: 0 0 10px 0;">You unlock a $3,000 project lead for $10.</p>
                 <p style="margin: 0 0 10px 0;">You win the job.</p>
-                <p style="margin: 0 0 15px 0; font-size: 24px; color: #22c55e;"><strong>You keep: $3,000</strong> <span style="font-size: 14px; color: #666;">(minus your $10 unlock cost)</span></p>
+                <p style="margin: 0 0 15px 0; font-size: 18px; color: #333;">You keep: <strong style="color: #22c55e; font-size: 24px;">$3,000</strong> <span style="font-size: 14px; color: #666;">(minus your $10 unlock cost)</span></p>
                 <p style="margin: 0; font-size: 14px; color: #666;">On Upwork/Fiverr: You'd keep ~$2,400.</p>
                 <p style="margin: 10px 0 0 0; font-size: 18px; color: #22c55e;"><strong>That's $590 more in your pocket — per project.</strong></p>
               </div>
               
-              <div style="background: #fef3c7; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
-                <p style="margin: 0; font-size: 14px;"><strong>🎁 Bonus:</strong> Bogus leads? Full refund, no questions asked.</p>
-              </div>
-              
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${addUTM(baseUrl + '/pricing', 3)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">See Full Pricing Details →</a>
+                <a href="${addUTM(baseUrl + '/role-dashboard', 3)}" style="display: inline-block; background: #22c55e; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">Start Winning Projects →</a>
               </div>
             </div>
             
@@ -338,7 +334,7 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
       `
     },
     
-    // STEP 5: Check Your Inbox Nudge
+    // STEP 5: First Lead Nudge
     5: {
       subject: `👋 Have You Checked Your Project Emails?`,
       html: `
@@ -351,8 +347,8 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8f9fa;">
             
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Don't Miss Leads!</h1>
-              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Make sure project emails aren't going to spam</p>
+              <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Check Your Inbox</h1>
+              <p style="margin: 0; font-size: 16px; opacity: 0.9;">Don't miss out on project opportunities</p>
             </div>
             
             <div style="padding: 30px; background: #ffffff;">
@@ -373,11 +369,10 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
               </div>
               
               <div style="background: #fef3c7; border-radius: 8px; padding: 20px; margin: 25px 0;">
-                <h4 style="margin: 0 0 15px 0; color: #92400e;">⚠️ If you haven't received any project emails yet:</h4>
+                <h4 style="margin: 0 0 15px 0; color: #92400e;">If you haven't received any project emails yet, make sure:</h4>
                 <ul style="margin: 0; padding-left: 20px;">
                   <li style="margin-bottom: 8px;">✓ Check your spam/promotions folder</li>
-                  <li style="margin-bottom: 8px;">✓ Add <strong>info@digsandgigs.net</strong> to your contacts</li>
-                  <li>✓ Make sure your profile categories match projects you want</li>
+                  <li style="margin-bottom: 8px;">✓ Add <strong>hello@digsandgigs.net</strong> to your contacts</li>
                 </ul>
               </div>
               
@@ -392,12 +387,10 @@ const getEmailContent = (step: number, firstName: string, email: string) => {
             
             <div style="background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e0e0e0;">
               <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                We're rooting for you, ${firstName}!<br>
-                <em>— The Digs & Gigs Team</em>
+                — The Digs & Gigs Team
               </p>
               <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
                 <a href="${baseUrl}" style="color: #667eea; text-decoration: none;">Digs & Gigs</a> | 
-                <a href="${baseUrl}/faq" style="color: #667eea; text-decoration: none;">FAQ</a> | 
                 <a href="${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}" style="color: #667eea; text-decoration: none;">Unsubscribe</a>
               </p>
             </div>

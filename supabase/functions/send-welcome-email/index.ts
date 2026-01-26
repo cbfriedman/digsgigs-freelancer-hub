@@ -62,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
       : `🎉 Welcome to Digs & Gigs, ${firstName}! Let's Find You a Pro`;
 
     const headline = isDigger 
-      ? "You're in! Projects are on the way."
+      ? "You're in! Get ready to receive project requests delivered straight to your inbox."
       : "You're in! Let's find you a pro.";
 
     const heroCtaUrl = isDigger ? dashboardUrl : postGigUrl;
@@ -70,9 +70,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Step content based on role - Updated for pay-per-lead model
     const steps = isDigger ? [
-      { number: "1", title: "Receive Project Emails", description: "We send matching projects directly to your inbox." },
-      { number: "2", title: "Unlock Leads You Want", description: "Pay a small fee ($10-$49) to reveal client contact info." },
-      { number: "3", title: "Win Work & Keep 100%", description: "Reach out directly. No commissions on your earnings." },
+      { number: "1", title: "Clients post projects", description: "We email them directly to you" },
+      { number: "2", title: "You see the details", description: "Scope, budget, timeline" },
+      { number: "3", title: "Pay a small fee to unlock", description: "Client contact info (starting at $10)" },
+      { number: "4", title: "Connect directly and win", description: "No platform commission on your earnings" },
     ] : [
       { number: "1", title: "Post Your Project", description: "Describe what you need — big or small. Takes 2 minutes." },
       { number: "2", title: "Get Free Quotes", description: "Verified pros in your area will reach out with quotes." },
@@ -99,7 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
           <li style="margin-bottom: 8px;"><strong>$0 setup fee</strong> (normally $199)</li>
           <li style="margin-bottom: 8px;"><strong>Dynamic lead pricing</strong> starting at just $10</li>
           <li style="margin-bottom: 8px;"><strong>Full refund</strong> on any bogus leads</li>
-          <li><strong>Keep 100%</strong> of your project earnings</li>
+          <li><strong>Non-exclusive leads</strong> — pursue as many as you want</li>
         </ul>
       </div>
     ` : '';
@@ -129,7 +130,7 @@ const handler = async (req: Request): Promise<Response> => {
               
               <p style="font-size: 16px; margin: 0 0 25px 0;">
                 ${isDigger 
-                  ? "Thanks for joining! You're now set up to receive project leads directly in your inbox. No browsing, no bidding wars — just relevant projects delivered to you."
+                  ? "You're in! Get ready to receive project requests delivered straight to your inbox."
                   : "Thanks for signing up! You're now connected to our network of verified professionals ready to help with your project."
                 }
               </p>
@@ -158,17 +159,26 @@ const handler = async (req: Request): Promise<Response> => {
               <div style="text-align: center; margin: 30px 0; padding: 20px; background: #f0f4ff; border-radius: 8px;">
                 <p style="margin: 0; font-size: 14px; color: #666;">
                   ${isDigger 
-                    ? 'Unlike other platforms that take 15-20%, we charge a small upfront fee and you keep everything you earn.' 
+                    ? 'Unlike other platforms that take 15-20% of every project, we charge a small upfront fee and you keep everything you earn.' 
                     : '96% of projects receive responses within 24 hours'}
                 </p>
               </div>
               
-              <!-- Questions -->
+              ${isDigger ? `
+              <!-- Closing for Diggers -->
+              <div style="border-top: 1px solid #e0e0e0; padding-top: 25px; margin-top: 30px;">
+                <p style="font-size: 14px; color: #666; text-align: center; margin: 0;">
+                  Over the next few days, I'll share tips to help you win more projects.
+                </p>
+              </div>
+              ` : `
+              <!-- Questions for Giggers -->
               <div style="border-top: 1px solid #e0e0e0; padding-top: 25px; margin-top: 30px;">
                 <p style="font-size: 14px; margin: 0;">
                   <strong>Questions?</strong> Just reply to this email — we're here to help!
                 </p>
               </div>
+              `}
             </div>
             
             <!-- Footer -->
