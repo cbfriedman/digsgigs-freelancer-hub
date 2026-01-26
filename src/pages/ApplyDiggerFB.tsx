@@ -5,7 +5,7 @@
  * Optimized for FB ad messaging:
  * - "Bid for Exclusive Jobs — Pay Only if Selected"
  * - Two-path structure: Non-Exclusive Leads vs Exclusive Awards
- * - Clear pricing: $10-$49 leads, 3% referral fee from client's 5% deposit
+ * - Clear pricing: $10-$49 leads, 8% referral fee from client's 5% deposit
  */
 
 import { useEffect, useRef } from 'react';
@@ -237,7 +237,7 @@ const ApplyDiggerFB = () => {
                       'No upfront payment',
                       'Client selects you — job becomes exclusive',
                       'Client pays a 5% deposit when awarding',
-                      '3% referral fee deducted from that deposit',
+                      '8% referral fee deducted from that deposit',
                       "You pay only when you're ready to start"
                     ].map((item, index) => (
                       <li key={index} className="flex items-start gap-3">
@@ -443,7 +443,7 @@ const ApplyDiggerFB = () => {
         <section className="py-8 px-4 bg-muted/20">
           <div className="max-w-3xl mx-auto text-center">
             <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">How exclusive awards work:</strong> When a client awards you an exclusive job, they pay a 5% deposit. You receive that deposit — and our 3% referral fee is deducted from it.
+              <strong className="text-foreground">How exclusive awards work:</strong> When a client awards you an exclusive job, they pay a 5% deposit. You receive that deposit — and our 8% referral fee is deducted from it.
             </p>
           </div>
         </section>

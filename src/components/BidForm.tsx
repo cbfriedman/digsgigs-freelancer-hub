@@ -28,7 +28,7 @@ const bidSchema = z.object({
 });
 
 // Referral fee configuration - must match edge function
-const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
 const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
 // Non-exclusive pricing for deposit calculation

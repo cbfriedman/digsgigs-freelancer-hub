@@ -23,7 +23,7 @@ interface BidSubmissionTemplateDemoProps {
 }
 
 // Referral fee configuration - must match edge function
-const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
 const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
 // Non-exclusive pricing for deposit calculation
@@ -177,7 +177,7 @@ export function BidSubmissionTemplateDemo({
     const diggerFee = calculateReferralFee();
     
     toast.success("Proposal Accepted! (Demo)", {
-      description: `Gigger pays $${giggerDeposit.toFixed(0)} down-payment. Digger receives 5% advance; 3% referral fee ($${diggerFee.toFixed(0)}) deducted.`,
+      description: `Gigger pays $${giggerDeposit.toFixed(0)} down-payment. Digger receives 5% advance; 8% referral fee ($${diggerFee.toFixed(0)}) deducted.`,
     });
     onAcceptProposal?.();
   };

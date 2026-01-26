@@ -13,7 +13,7 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Referral fee configuration
-const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
 const REFERRAL_FEE_MIN_CENTS = 1000; // $10 minimum
 const REFERRAL_FEE_CAP_CENTS = 24900; // $249 cap
 

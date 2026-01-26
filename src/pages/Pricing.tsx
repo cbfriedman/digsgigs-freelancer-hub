@@ -36,7 +36,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (3% referral fee, $50-$249). No subscriptions. Bogus leads refundable. Prices subject to change." />
+        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (8% referral fee, $50-$249). No subscriptions. Bogus leads refundable. Prices subject to change." />
       </Helmet>
       
       <Navigation />
@@ -139,13 +139,13 @@ export default function Pricing() {
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <p className="text-center text-muted-foreground">
-                      3% referral fee when awarded. Fee comes from Gigger's 5% deposit (your down-payment).
+                      8% referral fee when awarded. Fee comes from Gigger's 5% deposit (your down-payment).
                     </p>
                     
                     <div className="bg-muted/50 rounded-xl p-4">
                       <div className="text-sm text-center mb-2 text-muted-foreground">Referral Fee</div>
                       <div className="text-center font-mono font-bold text-accent">
-                        Higher of 3% or $50
+                        Higher of 8% or $50
                       </div>
                     </div>
 

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, Lock, AlertTriangle } from "lucide-react";
 
 // Referral fee configuration - must match edge function
-const REFERRAL_FEE_RATE = 0.03; // 3% for exclusive
+const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
 const REFERRAL_FEE_MIN = 10; // $10 minimum
 const REFERRAL_FEE_CAP = 249; // $249 cap
 // Non-exclusive pricing for deposit calculation
@@ -191,7 +191,7 @@ export function ConfirmHireDialog({
                     <li>• This down-payment is deducted from the total you owe {diggerName} at job completion</li>
                     <li>• If {diggerName} accepts within 24 hours, the 5% is released to them as an advance</li>
                     <li>• If they don't accept in 24 hours, your deposit is refunded</li>
-                    <li>• The 3% referral fee (${referralFee.toFixed(0)}) is paid out of your down-payment</li>
+                    <li>• The 8% referral fee (${referralFee.toFixed(0)}) is paid out of your down-payment</li>
                   </ul>
                 </div>
               </div>
