@@ -96,7 +96,7 @@ serve(async (req) => {
       );
     }
 
-    // Calculate the referral fee (3% with $10 min, $249 cap)
+    // Calculate the referral fee (8% with $10 min, $249 cap)
     const bidAmountCents = Math.round(bid.amount * 100);
     const calculatedFeeCents = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
     // Apply minimum and maximum constraints
@@ -274,7 +274,7 @@ serve(async (req) => {
                 unit_amount: feeCents,
                 product_data: {
                   name: "Referral Fee",
-                  description: `2% referral fee for winning: ${gig?.title || 'project'}`,
+                  description: `8% referral fee for winning: ${gig?.title || 'project'}`,
                 },
               },
               quantity: 1,

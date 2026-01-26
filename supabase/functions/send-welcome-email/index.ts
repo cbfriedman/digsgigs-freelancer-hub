@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "https://esm.sh/resend@3.0.0";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -39,13 +37,29 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Check if RESEND_API_KEY is configured
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY is not configured');
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured', details: 'RESEND_API_KEY is missing' }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const resend = new Resend(resendApiKey);
+
     const { userId, email, name, role = 'gigger', utmSource, utmMedium, utmCampaign }: WelcomeEmailRequest = await req.json();
 
     if (!email) {
-      throw new Error('Email is required');
+      console.error('Email is missing from request');
+      return new Response(
+        JSON.stringify({ error: 'Email is required' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    console.log('Sending welcome email to:', { email, name, role });
+    console.log('Sending welcome email to:', { email, name, role, userId });
 
     const firstName = name?.split(' ')[0] || 'there';
     const isDigger = role === 'digger';
@@ -105,6 +119,17 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     ` : '';
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.error('Invalid email format:', email);
+      return new Response(
+        JSON.stringify({ error: 'Invalid email format' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log('Attempting to send email via Resend...');
     const emailResponse = await resend.emails.send({
       from: "Digs and Gigs <hello@digsandgigs.net>",
       to: [email],
@@ -200,22 +225,46 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Welcome email sent successfully:", emailResponse);
+    // Check if email was sent successfully
+    if (emailResponse.error) {
+      console.error('Resend API error:', emailResponse.error);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to send email', 
+          details: emailResponse.error.message || 'Unknown error from Resend API'
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Welcome email sent successfully:", { 
+      emailId: emailResponse.data?.id, 
+      email: email,
+      to: emailResponse.data?.to 
+    });
 
     // Log to marketing_email_log database
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const { error: logError } = await supabase
-      .from('marketing_email_log')
-      .insert({
-        email: email,
-        email_type: 'welcome',
-        reason: `welcome_${role}`,
-        user_id: userId,
-        campaign_name: utmCampaign || 'onboarding',
-      });
+    try {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { error: logError } = await supabase
+        .from('marketing_email_log')
+        .insert({
+          email: email,
+          email_type: 'welcome',
+          reason: `welcome_${role}`,
+          user_id: userId,
+          campaign_name: utmCampaign || 'onboarding',
+        });
 
-    if (logError) {
-      console.error('Failed to log welcome email:', logError);
+      if (logError) {
+        console.error('Failed to log welcome email to database:', logError);
+        // Don't fail the request if logging fails
+      } else {
+        console.log('Welcome email logged to database successfully');
+      }
+    } catch (logErr) {
+      console.error('Error logging welcome email:', logErr);
+      // Don't fail the request if logging fails
     }
 
     return new Response(JSON.stringify({ success: true, emailResponse }), {
@@ -226,9 +275,16 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error sending welcome email:", error);
+    console.error("Error sending welcome email:", {
+      message: error?.message,
+      stack: error?.stack,
+      error: error,
+    });
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error?.message || 'Unknown error',
+        details: error?.stack || 'No additional details'
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

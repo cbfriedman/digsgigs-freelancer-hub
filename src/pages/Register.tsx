@@ -1384,7 +1384,8 @@ const Register = () => {
       const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
       Promise.resolve().then(async () => {
         try {
-          await supabase.functions.invoke('send-welcome-email', {
+          console.log('Attempting to send welcome email:', { email, name: fullName, role: primaryRole, userId: verifiedUserId });
+          const { data, error } = await supabase.functions.invoke('send-welcome-email', {
             body: {
               userId: verifiedUserId,
               email,
@@ -1395,9 +1396,20 @@ const Register = () => {
               utmCampaign: getCampaignData()?.utm_campaign,
             },
           });
+          
+          if (error) {
+            console.error('Welcome email function error:', error);
+            // Log to console for debugging but don't block registration
+          } else {
+            console.log('Welcome email sent successfully:', data);
+          }
         } catch (err: any) {
-          // Silently handle CORS and other errors - don't block registration
-          console.warn('Welcome email failed (non-critical):', err?.message || err);
+          // Log error details for debugging
+          console.error('Welcome email failed (non-critical):', {
+            message: err?.message,
+            error: err,
+            stack: err?.stack,
+          });
         }
       });
       
