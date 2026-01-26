@@ -115,13 +115,13 @@ export const SafeProfessionSelector = ({
         </AlertDescription>
       </Alert>
 
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full h-auto min-h-12 justify-between hover:bg-accent"
+            className="w-full h-auto min-h-12 justify-between hover:bg-accent touch-manipulation"
           >
             <div className="flex flex-wrap gap-1.5 flex-1">
               {selectedProfessions.length === 0 ? (
@@ -151,9 +151,16 @@ export const SafeProfessionSelector = ({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[600px] p-0 z-50" align="start">
-          {/* Search Header */}
-          <div className="sticky top-0 z-10 bg-background border-b p-3">
+        <PopoverContent 
+          className="w-[95vw] max-w-[600px] p-0 z-50 max-h-[90vh] flex flex-col overflow-hidden" 
+          align="start"
+          sideOffset={8}
+          side="bottom"
+          avoidCollisions={true}
+          collisionPadding={8}
+        >
+          {/* Search Header - Always visible at top */}
+          <div className="flex-shrink-0 bg-background border-b p-3 z-10">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -166,8 +173,8 @@ export const SafeProfessionSelector = ({
             
           </div>
 
-          {/* Categories List */}
-          <div className="max-h-[400px] overflow-y-auto">
+          {/* Categories List - Scrollable area */}
+          <div className="flex-1 overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch min-h-0" style={{ scrollBehavior: 'smooth' }}>
             {filteredCategories.length === 0 ? (
               <div className="px-4 py-6 text-center space-y-3">
                 <div className="text-sm text-muted-foreground">
@@ -182,18 +189,18 @@ export const SafeProfessionSelector = ({
                 <div key={category.id} className="border-b last:border-b-0">
                   {/* Category Header */}
                   <button
-                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors"
+                    className="w-full px-3 sm:px-4 py-3 sm:py-3 flex items-center justify-between hover:bg-accent/50 active:bg-accent transition-colors touch-manipulation min-h-[44px]"
                     onClick={() => toggleCategory(category.id)}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       {expandedCategories.has(category.id) ? (
-                        <ChevronDown className="h-4 w-4" />
+                        <ChevronDown className="h-4 w-4 shrink-0" />
                       ) : (
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4 shrink-0" />
                       )}
-                      <span className="font-semibold text-sm">{category.name}</span>
+                      <span className="font-semibold text-sm truncate">{category.name}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground shrink-0 ml-2">
                       {category.professions.length} professions
                     </span>
                   </button>
@@ -208,27 +215,34 @@ export const SafeProfessionSelector = ({
                         return (
                           <div
                             key={profession.id}
-                            className={`px-4 py-2 pl-10 flex items-center justify-between gap-3 transition-colors ${
-                              isDisabled ? 'opacity-50' : 'hover:bg-accent/50'
+                            className={`px-3 sm:px-4 py-3 sm:py-2 pl-8 sm:pl-10 flex items-center justify-between gap-2 sm:gap-3 transition-colors touch-manipulation ${
+                              isDisabled ? 'opacity-50' : 'hover:bg-accent/50 active:bg-accent'
                             }`}
+                            onClick={() => !isDisabled && toggleProfession(profession.id)}
                           >
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                               <div 
-                                className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 cursor-pointer ${
+                                className={`w-5 h-5 sm:w-4 sm:h-4 rounded border-2 flex items-center justify-center shrink-0 cursor-pointer touch-manipulation ${
                                   isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
                                 }`}
-                                onClick={() => !isDisabled && toggleProfession(profession.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!isDisabled) toggleProfession(profession.id);
+                                }}
                               >
                                 {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                               </div>
-                              <span className="text-sm">{profession.name}</span>
+                              <span className="text-sm sm:text-sm break-words">{profession.name}</span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <Button
                                 size="sm"
                                 variant={isSelected ? "secondary" : "default"}
-                                className="h-7 px-3 text-xs"
-                                onClick={() => toggleProfession(profession.id)}
+                                className="h-8 sm:h-7 px-3 text-xs touch-manipulation"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleProfession(profession.id);
+                                }}
                                 disabled={isDisabled}
                               >
                                 {isSelected ? "Selected" : "Select"}
@@ -244,9 +258,9 @@ export const SafeProfessionSelector = ({
             )}
           </div>
 
-          {/* Footer */}
-          <Separator />
-          <div className="p-3 bg-muted/30 space-y-3">
+          {/* Footer - Always visible at bottom */}
+          <Separator className="flex-shrink-0" />
+          <div className="flex-shrink-0 p-3 sm:p-3 bg-muted/30 space-y-3 bg-background border-t">
             {selectedProfessionIds.length > 0 && (
               <div className="flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
@@ -255,7 +269,7 @@ export const SafeProfessionSelector = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs"
+                  className="h-8 sm:h-7 text-xs touch-manipulation min-h-[44px] sm:min-h-0"
                   onClick={() => onProfessionsChange([])}
                 >
                   Clear all
@@ -263,7 +277,7 @@ export const SafeProfessionSelector = ({
               </div>
             )}
             <Button
-              className="w-full"
+              className="w-full min-h-[44px] sm:min-h-0 touch-manipulation"
               onClick={() => setOpen(false)}
               disabled={selectedProfessionIds.length === 0}
             >

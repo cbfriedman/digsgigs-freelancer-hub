@@ -187,7 +187,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
 
   return (
     <div className="space-y-3">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -218,7 +218,14 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[700px] p-0 z-50" align="start">
+        <PopoverContent 
+          className="w-[95vw] max-w-[700px] p-0 z-50 max-h-[90vh] flex flex-col" 
+          align="start"
+          sideOffset={8}
+          side="bottom"
+          avoidCollisions={true}
+          collisionPadding={8}
+        >
           {/* Search Input */}
           <div className="sticky top-0 z-10 bg-background border-b p-3">
             <div className="relative">
@@ -268,7 +275,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
             </div>
           </div>
 
-          <div className="max-h-[450px] overflow-y-auto">
+          <div className="max-h-[60vh] sm:max-h-[450px] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch flex-1">
             {filteredGroups.length === 0 ? (
               <div className="px-4 py-6 text-center space-y-3">
                 <div className="text-sm text-muted-foreground">
@@ -283,20 +290,20 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
               <div key={group.categoryName} className="border-b last:border-b-0">
                 {/* Category Header */}
                 <button
-                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-accent/50 transition-colors"
+                  className="w-full px-3 sm:px-4 py-3 flex items-center justify-between hover:bg-accent/50 active:bg-accent transition-colors touch-manipulation min-h-[44px]"
                   onClick={() => toggleCategory(group.categoryName)}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
                     {expandedCategories.has(group.categoryName) ? (
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4 shrink-0" />
                     ) : (
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-4 w-4 shrink-0" />
                     )}
-                    <span className="font-semibold text-sm">
+                    <span className="font-semibold text-sm truncate">
                       {group.categoryName}
                     </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground shrink-0 ml-2">
                     {group.industries.length} services
                   </span>
                 </button>
@@ -312,17 +319,34 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                       return (
                         <div
                           key={industry.name}
-                          className="px-4 py-2 pl-10 flex items-center justify-between gap-3 hover:bg-accent/50 transition-colors"
+                          className="px-3 sm:px-4 py-3 sm:py-2 pl-8 sm:pl-10 flex items-center justify-between gap-2 sm:gap-3 hover:bg-accent/50 active:bg-accent transition-colors touch-manipulation"
+                          onClick={() => {
+                            if (isSelected) {
+                              onIndustriesChange(selectedIndustries.filter(i => i !== industry.name));
+                            } else {
+                              onIndustriesChange([...selectedIndustries, industry.name]);
+                            }
+                          }}
                         >
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
-                              isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
-                            }`}>
+                          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                            <div 
+                              className={`w-5 h-5 sm:w-4 sm:h-4 rounded border-2 flex items-center justify-center shrink-0 cursor-pointer touch-manipulation ${
+                                isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30'
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isSelected) {
+                                  onIndustriesChange(selectedIndustries.filter(i => i !== industry.name));
+                                } else {
+                                  onIndustriesChange([...selectedIndustries, industry.name]);
+                                }
+                              }}
+                            >
                               {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                             </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-sm">{industry.name}</span>
-                              <span className="text-sm text-foreground">
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-sm break-words">{industry.name}</span>
+                              <span className="text-xs sm:text-sm text-foreground">
                                 <span className="font-bold">${nonExclusiveCost}</span> NE • <span className="font-bold">${semiExclusiveCost}</span> SE • <span className="font-bold">${exclusiveCost}</span> 24h Ex
                               </span>
                             </div>

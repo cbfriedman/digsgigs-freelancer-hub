@@ -264,15 +264,15 @@ export const CategoryBrowserWithDescription = () => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <Card className="w-full overflow-x-hidden">
+      <CardHeader className="p-4 sm:p-6">
         <div className="flex items-center gap-2">
-          <Target className="h-6 w-6 text-primary" />
-          <CardTitle>Browse Categories</CardTitle>
+          <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
+          <CardTitle className="text-lg sm:text-xl">Browse Categories</CardTitle>
         </div>
         {selectedProfessionIds.length > 0 && !existingProfileId && (
-          <div className="mt-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-            <p className="text-sm font-medium text-primary">
+          <div className="mt-2 p-3 sm:p-3 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm sm:text-sm font-medium text-primary break-words">
               Creating Profile: <span className="font-bold">{profileName || 'Enter name below'}</span>
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -284,7 +284,7 @@ export const CategoryBrowserWithDescription = () => {
           Select your professions and describe your specialties
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
         {/* Profession Selection */}
         <div className="space-y-3">
           <Label>Select Your Professions *</Label>
@@ -305,10 +305,10 @@ export const CategoryBrowserWithDescription = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={getDescriptionPlaceholder()}
-              className="min-h-[150px] bg-background"
+              className="min-h-[150px] bg-background text-base sm:text-sm"
             />
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+              <p className="text-sm text-muted-foreground flex-1">
                 Be specific about your services and expertise in your selected professions
               </p>
               <Button
@@ -317,7 +317,7 @@ export const CategoryBrowserWithDescription = () => {
                 size="sm"
                 onClick={handleEnhanceDescription}
                 disabled={isEnhancingDescription || !description.trim() || description.trim().length < 10}
-                className="shrink-0"
+                className="shrink-0 w-full sm:w-auto min-h-[44px] sm:min-h-0 touch-manipulation"
               >
                 {isEnhancingDescription ? (
                   <>
@@ -339,16 +339,16 @@ export const CategoryBrowserWithDescription = () => {
         {selectedProfessionIds.length > 0 && !suggestedKeywords.length && (
           <div className="space-y-4">
             {description && (
-              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                <h4 className="font-semibold mb-2">Next Steps</h4>
-                <p className="text-sm text-muted-foreground">
-                  Your description will be used to match you with relevant leads for your selected professions.
-                  The more specific you are, the better your matches will be.
-                </p>
-              </div>
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 sm:p-4">
+              <h4 className="font-semibold mb-2 text-sm sm:text-base">Next Steps</h4>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Your description will be used to match you with relevant leads for your selected professions.
+                The more specific you are, the better your matches will be.
+              </p>
+            </div>
             )}
             <Button 
-              className="w-full" 
+              className="w-full min-h-[44px] sm:min-h-0 touch-manipulation" 
               size="lg"
               onClick={handleContinue}
               disabled={isProcessing || !description.trim()}
@@ -373,9 +373,9 @@ export const CategoryBrowserWithDescription = () => {
         {/* Selected Keywords Display */}
         {suggestedKeywords.length > 0 && (
           <div className="space-y-4">
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-              <h4 className="font-semibold mb-3">Selected Keywords ({suggestedKeywords.length})</h4>
-              <p className="text-sm text-muted-foreground mb-3">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 sm:p-4">
+              <h4 className="font-semibold mb-3 text-sm sm:text-base">Selected Keywords ({suggestedKeywords.length})</h4>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3">
                 Click keywords to deselect them. Selected keywords have a checkmark and colored background. Click the X to remove them entirely.
               </p>
               <div className="flex flex-wrap gap-2">
@@ -385,10 +385,10 @@ export const CategoryBrowserWithDescription = () => {
                   return (
                     <div
                       key={index}
-                      className={`group relative flex items-center gap-2 px-3 py-1.5 pr-8 rounded-md text-sm cursor-pointer transition-all ${
+                      className={`group relative flex items-center gap-2 px-3 py-2 sm:py-1.5 pr-8 rounded-md text-sm cursor-pointer transition-all touch-manipulation min-h-[44px] sm:min-h-0 ${
                         isSelected
                           ? 'bg-primary/10 border-2 border-primary text-primary font-medium'
-                          : 'bg-background border-2 border-dashed border-border text-muted-foreground hover:border-primary/50'
+                          : 'bg-background border-2 border-dashed border-border text-muted-foreground hover:border-primary/50 active:border-primary/50'
                       }`}
                       onClick={() => {
                         const newSelected = new Set(selectedKeywords);
@@ -400,10 +400,10 @@ export const CategoryBrowserWithDescription = () => {
                         setSelectedKeywords(newSelected);
                       }}
                     >
-                      {isSelected && <span>✓</span>}
-                      <span>{keyword}</span>
+                      {isSelected && <span className="text-base sm:text-sm">✓</span>}
+                      <span className="break-words">{keyword}</span>
                       <button
-                        className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 sm:p-0.5 rounded hover:bg-destructive/20 active:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors touch-manipulation min-w-[32px] min-h-[32px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                         onClick={(e) => {
                           e.stopPropagation();
                           const newKeywords = suggestedKeywords.filter((k) => k !== keyword);
@@ -414,7 +414,7 @@ export const CategoryBrowserWithDescription = () => {
                         }}
                         title="Remove keyword"
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                       </button>
                     </div>
                   );
@@ -435,7 +435,7 @@ export const CategoryBrowserWithDescription = () => {
                 value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
                 placeholder="e.g., My Design Services, Web Development"
-                className="w-full"
+                className="w-full min-h-[44px] sm:min-h-0 text-base sm:text-sm"
                 required
               />
               <p className="text-xs text-muted-foreground">
@@ -444,7 +444,7 @@ export const CategoryBrowserWithDescription = () => {
             </div>
 
             {/* Location Preferences Section */}
-            <Card className="p-4 border-2 border-primary/20 bg-primary/5 mt-4">
+            <Card className="p-3 sm:p-4 border-2 border-primary/20 bg-primary/5 mt-4 overflow-x-hidden">
               <div className="space-y-4">
                 <div>
                   <Label className="text-base font-semibold flex items-center gap-2">
@@ -466,7 +466,7 @@ export const CategoryBrowserWithDescription = () => {
                     id="country_browser"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background ${!country ? 'border-destructive/50' : 'border-input'}`}
+                    className={`flex h-12 sm:h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background touch-manipulation ${!country ? 'border-destructive/50' : 'border-input'}`}
                   >
                     <option value="">Select a country...</option>
                     <option value="All Countries">🌐 All Countries</option>
@@ -491,9 +491,9 @@ export const CategoryBrowserWithDescription = () => {
                       {getRegionLabel(country)} <span className="text-destructive font-semibold">*</span>
                       <span className="text-xs text-destructive">(required)</span>
                     </Label>
-                    <div className={`rounded-md border p-3 max-h-48 overflow-y-auto ${selectedStates.length === 0 ? 'border-destructive/50' : 'border-input'}`}>
+                    <div className={`rounded-md border p-3 max-h-48 overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch ${selectedStates.length === 0 ? 'border-destructive/50' : 'border-input'}`}>
                       {/* All option */}
-                      <div className="flex items-center space-x-2 pb-2 border-b border-border mb-2">
+                      <div className="flex items-center space-x-2 pb-2 border-b border-border mb-2 min-h-[44px] sm:min-h-0 touch-manipulation">
                         <Checkbox
                           id="state_all"
                           checked={selectedStates.length === getRegionsForCountry(country).length}
@@ -504,15 +504,16 @@ export const CategoryBrowserWithDescription = () => {
                               setSelectedStates([]);
                             }
                           }}
+                          className="h-5 w-5 sm:h-4 sm:w-4"
                         />
-                        <Label htmlFor="state_all" className="cursor-pointer font-medium">
+                        <Label htmlFor="state_all" className="cursor-pointer font-medium flex-1 py-2 sm:py-0">
                           All {getRegionLabel(country)}s
                         </Label>
                       </div>
                       {/* Individual state options */}
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {getRegionsForCountry(country).map((region) => (
-                          <div key={region} className="flex items-center space-x-2">
+                          <div key={region} className="flex items-center space-x-2 min-h-[44px] sm:min-h-0 touch-manipulation">
                             <Checkbox
                               id={`state_${region}`}
                               checked={selectedStates.includes(region)}
@@ -523,8 +524,9 @@ export const CategoryBrowserWithDescription = () => {
                                   setSelectedStates(prev => prev.filter(s => s !== region));
                                 }
                               }}
+                              className="h-5 w-5 sm:h-4 sm:w-4"
                             />
-                            <Label htmlFor={`state_${region}`} className="cursor-pointer text-sm font-normal">
+                            <Label htmlFor={`state_${region}`} className="cursor-pointer text-sm font-normal flex-1 py-2 sm:py-0">
                               {region}
                             </Label>
                           </div>
@@ -550,7 +552,7 @@ export const CategoryBrowserWithDescription = () => {
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="e.g., Los Angeles"
-                      className="bg-background"
+                      className="bg-background min-h-[44px] sm:min-h-0 text-base sm:text-sm"
                     />
                   </div>
                 )}
@@ -563,7 +565,7 @@ export const CategoryBrowserWithDescription = () => {
                     </Label>
                     
                     <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 min-h-[44px] sm:min-h-0 touch-manipulation">
                         <input 
                           type="radio" 
                           name="locationPreferenceBrowser"
@@ -571,13 +573,13 @@ export const CategoryBrowserWithDescription = () => {
                           id="zip_codes_browser" 
                           checked={locationPreferenceType === "zip_codes"}
                           onChange={() => setLocationPreferenceType("zip_codes")}
-                          className="h-4 w-4"
+                          className="h-5 w-5 sm:h-4 sm:w-4"
                         />
-                        <Label htmlFor="zip_codes_browser" className="cursor-pointer font-normal">
+                        <Label htmlFor="zip_codes_browser" className="cursor-pointer font-normal flex-1 py-2 sm:py-0">
                           Specific Zip Codes
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 min-h-[44px] sm:min-h-0 touch-manipulation">
                         <input 
                           type="radio" 
                           name="locationPreferenceBrowser"
@@ -585,9 +587,9 @@ export const CategoryBrowserWithDescription = () => {
                           id="radius_browser" 
                           checked={locationPreferenceType === "radius"}
                           onChange={() => setLocationPreferenceType("radius")}
-                          className="h-4 w-4"
+                          className="h-5 w-5 sm:h-4 sm:w-4"
                         />
-                        <Label htmlFor="radius_browser" className="cursor-pointer font-normal">
+                        <Label htmlFor="radius_browser" className="cursor-pointer font-normal flex-1 py-2 sm:py-0">
                           Radius from Zip Code
                         </Label>
                       </div>
@@ -602,14 +604,14 @@ export const CategoryBrowserWithDescription = () => {
                           onChange={(e) => setServiceZipCodes(e.target.value)}
                           placeholder="e.g., 10001, 10002, 10003"
                           rows={3}
-                          className="resize-none"
+                          className="resize-none min-h-[100px] sm:min-h-0 text-base sm:text-sm"
                         />
                         <p className="text-xs text-muted-foreground">
                           Enter multiple zip codes separated by commas
                         </p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
                         <div className="space-y-2">
                           <Label htmlFor="serviceRadiusCenter">Center Zip Code</Label>
                           <Input
@@ -618,6 +620,7 @@ export const CategoryBrowserWithDescription = () => {
                             onChange={(e) => setServiceRadiusCenter(e.target.value)}
                             placeholder="e.g., 10001"
                             maxLength={10}
+                            className="min-h-[44px] sm:min-h-0"
                           />
                         </div>
                         <div className="space-y-2">
@@ -630,6 +633,7 @@ export const CategoryBrowserWithDescription = () => {
                             value={serviceRadiusMiles}
                             onChange={(e) => setServiceRadiusMiles(parseInt(e.target.value) || 25)}
                             placeholder="25"
+                            className="min-h-[44px] sm:min-h-0"
                           />
                         </div>
                       </div>
@@ -639,9 +643,9 @@ export const CategoryBrowserWithDescription = () => {
               </div>
             </Card>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button 
-                className="flex-1" 
+                className="flex-1 w-full min-h-[44px] sm:min-h-0 touch-manipulation" 
                 size="lg"
                 onClick={async () => {
                   if (!user?.id) {
@@ -858,6 +862,7 @@ export const CategoryBrowserWithDescription = () => {
               <Button 
                 variant="outline"
                 size="lg"
+                className="w-full sm:w-auto min-h-[44px] sm:min-h-0 touch-manipulation"
                 onClick={() => {
                   setSuggestedKeywords([]);
                   setSelectedKeywords(new Set());
