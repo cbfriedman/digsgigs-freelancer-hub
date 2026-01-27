@@ -302,13 +302,13 @@ export const SafeProfessionSelector = ({
           </Sheet>
         </>
       ) : (
-        <Popover open={open} onOpenChange={setOpen} modal>
+        <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-full h-auto min-h-12 justify-between hover:bg-accent touch-manipulation"
+              className="w-full h-auto min-h-12 justify-between hover:bg-accent"
             >
               <div className="flex flex-wrap gap-1.5 flex-1">
                 {selectedProfessions.length === 0 ? (
@@ -339,12 +339,9 @@ export const SafeProfessionSelector = ({
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-[var(--radix-popover-trigger-width)] max-w-[600px] p-0 z-50 max-h-[70vh] flex flex-col overflow-hidden"
+            className="w-[var(--radix-popover-trigger-width)] min-w-[400px] max-w-[600px] p-0 max-h-[60vh] flex flex-col overflow-hidden bg-popover border shadow-lg"
             align="start"
-            sideOffset={8}
-            side="bottom"
-            avoidCollisions
-            collisionPadding={8}
+            sideOffset={4}
           >
             {pickerContent}
           </PopoverContent>
