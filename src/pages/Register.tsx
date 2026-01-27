@@ -1730,7 +1730,7 @@ const Register = () => {
       
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full flex items-center justify-center">
-          <Card className="w-full max-w-2xl">
+          <Card className="w-full max-w-md">
             <CardHeader className="text-center pb-4">
               {/* Logo */}
               <AuthLogo />
@@ -1845,7 +1845,7 @@ const Register = () => {
                 {/* Google Sign In Button */}
                 {!signInOtpSent && (
                   <div className="space-y-4 mb-2">
-                    <GoogleSignInButton className="h-11" />
+                    <GoogleSignInButton className="h-11" label="Sign in with Google" />
                     
                     {/* Divider */}
                     <div className="relative">
