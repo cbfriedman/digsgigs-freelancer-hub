@@ -22,7 +22,7 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 import { useRedditPixel } from "@/hooks/useRedditPixel";
 import { PasswordRequirements, GoogleSignInButton, AuthLogo } from "@/components/auth";
-import { Footer } from "@/components/Footer";
+import { PageLayout } from "@/components/layout";
 
 // SECURITY: Input validation schemas - phone is now optional
 const basicInfoSchema = z.object({
@@ -1728,33 +1728,8 @@ const Register = () => {
         canonical="/register"
       />
       
-      <div className="min-h-screen bg-gradient-primary">
-        {/* Top Navigation */}
-        <div className="w-full bg-card border-b-2 border-primary/20 shadow-lg sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="default"
-              onClick={() => navigate("/")}
-              className="font-medium hover:bg-primary/10 hover:border-primary"
-            >
-              <Home className="h-5 w-5 mr-2" />
-              Home
-            </Button>
-            
-            <h1 
-              className="text-2xl font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors"
-              onClick={() => navigate("/")}
-            >
-              Digs and Gigs
-            </h1>
-            
-            <div className="w-28" /> {/* Spacer for balance */}
-          </div>
-        </div>
-        
-        {/* Main Content */}
-        <div className="flex items-center justify-center p-4 pt-8">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full flex items-center justify-center">
           <Card className="w-full max-w-2xl">
             <CardHeader className="text-center pb-4">
               {/* Logo */}
@@ -2493,9 +2468,8 @@ const Register = () => {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
-      <Footer />
-    </div>
     </>
   );
 };
