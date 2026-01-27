@@ -21,15 +21,19 @@ import { useUTMTracking } from "@/hooks/useUTMTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 import { useRedditPixel } from "@/hooks/useRedditPixel";
-import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
+import { PasswordRequirements, GoogleSignInButton, AuthLogo } from "@/components/auth";
 import { Footer } from "@/components/Footer";
 
-// SECURITY: Input validation schemas
+// SECURITY: Input validation schemas - phone is now optional
 const basicInfoSchema = z.object({
-  fullName: z.string()
+  firstName: z.string()
     .trim()
-    .min(2, "Full name must be at least 2 characters")
-    .max(100, "Full name must be less than 100 characters"),
+    .min(1, "First name is required")
+    .max(50, "First name must be less than 50 characters"),
+  lastName: z.string()
+    .trim()
+    .min(1, "Last name is required")
+    .max(50, "Last name must be less than 50 characters"),
   email: z.string()
     .trim()
     .min(1, "Email is required")
@@ -41,16 +45,11 @@ const basicInfoSchema = z.object({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
-  confirmPassword: z.string(),
   phone: z.string()
     .trim()
-    .min(1, "Phone number is required")
-    .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format. Use international format (e.g., +1234567890)")
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be less than 15 digits"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
+    .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format")
+    .optional()
+    .or(z.literal("")),
 });
 
 // Schema for gig posting flow - EMAIL ONLY, no password required (hybrid passwordless)
@@ -143,7 +142,16 @@ const Register = () => {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   // Step 1: Basic Info
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  
+  // Helper to get full name from first + last
+  const fullName = `${firstName} ${lastName}`.trim();
+  const setFullName = (name: string) => {
+    const parts = name.split(' ');
+    setFirstName(parts[0] || '');
+    setLastName(parts.slice(1).join(' ') || '');
+  };
   
   // Initialize email from sessionStorage if in OTP flow
   const [email, setEmail] = useState(() => {
@@ -463,10 +471,10 @@ const Register = () => {
         });
       } else {
         basicInfoSchema.parse({
-          fullName,
+          firstName,
+          lastName,
           email,
           password,
-          confirmPassword,
           phone: phone || "",
         });
       }
@@ -527,13 +535,13 @@ const Register = () => {
         return;
       }
 
-      // PREFERRED WORKFLOW: Create account FIRST (pending verification), then send verification email
+      // SIMPLIFIED WORKFLOW: Create account and proceed directly to role selection
+      // Email verification is temporarily disabled (can be enabled via Admin Dashboard)
       
-      // Format phone number (ensure it starts with +)
+      // Format phone number (ensure it starts with +) - phone is now optional
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
       
-      // Step 1: Create account in "pending verification" state
-      // Supabase will automatically set email_confirmed_at to NULL for unverified accounts
+      // Create account - Supabase auto-confirm is enabled
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -542,8 +550,7 @@ const Register = () => {
             full_name: fullName,
             phone: formattedPhone,
           },
-          emailRedirectTo: `${window.location.origin}/`,
-          // Don't send default Supabase email - we'll send custom OTP email instead
+          emailRedirectTo: `${window.location.origin}/role-dashboard`,
         },
       });
 
@@ -570,7 +577,7 @@ const Register = () => {
       // Store user ID for later use
       setUserId(authData.user.id);
 
-      // Update profiles table with phone number if needed
+      // Update profiles table with phone number if provided
       if (formattedPhone) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -583,112 +590,28 @@ const Register = () => {
         }
       }
 
-      // Step 2: Generate OTP code and send verification email AFTER account creation
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      // Account created successfully - proceed directly to role selection
+      // Email verification is disabled, so we skip step 2 (OTP)
+      toast.success("Account created successfully! Now select your role.");
+      setStep(3); // Go directly to role selection
+      setLoading(false);
+      isSendingOtpRef.current = false;
       
-      // Send OTP via unified edge function (supports both email and SMS)
-      let otpData, otpError;
+      // Track the successful signup
       try {
-        const result = await supabase.functions.invoke('send-otp', {
-          body: {
-            email,
-            phone: formattedPhone,
-            code: otpCode,
-            name: fullName,
-            method: verificationMethod,
-          },
-        });
-        otpData = result.data;
-        otpError = result.error;
-      } catch (err: any) {
-        console.error("Exception calling send-otp:", err);
-        otpError = err;
+        if (fbConfigured) {
+          trackFBEvent('CompleteRegistration', { currency: 'USD', value: 0 });
+        }
+        if (gaConfigured) {
+          trackGAConversion(0, 'USD');
+        }
+        if (redditConfigured) {
+          trackRedditEvent('SignUp');
+        }
+      } catch (trackError) {
+        console.warn("Tracking error (non-critical):", trackError);
       }
 
-      if (otpError) {
-        console.error("=== OTP SEND ERROR ===");
-        console.error("Error object:", otpError);
-        console.error("Error name:", otpError?.name);
-        console.error("Error message:", otpError?.message);
-        console.error("Error context:", otpError?.context);
-        
-        // Try to extract error message from response
-        let errorMessage = "Failed to send verification code. Please try again.";
-        let errorDetails = "";
-        let retryAfter = 300; // Default 5 minutes
-        
-        // Check if we can get the actual error from the function response
-        if (otpError?.context?.body) {
-          try {
-            const errorBody = typeof otpError.context.body === 'string' 
-              ? JSON.parse(otpError.context.body) 
-              : otpError.context.body;
-            
-            if (errorBody?.error) {
-              errorMessage = errorBody.error;
-            }
-            if (errorBody?.message) {
-              errorMessage = errorBody.message;
-            }
-            if (errorBody?.details) {
-              errorDetails = errorBody.details;
-            }
-            if (errorBody?.retryAfter) {
-              retryAfter = errorBody.retryAfter;
-            }
-          } catch (e) {
-            console.error("Could not parse error body:", e);
-          }
-        }
-        
-        // Check for 429 status code
-        const errorStatus = otpError.status || (otpError as any)?.context?.status || (otpError as any)?.response?.status;
-        
-        // Fallback to error message if available
-        if (otpError?.message && !errorMessage.includes(otpError.message)) {
-          errorMessage = otpError.message;
-        }
-        
-        // Handle rate limiting (429) specifically
-        if (errorStatus === 429 || errorMessage.includes('429') || errorMessage.includes('Too many')) {
-          const minutes = Math.ceil(retryAfter / 60);
-          errorMessage = `Too many verification requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.`;
-          toast.error(errorMessage, {
-            duration: 10000,
-          });
-          setLoading(false);
-          isSendingOtpRef.current = false;
-          return;
-        }
-        
-        // Provide specific error messages for other errors
-        if (errorMessage.includes('RESEND_API_KEY') || errorMessage.includes('not configured') || errorMessage.includes('Email service')) {
-          errorMessage = "Email service is not configured. The send-otp function needs RESEND_API_KEY to be set in Supabase secrets.";
-        } else if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error') || errorMessage.includes('non-2xx')) {
-          errorMessage = "Server error: The send-otp function returned an error. Please check Supabase function logs for details.";
-          errorDetails = "Go to Supabase Dashboard → Edge Functions → send-otp → Logs tab to see the exact error.";
-        } else if (errorMessage.includes('Database') || errorMessage.includes('verification_codes')) {
-          errorMessage = "Database error: Unable to store verification code. Please check database configuration.";
-        }
-        
-        console.error("Final error message:", errorMessage);
-        if (errorDetails) {
-          console.error("Error details:", errorDetails);
-        }
-        
-        toast.error(errorMessage, {
-          description: errorDetails || "Check browser console and Supabase function logs for details",
-          duration: 7000
-        });
-        setLoading(false);
-        isSendingOtpRef.current = false;
-        return;
-      }
-
-      // OTP sent successfully - move to verification step
-      setOtpSent(true);
-      toast.success("Verification code sent! Please check your email.");
-      setStep(2); // Move to verification step
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -1833,39 +1756,18 @@ const Register = () => {
         {/* Main Content */}
         <div className="flex items-center justify-center p-4 pt-8">
           <Card className="w-full max-w-2xl">
-            <CardHeader className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-              {isPasswordResetMode ? (
-                <Badge variant="outline" className="text-base px-3 py-1">
-                  Reset Password
-                </Badge>
-              ) : isSignInMode ? (
-                <Badge variant="outline" className="text-base px-3 py-1">
-                  Sign In
-                </Badge>
-              ) : (
-                <Badge variant="default" className="text-base px-3 py-1">
-                  Register
-                </Badge>
-              )}
-            </div>
-            <CardTitle className="text-2xl font-bold">
-              {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome Back" : (step === 1 && isFromGigPosting) ? "Register your Gig" : step === 1 ? "Create your Account" : step === 2 ? "Verify Your Email" : step === 3 ? "Select Your Roles" : currentRole === 'digger' ? "Create Your Digger Profile" : "Create Your Gigger Profile"}
-            </CardTitle>
-            <CardDescription>
-              {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : (step === 1 && isFromGigPosting) ? "Create an account to post and manage your gig" : step === 1 ? "Let's start with your basic information" : step === 2 ? "Enter the 6-digit code sent to your email" : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
-            </CardDescription>
+            <CardHeader className="text-center pb-4">
+              {/* Logo */}
+              <AuthLogo />
+              
+              <CardTitle className="text-2xl font-bold">
+                {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome back" : step === 1 ? "Create a new account" : step === 3 ? "Select Your Role" : currentRole === 'digger' ? "Complete Your Profile" : "Complete Your Profile"}
+              </CardTitle>
+              <CardDescription className="text-base">
+                {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : step === 1 ? "Get matched with jobs tailored to your skills, passions, and experience and track your applications – all for free." : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+              </CardDescription>
+            </CardHeader>
 
-            {/* Progress Bar - Only show during registration */}
-            {!isSignInMode && !isPasswordResetMode && (
-              <div className="mt-4 space-y-2">
-                <Progress value={progressPercentage} className="w-full" />
-                <p className="text-xs text-muted-foreground">
-                  Step {step} of {totalSteps}
-                </p>
-              </div>
-            )}
-          </CardHeader>
 
           <CardContent>
             {/* Password Reset Form */}
@@ -2183,29 +2085,63 @@ const Register = () => {
                   </div>
                 )}
 
-                {/* Hide full name for gig posting flow - not needed */}
+                {/* Google Sign Up Button */}
                 {!isFromGigPosting && (
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name *</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="John Doe"
-                      value={fullName}
-                      autoComplete="name"
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      maxLength={100}
-                    />
+                  <div className="space-y-4 mb-6">
+                    <GoogleSignInButton />
+                    
+                    {/* Divider */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">Or</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Name Fields - First and Last */}
+                {!isFromGigPosting && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        placeholder="First name"
+                        value={firstName}
+                        autoComplete="given-name"
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                        maxLength={50}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        placeholder="Last name"
+                        value={lastName}
+                        autoComplete="family-name"
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        maxLength={50}
+                        className="h-11"
+                      />
+                    </div>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="your@email.com"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -2216,184 +2152,101 @@ const Register = () => {
                     required
                     autoComplete="username"
                     maxLength={255}
+                    className="h-11"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">
-                    Phone Number * {isFromGigPosting ? "(for Diggers to contact you)" : ""}
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+1234567890"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    autoComplete="tel"
-                    maxLength={15}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Use international format (e.g., +1234567890). Required for account verification.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-accent/50">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <div>
-                      <div className="font-medium">Email Verification</div>
-                      <div className="text-xs text-muted-foreground">
-                        We'll send a verification code to your email
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hide password fields for gig posting flow (hybrid passwordless) */}
+                {/* Phone Number - Optional */}
                 {!isFromGigPosting && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password *</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          autoComplete="new-password"
-                          maxLength={100}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                      {/* Password Strength Indicator */}
-                      {password && <PasswordStrengthIndicator password={password} />}
-                      {!password && (
-                        <p className="text-xs text-muted-foreground">
-                          Must be 8+ characters with uppercase, lowercase, and number
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                      <div className="relative">
-                        <Input
-                          id="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          required
-                          autoComplete="new-password"
-                          maxLength={100}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">
+                      Phone Number <span className="text-muted-foreground text-xs">(optional)</span>
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      autoComplete="tel"
+                      maxLength={15}
+                      className="h-11"
+                    />
+                  </div>
                 )}
-
-                {/* Show verification code input after OTP is sent */}
-                {otpSent && (
-                  <div className="space-y-4 p-4 border rounded-lg bg-accent/10">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-5 w-5 text-primary" />
-                      <div>
-                        <h4 className="font-medium">Verification Code Sent!</h4>
-                        <p className="text-sm text-muted-foreground">Check your email for the 6-digit code</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="verification-code">Enter Verification Code *</Label>
-                      <Input
-                        id="verification-code"
-                        type="text"
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        placeholder="000000"
-                        maxLength={6}
-                        required
-                        className="text-center text-2xl tracking-widest font-mono"
-                      />
-                    </div>
-
-                    <Button
-                      onClick={handleVerification}
-                      disabled={loading || verificationCode.length !== 6}
-                      className="w-full"
-                      type="button"
-                    >
-                      {loading 
-                        ? (isFromGigPosting ? "Verifying..." : "Creating Account...") 
-                        : (isFromGigPosting ? "Verify & Post Gig" : "Create Account")}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={handleResendCode}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      Resend Code
-                    </Button>
+                
+                {/* Phone for gig posting flow */}
+                {isFromGigPosting && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">
+                      Phone Number <span className="text-muted-foreground text-xs">(for Diggers to contact you)</span>
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      autoComplete="tel"
+                      maxLength={15}
+                      className="h-11"
+                    />
                   </div>
                 )}
 
-                {/* Only show this button if OTP hasn't been sent yet */}
-                {!otpSent && (
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={loading}
-                  >
-                    {loading 
-                      ? "Sending Code..." 
-                      : (isFromGigPosting 
-                          ? "Verify Email & Post Gig" 
-                          : verificationMethod === 'email' 
-                            ? "Verify my Email" 
-                            : "Send SMS Code")} 
-                  </Button>
+                {/* Password field */}
+                {!isFromGigPosting && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Create a password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        autoComplete="new-password"
+                        maxLength={100}
+                        className="h-11 pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                    {/* Password Requirements */}
+                    <PasswordRequirements password={password} />
+                  </div>
                 )}
+
+                {/* Sign Up Button */}
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
+                  disabled={loading}
+                >
+                  {loading ? "Creating Account..." : "Sign up"}
+                </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
                   Already have an account?{" "}
                   <Button
                     variant="link"
-                    className="p-0 h-auto"
+                    className="p-0 h-auto font-semibold text-foreground"
                     onClick={() => {
                       setIsSignInMode(true);
-                      setFullName("");
+                      setFirstName("");
+                      setLastName("");
                       setConfirmPassword("");
                       setPhone("");
                       setPassword("");
@@ -2405,8 +2258,16 @@ const Register = () => {
                       setCurrentRoleIndex(0);
                     }}
                   >
-                    Sign in
+                    Log in
                   </Button>
+                </p>
+
+                {/* Terms and Privacy */}
+                <p className="text-center text-xs text-muted-foreground">
+                  By clicking 'Sign up', you acknowledge that you have read and accepted the{" "}
+                  <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
+                  {" "}and{" "}
+                  <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>.
                 </p>
               </form>
             )}
