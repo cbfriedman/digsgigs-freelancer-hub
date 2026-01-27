@@ -1842,10 +1842,27 @@ const Register = () => {
             {/* Sign In Form */}
             {!isPasswordResetMode && isSignInMode && (
               <form onSubmit={handleSignIn} className="space-y-4">
+                {/* Google Sign In Button */}
+                {!signInOtpSent && (
+                  <div className="space-y-4 mb-2">
+                    <GoogleSignInButton className="h-11" />
+                    
+                    {/* Divider */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {!signInOtpSent ? (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="signin-email">Email Address</Label>
+                      <Label htmlFor="signin-email">Email</Label>
                       <Input
                         id="signin-email"
                         type="email"
@@ -2077,37 +2094,21 @@ const Register = () => {
                   </div>
                 )}
 
-                {/* Name Fields - First and Last */}
+                {/* Full Name Field */}
                 {!isFromGigPosting && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First name</Label>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        placeholder="First name"
-                        value={firstName}
-                        autoComplete="given-name"
-                        onChange={(e) => setFirstName(e.target.value)}
-                        required
-                        maxLength={50}
-                        className="h-11"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last name</Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        placeholder="Last name"
-                        value={lastName}
-                        autoComplete="family-name"
-                        onChange={(e) => setLastName(e.target.value)}
-                        required
-                        maxLength={50}
-                        className="h-11"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full name</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      autoComplete="name"
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      maxLength={100}
+                      className="h-11"
+                    />
                   </div>
                 )}
 
