@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +17,10 @@ import {
   Zap,
   Award,
   Lock,
-  Users
+  Users,
+  Sparkles,
+  TrendingUp,
+  Clock
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
@@ -39,27 +41,33 @@ export default function Pricing() {
         <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (8% referral fee, $50-$249). No subscriptions. Bogus leads refundable. Prices subject to change." />
       </Helmet>
       
-      <Navigation />
-      
-      <div className="min-h-screen bg-background">
+      <PageLayout showNav={true} showFooter={true} maxWidth="full" padded={false}>
         {/* HERO SECTION */}
-        <section className="py-20 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-          <div className="container mx-auto px-4">
+        <section className="py-20 md:py-28 bg-gradient-to-br from-primary/5 via-background to-accent/5 relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
+          </div>
+          
+          <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
-              <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1">
-                <DollarSign className="h-3 w-3 mr-1" />
-                Two Ways to Engage
-              </Badge>
+              <div className="animate-fade-in-up">
+                <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1.5 text-sm">
+                  <DollarSign className="h-3.5 w-3.5 mr-1.5" />
+                  Two Ways to Engage
+                </Badge>
+              </div>
               
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                 Choose your pricing model —
                 <br />
-                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
                   pay per lead or per job
                 </span>
               </h1>
               
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                 No subscriptions. Pick the engagement type that fits your workflow.
               </p>
             </div>
@@ -67,58 +75,70 @@ export default function Pricing() {
         </section>
 
         {/* TWO PRICING MODELS */}
-        <section className="py-16">
+        <section className="py-16 md:py-20">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl font-bold text-center mb-12">Two Engagement Options</h2>
+              <div className="text-center mb-12 animate-fade-in-up">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Two Engagement Options</h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                  Choose the model that works best for your business
+                </p>
+              </div>
               
               <div className="grid md:grid-cols-2 gap-8">
                 {/* Non-Exclusive */}
-                <Card className="border-2 border-primary shadow-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-primary" />
-                  <CardHeader className="text-center pb-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                      <Users className="h-6 w-6 text-primary" />
+                <Card className="border-2 border-primary/50 shadow-lg relative overflow-hidden hover-lift animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary to-primary/70" />
+                  <CardHeader className="text-center pb-4 bg-gradient-to-b from-primary/5 to-transparent">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <Users className="h-7 w-7 text-primary" />
                     </div>
-                    <Badge className="mb-2 bg-primary/10 text-primary border-primary/20">
+                    <Badge className="mb-3 bg-primary/10 text-primary border-primary/20">
                       Pay Per Lead
                     </Badge>
                     <CardTitle className="text-2xl">Non-Exclusive Access</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-6 pt-2">
                     <p className="text-center text-muted-foreground">
                       Pay once to unlock client contact details. Other professionals may also engage.
                     </p>
                     
-                    <div className="bg-muted/50 rounded-xl p-4">
-                      <div className="text-sm text-center mb-2 text-muted-foreground">Pricing Formula</div>
-                      <div className="text-center font-mono font-bold text-primary">
+                    <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-5 border border-primary/10">
+                      <div className="text-sm text-center mb-2 text-muted-foreground font-medium">Pricing Formula</div>
+                      <div className="text-center font-mono font-bold text-primary text-lg">
                         Higher of 2% or $10
                       </div>
                     </div>
 
-                    <div className="flex justify-center gap-6">
+                    <div className="flex justify-center gap-8">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">$10</div>
-                        <div className="text-xs text-muted-foreground">Minimum</div>
+                        <div className="text-3xl font-bold text-primary">$10</div>
+                        <div className="text-xs text-muted-foreground font-medium">Minimum</div>
                       </div>
+                      <div className="w-px bg-border" />
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">$49</div>
-                        <div className="text-xs text-muted-foreground">Maximum</div>
+                        <div className="text-3xl font-bold text-primary">$49</div>
+                        <div className="text-xs text-muted-foreground font-medium">Maximum</div>
                       </div>
                     </div>
 
-                    <ul className="space-y-2">
-                      <li className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <ul className="space-y-3 pt-2">
+                      <li className="flex items-center gap-3 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                          <Check className="h-3 w-3 text-green-600" />
+                        </div>
                         <span>Instant access to client contact</span>
                       </li>
-                      <li className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <li className="flex items-center gap-3 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                          <Check className="h-3 w-3 text-green-600" />
+                        </div>
                         <span>Pay only for leads you want</span>
                       </li>
-                      <li className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <li className="flex items-center gap-3 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                          <Check className="h-3 w-3 text-green-600" />
+                        </div>
                         <span>First to respond often wins</span>
                       </li>
                     </ul>
@@ -126,57 +146,64 @@ export default function Pricing() {
                 </Card>
 
                 {/* Exclusive */}
-                <Card className="border-2 border-accent shadow-lg relative overflow-hidden">
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
-                  <CardHeader className="text-center pb-4">
-                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                      <Award className="h-6 w-6 text-accent" />
+                <Card className="border-2 border-accent/50 shadow-lg relative overflow-hidden hover-lift animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-accent to-accent/70" />
+                  <CardHeader className="text-center pb-4 bg-gradient-to-b from-accent/5 to-transparent">
+                    <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                      <Award className="h-7 w-7 text-accent" />
                     </div>
-                    <Badge className="mb-2 bg-accent/10 text-accent border-accent/20">
+                    <Badge className="mb-3 bg-accent/10 text-accent border-accent/20">
                       Pay on Award
                     </Badge>
                     <CardTitle className="text-2xl">Exclusive Job Award</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-6 pt-2">
                     <p className="text-center text-muted-foreground">
                       8% referral fee when awarded. Fee comes from Gigger's 5% deposit (your down-payment).
                     </p>
                     
-                    <div className="bg-muted/50 rounded-xl p-4">
-                      <div className="text-sm text-center mb-2 text-muted-foreground">Referral Fee</div>
-                      <div className="text-center font-mono font-bold text-accent">
+                    <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-5 border border-accent/10">
+                      <div className="text-sm text-center mb-2 text-muted-foreground font-medium">Referral Fee</div>
+                      <div className="text-center font-mono font-bold text-accent text-lg">
                         Higher of 8% or $50
                       </div>
                     </div>
 
-                    <div className="flex justify-center gap-6">
+                    <div className="flex justify-center gap-8">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-accent">$50</div>
-                        <div className="text-xs text-muted-foreground">Minimum</div>
+                        <div className="text-3xl font-bold text-accent">$50</div>
+                        <div className="text-xs text-muted-foreground font-medium">Minimum</div>
                       </div>
+                      <div className="w-px bg-border" />
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-accent">$249</div>
-                        <div className="text-xs text-muted-foreground">Maximum</div>
+                        <div className="text-3xl font-bold text-accent">$249</div>
+                        <div className="text-xs text-muted-foreground font-medium">Maximum</div>
                       </div>
                     </div>
                     
-                    <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <div className="text-xs text-muted-foreground mb-1">Gigger Deposit (Down-Payment)</div>
-                      <div className="text-sm font-medium">Higher of (5% + lead cost) or $249</div>
+                    <div className="bg-muted/50 rounded-xl p-4 text-center border border-border/50">
+                      <div className="text-xs text-muted-foreground mb-1 font-medium">Gigger Deposit (Down-Payment)</div>
+                      <div className="text-sm font-semibold">Higher of (5% + lead cost) or $249</div>
                       <div className="text-xs text-muted-foreground mt-1">Deducted from total owed to Digger</div>
                     </div>
 
-                    <ul className="space-y-2">
-                      <li className="flex items-center gap-2 text-sm">
-                        <Lock className="h-4 w-4 text-accent flex-shrink-0" />
+                    <ul className="space-y-3">
+                      <li className="flex items-center gap-3 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                          <Lock className="h-3 w-3 text-accent" />
+                        </div>
                         <span>Job is locked to you only</span>
                       </li>
-                      <li className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <li className="flex items-center gap-3 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                          <Check className="h-3 w-3 text-green-600" />
+                        </div>
                         <span>No competition after award</span>
                       </li>
-                      <li className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <li className="flex items-center gap-3 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                          <Check className="h-3 w-3 text-green-600" />
+                        </div>
                         <span>Pay nothing until you accept</span>
                       </li>
                     </ul>
@@ -188,25 +215,31 @@ export default function Pricing() {
         </section>
 
         {/* NON-EXCLUSIVE PRICING FORMULA */}
-        <section className="py-16 bg-muted/30">
+        <section className="py-16 bg-gradient-to-b from-muted/30 to-muted/50">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
-              <h2 className="text-2xl font-bold text-center mb-8">Non-Exclusive Pricing Details</h2>
-              <Card className="border-primary/30">
-                <CardContent className="pt-6 text-center space-y-6">
-                  <div className="bg-muted/50 rounded-xl p-6">
-                    <div className="text-lg mb-4">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-2 text-primary mb-3">
+                  <TrendingUp className="h-5 w-5" />
+                  <span className="text-sm font-semibold uppercase tracking-wider">Formula</span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold">Non-Exclusive Pricing Details</h2>
+              </div>
+              <Card className="border-primary/20 shadow-lg">
+                <CardContent className="pt-8 pb-8 text-center space-y-6">
+                  <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-accent/5 rounded-2xl p-8 border border-primary/10">
+                    <div className="text-lg md:text-xl mb-4">
                       <span className="font-mono font-bold text-primary">
                         Lead Price = Higher of [ (Budget Avg × 2%) ] or [ $10 ]
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Rounded to the nearest dollar • $49 maximum
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2 italic">
-                      * Prices are subject to change at any time
+                      Rounded to the nearest dollar • <span className="font-semibold">$49 maximum</span>
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground italic">
+                    * Prices are subject to change at any time
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -214,33 +247,41 @@ export default function Pricing() {
         </section>
 
         {/* NON-EXCLUSIVE EXAMPLES */}
-        <section className="py-16">
+        <section className="py-16 md:py-20">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-2xl font-bold text-center mb-2">Non-Exclusive Examples</h2>
-              <p className="text-center text-muted-foreground mb-8">Pay-per-lead pricing based on project budget</p>
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-10">
+                <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+                  <Users className="h-3 w-3 mr-1" />
+                  Non-Exclusive
+                </Badge>
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">Pay-Per-Lead Examples</h2>
+                <p className="text-muted-foreground">Pricing based on project budget</p>
+              </div>
               
               <div className="grid md:grid-cols-3 gap-6">
                 {PRICING_EXAMPLES.map((example, i) => (
-                  <Card key={i} className="text-center">
-                    <CardContent className="pt-6">
-                      <div className="text-sm text-muted-foreground mb-2">
+                  <Card key={i} className="text-center hover-lift border-primary/20" style={{ animationDelay: `${i * 0.1}s` }}>
+                    <CardContent className="pt-8 pb-8">
+                      <div className="text-sm text-muted-foreground mb-2 font-medium">
                         Project Budget
                       </div>
-                      <div className="text-lg font-semibold mb-4">
+                      <div className="text-xl font-bold mb-4 text-foreground">
                         {example.budget}
                       </div>
-                      <div className="text-sm text-muted-foreground mb-1">
-                        Average: ${example.average.toLocaleString()}
+                      <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Average: ${example.average.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          × 2% = ${Math.round(example.average * 0.02)}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground mb-4">
-                        × 2% = ${Math.round(example.average * 0.02)}
-                      </div>
-                      <div className="text-4xl font-bold text-primary">
+                      <div className="text-5xl font-bold text-primary mb-1">
                         ${example.price}
                       </div>
                       {example.note && (
-                        <div className="text-sm text-muted-foreground mt-1">
+                        <div className="text-sm text-muted-foreground font-medium">
                           {example.note}
                         </div>
                       )}
@@ -250,42 +291,56 @@ export default function Pricing() {
               </div>
 
               {/* EXCLUSIVE EXAMPLES */}
-              <h2 className="text-2xl font-bold text-center mt-16 mb-2">Exclusive Examples</h2>
-              <p className="text-center text-muted-foreground mb-8">Pay-on-acceptance referral fee based on your bid</p>
-              
-              <div className="grid md:grid-cols-3 gap-6">
-                <Card className="text-center border-accent/30">
-                  <CardContent className="pt-6">
-                    <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
-                    <div className="text-lg font-semibold mb-4">$1,500</div>
-                    <div className="text-sm text-muted-foreground mb-1">3% = $45</div>
-                    <div className="text-sm text-muted-foreground mb-4">Below minimum</div>
-                    <div className="text-4xl font-bold text-accent">$50</div>
-                    <div className="text-sm text-muted-foreground mt-1">(minimum)</div>
-                  </CardContent>
-                </Card>
-                <Card className="text-center border-accent/30">
-                  <CardContent className="pt-6">
-                    <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
-                    <div className="text-lg font-semibold mb-4">$5,000</div>
-                    <div className="text-sm text-muted-foreground mb-1">× 3%</div>
-                    <div className="text-sm text-muted-foreground mb-4">= $150</div>
-                    <div className="text-4xl font-bold text-accent">$150</div>
-                  </CardContent>
-                </Card>
-                <Card className="text-center border-accent/30">
-                  <CardContent className="pt-6">
-                    <div className="text-sm text-muted-foreground mb-2">Your Bid Amount</div>
-                    <div className="text-lg font-semibold mb-4">$10,000+</div>
-                    <div className="text-sm text-muted-foreground mb-1">3% = $300+</div>
-                    <div className="text-sm text-muted-foreground mb-4">Above maximum</div>
-                    <div className="text-4xl font-bold text-accent">$249</div>
-                    <div className="text-sm text-muted-foreground mt-1">(cap)</div>
-                  </CardContent>
-                </Card>
+              <div className="mt-20">
+                <div className="text-center mb-10">
+                  <Badge className="mb-4 bg-accent/10 text-accent border-accent/20">
+                    <Award className="h-3 w-3 mr-1" />
+                    Exclusive
+                  </Badge>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2">Pay-On-Acceptance Examples</h2>
+                  <p className="text-muted-foreground">Referral fee based on your bid amount</p>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-6">
+                  <Card className="text-center hover-lift border-accent/20">
+                    <CardContent className="pt-8 pb-8">
+                      <div className="text-sm text-muted-foreground mb-2 font-medium">Your Bid Amount</div>
+                      <div className="text-xl font-bold mb-4">$1,500</div>
+                      <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                        <div className="text-sm text-muted-foreground mb-1">3% = $45</div>
+                        <div className="text-sm text-muted-foreground">Below minimum</div>
+                      </div>
+                      <div className="text-5xl font-bold text-accent mb-1">$50</div>
+                      <div className="text-sm text-muted-foreground font-medium">(minimum)</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="text-center hover-lift border-accent/20">
+                    <CardContent className="pt-8 pb-8">
+                      <div className="text-sm text-muted-foreground mb-2 font-medium">Your Bid Amount</div>
+                      <div className="text-xl font-bold mb-4">$5,000</div>
+                      <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                        <div className="text-sm text-muted-foreground mb-1">× 3%</div>
+                        <div className="text-sm text-muted-foreground">= $150</div>
+                      </div>
+                      <div className="text-5xl font-bold text-accent">$150</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="text-center hover-lift border-accent/20">
+                    <CardContent className="pt-8 pb-8">
+                      <div className="text-sm text-muted-foreground mb-2 font-medium">Your Bid Amount</div>
+                      <div className="text-xl font-bold mb-4">$10,000+</div>
+                      <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                        <div className="text-sm text-muted-foreground mb-1">3% = $300+</div>
+                        <div className="text-sm text-muted-foreground">Above maximum</div>
+                      </div>
+                      <div className="text-5xl font-bold text-accent mb-1">$249</div>
+                      <div className="text-sm text-muted-foreground font-medium">(cap)</div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
               
-              <p className="text-xs text-muted-foreground text-center mt-6 italic">
+              <p className="text-xs text-muted-foreground text-center mt-8 italic">
                 * Prices are subject to change at any time
               </p>
             </div>
@@ -293,78 +348,70 @@ export default function Pricing() {
         </section>
 
         {/* WHAT'S INCLUDED */}
-        <section className="py-16">
+        <section className="py-16 md:py-20 bg-gradient-to-b from-background to-muted/20">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl font-bold text-center mb-12">
-                What You Get When You Unlock a Lead
-              </h2>
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 text-primary mb-3">
+                  <Sparkles className="h-5 w-5" />
+                  <span className="text-sm font-semibold uppercase tracking-wider">Lead Details</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold">
+                  What You Get When You Unlock
+                </h2>
+              </div>
               
               <div className="grid md:grid-cols-2 gap-8">
                 {/* Before */}
-                <Card className="border-muted">
-                  <CardHeader>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      <Eye className="h-5 w-5 text-muted-foreground" />
-                      Before You Unlock
-                    </CardTitle>
+                <Card className="border-muted hover-lift">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                        <Eye className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <CardTitle className="text-xl">Before You Unlock</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-3">
-                      <li className="flex items-center gap-3">
-                        <Check className="h-4 w-4 text-muted-foreground" />
-                        <span>Project title</span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <Check className="h-4 w-4 text-muted-foreground" />
-                        <span>Description & requirements</span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <Check className="h-4 w-4 text-muted-foreground" />
-                        <span>Budget range</span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <Check className="h-4 w-4 text-muted-foreground" />
-                        <span>Timeline</span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <Check className="h-4 w-4 text-muted-foreground" />
-                        <span>Location</span>
-                      </li>
+                    <ul className="space-y-4">
+                      {['Project title', 'Description & requirements', 'Budget range', 'Timeline', 'Location'].map((item, i) => (
+                        <li key={i} className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                            <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                          <span className="text-muted-foreground">{item}</span>
+                        </li>
+                      ))}
                     </ul>
                   </CardContent>
                 </Card>
                 
                 {/* After */}
-                <Card className="border-green-500/30 bg-green-500/5">
-                  <CardHeader>
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-green-600" />
-                      After You Unlock
-                    </CardTitle>
+                <Card className="border-green-500/30 bg-gradient-to-br from-green-500/5 to-green-500/10 hover-lift">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                        <Zap className="h-5 w-5 text-green-600" />
+                      </div>
+                      <CardTitle className="text-xl">After You Unlock</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-3">
-                      <li className="flex items-center gap-3">
-                        <User className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">Client name</span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <Mail className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">Email address</span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <Phone className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">Phone number</span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <FileText className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">Full project details</span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <Calendar className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">Direct contact access</span>
-                      </li>
+                    <ul className="space-y-4">
+                      {[
+                        { icon: User, label: 'Client name' },
+                        { icon: Mail, label: 'Email address' },
+                        { icon: Phone, label: 'Phone number' },
+                        { icon: FileText, label: 'Full project details' },
+                        { icon: Calendar, label: 'Direct contact access' },
+                      ].map((item, i) => (
+                        <li key={i} className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                            <item.icon className="h-3.5 w-3.5 text-green-600" />
+                          </div>
+                          <span className="font-medium">{item.label}</span>
+                        </li>
+                      ))}
                     </ul>
                   </CardContent>
                 </Card>
@@ -374,96 +421,85 @@ export default function Pricing() {
         </section>
 
         {/* REFUND POLICY */}
-        <section className="py-16 bg-muted/30">
+        <section className="py-16 md:py-20 bg-gradient-to-b from-muted/30 to-muted/50">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mx-auto mb-6">
-                <Shield className="h-8 w-8 text-green-600" />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500/10 to-green-500/20 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Shield className="h-10 w-10 text-green-600" />
               </div>
-              <h2 className="text-3xl font-bold mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
                 Bogus Leads Are Fully Refundable
               </h2>
-              <p className="text-lg text-muted-foreground mb-6">
+              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                 If the contact details are invalid, the client is unreachable, or the project is a scam — you get a full refund. No questions asked.
               </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Badge variant="outline" className="px-4 py-2">
-                  <Check className="h-4 w-4 mr-2 text-green-500" />
-                  Invalid contact info
-                </Badge>
-                <Badge variant="outline" className="px-4 py-2">
-                  <Check className="h-4 w-4 mr-2 text-green-500" />
-                  Client unreachable
-                </Badge>
-                <Badge variant="outline" className="px-4 py-2">
-                  <Check className="h-4 w-4 mr-2 text-green-500" />
-                  Scam or fake project
-                </Badge>
-                <Badge variant="outline" className="px-4 py-2">
-                  <Check className="h-4 w-4 mr-2 text-green-500" />
-                  Project cancelled before contact
-                </Badge>
+              <div className="flex flex-wrap justify-center gap-3">
+                {[
+                  'Invalid contact info',
+                  'Client unreachable',
+                  'Scam or fake project',
+                  'Project cancelled before contact',
+                ].map((reason, i) => (
+                  <Badge key={i} variant="outline" className="px-4 py-2 bg-background/80 backdrop-blur-sm">
+                    <Check className="h-4 w-4 mr-2 text-green-500" />
+                    {reason}
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
         {/* GUARANTEES */}
-        <section className="py-16">
+        <section className="py-16 md:py-20">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl font-bold text-center mb-12">
-                Our Promise to You
-              </h2>
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold">
+                  Our Promise to You
+                </h2>
+              </div>
               
-              <div className="grid sm:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <Check className="h-6 w-6 text-primary" />
+              <div className="grid sm:grid-cols-3 gap-8">
+                {[
+                  { icon: DollarSign, title: 'No Subscriptions', desc: 'Pay only for leads you want' },
+                  { icon: Clock, title: 'Instant Delivery', desc: 'Leads emailed immediately' },
+                  { icon: Shield, title: 'Lead Protection', desc: 'Refunds for bogus leads' },
+                ].map((item, i) => (
+                  <div key={i} className="text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center mx-auto mb-4 shadow-md">
+                      <item.icon className="h-8 w-8 text-primary" />
+                    </div>
+                    <div className="font-bold text-lg mb-2">{item.title}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {item.desc}
+                    </div>
                   </div>
-                  <div className="font-semibold mb-1">No Subscriptions</div>
-                  <div className="text-sm text-muted-foreground">
-                    Pay only for leads you want
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <Check className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="font-semibold mb-1">Instant Delivery</div>
-                  <div className="text-sm text-muted-foreground">
-                    Leads emailed immediately
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <Check className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="font-semibold mb-1">Lead Protection</div>
-                  <div className="text-sm text-muted-foreground">
-                    Refunds for bogus leads
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
         {/* FINAL CTA */}
-        <section className="py-20 bg-gradient-to-br from-primary/10 to-accent/10">
-          <div className="container mx-auto px-4">
+        <section className="py-20 md:py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5 relative overflow-hidden">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
+          </div>
+          
+          <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
                 Ready to Start Getting Leads?
               </h2>
-              <p className="text-lg text-muted-foreground mb-8">
+              <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl mx-auto">
                 Join Digs & Gigs for free. Pay only when you unlock leads.
               </p>
               <Button 
+                variant="hero"
                 size="lg" 
-                className="text-lg px-8"
+                className="text-lg px-8 py-6"
                 onClick={() => navigate("/register?mode=signup&type=digger")}
               >
                 Become a Digger — It's Free
@@ -472,9 +508,7 @@ export default function Pricing() {
             </div>
           </div>
         </section>
-      </div>
-
-      <Footer />
+      </PageLayout>
     </>
   );
 }
