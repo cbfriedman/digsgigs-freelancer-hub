@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
-import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles, DollarSign, Award, Camera } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles, DollarSign, Award, Camera, User, Briefcase, Settings } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { KeywordSelector } from "@/components/KeywordSelector";
 // Note: Using native radio inputs for pricing model selection to ensure stable controlled component behavior
 import { BioGenerator } from "@/components/BioGenerator";
@@ -521,53 +520,84 @@ const EditDiggerProfile = () => {
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navigation />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </main>
-        <Footer />
-      </div>
+      <PageLayout maxWidth="wide">
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <p className="text-muted-foreground">Loading your profile...</p>
+          </div>
+        </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <SubscriptionBanner currentTier={subscriptionTier} />
+    <PageLayout maxWidth="wide">
+      <div className="animate-fade-in-up">
+        <SubscriptionBanner currentTier={subscriptionTier} />
+        
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Settings className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground">Edit Your Profile</h1>
+          </div>
+          <p className="text-muted-foreground ml-14">
+            Complete your profile to attract more clients and receive relevant leads
+          </p>
+        </div>
           
-          <h1 className="text-3xl font-bold mb-6">Edit Your Profile</h1>
-          
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Main Form */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Profile Photo Section */}
-              <Card className="p-6" id="photos">
-                <h2 className="text-xl font-bold mb-4">Profile Photo</h2>
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Main Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Profile Photo Section */}
+            <Card className="overflow-hidden border-border/50 hover:shadow-md transition-shadow" id="photos">
+              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Profile Photo</CardTitle>
+                    <CardDescription>Add a professional photo to build trust</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
                 <ProfilePhotoUpload
                   currentPhotoUrl={photoUrl}
                   onPhotoChange={setPhotoUrl}
                   companyName={businessName}
                 />
-              </Card>
+              </CardContent>
+            </Card>
 
-              {/* Work Samples Section */}
-              <Card className="p-6" id="work-samples">
-                <div className="flex items-center gap-2 mb-4">
-                  <Camera className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-bold">Work Samples</h2>
+            {/* Work Samples Section */}
+            <Card className="overflow-hidden border-border/50 hover:shadow-md transition-shadow" id="work-samples">
+              <CardHeader className="pb-4 bg-gradient-to-r from-accent/5 to-transparent">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-accent/10">
+                    <Camera className="h-5 w-5 text-accent" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Work Samples</CardTitle>
+                    <CardDescription>Showcase your best work with photos of completed projects</CardDescription>
+                  </div>
                 </div>
+              </CardHeader>
+              <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground mb-4">
-                  Showcase your best work with photos of completed projects. Add at least 3 photos to complete this section.
+                  Add at least 3 photos to complete this section and attract more clients.
                 </p>
                 <WorkSamplesUpload
                   currentPhotos={workPhotos}
                   onPhotosChange={setWorkPhotos}
                   maxPhotos={10}
                 />
-              </Card>
+              </CardContent>
+            </Card>
 
               {/* Profile Preview */}
               <DiggerProfileCard
@@ -581,17 +611,32 @@ const EditDiggerProfile = () => {
                 
               />
 
-              <form onSubmit={handleSubmit} className="space-y-6" id="profile-form">
-            <div className="space-y-2">
-              <Label htmlFor="businessName">Business Name *</Label>
-              <Input
-                id="businessName"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="Your business name"
-                required
-              />
-            </div>
+            {/* Main Form Card */}
+            <Card className="overflow-hidden border-border/50" id="profile-form">
+              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-accent/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Business Information</CardTitle>
+                    <CardDescription>Tell clients about your business and services</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName" className="text-sm font-medium">Business Name *</Label>
+                    <Input
+                      id="businessName"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      placeholder="Your business name"
+                      required
+                      className="border-border/50 focus:border-primary"
+                    />
+                  </div>
 
             {/* Optional Profile Title & Tagline */}
             <ProfileTitleTaglineEditor
@@ -638,83 +683,83 @@ const EditDiggerProfile = () => {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="location">Business Location (Country) *</Label>
-              <select
-                id="location"
-                value={location}
-                onChange={(e) => {
-                  setLocation(e.target.value);
-                  setStateProvince(""); // Clear state when country changes
-                }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                required
-              >
-                <option value="">Select your country...</option>
-                {ALL_COUNTRIES.map((c) => (
-                  <option key={c.name} value={c.name}>
-                    {c.flag} {c.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">
-                This is the country where your business is registered
-              </p>
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="location" className="text-sm font-medium">Business Location (Country) *</Label>
+                    <select
+                      id="location"
+                      value={location}
+                      onChange={(e) => {
+                        setLocation(e.target.value);
+                        setStateProvince(""); // Clear state when country changes
+                      }}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      required
+                    >
+                      <option value="">Select your country...</option>
+                      {ALL_COUNTRIES.map((c) => (
+                        <option key={c.name} value={c.name}>
+                          {c.flag} {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      This is the country where your business is registered
+                    </p>
+                  </div>
 
-            {/* State/Province Field - Shows when country has regions */}
-            {location && location !== "Other" && businessLocationRegions.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="stateProvince">{getRegionLabel(location)}</Label>
-                <select
-                  id="stateProvince"
-                  value={stateProvince}
-                  onChange={(e) => setStateProvince(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                >
-                  <option value="">Select {getRegionLabel(location).toLowerCase()}...</option>
-                  {businessLocationRegions.map((region) => (
-                    <option key={region} value={region}>
-                      {region}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+                  {/* State/Province Field - Shows when country has regions */}
+                  {location && location !== "Other" && businessLocationRegions.length > 0 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="stateProvince" className="text-sm font-medium">{getRegionLabel(location)}</Label>
+                      <select
+                        id="stateProvince"
+                        value={stateProvince}
+                        onChange={(e) => setStateProvince(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      >
+                        <option value="">Select {getRegionLabel(location).toLowerCase()}...</option>
+                        {businessLocationRegions.map((region) => (
+                          <option key={region} value={region}>
+                            {region}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
-            {/* Location Preferences Section */}
-            <Card className="p-4 border-2 border-primary/20 bg-primary/5">
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Service Area Preferences
-                  </Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Define where you want to receive gig notifications
-                  </p>
-                </div>
+                  {/* Location Preferences Section */}
+                  <div className="p-5 rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-primary" />
+                          Service Area Preferences
+                        </Label>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Define where you want to receive gig notifications
+                        </p>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <select
-                    id="country"
-                    value={country}
-                    onChange={(e) => {
-                      setCountry(e.target.value);
-                      setSelectedStates([]); // Clear states when country changes
-                    }}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                  >
-                    <option value="">Select a country...</option>
-                    <option value="All Countries">🌐 All Countries</option>
-                    {ALL_COUNTRIES.map((c) => (
-                      <option key={c.name} value={c.name}>
-                        {c.flag} {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="country" className="text-sm font-medium">Country</Label>
+                        <select
+                          id="country"
+                          value={country}
+                          onChange={(e) => {
+                            setCountry(e.target.value);
+                            setSelectedStates([]); // Clear states when country changes
+                          }}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        >
+                          <option value="">Select a country...</option>
+                          <option value="All Countries">🌐 All Countries</option>
+                          {ALL_COUNTRIES.map((c) => (
+                            <option key={c.name} value={c.name}>
+                              {c.flag} {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
                 {/* State/Province Multi-Select - Always visible for supported countries, but not for "All Countries" */}
                 {country && country !== "Other" && country !== "All Countries" && country !== "" && availableRegions.length > 0 && (
@@ -848,224 +893,234 @@ const EditDiggerProfile = () => {
                     </div>
                   </div>
                 )}
-              </div>
-            </Card>
+                    </div>
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone *</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  // Allow only digits, spaces, dashes, parentheses, and plus sign
-                  const sanitized = e.target.value.replace(/[^\d\s\-()+ ]/g, '');
-                  setPhone(sanitized);
-                }}
-                placeholder="(555) 123-4567"
-                required
-                pattern="[\d\s\-\(\)+ ]{10,20}"
-              />
-              {phone && !isValidPhoneNumber(phone) && (
-                <p className="text-sm text-destructive">Please enter a valid phone number (10-15 digits)</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-medium">Phone *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => {
+                        // Allow only digits, spaces, dashes, parentheses, and plus sign
+                        const sanitized = e.target.value.replace(/[^\d\s\-()+ ]/g, '');
+                        setPhone(sanitized);
+                      }}
+                      placeholder="(555) 123-4567"
+                      required
+                      pattern="[\d\s\-\(\)+ ]{10,20}"
+                      className="border-border/50 focus:border-primary"
+                    />
+                    {phone && !isValidPhoneNumber(phone) && (
+                      <p className="text-sm text-destructive">Please enter a valid phone number (10-15 digits)</p>
+                    )}
+                  </div>
+
+
+                  {/* AI-Powered Bio Generator */}
+                  <div className="p-5 rounded-xl border-2 border-accent/30 bg-gradient-to-br from-accent/5 to-primary/5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-lg bg-accent/10">
+                        <Sparkles className="h-4 w-4 text-accent" />
+                      </div>
+                      <span className="font-semibold text-sm">AI-Powered Bio Generator</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Let AI generate a professional bio based on your profession and keywords
+                    </p>
+                    <BioGenerator 
+                      profession={getProfessionNames().join(', ')}
+                      currentBio={bio}
+                      onBioGenerated={setBio}
+                    />
+                  </div>
+
+
+                  <div id="pricing" className="space-y-3">
+                    <Label className="text-base font-semibold">Available for *</Label>
+                    <p className="text-sm text-muted-foreground">Select at least one pricing option</p>
+                    <div className="space-y-3">
+                      <label className={`flex items-start space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${pricingModel === "commission" ? "border-primary bg-primary/5" : "border-border/50 bg-card hover:border-primary/30"}`}>
+                        <input
+                          type="radio"
+                          name="pricingModel"
+                          value="commission"
+                          checked={pricingModel === "commission"}
+                          onChange={(e) => setPricingModel(e.target.value)}
+                          className="h-4 w-4 mt-1 accent-primary"
+                        />
+                        <div className="flex-1">
+                          <span className="font-semibold">Fixed Price Contracts</span>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Volume-based lead pricing + 9%/5%/3% escrow processing fee
+                          </p>
+                        </div>
+                      </label>
+
+                      <label className={`flex items-start space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${pricingModel === "hourly" ? "border-primary bg-primary/5" : "border-border/50 bg-card hover:border-primary/30"}`}>
+                        <input
+                          type="radio"
+                          name="pricingModel"
+                          value="hourly"
+                          checked={pricingModel === "hourly"}
+                          onChange={(e) => setPricingModel(e.target.value)}
+                          className="h-4 w-4 mt-1 accent-primary"
+                        />
+                        <div className="flex-1">
+                          <span className="font-semibold">Time and Materials (Hourly)</span>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Volume-based lead pricing + Award fee based on tier
+                          </p>
+                        </div>
+                      </label>
+
+                      <label className={`flex items-start space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${pricingModel === "both" ? "border-primary bg-primary/5" : "border-border/50 bg-card hover:border-primary/30"}`}>
+                        <input
+                          type="radio"
+                          name="pricingModel"
+                          value="both"
+                          checked={pricingModel === "both"}
+                          onChange={(e) => setPricingModel(e.target.value)}
+                          className="h-4 w-4 mt-1 accent-primary"
+                        />
+                        <div className="flex-1">
+                          <span className="font-semibold">Both Models</span>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Flexible pricing based on project requirements
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Hourly Rate Range Section */}
+                  <div className="space-y-4" id="hourly-rate">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-green-500/10">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                      </div>
+                      <Label className="text-base font-semibold">Hourly Rate Range</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Set your hourly rate range to display on your profile
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="hourlyRateMin" className="text-sm font-medium">Minimum Rate ($)</Label>
+                        <Input
+                          id="hourlyRateMin"
+                          type="number"
+                          min="0"
+                          value={hourlyRateMin || ''}
+                          onChange={(e) => setHourlyRateMin(e.target.value ? parseInt(e.target.value) : null)}
+                          placeholder="e.g., 50"
+                          className="border-border/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hourlyRateMax" className="text-sm font-medium">Maximum Rate ($)</Label>
+                        <Input
+                          id="hourlyRateMax"
+                          type="number"
+                          min="0"
+                          value={hourlyRateMax || ''}
+                          onChange={(e) => setHourlyRateMax(e.target.value ? parseInt(e.target.value) : null)}
+                          placeholder="e.g., 150"
+                          className="border-border/50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Certifications Section */}
+                  <div className="space-y-4" id="certifications">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-amber-500/10">
+                        <Award className="h-4 w-4 text-amber-600" />
+                      </div>
+                      <Label className="text-base font-semibold">Certifications & Credentials</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Add your professional certifications to build trust with potential clients
+                    </p>
+                    <CertificationsInput
+                      certifications={certifications}
+                      onCertificationsChange={setCertifications}
+                    />
+                  </div>
+
+                  <div className="space-y-3" id="keywords">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-blue-500/10">
+                          <Tag className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <Label htmlFor="keywords" className="text-base font-semibold">Keywords / Specialties</Label>
+                      </div>
+                      <Badge variant="default" className="bg-primary text-primary-foreground px-3 py-1">
+                        {keywords.length} Selected
+                      </Badge>
+                    </div>
+                    
+                    <div className="p-4 rounded-xl border-2 border-blue-500/20 bg-blue-500/5 space-y-2">
+                      <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        ⚠️ Important: Lead Matching Criteria
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>You will only receive leads that contain your selected specialties.</strong> Select all relevant keywords to maximize opportunities.
+                      </p>
+                    </div>
+                    
+                    <Textarea
+                      id="keywords"
+                      value={keywordsInput}
+                      onChange={(e) => setKeywordsInput(e.target.value)}
+                      placeholder="Enter keywords separated by commas (e.g., residential plumbing, emergency repairs)"
+                      rows={3}
+                      className="border-border/50"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Add relevant keywords to improve matching with gigs
+                    </p>
+                  </div>
+
+
+                  <Button type="submit" disabled={loading} size="lg" className="w-full bg-primary hover:bg-primary/90">
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save and Continue"
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar with Completion Widget */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              {profileData && (
+                <ProfileCompletionWidget
+                  profile={profileData}
+                  profileId={profileId}
+                  onNavigateToSection={(section) => {
+                    const element = document.getElementById(section);
+                    if (element) {
+                      element.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  }}
+                />
               )}
             </div>
-
-
-            {/* AI-Powered Bio Generator - Above About Your Services */}
-            <Card className="p-4 border-2 border-primary/30 bg-primary/5">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-sm">AI-Powered Bio Generator</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Let AI generate a professional bio based on your profession and keywords
-              </p>
-              <BioGenerator 
-                profession={getProfessionNames().join(', ')}
-                currentBio={bio}
-                onBioGenerated={setBio}
-              />
-            </Card>
-
-
-            <div id="pricing">
-              <Label className="text-base font-semibold">Available for *</Label>
-              <p className="text-sm text-muted-foreground mb-3">Select at least one pricing option</p>
-              <div className="space-y-4">
-                <label className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer">
-                  <input
-                    type="radio"
-                    name="pricingModel"
-                    value="commission"
-                    checked={pricingModel === "commission"}
-                    onChange={(e) => setPricingModel(e.target.value)}
-                    className="h-4 w-4 mt-1 accent-primary"
-                  />
-                  <div className="flex-1">
-                    <span className="font-semibold">Fixed Price Contracts</span>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Volume-based lead pricing + 9%/5%/3% escrow processing fee (based on monthly lead volume)
-                    </p>
-                  </div>
-                </label>
-
-                <label className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer">
-                  <input
-                    type="radio"
-                    name="pricingModel"
-                    value="hourly"
-                    checked={pricingModel === "hourly"}
-                    onChange={(e) => setPricingModel(e.target.value)}
-                    className="h-4 w-4 mt-1 accent-primary"
-                  />
-                  <div className="flex-1">
-                    <span className="font-semibold">Time and Materials (Hourly)</span>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Volume-based lead pricing + Award fee based on tier + 9%/5%/3% escrow processing fee
-                    </p>
-                  </div>
-                </label>
-
-                <label className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer">
-                  <input
-                    type="radio"
-                    name="pricingModel"
-                    value="both"
-                    checked={pricingModel === "both"}
-                    onChange={(e) => setPricingModel(e.target.value)}
-                    className="h-4 w-4 mt-1 accent-primary"
-                  />
-                  <div className="flex-1">
-                    <span className="font-semibold">Both Models</span>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Volume-based lead pricing + Award fee varies by model + 9%/5%/3% escrow processing fee
-                    </p>
-                  </div>
-                </label>
-              </div>
-
-            </div>
-
-            {/* Hourly Rate Range Section */}
-            <div className="space-y-4" id="hourly-rate">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                <Label className="text-base font-semibold">Hourly Rate Range</Label>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Set your hourly rate range to display on your profile
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="hourlyRateMin">Minimum Rate ($)</Label>
-                  <Input
-                    id="hourlyRateMin"
-                    type="number"
-                    min="0"
-                    value={hourlyRateMin || ''}
-                    onChange={(e) => setHourlyRateMin(e.target.value ? parseInt(e.target.value) : null)}
-                    placeholder="e.g., 50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hourlyRateMax">Maximum Rate ($)</Label>
-                  <Input
-                    id="hourlyRateMax"
-                    type="number"
-                    min="0"
-                    value={hourlyRateMax || ''}
-                    onChange={(e) => setHourlyRateMax(e.target.value ? parseInt(e.target.value) : null)}
-                    placeholder="e.g., 150"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Certifications Section */}
-            <div className="space-y-4" id="certifications">
-              <div className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-primary" />
-                <Label className="text-base font-semibold">Certifications & Credentials</Label>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Add your professional certifications to build trust with potential clients
-              </p>
-              <CertificationsInput
-                certifications={certifications}
-                onCertificationsChange={setCertifications}
-              />
-            </div>
-
-            <div className="space-y-2" id="keywords">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="keywords" className="text-base font-semibold">Keywords / Specialties</Label>
-                <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-primary" />
-                  <Badge variant="default" className="bg-primary text-primary-foreground px-3 py-1">
-                    {keywords.length} Selected
-                  </Badge>
-                </div>
-              </div>
-              
-              <div className="p-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5 space-y-2">
-                <p className="text-sm font-semibold text-foreground">
-                  ⚠️ Important: Lead Matching Criteria
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  <strong>You will only receive leads that contain your selected specialties.</strong> To maximize your lead opportunities, we recommend selecting all available specialty keywords related to your profession or creating your own custom keywords below.
-                </p>
-              </div>
-              
-              <Textarea
-                id="keywords"
-                value={keywordsInput}
-                onChange={(e) => setKeywordsInput(e.target.value)}
-                placeholder="Enter keywords separated by commas or semicolons (e.g., residential plumbing, emergency repairs, water heaters)"
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground">
-                Add relevant keywords to improve matching with gigs. Use commas or semicolons to separate keywords.
-              </p>
-              
-            </div>
-
-
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save and continue"
-              )}
-            </Button>
-          </form>
-        </div>
-
-        {/* Sidebar with Completion Widget */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24">
-            {profileData && (
-              <ProfileCompletionWidget
-                profile={profileData}
-                profileId={profileId}
-                onNavigateToSection={(section) => {
-                  const element = document.getElementById(section);
-                  if (element) {
-                    element.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }
-                }}
-              />
-            )}
           </div>
         </div>
       </div>
-    </div>
-  </main>
-  <Footer />
-</div>
+    </PageLayout>
   );
 };
 
