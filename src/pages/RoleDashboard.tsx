@@ -6,11 +6,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Briefcase, TrendingUp, FileText, DollarSign, Plus } from "lucide-react";
+import { 
+  Wrench, 
+  Briefcase, 
+  TrendingUp, 
+  FileText, 
+  Plus,
+  ArrowRight,
+  Sparkles,
+  Users,
+  CheckCircle2,
+  AlertCircle
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Navigation } from "@/components/Navigation";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
-import { Footer } from "@/components/Footer";
 
 interface RoleStats {
   digger?: {
@@ -25,31 +35,20 @@ interface RoleStats {
   };
 }
 
-const roleConfig = {
-  digger: { label: 'Digger', emoji: '🔧', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100', icon: Wrench },
-  gigger: { label: 'Gigger', emoji: '📋', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100', icon: Briefcase },
-};
-
 export default function RoleDashboard() {
   const { user, userRoles, activeRole, switchRole, loading: authLoading, refreshRoles } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [stats, setStats] = useState<RoleStats>({});
-  const [refreshKey, setRefreshKey] = useState(0);
   const [isCheckingRoles, setIsCheckingRoles] = useState(false);
   const hasCheckedRolesRef = useRef(false);
   const hasFetchedStatsRef = useRef(false);
   
-  // Check if user just completed registration - refresh roles immediately
-  // NOTE: This useEffect is moved after fetchStats definition to avoid initialization error
-
   // Memoize fetchStats to prevent recreation on every render
-  // Use user?.id instead of user object to prevent unnecessary recreations
   const fetchStats = useCallback(async (forceRefresh = false) => {
     if (!user || userRoles.length === 0) return;
     
-    // Allow force refresh to bypass the flag
     if (hasFetchedStatsRef.current && !forceRefresh) return;
     
     hasFetchedStatsRef.current = true;
@@ -57,7 +56,6 @@ export default function RoleDashboard() {
     try {
       // Fetch Digger stats
       if (userRoles.includes('digger')) {
-        // Query digger_profiles with error handling
         let profilesCount = 0;
         try {
           const { count, error: profilesError } = await supabase
@@ -65,11 +63,9 @@ export default function RoleDashboard() {
             .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id);
 
-          // Handle 406 or other errors gracefully
           if (profilesError) {
             if (profilesError.code === 'PGRST116' || profilesError.message?.includes('406') || profilesError.message?.includes('Not Acceptable')) {
-              // User might not have digger profile yet or RLS blocking - this is OK
-              console.warn('Could not fetch digger profiles count (user may not have profile yet):', profilesError);
+              console.warn('Could not fetch digger profiles count:', profilesError);
             } else {
               console.error('Error fetching digger profiles count:', profilesError);
             }
@@ -80,20 +76,17 @@ export default function RoleDashboard() {
           console.warn('Error fetching digger profiles count:', err);
         }
 
-        // Query lead_purchases - need digger profile ID first, so skip if no profile
         let leadsCount = 0;
         let activeLeadsCount = 0;
         
         if (profilesCount > 0) {
           try {
-            // Get digger profile ID to query leads (use maybeSingle to handle no profile case)
             const { data: diggerProfiles, error: profileError } = await supabase
               .from('digger_profiles')
               .select('id')
               .eq('user_id', user.id)
               .limit(1);
 
-            // Handle 406 or other errors gracefully
             if (profileError) {
               if (profileError.code === 'PGRST116' || profileError.message?.includes('406') || profileError.message?.includes('Not Acceptable')) {
                 console.warn('Could not fetch digger profile for lead counts:', profileError);
@@ -155,32 +148,25 @@ export default function RoleDashboard() {
       }
     } catch (err) {
       console.error('Error fetching stats:', err);
-      hasFetchedStatsRef.current = false; // Allow retry on error
+      hasFetchedStatsRef.current = false;
     }
-  }, [user?.id, userRoles]); // Need userRoles array to check includes()
+  }, [user?.id, userRoles]);
 
-  // Check if user just completed registration - refresh roles immediately
-  // Moved here after fetchStats is defined to avoid initialization error
+  // Check if user just completed registration
   useEffect(() => {
     const justRegistered = searchParams.get('registered') === 'true';
     if (justRegistered && user?.id) {
       console.log('User just registered, refreshing roles and stats...');
       
-      // Immediately refresh roles to ensure they're loaded
       refreshRoles().then(async () => {
         console.log('Roles refreshed after registration');
-        // Reset the stats fetch flag to allow stats to be fetched again
         hasFetchedStatsRef.current = false;
-        // Wait a moment for roles to propagate
         await new Promise(resolve => setTimeout(resolve, 500));
-        // Force fetch stats again with updated roles
         await fetchStats(true);
-        // Remove the query parameter from URL after roles are refreshed
         searchParams.delete('registered');
         setSearchParams(searchParams, { replace: true });
       }).catch(err => {
         console.warn('Error refreshing roles after registration:', err);
-        // Still remove the parameter even if refresh fails
         searchParams.delete('registered');
         setSearchParams(searchParams, { replace: true });
       });
@@ -189,50 +175,31 @@ export default function RoleDashboard() {
 
   // Check roles only once when component mounts or user changes
   useEffect(() => {
-    // Wait for auth to finish loading before checking user
-    if (authLoading) {
-      return;
-    }
+    if (authLoading) return;
 
-    // If no user after loading completes, redirect to register
     if (!user) {
       navigate("/register");
       return;
     }
 
-    // Only check roles once
-    if (hasCheckedRolesRef.current) {
-      return;
-    }
+    if (hasCheckedRolesRef.current) return;
 
-    // If user has no roles, wait for AuthContext to load them, then check
-    // But don't redirect immediately - give it time and be defensive about errors
     if (userRoles.length === 0 && !isCheckingRoles) {
       setIsCheckingRoles(true);
       hasCheckedRolesRef.current = true;
       
-      // Wait a bit for AuthContext to finish loading roles, then check
       const checkRolesTimeout = setTimeout(async () => {
         try {
-          // First, try refreshing roles from AuthContext (uses RPC function that bypasses RLS)
           await refreshRoles();
-          
-          // Wait for state to potentially update
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Check database directly using RPC function
           try {
-            // Use the safe RPC function that bypasses RLS completely
             const { data: rpcRoles, error: rpcError } = await (supabase
               .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
             
             if (rpcError) {
               console.error('RPC function error (non-fatal):', rpcError);
-              // Don't redirect on error - user might have roles but query is failing
-              // This could be due to migrations not being applied
-              console.warn('RPC function failed - this might mean migrations need to be applied');
               setIsCheckingRoles(false);
-              // Show a helpful message but don't redirect
               toast({
                 title: "Loading Roles",
                 description: "Having trouble loading your roles. The page will still work.",
@@ -242,27 +209,20 @@ export default function RoleDashboard() {
             }
             
             if (!rpcRoles || (rpcRoles as any[]).length === 0) {
-              // No roles found - but DON'T redirect automatically
-              // Let user see the dashboard and choose to register if they want
-              // This is better UX than forcing a redirect
               console.log('No roles found - showing dashboard with registration options');
               setIsCheckingRoles(false);
-              
-              // Show a helpful toast but don't redirect
               toast({
                 title: "No Roles Found",
                 description: "You can register for roles using the buttons below.",
                 variant: "default",
               });
             } else {
-              // Found roles via RPC - refresh AuthContext to update state
               console.log('Found roles via RPC, refreshing AuthContext:', rpcRoles);
               await refreshRoles();
               setIsCheckingRoles(false);
             }
           } catch (err) {
             console.error('Exception checking roles:', err);
-            // Don't redirect on exception - might be temporary error
             setIsCheckingRoles(false);
             toast({
               title: "Error Loading Roles",
@@ -273,31 +233,25 @@ export default function RoleDashboard() {
         } catch (err) {
           console.error('Error in role check:', err);
           setIsCheckingRoles(false);
-          // Don't redirect on error
         }
-      }, 3000); // Wait 3 seconds for AuthContext to load roles
+      }, 3000);
       
       return () => {
         clearTimeout(checkRolesTimeout);
       };
     } else if (userRoles.length > 0) {
-      // User has roles, mark as checked
       hasCheckedRolesRef.current = true;
       setIsCheckingRoles(false);
     }
-  }, [user, authLoading, navigate, toast]); // Removed problematic dependencies
+  }, [user, authLoading, navigate, toast]);
 
-  // Fetch stats when userRoles are available (separate effect to prevent loops)
-  // Use a ref to track if we've already fetched to prevent multiple calls
+  // Fetch stats when userRoles are available
   useEffect(() => {
-    // Reset fetch flag when user or roles change significantly
     if (user?.id && userRoles.length > 0) {
-      // Only fetch if we haven't already
       if (!hasFetchedStatsRef.current && !authLoading) {
         fetchStats();
       }
     } else {
-      // Reset flag when user/roles are cleared
       hasFetchedStatsRef.current = false;
     }
   }, [authLoading, user?.id, userRoles.length, fetchStats]);
@@ -306,345 +260,427 @@ export default function RoleDashboard() {
     await switchRole(role);
     toast({
       title: "Role switched",
-      description: `You are now in ${roleConfig[role].label} mode`,
+      description: `You are now in ${role === 'digger' ? 'Digger' : 'Gigger'} mode`,
     });
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
+  const handleRegisterGigger = async () => {
+    if (!user) return;
+    
+    try {
+      if (userRoles.includes('gigger')) {
+        await switchRole('gigger');
+        navigate('/post-gig');
+        return;
+      }
+      
+      let hasGiggerRole = false;
+      
+      try {
+        const { data: hasRole, error: hasRoleError } = await supabase
+          .rpc('has_app_role', { 
+            _user_id: user.id, 
+            _role: 'gigger' 
+          });
+        
+        if (!hasRoleError && hasRole === true) {
+          hasGiggerRole = true;
+        } else if (hasRoleError && userRoles.includes('gigger')) {
+          hasGiggerRole = true;
+        }
+      } catch (rpcException) {
+        console.warn('RPC function failed, checking AuthContext:', rpcException);
+        if (userRoles.includes('gigger')) {
+          hasGiggerRole = true;
+        }
+      }
+      
+      if (hasGiggerRole) {
+        await switchRole('gigger');
+        navigate('/post-gig');
+      } else {
+        let roleError = null;
+        
+        try {
+          const { error: directInsertError } = await supabase
+            .from('user_app_roles')
+            .insert({ user_id: user.id, app_role: 'gigger', is_active: true });
+          
+          if (directInsertError && (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion'))) {
+            console.log('Infinite recursion detected, using RPC function');
+            const { error: rpcInsertError } = await (supabase
+              .rpc as any)('insert_user_app_role', {
+                p_user_id: user.id,
+                p_app_role: 'gigger'
+              });
+            
+            if (rpcInsertError) {
+              roleError = rpcInsertError;
+            }
+          } else if (directInsertError) {
+            roleError = directInsertError;
+          }
+        } catch (insertException) {
+          console.error('Exception adding gigger role:', insertException);
+          roleError = insertException as any;
+        }
+        
+        if (roleError) {
+          console.error('Error adding gigger role:', roleError);
+          toast({
+            title: "Error",
+            description: "Failed to add Gigger role. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        await switchRole('gigger');
+        toast({
+          title: "Success",
+          description: "Gigger role added! You can now post gigs.",
+        });
+        navigate('/post-gig');
+      }
+    } catch (err) {
+      console.error('Exception in gigger role check:', err);
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Show loading state only while auth is loading, not while checking roles
-  // Allow user to see dashboard even if role check is in progress
+  // Loading state
   if (authLoading && !user) {
     return (
-      <div className="min-h-screen relative">
-        <Navigation />
-        <div className="container mx-auto px-4 py-4 sm:py-8 relative z-0">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading your dashboard...</p>
+      <PageLayout showFooter={false}>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center animate-fade-in">
+            <div className="relative mx-auto mb-6">
+              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+              </div>
             </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Loading your dashboard</h3>
+            <p className="text-muted-foreground">Please wait a moment...</p>
           </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
   
-  // Show a message if checking roles but don't block the page
   const showRoleCheckMessage = isCheckingRoles && userRoles.length === 0;
+  const hasRoles = userRoles.length > 0;
 
   return (
-    <div className="min-h-screen relative">
-      <Navigation />
-      <div className="container mx-auto px-4 py-4 sm:py-8 relative z-0">
-      <EmailVerificationBanner />
-      
-      {/* Show helpful message if user has no roles (but don't block access) */}
-      {user && userRoles.length === 0 && !isCheckingRoles && (
-        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
-                No roles assigned yet
-              </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                To get started, please select your role(s) by clicking the registration buttons below or visit the registration page.
+    <PageLayout maxWidth="wide">
+      <div className="space-y-8">
+        <EmailVerificationBanner />
+        
+        {/* Welcome Header */}
+        <header className="animate-fade-in-up">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-5 w-5 text-accent" />
+                <span className="text-sm font-medium text-accent">Welcome back</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-2">
+                My Dashboard
+              </h1>
+              <p className="text-muted-foreground max-w-lg">
+                Manage all your roles and activities in one place. Switch between being a service provider or project poster.
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate('/register?complete=true')}
-            >
-              Complete Registration
-            </Button>
+            
+            {hasRoles && (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="px-3 py-1.5 text-sm">
+                  <Users className="h-3.5 w-3.5 mr-1.5" />
+                  {userRoles.length} {userRoles.length === 1 ? 'Role' : 'Roles'} Active
+                </Badge>
+              </div>
+            )}
           </div>
-        </div>
-      )}
-      
-      {/* Show loading message while checking roles */}
-      {showRoleCheckMessage && (
-        <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            Loading your roles... Please wait.
-          </p>
-        </div>
-      )}
-      
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">My Dashboard</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Manage all your roles and activities in one place
-        </p>
-      </div>
+        </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Digger Role Card */}
-        <Card className="relative overflow-hidden">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
-                  <Wrench className="h-6 w-6 text-blue-600 dark:text-blue-300" />
+        {/* No Roles Message */}
+        {user && userRoles.length === 0 && !isCheckingRoles && (
+          <Card className="border-info/30 bg-info/5 animate-fade-in-up stagger-1">
+            <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6">
+              <div className="p-3 rounded-full bg-info/10">
+                <AlertCircle className="h-6 w-6 text-info" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-1">Get started with your first role</h3>
+                <p className="text-sm text-muted-foreground">
+                  Choose a role below to unlock the full platform experience. You can have both roles at the same time!
+                </p>
+              </div>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/register?complete=true')}
+                className="shrink-0"
+              >
+                Complete Setup
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Loading Roles Message */}
+        {showRoleCheckMessage && (
+          <Card className="border-warning/30 bg-warning/5 animate-fade-in">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-warning border-t-transparent"></div>
+              <p className="text-sm text-warning-foreground">
+                Loading your roles... Please wait.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Role Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Digger Role Card */}
+          <Card className="relative overflow-hidden hover-lift animate-fade-in-up stagger-2 group">
+            {/* Decorative gradient */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full pointer-events-none" />
+            
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                  <Wrench className="h-7 w-7 text-primary" />
                 </div>
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    Digger
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CardTitle className="text-xl font-display">Digger</CardTitle>
                     {activeRole === 'digger' && (
-                      <Badge variant="secondary" className="text-xs">Active</Badge>
+                      <Badge className="bg-primary/10 text-primary border-0 font-medium">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Active
+                      </Badge>
                     )}
                     {!userRoles.includes('digger') && (
-                      <Badge variant="outline" className="text-xs">Not Registered</Badge>
+                      <Badge variant="secondary" className="font-medium">
+                        Not Registered
+                      </Badge>
                     )}
-                  </CardTitle>
-                  <CardDescription>Service Provider</CardDescription>
+                  </div>
+                  <CardDescription className="mt-1">Service Provider — Find work opportunities</CardDescription>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {userRoles.includes('digger') ? (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Profiles</p>
-                    <p className="text-2xl font-bold">{stats.digger?.profilesCount ?? 0}</p>
+            </CardHeader>
+            
+            <CardContent className="space-y-5">
+              {userRoles.includes('digger') ? (
+                <>
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 rounded-xl bg-muted/50 text-center">
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats.digger?.profilesCount ?? 0}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Profiles</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-muted/50 text-center">
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats.digger?.leadsCount ?? 0}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Total Leads</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-primary/10 text-center">
+                      <p className="text-2xl sm:text-3xl font-bold text-primary">{stats.digger?.activeLeadsCount ?? 0}</p>
+                      <p className="text-xs text-primary/70 mt-1">Active</p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Leads</p>
-                    <p className="text-2xl font-bold">{stats.digger?.leadsCount ?? 0}</p>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-3 pt-2">
+                    <Button 
+                      size="lg"
+                      className="w-full justify-between group/btn"
+                      onClick={() => {
+                        handleSwitchRole('digger');
+                        navigate('/my-leads');
+                      }}
+                    >
+                      <span className="flex items-center">
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        View My Leads
+                      </span>
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          handleSwitchRole('digger');
+                          navigate('/my-profiles');
+                        }}
+                      >
+                        My Profiles
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          handleSwitchRole('digger');
+                          navigate('/profile-categories');
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        New Profile
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs sm:text-sm text-muted-foreground">Active Leads</p>
-                  <p className="text-lg sm:text-xl font-semibold text-primary">{stats.digger?.activeLeadsCount ?? 0}</p>
-                </div>
-                <div className="flex flex-col gap-2 pt-4 border-t">
+                </>
+              ) : (
+                /* Registration CTA */
+                <div className="text-center py-8 px-4">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <Wrench className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">Become a Digger</h3>
+                  <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                    Register as a service provider to find work opportunities and connect with clients looking for your skills.
+                  </p>
                   <Button 
-                    variant="default" 
-                    className="w-full text-sm sm:text-base"
-                    onClick={() => {
-                      handleSwitchRole('digger');
-                      navigate('/my-leads');
-                    }}
+                    size="lg"
+                    className="w-full sm:w-auto"
+                    onClick={() => navigate('/register?complete=true&type=digger')}
                   >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    View Leads
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full text-sm sm:text-base"
-                    onClick={() => {
-                      handleSwitchRole('digger');
-                      navigate('/my-profiles');
-                    }}
-                  >
-                    My Profiles
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full text-sm sm:text-base"
-                    onClick={() => {
-                      handleSwitchRole('digger');
-                      navigate('/profile-categories');
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create a new profile
+                    Register as Digger
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Register as a Digger to find work opportunities</p>
-                <Button onClick={() => navigate('/register?complete=true&type=digger')}>
-                  Register as Digger
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Gigger Role Card */}
-        <Card className="relative overflow-hidden">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
-                  <Briefcase className="h-6 w-6 text-green-600 dark:text-green-300" />
+          {/* Gigger Role Card */}
+          <Card className="relative overflow-hidden hover-lift animate-fade-in-up stagger-3 group">
+            {/* Decorative gradient */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-accent/10 to-transparent rounded-bl-full pointer-events-none" />
+            
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-accent/10 group-hover:bg-accent/15 transition-colors">
+                  <Briefcase className="h-7 w-7 text-accent" />
                 </div>
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    Gigger
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CardTitle className="text-xl font-display">Gigger</CardTitle>
                     {activeRole === 'gigger' && (
-                      <Badge variant="secondary" className="text-xs">Active</Badge>
+                      <Badge className="bg-accent/10 text-accent border-0 font-medium">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Active
+                      </Badge>
                     )}
                     {!userRoles.includes('gigger') && (
-                      <Badge variant="outline" className="text-xs">Not Registered</Badge>
+                      <Badge variant="secondary" className="font-medium">
+                        Not Registered
+                      </Badge>
                     )}
-                  </CardTitle>
-                  <CardDescription>Project Poster</CardDescription>
+                  </div>
+                  <CardDescription className="mt-1">Project Poster — Find talent for your projects</CardDescription>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {userRoles.includes('gigger') ? (
-              <>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs sm:text-sm text-muted-foreground">Gigs Posted</p>
-                    <p className="text-xl sm:text-2xl font-bold">{stats.gigger?.gigsCount ?? 0}</p>
+            </CardHeader>
+            
+            <CardContent className="space-y-5">
+              {userRoles.includes('gigger') ? (
+                <>
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 rounded-xl bg-muted/50 text-center">
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats.gigger?.gigsCount ?? 0}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Gigs Posted</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-muted/50 text-center">
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats.gigger?.activeBidsCount ?? 0}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Active Bids</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-accent/10 text-center">
+                      <p className="text-2xl sm:text-3xl font-bold text-accent">{stats.gigger?.awardedGigsCount ?? 0}</p>
+                      <p className="text-xs text-accent/70 mt-1">Awarded</p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs sm:text-sm text-muted-foreground">Active Bids</p>
-                    <p className="text-xl sm:text-2xl font-bold">{stats.gigger?.activeBidsCount ?? 0}</p>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs sm:text-sm text-muted-foreground">Awarded Gigs</p>
-                  <p className="text-lg sm:text-xl font-semibold text-primary">{stats.gigger?.awardedGigsCount ?? 0}</p>
-                </div>
-                <div className="flex flex-col gap-2 pt-4 border-t">
-                  <Button 
-                    variant="default" 
-                    className="w-full text-sm sm:text-base"
-                    onClick={() => {
-                      handleSwitchRole('gigger');
-                      navigate('/my-gigs');
-                    }}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    View My Gigs
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full text-sm sm:text-base"
-                    onClick={() => {
-                      handleSwitchRole('gigger');
-                      navigate('/post-gig');
-                    }}
-                  >
-                    Post New Gig
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Register as a Gigger to post projects</p>
-                <Button onClick={async () => {
-                  if (!user) return;
                   
-                  try {
-                    // First check if user already has gigger role from AuthContext (avoid query if possible)
-                    if (userRoles.includes('gigger')) {
-                      await switchRole('gigger');
-                      navigate('/post-gig');
-                      return;
-                    }
-                    
-                    // Check if user already has gigger role using RPC function (bypasses RLS)
-                    let hasGiggerRole = false;
-                    let checkError = null;
-                    
-                    try {
-                      // Use RPC function to check role (bypasses RLS)
-                      const { data: hasRole, error: hasRoleError } = await supabase
-                        .rpc('has_app_role', { 
-                          _user_id: user.id, 
-                          _role: 'gigger' 
-                        });
-                      
-                      if (!hasRoleError && hasRole === true) {
-                        hasGiggerRole = true;
-                      } else if (hasRoleError) {
-                        checkError = hasRoleError;
-                        // Fallback: check AuthContext
-                        if (userRoles.includes('gigger')) {
-                          hasGiggerRole = true;
-                        }
-                      }
-                    } catch (rpcException) {
-                      console.warn('RPC function failed, checking AuthContext:', rpcException);
-                      // Fallback: check AuthContext
-                      if (userRoles.includes('gigger')) {
-                        hasGiggerRole = true;
-                      }
-                    }
-                    
-                    if (hasGiggerRole) {
-                      // User already has gigger role, just switch to it
-                      await switchRole('gigger');
-                      navigate('/post-gig');
-                    } else {
-                      // User doesn't have gigger role, add it using RPC function
-                      let roleError = null;
-                      
-                      try {
-                        // Try direct INSERT first
-                        const { error: directInsertError } = await supabase
-                          .from('user_app_roles')
-                          .insert({ user_id: user.id, app_role: 'gigger', is_active: true });
-                        
-                        // If recursion error, use RPC function
-                        if (directInsertError && (directInsertError.code === '42P17' || directInsertError.message?.includes('infinite recursion'))) {
-                          console.log('Infinite recursion detected, using RPC function');
-                          const { error: rpcInsertError } = await (supabase
-                            .rpc as any)('insert_user_app_role', {
-                              p_user_id: user.id,
-                              p_app_role: 'gigger'
-                            });
-                          
-                          if (rpcInsertError) {
-                            roleError = rpcInsertError;
-                          }
-                        } else if (directInsertError) {
-                          roleError = directInsertError;
-                        }
-                      } catch (insertException) {
-                        console.error('Exception adding gigger role:', insertException);
-                        roleError = insertException as any;
-                      }
-                      
-                      if (roleError) {
-                        console.error('Error adding gigger role:', roleError);
-                        toast({
-                          title: "Error",
-                          description: "Failed to add Gigger role. Please try again.",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      
-                      // Switch to gigger role and navigate
-                      await switchRole('gigger');
-                      toast({
-                        title: "Success",
-                        description: "Gigger role added! You can now post gigs.",
-                      });
-                      navigate('/post-gig');
-                    }
-                  } catch (err) {
-                    console.error('Exception in gigger role check:', err);
-                    toast({
-                      title: "Error",
-                      description: "An error occurred. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }}>
-                  Register as Gigger
-                </Button>
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-3 pt-2">
+                    <Button 
+                      size="lg"
+                      variant="hero"
+                      className="w-full justify-between group/btn"
+                      onClick={() => {
+                        handleSwitchRole('gigger');
+                        navigate('/my-gigs');
+                      }}
+                    >
+                      <span className="flex items-center">
+                        <FileText className="h-4 w-4 mr-2" />
+                        View My Gigs
+                      </span>
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        handleSwitchRole('gigger');
+                        navigate('/post-gig');
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Post New Gig
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                /* Registration CTA */
+                <div className="text-center py-8 px-4">
+                  <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                    <Briefcase className="h-8 w-8 text-accent" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">Become a Gigger</h3>
+                  <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                    Register as a project poster to find talented service providers and get your projects done.
+                  </p>
+                  <Button 
+                    size="lg"
+                    variant="hero"
+                    className="w-full sm:w-auto"
+                    onClick={handleRegisterGigger}
+                  >
+                    Register as Gigger
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Tips Section (only if user has roles) */}
+        {hasRoles && (
+          <Card className="border-dashed animate-fade-in-up stagger-4">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="p-2.5 rounded-lg bg-primary/10">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">Pro Tip</h3>
+                  <p className="text-sm text-muted-foreground">
+                    You can have both Digger and Gigger roles active at the same time. Switch between them seamlessly to find work or post projects!
+                  </p>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
-      </div>
-      <Footer />
-    </div>
+    </PageLayout>
   );
 }
