@@ -2,18 +2,18 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, MessageSquare, Mail, Copy, Check } from "lucide-react";
+import { Send, MessageSquare, Mail, Copy, Check, Inbox, Shield, Clock, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
-import { Navigation } from "@/components/Navigation";
 import { useProxyEmail } from "@/hooks/useProxyEmail";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import PageLayout from "@/components/layout/PageLayout";
 
 // SECURITY: Input validation schema
 const messageSchema = z.object({
@@ -282,205 +282,316 @@ export default function Messages() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading conversations...</div>
-      </div>
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <div className="h-12 w-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+              <MessageSquare className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-muted-foreground">Loading conversations...</p>
+          </div>
+        </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            digsandgigs
-          </h1>
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </div>
-      </nav>
-
+    <PageLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+        {/* Header Section */}
+        <div className="mb-8 animate-fade-in-up">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
+                Messages
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Communicate securely with clients and professionals
+              </p>
+            </div>
+            
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap gap-3">
+              <Badge variant="outline" className="gap-1.5 px-3 py-1.5 bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400">
+                <Shield className="h-3.5 w-3.5" />
+                Private & Secure
+              </Badge>
+              <Badge variant="outline" className="gap-1.5 px-3 py-1.5 bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400">
+                <Mail className="h-3.5 w-3.5" />
+                Email Integration
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)] animate-fade-in-up" style={{ animationDelay: "100ms" }}>
           {/* Conversations List */}
-          <Card className="lg:col-span-1">
-            <CardContent className="p-0">
-              <div className="p-4 border-b border-border">
-                <h2 className="text-xl font-bold">Messages</h2>
+          <Card className="lg:col-span-1 border-border/50 shadow-sm overflow-hidden">
+            <CardHeader className="border-b border-border/50 bg-muted/30 py-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Inbox className="h-5 w-5 text-primary" />
+                  Inbox
+                </CardTitle>
+                {conversations.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {conversations.length}
+                  </Badge>
+                )}
               </div>
-              <ScrollArea className="h-[calc(100vh-280px)]">
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[calc(100vh-380px)]">
                 {conversations.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No conversations yet</p>
+                  <div className="p-8 text-center">
+                    <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
+                      <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                    <h3 className="font-medium text-foreground mb-2">No conversations yet</h3>
+                    <p className="text-sm text-muted-foreground">
+                      When you connect with clients or professionals, your messages will appear here.
+                    </p>
                   </div>
                 ) : (
-                  conversations.map((conv) => (
-                    <div
-                      key={conv.id}
-                      className={`p-4 border-b border-border cursor-pointer hover:bg-accent/50 transition-colors ${
-                        selectedConversation === conv.id ? "bg-accent" : ""
-                      }`}
-                      onClick={() => setSelectedConversation(conv.id)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar>
-                          <AvatarFallback>
-                            {getConversationPartner(conv)[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">
-                            {getConversationPartner(conv)}
-                          </p>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {conv.gigs?.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(new Date(conv.updated_at), {
-                              addSuffix: true,
-                            })}
-                          </p>
+                  <div className="divide-y divide-border/50">
+                    {conversations.map((conv) => (
+                      <div
+                        key={conv.id}
+                        className={`p-4 cursor-pointer transition-all duration-200 hover:bg-accent/50 ${
+                          selectedConversation === conv.id 
+                            ? "bg-primary/5 border-l-2 border-l-primary" 
+                            : "hover:border-l-2 hover:border-l-transparent"
+                        }`}
+                        onClick={() => setSelectedConversation(conv.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-10 w-10 ring-2 ring-border/50">
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                              {getConversationPartner(conv)[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="font-semibold text-foreground truncate">
+                                {getConversationPartner(conv)}
+                              </p>
+                              <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatDistanceToNow(new Date(conv.updated_at), {
+                                  addSuffix: true,
+                                }).replace("about ", "")}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate mt-0.5">
+                              {conv.gigs?.title || "General inquiry"}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </ScrollArea>
             </CardContent>
           </Card>
 
           {/* Messages View */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 border-border/50 shadow-sm overflow-hidden flex flex-col">
             {selectedConversation ? (
-              <CardContent className="p-0 flex flex-col h-full">
-                <div className="p-4 border-b border-border space-y-3">
+              <>
+                {/* Conversation Header */}
+                <CardHeader className="border-b border-border/50 bg-muted/30 py-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">
-                      {conversations.find((c) => c.id === selectedConversation)?.gigs?.title || "Conversation"}
-                    </h3>
-                    <Badge variant="outline" className="text-xs">
-                      <MessageSquare className="h-3 w-3 mr-1" />
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 ring-2 ring-border/50">
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {getConversationPartner(
+                            conversations.find((c) => c.id === selectedConversation)!
+                          )[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-semibold text-foreground">
+                          {getConversationPartner(
+                            conversations.find((c) => c.id === selectedConversation)!
+                          )}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {conversations.find((c) => c.id === selectedConversation)?.gigs?.title || "General inquiry"}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="gap-1.5 bg-background">
+                      <MessageSquare className="h-3 w-3" />
                       In-App + Email
                     </Badge>
                   </div>
                   
                   {/* Proxy Email Section */}
                   <TooltipProvider>
-                    <div className="flex flex-col sm:flex-row gap-2 p-3 bg-muted/50 rounded-lg text-sm">
+                    <div className="flex flex-col sm:flex-row gap-3 p-3 bg-gradient-to-r from-blue-500/5 to-primary/5 rounded-lg border border-primary/10">
                       {partnerProxyEmail && (
                         <div className="flex items-center gap-2 flex-1">
-                          <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className="text-muted-foreground">Contact via email:</span>
-                          <code className="bg-background px-2 py-0.5 rounded text-xs truncate max-w-[200px]">
-                            {partnerProxyEmail}
-                          </code>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6"
-                                onClick={() => copyToClipboard(partnerProxyEmail)}
-                              >
-                                {copiedEmail === partnerProxyEmail ? (
-                                  <Check className="h-3 w-3 text-green-500" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Copy email</TooltipContent>
-                          </Tooltip>
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <Mail className="h-4 w-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-muted-foreground mb-0.5">Contact via email</p>
+                            <div className="flex items-center gap-2">
+                              <code className="bg-background px-2 py-1 rounded text-xs font-mono truncate max-w-[200px] border border-border/50">
+                                {partnerProxyEmail}
+                              </code>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-7 w-7 shrink-0"
+                                    onClick={() => copyToClipboard(partnerProxyEmail)}
+                                  >
+                                    {copiedEmail === partnerProxyEmail ? (
+                                      <Check className="h-3.5 w-3.5 text-green-500" />
+                                    ) : (
+                                      <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy email</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </div>
                         </div>
                       )}
                       {myProxyEmail && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground border-t sm:border-t-0 sm:border-l border-border pt-2 sm:pt-0 sm:pl-2">
-                          <span>Your proxy:</span>
-                          <code className="bg-background px-2 py-0.5 rounded truncate max-w-[150px]">
-                            {myProxyEmail}
-                          </code>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6"
-                                onClick={() => copyToClipboard(myProxyEmail)}
-                              >
-                                {copiedEmail === myProxyEmail ? (
-                                  <Check className="h-3 w-3 text-green-500" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Copy your proxy email</TooltipContent>
-                          </Tooltip>
+                        <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-border/50 pt-3 sm:pt-0 sm:pl-3">
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-muted-foreground mb-0.5">Your proxy email</p>
+                            <div className="flex items-center gap-2">
+                              <code className="bg-background px-2 py-1 rounded text-xs font-mono truncate max-w-[150px] border border-border/50">
+                                {myProxyEmail}
+                              </code>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-7 w-7 shrink-0"
+                                    onClick={() => copyToClipboard(myProxyEmail)}
+                                  >
+                                    {copiedEmail === myProxyEmail ? (
+                                      <Check className="h-3.5 w-3.5 text-green-500" />
+                                    ) : (
+                                      <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy your proxy email</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
                   </TooltipProvider>
-                </div>
-                <ScrollArea className="flex-1 p-4 h-[calc(100vh-400px)]">
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`mb-4 flex ${
-                        msg.sender_id === currentUser?.id ? "justify-end" : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          msg.sender_id === currentUser?.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        }`}
-                      >
-                        <p className="text-sm">{msg.content}</p>
-                        <p className="text-xs opacity-70 mt-1">
-                          {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                        </p>
-                      </div>
+                </CardHeader>
+
+                {/* Messages List */}
+                <CardContent className="flex-1 p-0 overflow-hidden">
+                  <ScrollArea className="h-[calc(100vh-520px)] p-4">
+                    <div className="space-y-4">
+                      {messages.length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="h-12 w-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+                            <MessageSquare className="h-6 w-6 text-muted-foreground/50" />
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            No messages yet. Start the conversation!
+                          </p>
+                        </div>
+                      ) : (
+                        messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`flex ${
+                              msg.sender_id === currentUser?.id ? "justify-end" : "justify-start"
+                            }`}
+                          >
+                            <div
+                              className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
+                                msg.sender_id === currentUser?.id
+                                  ? "bg-primary text-primary-foreground rounded-br-md"
+                                  : "bg-muted border border-border/50 rounded-bl-md"
+                              }`}
+                            >
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                              <p className={`text-xs mt-1.5 ${
+                                msg.sender_id === currentUser?.id 
+                                  ? "text-primary-foreground/70" 
+                                  : "text-muted-foreground"
+                              }`}>
+                                {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
-                  ))}
-                </ScrollArea>
-                <div className="p-4 border-t border-border">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
+                  </ScrollArea>
+                </CardContent>
+
+                {/* Message Input */}
+                <div className="p-4 border-t border-border/50 bg-muted/30">
+                  <div className="flex gap-3">
+                    <div className="flex-1 relative">
                       <Input
                         placeholder="Type your message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                        onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
                         maxLength={5000}
+                        className="pr-16 bg-background border-border/50 focus-visible:ring-primary/50"
                       />
-                      <Button onClick={sendMessage} size="icon">
-                        <Send className="h-4 w-4" />
-                      </Button>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        {newMessage.length}/5000
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground text-right">
-                      {newMessage.length}/5000 characters
-                    </p>
+                    <Button 
+                      onClick={sendMessage} 
+                      size="icon"
+                      disabled={!newMessage.trim()}
+                      className="shrink-0 shadow-sm"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    <Shield className="h-3 w-3 inline mr-1" />
+                    Messages are private and only visible to you and the recipient
+                  </p>
                 </div>
-              </CardContent>
+              </>
             ) : (
               <CardContent className="flex items-center justify-center h-full">
-                <div className="text-center text-muted-foreground">
-                  <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <p>Select a conversation to start messaging</p>
+                <div className="text-center max-w-sm">
+                  <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6">
+                    <MessageSquare className="h-10 w-10 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
+                    Select a conversation
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Choose a conversation from the list to start messaging securely with clients or professionals.
+                  </p>
                 </div>
               </CardContent>
             )}
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
