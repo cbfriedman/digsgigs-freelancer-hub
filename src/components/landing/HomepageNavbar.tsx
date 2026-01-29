@@ -9,9 +9,7 @@ import {
   LogOut,
   ChevronDown,
   HelpCircle,
-  MessageSquare,
-  DollarSign,
-  X
+  DollarSign
 } from "lucide-react";
 import {
   Sheet,
@@ -31,11 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 
-interface HomepageNavbarProps {
-  onChatOpen: () => void;
-}
-
-export const HomepageNavbar = ({ onChatOpen }: HomepageNavbarProps) => {
+export const HomepageNavbar = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { trackButtonClick } = useGA4Tracking();
@@ -116,16 +110,6 @@ export const HomepageNavbar = ({ onChatOpen }: HomepageNavbarProps) => {
           </Button>
           
           <div className="w-px h-6 bg-border mx-2" />
-          
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onChatOpen}
-            className="gap-2 border-primary/20 hover:border-primary hover:bg-primary/5"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Chat with us
-          </Button>
           
           {user ? (
             <DropdownMenu>
@@ -208,17 +192,6 @@ export const HomepageNavbar = ({ onChatOpen }: HomepageNavbarProps) => {
               >
                 <HelpCircle className="mr-3 h-5 w-5 text-primary" />
                 How It Works
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="justify-start h-12" 
-                onClick={() => {
-                  onChatOpen();
-                  setMobileMenuOpen(false);
-                }}
-              >
-                <MessageSquare className="mr-3 h-5 w-5 text-primary" />
-                Chat with us
               </Button>
               
               <div className="h-px bg-border my-4" />
