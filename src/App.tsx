@@ -10,6 +10,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
 import { PageViewTracker } from "./components/PageViewTracker";
+import { FloatingChatButton } from "./components/FloatingChatButton";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
 // Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
@@ -117,6 +118,7 @@ const RootLayout = () => {
     <>
       <PageViewTracker />
       <Outlet />
+      <FloatingChatButton />
     </>
   );
 };

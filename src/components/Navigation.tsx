@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/digsandgigs-logo.svg";
 import { 
-  MessageSquare, 
   ShoppingCart, 
   ChevronDown, 
   User, 
@@ -14,7 +13,6 @@ import {
   Sparkles
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import AIChatbot from "@/components/AIChatbot";
 import { DiggerProfileSelector } from "@/components/DiggerProfileSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -55,7 +53,6 @@ const roleConfig: Record<UserAppRole, { label: string; emoji: string; color: str
 export function Navigation({ showBackButton = false, backTo = "/", backLabel = "Back to Home" }: NavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [chatOpen, setChatOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { user, userRoles, activeRole, switchRole, signOut } = useAuth();
@@ -259,16 +256,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 )}
               </Button>
 
-              {/* Chat Button */}
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={() => setChatOpen(true)}
-                className="gap-1.5 border-primary/20 hover:border-primary/40 hover:bg-primary/5"
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                <span className="hidden lg:inline">Chat</span>
-              </Button>
 
               {showBackButton && (
                 <Button variant="ghost" size="sm" onClick={() => navigate(backTo)}>
@@ -413,19 +400,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         </>
                       )}
 
-                      {/* Chat */}
-                      <div className="pt-4">
-                        <button
-                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/50"
-                          onClick={() => {
-                            setChatOpen(true);
-                            setMobileMenuOpen(false);
-                          }}
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          <span className="font-medium">Chat with us</span>
-                        </button>
-                      </div>
                     </div>
 
                     {/* Footer Actions */}
@@ -474,8 +448,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
           </div>
         </div>
       </nav>
-      
-      <AIChatbot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );
