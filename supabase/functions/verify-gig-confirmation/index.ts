@@ -51,14 +51,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (updateError) throw updateError;
 
-    // Blast to diggers now that gig is confirmed
-    console.log("Blasting lead to diggers for confirmed gig:", gigId);
+    // Blast to PRO diggers immediately (non-Pro will receive after 2 hour delay via cron)
+    console.log("Blasting lead to PRO diggers for confirmed gig:", gigId);
     try {
       await supabase.functions.invoke("blast-lead-to-diggers", {
-        body: { leadId: gigId }
+        body: { leadId: gigId, proOnly: true }
       });
+      console.log("Pro blast sent. Non-Pro diggers will receive in 2 hours.");
     } catch (blastError) {
-      console.error("Error blasting to diggers:", blastError);
+      console.error("Error blasting to Pro diggers:", blastError);
     }
 
     // Send management email with edit/cancel links
