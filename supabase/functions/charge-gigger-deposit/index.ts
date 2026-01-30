@@ -13,31 +13,23 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Deposit calculation constants
-const NON_EXCLUSIVE_RATE = 0.02; // 2%
-const NON_EXCLUSIVE_MIN_CENTS = 300; // $3 minimum
-const NON_EXCLUSIVE_MAX_CENTS = 4900; // $49 maximum
-const DEPOSIT_BASE_RATE = 0.05; // 5% base
-const DEPOSIT_MIN_CENTS = 24900; // $249 minimum
+// NEW MODEL: 15% deposit, 8% referral fee (no caps)
+// Digger pays 0 upfront - referral fee only charged if they don't accept
+const DEPOSIT_RATE = 0.15; // 15% deposit from Gigger
+const REFERRAL_FEE_RATE = 0.08; // 8% referral fee (deducted from deposit on acceptance)
 
-// Calculate non-exclusive lead cost
-const calculateNonExclusiveCostCents = (bidAmountCents: number): number => {
-  const percentageCost = Math.round(bidAmountCents * NON_EXCLUSIVE_RATE);
-  return Math.max(NON_EXCLUSIVE_MIN_CENTS, Math.min(percentageCost, NON_EXCLUSIVE_MAX_CENTS));
-};
-
-// Calculate Gigger deposit: higher of (5% + non-exclusive cost) or $249
+// Calculate Gigger deposit: 15% of bid amount (no minimum)
 const calculateGiggerDepositCents = (bidAmountCents: number): { 
   total: number; 
-  baseRate: number; 
-  leadCost: number; 
+  depositAmount: number; 
+  referralFee: number; 
 } => {
-  const baseRateCents = Math.round(bidAmountCents * DEPOSIT_BASE_RATE);
-  const leadCostCents = calculateNonExclusiveCostCents(bidAmountCents);
-  const totalCents = baseRateCents + leadCostCents;
+  const depositCents = Math.round(bidAmountCents * DEPOSIT_RATE);
+  const referralFeeCents = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
   return {
-    total: Math.max(DEPOSIT_MIN_CENTS, totalCents),
-    baseRate: baseRateCents,
-    leadCost: leadCostCents,
+    total: depositCents,
+    depositAmount: depositCents,
+    referralFee: referralFeeCents,
   };
 };
 
@@ -113,8 +105,8 @@ serve(async (req) => {
     logStep("Deposit calculated", {
       bidAmount: bid.amount,
       depositTotal: depositDetails.total / 100,
-      baseRate: depositDetails.baseRate / 100,
-      leadCost: depositDetails.leadCost / 100,
+      depositAmount: depositDetails.depositAmount / 100,
+      referralFee: depositDetails.referralFee / 100,
     });
 
     // Get Gigger's profile to find Stripe customer ID
@@ -151,8 +143,8 @@ serve(async (req) => {
         gigger_id: giggerId,
         digger_id: diggerId,
         deposit_amount_cents: depositDetails.total,
-        base_rate_amount_cents: depositDetails.baseRate,
-        lead_cost_amount_cents: depositDetails.leadCost,
+        base_rate_amount_cents: depositDetails.depositAmount, // Full 15% deposit
+        lead_cost_amount_cents: depositDetails.referralFee, // 8% referral fee portion
         status: "pending",
         acceptance_deadline: acceptanceDeadline,
       })
@@ -177,7 +169,7 @@ serve(async (req) => {
             currency: "usd",
             product_data: {
               name: "Exclusive Award Deposit",
-              description: `Deposit for exclusive job award. 5% (${(depositDetails.baseRate / 100).toFixed(2)}) released to Digger on acceptance.`,
+              description: `15% deposit ($${(depositDetails.total / 100).toFixed(2)}) for exclusive job award. 8% referral fee ($${(depositDetails.referralFee / 100).toFixed(2)}) is retained on Digger acceptance. Full refund if Digger doesn't accept.`,
             },
             unit_amount: depositDetails.total,
           },

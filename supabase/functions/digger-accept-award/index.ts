@@ -153,7 +153,8 @@ serve(async (req) => {
       })
       .eq("id", gigId);
 
-    // Release 5% deposit to Digger if there's a paid deposit
+    // Release deposit to Digger if there's a paid deposit
+    // NEW MODEL: 15% deposit, 8% referral fee retained, remaining released to Digger
     const { data: deposit, error: depositError } = await supabaseClient
       .from("gigger_deposits")
       .select("*")
@@ -162,14 +163,18 @@ serve(async (req) => {
       .single();
 
     if (deposit && !depositError) {
-      // Calculate the 5% portion to release to Digger as down-payment/advance
+      // Calculate amounts: 8% referral fee is retained, rest goes to Digger
       const bidAmount = bid.amount || ((bid.amount_min || 0) + (bid.amount_max || 0)) / 2;
-      const fivePercentAdvance = Math.round(bidAmount * 0.05 * 100); // in cents
+      const bidAmountCents = Math.round(bidAmount * 100);
+      const referralFeeCents = Math.round(bidAmountCents * 0.08); // 8% referral fee
+      const releasedToDiggerCents = deposit.deposit_amount_cents - referralFeeCents;
 
-      logStep("Releasing 5% down-payment to Digger as advance", {
+      logStep("Processing deposit release", {
         depositId: deposit.id,
         bidAmount,
-        fivePercentAdvance: fivePercentAdvance / 100,
+        depositAmountCents: deposit.deposit_amount_cents,
+        referralFeeCents,
+        releasedToDiggerCents,
       });
 
       // Update deposit status to released
@@ -178,16 +183,25 @@ serve(async (req) => {
         .update({
           status: "released",
           released_at: new Date().toISOString(),
-          released_to_digger_cents: fivePercentAdvance,
+          released_to_digger_cents: releasedToDiggerCents,
           updated_at: new Date().toISOString(),
         })
         .eq("id", deposit.id);
 
-      // TODO: If using Stripe Connect, transfer fivePercentAdvance to Digger's connected account
-      // For now, we just record it - actual transfer would require Stripe Connect setup
-      logStep("Down-payment released to Digger as advance", {
+      // Record the referral fee as charged
+      await supabaseClient
+        .from("bids")
+        .update({
+          referral_fee_cents: referralFeeCents,
+          referral_fee_charged_at: new Date().toISOString(),
+        })
+        .eq("id", bidId);
+
+      // TODO: If using Stripe Connect, transfer releasedToDiggerCents to Digger's connected account
+      logStep("Deposit processed - referral fee retained, remainder released to Digger", {
         depositId: deposit.id,
-        releasedAmount: fivePercentAdvance / 100,
+        referralFee: referralFeeCents / 100,
+        releasedToDigger: releasedToDiggerCents / 100,
       });
     }
 
