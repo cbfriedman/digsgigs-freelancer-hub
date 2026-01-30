@@ -133,7 +133,32 @@ export default function BecomeADigger() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-muted rounded-lg p-4 text-left space-y-2">
+              {/* Benefits Grid */}
+              <div className="grid gap-3 mb-4">
+                <div className="bg-muted rounded-lg p-3 flex items-center gap-3">
+                  <Zap className="w-6 h-6 text-primary flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-sm">Instant Delivery</h3>
+                    <p className="text-xs text-muted-foreground">Get leads emailed the moment clients post</p>
+                  </div>
+                </div>
+                <div className="bg-muted rounded-lg p-3 flex items-center gap-3">
+                  <DollarSign className="w-6 h-6 text-primary flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-sm">Pay Per Lead</h3>
+                    <p className="text-xs text-muted-foreground">Only pay for leads you want ($9-$49)</p>
+                  </div>
+                </div>
+                <div className="bg-muted rounded-lg p-3 flex items-center gap-3">
+                  <Users className="w-6 h-6 text-primary flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-sm">Keep 100%</h3>
+                    <p className="text-xs text-muted-foreground">No commissions on work you land</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-card border rounded-lg p-4 text-left space-y-2">
                 <h3 className="font-semibold">What happens next?</h3>
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li>✓ You'll receive emails when new projects match your skills</li>
@@ -176,24 +201,6 @@ export default function BecomeADigger() {
             </p>
           </div>
 
-          {/* Benefits Grid */}
-          <div className="grid md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-card border rounded-lg p-4 text-center">
-              <Zap className="w-8 h-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold">Instant Delivery</h3>
-              <p className="text-sm text-muted-foreground">Get leads emailed the moment clients post</p>
-            </div>
-            <div className="bg-card border rounded-lg p-4 text-center">
-              <DollarSign className="w-8 h-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold">Pay Per Lead</h3>
-              <p className="text-sm text-muted-foreground">Only pay for leads you want ($9-$49)</p>
-            </div>
-            <div className="bg-card border rounded-lg p-4 text-center">
-              <Users className="w-8 h-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold">Keep 100%</h3>
-              <p className="text-sm text-muted-foreground">No commissions on work you land</p>
-            </div>
-          </div>
 
           {/* Simple Form */}
           <Card className="max-w-md mx-auto shadow-lg border-primary/20">
