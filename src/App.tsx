@@ -66,6 +66,7 @@ import CheckoutSuccess from "./pages/CheckoutSuccess";
 import TelemarketerDashboard from "./pages/TelemarketerDashboard";
 import ProfileCreationDemo from "./pages/ProfileCreationDemo";
 import Register from "./pages/Register";
+import ProDiggerSignup from "./pages/ProDiggerSignup";
 import RoleDashboard from "./pages/RoleDashboard";
 import Logout from "./pages/Logout";
 import KeywordSummary from "./pages/KeywordSummary";
@@ -142,6 +143,10 @@ const router = createBrowserRouter(
         path: "/register",
         element: <Register />,
         errorElement: <div>Register route error</div>,
+      },
+      {
+        path: "/pro-digger-signup",
+        element: <ProDiggerSignup />,
       },
       {
         path: "/logout",

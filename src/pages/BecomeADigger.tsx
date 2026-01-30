@@ -97,7 +97,7 @@ export default function BecomeADigger() {
       phone,
       subscriberId,
     }));
-    navigate("/register?mode=signup&type=digger&upgrade=pro");
+    navigate("/pro-digger-signup");
   };
 
   if (showThankYou) {

@@ -7,9 +7,15 @@ interface GoogleSignInButtonProps {
   className?: string;
   disabled?: boolean;
   label?: string;
+  redirectTo?: string;
 }
 
-export const GoogleSignInButton = ({ className, disabled, label = "Sign up with Google" }: GoogleSignInButtonProps) => {
+export const GoogleSignInButton = ({ 
+  className, 
+  disabled, 
+  label = "Sign up with Google",
+  redirectTo,
+}: GoogleSignInButtonProps) => {
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
@@ -18,7 +24,7 @@ export const GoogleSignInButton = ({ className, disabled, label = "Sign up with 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/role-dashboard`,
+          redirectTo: redirectTo || `${window.location.origin}/role-dashboard`,
         },
       });
 
