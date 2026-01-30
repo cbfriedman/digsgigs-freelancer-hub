@@ -38,7 +38,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (8% referral fee, $50-$249). No subscriptions. Bogus leads refundable. Prices subject to change." />
+        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (8% referral fee, no caps). Gigger pays 15% deposit. No subscriptions. Bogus leads refundable. Prices subject to change." />
       </Helmet>
       
       <PageLayout showNav={true} showFooter={true} maxWidth="full" padded={false}>
@@ -159,32 +159,27 @@ export default function Pricing() {
                   </CardHeader>
                   <CardContent className="space-y-6 pt-2">
                     <p className="text-center text-muted-foreground">
-                      8% referral fee when awarded. Fee comes from Gigger's 5% deposit (your down-payment).
+                      8% referral fee when awarded. Fee comes from Gigger's 15% deposit — you pay nothing out of pocket.
                     </p>
                     
                     <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl p-5 border border-accent/10">
                       <div className="text-sm text-center mb-2 text-muted-foreground font-medium">Referral Fee</div>
                       <div className="text-center font-mono font-bold text-accent text-lg">
-                        Higher of 8% or $50
+                        8% of your bid
                       </div>
                     </div>
 
-                    <div className="flex justify-center gap-8">
+                    <div className="flex justify-center">
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-accent">$50</div>
-                        <div className="text-xs text-muted-foreground font-medium">Minimum</div>
-                      </div>
-                      <div className="w-px bg-border" />
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-accent">$249</div>
-                        <div className="text-xs text-muted-foreground font-medium">Maximum</div>
+                        <div className="text-3xl font-bold text-accent">No Caps</div>
+                        <div className="text-xs text-muted-foreground font-medium">Deducted from Gigger deposit</div>
                       </div>
                     </div>
                     
                     <div className="bg-muted/50 rounded-xl p-4 text-center border border-border/50">
-                      <div className="text-xs text-muted-foreground mb-1 font-medium">Gigger Deposit (Down-Payment)</div>
-                      <div className="text-sm font-semibold">Higher of (5% + lead cost) or $249</div>
-                      <div className="text-xs text-muted-foreground mt-1">Deducted from total owed to Digger</div>
+                      <div className="text-xs text-muted-foreground mb-1 font-medium">Gigger Deposit</div>
+                      <div className="text-sm font-semibold">15% of bid amount</div>
+                      <div className="text-xs text-muted-foreground mt-1">Refundable if Digger doesn't accept in 24h</div>
                     </div>
 
                     <ul className="space-y-3">
@@ -297,21 +292,20 @@ export default function Pricing() {
                     <Award className="h-3 w-3 mr-1" />
                     Exclusive
                   </Badge>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-2">Pay-On-Acceptance Examples</h2>
-                  <p className="text-muted-foreground">Referral fee based on your bid amount</p>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2">Referral Fee Examples</h2>
+                  <p className="text-muted-foreground">8% of your bid — deducted from Gigger's 15% deposit</p>
                 </div>
                 
                 <div className="grid md:grid-cols-3 gap-6">
                   <Card className="text-center hover-lift border-accent/20">
                     <CardContent className="pt-8 pb-8">
                       <div className="text-sm text-muted-foreground mb-2 font-medium">Your Bid Amount</div>
-                      <div className="text-xl font-bold mb-4">$1,500</div>
+                      <div className="text-xl font-bold mb-4">$1,000</div>
                       <div className="bg-muted/50 rounded-lg p-3 mb-4">
-                        <div className="text-sm text-muted-foreground mb-1">3% = $45</div>
-                        <div className="text-sm text-muted-foreground">Below minimum</div>
+                        <div className="text-sm text-muted-foreground mb-1">× 8%</div>
+                        <div className="text-sm text-muted-foreground">= $80</div>
                       </div>
-                      <div className="text-5xl font-bold text-accent mb-1">$50</div>
-                      <div className="text-sm text-muted-foreground font-medium">(minimum)</div>
+                      <div className="text-5xl font-bold text-accent">$80</div>
                     </CardContent>
                   </Card>
                   <Card className="text-center hover-lift border-accent/20">
@@ -319,24 +313,31 @@ export default function Pricing() {
                       <div className="text-sm text-muted-foreground mb-2 font-medium">Your Bid Amount</div>
                       <div className="text-xl font-bold mb-4">$5,000</div>
                       <div className="bg-muted/50 rounded-lg p-3 mb-4">
-                        <div className="text-sm text-muted-foreground mb-1">× 3%</div>
-                        <div className="text-sm text-muted-foreground">= $150</div>
+                        <div className="text-sm text-muted-foreground mb-1">× 8%</div>
+                        <div className="text-sm text-muted-foreground">= $400</div>
                       </div>
-                      <div className="text-5xl font-bold text-accent">$150</div>
+                      <div className="text-5xl font-bold text-accent">$400</div>
                     </CardContent>
                   </Card>
                   <Card className="text-center hover-lift border-accent/20">
                     <CardContent className="pt-8 pb-8">
                       <div className="text-sm text-muted-foreground mb-2 font-medium">Your Bid Amount</div>
-                      <div className="text-xl font-bold mb-4">$10,000+</div>
+                      <div className="text-xl font-bold mb-4">$10,000</div>
                       <div className="bg-muted/50 rounded-lg p-3 mb-4">
-                        <div className="text-sm text-muted-foreground mb-1">3% = $300+</div>
-                        <div className="text-sm text-muted-foreground">Above maximum</div>
+                        <div className="text-sm text-muted-foreground mb-1">× 8%</div>
+                        <div className="text-sm text-muted-foreground">= $800</div>
                       </div>
-                      <div className="text-5xl font-bold text-accent mb-1">$249</div>
-                      <div className="text-sm text-muted-foreground font-medium">(cap)</div>
+                      <div className="text-5xl font-bold text-accent">$800</div>
                     </CardContent>
                   </Card>
+                </div>
+                
+                {/* Non-acceptance penalty info */}
+                <div className="mt-8 p-6 bg-destructive/5 border border-destructive/20 rounded-xl text-center">
+                  <div className="text-sm font-semibold text-destructive mb-2">Non-Acceptance Penalty</div>
+                  <p className="text-sm text-muted-foreground">
+                    If you don't accept an awarded job within 24 hours, you'll be charged <span className="font-semibold">8% of the bid amount ($100 min, $500 max)</span>.
+                  </p>
                 </div>
               </div>
               

@@ -74,7 +74,7 @@ export const PricingPreviewSection = () => {
                 <span className="text-4xl font-display font-bold text-accent">8%</span>
                 <span className="text-lg text-muted-foreground ml-2">referral fee</span>
               </div>
-              <p className="text-sm text-muted-foreground">No minimum or maximum caps</p>
+              <p className="text-sm text-muted-foreground">No caps — deducted from Gigger deposit</p>
             </Card>
           </div>
 
