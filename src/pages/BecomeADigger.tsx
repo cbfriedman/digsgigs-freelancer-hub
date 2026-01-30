@@ -121,37 +121,55 @@ export default function BecomeADigger() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Benefits Grid */}
-              <div className="grid gap-3 mb-4">
-                <div className="bg-muted rounded-lg p-3 flex items-center gap-3">
-                  <Zap className="w-6 h-6 text-primary flex-shrink-0" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-sm">Instant Delivery</h3>
-                    <p className="text-xs text-muted-foreground">Get leads emailed the moment clients post</p>
+              {/* Two Payment Options */}
+              <div className="space-y-3 mb-4">
+                <h3 className="font-semibold text-sm text-center">Two Ways to Get Work:</h3>
+                
+                {/* Option 1: Pay Per Lead */}
+                <div className="bg-muted rounded-lg p-4 border-l-4 border-primary">
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
+                    <div className="text-left">
+                      <h4 className="font-semibold text-sm">Option 1: Pay Per Lead</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Browse leads and unlock the ones you want for <span className="font-medium text-foreground">$9-$49</span>. 
+                        Contact info revealed instantly. No further fees.
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-muted rounded-lg p-3 flex items-center gap-3">
-                  <DollarSign className="w-6 h-6 text-primary flex-shrink-0" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-sm">Pay Per Lead</h3>
-                    <p className="text-xs text-muted-foreground">Only pay for leads you want ($9-$49)</p>
-                  </div>
-                </div>
-                <div className="bg-muted rounded-lg p-3 flex items-center gap-3">
-                  <Users className="w-6 h-6 text-primary flex-shrink-0" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-sm">Keep 100%</h3>
-                    <p className="text-xs text-muted-foreground">No commissions on work you land</p>
+
+                {/* Option 2: Get Awarded */}
+                <div className="bg-muted rounded-lg p-4 border-l-4 border-accent">
+                  <div className="flex items-start gap-3">
+                    <Star className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                    <div className="text-left">
+                      <h4 className="font-semibold text-sm">Option 2: Get Awarded a Project</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        When a client chooses you, pay only <span className="font-medium text-foreground">8% referral fee</span>. 
+                        Keep 92% of your earnings—no upfront cost.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
+              {/* Additional Benefits */}
               <div className="bg-card border rounded-lg p-4 text-left space-y-2">
                 <h3 className="font-semibold">What happens next?</h3>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>✓ You'll receive emails when new projects match your skills</li>
-                  <li>✓ Pay only for the leads you want (starting at $9)</li>
-                  <li>✓ No subscriptions or commitments required</li>
+                  <li className="flex items-start gap-2">
+                    <Zap className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span>You'll receive emails instantly when new projects match your skills</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span>Choose to unlock leads ($9-$49) OR wait to be awarded (8% fee)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span>No subscriptions or commitments required</span>
+                  </li>
                 </ul>
               </div>
               <div className="flex flex-col gap-2">
