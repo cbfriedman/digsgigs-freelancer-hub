@@ -201,6 +201,12 @@ export default function BecomeADigger() {
             </p>
           </div>
 
+          {/* Benefit Highlight */}
+          <div className="bg-card border rounded-lg p-4 text-center mb-8 max-w-md mx-auto">
+            <Zap className="w-8 h-8 text-primary mx-auto mb-2" />
+            <h3 className="font-semibold">Instant Delivery</h3>
+            <p className="text-sm text-muted-foreground">Get leads emailed the moment clients post</p>
+          </div>
 
           {/* Simple Form */}
           <Card className="max-w-md mx-auto shadow-lg border-primary/20">
