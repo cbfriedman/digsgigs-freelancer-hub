@@ -12,19 +12,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHARGE-REFERRAL-FEE] ${step}${detailsStr}`);
 };
 
-// Fee configuration
-const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
-const REFERRAL_FEE_MIN_CENTS = 1000; // $10 minimum
-const REFERRAL_FEE_CAP_CENTS = 24900; // $249 cap
+// Fee configuration - NEW MODEL: 8% with no caps
+const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive (no caps)
 
-// Non-exclusive pricing for deposit calculation
-const NON_EXCLUSIVE_RATE = 0.02; // 2%
-const NON_EXCLUSIVE_MIN_CENTS = 300; // $3 minimum
-const NON_EXCLUSIVE_MAX_CENTS = 4900; // $49 maximum
-
-// Deposit configuration: higher of (5% + non-exclusive cost) or $249
-const DEPOSIT_BASE_RATE = 0.05; // 5% base
-const DEPOSIT_MIN_CENTS = 24900; // $249 minimum deposit
+// Deposit configuration: 15% deposit from Gigger
+const DEPOSIT_RATE = 0.15; // 15% deposit
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -96,26 +88,18 @@ serve(async (req) => {
       );
     }
 
-    // Calculate the referral fee (8% with $10 min, $249 cap)
+    // Calculate the referral fee (8% with no caps)
     const bidAmountCents = Math.round(bid.amount * 100);
-    const calculatedFeeCents = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
-    // Apply minimum and maximum constraints
-    const feeCents = Math.max(REFERRAL_FEE_MIN_CENTS, Math.min(calculatedFeeCents, REFERRAL_FEE_CAP_CENTS));
+    const feeCents = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
 
-    // Calculate Gigger deposit: higher of (5% + non-exclusive cost) or $249
-    const nonExclusivePercentageCents = Math.round(bidAmountCents * NON_EXCLUSIVE_RATE);
-    const nonExclusiveCostCents = Math.max(NON_EXCLUSIVE_MIN_CENTS, Math.min(nonExclusivePercentageCents, NON_EXCLUSIVE_MAX_CENTS));
-    const percentageDepositCents = Math.round(bidAmountCents * DEPOSIT_BASE_RATE) + nonExclusiveCostCents;
-    const depositCents = Math.max(DEPOSIT_MIN_CENTS, percentageDepositCents);
+    // Calculate Gigger deposit for reference: 15% of bid
+    const depositCents = Math.round(bidAmountCents * DEPOSIT_RATE);
 
     logStep("Fee calculated", {
       bidAmount: bid.amount,
       bidAmountCents,
-      calculatedFeeCents,
       feeCents,
-      minApplied: calculatedFeeCents < REFERRAL_FEE_MIN_CENTS,
-      capApplied: calculatedFeeCents > REFERRAL_FEE_CAP_CENTS,
-      nonExclusiveCostCents,
+      feeRate: REFERRAL_FEE_RATE,
       depositCents
     });
 
@@ -172,7 +156,7 @@ serve(async (req) => {
         digger_id: diggerId,
         amount_cents: feeCents,
         fee_rate: REFERRAL_FEE_RATE,
-        fee_cap_cents: REFERRAL_FEE_CAP_CENTS,
+        fee_cap_cents: null, // No cap in new model
         bid_amount: bid.amount,
         status: "processing",
       })

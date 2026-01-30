@@ -63,18 +63,18 @@ export const PricingPreviewSection = () => {
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
               
               <Badge className="mb-4 bg-accent/10 text-accent border-accent/20 font-medium">
-                Pay on Award
+                Exclusive Award
               </Badge>
-              <h3 className="font-display text-2xl font-bold mb-2">Exclusive Job Award</h3>
+              <h3 className="font-display text-2xl font-bold mb-2">15% Gigger Deposit</h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                8% referral fee when awarded the job. Referral fee is paid out of Gigger's initial 5% deposit.
+                Gigger pays 15% upfront. 8% referral fee retained from deposit. Full refund if Digger doesn't accept within 24h.
               </p>
               
               <div className="mb-2">
                 <span className="text-4xl font-display font-bold text-accent">8%</span>
                 <span className="text-lg text-muted-foreground ml-2">referral fee</span>
               </div>
-              <p className="text-sm text-muted-foreground">$50 min – $249 max</p>
+              <p className="text-sm text-muted-foreground">No minimum or maximum caps</p>
             </Card>
           </div>
 

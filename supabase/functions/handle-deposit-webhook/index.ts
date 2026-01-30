@@ -125,11 +125,14 @@ serve(async (req) => {
       // Get deposit details for notification
       const { data: deposit } = await supabaseClient
         .from("gigger_deposits")
-        .select("acceptance_deadline, base_rate_amount_cents")
+        .select("acceptance_deadline, base_rate_amount_cents, lead_cost_amount_cents, deposit_amount_cents")
         .eq("id", depositId)
         .single();
 
       if (diggerProfile) {
+        // Calculate amounts for notification: 15% deposit with 8% fee retained
+        const releasedAmount = ((deposit?.base_rate_amount_cents || 0) - (deposit?.lead_cost_amount_cents || 0)) / 100;
+        
         // Notify the awarded digger with 24-hour deadline
         await supabaseClient
           .from("notifications")
@@ -137,14 +140,15 @@ serve(async (req) => {
             user_id: diggerProfile.user_id,
             type: "lead_awarded_exclusive",
             title: "🎉 Exclusive Job Award!",
-            message: `You've been exclusively awarded "${gig?.title || 'a project'}". Accept within 24 hours to receive the $${((deposit?.base_rate_amount_cents || 0) / 100).toFixed(0)} down-payment as an advance!`,
+            message: `You've been exclusively awarded "${gig?.title || 'a project'}". Accept within 24 hours to receive $${releasedAmount.toFixed(0)} from the Gigger's 15% deposit (after 8% referral fee is retained)!`,
             link: `/gig/${gigId}`,
             metadata: {
               gig_id: gigId,
               bid_id: bidId,
               deposit_id: depositId,
               acceptance_deadline: deposit?.acceptance_deadline,
-              deposit_bonus_cents: deposit?.base_rate_amount_cents,
+              deposit_amount_cents: deposit?.base_rate_amount_cents,
+              referral_fee_cents: deposit?.lead_cost_amount_cents,
             },
           });
 
