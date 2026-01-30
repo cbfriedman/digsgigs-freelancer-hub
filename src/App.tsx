@@ -103,6 +103,7 @@ import BidTemplatePreview from "./pages/BidTemplatePreview";
 import LeadUnlockPreview from "./pages/LeadUnlockPreview";
 import Subscribe from "./pages/Subscribe";
 import ImportSubscribers from "./pages/admin/ImportSubscribers";
+import BecomeADigger from "./pages/BecomeADigger";
 
 const queryClient = new QueryClient();
 
@@ -497,6 +498,10 @@ const router = createBrowserRouter(
       {
         path: "/apply-digger-fb",
         element: <ApplyDiggerFB />,
+      },
+      {
+        path: "/become-a-digger",
+        element: <BecomeADigger />,
       },
       {
         path: "*",
