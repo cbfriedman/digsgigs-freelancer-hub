@@ -60,7 +60,8 @@ serve(async (req) => {
         digger_profiles!inner(
           id,
           user_id,
-          stripe_customer_id
+          stripe_customer_id,
+          business_name
         )
       `)
       .eq("status", "paid")
@@ -114,7 +115,7 @@ serve(async (req) => {
           })
           .eq("id", deposit.id);
 
-        // 2. Charge the Digger the referral fee (8%, min $100, max $500)
+        // 2. Calculate the referral fee (8%, min $100, max $500)
         const bidAmountCents = Math.round(bid.amount * 100);
         const calculatedFee = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
         const feeCents = Math.max(REFERRAL_FEE_MIN_CENTS, Math.min(calculatedFee, REFERRAL_FEE_MAX_CENTS));
@@ -126,6 +127,9 @@ serve(async (req) => {
           appliedMin: calculatedFee < REFERRAL_FEE_MIN_CENTS,
           appliedMax: calculatedFee > REFERRAL_FEE_MAX_CENTS
         });
+
+        let penaltyCollected = false;
+        let chargeError: string | null = null;
 
         // Try to charge the Digger's card on file
         if (diggerProfile.stripe_customer_id) {
@@ -143,7 +147,7 @@ serve(async (req) => {
                 payment_method: defaultPaymentMethod as string,
                 off_session: true,
                 confirm: true,
-                description: `Referral fee for expired exclusive award - ${gig.title}`,
+                description: `Non-acceptance penalty for expired exclusive award - ${gig.title}`,
                 metadata: {
                   type: "expired_award_referral_fee",
                   deposit_id: deposit.id,
@@ -154,6 +158,7 @@ serve(async (req) => {
               });
 
               logStep("Digger charged successfully", { paymentIntentId: paymentIntent.id });
+              penaltyCollected = true;
 
               // Update bid with fee info
               await supabaseClient
@@ -165,16 +170,59 @@ serve(async (req) => {
                 })
                 .eq("id", bid.id);
             } else {
+              chargeError = "No default payment method found";
               logStep("No default payment method found for Digger", { diggerId: diggerProfile.id });
             }
-          } catch (chargeError) {
-            logStep("Failed to charge Digger", { 
-              error: chargeError instanceof Error ? chargeError.message : String(chargeError) 
-            });
+          } catch (err) {
+            chargeError = err instanceof Error ? err.message : String(err);
+            logStep("Failed to charge Digger", { error: chargeError });
           }
+        } else {
+          chargeError = "No Stripe customer ID on file";
+          logStep("No Stripe customer ID for Digger", { diggerId: diggerProfile.id });
         }
 
-        // 3. Update gig status back to open
+        // 3. FALLBACK: If penalty collection failed, create pending payment record and flag account
+        if (!penaltyCollected) {
+          logStep("Creating pending penalty payment record", { diggerId: diggerProfile.id, feeCents });
+
+          // Create pending penalty payment record
+          await supabaseClient
+            .from("pending_penalty_payments")
+            .insert({
+              digger_id: diggerProfile.id,
+              deposit_id: deposit.id,
+              gig_id: gig.id,
+              bid_id: bid.id,
+              amount_cents: feeCents,
+              reason: "non_acceptance_penalty",
+              status: "pending",
+              collection_attempts: 1,
+              last_attempt_at: new Date().toISOString(),
+              notes: `Initial collection failed: ${chargeError}`,
+            });
+
+          // Flag the Digger's account
+          await supabaseClient
+            .from("digger_profiles")
+            .update({
+              has_outstanding_penalty: true,
+            })
+            .eq("id", diggerProfile.id);
+
+          // Update bid status to reflect pending penalty
+          await supabaseClient
+            .from("bids")
+            .update({
+              referral_fee_cents: feeCents,
+              status: "expired",
+            })
+            .eq("id", bid.id);
+
+          logStep("Account flagged with outstanding penalty", { diggerId: diggerProfile.id });
+        }
+
+        // 4. Update gig status back to open
         await supabaseClient
           .from("gigs")
           .update({
@@ -185,7 +233,7 @@ serve(async (req) => {
           })
           .eq("id", gig.id);
 
-        // 4. Update bid status
+        // 5. Update bid status
         await supabaseClient
           .from("bids")
           .update({
@@ -194,7 +242,7 @@ serve(async (req) => {
           })
           .eq("id", bid.id);
 
-        // 5. Notify the Gigger about the refund
+        // 6. Notify the Gigger about the refund
         await supabaseClient
           .from("notifications")
           .insert({
@@ -210,23 +258,33 @@ serve(async (req) => {
             },
           });
 
-        // 6. Notify the Digger about the fee
+        // 7. Notify the Digger about the fee (with different message based on collection status)
+        const diggerMessage = penaltyCollected
+          ? `You did not accept the exclusive award for "${gig.title}" within 24 hours. A penalty of $${(feeCents / 100).toFixed(0)} has been charged.`
+          : `You did not accept the exclusive award for "${gig.title}" within 24 hours. A penalty of $${(feeCents / 100).toFixed(0)} is outstanding. Please update your payment method to settle this balance.`;
+
         await supabaseClient
           .from("notifications")
           .insert({
             user_id: diggerProfile.user_id,
-            type: "award_expired_fee",
-            title: "Exclusive Award Expired",
-            message: `You did not accept the exclusive award for "${gig.title}" within 24 hours. A referral fee of $${(feeCents / 100).toFixed(0)} has been charged.`,
-            link: `/gig/${gig.id}`,
+            type: penaltyCollected ? "award_expired_fee" : "award_expired_fee_pending",
+            title: penaltyCollected ? "Exclusive Award Expired - Penalty Charged" : "Exclusive Award Expired - Penalty Outstanding",
+            message: diggerMessage,
+            link: penaltyCollected ? `/gig/${gig.id}` : "/settings/billing",
             metadata: {
               gig_id: gig.id,
               deposit_id: deposit.id,
               fee_cents: feeCents,
+              penalty_collected: penaltyCollected,
             },
           });
 
-        results.push({ depositId: deposit.id, success: true });
+        results.push({ 
+          depositId: deposit.id, 
+          success: true, 
+          penaltyCollected,
+          penaltyAmount: feeCents,
+        });
       } catch (error) {
         logStep("Failed to process deposit", { 
           depositId: deposit.id, 

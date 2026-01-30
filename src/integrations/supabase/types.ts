@@ -1269,6 +1269,7 @@ export type Database = {
           founding_digger_number: number | null
           geographic_tier: string | null
           handle: string | null
+          has_outstanding_penalty: boolean | null
           hourly_rate: number | null
           hourly_rate_max: number | null
           hourly_rate_min: number | null
@@ -1351,6 +1352,7 @@ export type Database = {
           founding_digger_number?: number | null
           geographic_tier?: string | null
           handle?: string | null
+          has_outstanding_penalty?: boolean | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
           hourly_rate_min?: number | null
@@ -1433,6 +1435,7 @@ export type Database = {
           founding_digger_number?: number | null
           geographic_tier?: string | null
           handle?: string | null
+          has_outstanding_penalty?: boolean | null
           hourly_rate?: number | null
           hourly_rate_max?: number | null
           hourly_rate_min?: number | null
@@ -3166,6 +3169,96 @@ export type Database = {
             columns: ["digger_profile_id"]
             isOneToOne: false
             referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_penalty_payments: {
+        Row: {
+          amount_cents: number
+          bid_id: string
+          collection_attempts: number | null
+          created_at: string
+          deposit_id: string
+          digger_id: string
+          gig_id: string
+          id: string
+          last_attempt_at: string | null
+          notes: string | null
+          paid_at: string | null
+          reason: string
+          status: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          bid_id: string
+          collection_attempts?: number | null
+          created_at?: string
+          deposit_id: string
+          digger_id: string
+          gig_id: string
+          id?: string
+          last_attempt_at?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          reason?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          bid_id?: string
+          collection_attempts?: number | null
+          created_at?: string
+          deposit_id?: string
+          digger_id?: string
+          gig_id?: string
+          id?: string
+          last_attempt_at?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          reason?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_penalty_payments_bid_id_fkey"
+            columns: ["bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_penalty_payments_deposit_id_fkey"
+            columns: ["deposit_id"]
+            isOneToOne: false
+            referencedRelation: "gigger_deposits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_penalty_payments_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_penalty_payments_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_penalty_payments_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
         ]
