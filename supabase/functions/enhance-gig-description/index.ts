@@ -5,6 +5,8 @@ interface EnhanceDescriptionRequest {
   description: string;
   problemLabel?: string;
   clarifyingLabel?: string;
+  labels?: string;
+  professions?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -18,7 +20,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { description, problemLabel, clarifyingLabel }: EnhanceDescriptionRequest = await req.json();
+    const { description, problemLabel, clarifyingLabel, labels, professions }: EnhanceDescriptionRequest = await req.json();
 
     if (!description?.trim()) {
       return new Response(
@@ -45,9 +47,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Build context from various possible inputs
+    const professionContext = professions?.length 
+      ? `Professions: ${professions.join(', ')}` 
+      : labels 
+        ? `Professions: ${labels}` 
+        : null;
+    
     const contextInfo = [
       problemLabel ? `Project Type: ${problemLabel}` : null,
       clarifyingLabel ? `Specifics: ${clarifyingLabel}` : null,
+      professionContext,
     ].filter(Boolean).join('\n');
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
