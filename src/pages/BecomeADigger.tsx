@@ -42,38 +42,26 @@ export default function BecomeADigger() {
     try {
       const utmParams = getUTMParams();
 
-      const { data, error } = await supabase
-        .from("subscribers")
-        .insert({
-          email: email.toLowerCase().trim(),
-          full_name: fullName.trim(),
-          phone: phone.trim(),
-          source: "become-a-digger",
-          utm_source: utmParams?.utm_source || null,
-          utm_medium: utmParams?.utm_medium || null,
-          utm_campaign: utmParams?.utm_campaign || null,
-          utm_content: utmParams?.utm_content || null,
-        })
-        .select("id")
-        .single();
+      // NOTE: Do not request returned rows for anonymous inserts.
+      // PostgREST will attempt a SELECT to return the inserted row, which can fail under RLS.
+      const { error } = await supabase.from("subscribers").insert({
+        email: email.toLowerCase().trim(),
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        source: "become-a-digger",
+        utm_source: utmParams?.utm_source || null,
+        utm_medium: utmParams?.utm_medium || null,
+        utm_campaign: utmParams?.utm_campaign || null,
+        utm_content: utmParams?.utm_content || null,
+      });
 
       if (error) {
-        if (error.code === "23505") {
-          // Duplicate - fetch existing
-          const { data: existing } = await supabase
-            .from("subscribers")
-            .select("id")
-            .eq("email", email.toLowerCase().trim())
-            .single();
-          if (existing) {
-            setSubscriberId(existing.id);
-          }
-        } else {
-          throw error;
-        }
-      } else if (data) {
-        setSubscriberId(data.id);
+        // If the email is already subscribed, treat as success.
+        if (error.code !== "23505") throw error;
       }
+
+      // We intentionally do not set subscriberId here to avoid any anonymous SELECT.
+      setSubscriberId(null);
 
       // Fire conversion pixels
       trackEvent("Lead", { 
