@@ -12,9 +12,10 @@ const logStep = (step: string, details?: any) => {
   console.log(`[PROCESS-EXPIRED-AWARDS] ${step}${detailsStr}`);
 };
 
-// Referral fee configuration - 8% capped at $249 for non-acceptance penalty
-const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
-const REFERRAL_FEE_CAP_CENTS = 24900; // $249 cap for non-acceptance penalty
+// Referral fee configuration for non-acceptance penalty
+const REFERRAL_FEE_RATE = 0.08; // 8%
+const REFERRAL_FEE_MIN_CENTS = 10000; // $100 minimum
+const REFERRAL_FEE_MAX_CENTS = 50000; // $500 maximum
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -113,16 +114,17 @@ serve(async (req) => {
           })
           .eq("id", deposit.id);
 
-        // 2. Charge the Digger the referral fee (lower of 8% or $249)
+        // 2. Charge the Digger the referral fee (8%, min $100, max $500)
         const bidAmountCents = Math.round(bid.amount * 100);
         const calculatedFee = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
-        const feeCents = Math.min(calculatedFee, REFERRAL_FEE_CAP_CENTS);
+        const feeCents = Math.max(REFERRAL_FEE_MIN_CENTS, Math.min(calculatedFee, REFERRAL_FEE_MAX_CENTS));
 
         logStep("Charging Digger referral fee", { 
           diggerId: diggerProfile.id, 
           calculatedFee,
           feeCents,
-          capped: calculatedFee > REFERRAL_FEE_CAP_CENTS
+          appliedMin: calculatedFee < REFERRAL_FEE_MIN_CENTS,
+          appliedMax: calculatedFee > REFERRAL_FEE_MAX_CENTS
         });
 
         // Try to charge the Digger's card on file
