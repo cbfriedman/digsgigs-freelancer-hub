@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import logo from "@/assets/digsandgigs-logo.svg";
 import { 
   ShoppingCart, 
@@ -58,6 +59,46 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const { user, userRoles, activeRole, switchRole, signOut } = useAuth();
   const { cartCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
+
+  // Fetch user profile photo and display name
+  useEffect(() => {
+    if (!user?.id) {
+      setUserPhotoUrl(null);
+      setUserDisplayName(null);
+      return;
+    }
+    const fetchUserProfile = async () => {
+      try {
+        // Get profile photo from digger_profiles (if user has digger role)
+        if (userRoles.includes('digger')) {
+          const { data: diggerProfile } = await supabase
+            .from('digger_profiles')
+            .select('profile_image_url')
+            .eq('user_id', user.id)
+            .not('profile_image_url', 'is', null)
+            .limit(1)
+            .maybeSingle();
+          if (diggerProfile?.profile_image_url) {
+            setUserPhotoUrl(diggerProfile.profile_image_url);
+          }
+        }
+        // Get display name from profiles
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (profile?.full_name) {
+          setUserDisplayName(profile.full_name);
+        }
+      } catch {
+        // Silently fail - fallback to initials
+      }
+    };
+    fetchUserProfile();
+  }, [user?.id, userRoles]);
 
   // Scroll detection for navbar styling
   useEffect(() => {
@@ -75,6 +116,20 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const navLinkActiveClass = "text-foreground bg-accent/50";
 
   const isActive = (path: string) => location.pathname === path;
+
+  const getUserInitials = () => {
+    if (userDisplayName) {
+      const parts = userDisplayName.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return userDisplayName.slice(0, 2).toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase();
+    }
+    return "U";
+  };
 
   return (
     <>
@@ -206,9 +261,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <DropdownMenu modal={true}>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="gap-1.5 px-2">
-                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                          <User className="h-3.5 w-3.5 text-primary" />
-                        </div>
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={userPhotoUrl || undefined} alt="Profile" />
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-xs font-medium">
+                            {getUserInitials()}
+                          </AvatarFallback>
+                        </Avatar>
                         <ChevronDown className="h-3.5 w-3.5 opacity-50" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -218,7 +276,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       className="w-52 bg-background/95 backdrop-blur-xl border shadow-xl z-[10000]"
                     >
                       <div className="px-2 py-1.5">
-                        <p className="text-sm font-medium truncate">{user.email?.split('@')[0]}</p>
+                        <p className="text-sm font-medium truncate">{userDisplayName || user.email?.split('@')[0]}</p>
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       </div>
                       <DropdownMenuSeparator />
@@ -301,11 +359,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     {user && (
                       <div className="p-4 bg-muted/30 border-b border-border/50">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                            <User className="h-5 w-5 text-primary" />
-                          </div>
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={userPhotoUrl || undefined} alt="Profile" />
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-sm font-medium">
+                              {getUserInitials()}
+                            </AvatarFallback>
+                          </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{user.email?.split('@')[0]}</p>
+                            <p className="text-sm font-medium truncate">{userDisplayName || user.email?.split('@')[0]}</p>
                             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                           </div>
                         </div>
