@@ -3,7 +3,7 @@
 -- =====================================================
 
 -- Industry Categories Table (16 safe categories)
-CREATE TABLE public.industry_categories (
+CREATE TABLE IF NOT EXISTS public.industry_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
   slug TEXT NOT NULL UNIQUE,
@@ -19,11 +19,13 @@ CREATE TABLE public.industry_categories (
 ALTER TABLE public.industry_categories ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can read active categories
+DROP POLICY IF EXISTS "Anyone can view active industry categories" ON public.industry_categories;
 CREATE POLICY "Anyone can view active industry categories"
 ON public.industry_categories FOR SELECT
 USING (is_active = true);
 
 -- Only admins can modify (via service role)
+DROP POLICY IF EXISTS "Admins can manage industry categories" ON public.industry_categories;
 CREATE POLICY "Admins can manage industry categories"
 ON public.industry_categories FOR ALL
 USING (
@@ -37,7 +39,7 @@ USING (
 -- Professions Table (250+ approved professions)
 -- =====================================================
 
-CREATE TABLE public.professions (
+CREATE TABLE IF NOT EXISTS public.professions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   slug TEXT NOT NULL UNIQUE,
@@ -58,11 +60,13 @@ CREATE TABLE public.professions (
 ALTER TABLE public.professions ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can read active professions
+DROP POLICY IF EXISTS "Anyone can view active professions" ON public.professions;
 CREATE POLICY "Anyone can view active professions"
 ON public.professions FOR SELECT
 USING (is_active = true);
 
 -- Only admins can modify
+DROP POLICY IF EXISTS "Admins can manage professions" ON public.professions;
 CREATE POLICY "Admins can manage professions"
 ON public.professions FOR ALL
 USING (
@@ -73,15 +77,15 @@ USING (
 );
 
 -- Create index for faster lookups
-CREATE INDEX idx_professions_category ON public.professions(industry_category_id);
-CREATE INDEX idx_professions_lead_tier ON public.professions(lead_tier);
-CREATE INDEX idx_professions_slug ON public.professions(slug);
+CREATE INDEX IF NOT EXISTS idx_professions_category ON public.professions(industry_category_id);
+CREATE INDEX IF NOT EXISTS idx_professions_lead_tier ON public.professions(lead_tier);
+CREATE INDEX IF NOT EXISTS idx_professions_slug ON public.professions(slug);
 
 -- =====================================================
 -- Profession Specialties Table (optional subtypes/tags)
 -- =====================================================
 
-CREATE TABLE public.profession_specialties (
+CREATE TABLE IF NOT EXISTS public.profession_specialties (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   profession_id UUID REFERENCES public.professions(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -95,11 +99,13 @@ CREATE TABLE public.profession_specialties (
 ALTER TABLE public.profession_specialties ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can read active specialties
+DROP POLICY IF EXISTS "Anyone can view active specialties" ON public.profession_specialties;
 CREATE POLICY "Anyone can view active specialties"
 ON public.profession_specialties FOR SELECT
 USING (is_active = true);
 
 -- Only admins can modify
+DROP POLICY IF EXISTS "Admins can manage specialties" ON public.profession_specialties;
 CREATE POLICY "Admins can manage specialties"
 ON public.profession_specialties FOR ALL
 USING (
@@ -109,13 +115,13 @@ USING (
   )
 );
 
-CREATE INDEX idx_specialties_profession ON public.profession_specialties(profession_id);
+CREATE INDEX IF NOT EXISTS idx_specialties_profession ON public.profession_specialties(profession_id);
 
 -- =====================================================
 -- Profession Requests Table (for "Request New Profession" feature)
 -- =====================================================
 
-CREATE TABLE public.profession_requests (
+CREATE TABLE IF NOT EXISTS public.profession_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   requested_profession TEXT NOT NULL,
@@ -134,16 +140,19 @@ CREATE TABLE public.profession_requests (
 ALTER TABLE public.profession_requests ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own requests
+DROP POLICY IF EXISTS "Users can view their own profession requests" ON public.profession_requests;
 CREATE POLICY "Users can view their own profession requests"
 ON public.profession_requests FOR SELECT
 USING (auth.uid() = user_id);
 
 -- Users can create requests
+DROP POLICY IF EXISTS "Users can create profession requests" ON public.profession_requests;
 CREATE POLICY "Users can create profession requests"
 ON public.profession_requests FOR INSERT
 WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 
 -- Admins can view and manage all requests
+DROP POLICY IF EXISTS "Admins can manage all profession requests" ON public.profession_requests;
 CREATE POLICY "Admins can manage all profession requests"
 ON public.profession_requests FOR ALL
 USING (
@@ -157,7 +166,7 @@ USING (
 -- Digger Profession Assignments Table (links diggers to approved professions)
 -- =====================================================
 
-CREATE TABLE public.digger_profession_assignments (
+CREATE TABLE IF NOT EXISTS public.digger_profession_assignments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   digger_profile_id UUID REFERENCES public.digger_profiles(id) ON DELETE CASCADE,
   profession_id UUID REFERENCES public.professions(id) ON DELETE CASCADE,
@@ -170,11 +179,13 @@ CREATE TABLE public.digger_profession_assignments (
 ALTER TABLE public.digger_profession_assignments ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can view assignments (for marketplace browsing)
+DROP POLICY IF EXISTS "Anyone can view profession assignments" ON public.digger_profession_assignments;
 CREATE POLICY "Anyone can view profession assignments"
 ON public.digger_profession_assignments FOR SELECT
 USING (true);
 
 -- Users can manage their own assignments
+DROP POLICY IF EXISTS "Users can manage their own profession assignments" ON public.digger_profession_assignments;
 CREATE POLICY "Users can manage their own profession assignments"
 ON public.digger_profession_assignments FOR ALL
 USING (
@@ -184,8 +195,8 @@ USING (
   )
 );
 
-CREATE INDEX idx_digger_profession_assignments_digger ON public.digger_profession_assignments(digger_profile_id);
-CREATE INDEX idx_digger_profession_assignments_profession ON public.digger_profession_assignments(profession_id);
+CREATE INDEX IF NOT EXISTS idx_digger_profession_assignments_digger ON public.digger_profession_assignments(digger_profile_id);
+CREATE INDEX IF NOT EXISTS idx_digger_profession_assignments_profession ON public.digger_profession_assignments(profession_id);
 
 -- =====================================================
 -- Update timestamp triggers
@@ -199,14 +210,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
 
+DROP TRIGGER IF EXISTS update_industry_categories_timestamp ON public.industry_categories;
 CREATE TRIGGER update_industry_categories_timestamp
 BEFORE UPDATE ON public.industry_categories
 FOR EACH ROW EXECUTE FUNCTION public.update_taxonomy_timestamp();
 
+DROP TRIGGER IF EXISTS update_professions_timestamp ON public.professions;
 CREATE TRIGGER update_professions_timestamp
 BEFORE UPDATE ON public.professions
 FOR EACH ROW EXECUTE FUNCTION public.update_taxonomy_timestamp();
 
+DROP TRIGGER IF EXISTS update_profession_requests_timestamp ON public.profession_requests;
 CREATE TRIGGER update_profession_requests_timestamp
 BEFORE UPDATE ON public.profession_requests
 FOR EACH ROW EXECUTE FUNCTION public.update_taxonomy_timestamp();

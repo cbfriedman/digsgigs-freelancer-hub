@@ -13,16 +13,7 @@ const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 if (!STRIPE_PUBLISHABLE_KEY) {
   console.warn('VITE_STRIPE_PUBLISHABLE_KEY is not set. Stripe payments will not work.');
 }
-
-// Lazy load Stripe - only initialize when needed
-let stripePromise: Promise<any> | null = null;
-const getStripe = () => {
-  if (!STRIPE_PUBLISHABLE_KEY) return null;
-  if (!stripePromise) {
-    stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
-  }
-  return stripePromise;
-};
+const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
 interface Milestone {
   description: string;
@@ -112,11 +103,11 @@ export const EscrowContractDialog = ({
 
       const { clientSecret, escrowContractId } = data;
 
-      // Initialize Stripe (lazy load)
-      if (!STRIPE_PUBLISHABLE_KEY) {
+      // Initialize Stripe
+      if (!stripePromise) {
         throw new Error("Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY environment variable.");
       }
-      const stripe = await getStripe();
+      const stripe = await stripePromise;
       if (!stripe) throw new Error("Stripe failed to load");
 
       // Redirect to Stripe payment

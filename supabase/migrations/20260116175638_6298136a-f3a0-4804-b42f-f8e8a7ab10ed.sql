@@ -31,24 +31,28 @@ CREATE TABLE IF NOT EXISTS public.gigger_deposits (
 ALTER TABLE public.gigger_deposits ENABLE ROW LEVEL SECURITY;
 
 -- Giggers can view their own deposits
+DROP POLICY IF EXISTS "Giggers can view their deposits" ON public.gigger_deposits;
 CREATE POLICY "Giggers can view their deposits"
 ON public.gigger_deposits
 FOR SELECT
 USING (gigger_id = auth.uid());
 
 -- Diggers can view deposits on their awarded bids
+DROP POLICY IF EXISTS "Diggers can view deposits on their bids" ON public.gigger_deposits;
 CREATE POLICY "Diggers can view deposits on their bids"
 ON public.gigger_deposits
 FOR SELECT
 USING (digger_id IN (SELECT id FROM digger_profiles WHERE user_id = auth.uid()));
 
 -- Admins can view all deposits
+DROP POLICY IF EXISTS "Admins can view all deposits" ON public.gigger_deposits;
 CREATE POLICY "Admins can view all deposits"
 ON public.gigger_deposits
 FOR SELECT
 USING (EXISTS (SELECT 1 FROM user_app_roles WHERE user_id = auth.uid() AND app_role = 'admin' AND is_active = true));
 
 -- Service role can manage deposits
+DROP POLICY IF EXISTS "Service role can manage deposits" ON public.gigger_deposits;
 CREATE POLICY "Service role can manage deposits"
 ON public.gigger_deposits
 FOR ALL

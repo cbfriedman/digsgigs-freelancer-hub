@@ -1,5 +1,5 @@
 -- Create pre_award_conversations table for anonymous messaging
-CREATE TABLE public.pre_award_conversations (
+CREATE TABLE IF NOT EXISTS public.pre_award_conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   gig_id UUID NOT NULL REFERENCES public.gigs(id) ON DELETE CASCADE,
   bid_id UUID NOT NULL REFERENCES public.bids(id) ON DELETE CASCADE,
@@ -11,7 +11,7 @@ CREATE TABLE public.pre_award_conversations (
 );
 
 -- Create pre_award_messages table for storing messages
-CREATE TABLE public.pre_award_messages (
+CREATE TABLE IF NOT EXISTS public.pre_award_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES public.pre_award_conversations(id) ON DELETE CASCADE,
   sender_type TEXT NOT NULL CHECK (sender_type IN ('gigger', 'digger')),
@@ -20,7 +20,7 @@ CREATE TABLE public.pre_award_messages (
 );
 
 -- Create message_violations table for logging blocked messages
-CREATE TABLE public.message_violations (
+CREATE TABLE IF NOT EXISTS public.message_violations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   conversation_id UUID REFERENCES public.pre_award_conversations(id) ON DELETE SET NULL,
@@ -40,6 +40,7 @@ ALTER TABLE public.pre_award_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.message_violations ENABLE ROW LEVEL SECURITY;
 
 -- RLS for pre_award_conversations
+DROP POLICY IF EXISTS "Users can view their own conversations" ON public.pre_award_conversations;
 CREATE POLICY "Users can view their own conversations" 
   ON public.pre_award_conversations FOR SELECT 
   USING (
@@ -47,6 +48,7 @@ CREATE POLICY "Users can view their own conversations"
     digger_id IN (SELECT id FROM public.digger_profiles WHERE user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "Consumers can create conversations for their gigs" ON public.pre_award_conversations;
 CREATE POLICY "Consumers can create conversations for their gigs" 
   ON public.pre_award_conversations FOR INSERT 
   WITH CHECK (
@@ -55,6 +57,7 @@ CREATE POLICY "Consumers can create conversations for their gigs"
   );
 
 -- RLS for pre_award_messages
+DROP POLICY IF EXISTS "Conversation participants can view messages" ON public.pre_award_messages;
 CREATE POLICY "Conversation participants can view messages" 
   ON public.pre_award_messages FOR SELECT 
   USING (
@@ -68,6 +71,7 @@ CREATE POLICY "Conversation participants can view messages"
     )
   );
 
+DROP POLICY IF EXISTS "Conversation participants can send messages" ON public.pre_award_messages;
 CREATE POLICY "Conversation participants can send messages" 
   ON public.pre_award_messages FOR INSERT 
   WITH CHECK (
@@ -82,6 +86,7 @@ CREATE POLICY "Conversation participants can send messages"
   );
 
 -- RLS for message_violations - only admins can view
+DROP POLICY IF EXISTS "Admins can view violations" ON public.message_violations;
 CREATE POLICY "Admins can view violations" 
   ON public.message_violations FOR SELECT 
   USING (
@@ -94,20 +99,22 @@ CREATE POLICY "Admins can view violations"
   );
 
 -- Allow system to insert violations (via service role)
+DROP POLICY IF EXISTS "System can insert violations" ON public.message_violations;
 CREATE POLICY "System can insert violations" 
   ON public.message_violations FOR INSERT 
   WITH CHECK (true);
 
 -- Add indexes for performance
-CREATE INDEX idx_pre_award_conversations_gig_id ON public.pre_award_conversations(gig_id);
-CREATE INDEX idx_pre_award_conversations_bid_id ON public.pre_award_conversations(bid_id);
-CREATE INDEX idx_pre_award_conversations_consumer_id ON public.pre_award_conversations(consumer_id);
-CREATE INDEX idx_pre_award_conversations_digger_id ON public.pre_award_conversations(digger_id);
-CREATE INDEX idx_pre_award_messages_conversation_id ON public.pre_award_messages(conversation_id);
-CREATE INDEX idx_message_violations_user_id ON public.message_violations(user_id);
-CREATE INDEX idx_message_violations_created_at ON public.message_violations(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pre_award_conversations_gig_id ON public.pre_award_conversations(gig_id);
+CREATE INDEX IF NOT EXISTS idx_pre_award_conversations_bid_id ON public.pre_award_conversations(bid_id);
+CREATE INDEX IF NOT EXISTS idx_pre_award_conversations_consumer_id ON public.pre_award_conversations(consumer_id);
+CREATE INDEX IF NOT EXISTS idx_pre_award_conversations_digger_id ON public.pre_award_conversations(digger_id);
+CREATE INDEX IF NOT EXISTS idx_pre_award_messages_conversation_id ON public.pre_award_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_message_violations_user_id ON public.message_violations(user_id);
+CREATE INDEX IF NOT EXISTS idx_message_violations_created_at ON public.message_violations(created_at DESC);
 
 -- Trigger for updated_at on conversations
+DROP TRIGGER IF EXISTS update_pre_award_conversations_updated_at ON public.pre_award_conversations;
 CREATE TRIGGER update_pre_award_conversations_updated_at
   BEFORE UPDATE ON public.pre_award_conversations
   FOR EACH ROW

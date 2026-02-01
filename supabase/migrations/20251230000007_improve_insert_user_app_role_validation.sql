@@ -30,5 +30,5 @@ $$;
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION public.insert_user_app_role(UUID, user_app_role) TO authenticated;
 
-COMMENT ON FUNCTION public.insert_user_app_role IS 
+COMMENT ON FUNCTION public.insert_user_app_role(UUID, user_app_role) IS 
 'Insert user app role bypassing RLS. Validates that user exists in auth.users before inserting. Use this if direct INSERT causes recursion issues.';

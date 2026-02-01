@@ -7,6 +7,7 @@ ADD COLUMN IF NOT EXISTS referral_fee_charged_at timestamp with time zone,
 ADD COLUMN IF NOT EXISTS referral_fee_cents integer;
 
 -- Add constraint to validate pricing_model values
+ALTER TABLE public.bids DROP CONSTRAINT IF EXISTS bids_pricing_model_check;
 ALTER TABLE public.bids 
 ADD CONSTRAINT bids_pricing_model_check 
 CHECK (pricing_model IN ('pay_per_lead', 'success_based'));
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS public.referral_payments (
 );
 
 -- Add constraint for status
+ALTER TABLE public.referral_payments DROP CONSTRAINT IF EXISTS referral_payments_status_check;
 ALTER TABLE public.referral_payments 
 ADD CONSTRAINT referral_payments_status_check 
 CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'refunded'));
@@ -41,6 +43,7 @@ CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'refunded'));
 ALTER TABLE public.referral_payments ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for referral_payments
+DROP POLICY IF EXISTS "Diggers can view their own referral payments" ON public.referral_payments;
 CREATE POLICY "Diggers can view their own referral payments" 
 ON public.referral_payments 
 FOR SELECT 
@@ -49,6 +52,7 @@ USING (digger_id IN (
   WHERE user_id = auth.uid()
 ));
 
+DROP POLICY IF EXISTS "Gig owners can view referral payments for their gigs" ON public.referral_payments;
 CREATE POLICY "Gig owners can view referral payments for their gigs" 
 ON public.referral_payments 
 FOR SELECT 
@@ -57,6 +61,7 @@ USING (gig_id IN (
   WHERE consumer_id = auth.uid()
 ));
 
+DROP POLICY IF EXISTS "Admins can view all referral payments" ON public.referral_payments;
 CREATE POLICY "Admins can view all referral payments" 
 ON public.referral_payments 
 FOR SELECT 

@@ -19,18 +19,21 @@ CREATE TABLE IF NOT EXISTS public.lead_unlocks (
 ALTER TABLE public.lead_unlocks ENABLE ROW LEVEL SECURITY;
 
 -- Diggers can view their own unlocks
+DROP POLICY IF EXISTS "Diggers can view their own unlocks" ON public.lead_unlocks;
 CREATE POLICY "Diggers can view their own unlocks"
   ON public.lead_unlocks
   FOR SELECT
   USING (user_id = auth.uid());
 
 -- Admins can view all unlocks
+DROP POLICY IF EXISTS "Admins can view all unlocks" ON public.lead_unlocks;
 CREATE POLICY "Admins can view all unlocks"
   ON public.lead_unlocks
   FOR SELECT
   USING (has_role(auth.uid(), 'admin'::app_role));
 
 -- Admins can update unlocks (for refunds)
+DROP POLICY IF EXISTS "Admins can update unlocks" ON public.lead_unlocks;
 CREATE POLICY "Admins can update unlocks"
   ON public.lead_unlocks
   FOR UPDATE
@@ -41,6 +44,7 @@ ALTER TABLE public.email_preferences ADD COLUMN IF NOT EXISTS lead_notifications
 
 -- Allow public/anonymous users to insert gigs (giggers don't need accounts)
 DROP POLICY IF EXISTS "Consumers can insert gigs" ON public.gigs;
+DROP POLICY IF EXISTS "Anyone can insert gigs" ON public.gigs;
 CREATE POLICY "Anyone can insert gigs"
   ON public.gigs
   FOR INSERT
@@ -48,6 +52,7 @@ CREATE POLICY "Anyone can insert gigs"
 
 -- Make gigs publicly viewable (for lead display)
 DROP POLICY IF EXISTS "Authenticated users can view gigs" ON public.gigs;
+DROP POLICY IF EXISTS "Anyone can view gigs" ON public.gigs;
 CREATE POLICY "Anyone can view gigs"
   ON public.gigs
   FOR SELECT

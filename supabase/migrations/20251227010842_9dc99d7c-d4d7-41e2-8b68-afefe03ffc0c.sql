@@ -21,12 +21,14 @@ CREATE TABLE IF NOT EXISTS public.digger_onboarding_emails (
 ALTER TABLE public.digger_onboarding_emails ENABLE ROW LEVEL SECURITY;
 
 -- Create policy for users to view their own records
+DROP POLICY IF EXISTS "Users can view their own onboarding emails" ON public.digger_onboarding_emails;
 CREATE POLICY "Users can view their own onboarding emails"
 ON public.digger_onboarding_emails
 FOR SELECT
 USING (auth.uid() = user_id);
 
 -- Create policy for service role to manage all records
+DROP POLICY IF EXISTS "Service role can manage all onboarding emails" ON public.digger_onboarding_emails;
 CREATE POLICY "Service role can manage all onboarding emails"
 ON public.digger_onboarding_emails
 FOR ALL
@@ -34,10 +36,11 @@ USING (true)
 WITH CHECK (true);
 
 -- Add index for faster lookups
-CREATE INDEX idx_digger_onboarding_emails_user_id ON public.digger_onboarding_emails(user_id);
-CREATE INDEX idx_digger_onboarding_emails_current_step ON public.digger_onboarding_emails(current_step);
+CREATE INDEX IF NOT EXISTS idx_digger_onboarding_emails_user_id ON public.digger_onboarding_emails(user_id);
+CREATE INDEX IF NOT EXISTS idx_digger_onboarding_emails_current_step ON public.digger_onboarding_emails(current_step);
 
 -- Add trigger for updated_at
+DROP TRIGGER IF EXISTS update_digger_onboarding_emails_updated_at ON public.digger_onboarding_emails;
 CREATE TRIGGER update_digger_onboarding_emails_updated_at
 BEFORE UPDATE ON public.digger_onboarding_emails
 FOR EACH ROW

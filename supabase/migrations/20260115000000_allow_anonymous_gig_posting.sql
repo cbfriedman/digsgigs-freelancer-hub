@@ -8,6 +8,7 @@ ALTER TABLE public.gigs
 DROP POLICY IF EXISTS "Enable insert for authenticated users" ON public.gigs;
 DROP POLICY IF EXISTS "Consumers can insert their own gigs" ON public.gigs;
 DROP POLICY IF EXISTS "Consumers can create gigs" ON public.gigs;
+DROP POLICY IF EXISTS "Anyone can create pending gigs" ON public.gigs;
 
 -- Allow anyone to insert gigs with pending_confirmation status (unauthenticated posting)
 CREATE POLICY "Anyone can create pending gigs"
@@ -21,6 +22,7 @@ CREATE POLICY "Anyone can create pending gigs"
   );
 
 -- Allow authenticated users to insert their own gigs (for authenticated users)
+DROP POLICY IF EXISTS "Authenticated users can create their own gigs" ON public.gigs;
 CREATE POLICY "Authenticated users can create their own gigs"
   ON public.gigs FOR INSERT
   TO authenticated
@@ -54,6 +56,7 @@ $$;
 DROP POLICY IF EXISTS "Enable update for gig owners" ON public.gigs;
 DROP POLICY IF EXISTS "Consumers can update own gigs" ON public.gigs;
 DROP POLICY IF EXISTS "Consumers can update their own gigs" ON public.gigs;
+DROP POLICY IF EXISTS "Gig owners can update their gigs" ON public.gigs;
 
 CREATE POLICY "Gig owners can update their gigs"
   ON public.gigs FOR UPDATE
@@ -70,6 +73,7 @@ DROP POLICY IF EXISTS "Enable read for authenticated users" ON public.gigs;
 DROP POLICY IF EXISTS "Consumers can view their own gigs" ON public.gigs;
 DROP POLICY IF EXISTS "Diggers can view all gigs" ON public.gigs;
 DROP POLICY IF EXISTS "Anyone can view open gigs" ON public.gigs;
+DROP POLICY IF EXISTS "Public can view open and pending gigs" ON public.gigs;
 
 CREATE POLICY "Public can view open and pending gigs"
   ON public.gigs FOR SELECT

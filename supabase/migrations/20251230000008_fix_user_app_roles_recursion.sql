@@ -73,5 +73,5 @@ CREATE POLICY "Users can view own app roles"
 GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.has_app_role(UUID, user_app_role) TO authenticated;
 
-COMMENT ON FUNCTION public.is_admin IS 
+COMMENT ON FUNCTION public.is_admin(UUID) IS 
 'Check if a user has admin role. Bypasses RLS completely using SECURITY DEFINER. Use this function instead of querying user_app_roles directly.';

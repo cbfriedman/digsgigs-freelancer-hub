@@ -55,6 +55,9 @@ CREATE POLICY "Users can view own app roles"
 -- FIX 3: Add a more robust function for getting user roles
 -- ============================================
 
+-- Drop first so we can change return type if it already exists
+DROP FUNCTION IF EXISTS public.get_user_app_roles_safe(UUID);
+
 -- Create a more robust function that handles errors gracefully
 CREATE OR REPLACE FUNCTION public.get_user_app_roles_safe(_user_id UUID)
 RETURNS TABLE(app_role user_app_role, last_used_at TIMESTAMPTZ)

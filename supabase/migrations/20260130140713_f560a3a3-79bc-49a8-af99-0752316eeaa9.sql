@@ -21,12 +21,14 @@ CREATE TABLE IF NOT EXISTS public.pending_penalty_payments (
 ALTER TABLE public.pending_penalty_payments ENABLE ROW LEVEL SECURITY;
 
 -- Admins can see all pending payments
+DROP POLICY IF EXISTS "Admins can view all pending payments" ON public.pending_penalty_payments;
 CREATE POLICY "Admins can view all pending payments"
   ON public.pending_penalty_payments
   FOR SELECT
   USING (public.has_role(auth.uid(), 'admin'));
 
 -- Diggers can see their own pending payments
+DROP POLICY IF EXISTS "Diggers can view own pending payments" ON public.pending_penalty_payments;
 CREATE POLICY "Diggers can view own pending payments"
   ON public.pending_penalty_payments
   FOR SELECT
@@ -43,6 +45,7 @@ ALTER TABLE public.digger_profiles
 ADD COLUMN IF NOT EXISTS has_outstanding_penalty BOOLEAN DEFAULT false;
 
 -- Create trigger to update updated_at
+DROP TRIGGER IF EXISTS update_pending_penalty_payments_updated_at ON public.pending_penalty_payments;
 CREATE TRIGGER update_pending_penalty_payments_updated_at
   BEFORE UPDATE ON public.pending_penalty_payments
   FOR EACH ROW

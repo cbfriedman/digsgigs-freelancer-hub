@@ -1,6 +1,7 @@
 -- CRM Feature: RLS Policies and Storage Setup
--- This migration assumes tables (clients, projects, interactions, crm_audit_log) 
+-- This migration assumes tables (clients, projects, interactions, crm_audit_log)
 -- were created via Lovable Cloud. This adds RLS policies, indexes, triggers, and storage.
+-- Only runs when all four CRM tables exist (no-op on projects that don't use CRM).
 
 -- Enable RLS on all CRM tables (if not already enabled)
 ALTER TABLE IF EXISTS public.clients ENABLE ROW LEVEL SECURITY;
@@ -8,45 +9,36 @@ ALTER TABLE IF EXISTS public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.interactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.crm_audit_log ENABLE ROW LEVEL SECURITY;
 
--- ============================================================================
--- RLS POLICIES FOR CLIENTS TABLE
--- ============================================================================
+DO $mig$
+DECLARE
+  tbl_count int;
+BEGIN
+  SELECT count(*) INTO tbl_count FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name IN ('clients', 'projects', 'interactions', 'crm_audit_log');
+  IF tbl_count <> 4 THEN
+    RETURN;
+  END IF;
 
--- Users can only view their own clients
-CREATE POLICY "Users can view own clients"
-  ON public.clients
-  FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid());
+  -- ============================================================================
+  -- RLS POLICIES FOR CLIENTS TABLE
+  -- ============================================================================
+  CREATE POLICY "Users can view own clients"
+    ON public.clients FOR SELECT TO authenticated USING (user_id = auth.uid());
 
--- Users can insert their own clients
-CREATE POLICY "Users can insert own clients"
-  ON public.clients
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  CREATE POLICY "Users can insert own clients"
+    ON public.clients FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
 
--- Users can update their own clients
-CREATE POLICY "Users can update own clients"
-  ON public.clients
-  FOR UPDATE
-  TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  CREATE POLICY "Users can update own clients"
+    ON public.clients FOR UPDATE TO authenticated
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
--- Users can delete their own clients (with audit logging via trigger)
-CREATE POLICY "Users can delete own clients"
-  ON public.clients
-  FOR DELETE
-  TO authenticated
-  USING (user_id = auth.uid());
+  CREATE POLICY "Users can delete own clients"
+    ON public.clients FOR DELETE TO authenticated USING (user_id = auth.uid());
 
--- ============================================================================
--- RLS POLICIES FOR PROJECTS TABLE
--- ============================================================================
-
--- Security definer function to check if user owns the client for a project
-CREATE OR REPLACE FUNCTION public.user_owns_client(_user_id UUID, _client_id UUID)
+  -- ============================================================================
+  -- RLS POLICIES FOR PROJECTS TABLE
+  -- ============================================================================
+  CREATE OR REPLACE FUNCTION public.user_owns_client(_user_id UUID, _client_id UUID)
 RETURNS BOOLEAN
 LANGUAGE SQL
 STABLE
@@ -374,3 +366,5 @@ COMMENT ON TABLE public.crm_audit_log IS 'CRM: Audit log for deleted records';
 
 COMMENT ON FUNCTION public.user_owns_client IS 'Security definer function to check client ownership';
 COMMENT ON FUNCTION public.user_owns_project IS 'Security definer function to check project ownership via client';
+
+END $mig$;

@@ -1,5 +1,5 @@
 -- Create subscribers table for low-friction lead capture
-CREATE TABLE public.subscribers (
+CREATE TABLE IF NOT EXISTS public.subscribers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL UNIQUE,
   full_name TEXT,
@@ -19,7 +19,7 @@ CREATE TABLE public.subscribers (
 );
 
 -- Create subscriber lead purchases table
-CREATE TABLE public.subscriber_lead_purchases (
+CREATE TABLE IF NOT EXISTS public.subscriber_lead_purchases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   subscriber_id UUID NOT NULL REFERENCES public.subscribers(id) ON DELETE CASCADE,
   gig_id UUID NOT NULL REFERENCES public.gigs(id) ON DELETE CASCADE,
@@ -36,31 +36,35 @@ ALTER TABLE public.subscribers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriber_lead_purchases ENABLE ROW LEVEL SECURITY;
 
 -- RLS for subscribers: Admin access only (service role handles inserts)
+DROP POLICY IF EXISTS "Admin can manage subscribers" ON public.subscribers;
 CREATE POLICY "Admin can manage subscribers"
   ON public.subscribers
   FOR ALL
   USING (public.has_role(auth.uid(), 'admin'));
 
 -- Allow public inserts for subscription form (no auth required)
+DROP POLICY IF EXISTS "Anyone can subscribe" ON public.subscribers;
 CREATE POLICY "Anyone can subscribe"
   ON public.subscribers
   FOR INSERT
   WITH CHECK (true);
 
 -- RLS for subscriber_lead_purchases: Admin access only
+DROP POLICY IF EXISTS "Admin can manage subscriber purchases" ON public.subscriber_lead_purchases;
 CREATE POLICY "Admin can manage subscriber purchases"
   ON public.subscriber_lead_purchases
   FOR ALL
   USING (public.has_role(auth.uid(), 'admin'));
 
 -- Create indexes for performance
-CREATE INDEX idx_subscribers_email ON public.subscribers(email);
-CREATE INDEX idx_subscribers_source ON public.subscribers(source);
-CREATE INDEX idx_subscribers_unsubscribed ON public.subscribers(unsubscribed) WHERE unsubscribed = false;
-CREATE INDEX idx_subscriber_purchases_subscriber ON public.subscriber_lead_purchases(subscriber_id);
-CREATE INDEX idx_subscriber_purchases_gig ON public.subscriber_lead_purchases(gig_id);
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON public.subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_subscribers_source ON public.subscribers(source);
+CREATE INDEX IF NOT EXISTS idx_subscribers_unsubscribed ON public.subscribers(unsubscribed) WHERE unsubscribed = false;
+CREATE INDEX IF NOT EXISTS idx_subscriber_purchases_subscriber ON public.subscriber_lead_purchases(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_subscriber_purchases_gig ON public.subscriber_lead_purchases(gig_id);
 
 -- Trigger for updated_at
+DROP TRIGGER IF EXISTS update_subscribers_updated_at ON public.subscribers;
 CREATE TRIGGER update_subscribers_updated_at
   BEFORE UPDATE ON public.subscribers
   FOR EACH ROW

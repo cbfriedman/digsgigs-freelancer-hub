@@ -1,5 +1,5 @@
 -- Create manual_test_results table for QA testing
-CREATE TABLE public.manual_test_results (
+CREATE TABLE IF NOT EXISTS public.manual_test_results (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   test_category TEXT NOT NULL,
   test_id TEXT NOT NULL,
@@ -15,12 +15,13 @@ CREATE TABLE public.manual_test_results (
 );
 
 -- Create unique constraint for test_id + environment combination
-CREATE UNIQUE INDEX idx_manual_test_results_unique ON public.manual_test_results(test_id, environment);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_manual_test_results_unique ON public.manual_test_results(test_id, environment);
 
 -- Enable RLS
 ALTER TABLE public.manual_test_results ENABLE ROW LEVEL SECURITY;
 
 -- Admins can do everything
+DROP POLICY IF EXISTS "Admins can manage test results" ON public.manual_test_results;
 CREATE POLICY "Admins can manage test results"
 ON public.manual_test_results
 FOR ALL
@@ -34,24 +35,33 @@ USING (
 );
 
 -- Authenticated users can view test results
+DROP POLICY IF EXISTS "Authenticated users can view test results" ON public.manual_test_results;
 CREATE POLICY "Authenticated users can view test results"
 ON public.manual_test_results
 FOR SELECT
 USING (auth.uid() IS NOT NULL);
 
--- Enable realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE public.manual_test_results;
+-- Enable realtime (ignore if already in publication)
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.manual_test_results;
+EXCEPTION WHEN duplicate_object THEN
+  NULL;
+END $$;
 
 -- Create updated_at trigger
+DROP TRIGGER IF EXISTS update_manual_test_results_updated_at ON public.manual_test_results;
 CREATE TRIGGER update_manual_test_results_updated_at
 BEFORE UPDATE ON public.manual_test_results
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Create storage bucket for test screenshots
-INSERT INTO storage.buckets (id, name, public) VALUES ('test-screenshots', 'test-screenshots', false);
+INSERT INTO storage.buckets (id, name, public) VALUES ('test-screenshots', 'test-screenshots', false)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for test screenshots
+DROP POLICY IF EXISTS "Admins can upload test screenshots" ON storage.objects;
 CREATE POLICY "Admins can upload test screenshots"
 ON storage.objects
 FOR INSERT
@@ -65,6 +75,7 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "Admins can view test screenshots" ON storage.objects;
 CREATE POLICY "Admins can view test screenshots"
 ON storage.objects
 FOR SELECT
@@ -78,6 +89,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Admins can delete test screenshots" ON storage.objects;
 CREATE POLICY "Admins can delete test screenshots"
 ON storage.objects
 FOR DELETE
@@ -169,10 +181,12 @@ INSERT INTO public.manual_test_results (test_category, test_id, test_name, envir
 ('Edge Cases', '10.2', 'Test form validation errors', 'lovable_preview'),
 ('Edge Cases', '10.3', 'Test session expiry handling', 'lovable_preview'),
 ('Edge Cases', '10.4', 'Test mobile responsive layouts', 'lovable_preview'),
-('Edge Cases', '10.5', 'Test case-insensitive routing', 'lovable_preview');
+('Edge Cases', '10.5', 'Test case-insensitive routing', 'lovable_preview')
+ON CONFLICT (test_id, environment) DO NOTHING;
 
 -- Duplicate all tests for Vercel production environment
 INSERT INTO public.manual_test_results (test_category, test_id, test_name, environment)
 SELECT test_category, test_id, test_name, 'vercel_production'
 FROM public.manual_test_results
-WHERE environment = 'lovable_preview';
+WHERE environment = 'lovable_preview'
+ON CONFLICT (test_id, environment) DO NOTHING;
