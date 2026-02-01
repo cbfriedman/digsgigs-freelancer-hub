@@ -126,7 +126,7 @@ const AdminUserManagement = () => {
         roles: userRoles
           ?.filter(ur => ur.user_id === profile.id)
           .map(ur => ur.app_role) || [],
-        is_suspended: profile.is_suspended ?? false,
+        is_suspended: false,
       }));
 
       setUsers(usersWithRoles);
