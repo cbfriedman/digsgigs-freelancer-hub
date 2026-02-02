@@ -579,7 +579,28 @@ const GigDetail = () => {
               </Card>
             )}
 
-            {!isDigger && !isOwner && gig.status === 'open' && (
+            {/* Logged in but not a Digger or no digger profile — need to complete setup to see bid form */}
+            {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && (
+              <Card id="bid">
+                <CardContent className="pt-6 space-y-4">
+                  <p className="text-center text-muted-foreground">
+                    To place a bid you need an active <strong>Digger</strong> profile (contractor/freelancer).
+                  </p>
+                  <p className="text-sm text-center text-muted-foreground">
+                    Go to your dashboard and choose &quot;Become a Digger&quot; or complete your Digger profile, then return here to submit your bid.
+                  </p>
+                  <Button
+                    className="w-full"
+                    onClick={() => navigate('/role-dashboard')}
+                  >
+                    Go to Dashboard
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Not logged in — prompt to sign in */}
+            {!currentUser && !isOwner && gig.status === 'open' && (
               <Card id="bid">
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground mb-4">
