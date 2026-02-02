@@ -16,6 +16,7 @@ import SEOHead from "@/components/SEOHead";
 import { generateJobPostingSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Gig {
   id: string;
@@ -54,10 +55,11 @@ const GigDetail = () => {
   const [canSeeBudget, setCanSeeBudget] = useState(false);
   const [hasLeadPurchase, setHasLeadPurchase] = useState(false);
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
+  const { userRoles } = useAuth();
 
   useEffect(() => {
     loadData();
-  }, [id]);
+  }, [id, userRoles]);
 
   useEffect(() => {
     // Scroll to bid section (#bid) only after gig is loaded so the target (form or Sign In card) exists
@@ -91,8 +93,8 @@ const GigDetail = () => {
         .select("user_type")
         .eq("id", session.user.id)
         .single();
-      
-      const userIsDigger = profile?.user_type === "digger";
+      // Treat as digger if profiles.user_type is "digger" OR user has digger role (user_roles table)
+      const userIsDigger = profile?.user_type === "digger" || (userRoles && userRoles.includes("digger"));
       setIsDigger(userIsDigger);
 
       if (userIsDigger) {

@@ -103,6 +103,20 @@ const EditDiggerProfile = () => {
     .map(k => k.trim())
     .filter(k => k.length > 0);
 
+  // Merge saved profile with current form state so completion widget updates live and can reach 100%
+  const displayProfileForCompletion = useMemo(() => {
+    if (!profileData) return null;
+    return {
+      ...profileData,
+      bio: bio || profileData.bio,
+      profile_image_url: photoUrl || profileData.profile_image_url,
+      work_photos: workPhotos.length > 0 ? workPhotos : (profileData.work_photos || []),
+      hourly_rate_min: hourlyRateMin ?? profileData.hourly_rate_min,
+      hourly_rate_max: hourlyRateMax ?? profileData.hourly_rate_max,
+      certifications: certifications.length > 0 ? certifications : (profileData.certifications || []),
+    };
+  }, [profileData, bio, photoUrl, workPhotos, hourlyRateMin, hourlyRateMax, certifications]);
+
   // Match pending profession names to IDs once professions are loaded
   useEffect(() => {
     if (pendingProfessionNames.length > 0 && professions.length > 0 && !professionsLoading) {
@@ -1104,9 +1118,9 @@ const EditDiggerProfile = () => {
           {/* Sidebar with Completion Widget */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
-              {profileData && (
+              {displayProfileForCompletion && (
                 <ProfileCompletionWidget
-                  profile={profileData}
+                  profile={displayProfileForCompletion}
                   profileId={profileId}
                   onNavigateToSection={(section) => {
                     const element = document.getElementById(section);
