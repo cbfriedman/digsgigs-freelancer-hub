@@ -87,7 +87,7 @@ export function EmailTemplateEditor({
     if (!editor) return;
     const current = editor.getHTML();
     if (value !== undefined && value !== current) {
-      editor.commands.setContent(value ?? "", false);
+      editor.commands.setContent(value ?? "");
     }
   }, [value]);
 
@@ -249,7 +249,7 @@ export function EmailTemplateEditor({
         />
       </div>
       {editor.isActive("link") && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+        <BubbleMenu editor={editor}>
           <Button
             type="button"
             variant="outline"
