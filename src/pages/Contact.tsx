@@ -67,8 +67,6 @@ const Contact = () => {
         description="Have questions about Digs & Gigs? Contact our support team for help with your account, pricing, or any other inquiries. We reply within 24–48 hours."
         keywords="contact us, customer support, help desk, get help, support team, contact digs and gigs"
       />
-      <Navigation showBackButton backLabel="Back to Home" />
-
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Hero */}
         <div className="text-center mb-12">

@@ -262,7 +262,6 @@ export default function EscrowDashboard() {
   if (loading) {
     return (
       <>
-        <Navigation showBackButton backTo="/" />
         <div className="min-h-screen bg-background flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -273,7 +272,6 @@ export default function EscrowDashboard() {
 
   return (
     <>
-      <Navigation showBackButton backTo="/" />
       <main className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">

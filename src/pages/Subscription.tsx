@@ -181,7 +181,6 @@ export default function Subscription() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
@@ -197,7 +196,6 @@ export default function Subscription() {
       </Helmet>
       
       <div className="min-h-screen bg-background">
-        <Navigation />
         
         <main className="container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto">

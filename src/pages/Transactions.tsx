@@ -533,26 +533,6 @@ const Transactions = () => {
             </div>
           )}
 
-          {/* Upgrade CTA for Free Tier Diggers */}
-          {userType === 'digger' && totalCommission > 0 && (
-            <Card className="border-primary/20 bg-primary/5">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-lg">Save on Commission Fees</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Upgrade to Pro (4%) or Premium (0%) to keep more of your earnings
-                    </p>
-                  </div>
-                  <Button onClick={() => navigate('/subscription')}>
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Upgrade Plan
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Transactions List */}
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-4">

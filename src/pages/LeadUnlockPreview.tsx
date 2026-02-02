@@ -131,8 +131,6 @@ export default function LeadUnlockPreview() {
         description="Preview of what Diggers see when they receive a lead notification email."
       />
       
-      <Navigation showBackButton backLabel="Back" />
-
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         {/* Demo Banner */}
         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">

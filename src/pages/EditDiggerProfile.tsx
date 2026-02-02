@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles, DollarSign, Award, Camera, User, Briefcase, Settings } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { KeywordSelector } from "@/components/KeywordSelector";
@@ -65,7 +64,6 @@ const EditDiggerProfile = () => {
   const [bio, setBio] = useState("");
   const [keywordsInput, setKeywordsInput] = useState("");
   const [profileId, setProfileId] = useState<string>("");
-  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
   const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
   const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
   const [pricingModel, setPricingModel] = useState<string>("commission");
@@ -154,39 +152,8 @@ const EditDiggerProfile = () => {
     }
     
     loadProfile();
-    checkSubscription();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate, profileIdParam]); // Removed searchParams from deps to prevent loop - read it inside effect instead
-
-  const checkSubscription = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) {
-        console.error('Error checking subscription:', error);
-        return;
-      }
-
-      if (data?.subscription_tier) {
-        setSubscriptionTier(data.subscription_tier);
-      } else if (data?.tier) {
-        // Fallback for backward compatibility
-        setSubscriptionTier(data.tier);
-      }
-    } catch (error) {
-      // Error logging - consider using proper error tracking service in production
-      if (import.meta.env.DEV) {
-        console.error('Error checking subscription:', error);
-      }
-    }
-  };
 
   const loadProfile = async () => {
     if (!user) return;
@@ -321,11 +288,6 @@ const EditDiggerProfile = () => {
         setWorkPhotos(profile.work_photos || []);
         setCertifications(profile.certifications || []);
         setProfileData(profile);
-        
-        // Load subscription tier from profile as fallback
-        if (profile.subscription_tier) {
-          setSubscriptionTier(profile.subscription_tier);
-        }
         
         // Category loading removed - using new taxonomy system with profession assignments
       }
@@ -548,8 +510,6 @@ const EditDiggerProfile = () => {
   return (
     <PageLayout maxWidth="wide">
       <div className="animate-fade-in-up">
-        <SubscriptionBanner currentTier={subscriptionTier} />
-        
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">

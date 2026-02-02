@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { OptimizedImage } from "@/components/OptimizedImage";
@@ -118,8 +117,6 @@ export default function Blog() {
         keywords="service industry blog, contractor tips, pricing guides, business growth, freelance success, how-to guides, industry insights"
       />
       
-      <Navigation showBackButton backLabel="Back to Home" />
-
       {/* Hero Section */}
       <section className="py-16 bg-gradient-to-b from-primary/5 to-background">
         <div className="container mx-auto px-4">

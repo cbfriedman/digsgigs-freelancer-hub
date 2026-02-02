@@ -2,14 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
-import { SubscriptionStatusCard } from "@/components/SubscriptionStatusCard";
 import { 
   ArrowLeft, 
   Edit, 
@@ -208,7 +206,6 @@ export default function ProfileDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="container mx-auto px-4 py-8">
           <p className="text-muted-foreground">Loading profile dashboard...</p>
         </div>
@@ -219,7 +216,6 @@ export default function ProfileDashboard() {
   if (!profile) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="container mx-auto px-4 py-8">
           <p className="text-muted-foreground">Profile not found</p>
         </div>
@@ -229,7 +225,6 @@ export default function ProfileDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <Button 
@@ -303,13 +298,6 @@ export default function ProfileDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Subscription Status Card */}
-        {profileId && (
-          <div className="mb-6">
-            <SubscriptionStatusCard diggerProfileId={profileId} />
-          </div>
-        )}
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="keywords" className="space-y-6">

@@ -15,7 +15,7 @@ const FAQ = () => {
     general: [
       {
         question: "What is Digs & Gigs?",
-        answer: "Digs & Gigs is a freelance marketplace where consumers (clients) can post projects and freelancers (\"Diggers\") can connect with them. We charge no commissions — freelancers pay only for subscription access and optional lead reveals."
+        answer: "Digs & Gigs is a freelance marketplace where consumers (clients) can post projects and freelancers (\"Diggers\") can connect with them. Diggers can either buy leads or bid on gigs and pay an 8% referral fee when awarded. No membership required."
       },
       {
         question: "Is Digs & Gigs a bidding platform?",
@@ -40,8 +40,8 @@ const FAQ = () => {
         answer: "When a consumer posts a project, our system automatically pairs it with Diggers whose skills match the project criteria."
       },
       {
-        question: "Do I need to buy credits or tokens?",
-        answer: "No. We do not use credit packs or point systems. You simply pay the monthly subscription and pay flat-rate prices for lead reveals. That's it."
+        question: "Do I need a membership or subscription?",
+        answer: "No. Diggers can buy leads or bid on gigs with no membership required. When you're awarded a job, we charge an 8% referral fee (from the client's deposit)."
       },
       {
         question: "What do I get when I pay for a lead reveal?",
@@ -88,20 +88,16 @@ const FAQ = () => {
     ],
     pricing: [
       {
-        question: "How much does it cost to use Digs & Gigs as a freelancer?",
-        answer: "Two components: Subscription ($19/month for Founders) and optional lead reveal fees ($10/$25 for first-year Founders)."
+        question: "How much does it cost to use Digs & Gigs as a Digger?",
+        answer: "No membership required. You can buy leads (pay per lead) or bid on gigs. When you're awarded a job, we charge an 8% referral fee (from the client's deposit)."
       },
       {
-        question: "Are subscription fees refundable?",
-        answer: "No. Because subscription access is immediate, all subscription payments are non-refundable except where law requires."
+        question: "What is the 8% referral fee?",
+        answer: "When a client awards you a gig, they pay a deposit. We retain 8% of that as a referral fee; the rest goes to you. You pay nothing upfront to bid."
       },
       {
-        question: "How long is the $19/month Founder subscription price guaranteed?",
-        answer: "For life — as long as the subscription remains active. If a Founder cancels or lapses for any reason, the lifetime guarantee expires."
-      },
-      {
-        question: "Will lead pricing increase after a year?",
-        answer: "It may. Founders receive the lowest lead pricing we will ever offer — $10/$25 for their entire first year. Pricing may adjust afterward."
+        question: "Can I only bid, or only buy leads?",
+        answer: "You can do either or both. Buy leads to contact clients directly, or bid on gigs and pay the 8% referral fee only when you're awarded."
       }
     ],
     leads: [
@@ -142,24 +138,12 @@ const FAQ = () => {
     ],
     founders: [
       {
-        question: "What is the Founders Program?",
-        answer: "A limited offer for the first 500 freelancers who join Digs & Gigs."
+        question: "Is there a Founders or membership program?",
+        answer: "No. We do not require membership. All Diggers can buy leads or bid on gigs and pay the 8% referral fee when awarded."
       },
       {
-        question: "What do Founders receive?",
-        answer: "Free 60-day subscription, $19/month subscription locked for life, lowest lead pricing we will ever offer — $10/$25 for the first 12 months, priority ranking, and Founding Digger badge."
-      },
-      {
-        question: "Can new freelancers join after all 500 spots are taken?",
-        answer: "Yes, but they will not receive: $19 lifetime subscription, first-year $10/$25 lead pricing, Founders badge, or priority ranking."
-      },
-      {
-        question: "Can Founders lose their lifetime subscription price?",
-        answer: "Yes. If a Founder cancels or lapses payments, the guarantee permanently expires."
-      },
-      {
-        question: "Will Founders still receive new features as the platform grows?",
-        answer: "Yes. All active Founders will continue to receive all new platform features."
+        question: "Do I need to subscribe to bid or buy leads?",
+        answer: "No. Create your profile and start bidding or buying leads. No subscription required."
       }
     ]
   };
@@ -178,8 +162,6 @@ const FAQ = () => {
       />
       
       <div className="min-h-screen flex flex-col bg-background">
-        <Navigation />
-        
         <main className="flex-1 container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">

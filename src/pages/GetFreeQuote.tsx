@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Shield, Phone, CheckCircle2 } from "lucide-react";
-import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
@@ -231,7 +230,6 @@ export default function GetFreeQuote() {
           }
         }}
       />
-      <Navigation />
       
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-12 px-4">
         <div className="max-w-lg mx-auto">

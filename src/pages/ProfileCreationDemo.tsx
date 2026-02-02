@@ -11,7 +11,6 @@ import { IndustryMultiSelector } from "@/components/IndustryMultiSelector";
 import { Briefcase, Loader2, ShoppingCart, Save } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lookupCPC } from "@/utils/cpcLookup";
@@ -208,8 +207,6 @@ export default function ProfileCreationDemo() {
         <title>Profile Creation Demo - DigsandGigs</title>
         <meta name="description" content="See how to create your professional digger profile with AI-powered suggestions" />
       </Helmet>
-
-      <Navigation />
 
       {loading ? (
         <div className="min-h-screen bg-background py-8 flex items-center justify-center">

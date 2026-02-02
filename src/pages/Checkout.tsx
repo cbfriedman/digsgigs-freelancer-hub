@@ -546,8 +546,6 @@ export default function Checkout() {
         description="Complete your lead purchase on Digsandgigs"
       />
       <div className="min-h-screen bg-background">
-        <Navigation />
-        
         <main className="container mx-auto px-4 py-8 max-w-4xl">
           <Button
             variant="ghost"

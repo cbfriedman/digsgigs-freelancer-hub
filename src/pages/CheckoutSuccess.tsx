@@ -100,8 +100,6 @@ export default function CheckoutSuccess() {
         description="Your lead purchase was successful"
       />
       <div className="min-h-screen bg-background">
-        <Navigation />
-        
         <main className="container mx-auto px-4 py-16 max-w-3xl">
           <Card className="p-8 md:p-12 text-center">
             <div className="mb-6 flex justify-center">

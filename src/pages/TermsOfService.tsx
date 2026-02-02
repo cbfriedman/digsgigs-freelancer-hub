@@ -4,8 +4,6 @@ import { Navigation } from "@/components/Navigation";
 const TermsOfService = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation showBackButton backLabel="Back to Home" />
-
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-4xl font-bold mb-4">Terms of Service</h1>
         <p className="text-muted-foreground mb-2">Effective Date: January 1, 2026</p>
@@ -77,46 +75,20 @@ const TermsOfService = () => {
 
             {/* Section 5 */}
             <section>
-              <h2 className="text-2xl font-bold mb-4">5. Subscription Pricing</h2>
+              <h2 className="text-2xl font-bold mb-4">5. Digger Pricing — No Membership Required</h2>
               <p className="text-muted-foreground mb-3">
-                Digger subscriptions renew automatically unless canceled.
+                Diggers can either buy leads or bid on gigs. No subscription or membership is required.
               </p>
               
-              <h3 className="text-lg font-semibold mb-2 mt-4">Founders Program Subscription</h3>
-              <p className="text-muted-foreground mb-2">Applicable only to the first 500 Diggers:</p>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-                <li>Free for 60 days</li>
-                <li>Then $19/month</li>
-                <li><strong>Lifetime subscription guarantee:</strong> This fee will not increase as long as your subscription remains active</li>
-                <li>If your subscription lapses, the guarantee expires permanently</li>
-              </ul>
-
-              <h3 className="text-lg font-semibold mb-2 mt-4">Refunds</h3>
-              <p className="text-muted-foreground">
-                Subscription fees are non-refundable except where required by law.
-              </p>
-            </section>
-
-            {/* Section 6 */}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">6. Lead Pricing</h2>
-              <p className="text-muted-foreground mb-3">
-                Diggers may reveal Client contact information by paying a lead fee.
+              <h3 className="text-lg font-semibold mb-2 mt-4">Buy Leads</h3>
+              <p className="text-muted-foreground mb-2">
+                Diggers may reveal Client contact information by paying a lead fee. Lead pricing varies by category and project size.
               </p>
 
-              <h3 className="text-lg font-semibold mb-2 mt-4">For Founding Diggers (First 500 Freelancers):</h3>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-                <li>Standard leads: $10 each</li>
-                <li>High-value leads: $25 each</li>
-                <li>These are the lowest lead prices we will ever offer</li>
-                <li>These rates apply only for the first 12 months after subscription activation</li>
-              </ul>
-
-              <h3 className="text-lg font-semibold mb-2 mt-4">After the first year:</h3>
-              <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-                <li>Lead pricing may adjust</li>
-                <li>New pricing will be communicated with reasonable notice</li>
-              </ul>
+              <h3 className="text-lg font-semibold mb-2 mt-4">Bid on Gigs — 8% Referral Fee</h3>
+              <p className="text-muted-foreground mb-2">
+                When a Digger is awarded a gig, we charge an 8% referral fee (from the Gigger&apos;s deposit). The Digger pays nothing upfront to bid.
+              </p>
 
               <h3 className="text-lg font-semibold mb-2 mt-4">Lead fees are non-refundable, even if:</h3>
               <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
@@ -213,7 +185,7 @@ const TermsOfService = () => {
               <p className="text-muted-foreground mb-3">To the fullest extent permitted by law:</p>
               <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
                 <li>Digs & Gigs is not liable for indirect, incidental, or consequential damages</li>
-                <li>Our total liability shall not exceed the subscription or lead fees paid in the past 3 months</li>
+                <li>Our total liability shall not exceed the lead or referral fees paid in the past 3 months</li>
                 <li>We provide the Platform "as is" with no warranties of any kind</li>
               </ul>
               <p className="text-muted-foreground mt-3 italic">

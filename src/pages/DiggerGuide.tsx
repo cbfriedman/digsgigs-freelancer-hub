@@ -301,8 +301,8 @@ export default function DiggerGuide() {
                   <p className="text-sm text-muted-foreground">
                     After completion, clients can rate your work. Great reviews help you win more gigs and build credibility!
                   </p>
-                  <Button onClick={() => navigate('/subscription')} variant="outline" className="w-full">
-                    Upgrade to Save More
+                  <Button onClick={() => navigate('/pricing')} variant="outline" className="w-full">
+                    See Pricing
                   </Button>
                 </div>
               </AccordionContent>

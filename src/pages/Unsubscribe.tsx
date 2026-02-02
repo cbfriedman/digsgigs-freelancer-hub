@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { PhoneOff, CheckCircle2 } from "lucide-react";
-import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 
 export default function Unsubscribe() {
@@ -73,7 +72,6 @@ export default function Unsubscribe() {
         title="Unsubscribe | DigsandGigs"
         description="Opt out of telemarketing calls from DigsandGigs."
       />
-      <Navigation />
       
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-12 px-4">
         <div className="max-w-md mx-auto">

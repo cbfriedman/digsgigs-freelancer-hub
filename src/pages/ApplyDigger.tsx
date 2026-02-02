@@ -70,8 +70,6 @@ const ApplyDigger = () => {
       />
 
       <div className="min-h-screen bg-background">
-        <Navigation />
-
         {/* Hero Section */}
         <section className="py-16 md:py-24 lg:py-32">
           <div className="container mx-auto px-4 max-w-4xl text-center">
@@ -394,11 +392,11 @@ const ApplyDigger = () => {
                 },
                 {
                   question: "Can I really keep 100% of what I earn?",
-                  answer: "Yes. We don't take any percentage of your project fees. Your earnings are yours. We make money through subscriptions and lead fees, not by taking a cut of your work."
+                  answer: "Yes. We don't take any percentage of your project fees. Your earnings are yours. We make money through lead purchases and an 8% referral fee when you're awarded a gig (from the client's deposit), not by taking a cut of your work."
                 },
                 {
                   question: "What if I'm not getting enough leads?",
-                  answer: "We're building a quality-focused marketplace. If leads are slow in your area or specialty, you can pause your subscription and resume when you're ready. No penalties."
+                  answer: "We're building a quality-focused marketplace. There's no membership — you can buy leads or bid on gigs whenever you want. Pay the 8% referral fee only when you're awarded a job."
                 }
               ].map((item, index) => (
                 <div key={index} className="border-b border-border/50 pb-6">

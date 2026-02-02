@@ -1,6 +1,5 @@
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +35,6 @@ export default function ServiceIndexPage() {
   if (!serviceInfo) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold">Service not found</h1>
           <p className="text-muted-foreground mt-2">The requested service could not be found.</p>
@@ -97,8 +95,6 @@ export default function ServiceIndexPage() {
         </script>
       </Helmet>
 
-      <Navigation />
-      
       <main className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, RouterProvider, Navigate, Outlet } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
@@ -12,6 +12,7 @@ import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { FloatingChatButton } from "./components/FloatingChatButton";
+import { Navigation } from "./components/Navigation";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
 // Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
@@ -31,7 +32,6 @@ import HowItWorks from "./pages/HowItWorks";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import LegalDocuments from "./pages/LegalDocuments";
-import Subscription from "./pages/Subscription";
 import Pricing from "./pages/Pricing";
 import PricingStrategy from "./pages/PricingStrategy";
 import Transactions from "./pages/Transactions";
@@ -54,8 +54,6 @@ import BlogPost from "./pages/BlogPost";
 import AdminBlog from "./pages/AdminBlog";
 import Sitemap from "./pages/Sitemap";
 import SitemapXML from "./pages/SitemapXML";
-import DiggerSubscription from "./pages/DiggerSubscription";
-import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
@@ -116,10 +114,22 @@ const PresenceTracker = () => {
   return null;
 };
 
-// Layout wrapper that includes PageViewTracker for all routes
+// Layout wrapper: persistent header (like Upwork) + page content
 const RootLayout = () => {
+  const location = useLocation();
+  const pathname = location.pathname;
+  const isBlogPost = /^\/blog\/[^/]+$/.test(pathname);
+  const isBlogIndex = pathname === "/blog";
+  const showBackButton = isBlogPost || isBlogIndex;
+  const backTo = isBlogPost ? "/blog" : "/";
+  const backLabel = isBlogPost ? "Back to Blog" : "Back to Home";
   return (
     <>
+      <Navigation
+        showBackButton={showBackButton}
+        backTo={backTo}
+        backLabel={backLabel}
+      />
       <PageViewTracker />
       <Outlet />
       <FloatingChatButton />
@@ -172,15 +182,15 @@ const router = createBrowserRouter(
       },
       {
         path: "/digger-subscription",
-        element: <ProtectedRoute><DiggerSubscription /></ProtectedRoute>,
+        element: <Navigate to="/pricing" replace />,
       },
       {
         path: "/subscription",
-        element: <ProtectedRoute requireVerified={true}><Subscription /></ProtectedRoute>,
+        element: <Navigate to="/pricing" replace />,
       },
       {
         path: "/subscription-success",
-        element: <ProtectedRoute><SubscriptionSuccess /></ProtectedRoute>,
+        element: <Navigate to="/pricing" replace />,
       },
       {
         path: "/checkout",

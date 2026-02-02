@@ -1,6 +1,5 @@
 import { Helmet } from "react-helmet-async";
 import { Link, useParams, Navigate } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { getFAQCategoryBySlug, faqCategories } from "@/data/faqData";
 import { ChevronRight, ArrowLeft } from "lucide-react";
@@ -90,8 +89,6 @@ export default function FAQCategory() {
       </Helmet>
 
       <div className="min-h-screen flex flex-col bg-background">
-        <Navigation />
-        
         <main className="flex-1">
           {/* Breadcrumb */}
           <div className="border-b bg-muted/30">

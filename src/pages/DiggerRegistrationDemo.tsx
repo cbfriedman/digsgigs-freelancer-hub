@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,8 +66,6 @@ export default function DiggerRegistrationDemo() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navigation />
-      
       <main className="flex-1 container mx-auto px-4 py-8 mt-16">
         <div className="max-w-2xl mx-auto">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">

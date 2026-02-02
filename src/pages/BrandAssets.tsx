@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,8 +157,6 @@ const BrandAssets = () => {
         description="Official Digs&Gigs brand guidelines, colors, and assets for freelancers, partners, and media."
       />
       <div className="min-h-screen bg-background">
-        <Navigation />
-        
         <main className="container mx-auto px-4 py-12">
           {/* Header */}
           <div className="text-center mb-12">

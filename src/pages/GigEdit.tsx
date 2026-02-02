@@ -174,7 +174,6 @@ const GigEdit = () => {
         title="Edit Project | Digs & Gigs"
         description="Update your project details."
       />
-      <Navigation showBackButton backLabel="Back" />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card className="shadow-lg">

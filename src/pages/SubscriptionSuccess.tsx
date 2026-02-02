@@ -94,8 +94,6 @@ export default function SubscriptionSuccess() {
       </Helmet>
       
       <div className="min-h-screen bg-background">
-        <Navigation />
-        
         <main className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto text-center">
             {/* Success Icon */}

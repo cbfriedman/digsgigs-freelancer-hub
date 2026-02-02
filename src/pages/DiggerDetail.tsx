@@ -120,7 +120,6 @@ const DiggerDetail = () => {
   const [hasViewAccess, setHasViewAccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
-  const [diggerNeedsSubscription, setDiggerNeedsSubscription] = useState(false);
   const { isOnline } = useDiggerPresence(id);
   const { recordCall, isRecording: isCallingDigger } = useProfileCallTracking();
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
@@ -187,19 +186,13 @@ const DiggerDetail = () => {
     setDigger(diggerData);
     setIsOwnProfile(session?.user?.id === diggerData.user_id);
 
-    // Check subscription status
-    const subscriptionStatus = diggerData.subscription_status;
-    setDiggerNeedsSubscription(subscriptionStatus !== 'active');
-
-    // Record click if digger is subscribed (for price lock tracking)
-    // Only record if not the digger viewing their own profile
-    if (subscriptionStatus === 'active' && session?.user?.id !== diggerData.user_id) {
+    // Record profile click when a non-owner views (for analytics)
+    if (session?.user?.id !== diggerData.user_id) {
       try {
         await supabase.functions.invoke('record-profile-click', {
           body: { digger_profile_id: id }
         });
       } catch (error) {
-        // Silently fail - click tracking shouldn't block page load
         console.error('Failed to record click:', error);
       }
     }
@@ -433,12 +426,6 @@ const DiggerDetail = () => {
           }
           return;
         }
-        // Check if it's a subscription requirement error
-        if (error.status === 402 || error.message?.includes('subscription')) {
-          setDiggerNeedsSubscription(true);
-          toast.error("This digger needs to activate their subscription first. Please contact them or try again later.");
-          return;
-        }
         throw error;
       }
 
@@ -451,13 +438,6 @@ const DiggerDetail = () => {
 
       if (data.notRelated) {
         toast.error("You can only view diggers that are related to your posted gigs.");
-        return;
-      }
-
-      // Handle subscription requirement response
-      if (data.requiresSubscription) {
-        setDiggerNeedsSubscription(true);
-        toast.error("This digger needs to activate their subscription before you can view their contact information.");
         return;
       }
 
@@ -500,9 +480,6 @@ const DiggerDetail = () => {
         if (error.message?.includes('must post')) {
           navigate("/post-gig");
         }
-      } else if (error.status === 402 || error.message?.includes('subscription')) {
-        setDiggerNeedsSubscription(true);
-        toast.error("This digger needs to activate their subscription first.");
       } else {
         toast.error(error.message || "Failed to unlock contact information");
       }
@@ -1263,60 +1240,36 @@ const DiggerDetail = () => {
               <>
                 {/* Contact Info Unlock Section */}
                 {!hasViewAccess && currentUser && (
-              <Card className={`border-primary/50 ${diggerNeedsSubscription ? 'bg-yellow-500/5 border-yellow-500/50' : 'bg-primary/5'}`}>
+              <Card className="border-primary/50 bg-primary/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    {diggerNeedsSubscription ? '⏳ Subscription Required' : '🔒 Contact Information Locked'}
+                    🔒 Contact Information Locked
                   </CardTitle>
                   <CardDescription>
-                    {diggerNeedsSubscription 
-                      ? "This digger needs to activate their subscription before you can view their contact information."
-                      : "Unlock this digger's full contact information to connect directly (free for subscribed diggers)"}
+                    Unlock this digger&apos;s full contact information to connect directly.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {diggerNeedsSubscription ? (
-                    <div className="space-y-3">
-                      <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                        <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                          <strong>Note:</strong> This digger hasn't activated their subscription yet. Once they subscribe, 
-                          you'll be able to view their contact information for free.
-                        </p>
-                      </div>
-                      <p className="text-xs text-muted-foreground text-center">
-                        Please check back later or contact the digger directly if you have their information.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                        <p className="text-sm text-green-700 dark:text-green-400">
-                          <strong>Good news!</strong> This digger has an active subscription. 
-                          Viewing their contact information is free.
-                        </p>
-                      </div>
-                      <Button
-                        className="w-full"
-                        size="lg"
-                        onClick={handleUnlockContact}
-                        disabled={isUnlocking}
-                      >
-                        {isUnlocking ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            🔓 View Contact Information
-                          </>
-                        )}
-                      </Button>
-                      <p className="text-xs text-muted-foreground text-center">
-                        Free for subscribed diggers - no payment required
-                      </p>
-                    </>
-                  )}
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleUnlockContact}
+                    disabled={isUnlocking}
+                  >
+                    {isUnlocking ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        🔓 View Contact Information
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Pay per lead — no membership required for Diggers
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -1420,14 +1373,6 @@ const DiggerDetail = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Profile Pricing Info for Diggers */}
-                  {digger.subscription_tier && digger.subscription_tier !== 'free' && (
-                    <ProfileClickPricingCard
-                      profession={digger.profession || 'contractor'}
-                      showActions={false}
-                      variant="full"
-                    />
-                  )}
                 </>
               )}
 

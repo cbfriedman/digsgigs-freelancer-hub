@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, User, Mail, Phone } from "lucide-react";
-import { Navigation } from "@/components/Navigation";
 import { z } from "zod";
 
 const registrationSchema = z.object({
@@ -72,8 +71,6 @@ const PreDemoRegistration = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Button
           variant="ghost"

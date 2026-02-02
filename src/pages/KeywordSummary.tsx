@@ -555,7 +555,6 @@ export default function KeywordSummary() {
   if (isLoading) {
     return (
       <>
-        <Navigation />
         <div className="min-h-screen bg-background py-12 flex items-center justify-center">
           <p className="text-muted-foreground">Loading keywords...</p>
         </div>
@@ -575,7 +574,6 @@ export default function KeywordSummary() {
 
   return (
     <>
-      <Navigation />
       <div className="min-h-screen bg-background py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="mb-8">

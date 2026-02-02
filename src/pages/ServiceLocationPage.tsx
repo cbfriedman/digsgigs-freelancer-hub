@@ -97,7 +97,6 @@ export default function ServiceLocationPage() {
   if (!serviceInfo || !cityInfo) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold">Service not found</h1>
           <p className="text-muted-foreground mt-2">The requested service or location could not be found.</p>
@@ -197,7 +196,6 @@ export default function ServiceLocationPage() {
         </script>
       </Helmet>
 
-      <Navigation />
       
       <main className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}

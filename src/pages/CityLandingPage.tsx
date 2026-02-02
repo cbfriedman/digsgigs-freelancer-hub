@@ -43,7 +43,6 @@ export default function CityLandingPage() {
   if (!cityInfo) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold">City not found</h1>
           <p className="text-muted-foreground mt-2">The requested city could not be found.</p>
@@ -143,8 +142,6 @@ export default function CityLandingPage() {
           {JSON.stringify(faqData)}
         </script>
       </Helmet>
-
-      <Navigation />
       
       <main className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}

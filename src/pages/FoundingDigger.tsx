@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,10 +24,8 @@ export default function FoundingDigger() {
     <>
       <Helmet>
         <title>Founding Digger Program — Lowest Lead Pricing Ever | Digs & Gigs</title>
-        <meta name="description" content="Join the first 500 Diggers to lock in the lowest lead pricing we will ever offer and a $19/month lifetime subscription." />
+        <meta name="description" content="Join Digs & Gigs as a Digger. Buy leads or bid on gigs — 8% referral fee when awarded. No membership required." />
       </Helmet>
-      
-      <Navigation />
       
       <div className="min-h-screen bg-background">
         {/* Hero Section */}

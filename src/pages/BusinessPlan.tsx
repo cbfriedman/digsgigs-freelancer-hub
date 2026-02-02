@@ -8,7 +8,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
 const BusinessPlan = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -491,8 +490,6 @@ const BusinessPlan = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Prominent Download Section */}
         <Card className="mb-8 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">

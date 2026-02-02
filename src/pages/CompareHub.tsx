@@ -1,6 +1,5 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { competitors } from "@/data/comparisonData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,8 +36,6 @@ export default function CompareHub() {
       </Helmet>
 
       <div className="min-h-screen flex flex-col bg-background">
-        <Navigation />
-        
         <main className="flex-1">
           {/* Hero */}
           <section className="bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-16 md:py-24">

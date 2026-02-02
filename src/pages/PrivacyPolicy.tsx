@@ -4,8 +4,6 @@ import { Navigation } from "@/components/Navigation";
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation showBackButton backLabel="Back to Home" />
-
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
         <p className="text-muted-foreground mb-2">Effective Date: January 1, 2026</p>

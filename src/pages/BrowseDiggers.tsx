@@ -375,15 +375,7 @@ const BrowseDiggers = () => {
     return null;
   };
 
-  const getFreeEstimatePrice = (subscriptionTier: string | null) => {
-    const tierPricing = {
-      free: 150,
-      pro: 100,
-      premium: 50
-    };
-    
-    return tierPricing[subscriptionTier as keyof typeof tierPricing] || 150;
-  };
+  const getFreeEstimatePrice = (_tier: string | null) => 150;
 
   const getCountryFlag = (countryName: string): string => {
     const flags: { [key: string]: string } = {
@@ -450,7 +442,6 @@ const BrowseDiggers = () => {
           title="Browse Service Professionals - Find Qualified Contractors"
           description="Find skilled service professionals and contractors for your project."
         />
-        <Navigation showBackButton backLabel="Back to Home" />
         <div className="container mx-auto px-4 py-12">
           <Card className="max-w-2xl mx-auto mt-12">
             <CardContent className="pt-6">
@@ -479,7 +470,6 @@ const BrowseDiggers = () => {
           title="Browse Service Professionals - Find Qualified Contractors"
           description="Find skilled service professionals and contractors for your project."
         />
-        <Navigation showBackButton backLabel="Back to Home" />
         <div className="container mx-auto px-4 py-12">
           <Card className="max-w-2xl mx-auto mt-12">
             <CardContent className="pt-6">
@@ -511,7 +501,6 @@ const BrowseDiggers = () => {
           { name: "Browse Diggers", url: "https://digsandgigs.com/browse-diggers" }
         ])}
       />
-      <Navigation showBackButton backLabel="Back to Home" />
 
       <div className="container mx-auto px-4 py-12">
         <Breadcrumb items={[{ label: "Browse Diggers", href: "/browse-diggers" }]} />

@@ -9,7 +9,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Briefcase, MapPin, DollarSign, Clock } from "lucide-react";
 import { GigCategorySelector } from "@/components/GigCategorySelector";
-import { Navigation } from "@/components/Navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -111,8 +110,6 @@ const GigRegistrationDemo = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <Alert className="mb-6 bg-primary/10 border-primary/30">
           <AlertDescription className="text-center font-medium">

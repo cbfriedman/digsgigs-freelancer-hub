@@ -2,7 +2,6 @@ import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { generateOrganizationSchema, generateWebsiteSchema } from "@/components/StructuredData";
 import {
-  HomepageNavbar,
   HeroSection,
   HowItWorksSection,
   PricingPreviewSection,
@@ -26,7 +25,6 @@ const Index = () => {
         }}
       />
       
-      <HomepageNavbar />
       <HeroSection />
       <HowItWorksSection />
       <PricingPreviewSection />

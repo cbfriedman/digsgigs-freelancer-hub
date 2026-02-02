@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +39,7 @@ export function PageLayout({
 }: PageLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {showNav && <Navigation {...navProps} />}
+      {/* Nav is in root layout so it persists on every page */}
       
       <main
         className={cn(

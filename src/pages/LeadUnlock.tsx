@@ -302,8 +302,6 @@ export default function LeadUnlock() {
         description="Unlock this lead to get full client contact details and project information."
       />
       
-      <Navigation showBackButton backLabel="Back" />
-
       <main className="container mx-auto px-4 py-8 max-w-3xl">
         <Button
           variant="ghost"

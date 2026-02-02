@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { ArrowLeft, DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
@@ -43,7 +42,6 @@ const GigDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
-  const { calculateCommission } = useCommissionCalculator();
   const [gig, setGig] = useState<Gig | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -51,9 +49,9 @@ const GigDetail = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [diggerId, setDiggerId] = useState<string | null>(null);
   const [existingBid, setExistingBid] = useState<any>(null);
-  const [subscriptionTier, setSubscriptionTier] = useState<'free' | 'pro' | 'premium'>('free');
   const [canSeeBudget, setCanSeeBudget] = useState(false);
   const [hasLeadPurchase, setHasLeadPurchase] = useState(false);
+  const REFERRAL_FEE_RATE = 0.08;
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   const { userRoles } = useAuth();
 
@@ -98,16 +96,14 @@ const GigDetail = () => {
       setIsDigger(userIsDigger);
 
       if (userIsDigger) {
-        // Get digger profile and subscription status
         const { data: diggerProfile } = await supabase
           .from("digger_profiles" as any)
-          .select("id, subscription_tier")
+          .select("id")
           .eq("user_id", session.user.id)
           .single();
 
         if (diggerProfile) {
           setDiggerId((diggerProfile as any)?.id);
-          setSubscriptionTier((diggerProfile as any)?.subscription_tier || 'free');
 
           // Check for existing bid
           const { data: bid } = await supabase
@@ -179,17 +175,6 @@ const GigDetail = () => {
     if (!max) return `$${min?.toLocaleString()}+`;
     if (!min) return `Up to $${max?.toLocaleString()}`;
     return `$${min?.toLocaleString()} - $${max?.toLocaleString()}`;
-  };
-
-  const getTierBadgeColor = (tier: string) => {
-    switch (tier) {
-      case 'premium':
-        return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
-      case 'pro':
-        return 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white';
-      default:
-        return 'bg-muted';
-    }
   };
 
   const handleSendMessage = async () => {
@@ -441,37 +426,32 @@ const GigDetail = () => {
                   <Separator />
 
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold">Your Potential Earnings ({subscriptionTier} tier):</p>
+                    <p className="text-sm font-semibold">When you&apos;re awarded:</p>
                     {(() => {
-                      const minCommission = calculateCommission(gig.budget_min, subscriptionTier);
-                      const maxCommission = gig.budget_max ? calculateCommission(gig.budget_max, subscriptionTier) : null;
-                      
+                      const minFee = gig.budget_min * REFERRAL_FEE_RATE;
+                      const maxFee = gig.budget_max ? gig.budget_max * REFERRAL_FEE_RATE : null;
+                      const minPayout = gig.budget_min - minFee;
+                      const maxPayout = gig.budget_max ? gig.budget_max - (maxFee ?? 0) : null;
                       return (
                         <div className="bg-background/50 rounded-lg p-3 space-y-1">
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">If you bid ${gig.budget_min.toLocaleString()}:</span>
-                            <span className="font-semibold text-accent">${minCommission.diggerPayout.toLocaleString()}</span>
+                            <span className="font-semibold text-accent">${Math.round(minPayout).toLocaleString()} to you</span>
                           </div>
-                          {maxCommission && (
+                          {maxPayout != null && (
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">If you bid ${gig.budget_max!.toLocaleString()}:</span>
-                              <span className="font-semibold text-accent">${maxCommission.diggerPayout.toLocaleString()}</span>
+                              <span className="font-semibold text-accent">${Math.round(maxPayout).toLocaleString()} to you</span>
                             </div>
                           )}
                           <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                            <span>Platform fee: {(minCommission.rate * 100).toFixed(0)}%</span>
-                            <span>Min fee: ${minCommission.minimumFee}</span>
+                            <span>8% referral fee (from Gigger&apos;s deposit)</span>
+                            <span>No membership required</span>
                           </div>
                         </div>
                       );
                     })()}
                   </div>
-
-                  {subscriptionTier === 'free' && (
-                    <div className="text-xs text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/10">
-                      💡 Tip: Upgrade to Pro (4% fee) or Premium (0% fee) to keep more of your earnings!
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
@@ -494,47 +474,20 @@ const GigDetail = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Subscription Info for Diggers */}
+            {/* Referral fee info for Diggers - no membership required */}
             {isDigger && (
-              <Card className={getTierBadgeColor(subscriptionTier)}>
+              <Card className="bg-primary/5 border-primary/20">
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <Award className="w-5 h-5" />
-                    <CardTitle className="text-lg">
-                      {subscriptionTier === 'free' ? 'Free Tier' :
-                       subscriptionTier === 'pro' ? 'Pro Member' :
-                       'Premium Member'}
-                    </CardTitle>
+                    <Award className="w-5 h-5 text-primary" />
+                    <CardTitle className="text-lg">Bid or buy leads — no membership</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Commission Rate:</span>
-                      <span className="font-bold">
-                        {subscriptionTier === 'premium' ? '0%' : 
-                         subscriptionTier === 'pro' ? '4%' : '9%'}
-                        {subscriptionTier !== 'premium' && ' ($5 min)'}
-                      </span>
-                    </div>
-                    {gig?.budget_min && (
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>On ${gig.budget_min.toLocaleString()} gig:</span>
-                        <span>
-                          ${calculateCommission(gig.budget_min, subscriptionTier).commissionAmount.toFixed(2)} commission
-                        </span>
-                      </div>
-                    )}
-                    {subscriptionTier === 'free' && (
-                      <Button
-                        variant="secondary"
-                        className="w-full mt-4"
-                        onClick={() => navigate('/subscription')}
-                      >
-                        Upgrade to Lower Fees
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    When you&apos;re awarded a job, we charge an <strong>8% referral fee</strong> (from the Gigger&apos;s deposit). 
+                    You can also buy leads upfront. No subscription required.
+                  </p>
                 </CardContent>
               </Card>
             )}

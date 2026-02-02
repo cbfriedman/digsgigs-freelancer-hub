@@ -283,7 +283,6 @@ const AdminUserManagement = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navigation />
       <div className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <Button
           variant="ghost"

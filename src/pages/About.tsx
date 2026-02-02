@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,8 +47,6 @@ export default function About() {
         <title>About Digs & Gigs — A Better Freelance Marketplace</title>
         <meta name="description" content="Our mission is to build a transparent, commission-free marketplace for freelancers and clients." />
       </Helmet>
-      
-      <Navigation />
       
       <div className="min-h-screen bg-background">
         {/* Hero Section */}

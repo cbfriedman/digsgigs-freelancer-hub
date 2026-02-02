@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { generateReviewSchema } from "@/components/StructuredData";
@@ -147,7 +146,6 @@ export default function BlogPost() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation showBackButton backLabel="Back to Blog" />
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-4xl mx-auto space-y-8">
             <div className="h-12 bg-muted rounded animate-pulse" />
@@ -196,8 +194,6 @@ export default function BlogPost() {
           }
         }}
       />
-
-      <Navigation showBackButton backLabel="Back to Blog" />
 
       <article className="py-16">
         <div className="container mx-auto px-4">

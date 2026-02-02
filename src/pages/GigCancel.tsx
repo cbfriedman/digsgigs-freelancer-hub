@@ -171,7 +171,6 @@ const GigCancel = () => {
         title="Cancel Project | Digs & Gigs"
         description="Cancel your project posting."
       />
-      <Navigation showBackButton backLabel="Back" />
 
       <main className="container mx-auto px-4 py-8 max-w-lg">
         <Card className="shadow-lg border-destructive/20">

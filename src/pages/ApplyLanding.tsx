@@ -226,8 +226,6 @@ const ApplyLanding = () => {
       />
 
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        <Navigation />
-
         {/* Hero Section - Above the Fold */}
         <section className="relative py-20 md:py-32 lg:py-40 overflow-hidden">
           {/* Animated background gradient */}
