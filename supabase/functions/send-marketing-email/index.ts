@@ -14,6 +14,12 @@ interface MarketingEmailRequest {
   email: string;
   name?: string;
   campaign?: string;
+  /** Sender address, e.g. "Digs and Gigs <hello@digsandgigs.net>" or "hello@digsandgigs.net" */
+  from?: string;
+  /** Email subject line */
+  subject?: string;
+  /** HTML body from admin rich editor. If provided, used as email body (wrapped in minimal layout). */
+  html?: string;
 }
 
 // Helper to add UTM parameters to URLs
@@ -33,20 +39,40 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { email, name, campaign = 'gigger_acquisition' }: MarketingEmailRequest = await req.json();
+    const raw = await req.json() as Record<string, unknown>;
+    // Support both direct body and wrapped { body: { ... } } (some gateways wrap)
+    const body = (raw?.body && typeof raw.body === 'object' && !Array.isArray(raw.body))
+      ? (raw.body as Record<string, unknown>)
+      : raw;
 
-    console.log('Sending marketing email to:', { email, name, campaign });
+    const email = body.email as string;
+    const name = body.name as string | undefined;
+    const campaign = (body.campaign as string) || 'gigger_acquisition';
+    const fromOverride = body.from as string | undefined;
+    const subjectOverride = body.subject as string | undefined;
+    const customHtml = body.html as string | undefined;
+
+    const fromAddress = (fromOverride && String(fromOverride).trim()) || "Digs and Gigs <hello@digsandgigs.net>";
+    const subject = (subjectOverride && String(subjectOverride).trim()) || "This week only: Skip the wait — pros respond in hours ⚡";
+
+    console.log('Sending marketing email:', {
+      email,
+      campaign,
+      fromAddress,
+      subject: subject.substring(0, 60),
+      customHtmlLength: customHtml ? String(customHtml).length : 0,
+    });
 
     const firstName = name?.split(' ')[0] || 'there';
     
-    // Generate tracked URLs
+    // Generate tracked URLs (for default template)
     const ctaUrlTop = addUTM('https://digsandgigs.net/post-gig', campaign, 'hero_cta');
     const ctaUrlMiddle = addUTM('https://digsandgigs.net/post-gig', campaign, 'middle_cta');
     const ctaUrlBottom = addUTM('https://digsandgigs.net/post-gig', campaign, 'bottom_cta');
     const ctaUrlPS = addUTM('https://digsandgigs.net/post-gig', campaign, 'ps_cta');
     const browseUrl = addUTM('https://digsandgigs.net/browse-diggers', campaign, 'browse_pros');
 
-    const emailHtml = `
+    const defaultEmailHtml = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -124,6 +150,14 @@ Deno.serve(async (req) => {
       </html>
     `;
 
+    // Use admin-provided HTML if present; otherwise default template
+    const rawHtml = (customHtml?.trim())
+      ? customHtml.trim()
+      : defaultEmailHtml;
+    const emailHtml = rawHtml.startsWith('<!DOCTYPE') || rawHtml.startsWith('<!doctype')
+      ? rawHtml
+      : `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">${rawHtml}<p style="margin-top: 24px; font-size: 12px; color: #666;"><a href="https://digsandgigs.net/unsubscribe?email=${encodeURIComponent(email)}">Unsubscribe</a></p></body></html>`;
+
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -131,9 +165,9 @@ Deno.serve(async (req) => {
         "Authorization": `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "Digs and Gigs <hello@digsandgigs.net>",
+        from: fromAddress,
         to: [email],
-        subject: "This week only: Skip the wait — pros respond in hours ⚡",
+        subject,
         html: emailHtml,
       }),
     });

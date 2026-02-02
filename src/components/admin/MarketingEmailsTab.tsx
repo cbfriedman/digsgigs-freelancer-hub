@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Mail, RefreshCw, Send, Users, UserX, TrendingUp, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { EmailTemplateEditor } from "./EmailTemplateEditor";
 
 interface EmailLog {
   id: string;
@@ -43,10 +44,14 @@ export const MarketingEmailsTab = () => {
   const [sendingCommunity, setSendingCommunity] = useState(false);
   const [marketingEmail, setMarketingEmail] = useState("");
   const [marketingName, setMarketingName] = useState("");
+  const [marketingFrom, setMarketingFrom] = useState("Digs and Gigs <hello@digsandgigs.net>");
+  const [marketingSubject, setMarketingSubject] = useState("This week only: Skip the wait — pros respond in hours ⚡");
+  const [marketingBodyHtml, setMarketingBodyHtml] = useState("");
   const [communityEmail, setCommunityEmail] = useState("");
   const [communityName, setCommunityName] = useState("");
   const [communityAudience, setCommunityAudience] = useState<string>("single");
   const [communityLimit, setCommunityLimit] = useState("100");
+  const marketingEditorGetHtmlRef = useRef<(() => string) | null>(null);
 
   useEffect(() => {
     loadEmailData();
@@ -114,14 +119,26 @@ export const MarketingEmailsTab = () => {
       toast.error("Please enter an email address");
       return;
     }
+    if (!marketingFrom?.trim()) {
+      toast.error("Please enter a From address (e.g. Name <email@domain.com>)");
+      return;
+    }
+    if (!marketingSubject?.trim()) {
+      toast.error("Please enter an email subject");
+      return;
+    }
 
     setSendingMarketing(true);
     try {
+      const latestHtml = marketingEditorGetHtmlRef.current?.()?.trim() || marketingBodyHtml?.trim() || undefined;
       const { data, error } = await supabase.functions.invoke("send-marketing-email", {
         body: {
           email: marketingEmail,
           name: marketingName || undefined,
-          campaign: "admin_manual"
+          campaign: "admin_manual",
+          from: marketingFrom.trim(),
+          subject: marketingSubject.trim(),
+          html: latestHtml,
         }
       });
 
@@ -130,10 +147,6 @@ export const MarketingEmailsTab = () => {
       toast.success("Marketing email sent!", {
         description: `Email sent to ${marketingEmail}`
       });
-      
-      // Clear form
-      setMarketingEmail("");
-      setMarketingName("");
       
       await loadEmailData();
     } catch (error: any) {
@@ -409,14 +422,37 @@ export const MarketingEmailsTab = () => {
               Send Marketing Email
             </CardTitle>
             <CardDescription>
-              Send a marketing email to attract new users
+              Compose with the rich editor (emojis, images, GIFs). Set From and Subject, then send.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="marketing-from">From (sender address)</Label>
               <Input
-                id="email"
+                id="marketing-from"
+                type="text"
+                placeholder="Digs and Gigs &lt;hello@digsandgigs.net&gt;"
+                value={marketingFrom}
+                onChange={(e) => setMarketingFrom(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Use format: Display Name &lt;email@yourdomain.com&gt;. Domain must be verified in Resend. Deploy the <code className="text-xs">send-marketing-email</code> Edge Function for custom From/content to apply.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="marketing-subject">Subject</Label>
+              <Input
+                id="marketing-subject"
+                type="text"
+                placeholder="Your email subject"
+                value={marketingSubject}
+                onChange={(e) => setMarketingSubject(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="marketing-to">To (recipient email)</Label>
+              <Input
+                id="marketing-to"
                 type="email"
                 placeholder="user@example.com"
                 value={marketingEmail}
@@ -424,17 +460,29 @@ export const MarketingEmailsTab = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Name (optional)</Label>
+              <Label>Recipient name (optional)</Label>
               <Input
-                id="name"
+                id="marketing-name"
                 placeholder="John Doe"
                 value={marketingName}
                 onChange={(e) => setMarketingName(e.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Email content (rich editor)</Label>
+              <EmailTemplateEditor
+                value={marketingBodyHtml}
+                onChange={setMarketingBodyHtml}
+                getHtmlRef={marketingEditorGetHtmlRef}
+                minHeight="260px"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use the toolbar for bold, lists, links, images/GIFs (paste URL), and emojis. Leave empty to use the default template.
+              </p>
+            </div>
             <Button
               onClick={sendMarketingEmail}
-              disabled={sendingMarketing || !marketingEmail}
+              disabled={sendingMarketing || !marketingEmail || !marketingFrom?.trim() || !marketingSubject?.trim()}
               className="w-full"
             >
               {sendingMarketing ? (
