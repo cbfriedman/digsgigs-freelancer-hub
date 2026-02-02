@@ -1891,6 +1891,7 @@ export type Database = {
           location_lng: number | null
           naics_codes: string[] | null
           non_pro_blast_sent_at: string | null
+          preferred_regions: string[] | null
           pro_blast_sent_at: string | null
           purchase_count: number | null
           requirements: string | null
@@ -1935,6 +1936,7 @@ export type Database = {
           location_lng?: number | null
           naics_codes?: string[] | null
           non_pro_blast_sent_at?: string | null
+          preferred_regions?: string[] | null
           pro_blast_sent_at?: string | null
           purchase_count?: number | null
           requirements?: string | null
@@ -1979,6 +1981,7 @@ export type Database = {
           location_lng?: number | null
           naics_codes?: string[] | null
           non_pro_blast_sent_at?: string | null
+          preferred_regions?: string[] | null
           pro_blast_sent_at?: string | null
           purchase_count?: number | null
           requirements?: string | null

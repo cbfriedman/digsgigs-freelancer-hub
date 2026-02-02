@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Globe } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { TIMELINE_OPTIONS } from "@/config/giggerProblems";
+import { formatSelectionDisplay } from "@/config/regionOptions";
+import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 
 const GigEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +32,7 @@ const GigEdit = () => {
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [timeline, setTimeline] = useState("");
+  const [preferredRegions, setPreferredRegions] = useState<string[]>([]);
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
 
@@ -83,6 +86,7 @@ const GigEdit = () => {
         setBudgetMin(gig.budget_min?.toString() || "");
         setBudgetMax(gig.budget_max?.toString() || "");
         setTimeline(gig.timeline || "");
+        setPreferredRegions(gig.preferred_regions || []);
         setClientName(gig.client_name || "");
         setClientPhone(gig.consumer_phone || "");
         
@@ -133,6 +137,7 @@ const GigEdit = () => {
           budget_min: parseCurrency(budgetMin) || null,
           budget_max: parseCurrency(budgetMax) || null,
           timeline: timeline || null,
+          preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
           client_name: clientName.trim() || null,
           consumer_phone: clientPhone.trim() || null,
           updated_at: new Date().toISOString(),
@@ -261,6 +266,27 @@ const GigEdit = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Region Preference */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  Preferred Freelancer Location
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Select regions or specific countries where you'd prefer freelancers to be located.
+                  Leave empty for all regions. Click a region to expand and select individual countries.
+                </p>
+                {preferredRegions.length > 0 && (
+                  <p className="text-xs text-primary font-medium">
+                    Selected: {formatSelectionDisplay(preferredRegions)}
+                  </p>
+                )}
+                <RegionCountrySelector
+                  selectedValues={preferredRegions}
+                  onChange={setPreferredRegions}
+                />
               </div>
 
               <div className="border-t pt-6 space-y-4">

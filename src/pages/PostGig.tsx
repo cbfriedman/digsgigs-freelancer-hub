@@ -9,14 +9,16 @@ import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping } from "@/config/giggerProblems";
+import { formatSelectionDisplay } from "@/config/regionOptions";
 import PageLayout from "@/components/layout/PageLayout";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
+import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 
 const PostGig = () => {
   const navigate = useNavigate();
@@ -30,6 +32,7 @@ const PostGig = () => {
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [timeline, setTimeline] = useState("");
+  const [preferredRegions, setPreferredRegions] = useState<string[]>([]);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -206,6 +209,7 @@ const PostGig = () => {
           status: "pending_confirmation",
           confirmation_status: "pending",
           is_confirmed_lead: false,
+          preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
         })
         .select()
         .single();
@@ -476,6 +480,27 @@ const PostGig = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Region Preference */}
+                  <div className="space-y-3 pt-4 border-t border-border/30">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      Preferred Freelancer Location <span className="text-muted-foreground text-xs">(optional)</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Select regions or specific countries where you'd prefer freelancers to be located. 
+                      Leave empty for all regions. Click a region to expand and select individual countries.
+                    </p>
+                    {preferredRegions.length > 0 && (
+                      <p className="text-xs text-primary font-medium">
+                        Selected: {formatSelectionDisplay(preferredRegions)}
+                      </p>
+                    )}
+                    <RegionCountrySelector
+                      selectedValues={preferredRegions}
+                      onChange={setPreferredRegions}
+                    />
                   </div>
                 </div>
               </div>
