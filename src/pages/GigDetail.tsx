@@ -60,39 +60,22 @@ const GigDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    // Scroll to bid form if hash is present
-    if (window.location.hash === '#bid') {
-      console.log('[GigDetail] Hash detected, scrolling to bid form');
-      // Use a more reliable scroll method
-      const scrollToBid = () => {
-        const bidElement = document.getElementById('bid');
-        if (bidElement) {
-          console.log('[GigDetail] Bid element found, scrolling');
-          bidElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          return true;
-        }
-        return false;
-      };
+    // Scroll to bid section (#bid) only after gig is loaded so the target (form or Sign In card) exists
+    if (window.location.hash !== '#bid' || loading || !gig) return;
 
-      // Try immediately
-      if (!scrollToBid()) {
-        // If not found, wait a bit and retry (form might still be rendering)
-        setTimeout(() => {
-          if (!scrollToBid()) {
-            // Final retry after longer delay
-            setTimeout(() => {
-              if (!scrollToBid()) {
-                console.error('[GigDetail] Bid element not found after multiple retries. Check if form conditions are met:', {
-                  isDigger,
-                  diggerId,
-                  gigStatus: gig?.status,
-                  existingBid: !!existingBid
-                });
-              }
-            }, 1500);
-          }
-        }, 500);
+    const scrollToBid = () => {
+      const bidElement = document.getElementById('bid');
+      if (bidElement) {
+        bidElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
       }
+      return false;
+    };
+
+    if (!scrollToBid()) {
+      // Brief retry in case DOM just updated
+      const t = setTimeout(() => scrollToBid(), 300);
+      return () => clearTimeout(t);
     }
   }, [id, loading, gig, isDigger, diggerId, existingBid]);
 
@@ -597,7 +580,7 @@ const GigDetail = () => {
             )}
 
             {!isDigger && !isOwner && gig.status === 'open' && (
-              <Card>
+              <Card id="bid">
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground mb-4">
                     Want to bid on this gig?
