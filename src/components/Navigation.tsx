@@ -13,6 +13,7 @@ import {
   LogOut,
   Sparkles
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { DiggerProfileSelector } from "@/components/DiggerProfileSelector";
 import { useAuth } from "@/contexts/AuthContext";
@@ -183,6 +184,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   Admin
                 </button>
               )}
+
+              {/* Dark Mode Toggle */}
+              <ThemeToggle className="shrink-0" />
 
               {/* Divider */}
               <div className="h-6 w-px bg-border/50 mx-2" />
@@ -375,6 +379,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
                     {/* Navigation Links */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                      <div className="flex items-center justify-between py-2 px-1 mb-2 border-b border-border/50">
+                        <ThemeToggle />
+                      </div>
                       <button
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",

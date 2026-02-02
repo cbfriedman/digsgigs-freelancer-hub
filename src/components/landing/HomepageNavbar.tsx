@@ -11,6 +11,7 @@ import {
   HelpCircle,
   DollarSign
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Sheet,
   SheetContent,
@@ -150,6 +151,7 @@ export const HomepageNavbar = () => {
             How It Works
           </Button>
           
+          <ThemeToggle className="shrink-0" />
           <div className="w-px h-6 bg-border mx-2" />
           
           {user ? (
@@ -215,6 +217,9 @@ export const HomepageNavbar = () => {
               <SheetTitle className="font-display">Menu</SheetTitle>
             </SheetHeader>
             <div className="flex flex-col gap-2 mt-8">
+              <div className="flex items-center justify-between py-2 px-1 mb-2 border-b border-border">
+                <ThemeToggle />
+              </div>
               <Button 
                 variant="ghost" 
                 className="justify-start h-12" 

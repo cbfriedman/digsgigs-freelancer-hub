@@ -1,3 +1,4 @@
+import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -520,19 +521,21 @@ const router = createBrowserRouter(
 const App = () => {
   return (
     <AppErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CartProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <GlobalAnalytics />
-              <PresenceTracker />
-              <RouterProvider router={router} />
-            </TooltipProvider>
-          </CartProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="digsgigs-theme">
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <CartProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <GlobalAnalytics />
+                <PresenceTracker />
+                <RouterProvider router={router} />
+              </TooltipProvider>
+            </CartProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </AppErrorBoundary>
   );
 };
