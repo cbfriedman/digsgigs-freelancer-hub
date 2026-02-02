@@ -74,6 +74,7 @@ import KeywordSummary from "./pages/KeywordSummary";
 import GigConfirmed from "./pages/GigConfirmed";
 import GigPendingConfirmation from "./pages/GigPendingConfirmation";
 import ReviewGigConfirmation from "./pages/ReviewGigConfirmation";
+import ConfirmGig from "./pages/ConfirmGig";
 import GigEdit from "./pages/GigEdit";
 import GigCancel from "./pages/GigCancel";
 import LeadUnlock from "./pages/LeadUnlock";
@@ -268,6 +269,10 @@ const router = createBrowserRouter(
       {
         path: "/gig-pending",
         element: <GigPendingConfirmation />,
+      },
+      {
+        path: "/confirm-gig",
+        element: <ConfirmGig />,
       },
       {
         path: "/review-gig",

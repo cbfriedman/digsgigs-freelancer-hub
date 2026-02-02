@@ -34,7 +34,9 @@ const handler = async (req: Request): Promise<Response> => {
     }: GigConfirmationRequest = await req.json();
 
     const siteUrl = Deno.env.get("SITE_URL") || "https://www.digsandgigs.net";
-    const confirmationUrl = `${siteUrl}/review-gig?gigId=${gigId}`;
+    // Use /confirm-gig so one click from email confirms (app sends Authorization header).
+    // Do NOT link to the Supabase function URL - it returns 401 when opened in browser.
+    const confirmationUrl = `${siteUrl}/confirm-gig?gigId=${gigId}`;
     
     const budgetText = estimatedBudget 
       ? `$${estimatedBudget.toLocaleString()}`
