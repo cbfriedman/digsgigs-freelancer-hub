@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import logo from "@/assets/digsandgigs-logo.svg";
+import logo from "@/assets/digsandgigs-logo.png";
 import { 
   ShoppingCart, 
   ChevronDown, 
@@ -151,7 +151,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               <img 
                 src={logo} 
                 alt="Digs & Gigs" 
-                className="h-9 sm:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
               />
             </div>
             

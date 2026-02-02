@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import logo from "@/assets/digsandgigs-logo.svg";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import logo from "@/assets/digsandgigs-logo.png";
 import {
   Menu,
   User,
@@ -31,9 +31,10 @@ import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 
 export const HomepageNavbar = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, userRoles, signOut } = useAuth();
   const { trackButtonClick } = useGA4Tracking();
   const [userName, setUserName] = useState<string>("");
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -42,6 +43,32 @@ export const HomepageNavbar = () => {
       fetchUserName(user.id);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setUserPhotoUrl(null);
+      return;
+    }
+    const fetchUserPhoto = async () => {
+      try {
+        if (userRoles?.includes("digger")) {
+          const { data } = await supabase
+            .from("digger_profiles")
+            .select("profile_image_url")
+            .eq("user_id", user.id)
+            .not("profile_image_url", "is", null)
+            .limit(1)
+            .maybeSingle();
+          if (data?.profile_image_url) {
+            setUserPhotoUrl(data.profile_image_url);
+          }
+        }
+      } catch {
+        // Silently fail
+      }
+    };
+    fetchUserPhoto();
+  }, [user?.id, userRoles]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -69,13 +96,27 @@ export const HomepageNavbar = () => {
     }
   };
 
+  const getUserInitials = () => {
+    if (userName && userName !== "User") {
+      const parts = userName.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return userName.slice(0, 2).toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase();
+    }
+    return "U";
+  };
+
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${
       scrolled 
         ? 'bg-background/95 backdrop-blur-lg border-b border-border/50 shadow-sm' 
         : 'bg-transparent'
     }`}>
-      <div className="container-wide py-4 flex items-center justify-between">
+      <div className="container-wide flex h-16 items-center justify-between">
         {/* Logo */}
         <div 
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
@@ -84,7 +125,7 @@ export const HomepageNavbar = () => {
           <img 
             src={logo} 
             alt="Digs & Gigs" 
-            className="h-12 md:h-14 w-auto object-contain"
+            className="h-10 w-auto object-contain"
           />
         </div>
         
@@ -115,9 +156,12 @@ export const HomepageNavbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 font-medium">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary" />
-                  </div>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={userPhotoUrl || undefined} alt="Profile" />
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="hidden lg:inline">{userName}</span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
@@ -198,9 +242,17 @@ export const HomepageNavbar = () => {
               
               {user ? (
                 <>
-                  <div className="px-4 py-3 bg-muted rounded-lg mb-2">
-                    <p className="text-sm text-muted-foreground">Signed in as</p>
-                    <p className="font-medium truncate">{userName}</p>
+                  <div className="px-4 py-3 bg-muted rounded-lg mb-2 flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={userPhotoUrl || undefined} alt="Profile" />
+                      <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-muted-foreground">Signed in as</p>
+                      <p className="font-medium truncate">{userName}</p>
+                    </div>
                   </div>
                   <Button 
                     variant="ghost" 

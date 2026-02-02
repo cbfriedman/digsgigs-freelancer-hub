@@ -12,7 +12,7 @@ import {
   Briefcase,
   Heart
 } from "lucide-react";
-import logo from "@/assets/footer-logo.svg";
+import logo from "@/assets/digsandgigs-logo.png";
 
 const platformLinks = [
   { label: "How It Works", path: "/how-it-works" },

@@ -171,7 +171,7 @@ export default function LeadLimits() {
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 flex h-16 items-center">
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}

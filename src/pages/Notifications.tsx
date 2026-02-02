@@ -51,7 +51,7 @@ const Notifications = () => {
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => navigate("/")}

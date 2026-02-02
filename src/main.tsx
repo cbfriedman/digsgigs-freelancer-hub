@@ -4,50 +4,76 @@ import "./index.css";
 import { HelmetProvider } from "react-helmet-async";
 import { logIntegrationStatus } from "./utils/integrationCheck";
 import { Capacitor } from "@capacitor/core";
-import favicon from "@/assets/favicon.ico";
+import lightFaviconIco from "@/assets/light/favicon.ico";
+import darkFaviconIco from "@/assets/dark/favicon.ico";
+import lightFavicon32 from "@/assets/light/favicon-32x32.png";
+import darkFavicon32 from "@/assets/dark/favicon-32x32.png";
+import lightFavicon48 from "@/assets/light/favicon-48x48.png";
+import darkFavicon48 from "@/assets/dark/favicon-48x48.png";
+import lightFavicon64 from "@/assets/light/favicon-64x64.png";
+import darkFavicon64 from "@/assets/dark/favicon-64x64.png";
+import lightAppleTouchIcon from "@/assets/light/apple-touch-icon.png";
+import darkAppleTouchIcon from "@/assets/dark/apple-touch-icon.png";
+import lightManifest from "@/assets/light/site.webmanifest";
+import darkManifest from "@/assets/dark/site.webmanifest";
 
 // Set favicon dynamically from assets
-const setFavicon = (iconPath: string) => {
-  const isSvg = iconPath.endsWith('.svg');
-  const isIco = iconPath.endsWith('.ico');
-  
-  const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-  if (link) {
-    link.href = iconPath;
-    if (isSvg) {
-      link.type = "image/svg+xml";
-    } else if (isIco) {
-      link.type = "image/x-icon";
+const setLink = (
+  rel: string,
+  href: string,
+  options: { sizes?: string; type?: string } = {}
+) => {
+  const selector = options.sizes
+    ? `link[rel='${rel}'][sizes='${options.sizes}']`
+    : `link[rel='${rel}']:not([sizes])`;
+  let link = document.querySelector(selector) as HTMLLinkElement | null;
+
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = rel;
+    if (options.sizes) {
+      link.sizes = options.sizes;
     }
-  } else {
-    const newLink = document.createElement("link");
-    newLink.rel = "icon";
-    if (isSvg) {
-      newLink.type = "image/svg+xml";
-    } else if (isIco) {
-      newLink.type = "image/x-icon";
-    } else {
-      newLink.type = "image/png";
-    }
-    newLink.href = iconPath;
-    document.getElementsByTagName("head")[0].appendChild(newLink);
+    document.getElementsByTagName("head")[0].appendChild(link);
   }
-  
-  // Also set apple-touch-icon (use the same icon)
-  const appleLink = document.querySelector("link[rel~='apple-touch-icon']") as HTMLLinkElement;
-  if (appleLink) {
-    appleLink.href = iconPath;
+
+  link.href = href;
+  if (options.type) {
+    link.type = options.type;
   } else {
-    const newAppleLink = document.createElement("link");
-    newAppleLink.rel = "apple-touch-icon";
-    newAppleLink.sizes = "180x180";
-    newAppleLink.href = iconPath;
-    document.getElementsByTagName("head")[0].appendChild(newAppleLink);
+    link.removeAttribute("type");
   }
 };
 
-// Set favicon on app load
-setFavicon(favicon);
+const setFaviconAssets = (isDark: boolean) => {
+  const ico = isDark ? darkFaviconIco : lightFaviconIco;
+  const icon32 = isDark ? darkFavicon32 : lightFavicon32;
+  const icon48 = isDark ? darkFavicon48 : lightFavicon48;
+  const icon64 = isDark ? darkFavicon64 : lightFavicon64;
+  const appleIcon = isDark ? darkAppleTouchIcon : lightAppleTouchIcon;
+  const manifest = isDark ? darkManifest : lightManifest;
+
+  setLink("icon", ico, { type: "image/x-icon" });
+  setLink("icon", icon32, { sizes: "32x32", type: "image/png" });
+  setLink("icon", icon48, { sizes: "48x48", type: "image/png" });
+  setLink("icon", icon64, { sizes: "64x64", type: "image/png" });
+  setLink("apple-touch-icon", appleIcon, { sizes: "180x180" });
+  setLink("manifest", manifest);
+};
+
+const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+const applyColorScheme = (event?: MediaQueryListEvent) => {
+  const isDark = event ? event.matches : colorScheme.matches;
+  setFaviconAssets(isDark);
+};
+
+// Set favicon on app load and react to theme changes
+applyColorScheme();
+if (typeof colorScheme.addEventListener === "function") {
+  colorScheme.addEventListener("change", applyColorScheme);
+} else {
+  colorScheme.addListener(applyColorScheme);
+}
 
 // Initialize Capacitor for mobile platforms
 if (Capacitor.isNativePlatform()) {

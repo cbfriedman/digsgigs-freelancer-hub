@@ -131,8 +131,8 @@ const ApplyDiggerFB = () => {
 
       <div className="min-h-screen bg-background">
         {/* Minimal Header - Logo Only */}
-        <header className="py-4 px-4 border-b border-border/50">
-          <div className="max-w-6xl mx-auto">
+        <header className="flex h-16 items-center px-4 border-b border-border/50">
+          <div className="max-w-6xl mx-auto w-full">
             <Link to="/" className="text-xl font-bold text-foreground">
               Digs<span className="text-primary">&</span>Gigs
             </Link>
