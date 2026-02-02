@@ -6,8 +6,11 @@ import type { Database } from './types';
 const FALLBACK_SUPABASE_URL = 'https://njpjxasfesdapxukvyth.supabase.co';
 const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qcGp4YXNmZXNkYXB4dWt2eXRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1MzY4MjMsImV4cCI6MjA4MDExMjgyM30.TgM7vZ-MhYzN2Bn4wyQJZDUolXbOuB6XH40hEJm8Z0I';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_URL.trim()) || FALLBACK_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY.trim()) || FALLBACK_SUPABASE_PUBLISHABLE_KEY;
+
+// Exported for Edge Function calls that must always send Authorization (e.g. from email link with no session)
+export const supabaseAnonKey = SUPABASE_PUBLISHABLE_KEY;
 
 // Validate environment variables
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
