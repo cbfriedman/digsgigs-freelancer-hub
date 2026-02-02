@@ -6,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Globe, CheckCircle2 } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { TIMELINE_OPTIONS } from "@/config/giggerProblems";
+import { REGION_OPTIONS } from "@/config/regionOptions";
 
 const GigEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +32,7 @@ const GigEdit = () => {
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [timeline, setTimeline] = useState("");
+  const [preferredRegions, setPreferredRegions] = useState<string[]>([]);
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
 
@@ -83,6 +86,7 @@ const GigEdit = () => {
         setBudgetMin(gig.budget_min?.toString() || "");
         setBudgetMax(gig.budget_max?.toString() || "");
         setTimeline(gig.timeline || "");
+        setPreferredRegions(gig.preferred_regions || []);
         setClientName(gig.client_name || "");
         setClientPhone(gig.consumer_phone || "");
         
@@ -133,6 +137,7 @@ const GigEdit = () => {
           budget_min: parseCurrency(budgetMin) || null,
           budget_max: parseCurrency(budgetMax) || null,
           timeline: timeline || null,
+          preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
           client_name: clientName.trim() || null,
           consumer_phone: clientPhone.trim() || null,
           updated_at: new Date().toISOString(),
@@ -261,6 +266,51 @@ const GigEdit = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Region Preference */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  Preferred Freelancer Regions
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Select regions where you'd prefer freelancers to be located. Leave empty for all regions.
+                </p>
+                <div className="grid gap-2">
+                  {REGION_OPTIONS.map((region) => {
+                    const isChecked = preferredRegions.includes(region.value);
+                    return (
+                      <label
+                        key={region.value}
+                        htmlFor={`edit-region-${region.value}`}
+                        className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+                          isChecked 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border hover:border-primary/30 hover:bg-muted/50'
+                        }`}
+                      >
+                        <Checkbox
+                          id={`edit-region-${region.value}`}
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setPreferredRegions(prev => [...prev, region.value]);
+                            } else {
+                              setPreferredRegions(prev => prev.filter(r => r !== region.value));
+                            }
+                          }}
+                          className="h-4 w-4"
+                        />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium">{region.label}</span>
+                          <span className="text-xs text-muted-foreground ml-2">{region.description}</span>
+                        </div>
+                        {isChecked && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="border-t pt-6 space-y-4">

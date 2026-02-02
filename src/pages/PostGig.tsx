@@ -9,12 +9,13 @@ import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping } from "@/config/giggerProblems";
+import { REGION_OPTIONS } from "@/config/regionOptions";
 import PageLayout from "@/components/layout/PageLayout";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 
@@ -30,6 +31,7 @@ const PostGig = () => {
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [timeline, setTimeline] = useState("");
+  const [preferredRegions, setPreferredRegions] = useState<string[]>([]);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -206,6 +208,7 @@ const PostGig = () => {
           status: "pending_confirmation",
           confirmation_status: "pending",
           is_confirmed_lead: false,
+          preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
         })
         .select()
         .single();
@@ -476,6 +479,51 @@ const PostGig = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Region Preference */}
+                  <div className="space-y-3 pt-4 border-t border-border/30">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      Preferred Freelancer Regions <span className="text-muted-foreground text-xs">(optional)</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Select regions where you'd prefer freelancers to be located. Leave empty for all regions.
+                    </p>
+                    <div className="grid gap-2 mt-2">
+                      {REGION_OPTIONS.map((region) => {
+                        const isChecked = preferredRegions.includes(region.value);
+                        return (
+                          <label
+                            key={region.value}
+                            htmlFor={`region-${region.value}`}
+                            className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+                              isChecked 
+                                ? 'border-primary bg-primary/5' 
+                                : 'border-border/50 hover:border-primary/30 hover:bg-muted/50'
+                            }`}
+                          >
+                            <Checkbox
+                              id={`region-${region.value}`}
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setPreferredRegions(prev => [...prev, region.value]);
+                                } else {
+                                  setPreferredRegions(prev => prev.filter(r => r !== region.value));
+                                }
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm font-medium">{region.label}</span>
+                              <span className="text-xs text-muted-foreground ml-2">{region.description}</span>
+                            </div>
+                            {isChecked && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
