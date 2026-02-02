@@ -15,9 +15,10 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping } from "@/config/giggerProblems";
-import { REGION_OPTIONS } from "@/config/regionOptions";
+import { formatSelectionDisplay } from "@/config/regionOptions";
 import PageLayout from "@/components/layout/PageLayout";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
+import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 
 const PostGig = () => {
   const navigate = useNavigate();
@@ -485,45 +486,21 @@ const PostGig = () => {
                   <div className="space-y-3 pt-4 border-t border-border/30">
                     <Label className="text-sm font-medium flex items-center gap-2">
                       <Globe className="h-4 w-4 text-muted-foreground" />
-                      Preferred Freelancer Regions <span className="text-muted-foreground text-xs">(optional)</span>
+                      Preferred Freelancer Location <span className="text-muted-foreground text-xs">(optional)</span>
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Select regions where you'd prefer freelancers to be located. Leave empty for all regions.
+                      Select regions or specific countries where you'd prefer freelancers to be located. 
+                      Leave empty for all regions. Click a region to expand and select individual countries.
                     </p>
-                    <div className="grid gap-2 mt-2">
-                      {REGION_OPTIONS.map((region) => {
-                        const isChecked = preferredRegions.includes(region.value);
-                        return (
-                          <label
-                            key={region.value}
-                            htmlFor={`region-${region.value}`}
-                            className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
-                              isChecked 
-                                ? 'border-primary bg-primary/5' 
-                                : 'border-border/50 hover:border-primary/30 hover:bg-muted/50'
-                            }`}
-                          >
-                            <Checkbox
-                              id={`region-${region.value}`}
-                              checked={isChecked}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setPreferredRegions(prev => [...prev, region.value]);
-                                } else {
-                                  setPreferredRegions(prev => prev.filter(r => r !== region.value));
-                                }
-                              }}
-                              className="h-4 w-4"
-                            />
-                            <div className="flex-1">
-                              <span className="text-sm font-medium">{region.label}</span>
-                              <span className="text-xs text-muted-foreground ml-2">{region.description}</span>
-                            </div>
-                            {isChecked && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                          </label>
-                        );
-                      })}
-                    </div>
+                    {preferredRegions.length > 0 && (
+                      <p className="text-xs text-primary font-medium">
+                        Selected: {formatSelectionDisplay(preferredRegions)}
+                      </p>
+                    )}
+                    <RegionCountrySelector
+                      selectedValues={preferredRegions}
+                      onChange={setPreferredRegions}
+                    />
                   </div>
                 </div>
               </div>
