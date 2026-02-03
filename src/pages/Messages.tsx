@@ -471,6 +471,8 @@ export default function Messages() {
 
       if (error) throw error;
       setNewMessage("");
+      // Reload messages so the sent message appears immediately and persists after refresh
+      await loadMessages(selectedConversation);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
