@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { z } from "zod";
 import { useProxyEmail } from "@/hooks/useProxyEmail";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import PageLayout from "@/components/layout/PageLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
@@ -116,6 +118,7 @@ export default function Messages() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = userRoles.includes("admin");
+  const { onlineDiggers } = useDiggerPresence();
 
   // Starred and hidden conversation ids (per user, persisted in localStorage)
   const getStorageKey = (suffix: string) =>
@@ -815,8 +818,13 @@ export default function Messages() {
                               </AvatarFallback>
                             </Avatar>
                             <span
-                              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground/50"
-                              title="Offline"
+                              className={cn(
+                                "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
+                                conv.digger_id && onlineDiggers.has(conv.digger_id)
+                                  ? "bg-success"
+                                  : "bg-muted-foreground/50"
+                              )}
+                              title={conv.digger_id && onlineDiggers.has(conv.digger_id) ? "Online" : "Offline"}
                             />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -913,6 +921,7 @@ export default function Messages() {
                 <ChatHeader
                   partnerName={partnerName}
                   subtitle={getConversationSubtitle(selectedConv)}
+                  isOnline={!!(selectedConv?.digger_id && onlineDiggers.has(selectedConv.digger_id))}
                   showBackButton={isMobile}
                   onBack={handleBackToList}
                   onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
