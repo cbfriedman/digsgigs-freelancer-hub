@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, 
   MoreHorizontal, ExternalLink, Briefcase, FileCheck, Hourglass, 
@@ -841,28 +841,22 @@ export default function Messages() {
                             selectedConversation === conv.id ? "bg-muted" : ""
                           }`}
                         >
-                          <div className="relative shrink-0 flex flex-col items-center gap-1">
-                            {conv.partner_avatar_url && (
-                              <img
-                                src={conv.partner_avatar_url}
-                                alt=""
-                                className="h-8 w-8 rounded-full object-cover ring-1 ring-border/50"
-                              />
-                            )}
-                            <div className="relative">
-                              <Avatar className="h-11 w-11 ring-1 ring-border/50">
-                                <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                                  {partnerName[0].toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span
-                                className={cn(
-                                  "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
-                                  getPartnerIsOnline(conv) ? "bg-success" : "bg-muted-foreground/50"
-                                )}
-                                title={getPartnerIsOnline(conv) ? "Online" : "Offline"}
-                              />
-                            </div>
+                          <div className="relative shrink-0">
+                            <Avatar className="h-11 w-11 ring-1 ring-border/50">
+                              {conv.partner_avatar_url && (
+                                <AvatarImage src={conv.partner_avatar_url} alt="" className="object-cover" />
+                              )}
+                              <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                                {partnerName[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span
+                              className={cn(
+                                "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
+                                getPartnerIsOnline(conv) ? "bg-success" : "bg-muted-foreground/50"
+                              )}
+                              title={getPartnerIsOnline(conv) ? "Online" : "Offline"}
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
@@ -1021,20 +1015,14 @@ export default function Messages() {
               {/* Profile header */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="shrink-0 flex flex-col items-center gap-1.5">
+                  <Avatar className="h-12 w-12 shrink-0 ring-2 ring-background shadow-sm">
                     {selectedConv?.partner_avatar_url && (
-                      <img
-                        src={selectedConv.partner_avatar_url}
-                        alt=""
-                        className="h-10 w-10 rounded-full object-cover ring-2 ring-background shadow-sm"
-                      />
+                      <AvatarImage src={selectedConv.partner_avatar_url} alt="" className="object-cover" />
                     )}
-                    <Avatar className="h-12 w-12 ring-2 ring-background shadow-sm">
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {partnerName[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {partnerName[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0">
                     <p className="font-semibold text-foreground truncate">{partnerName}</p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
