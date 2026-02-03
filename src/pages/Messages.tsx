@@ -336,31 +336,38 @@ export default function Messages() {
         digger_handle: string | null;
         digger_profession: string | null;
         digger_profile_image_url?: string | null;
+        consumer_avatar_url?: string | null;
+        admin_avatar_url?: string | null;
         last_message_content?: string | null;
         last_message_sender_id?: string | null;
       }>) || [];
 
-      const list: Conversation[] = raw.map((c) => ({
-        id: c.id,
-        gig_id: c.gig_id,
-        consumer_id: c.consumer_id,
-        digger_id: c.digger_id,
-        admin_id: c.admin_id,
-        created_at: c.created_at,
-        updated_at: c.updated_at,
-        gigs: c.gig_title != null ? { title: c.gig_title } : null,
-        digger_profiles:
-          c.digger_handle != null || c.digger_profession != null
-            ? {
-                handle: c.digger_handle ?? "",
-                profession: c.digger_profession ?? "",
-                profile_image_url: c.digger_profile_image_url ?? null,
-              }
-            : null,
-        last_message_content: c.last_message_content ?? null,
-        last_message_sender_id: c.last_message_sender_id ?? null,
-        partner_avatar_url: c.digger_profile_image_url ?? null,
-      }));
+      const list: Conversation[] = raw.map((c) => {
+        const partnerAvatarUrl = c.admin_id
+          ? (currentUser?.id === c.admin_id ? (c.consumer_avatar_url ?? null) : (c.admin_avatar_url ?? null))
+          : (c.digger_profile_image_url ?? null);
+        return {
+          id: c.id,
+          gig_id: c.gig_id,
+          consumer_id: c.consumer_id,
+          digger_id: c.digger_id,
+          admin_id: c.admin_id,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+          gigs: c.gig_title != null ? { title: c.gig_title } : null,
+          digger_profiles:
+            c.digger_handle != null || c.digger_profession != null
+              ? {
+                  handle: c.digger_handle ?? "",
+                  profession: c.digger_profession ?? "",
+                  profile_image_url: c.digger_profile_image_url ?? null,
+                }
+              : null,
+          last_message_content: c.last_message_content ?? null,
+          last_message_sender_id: c.last_message_sender_id ?? null,
+          partner_avatar_url: partnerAvatarUrl,
+        };
+      });
 
       if (isAdmin) {
         const adminConvos = list.filter((c) => c.admin_id);
