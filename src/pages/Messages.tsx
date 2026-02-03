@@ -2,17 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, MoreHorizontal, Video, Calendar, Image, ExternalLink, Briefcase, FileCheck, Hourglass, ChevronDown, X, Type, Paperclip, Settings, Smile } from "lucide-react";
+import { Send, MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, MoreHorizontal, Video, Calendar, Image, ExternalLink, Briefcase, FileCheck, Hourglass, ChevronDown, X, Type, Paperclip, Settings, Smile, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow, format } from "date-fns";
+import { format } from "date-fns";
 import { z } from "zod";
 import { useProxyEmail } from "@/hooks/useProxyEmail";
 import { useAuth } from "@/contexts/AuthContext";
-import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
@@ -23,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import PageLayout from "@/components/layout/PageLayout";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // SECURITY: Input validation schema
 const messageSchema = z.object({
@@ -47,7 +46,6 @@ interface Conversation {
     handle: string;
     profession: string;
   } | null;
-  /** For admin conversations: consumer's display name (from profiles) */
   consumer_profile?: { full_name: string | null } | null;
 }
 
@@ -59,10 +57,24 @@ interface Message {
   read_at: string | null;
 }
 
+interface RawConversation {
+  id: string;
+  gig_id: string | null;
+  consumer_id: string;
+  digger_id: string | null;
+  admin_id: string | null;
+  created_at: string;
+  updated_at: string;
+  gig_title: string | null;
+  digger_handle: string | null;
+  digger_profession: string | null;
+}
+
 export default function Messages() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userRoles } = useAuth();
+  const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(
@@ -80,9 +92,14 @@ export default function Messages() {
   const [userSearchLoading, setUserSearchLoading] = useState(false);
   const [startingChatUserId, setStartingChatUserId] = useState<string | null>(null);
   const [listSearch, setListSearch] = useState("");
+  const [showInfoPanel, setShowInfoPanel] = useState(false);
   const currentUserIdRef = useRef<string | undefined>(undefined);
 
   const isAdmin = userRoles.includes("admin");
+
+  // On mobile, show conversation list when no conversation selected
+  const showConversationList = !isMobile || !selectedConversation;
+  const showChatArea = !isMobile || selectedConversation;
 
   const filteredConversations = listSearch.trim()
     ? conversations.filter(
@@ -96,7 +113,6 @@ export default function Messages() {
     currentUserIdRef.current = currentUser?.id;
   }, [currentUser?.id]);
 
-  // Get current user's proxy email
   const { proxyEmail: myProxyEmail } = useProxyEmail(currentUser?.id || null);
 
   useEffect(() => {
@@ -123,11 +139,9 @@ export default function Messages() {
 
     let partnerUserId: string | null = null;
 
-    // Admin support conversation
     if (conv.admin_id) {
       partnerUserId = currentUser.id === conv.admin_id ? conv.consumer_id : conv.admin_id;
     } else {
-      // Gig conversation: consumer + digger
       const partnerId = currentUser.id === conv.consumer_id
         ? conv.digger_id
         : conv.consumer_id;
@@ -166,21 +180,10 @@ export default function Messages() {
 
   const loadConversations = async () => {
     try {
-      const { data, error } = await supabase.rpc("get_my_conversations");
+      const { data, error } = await supabase.rpc("get_my_conversations" as any);
 
       if (error) throw error;
-      const raw = (data as Array<{
-        id: string;
-        gig_id: string | null;
-        consumer_id: string;
-        digger_id: string | null;
-        admin_id: string | null;
-        created_at: string;
-        updated_at: string;
-        gig_title: string | null;
-        digger_handle: string | null;
-        digger_profession: string | null;
-      }>) || [];
+      const raw = (data as RawConversation[]) || [];
 
       const list: Conversation[] = raw.map((c) => ({
         id: c.id,
@@ -197,7 +200,6 @@ export default function Messages() {
             : null,
       }));
 
-      // Enrich admin conversations with consumer display names (admins can view profiles)
       if (isAdmin) {
         const adminConvos = list.filter((c) => c.admin_id);
         const consumerIds = [...new Set(adminConvos.map((c) => c.consumer_id))];
@@ -229,16 +231,15 @@ export default function Messages() {
 
   const loadMessages = async (conversationId: string) => {
     try {
-      const { data, error } = await supabase.rpc("get_conversation_messages", {
+      const { data, error } = await supabase.rpc("get_conversation_messages" as any, {
         _conversation_id: conversationId,
       });
 
       if (error) throw error;
-      setMessages((data as Message[]) || []);
+      setMessages((data as unknown as Message[]) || []);
 
-      // Mark other party's messages as read (works for admin and regular users)
       if (currentUser?.id) {
-        await supabase.rpc("mark_conversation_messages_read", {
+        await supabase.rpc("mark_conversation_messages_read" as any, {
           _conversation_id: conversationId,
         });
       }
@@ -314,7 +315,6 @@ export default function Messages() {
     if (!newMessage.trim() || !selectedConversation) return;
 
     try {
-      // SECURITY: Validate message content
       const validated = messageSchema.parse({
         content: newMessage,
       });
@@ -329,7 +329,7 @@ export default function Messages() {
         return;
       }
 
-      const { error } = await supabase.rpc("send_message", {
+      const { error } = await supabase.rpc("send_message" as any, {
         _conversation_id: selectedConversation,
         _content: validated.content,
       });
@@ -385,7 +385,6 @@ export default function Messages() {
     }
   };
 
-  // Admin: search users (profiles) for "Chat with user"
   const runUserSearch = async () => {
     if (!userSearch.trim() || !isAdmin) return;
     setUserSearchLoading(true);
@@ -405,19 +404,21 @@ export default function Messages() {
     }
   };
 
-  // Admin: find or create admin conversation and open it
   const startOrOpenAdminChat = async (consumerId: string) => {
     if (!currentUser?.id || !isAdmin) return;
-    if (startingChatUserId) return; // prevent double-click
+    if (startingChatUserId) return;
     setStartingChatUserId(consumerId);
     try {
-      const { data: existing, error: fetchError } = await supabase
+      // Check for existing conversation - cast client to avoid deep type instantiation
+      const client = supabase as any;
+      const existingResult = await client
         .from("conversations")
         .select("id")
         .eq("admin_id", currentUser.id)
         .eq("consumer_id", consumerId)
-        .maybeSingle();
-      if (fetchError) throw fetchError;
+        .maybeSingle() as { data: { id: string } | null; error: Error | null };
+      if (existingResult.error) throw existingResult.error;
+      const existing = existingResult.data;
       if (existing?.id) {
         setSelectedConversation(existing.id);
         setAdminChatOpen(false);
@@ -426,11 +427,11 @@ export default function Messages() {
         toast({ title: "Chat opened", description: "Conversation selected." });
         return;
       }
-      const { data: conversationId, error } = await supabase.rpc("create_admin_conversation", {
+      const { data: conversationId, error } = await supabase.rpc("create_admin_conversation" as any, {
         target_user_id: consumerId,
       });
       if (error) throw error;
-      const id = Array.isArray(conversationId) ? conversationId?.[0] : conversationId;
+      const id = Array.isArray(conversationId) ? conversationId?.[0] : (conversationId as unknown as string);
       if (id) {
         await loadConversations();
         setSelectedConversation(id);
@@ -450,6 +451,11 @@ export default function Messages() {
     } finally {
       setStartingChatUserId(null);
     }
+  };
+
+  const handleBackToList = () => {
+    setSelectedConversation(null);
+    setShowInfoPanel(false);
   };
 
   const messagesByDate = (() => {
@@ -480,323 +486,348 @@ export default function Messages() {
   return (
     <PageLayout showFooter={false} maxWidth="full" padded={false}>
       <div className="flex h-[calc(100vh-4rem)] border-t border-border/50">
-        {/* Left: Messages list */}
-        <div className="w-full sm:w-80 lg:w-96 border-r border-border/50 flex flex-col bg-background shrink-0">
-          <div className="p-3 border-b border-border/50 flex items-center justify-between gap-2">
-            <h1 className="text-lg font-semibold truncate">Messages</h1>
-            <div className="flex items-center gap-1 shrink-0">
-              {isAdmin && (
-              <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Chat with user">
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Chat with any user</DialogTitle>
-                    <DialogDescription>
-                      Search by name and start a support conversation.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Search by name..."
-                        value={userSearch}
-                        onChange={(e) => setUserSearch(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && runUserSearch()}
-                      />
-                      <Button type="button" onClick={runUserSearch} disabled={userSearchLoading}>
-                        <Search className="h-4 w-4" />
+        {/* Left: Conversation list - hidden on mobile when chat is selected */}
+        {showConversationList && (
+          <div className={`
+            ${isMobile ? 'w-full' : 'w-80 lg:w-96'} 
+            border-r border-border/50 flex flex-col bg-background shrink-0
+          `}>
+            <div className="p-3 border-b border-border/50 flex items-center justify-between gap-2">
+              <h1 className="text-lg font-semibold truncate">Messages</h1>
+              <div className="flex items-center gap-1 shrink-0">
+                {isAdmin && (
+                  <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Chat with user">
+                        <UserPlus className="h-4 w-4" />
                       </Button>
-                    </div>
-                    <ScrollArea className="h-[240px] rounded-md border p-2">
-                      {userSearchResults.length === 0 && !userSearchLoading && (
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                          {userSearch.trim() ? "No users found." : "Type a name and search."}
-                        </p>
-                      )}
-                      {userSearchResults.map((u) => (
-                        <button
-                          key={u.id}
-                          type="button"
-                          disabled={startingChatUserId !== null}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted disabled:opacity-50 text-left text-sm cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            startOrOpenAdminChat(u.id);
-                          }}
-                        >
-                          <Users className="h-4 w-4 shrink-0" />
-                          <span className="flex-1 truncate">{u.full_name?.trim() || "Unnamed"}</span>
-                          {startingChatUserId === u.id ? (
-                            <span className="text-xs text-muted-foreground">Opening…</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">({u.id.slice(0, 8)}…)</span>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)]">
+                      <DialogHeader>
+                        <DialogTitle>Chat with any user</DialogTitle>
+                        <DialogDescription>
+                          Search by name and start a support conversation.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Search by name..."
+                            value={userSearch}
+                            onChange={(e) => setUserSearch(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && runUserSearch()}
+                          />
+                          <Button type="button" onClick={runUserSearch} disabled={userSearchLoading}>
+                            <Search className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <ScrollArea className="h-[240px] rounded-md border p-2">
+                          {userSearchResults.length === 0 && !userSearchLoading && (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              {userSearch.trim() ? "No users found." : "Type a name and search."}
+                            </p>
                           )}
-                        </button>
-                      ))}
-                    </ScrollArea>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="More options">
+                          {userSearchResults.map((u) => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              disabled={startingChatUserId !== null}
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted disabled:opacity-50 text-left text-sm cursor-pointer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                startOrOpenAdminChat(u.id);
+                              }}
+                            >
+                              <Users className="h-4 w-4 shrink-0" />
+                              <span className="flex-1 truncate">{u.full_name?.trim() || "Unnamed"}</span>
+                              {startingChatUserId === u.id ? (
+                                <span className="text-xs text-muted-foreground">Opening…</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground hidden sm:inline">({u.id.slice(0, 8)}…)</span>
+                              )}
+                            </button>
+                          ))}
+                        </ScrollArea>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="More options">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="p-2 border-b border-border/50 flex items-center gap-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search"
+                  value={listSearch}
+                  onChange={(e) => setListSearch(e.target.value)}
+                  className="pl-8 h-9 bg-muted/50"
+                />
+              </div>
+              <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" title="Filter or sort">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-          <div className="p-2 border-b border-border/50 flex items-center gap-1">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search"
-                value={listSearch}
-                onChange={(e) => setListSearch(e.target.value)}
-                className="pl-8 h-9 bg-muted/50"
-              />
-            </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" title="Filter or sort">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </div>
-          <ScrollArea className="flex-1">
-            {filteredConversations.length === 0 ? (
-              <div className="p-6 text-center">
-                <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  {listSearch.trim() ? "No matches." : "No conversations yet."}
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/30">
-                {filteredConversations.map((conv) => (
-                  <button
-                    key={conv.id}
-                    type="button"
-                    className={`w-full flex items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50 ${
-                      selectedConversation === conv.id ? "bg-muted" : ""
-                    }`}
-                    onClick={() => setSelectedConversation(conv.id)}
-                  >
-                    <div className="relative shrink-0">
-                      <Avatar className="h-11 w-11 ring-1 ring-border/50">
-                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                          {getConversationPartner(conv)[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span
-                        className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground/50"
-                        title="Offline"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">
-                        {getConversationPartner(conv)}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {conv?.admin_id ? "Support chat" : (conv?.gigs?.title || "General inquiry")}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {format(new Date(conv.updated_at), "M/d/yy")}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </div>
-
-        {/* Center: Chat */}
-        <div className="flex-1 flex flex-col min-w-0 bg-muted/20">
-          <div className="border-border/50 flex flex-col flex-1 min-h-0">
-            {selectedConversation ? (
-              <>
-                {/* Chat header */}
-                <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-border/50 bg-background">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/50">
-                      <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                        {getConversationPartner(
-                          conversations.find((c) => c.id === selectedConversation)
-                        )[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <h2 className="font-semibold text-foreground truncate">
-                        {getConversationPartner(
-                          conversations.find((c) => c.id === selectedConversation)
-                        )}
-                        {(() => {
-                          const sel = conversations.find((c) => c.id === selectedConversation);
-                          return sel?.admin_id ? "" : sel?.gigs?.title ? `, ${sel.gigs.title}` : "";
-                        })()}
-                      </h2>
-                      <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-                        <Briefcase className="h-3 w-3 shrink-0" />
-                        {(() => {
-                          const sel = conversations.find((c) => c.id === selectedConversation);
-                          return sel?.admin_id
-                            ? "Support chat"
-                            : (sel?.gigs?.title || sel?.digger_profiles?.profession || "General inquiry");
-                        })()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Video className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Video call</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Calendar className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Schedule</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Image className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Attach image</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Open in new window</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </div>
-
-                {/* Messages with date separators */}
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
-                    {messages.length === 0 ? (
-                      <div className="text-center py-12">
-                        <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                        <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
-                      </div>
-                    ) : (
-                      messagesByDate.map(([dateKey, dayMessages]) => (
-                        <div key={dateKey} className="space-y-3">
-                          <p className="text-xs font-medium text-muted-foreground text-center py-1">
-                            {format(new Date(dateKey), "EEEE, MMM d")}
-                          </p>
-                          {dayMessages.map((msg) => {
-                            const isOwn = msg.sender_id === currentUser?.id;
-                            const timeStr = format(new Date(msg.created_at), "h:mm a");
-                            return (
-                              <div
-                                key={msg.id}
-                                className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
-                              >
-                                <div
-                                  className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
-                                    isOwn
-                                      ? "bg-primary text-primary-foreground rounded-br-md"
-                                      : "bg-background border border-border/50 rounded-bl-md"
-                                  }`}
-                                >
-                                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                                  <div
-                                    className={`flex items-center justify-end gap-1 mt-1.5 ${
-                                      isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    <span className="text-xs">{timeStr}</span>
-                                    {isOwn && (
-                                      <span className="shrink-0">
-                                        {msg.read_at ? (
-                                          <CheckCheck className="h-3.5 w-3.5" aria-label="Read" />
-                                        ) : (
-                                          <Check className="h-3.5 w-3.5" aria-label="Sent" />
-                                        )}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </ScrollArea>
-
-                {/* Message input */}
-                <div className="shrink-0 p-3 border-t border-border/50 bg-background">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Format">
-                        <Type className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Attach">
-                        <Paperclip className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Settings">
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Emoji">
-                        <Smile className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Input
-                      placeholder="Send a message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                      maxLength={5000}
-                      className="flex-1 bg-muted/50"
-                    />
-                    <Button
-                      onClick={sendMessage}
-                      size="icon"
-                      disabled={!newMessage.trim()}
-                      className="shrink-0 h-8 w-8"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center p-8">
-                <div className="text-center max-w-sm">
-                  <MessageSquare className="h-14 w-14 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="font-semibold text-foreground mb-1">Select a conversation</h3>
+            <ScrollArea className="flex-1">
+              {filteredConversations.length === 0 ? (
+                <div className="p-6 text-center">
+                  <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
                   <p className="text-sm text-muted-foreground">
-                    Choose from the list to start messaging.
+                    {listSearch.trim() ? "No matches." : "No conversations yet."}
                   </p>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="divide-y divide-border/30">
+                  {filteredConversations.map((conv) => (
+                    <button
+                      key={conv.id}
+                      type="button"
+                      className={`w-full flex items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50 ${
+                        selectedConversation === conv.id ? "bg-muted" : ""
+                      }`}
+                      onClick={() => setSelectedConversation(conv.id)}
+                    >
+                      <div className="relative shrink-0">
+                        <Avatar className="h-11 w-11 ring-1 ring-border/50">
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                            {getConversationPartner(conv)[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span
+                          className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground/50"
+                          title="Offline"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground truncate">
+                          {getConversationPartner(conv)}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {conv?.admin_id ? "Support chat" : (conv?.gigs?.title || "General inquiry")}
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {format(new Date(conv.updated_at), "M/d/yy")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
           </div>
-        </div>
+        )}
 
-        {/* Right: Contact / Activity */}
-        {selectedConversation && (
-          <div className="hidden xl:flex w-80 shrink-0 flex-col border-l border-border/50 bg-background overflow-hidden">
-            <div className="p-4 space-y-4 flex-1 overflow-auto">
+        {/* Center: Chat area - full width on mobile when conversation is selected */}
+        {showChatArea && (
+          <div className={`flex-1 flex flex-col min-w-0 bg-muted/20 ${isMobile && !selectedConversation ? 'hidden' : ''}`}>
+            <div className="border-border/50 flex flex-col flex-1 min-h-0">
+              {selectedConversation ? (
+                <>
+                  {/* Chat header */}
+                  <div className="shrink-0 flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-border/50 bg-background">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      {/* Back button on mobile */}
+                      {isMobile && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={handleBackToList}
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Avatar className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 ring-1 ring-border/50">
+                        <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
+                          {getConversationPartner(
+                            conversations.find((c) => c.id === selectedConversation)
+                          )[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="font-semibold text-foreground truncate text-sm sm:text-base">
+                          {getConversationPartner(
+                            conversations.find((c) => c.id === selectedConversation)
+                          )}
+                        </h2>
+                        <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                          <Briefcase className="h-3 w-3 shrink-0 hidden sm:block" />
+                          {(() => {
+                            const sel = conversations.find((c) => c.id === selectedConversation);
+                            return sel?.admin_id
+                              ? "Support"
+                              : (sel?.gigs?.title || sel?.digger_profiles?.profession || "General");
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                      <TooltipProvider>
+                        {/* Hide some buttons on very small screens */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:flex">
+                              <Video className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Video call</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:flex">
+                              <Calendar className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Schedule</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:flex">
+                              <Image className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Attach image</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => setShowInfoPanel(!showInfoPanel)}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>More options</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+
+                  {/* Messages with date separators */}
+                  <ScrollArea className="flex-1 p-3 sm:p-4">
+                    <div className="space-y-3 sm:space-y-4">
+                      {messages.length === 0 ? (
+                        <div className="text-center py-12">
+                          <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                          <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
+                        </div>
+                      ) : (
+                        messagesByDate.map(([dateKey, dayMessages]) => (
+                          <div key={dateKey} className="space-y-2 sm:space-y-3">
+                            <p className="text-xs font-medium text-muted-foreground text-center py-1">
+                              {format(new Date(dateKey), "EEEE, MMM d")}
+                            </p>
+                            {dayMessages.map((msg) => {
+                              const isOwn = msg.sender_id === currentUser?.id;
+                              const timeStr = format(new Date(msg.created_at), "h:mm a");
+                              return (
+                                <div
+                                  key={msg.id}
+                                  className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                                >
+                                  <div
+                                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm ${
+                                      isOwn
+                                        ? "bg-primary text-primary-foreground rounded-br-md"
+                                        : "bg-background border border-border/50 rounded-bl-md"
+                                    }`}
+                                  >
+                                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
+                                    <div
+                                      className={`flex items-center justify-end gap-1 mt-1 sm:mt-1.5 ${
+                                        isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      <span className="text-[10px] sm:text-xs">{timeStr}</span>
+                                      {isOwn && (
+                                        <span className="shrink-0">
+                                          {msg.read_at ? (
+                                            <CheckCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-label="Read" />
+                                          ) : (
+                                            <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-label="Sent" />
+                                          )}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+
+                  {/* Message input - optimized for mobile */}
+                  <div className="shrink-0 p-2 sm:p-3 border-t border-border/50 bg-background">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      {/* Toolbar - hide on mobile, show on larger screens */}
+                      <div className="hidden sm:flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Format">
+                          <Type className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Attach">
+                          <Paperclip className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Emoji">
+                          <Smile className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {/* Mobile: attach button */}
+                      <Button variant="ghost" size="icon" className="h-9 w-9 sm:hidden shrink-0" title="Attach">
+                        <Paperclip className="h-4 w-4" />
+                      </Button>
+                      <Input
+                        placeholder="Message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                        maxLength={5000}
+                        className="flex-1 bg-muted/50 h-9 sm:h-10 text-sm"
+                      />
+                      <Button
+                        onClick={sendMessage}
+                        size="icon"
+                        disabled={!newMessage.trim()}
+                        className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center max-w-sm">
+                    <MessageSquare className="h-14 w-14 mx-auto text-muted-foreground/50 mb-4" />
+                    <h3 className="font-semibold text-foreground mb-1">Select a conversation</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Choose from the list to start messaging.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Right: Contact / Activity panel - hidden on mobile/tablet, toggle on medium screens */}
+        {selectedConversation && !isMobile && (
+          <div className={`
+            ${showInfoPanel ? 'flex' : 'hidden xl:flex'} 
+            w-72 xl:w-80 shrink-0 flex-col border-l border-border/50 bg-background overflow-hidden
+          `}>
+            <div className="p-3 sm:p-4 space-y-4 flex-1 overflow-auto">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Avatar className="h-12 w-12 shrink-0 ring-1 ring-border/50">
+                  <Avatar className="h-10 w-10 xl:h-12 xl:w-12 shrink-0 ring-1 ring-border/50">
                     <AvatarFallback className="bg-primary/10 text-primary font-medium">
                       {getConversationPartner(
                         conversations.find((c) => c.id === selectedConversation)
@@ -804,7 +835,7 @@ export default function Messages() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="font-medium text-foreground truncate">
+                    <p className="font-medium text-foreground truncate text-sm">
                       {getConversationPartner(
                         conversations.find((c) => c.id === selectedConversation)
                       )}
@@ -818,7 +849,13 @@ export default function Messages() {
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Close panel">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 shrink-0" 
+                  title="Close panel"
+                  onClick={() => setShowInfoPanel(false)}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
