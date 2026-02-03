@@ -185,11 +185,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </button>
               )}
 
-              {/* Dark Mode Toggle */}
-              <ThemeToggle className="shrink-0" />
-
-              {/* Divider */}
-              <div className="h-6 w-px bg-border/50 mx-2" />
+              {/* When not logged in: Dark Mode in bar (no avatar dropdown) */}
+              {!user && (
+                <>
+                  <ThemeToggle className="shrink-0" />
+                  <div className="h-6 w-px bg-border/50 mx-2" />
+                </>
+              )}
 
               {/* Auth Section */}
               {!user ? (
@@ -213,55 +215,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  {/* Role Switcher */}
-                  {userRoles.length > 0 && (
-                    <DropdownMenu modal={true}>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="gap-1.5 px-2">
-                          <div className="flex gap-0.5">
-                            {userRoles.slice(0, 3).map((role) => (
-                              <span key={role} className="text-sm" title={roleConfig[role].label}>
-                                {roleConfig[role].emoji}
-                              </span>
-                            ))}
-                          </div>
-                          <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent 
-                        align="end" 
-                        sideOffset={8}
-                        className="w-52 bg-background/95 backdrop-blur-xl border shadow-xl z-[10000]"
-                      >
-                        <DropdownMenuLabel className="text-xs text-muted-foreground">Switch Role</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {userRoles.map((role) => (
-                          <DropdownMenuItem
-                            key={role}
-                            onClick={() => switchRole(role)}
-                            className={cn(
-                              "cursor-pointer transition-colors",
-                              activeRole === role && "bg-accent/50"
-                            )}
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <div className="flex items-center gap-2">
-                                <span>{roleConfig[role].emoji}</span>
-                                <span>{roleConfig[role].label}</span>
-                              </div>
-                              {activeRole === role && (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                  Active
-                                </Badge>
-                              )}
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-
-                  {/* User Menu */}
+                  {/* User Menu (avatar dropdown: Dark Mode, Role, Dashboard, Sign Out) */}
                   <DropdownMenu modal={true}>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="gap-1.5 px-2">
@@ -284,6 +238,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       </div>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
+                        <User className="h-4 w-4 mr-2" />
+                        View Profile
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
                         <LayoutDashboard className="h-4 w-4 mr-2" />
                         Dashboard

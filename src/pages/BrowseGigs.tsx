@@ -288,35 +288,6 @@ const BrowseGigs = () => {
           { name: "Browse Gigs", url: "https://digsandgigs.com/browse-gigs" }
         ])}
       />
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            digsandgigs
-          </h1>
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setCartOpen(true)}
-              className="relative"
-            >
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Cart
-              {cartCount > 0 && (
-                <Badge variant="destructive" className="ml-2">
-                  {cartCount}
-                </Badge>
-              )}
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </div>
-        </div>
-      </nav>
       
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
