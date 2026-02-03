@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, MessageSquare, Mail, Copy, Check, Inbox, Shield, Clock, Users, UserPlus, Search } from "lucide-react";
+import { Send, MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, MoreHorizontal, Video, Calendar, Image, ExternalLink, Briefcase, FileCheck, Hourglass, ChevronDown, X, Type, Paperclip, Settings, Smile } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { z } from "zod";
 import { useProxyEmail } from "@/hooks/useProxyEmail";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +38,7 @@ interface Conversation {
   consumer_id: string;
   digger_id: string | null;
   admin_id: string | null;
+  created_at: string;
   updated_at: string;
   gigs: {
     title: string;
@@ -78,8 +79,22 @@ export default function Messages() {
   const [userSearchResults, setUserSearchResults] = useState<{ id: string; full_name: string | null }[]>([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
   const [startingChatUserId, setStartingChatUserId] = useState<string | null>(null);
+  const [listSearch, setListSearch] = useState("");
+  const currentUserIdRef = useRef<string | undefined>(undefined);
 
   const isAdmin = userRoles.includes("admin");
+
+  const filteredConversations = listSearch.trim()
+    ? conversations.filter(
+        (c) =>
+          getConversationPartner(c).toLowerCase().includes(listSearch.toLowerCase()) ||
+          (c?.admin_id ? "support chat" : (c?.gigs?.title || "")).toLowerCase().includes(listSearch.toLowerCase())
+      )
+    : conversations;
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUser?.id;
+  }, [currentUser?.id]);
 
   // Get current user's proxy email
   const { proxyEmail: myProxyEmail } = useProxyEmail(currentUser?.id || null);
@@ -151,17 +166,36 @@ export default function Messages() {
 
   const loadConversations = async () => {
     try {
-      const { data, error } = await supabase
-        .from("conversations")
-        .select(`
-          *,
-          gigs(title),
-          digger_profiles(handle, profession)
-        `)
-        .order("updated_at", { ascending: false });
+      const { data, error } = await supabase.rpc("get_my_conversations");
 
       if (error) throw error;
-      const list = (data as Conversation[]) || [];
+      const raw = (data as Array<{
+        id: string;
+        gig_id: string | null;
+        consumer_id: string;
+        digger_id: string | null;
+        admin_id: string | null;
+        created_at: string;
+        updated_at: string;
+        gig_title: string | null;
+        digger_handle: string | null;
+        digger_profession: string | null;
+      }>) || [];
+
+      const list: Conversation[] = raw.map((c) => ({
+        id: c.id,
+        gig_id: c.gig_id,
+        consumer_id: c.consumer_id,
+        digger_id: c.digger_id,
+        admin_id: c.admin_id,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+        gigs: c.gig_title != null ? { title: c.gig_title } : null,
+        digger_profiles:
+          c.digger_handle != null || c.digger_profession != null
+            ? { handle: c.digger_handle ?? "", profession: c.digger_profession ?? "" }
+            : null,
+      }));
 
       // Enrich admin conversations with consumer display names (admins can view profiles)
       if (isAdmin) {
@@ -195,23 +229,18 @@ export default function Messages() {
 
   const loadMessages = async (conversationId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
+      const { data, error } = await supabase.rpc("get_conversation_messages", {
+        _conversation_id: conversationId,
+      });
 
       if (error) throw error;
       setMessages((data as Message[]) || []);
 
-      // Mark messages as read
+      // Mark other party's messages as read (works for admin and regular users)
       if (currentUser?.id) {
-        await supabase
-          .from("messages")
-          .update({ read_at: new Date().toISOString() })
-          .eq("conversation_id", conversationId)
-          .neq("sender_id", currentUser.id)
-          .is("read_at", null);
+        await supabase.rpc("mark_conversation_messages_read", {
+          _conversation_id: conversationId,
+        });
       }
     } catch (error: any) {
       toast({
@@ -219,6 +248,24 @@ export default function Messages() {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const playNotificationSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 800;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch {
+      // ignore
     }
   };
 
@@ -234,7 +281,26 @@ export default function Messages() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
+          const newMsg = payload.new as Message;
+          setMessages((prev) => [...prev, newMsg]);
+          if (newMsg.sender_id !== currentUserIdRef.current) {
+            playNotificationSound();
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Message;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === updated.id ? { ...m, read_at: updated.read_at } : m))
+          );
         }
       )
       .subscribe();
@@ -386,9 +452,19 @@ export default function Messages() {
     }
   };
 
+  const messagesByDate = (() => {
+    const map = new Map<string, Message[]>();
+    messages.forEach((msg) => {
+      const key = format(new Date(msg.created_at), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(msg);
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  })();
+
   if (loading) {
     return (
-      <PageLayout>
+      <PageLayout showFooter={false} maxWidth="full" padded={false}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center space-y-4">
             <div className="h-12 w-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
@@ -402,368 +478,464 @@ export default function Messages() {
   }
 
   return (
-    <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Header Section */}
-        <div className="mb-8 animate-fade-in-up">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-                Messages
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Communicate securely with clients and professionals
-              </p>
-            </div>
-            
-            {/* Trust Indicators + Admin Chat with user */}
-            <div className="flex flex-wrap items-center gap-3">
+    <PageLayout showFooter={false} maxWidth="full" padded={false}>
+      <div className="flex h-[calc(100vh-4rem)] border-t border-border/50">
+        {/* Left: Messages list */}
+        <div className="w-full sm:w-80 lg:w-96 border-r border-border/50 flex flex-col bg-background shrink-0">
+          <div className="p-3 border-b border-border/50 flex items-center justify-between gap-2">
+            <h1 className="text-lg font-semibold truncate">Messages</h1>
+            <div className="flex items-center gap-1 shrink-0">
               {isAdmin && (
-                <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <UserPlus className="h-4 w-4" />
-                      Chat with user
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Chat with any user</DialogTitle>
-                      <DialogDescription>
-                        Search by name and start a support conversation. The user will see it in their Messages.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Search by name..."
-                          value={userSearch}
-                          onChange={(e) => setUserSearch(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && runUserSearch()}
-                        />
-                        <Button type="button" onClick={runUserSearch} disabled={userSearchLoading}>
-                          <Search className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <ScrollArea className="h-[240px] rounded-md border p-2">
-                        {userSearchResults.length === 0 && !userSearchLoading && (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            {userSearch.trim() ? "No users found. Try a different name." : "Type a name and search."}
-                          </p>
-                        )}
-                        {userSearchLoading && (
-                          <p className="text-sm text-muted-foreground text-center py-4">Searching...</p>
-                        )}
-                        {userSearchResults.map((u) => (
-                          <button
-                            key={u.id}
-                            type="button"
-                            disabled={startingChatUserId !== null}
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted disabled:opacity-50 text-left text-sm cursor-pointer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              startOrOpenAdminChat(u.id);
-                            }}
-                          >
-                            <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span className="flex-1 truncate">{u.full_name?.trim() || "Unnamed"}</span>
-                            {startingChatUserId === u.id ? (
-                              <span className="text-xs text-muted-foreground">Opening…</span>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">({u.id.slice(0, 8)}…)</span>
-                            )}
-                          </button>
-                        ))}
-                      </ScrollArea>
+              <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Chat with user">
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Chat with any user</DialogTitle>
+                    <DialogDescription>
+                      Search by name and start a support conversation.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Search by name..."
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && runUserSearch()}
+                      />
+                      <Button type="button" onClick={runUserSearch} disabled={userSearchLoading}>
+                        <Search className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-              <Badge variant="outline" className="gap-1.5 px-3 py-1.5 bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400">
-                <Shield className="h-3.5 w-3.5" />
-                Private & Secure
-              </Badge>
-              <Badge variant="outline" className="gap-1.5 px-3 py-1.5 bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400">
-                <Mail className="h-3.5 w-3.5" />
-                Email Integration
-              </Badge>
+                    <ScrollArea className="h-[240px] rounded-md border p-2">
+                      {userSearchResults.length === 0 && !userSearchLoading && (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          {userSearch.trim() ? "No users found." : "Type a name and search."}
+                        </p>
+                      )}
+                      {userSearchResults.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          disabled={startingChatUserId !== null}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted disabled:opacity-50 text-left text-sm cursor-pointer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            startOrOpenAdminChat(u.id);
+                          }}
+                        >
+                          <Users className="h-4 w-4 shrink-0" />
+                          <span className="flex-1 truncate">{u.full_name?.trim() || "Unnamed"}</span>
+                          {startingChatUserId === u.id ? (
+                            <span className="text-xs text-muted-foreground">Opening…</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">({u.id.slice(0, 8)}…)</span>
+                          )}
+                        </button>
+                      ))}
+                    </ScrollArea>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+              <Button variant="ghost" size="icon" className="h-8 w-8" title="More options">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)] animate-fade-in-up" style={{ animationDelay: "100ms" }}>
-          {/* Conversations List */}
-          <Card className="lg:col-span-1 border-border/50 shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-border/50 bg-muted/30 py-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Inbox className="h-5 w-5 text-primary" />
-                  Inbox
-                </CardTitle>
-                {conversations.length > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    {conversations.length}
-                  </Badge>
-                )}
+          <div className="p-2 border-b border-border/50 flex items-center gap-1">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search"
+                value={listSearch}
+                onChange={(e) => setListSearch(e.target.value)}
+                className="pl-8 h-9 bg-muted/50"
+              />
+            </div>
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" title="Filter or sort">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </div>
+          <ScrollArea className="flex-1">
+            {filteredConversations.length === 0 ? (
+              <div className="p-6 text-center">
+                <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  {listSearch.trim() ? "No matches." : "No conversations yet."}
+                </p>
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[calc(100vh-380px)]">
-                {conversations.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <div className="h-16 w-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
-                      <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
-                    </div>
-                    <h3 className="font-medium text-foreground mb-2">No conversations yet</h3>
-                    <p className="text-sm text-muted-foreground">
-                      When you connect with clients or professionals, your messages will appear here.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border/50">
-                    {conversations.map((conv) => (
-                      <div
-                        key={conv.id}
-                        className={`p-4 cursor-pointer transition-all duration-200 hover:bg-accent/50 ${
-                          selectedConversation === conv.id 
-                            ? "bg-primary/5 border-l-2 border-l-primary" 
-                            : "hover:border-l-2 hover:border-l-transparent"
-                        }`}
-                        onClick={() => setSelectedConversation(conv.id)}
-                      >
-                        <div className="flex items-start gap-3">
-                          <Avatar className="h-10 w-10 ring-2 ring-border/50">
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                              {getConversationPartner(conv)[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="font-semibold text-foreground truncate">
-                                {getConversationPartner(conv)}
-                              </p>
-                              <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {formatDistanceToNow(new Date(conv.updated_at), {
-                                  addSuffix: true,
-                                }).replace("about ", "")}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground truncate mt-0.5">
-                              {conv?.admin_id ? "Support chat" : (conv?.gigs?.title || "General inquiry")}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          {/* Messages View */}
-          <Card className="lg:col-span-2 border-border/50 shadow-sm overflow-hidden flex flex-col">
-            {selectedConversation ? (
-              <>
-                {/* Conversation Header */}
-                <CardHeader className="border-b border-border/50 bg-muted/30 py-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 ring-2 ring-border/50">
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {getConversationPartner(
-                            conversations.find((c) => c.id === selectedConversation)
-                          )[0].toUpperCase()}
+            ) : (
+              <div className="divide-y divide-border/30">
+                {filteredConversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    type="button"
+                    className={`w-full flex items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50 ${
+                      selectedConversation === conv.id ? "bg-muted" : ""
+                    }`}
+                    onClick={() => setSelectedConversation(conv.id)}
+                  >
+                    <div className="relative shrink-0">
+                      <Avatar className="h-11 w-11 ring-1 ring-border/50">
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                          {getConversationPartner(conv)[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <h3 className="font-semibold text-foreground">
-                          {getConversationPartner(
-                            conversations.find((c) => c.id === selectedConversation)
-                          )}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {(() => {
-                            const sel = conversations.find((c) => c.id === selectedConversation);
-                            return sel?.admin_id
-                              ? "Support chat"
-                              : (sel?.gigs?.title || "General inquiry");
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="gap-1.5 bg-background">
-                      <MessageSquare className="h-3 w-3" />
-                      In-App + Email
-                    </Badge>
-                  </div>
-                  
-                  {/* Proxy Email Section */}
-                  <TooltipProvider>
-                    <div className="flex flex-col sm:flex-row gap-3 p-3 bg-gradient-to-r from-blue-500/5 to-primary/5 rounded-lg border border-primary/10">
-                      {partnerProxyEmail && (
-                        <div className="flex items-center gap-2 flex-1">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <Mail className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-muted-foreground mb-0.5">Contact via email</p>
-                            <div className="flex items-center gap-2">
-                              <code className="bg-background px-2 py-1 rounded text-xs font-mono truncate max-w-[200px] border border-border/50">
-                                {partnerProxyEmail}
-                              </code>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7 shrink-0"
-                                    onClick={() => copyToClipboard(partnerProxyEmail)}
-                                  >
-                                    {copiedEmail === partnerProxyEmail ? (
-                                      <Check className="h-3.5 w-3.5 text-green-500" />
-                                    ) : (
-                                      <Copy className="h-3.5 w-3.5" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Copy email</TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {myProxyEmail && (
-                        <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-border/50 pt-3 sm:pt-0 sm:pl-3">
-                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-muted-foreground mb-0.5">Your proxy email</p>
-                            <div className="flex items-center gap-2">
-                              <code className="bg-background px-2 py-1 rounded text-xs font-mono truncate max-w-[150px] border border-border/50">
-                                {myProxyEmail}
-                              </code>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7 shrink-0"
-                                    onClick={() => copyToClipboard(myProxyEmail)}
-                                  >
-                                    {copiedEmail === myProxyEmail ? (
-                                      <Check className="h-3.5 w-3.5 text-green-500" />
-                                    ) : (
-                                      <Copy className="h-3.5 w-3.5" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Copy your proxy email</TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </TooltipProvider>
-                </CardHeader>
-
-                {/* Messages List */}
-                <CardContent className="flex-1 p-0 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-520px)] p-4">
-                    <div className="space-y-4">
-                      {messages.length === 0 ? (
-                        <div className="text-center py-12">
-                          <div className="h-12 w-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
-                            <MessageSquare className="h-6 w-6 text-muted-foreground/50" />
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            No messages yet. Start the conversation!
-                          </p>
-                        </div>
-                      ) : (
-                        messages.map((msg) => (
-                          <div
-                            key={msg.id}
-                            className={`flex ${
-                              msg.sender_id === currentUser?.id ? "justify-end" : "justify-start"
-                            }`}
-                          >
-                            <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
-                                msg.sender_id === currentUser?.id
-                                  ? "bg-primary text-primary-foreground rounded-br-md"
-                                  : "bg-muted border border-border/50 rounded-bl-md"
-                              }`}
-                            >
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                              <p className={`text-xs mt-1.5 ${
-                                msg.sender_id === currentUser?.id 
-                                  ? "text-primary-foreground/70" 
-                                  : "text-muted-foreground"
-                              }`}>
-                                {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                              </p>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-
-                {/* Message Input */}
-                <div className="p-4 border-t border-border/50 bg-muted/30">
-                  <div className="flex gap-3">
-                    <div className="flex-1 relative">
-                      <Input
-                        placeholder="Type your message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                        maxLength={5000}
-                        className="pr-16 bg-background border-border/50 focus-visible:ring-primary/50"
+                      <span
+                        className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground/50"
+                        title="Offline"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                        {newMessage.length}/5000
-                      </span>
                     </div>
-                    <Button 
-                      onClick={sendMessage} 
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">
+                        {getConversationPartner(conv)}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {conv?.admin_id ? "Support chat" : (conv?.gigs?.title || "General inquiry")}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {format(new Date(conv.updated_at), "M/d/yy")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+
+        {/* Center: Chat */}
+        <div className="flex-1 flex flex-col min-w-0 bg-muted/20">
+          <div className="border-border/50 flex flex-col flex-1 min-h-0">
+            {selectedConversation ? (
+              <>
+                {/* Chat header */}
+                <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-border/50 bg-background">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/50">
+                      <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                        {getConversationPartner(
+                          conversations.find((c) => c.id === selectedConversation)
+                        )[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-semibold text-foreground truncate">
+                        {getConversationPartner(
+                          conversations.find((c) => c.id === selectedConversation)
+                        )}
+                        {(() => {
+                          const sel = conversations.find((c) => c.id === selectedConversation);
+                          return sel?.admin_id ? "" : sel?.gigs?.title ? `, ${sel.gigs.title}` : "";
+                        })()}
+                      </h2>
+                      <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                        <Briefcase className="h-3 w-3 shrink-0" />
+                        {(() => {
+                          const sel = conversations.find((c) => c.id === selectedConversation);
+                          return sel?.admin_id
+                            ? "Support chat"
+                            : (sel?.gigs?.title || sel?.digger_profiles?.profession || "General inquiry");
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Video className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Video call</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Calendar className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Schedule</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Image className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Attach image</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Open in new window</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+
+                {/* Messages with date separators */}
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-4">
+                    {messages.length === 0 ? (
+                      <div className="text-center py-12">
+                        <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                        <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
+                      </div>
+                    ) : (
+                      messagesByDate.map(([dateKey, dayMessages]) => (
+                        <div key={dateKey} className="space-y-3">
+                          <p className="text-xs font-medium text-muted-foreground text-center py-1">
+                            {format(new Date(dateKey), "EEEE, MMM d")}
+                          </p>
+                          {dayMessages.map((msg) => {
+                            const isOwn = msg.sender_id === currentUser?.id;
+                            const timeStr = format(new Date(msg.created_at), "h:mm a");
+                            return (
+                              <div
+                                key={msg.id}
+                                className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                              >
+                                <div
+                                  className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
+                                    isOwn
+                                      ? "bg-primary text-primary-foreground rounded-br-md"
+                                      : "bg-background border border-border/50 rounded-bl-md"
+                                  }`}
+                                >
+                                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                  <div
+                                    className={`flex items-center justify-end gap-1 mt-1.5 ${
+                                      isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    <span className="text-xs">{timeStr}</span>
+                                    {isOwn && (
+                                      <span className="shrink-0">
+                                        {msg.read_at ? (
+                                          <CheckCheck className="h-3.5 w-3.5" aria-label="Read" />
+                                        ) : (
+                                          <Check className="h-3.5 w-3.5" aria-label="Sent" />
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+
+                {/* Message input */}
+                <div className="shrink-0 p-3 border-t border-border/50 bg-background">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Format">
+                        <Type className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Attach">
+                        <Paperclip className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Settings">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Emoji">
+                        <Smile className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="Send a message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                      maxLength={5000}
+                      className="flex-1 bg-muted/50"
+                    />
+                    <Button
+                      onClick={sendMessage}
                       size="icon"
                       disabled={!newMessage.trim()}
-                      className="shrink-0 shadow-sm"
+                      className="shrink-0 h-8 w-8"
                     >
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    <Shield className="h-3 w-3 inline mr-1" />
-                    Messages are private and only visible to you and the recipient
-                  </p>
                 </div>
               </>
             ) : (
-              <CardContent className="flex items-center justify-center h-full">
+              <div className="flex-1 flex items-center justify-center p-8">
                 <div className="text-center max-w-sm">
-                  <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-6">
-                    <MessageSquare className="h-10 w-10 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
-                    Select a conversation
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Choose a conversation from the list to start messaging securely with clients or professionals.
+                  <MessageSquare className="h-14 w-14 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="font-semibold text-foreground mb-1">Select a conversation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Choose from the list to start messaging.
                   </p>
                 </div>
-              </CardContent>
+              </div>
             )}
-          </Card>
+          </div>
         </div>
+
+        {/* Right: Contact / Activity */}
+        {selectedConversation && (
+          <div className="hidden xl:flex w-80 shrink-0 flex-col border-l border-border/50 bg-background overflow-hidden">
+            <div className="p-4 space-y-4 flex-1 overflow-auto">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="h-12 w-12 shrink-0 ring-1 ring-border/50">
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                      {getConversationPartner(
+                        conversations.find((c) => c.id === selectedConversation)
+                      )[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground truncate">
+                      {getConversationPartner(
+                        conversations.find((c) => c.id === selectedConversation)
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <FileCheck className="h-3 w-3 shrink-0" />
+                      {(() => {
+                        const sel = conversations.find((c) => c.id === selectedConversation);
+                        return sel?.admin_id ? "Support" : (sel?.gigs?.title || "Conversation");
+                      })()}
+                    </p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Close panel">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} local
+              </div>
+              {(() => {
+                const sel = conversations.find((c) => c.id === selectedConversation);
+                const gigId = sel?.gig_id;
+                return gigId ? (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => navigate(`/gig/${gigId}`)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View proposal / gig
+                  </Button>
+                ) : null;
+              })()}
+              <div className="border-t border-border/50 pt-3">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between text-left font-medium text-sm py-1"
+                >
+                  Activity timeline
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <div className="mt-3 space-y-0 relative pl-5 border-l-2 border-border/50 ml-0.5">
+                  <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-primary -translate-x-[5px]" />
+                  <div className="pb-3 flex items-start gap-2">
+                    <FileCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Conversation started</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedConversation &&
+                          format(
+                            new Date(
+                              conversations.find((c) => c.id === selectedConversation)?.created_at ?? 0
+                            ),
+                            "MMM d"
+                          )}
+                      </p>
+                    </div>
+                  </div>
+                  {(() => {
+                    const sel = conversations.find((c) => c.id === selectedConversation);
+                    if (!sel?.gig_id) return null;
+                    return (
+                      <>
+                        <div className="absolute left-0 top-9 w-2 h-2 rounded-full bg-muted-foreground/50 -translate-x-[5px]" />
+                        <div className="pb-3 flex items-start gap-2">
+                          <Hourglass className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Gig / offer</p>
+                            <p className="text-xs text-muted-foreground">Linked to gig</p>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+              {(partnerProxyEmail || myProxyEmail) && (
+                <div className="pt-3 border-t border-border/50 space-y-2">
+                  {partnerProxyEmail && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Contact email</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <code className="text-xs truncate block flex-1">{partnerProxyEmail}</code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => copyToClipboard(partnerProxyEmail)}
+                          >
+                            {copiedEmail === partnerProxyEmail ? (
+                              <Check className="h-3 w-3 text-green-500" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {myProxyEmail && (
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Your proxy</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <code className="text-xs truncate block flex-1">{myProxyEmail}</code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0"
+                            onClick={() => copyToClipboard(myProxyEmail)}
+                          >
+                            {copiedEmail === myProxyEmail ? (
+                              <Check className="h-3 w-3 text-green-500" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </PageLayout>
   );
