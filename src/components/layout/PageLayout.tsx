@@ -13,6 +13,8 @@ interface PageLayoutProps {
   padded?: boolean;
   /** Additional className for main content */
   className?: string;
+  /** Optional className for the outer wrapper (e.g. to constrain height and remove page scroll) */
+  wrapperClassName?: string;
   /** Navigation props */
   navProps?: {
     showBackButton?: boolean;
@@ -35,10 +37,11 @@ export function PageLayout({
   maxWidth = "default",
   padded = true,
   className,
+  wrapperClassName,
   navProps,
 }: PageLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={cn("min-h-screen flex flex-col bg-background", wrapperClassName)}>
       {/* Nav is in root layout so it persists on every page */}
       
       <main

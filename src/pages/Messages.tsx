@@ -229,6 +229,17 @@ export default function Messages() {
     }
   }, [currentUser, isAdmin]);
 
+  // Select the most recently chatted conversation by default when opening the page (no URL param)
+  useEffect(() => {
+    if (
+      conversations.length > 0 &&
+      !selectedConversation &&
+      !searchParams.get("conversation")
+    ) {
+      setSelectedConversation(conversations[0].id);
+    }
+  }, [conversations]);
+
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation);
@@ -618,16 +629,22 @@ export default function Messages() {
   }
 
   return (
-    <PageLayout showFooter={false} maxWidth="full" padded={false}>
-      <div className="flex h-[calc(100vh-4rem)] border-t border-border/30">
+    <PageLayout
+      showFooter={false}
+      maxWidth="full"
+      padded={false}
+      wrapperClassName="h-[calc(100vh-4rem)] overflow-hidden"
+      className="flex flex-col min-h-0"
+    >
+      <div className="flex flex-1 min-h-0 border-t border-border/30">
         {/* Left: Conversation list */}
         {showConversationList && (
           <div className={`
             ${isMobile ? 'w-full' : 'w-80 lg:w-96'} 
-            border-r border-border/30 flex flex-col bg-card shrink-0
+            border-r border-border/30 flex flex-col min-h-0 bg-card shrink-0
           `}>
             {/* Header */}
-            <div className="p-4 border-b border-border/30 bg-card">
+            <div className="shrink-0 p-4 border-b border-border/30 bg-card">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h1 className="text-xl font-bold text-foreground">Messages</h1>
                 <div className="flex items-center gap-1">
@@ -734,9 +751,10 @@ export default function Messages() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+            </div>
 
-              {/* Conversation list */}
-              <ScrollArea className="flex-1">
+            {/* Conversation list - scrollable */}
+            <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
                 {filteredConversations.length === 0 ? (
                   <div className="p-6 text-center">
                     <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
@@ -858,12 +876,12 @@ export default function Messages() {
                   </div>
                 )}
               </ScrollArea>
-            </div>
-          )}
+          </div>
+        )}
 
         {/* Center: Chat area */}
         {showChatArea && (
-          <div className={`flex-1 flex flex-col min-w-0 bg-background ${isMobile && !selectedConversation ? 'hidden' : ''}`}>
+          <div className={`flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden ${isMobile && !selectedConversation ? 'hidden' : ''}`}>
             {selectedConversation ? (
               <>
                 {/* Chat header */}
@@ -875,35 +893,37 @@ export default function Messages() {
                   onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
                 />
 
-                {/* Messages area */}
-                <ScrollArea className="flex-1">
-                  <div className="p-4 sm:p-6 space-y-1">
-                    {messages.length === 0 ? (
-                      <EmptyConversation variant="no-messages" partnerName={partnerName} />
-                    ) : (
-                      messagesByDate.map(([dateKey, dayMessages]) => (
-                        <div key={dateKey}>
-                          <DateSeparator date={dateKey} />
-                          <div className="space-y-3">
-                            {dayMessages.map((msg) => (
-                              <MessageBubble
-                                key={msg.id}
-                                content={msg.content}
-                                timestamp={msg.created_at}
-                                isOwn={msg.sender_id === currentUser?.id}
-                                isRead={!!msg.read_at}
-                              />
-                            ))}
+                {/* Messages only - this is the only part that scrolls; input stays fixed below */}
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                  <ScrollArea className="h-full min-h-0">
+                    <div className="p-4 sm:p-6 space-y-1">
+                      {messages.length === 0 ? (
+                        <EmptyConversation variant="no-messages" partnerName={partnerName} />
+                      ) : (
+                        messagesByDate.map(([dateKey, dayMessages]) => (
+                          <div key={dateKey}>
+                            <DateSeparator date={dateKey} />
+                            <div className="space-y-3">
+                              {dayMessages.map((msg) => (
+                                <MessageBubble
+                                  key={msg.id}
+                                  content={msg.content}
+                                  timestamp={msg.created_at}
+                                  isOwn={msg.sender_id === currentUser?.id}
+                                  isRead={!!msg.read_at}
+                                />
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </ScrollArea>
+                        ))
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  </ScrollArea>
+                </div>
 
-                {/* Message input */}
-                <div className="shrink-0 p-3 sm:p-4 border-t border-border/30 bg-card/50">
+                {/* Message input - fixed at bottom, never inside scroll, never scrolled */}
+                <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
                   <MessageInput
                     value={newMessage}
                     onChange={setNewMessage}
@@ -925,7 +945,7 @@ export default function Messages() {
             ${showInfoPanel ? 'flex' : 'hidden xl:flex'} 
             w-72 xl:w-80 shrink-0 flex-col border-l border-border/30 bg-card overflow-hidden
           `}>
-            <div className="p-4 space-y-5 flex-1 overflow-auto">
+            <div className="p-4 space-y-5 flex-1 overflow-hidden min-h-0 flex flex-col">
               {/* Profile header */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
