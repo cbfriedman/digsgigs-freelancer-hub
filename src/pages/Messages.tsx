@@ -241,11 +241,24 @@ export default function Messages() {
   }, [conversations]);
 
   useEffect(() => {
-    if (selectedConversation) {
-      loadMessages(selectedConversation);
-      subscribeToMessages(selectedConversation);
-      loadPartnerProxyEmail(selectedConversation);
-    }
+    if (!selectedConversation) return;
+    const convId = selectedConversation;
+    loadMessages(convId);
+    loadPartnerProxyEmail(convId);
+    let cleanup: (() => void) | undefined;
+    let cancelled = false;
+    (async () => {
+      const unsub = await subscribeToMessages(convId);
+      if (cancelled) {
+        unsub();
+        return;
+      }
+      cleanup = unsub;
+    })();
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
   }, [selectedConversation]);
 
   // Scroll to bottom when messages change
@@ -405,7 +418,17 @@ export default function Messages() {
     }
   };
 
-  const subscribeToMessages = (conversationId: string) => {
+  const subscribeToMessages = async (
+    conversationId: string
+  ): Promise<() => void> => {
+    // Sync JWT to Realtime so RLS sees current user (fixes admin not receiving user messages in real time)
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      await supabase.realtime.setAuth(session.access_token);
+    }
+
     const channel = supabase
       .channel(`messages:${conversationId}`)
       .on(
