@@ -107,6 +107,7 @@ import LeadUnlockPreview from "./pages/LeadUnlockPreview";
 import Subscribe from "./pages/Subscribe";
 import ImportSubscribers from "./pages/admin/ImportSubscribers";
 import BecomeADigger from "./pages/BecomeADigger";
+import HireAPro from "./pages/HireAPro";
 
 const queryClient = new QueryClient();
 
@@ -530,6 +531,10 @@ const router = createBrowserRouter(
       {
         path: "/become-a-digger",
         element: <BecomeADigger />,
+      },
+      {
+        path: "/hire-a-pro",
+        element: <HireAPro />,
       },
       {
         path: "*",
