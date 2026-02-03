@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
-import { DiggerProfileSelector } from "@/components/DiggerProfileSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCart } from "@/contexts/CartContext";
@@ -109,9 +108,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Hide digger profile selector on client-facing pages
-  const hideDiggerSelector = ['/post-gig', '/browse-gigs'].includes(location.pathname);
 
   const navLinkClass = "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-3 py-2 rounded-md hover:bg-accent/50";
   const navLinkActiveClass = "text-foreground bg-accent/50";
@@ -238,6 +234,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       </div>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate('/my-profiles')} className="cursor-pointer">
+                        <User className="h-4 w-4 mr-2" />
+                        View Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       {/* Dark Mode - prevent close on toggle */}
                       <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent focus:outline-none">
                         <ThemeToggle className="w-full" />
@@ -283,11 +284,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-
-                  {/* Digger Profile Selector */}
-                  {!hideDiggerSelector && location.pathname !== '/register' && userRoles.includes('digger') && (
-                    <DiggerProfileSelector />
-                  )}
                 </div>
               )}
 
