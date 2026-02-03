@@ -36,6 +36,7 @@ import LegalDocuments from "./pages/LegalDocuments";
 import Pricing from "./pages/Pricing";
 import PricingStrategy from "./pages/PricingStrategy";
 import Transactions from "./pages/Transactions";
+import Account from "./pages/Account";
 import EmailPreferences from "./pages/EmailPreferences";
 import LeadLimits from "./pages/LeadLimits";
 import DiggerGuide from "./pages/DiggerGuide";
@@ -381,6 +382,10 @@ const router = createBrowserRouter(
       {
         path: "/saved-searches",
         element: <ProtectedRoute><SavedSearches /></ProtectedRoute>,
+      },
+      {
+        path: "/account",
+        element: <ProtectedRoute><Account /></ProtectedRoute>,
       },
       {
         path: "/email-preferences",

@@ -196,6 +196,7 @@ export default function Messages() {
   };
 
   const [showHidden, setShowHidden] = useState(false);
+  const [listFilter, setListFilter] = useState<"all" | "favorites">("all");
 
   const unhideConversation = (conversationId: string) => {
     const key = getStorageKey("hidden");
@@ -219,7 +220,9 @@ export default function Messages() {
           (c?.admin_id ? "support chat" : (c?.gigs?.title || "")).toLowerCase().includes(listSearch.toLowerCase())
       )
     : conversations
-  ).filter((c) => showHidden || !hiddenIds.includes(c.id));
+  )
+    .filter((c) => showHidden || !hiddenIds.includes(c.id))
+    .filter((c) => listFilter === "all" || starredIds.includes(c.id));
 
   useEffect(() => {
     currentUserIdRef.current = currentUser?.id;
@@ -699,12 +702,12 @@ export default function Messages() {
         {showConversationList && (
           <div className={`
             ${isMobile ? 'w-full' : 'w-80 lg:w-96'} 
-            border-r border-border/30 flex flex-col min-h-0 bg-card shrink-0
+            border-r border-border/30 flex flex-col min-h-0 bg-background shrink-0
           `}>
-            {/* Header */}
-            <div className="shrink-0 p-4 border-b border-border/30 bg-card">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <h1 className="text-xl font-bold text-foreground">Messages</h1>
+            {/* Header - Chats style */}
+            <div className="shrink-0 p-4 pb-3 border-b border-border/40 bg-background">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h1 className="text-xl font-bold text-foreground tracking-tight">Chats</h1>
                 <div className="flex items-center gap-1">
                   {isAdmin && (
                     <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
@@ -785,20 +788,50 @@ export default function Messages() {
                 </div>
               </div>
 
-              {/* Search + filter */}
-              <div className="p-2 border-b border-border/50 flex items-center gap-1">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search"
-                    value={listSearch}
-                    onChange={(e) => setListSearch(e.target.value)}
-                    className="pl-8 h-9 bg-muted/50"
-                  />
-                </div>
+              {/* Search - rounded, prominent */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search conversations"
+                  value={listSearch}
+                  onChange={(e) => setListSearch(e.target.value)}
+                  className="pl-9 h-10 rounded-xl bg-muted/40 border-border/50 focus-visible:ring-2 focus-visible:ring-primary/20"
+                />
+              </div>
+              {/* Filter pills: All, Favorites */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  variant={listFilter === "all" ? "secondary" : "ghost"}
+                  size="sm"
+                  className={`rounded-full h-8 px-3 text-sm font-medium ${
+                    listFilter === "all"
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                  onClick={() => setListFilter("all")}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={listFilter === "favorites" ? "secondary" : "ghost"}
+                  size="sm"
+                  className={`rounded-full h-8 px-3 text-sm font-medium ${
+                    listFilter === "favorites"
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                  onClick={() => setListFilter("favorites")}
+                >
+                  Favorites
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" title="Filter or sort">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-full h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                      title="More filters"
+                    >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -811,7 +844,7 @@ export default function Messages() {
               </div>
             </div>
 
-            {/* Conversation list - scrollable */}
+            {/* Conversation list - scrollable, with rounded selected highlight */}
             <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
                 {filteredConversations.length === 0 ? (
                   <div className="p-6 text-center">
@@ -821,7 +854,7 @@ export default function Messages() {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-border/30">
+                  <div className="px-2 py-1 space-y-0.5">
                     {filteredConversations.map((conv) => {
                       const partnerName = getConversationPartner(conv);
                       const roleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
@@ -837,9 +870,13 @@ export default function Messages() {
                           tabIndex={0}
                           onClick={() => setSelectedConversation(conv.id)}
                           onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)}
-                          className={`group w-full flex items-start gap-3 p-3 text-left transition-colors cursor-pointer hover:bg-muted/50 ${
-                            selectedConversation === conv.id ? "bg-muted" : ""
-                          }`}
+                          className={cn(
+                            "group w-full flex items-start gap-3 p-3 text-left transition-colors cursor-pointer rounded-xl",
+                            "hover:bg-muted/60",
+                            selectedConversation === conv.id
+                              ? "bg-muted shadow-sm ring-1 ring-border/50"
+                              : "bg-transparent"
+                          )}
                         >
                           <div className="relative shrink-0">
                             <Avatar className="h-11 w-11 ring-1 ring-border/50">

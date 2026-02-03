@@ -14,7 +14,8 @@ import {
   MessageCircle,
   BellRing,
   FolderOpen,
-  Sparkles
+  Sparkles,
+  Settings
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
@@ -373,6 +374,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       <DropdownMenuItem onClick={() => navigate('/my-profiles')} className="cursor-pointer">
                         <User className="h-4 w-4 mr-2" />
                         View Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/account')} className="cursor-pointer">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Account
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       {/* Dark Mode - prevent close on toggle */}
