@@ -1,13 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useDiggerPresence = (diggerId?: string) => {
   const [onlineDiggers, setOnlineDiggers] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+  const observerKeyRef = useRef<string>(
+    (globalThis.crypto && 'randomUUID' in globalThis.crypto)
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`
+  );
 
   useEffect(() => {
-    const channel = supabase.channel('digger-presence');
+    const channel = supabase.channel('digger-presence', {
+      config: { presence: { key: user?.id ?? observerKeyRef.current } },
+    });
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -88,7 +95,9 @@ export const useTrackDiggerPresence = () => {
       return;
     }
 
-    const channel = supabase.channel('digger-presence');
+    const channel = supabase.channel('digger-presence', {
+      config: { presence: { key: user.id } },
+    });
     let diggerProfileId: string | null = null;
 
     const setupPresence = async () => {

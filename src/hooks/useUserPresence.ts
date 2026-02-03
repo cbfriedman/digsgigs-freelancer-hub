@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -7,9 +7,16 @@ const USER_PRESENCE_CHANNEL = 'user-presence';
 /** Returns the set of user IDs currently online (tracked on user-presence channel). */
 export function useUserPresence() {
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const observerKeyRef = useRef<string>(
+    (globalThis.crypto && 'randomUUID' in globalThis.crypto)
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`
+  );
 
   useEffect(() => {
-    const channel = supabase.channel(USER_PRESENCE_CHANNEL);
+    const channel = supabase.channel(USER_PRESENCE_CHANNEL, {
+      config: { presence: { key: observerKeyRef.current } },
+    });
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -43,7 +50,9 @@ export function useTrackUserPresence() {
     const isRegisterPage = window.location.pathname === '/register';
     if (isInOtpFlow || isRegisterPage) return;
 
-    const channel = supabase.channel(USER_PRESENCE_CHANNEL);
+    const channel = supabase.channel(USER_PRESENCE_CHANNEL, {
+      config: { presence: { key: user.id } },
+    });
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await channel.track({
