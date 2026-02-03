@@ -18,17 +18,21 @@ export function useUserPresence() {
       config: { presence: { key: observerKeyRef.current } },
     });
 
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const online = new Set<string>();
-        Object.values(state).forEach((presences: { user_id?: string }[]) => {
-          presences.forEach((p) => {
-            if (p.user_id) online.add(p.user_id);
-          });
+    const refreshOnline = () => {
+      const state = channel.presenceState();
+      const online = new Set<string>();
+      Object.values(state).forEach((presences: { user_id?: string }[]) => {
+        presences.forEach((p) => {
+          if (p.user_id) online.add(p.user_id);
         });
-        setOnlineUserIds(online);
-      })
+      });
+      setOnlineUserIds(online);
+    };
+
+    channel
+      .on('presence', { event: 'sync' }, refreshOnline)
+      .on('presence', { event: 'join' }, refreshOnline)
+      .on('presence', { event: 'leave' }, refreshOnline)
       .subscribe();
 
     return () => {

@@ -16,21 +16,25 @@ export const useDiggerPresence = (diggerId?: string) => {
       config: { presence: { key: user?.id ?? observerKeyRef.current } },
     });
 
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const online = new Set<string>();
-        
-        Object.values(state).forEach((presences: any) => {
-          presences.forEach((presence: any) => {
-            if (presence.digger_id) {
-              online.add(presence.digger_id);
-            }
-          });
+    const refreshOnline = () => {
+      const state = channel.presenceState();
+      const online = new Set<string>();
+
+      Object.values(state).forEach((presences: any) => {
+        presences.forEach((presence: any) => {
+          if (presence.digger_id) {
+            online.add(presence.digger_id);
+          }
         });
-        
-        setOnlineDiggers(online);
-      })
+      });
+
+      setOnlineDiggers(online);
+    };
+
+    channel
+      .on('presence', { event: 'sync' }, refreshOnline)
+      .on('presence', { event: 'join' }, refreshOnline)
+      .on('presence', { event: 'leave' }, refreshOnline)
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED' && user && diggerId) {
           // Skip if in sign-in OTP flow
