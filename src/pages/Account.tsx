@@ -27,12 +27,17 @@ export default function Account() {
   const loadProfile = async () => {
     if (!user?.id) return;
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("avatar_url")
-        .eq("id", user.id)
-        .single();
-      if (!error && data?.avatar_url) setAvatarUrl(data.avatar_url);
+      // Note: avatar_url is stored in profile-photos bucket, not in profiles table
+      // Check for existing photo in storage
+      const { data: files } = await supabase.storage
+        .from("profile-photos")
+        .list(user.id, { limit: 1 });
+      if (files && files.length > 0) {
+        const { data: urlData } = supabase.storage
+          .from("profile-photos")
+          .getPublicUrl(`${user.id}/${files[0].name}`);
+        if (urlData?.publicUrl) setAvatarUrl(urlData.publicUrl);
+      }
     } catch {
       // ignore
     } finally {
@@ -42,24 +47,13 @@ export default function Account() {
 
   const handlePhotoChange = async (url: string) => {
     if (!user?.id) return;
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ avatar_url: url })
-        .eq("id", user.id);
-      if (error) throw error;
-      setAvatarUrl(url);
-      toast({
-        title: "Profile photo updated",
-        description: "Your photo will appear in messages and across the site.",
-      });
-    } catch (e: unknown) {
-      toast({
-        title: "Error",
-        description: e instanceof Error ? e.message : "Failed to save photo.",
-        variant: "destructive",
-      });
-    }
+    // Photo is already uploaded via ProfilePhotoUpload component to storage
+    // Just update local state
+    setAvatarUrl(url);
+    toast({
+      title: "Profile photo updated",
+      description: "Your photo will appear in messages and across the site.",
+    });
   };
 
   if (!user) return null;
