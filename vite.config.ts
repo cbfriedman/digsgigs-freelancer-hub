@@ -69,6 +69,6 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    chunkSizeWarningLimit: 2000, // Set limit to 2MB to suppress warnings for optimized chunks
+    chunkSizeWarningLimit: 3000, // 3MB - suppress chunk size warnings on Vercel (large vendor chunks are acceptable)
   },
 }));
