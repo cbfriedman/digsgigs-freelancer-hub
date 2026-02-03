@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, MoreHorizontal, Video, Calendar, Image, ExternalLink, Briefcase, FileCheck, Hourglass, ChevronDown, X, Type, Paperclip, Settings, Smile } from "lucide-react";
+import { Send, MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, MoreHorizontal, Video, Calendar, Image, ExternalLink, Briefcase, FileCheck, Hourglass, ChevronDown, X, Type, Paperclip, Settings, Smile, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow, format } from "date-fns";
 import { z } from "zod";
@@ -22,7 +22,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import PageLayout from "@/components/layout/PageLayout";
+
+const STORAGE_STARRED_KEY = "messages_starred";
+const STORAGE_HIDDEN_KEY = "messages_hidden";
 
 // SECURITY: Input validation schema
 const messageSchema = z.object({
@@ -49,6 +58,9 @@ interface Conversation {
   } | null;
   /** For admin conversations: consumer's display name (from profiles) */
   consumer_profile?: { full_name: string | null } | null;
+  /** Last message preview (from get_my_conversations) */
+  last_message_content?: string | null;
+  last_message_sender_id?: string | null;
 }
 
 interface Message {
@@ -84,13 +96,97 @@ export default function Messages() {
 
   const isAdmin = userRoles.includes("admin");
 
-  const filteredConversations = listSearch.trim()
+  // Starred and hidden conversation ids (per user, persisted in localStorage)
+  const getStorageKey = (suffix: string) =>
+    currentUser?.id ? `messages_${suffix}_${currentUser.id}` : null;
+  const [starredIds, setStarredIds] = useState<string[]>(() => {
+    try {
+      const key = getStorageKey("starred");
+      if (!key) return [];
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [hiddenIds, setHiddenIds] = useState<string[]>(() => {
+    try {
+      const key = getStorageKey("hidden");
+      if (!key) return [];
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const sk = getStorageKey("starred");
+    const hk = getStorageKey("hidden");
+    if (sk) {
+      try {
+        const raw = localStorage.getItem(sk);
+        setStarredIds(raw ? (JSON.parse(raw) as string[]) : []);
+      } catch {
+        setStarredIds([]);
+      }
+    }
+    if (hk) {
+      try {
+        const raw = localStorage.getItem(hk);
+        setHiddenIds(raw ? (JSON.parse(raw) as string[]) : []);
+      } catch {
+        setHiddenIds([]);
+      }
+    }
+  }, [currentUser?.id]);
+
+  const toggleStarred = (conversationId: string) => {
+    const key = getStorageKey("starred");
+    if (!key) return;
+    setStarredIds((prev) => {
+      const wasStarred = prev.includes(conversationId);
+      const next = wasStarred ? prev.filter((id) => id !== conversationId) : [...prev, conversationId];
+      localStorage.setItem(key, JSON.stringify(next));
+      toast({ title: wasStarred ? "Removed from favorites" : "Added to favorites" });
+      return next;
+    });
+  };
+
+  const hideConversation = (conversationId: string) => {
+    const key = getStorageKey("hidden");
+    if (!key) return;
+    setHiddenIds((prev) => {
+      const next = prev.includes(conversationId) ? prev : [...prev, conversationId];
+      localStorage.setItem(key, JSON.stringify(next));
+      return next;
+    });
+    if (selectedConversation === conversationId) setSelectedConversation(null);
+    toast({ title: "Conversation hidden", description: "You can restore it from filters later." });
+  };
+
+  const [showHidden, setShowHidden] = useState(false);
+
+  const unhideConversation = (conversationId: string) => {
+    const key = getStorageKey("hidden");
+    if (!key) return;
+    setHiddenIds((prev) => {
+      const next = prev.filter((id) => id !== conversationId);
+      localStorage.setItem(key, JSON.stringify(next));
+      return next;
+    });
+    toast({ title: "Conversation restored" });
+  };
+
+  const filteredConversations = (listSearch.trim()
     ? conversations.filter(
         (c) =>
           getConversationPartner(c).toLowerCase().includes(listSearch.toLowerCase()) ||
           (c?.admin_id ? "support chat" : (c?.gigs?.title || "")).toLowerCase().includes(listSearch.toLowerCase())
       )
-    : conversations;
+    : conversations
+  ).filter((c) => showHidden || !hiddenIds.includes(c.id));
 
   useEffect(() => {
     currentUserIdRef.current = currentUser?.id;
@@ -180,6 +276,8 @@ export default function Messages() {
         gig_title: string | null;
         digger_handle: string | null;
         digger_profession: string | null;
+        last_message_content: string | null;
+        last_message_sender_id: string | null;
       }>) || [];
 
       const list: Conversation[] = raw.map((c) => ({
@@ -195,6 +293,8 @@ export default function Messages() {
           c.digger_handle != null || c.digger_profession != null
             ? { handle: c.digger_handle ?? "", profession: c.digger_profession ?? "" }
             : null,
+        last_message_content: c.last_message_content ?? null,
+        last_message_sender_id: c.last_message_sender_id ?? null,
       }));
 
       // Enrich admin conversations with consumer display names (admins can view profiles)
@@ -558,9 +658,20 @@ export default function Messages() {
                 className="pl-8 h-9 bg-muted/50"
               />
             </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" title="Filter or sort">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" title="Filter or sort">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => setShowHidden((prev) => !prev)}
+                >
+                  {showHidden ? "Hide hidden conversations" : "Show hidden conversations"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <ScrollArea className="flex-1">
             {filteredConversations.length === 0 ? (
@@ -572,39 +683,115 @@ export default function Messages() {
               </div>
             ) : (
               <div className="divide-y divide-border/30">
-                {filteredConversations.map((conv) => (
-                  <button
-                    key={conv.id}
-                    type="button"
-                    className={`w-full flex items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50 ${
-                      selectedConversation === conv.id ? "bg-muted" : ""
-                    }`}
-                    onClick={() => setSelectedConversation(conv.id)}
-                  >
-                    <div className="relative shrink-0">
-                      <Avatar className="h-11 w-11 ring-1 ring-border/50">
-                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                          {getConversationPartner(conv)[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span
-                        className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground/50"
-                        title="Offline"
-                      />
+                {filteredConversations.map((conv) => {
+                  const partnerName = getConversationPartner(conv);
+                  const roleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
+                  const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
+                  const lastSnippet = conv?.last_message_content
+                    ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content
+                    : null;
+                  const isStarred = starredIds.includes(conv.id);
+                  return (
+                    <div
+                      key={conv.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedConversation(conv.id)}
+                      onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)}
+                      className={`group w-full flex items-start gap-3 p-3 text-left transition-colors cursor-pointer hover:bg-muted/50 ${
+                        selectedConversation === conv.id ? "bg-muted" : ""
+                      }`}
+                    >
+                      <div className="relative shrink-0">
+                        <Avatar className="h-11 w-11 ring-1 ring-border/50">
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                            {partnerName[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span
+                          className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground/50"
+                          title="Offline"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium text-foreground truncate shrink min-w-0">
+                            {partnerName}
+                          </p>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(conv.updated_at), "M/d/yy")}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleStarred(conv.id);
+                              }}
+                              title={isStarred ? "Remove from favorites" : "Add to favorites"}
+                            >
+                              <Star
+                                className={`h-4 w-4 ${isStarred ? "fill-amber-400 text-amber-500" : ""}`}
+                              />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="More options"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleStarred(conv.id);
+                                  }}
+                                >
+                                  {isStarred ? "Remove from Favorites" : "Add to Favorites"}
+                                </DropdownMenuItem>
+                                {hiddenIds.includes(conv.id) ? (
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      unhideConversation(conv.id);
+                                    }}
+                                  >
+                                    Unhide
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      hideConversation(conv.id);
+                                    }}
+                                  >
+                                    Hide
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {roleOrTitle}
+                        </p>
+                        {lastSnippet && (
+                          <p className="text-xs text-muted-foreground/90 truncate mt-0.5">
+                            {lastSnippet.length > 42 ? `${lastSnippet.slice(0, 42)}...` : lastSnippet}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">
-                        {getConversationPartner(conv)}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {conv?.admin_id ? "Support chat" : (conv?.gigs?.title || "General inquiry")}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {format(new Date(conv.updated_at), "M/d/yy")}
-                    </span>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
