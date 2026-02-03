@@ -19,8 +19,8 @@ const steps = [
   {
     icon: Zap,
     step: "03",
-    title: "Unlock & Connect",
-    description: "Pay the lead price to unlock client contact info. Reach out directly.",
+    title: "Unlock or Bid",
+    description: "Pay a small fee to unlock contact info instantly, or submit a proposal and only pay when you win the job.",
     color: "primary"
   }
 ];
