@@ -1,5 +1,12 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+
+// Minimal types for Vercel serverless (avoids @vercel/node dependency at build time)
+type VercelRequest = { method?: string; url?: string; query?: Record<string, string | string[] | undefined> };
+type VercelResponse = {
+  setHeader(name: string, value: string | number | string[]): VercelResponse;
+  status(code: number): VercelResponse;
+  send(body: string): VercelResponse;
+};
 
 // Top 100 US cities for programmatic SEO pages
 const SEO_CITIES = [
