@@ -308,18 +308,18 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  {/* Messages — only when signed in */}
+                  {/* Messages — only when signed in; unread count on top of icon */}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="relative h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+                    className="relative h-9 w-9 shrink-0 overflow-visible text-muted-foreground hover:text-foreground"
                     onClick={() => navigate("/messages")}
-                    title="Messages"
+                    title={unreadMessagesCount > 0 ? `${unreadMessagesCount} unread messages` : "Messages"}
                   >
                     <MessageCircle className="h-4 w-4" />
                     {unreadMessagesCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-                        {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                      <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center ring-2 ring-background">
+                        {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
                       </span>
                     )}
                   </Button>
@@ -453,19 +453,19 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
             {/* Mobile Navigation */}
             <div className="flex md:hidden items-center gap-1">
-              {/* Messages - Mobile (only when signed in) */}
+              {/* Messages - Mobile (only when signed in); unread count on top of icon */}
               {user && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
+                  className="relative h-9 w-9 overflow-visible text-muted-foreground hover:text-foreground"
                   onClick={() => navigate("/messages")}
-                  title="Messages"
+                  title={unreadMessagesCount > 0 ? `${unreadMessagesCount} unread messages` : "Messages"}
                 >
                   <MessageCircle className="h-4 w-4" />
                   {unreadMessagesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-                      {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                    <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center ring-2 ring-background">
+                      {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
                     </span>
                   )}
                 </Button>

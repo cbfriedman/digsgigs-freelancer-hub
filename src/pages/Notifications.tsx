@@ -42,7 +42,9 @@ const Notifications = () => {
 
   const handleNotificationClick = (notification: any) => {
     markAsRead(notification.id);
-    if (notification.link) {
+    if (notification.type === "new_message" && notification.metadata?.conversation_id) {
+      navigate(`/messages?conversation=${notification.metadata.conversation_id}`);
+    } else if (notification.link) {
       navigate(notification.link);
     }
   };

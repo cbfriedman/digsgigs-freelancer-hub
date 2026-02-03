@@ -21,14 +21,20 @@ export function useUserPresence() {
 
     const refreshOnline = () => {
       if (!mounted) return;
-      const state = channel.presenceState();
-      const online = new Set<string>();
-      Object.values(state).forEach((presences: { user_id?: string }[]) => {
-        presences.forEach((p) => {
-          if (p.user_id) online.add(p.user_id);
+      try {
+        const state = channel.presenceState();
+        const online = new Set<string>();
+        Object.values(state).forEach((presences: unknown) => {
+          const list = Array.isArray(presences) ? presences : [];
+          list.forEach((p: Record<string, unknown>) => {
+            const uid = p?.user_id ?? (p?.payload as Record<string, unknown>)?.user_id;
+            if (typeof uid === 'string') online.add(uid);
+          });
         });
-      });
-      setOnlineUserIds(online);
+        setOnlineUserIds(online);
+      } catch {
+        // ignore
+      }
     };
 
     const setup = async () => {
@@ -43,14 +49,15 @@ export function useUserPresence() {
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             refreshOnline();
-            setTimeout(refreshOnline, 500);
+            setTimeout(refreshOnline, 300);
+            setTimeout(refreshOnline, 1000);
           }
         });
     };
     setup();
 
-    // Periodic refresh so online/offline updates in real time even if join/leave is missed
-    const interval = setInterval(refreshOnline, 5000);
+    // Periodic refresh so online/offline updates in real time
+    const interval = setInterval(refreshOnline, 3000);
 
     return () => {
       mounted = false;
@@ -84,22 +91,25 @@ export function useTrackUserPresence() {
       });
     };
 
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          await supabase.realtime.setAuth(session.access_token);
-        }
-        await trackPresence();
-      }
-    });
+    let heartbeat: ReturnType<typeof setInterval> | null = null;
 
-    const heartbeat = setInterval(() => {
-      trackPresence();
-    }, 25_000);
+    const setup = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        await supabase.realtime.setAuth(session.access_token);
+      }
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await trackPresence();
+          if (heartbeat) clearInterval(heartbeat);
+          heartbeat = setInterval(trackPresence, 25_000);
+        }
+      });
+    };
+    setup();
 
     return () => {
-      clearInterval(heartbeat);
+      if (heartbeat) clearInterval(heartbeat);
       supabase.removeChannel(channel);
     };
   }, [user?.id]);

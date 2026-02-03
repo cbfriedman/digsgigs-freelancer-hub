@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 /**
  * Returns the count of messages unread by the current user (sent by others, read_at is null).
@@ -7,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export function useUnreadMessagesCount() {
   const [count, setCount] = useState(0);
+
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -76,24 +79,33 @@ export function useUnreadMessagesCount() {
       }
     };
 
-    fetchCount();
-
-    const channel = supabase
-      .channel("unread-messages-count")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-        },
-        () => fetchCount()
-      )
-      .subscribe();
+    const setup = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) await supabase.realtime.setAuth(session.access_token);
+      await fetchCount();
+      const ch = supabase
+        .channel("unread-messages-count")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "messages",
+          },
+          () => fetchCount()
+        )
+        .subscribe();
+      channelRef.current = ch;
+      return ch;
+    };
+    setup();
 
     return () => {
       mounted = false;
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, []);
 

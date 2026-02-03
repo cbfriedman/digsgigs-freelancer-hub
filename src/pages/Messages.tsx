@@ -82,6 +82,8 @@ interface Conversation {
   last_message_sender_id?: string | null;
   /** Partner avatar URL (digger profile image or null for consumers) */
   partner_avatar_url?: string | null;
+  /** Number of messages in this conversation not read by current user (from get_my_conversations) */
+  unread_count?: number;
 }
 
 interface Message {
@@ -129,6 +131,8 @@ export default function Messages() {
   const [listSearch, setListSearch] = useState("");
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const currentUserIdRef = useRef<string | undefined>(undefined);
+  const selectedConversationRef = useRef<string | null>(null);
+  const conversationsRef = useRef<Conversation[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = userRoles.includes("admin");
@@ -326,6 +330,12 @@ export default function Messages() {
   useEffect(() => {
     currentUserIdRef.current = currentUser?.id;
   }, [currentUser?.id]);
+  useEffect(() => {
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
 
   const { proxyEmail: myProxyEmail } = useProxyEmail(currentUser?.id || null);
 
@@ -338,6 +348,12 @@ export default function Messages() {
       loadConversations();
     }
   }, [currentUser, isAdmin]);
+
+  // Sync selected conversation from URL (e.g. after clicking a message notification)
+  useEffect(() => {
+    const q = searchParams.get("conversation");
+    if (q && q !== selectedConversation) setSelectedConversation(q);
+  }, [searchParams]);
 
   // Select the most recently chatted conversation by default when opening the page (no URL param)
   useEffect(() => {
@@ -370,6 +386,68 @@ export default function Messages() {
       cleanup?.();
     };
   }, [selectedConversation]);
+
+  // Subscribe to new messages in ANY conversation so we can alert when user is viewing another chat
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    let mounted = true;
+    const channel = supabase.channel("messages:all");
+    const setup = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) await supabase.realtime.setAuth(session.access_token);
+      channel
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages" },
+          (payload) => {
+            if (!mounted) return;
+            const msg = payload.new as { id: string; conversation_id: string; sender_id: string; content?: string };
+            if (msg.sender_id === currentUserIdRef.current) return;
+            const selectedId = selectedConversationRef.current;
+            const convs = conversationsRef.current;
+            const conv = convs.find((c) => c.id === msg.conversation_id);
+            const getPartnerName = (c: Conversation) => {
+              if (!c) return "Someone";
+              if (c.admin_id) {
+                return currentUserIdRef.current === c.admin_id
+                  ? (c.consumer_profile?.full_name?.trim() || "User")
+                  : "Support";
+              }
+              return currentUserIdRef.current === c.consumer_id
+                ? (c.digger_profiles?.handle || "Someone")
+                : "Client";
+            };
+            const partnerName = getPartnerName(conv);
+            if (msg.conversation_id !== selectedId) {
+              playNotificationSound();
+              toast({
+                title: "New message",
+                description: `${partnerName}: ${(msg.content ?? "").slice(0, 80)}${(msg.content?.length ?? 0) > 80 ? "…" : ""}`,
+              });
+              if (typeof window !== "undefined" && "Notification" in window && document.hidden) {
+                try {
+                  if (Notification.permission === "granted") {
+                    new Notification(`Message from ${partnerName}`, {
+                      body: (msg.content ?? "").slice(0, 100),
+                      tag: `msg-${msg.conversation_id}`,
+                    });
+                  }
+                } catch {
+                  // ignore
+                }
+              }
+              loadConversations();
+            }
+          }
+        )
+        .subscribe();
+    };
+    setup();
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser?.id, toast]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -442,6 +520,7 @@ export default function Messages() {
         admin_avatar_url?: string | null;
         last_message_content?: string | null;
         last_message_sender_id?: string | null;
+        unread_count?: number;
       }>) || [];
 
       const list: Conversation[] = raw.map((c) => {
@@ -468,6 +547,7 @@ export default function Messages() {
           last_message_content: c.last_message_content ?? null,
           last_message_sender_id: c.last_message_sender_id ?? null,
           partner_avatar_url: partnerAvatarUrl,
+          unread_count: typeof c.unread_count === "number" ? c.unread_count : 0,
         };
       });
 
@@ -513,6 +593,7 @@ export default function Messages() {
         await supabase.rpc("mark_conversation_messages_read" as any, {
           _conversation_id: conversationId,
         });
+        loadConversations(); // refresh list so unread badge and bold state update
       }
     } catch (error: any) {
       toast({
@@ -963,6 +1044,8 @@ export default function Messages() {
                         : null;
                       const isStarred = starredIds.includes(conv.id);
                       const isPinned = pinnedIds.includes(conv.id);
+                      const unreadCount = conv.unread_count ?? 0;
+                      const hasUnread = unreadCount > 0;
                       return (
                         <div
                           key={conv.id}
@@ -997,13 +1080,24 @@ export default function Messages() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="font-medium text-foreground truncate shrink min-w-0">
+                              <p className={cn(
+                                "truncate shrink min-w-0 text-foreground",
+                                hasUnread ? "font-semibold" : "font-medium"
+                              )}>
                                 {partnerName}
                               </p>
                               <div className="flex items-center gap-0.5 shrink-0">
                                 <span className="text-xs text-muted-foreground">
                                   {format(new Date(conv.updated_at), "M/d/yy")}
                                 </span>
+                                {hasUnread && (
+                                  <span
+                                    className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0"
+                                    title={`${unreadCount} unread`}
+                                  >
+                                    {unreadCount > 99 ? "99+" : unreadCount}
+                                  </span>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -1034,14 +1128,14 @@ export default function Messages() {
                                 </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={(e) => e.stopPropagation()}
-                                      title="More options"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="More options"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -1098,7 +1192,10 @@ export default function Messages() {
                               {roleOrTitle}
                             </p>
                             {lastSnippet && (
-                              <p className="text-xs text-muted-foreground/90 truncate mt-0.5">
+                              <p className={cn(
+                                "text-xs truncate mt-0.5",
+                                hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90"
+                              )}>
                                 {lastSnippet.length > 42 ? `${lastSnippet.slice(0, 42)}...` : lastSnippet}
                               </p>
                             )}
