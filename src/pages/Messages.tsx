@@ -77,6 +77,7 @@ export default function Messages() {
   const [userSearch, setUserSearch] = useState("");
   const [userSearchResults, setUserSearchResults] = useState<{ id: string; full_name: string | null }[]>([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [startingChatUserId, setStartingChatUserId] = useState<string | null>(null);
 
   const isAdmin = userRoles.includes("admin");
 
@@ -342,37 +343,47 @@ export default function Messages() {
   // Admin: find or create admin conversation and open it
   const startOrOpenAdminChat = async (consumerId: string) => {
     if (!currentUser?.id || !isAdmin) return;
+    if (startingChatUserId) return; // prevent double-click
+    setStartingChatUserId(consumerId);
     try {
-      const { data: existing } = await supabase
+      const { data: existing, error: fetchError } = await supabase
         .from("conversations")
         .select("id")
         .eq("admin_id", currentUser.id)
         .eq("consumer_id", consumerId)
         .maybeSingle();
+      if (fetchError) throw fetchError;
       if (existing?.id) {
         setSelectedConversation(existing.id);
         setAdminChatOpen(false);
         setUserSearch("");
         setUserSearchResults([]);
+        toast({ title: "Chat opened", description: "Conversation selected." });
         return;
       }
       const { data: conversationId, error } = await supabase.rpc("create_admin_conversation", {
         target_user_id: consumerId,
       });
       if (error) throw error;
-      if (conversationId) {
+      const id = Array.isArray(conversationId) ? conversationId?.[0] : conversationId;
+      if (id) {
         await loadConversations();
-        setSelectedConversation(conversationId);
+        setSelectedConversation(id);
         setAdminChatOpen(false);
         setUserSearch("");
         setUserSearchResults([]);
+        toast({ title: "Chat started", description: "You can start messaging now." });
+      } else {
+        throw new Error("No conversation id returned");
       }
     } catch (e: any) {
       toast({
         title: "Could not start chat",
-        description: e?.message || "Please try again",
+        description: e?.message || e?.error_description || "Please try again",
         variant: "destructive",
       });
+    } finally {
+      setStartingChatUserId(null);
     }
   };
 
@@ -448,12 +459,21 @@ export default function Messages() {
                           <button
                             key={u.id}
                             type="button"
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted text-left text-sm"
-                            onClick={() => startOrOpenAdminChat(u.id)}
+                            disabled={startingChatUserId !== null}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted disabled:opacity-50 text-left text-sm cursor-pointer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              startOrOpenAdminChat(u.id);
+                            }}
                           >
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span>{u.full_name?.trim() || "Unnamed"}</span>
-                            <span className="text-xs text-muted-foreground">({u.id.slice(0, 8)}…)</span>
+                            <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="flex-1 truncate">{u.full_name?.trim() || "Unnamed"}</span>
+                            {startingChatUserId === u.id ? (
+                              <span className="text-xs text-muted-foreground">Opening…</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">({u.id.slice(0, 8)}…)</span>
+                            )}
                           </button>
                         ))}
                       </ScrollArea>
