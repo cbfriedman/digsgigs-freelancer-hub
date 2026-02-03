@@ -14,7 +14,7 @@ const corsHeaders = {
 
 interface WelcomeEmailRequest {
   userId: string;
-  email: string;
+  email?: string;
   name?: string;
   role?: 'digger' | 'gigger';
   utmSource?: string;
@@ -49,10 +49,24 @@ const handler = async (req: Request): Promise<Response> => {
 
     const resend = new Resend(resendApiKey);
 
-    const { userId, email, name, role = 'gigger', utmSource, utmMedium, utmCampaign }: WelcomeEmailRequest = await req.json();
+    let { userId, email, name, role = 'gigger', utmSource, utmMedium, utmCampaign }: WelcomeEmailRequest = await req.json();
+
+    // If email missing but userId provided, look up from auth and profiles (e.g. when triggered by DB webhook)
+    if ((!email || !name) && userId) {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+      if (authUser?.user) {
+        if (!email) email = authUser.user.email ?? undefined;
+        if (!name) name = (authUser.user.user_metadata?.full_name as string) || (authUser.user.user_metadata?.name as string) || undefined;
+      }
+      if (!email) {
+        const { data: profile } = await supabaseAdmin.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+        if (profile?.full_name && !name) name = profile.full_name;
+      }
+    }
 
     if (!email) {
-      console.error('Email is missing from request');
+      console.error('Email is missing from request and could not be resolved from userId');
       return new Response(
         JSON.stringify({ error: 'Email is required' }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -1302,39 +1302,30 @@ const Register = () => {
 
       toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
       
-      // Send welcome email in the background (non-blocking)
-      // Wrap in try-catch to prevent CORS errors from blocking registration
+      // Send welcome email and wait for completion (or timeout) so redirect doesn't cancel the request
       const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
-      Promise.resolve().then(async () => {
-        try {
-          console.log('Attempting to send welcome email:', { email, name: fullName, role: primaryRole, userId: verifiedUserId });
-          const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-            body: {
-              userId: verifiedUserId,
-              email,
-              name: fullName,
-              role: primaryRole,
-              utmSource: getCampaignData()?.utm_source,
-              utmMedium: getCampaignData()?.utm_medium,
-              utmCampaign: getCampaignData()?.utm_campaign,
-            },
-          });
-          
-          if (error) {
-            console.error('Welcome email function error:', error);
-            // Log to console for debugging but don't block registration
-          } else {
-            console.log('Welcome email sent successfully:', data);
-          }
-        } catch (err: any) {
-          // Log error details for debugging
-          console.error('Welcome email failed (non-critical):', {
-            message: err?.message,
-            error: err,
-            stack: err?.stack,
-          });
+      const welcomeEmailPayload = {
+        userId: verifiedUserId,
+        email,
+        name: fullName,
+        role: primaryRole,
+        utmSource: getCampaignData()?.utm_source,
+        utmMedium: getCampaignData()?.utm_medium,
+        utmCampaign: getCampaignData()?.utm_campaign,
+      };
+      const welcomeEmailSent = supabase.functions.invoke('send-welcome-email', { body: welcomeEmailPayload });
+      const welcomeEmailTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Welcome email timeout')), 12000)
+      );
+      try {
+        const { error } = await Promise.race([welcomeEmailSent, welcomeEmailTimeout]);
+        if (error) console.error('Welcome email function error:', error);
+        else console.log('Welcome email sent successfully');
+      } catch (err: any) {
+        if (err?.message !== 'Welcome email timeout') {
+          console.error('Welcome email failed (non-critical):', err?.message ?? err);
         }
-      });
+      }
       
       // Wait for roles to be created and verified, then refresh auth context and navigate
       // Use a longer delay to ensure database operations complete
