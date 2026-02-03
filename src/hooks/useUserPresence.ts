@@ -49,8 +49,12 @@ export function useUserPresence() {
     };
     setup();
 
+    // Periodic refresh so online/offline updates in real time even if join/leave is missed
+    const interval = setInterval(refreshOnline, 5000);
+
     return () => {
       mounted = false;
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, []);

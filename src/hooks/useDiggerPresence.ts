@@ -31,10 +31,18 @@ export const useDiggerPresence = (diggerId?: string) => {
       setOnlineDiggers(online);
     };
 
+    const refreshOnlineSafe = () => {
+      try {
+        refreshOnline();
+      } catch {
+        // ignore
+      }
+    };
+
     channel
-      .on('presence', { event: 'sync' }, refreshOnline)
-      .on('presence', { event: 'join' }, refreshOnline)
-      .on('presence', { event: 'leave' }, refreshOnline)
+      .on('presence', { event: 'sync' }, refreshOnlineSafe)
+      .on('presence', { event: 'join' }, refreshOnlineSafe)
+      .on('presence', { event: 'leave' }, refreshOnlineSafe)
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED' && user && diggerId) {
           // Skip if in sign-in OTP flow
@@ -73,7 +81,11 @@ export const useDiggerPresence = (diggerId?: string) => {
         }
       });
 
+    // Real-time: periodic refresh so online/offline updates even if join/leave is missed
+    const interval = setInterval(refreshOnlineSafe, 5000);
+
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [user, diggerId]);
@@ -87,6 +99,7 @@ export const useDiggerPresence = (diggerId?: string) => {
 // Hook for tracking current digger's presence globally
 export const useTrackDiggerPresence = () => {
   const { user } = useAuth();
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -103,6 +116,15 @@ export const useTrackDiggerPresence = () => {
       config: { presence: { key: user.id } },
     });
     let diggerProfileId: string | null = null;
+
+    const trackPresence = () => {
+      if (diggerProfileId) {
+        channel.track({
+          digger_id: diggerProfileId,
+          online_at: new Date().toISOString(),
+        });
+      }
+    };
 
     const setupPresence = async () => {
       try {
@@ -157,6 +179,9 @@ export const useTrackDiggerPresence = () => {
                 digger_id: diggerProfileId,
                 online_at: new Date().toISOString(),
               });
+              // Heartbeat so we stay visible as online in real time
+              if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+              heartbeatRef.current = setInterval(trackPresence, 25_000);
             }
           });
         }
@@ -169,6 +194,10 @@ export const useTrackDiggerPresence = () => {
     setupPresence();
 
     return () => {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
       supabase.removeChannel(channel);
     };
   }, [user]);
