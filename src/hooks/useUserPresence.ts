@@ -23,8 +23,8 @@ export function useUserPresence() {
       if (!mounted) return;
       const state = channel.presenceState();
       const online = new Set<string>();
-      Object.values(state).forEach((presences: { user_id?: string }[]) => {
-        presences.forEach((p) => {
+      Object.values(state).forEach((presences) => {
+        (presences as Array<{ user_id?: string }>).forEach((p) => {
           if (p.user_id) online.add(p.user_id);
         });
       });
