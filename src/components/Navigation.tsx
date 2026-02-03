@@ -238,10 +238,40 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       </div>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
-                        <User className="h-4 w-4 mr-2" />
-                        View Profile
+                      {/* Dark Mode - prevent close on toggle */}
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default focus:bg-transparent focus:outline-none">
+                        <ThemeToggle className="w-full" />
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {/* Role selection */}
+                      {userRoles.length > 0 && (
+                        <>
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Switch Role</DropdownMenuLabel>
+                          {userRoles.map((role) => (
+                            <DropdownMenuItem
+                              key={role}
+                              onClick={() => switchRole(role)}
+                              className={cn(
+                                "cursor-pointer transition-colors",
+                                activeRole === role && "bg-accent/50"
+                              )}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-2">
+                                  <span>{roleConfig[role].emoji}</span>
+                                  <span>{roleConfig[role].label}</span>
+                                </div>
+                                {activeRole === role && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                    Active
+                                  </Badge>
+                                )}
+                              </div>
+                            </DropdownMenuItem>
+                          ))}
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
                       <DropdownMenuItem onClick={() => navigate('/role-dashboard')} className="cursor-pointer">
                         <LayoutDashboard className="h-4 w-4 mr-2" />
                         Dashboard
