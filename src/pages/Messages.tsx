@@ -287,7 +287,8 @@ export default function Messages() {
     }
   };
 
-  const getConversationPartner = (conv: Conversation) => {
+  const getConversationPartner = (conv: Conversation | undefined) => {
+    if (!conv) return "Unknown";
     if (conv.admin_id) {
       if (currentUser?.id === conv.admin_id) {
         return conv.consumer_profile?.full_name?.trim() || "User";
@@ -532,7 +533,7 @@ export default function Messages() {
                               </span>
                             </div>
                             <p className="text-sm text-muted-foreground truncate mt-0.5">
-                              {conv.admin_id ? "Support chat" : (conv.gigs?.title || "General inquiry")}
+                              {conv?.admin_id ? "Support chat" : (conv?.gigs?.title || "General inquiry")}
                             </p>
                           </div>
                         </div>
@@ -555,20 +556,23 @@ export default function Messages() {
                       <Avatar className="h-10 w-10 ring-2 ring-border/50">
                         <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                           {getConversationPartner(
-                            conversations.find((c) => c.id === selectedConversation)!
+                            conversations.find((c) => c.id === selectedConversation)
                           )[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <h3 className="font-semibold text-foreground">
                           {getConversationPartner(
-                            conversations.find((c) => c.id === selectedConversation)!
+                            conversations.find((c) => c.id === selectedConversation)
                           )}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {conversations.find((c) => c.id === selectedConversation)?.admin_id
-                            ? "Support chat"
-                            : (conversations.find((c) => c.id === selectedConversation)?.gigs?.title || "General inquiry")}
+                          {(() => {
+                            const sel = conversations.find((c) => c.id === selectedConversation);
+                            return sel?.admin_id
+                              ? "Support chat"
+                              : (sel?.gigs?.title || "General inquiry");
+                          })()}
                         </p>
                       </div>
                     </div>
