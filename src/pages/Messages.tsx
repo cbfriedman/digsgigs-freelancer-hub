@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, 
   MoreHorizontal, ExternalLink, Briefcase, FileCheck, Hourglass, 
-  ChevronDown, X, Star 
+  ChevronDown, X, Star, Pin, Trash2 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -31,6 +31,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import PageLayout from "@/components/layout/PageLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -148,6 +158,16 @@ export default function Messages() {
       return [];
     }
   });
+  const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
+    try {
+      const key = currentUser?.id ? `messages_pinned_${currentUser.id}` : null;
+      if (!key) return [];
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -167,6 +187,15 @@ export default function Messages() {
         setHiddenIds(raw ? (JSON.parse(raw) as string[]) : []);
       } catch {
         setHiddenIds([]);
+      }
+    }
+    const pk = getStorageKey("pinned");
+    if (pk) {
+      try {
+        const raw = localStorage.getItem(pk);
+        setPinnedIds(raw ? (JSON.parse(raw) as string[]) : []);
+      } catch {
+        setPinnedIds([]);
       }
     }
   }, [currentUser?.id]);
@@ -193,6 +222,69 @@ export default function Messages() {
     });
     if (selectedConversation === conversationId) setSelectedConversation(null);
     toast({ title: "Conversation hidden", description: "You can restore it from filters later." });
+  };
+
+  const togglePinned = (conversationId: string) => {
+    const key = getStorageKey("pinned");
+    if (!key) return;
+    setPinnedIds((prev) => {
+      const wasPinned = prev.includes(conversationId);
+      const next = wasPinned ? prev.filter((id) => id !== conversationId) : [...prev, conversationId];
+      localStorage.setItem(key, JSON.stringify(next));
+      toast({ title: wasPinned ? "Unpinned" : "Pinned to top" });
+      return next;
+    });
+  };
+
+  const [deleteConversationId, setDeleteConversationId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const confirmDeleteConversation = async () => {
+    if (!deleteConversationId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", deleteConversationId);
+      if (error) throw error;
+      if (selectedConversation === deleteConversationId) setSelectedConversation(null);
+      const sk = getStorageKey("starred");
+      const pk = getStorageKey("pinned");
+      const hk = getStorageKey("hidden");
+      if (sk) {
+        setStarredIds((prev) => {
+          const next = prev.filter((id) => id !== deleteConversationId);
+          localStorage.setItem(sk, JSON.stringify(next));
+          return next;
+        });
+      }
+      if (pk) {
+        setPinnedIds((prev) => {
+          const next = prev.filter((id) => id !== deleteConversationId);
+          localStorage.setItem(pk, JSON.stringify(next));
+          return next;
+        });
+      }
+      if (hk) {
+        setHiddenIds((prev) => {
+          const next = prev.filter((id) => id !== deleteConversationId);
+          localStorage.setItem(hk, JSON.stringify(next));
+          return next;
+        });
+      }
+      await loadConversations();
+      toast({ title: "Chat deleted" });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Could not delete chat",
+        description: err?.message ?? "Please try again.",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteConversationId(null);
+    }
   };
 
   const [showHidden, setShowHidden] = useState(false);
@@ -222,7 +314,14 @@ export default function Messages() {
     : conversations
   )
     .filter((c) => showHidden || !hiddenIds.includes(c.id))
-    .filter((c) => listFilter === "all" || starredIds.includes(c.id));
+    .filter((c) => listFilter === "all" || starredIds.includes(c.id))
+    .sort((a, b) => {
+      const aPin = pinnedIds.includes(a.id);
+      const bPin = pinnedIds.includes(b.id);
+      if (aPin && !bPin) return -1;
+      if (!aPin && bPin) return 1;
+      return 0;
+    });
 
   useEffect(() => {
     currentUserIdRef.current = currentUser?.id;
@@ -863,6 +962,7 @@ export default function Messages() {
                         ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content
                         : null;
                       const isStarred = starredIds.includes(conv.id);
+                      const isPinned = pinnedIds.includes(conv.id);
                       return (
                         <div
                           key={conv.id}
@@ -918,6 +1018,20 @@ export default function Messages() {
                                     className={`h-4 w-4 ${isStarred ? "fill-amber-400 text-amber-500" : ""}`}
                                   />
                                 </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={`h-7 w-7 transition-opacity ${isPinned ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    togglePinned(conv.id);
+                                  }}
+                                  title={isPinned ? "Unpin" : "Pin to top"}
+                                >
+                                  <Pin
+                                    className={`h-4 w-4 ${isPinned ? "fill-muted-foreground text-muted-foreground" : ""}`}
+                                  />
+                                </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button
@@ -931,15 +1045,23 @@ export default function Messages() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleStarred(conv.id);
-                                      }}
-                                    >
-                                      {isStarred ? "Remove from Favorites" : "Add to Favorites"}
-                                    </DropdownMenuItem>
-                                    {hiddenIds.includes(conv.id) ? (
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleStarred(conv.id);
+                                    }}
+                                  >
+                                    {isStarred ? "Remove from Favorites" : "Add to Favorites"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      togglePinned(conv.id);
+                                    }}
+                                  >
+                                    {isPinned ? "Unpin from top" : "Pin to top"}
+                                  </DropdownMenuItem>
+                                  {hiddenIds.includes(conv.id) ? (
                                       <DropdownMenuItem
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -958,6 +1080,16 @@ export default function Messages() {
                                         Hide
                                       </DropdownMenuItem>
                                     )}
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteConversationId(conv.id);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete chat
+                                  </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
@@ -1183,6 +1315,30 @@ export default function Messages() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!deleteConversationId} onOpenChange={(open) => !open && setDeleteConversationId(null)}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete chat?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this conversation and all messages. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDeleteConversation();
+              }}
+            >
+              {isDeleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageLayout>
   );
 }

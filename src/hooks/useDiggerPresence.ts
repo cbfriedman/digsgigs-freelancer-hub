@@ -12,83 +12,55 @@ export const useDiggerPresence = (diggerId?: string) => {
   );
 
   useEffect(() => {
+    let mounted = true;
+    // Use a unique key for observer so we don't conflict with tracker (same user = same key)
     const channel = supabase.channel('digger-presence', {
-      config: { presence: { key: user?.id ?? observerKeyRef.current } },
+      config: { presence: { key: observerKeyRef.current } },
     });
 
     const refreshOnline = () => {
-      const state = channel.presenceState();
-      const online = new Set<string>();
-
-      Object.values(state).forEach((presences: any) => {
-        presences.forEach((presence: any) => {
-          if (presence.digger_id) {
-            online.add(presence.digger_id);
-          }
-        });
-      });
-
-      setOnlineDiggers(online);
-    };
-
-    const refreshOnlineSafe = () => {
+      if (!mounted) return;
       try {
-        refreshOnline();
+        const state = channel.presenceState();
+        const online = new Set<string>();
+        Object.values(state).forEach((presences: any) => {
+          presences.forEach((presence: any) => {
+            if (presence.digger_id) online.add(presence.digger_id);
+          });
+        });
+        setOnlineDiggers(online);
       } catch {
         // ignore
       }
     };
 
-    channel
-      .on('presence', { event: 'sync' }, refreshOnlineSafe)
-      .on('presence', { event: 'join' }, refreshOnlineSafe)
-      .on('presence', { event: 'leave' }, refreshOnlineSafe)
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED' && user && diggerId) {
-          // Skip if in sign-in OTP flow
-          const isInOtpFlow = sessionStorage.getItem('signInOtpFlow') === 'true';
-          if (isInOtpFlow) {
-            return;
+    const setup = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        await supabase.realtime.setAuth(session.access_token);
+      }
+      channel
+        .on('presence', { event: 'sync' }, refreshOnline)
+        .on('presence', { event: 'join' }, refreshOnline)
+        .on('presence', { event: 'leave' }, refreshOnline)
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            refreshOnline();
+            setTimeout(refreshOnline, 500);
           }
-
-          // Track this digger's presence if it's their own profile
-          try {
-            const { data: diggerProfile, error } = await supabase
-              .from('digger_profiles')
-              .select('id')
-              .eq('user_id', user.id)
-              .single();
-
-            // Handle 406 or other errors gracefully
-            if (error) {
-              if (error.code === 'PGRST116' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
-                return;
-              }
-              console.warn('Error fetching digger profile for presence:', error);
-              return;
-            }
-
-            if (diggerProfile && diggerProfile.id === diggerId) {
-              await channel.track({
-                digger_id: diggerId,
-                online_at: new Date().toISOString(),
-              });
-            }
-          } catch (error) {
-            // Silently fail - presence tracking is not critical
-            console.warn('Error setting up digger presence:', error);
-          }
-        }
-      });
+        });
+    };
+    setup();
 
     // Real-time: periodic refresh so online/offline updates even if join/leave is missed
-    const interval = setInterval(refreshOnlineSafe, 5000);
+    const interval = setInterval(refreshOnline, 5000);
 
     return () => {
+      mounted = false;
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [user, diggerId]);
+  }, []);
 
   return {
     isOnline: diggerId ? onlineDiggers.has(diggerId) : false,
@@ -175,6 +147,10 @@ export const useTrackDiggerPresence = () => {
           
           channel.subscribe(async (status) => {
             if (status === 'SUBSCRIBED' && diggerProfileId) {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.access_token) {
+                await supabase.realtime.setAuth(session.access_token);
+              }
               await channel.track({
                 digger_id: diggerProfileId,
                 online_at: new Date().toISOString(),
