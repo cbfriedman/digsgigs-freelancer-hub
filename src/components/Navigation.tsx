@@ -11,6 +11,9 @@ import {
   Home, 
   LayoutDashboard, 
   LogOut,
+  MessageCircle,
+  BellRing,
+  FolderOpen,
   Sparkles
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -18,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCart } from "@/contexts/CartContext";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
@@ -58,6 +63,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [scrolled, setScrolled] = useState(false);
   const { user, userRoles, activeRole, switchRole, signOut } = useAuth();
   const { cartCount } = useCart();
+  const { unreadCount: notificationUnreadCount } = useNotifications();
+  const unreadMessagesCount = useUnreadMessagesCount();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
@@ -139,22 +146,21 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
         )}
       >
         <div className="container mx-auto px-4 sm:px-6">
-          <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
-            <div 
-              className="flex items-center gap-3 cursor-pointer group"
-              onClick={() => navigate("/")}
-            >
-              <img 
-                src={logo} 
-                alt="Digs & Gigs" 
-                className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
-              />
-            </div>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-1 lg:gap-2">
-              {/* Primary Nav Links */}
+          <div className="flex h-16 items-center justify-between gap-4">
+            {/* Left: Logo + menu group (Home, Hire, Find work, Pricing) — right next to logo */}
+            <div className="flex items-center min-w-0 gap-2 lg:gap-3">
+              <div 
+                className="flex-shrink-0 cursor-pointer group"
+                onClick={() => navigate("/")}
+              >
+                <img 
+                  src={logo} 
+                  alt="Digs & Gigs" 
+                  className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                />
+              </div>
+              {/* Nav links — immediately after logo (desktop only) */}
+              <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
               <button
                 onClick={() => navigate("/")}
                 className={cn(navLinkClass, isActive("/") && navLinkActiveClass)}
@@ -206,44 +212,48 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Why Digs & Gigs */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
-                    Why Digs & Gigs
-                    <ChevronDown className="h-4 w-4 opacity-70" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate("/about")} className="cursor-pointer">
-                    About
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/how-it-works")} className="cursor-pointer">
-                    How it works
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/faq")} className="cursor-pointer">
-                    FAQ
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/compare")} className="cursor-pointer">
-                    Compare
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Why Digs & Gigs — shown only when not signed in */}
+              {!user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
+                      Why Digs & Gigs
+                      <ChevronDown className="h-4 w-4 opacity-70" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuItem onClick={() => navigate("/about")} className="cursor-pointer">
+                      About
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/how-it-works")} className="cursor-pointer">
+                      How it works
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/faq")} className="cursor-pointer">
+                      FAQ
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/compare")} className="cursor-pointer">
+                      Compare
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
-              {/* What's new */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
-                    What&apos;s new
-                    <ChevronDown className="h-4 w-4 opacity-70" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate("/blog")} className="cursor-pointer">
-                    Blog
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* What's new — shown only when not signed in */}
+              {!user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
+                      What&apos;s new
+                      <ChevronDown className="h-4 w-4 opacity-70" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuItem onClick={() => navigate("/blog")} className="cursor-pointer">
+                      Blog
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
               {/* Pricing - direct link */}
               <button
@@ -262,7 +272,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   Admin
                 </button>
               )}
+              </nav>
+            </div>
 
+            {/* Right: Dark mode, Sign In/Sign up or Messages, Notifications, Folder, Avatar, Cart */}
+            <div className="hidden md:flex items-center gap-2 flex-shrink-0 ml-auto">
               {/* When not logged in: Dark Mode in bar (no avatar dropdown) */}
               {!user && (
                 <>
@@ -293,6 +307,46 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
+                  {/* Messages — only when signed in */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => navigate("/messages")}
+                    title="Messages"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    {unreadMessagesCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+                        {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                      </span>
+                    )}
+                  </Button>
+                  {/* Notifications — only when signed in */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => navigate("/notifications")}
+                    title="Notifications"
+                  >
+                    <BellRing className="h-4 w-4" />
+                    {notificationUnreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+                        {notificationUnreadCount > 9 ? "9+" : notificationUnreadCount}
+                      </span>
+                    )}
+                  </Button>
+                  {/* Project folders (My Gigs) — only when signed in */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => navigate("/my-gigs")}
+                    title="My projects"
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                  </Button>
                   {/* User Menu (avatar dropdown: Dark Mode, Role, Dashboard, Sign Out) */}
                   <DropdownMenu modal={true}>
                     <DropdownMenuTrigger asChild>
@@ -394,6 +448,52 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
             {/* Mobile Navigation */}
             <div className="flex md:hidden items-center gap-1">
+              {/* Messages - Mobile (only when signed in) */}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate("/messages")}
+                  title="Messages"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+                      {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                    </span>
+                  )}
+                </Button>
+              )}
+              {/* Notifications - Mobile (only when signed in) */}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate("/notifications")}
+                  title="Notifications"
+                >
+                  <BellRing className="h-4 w-4" />
+                  {notificationUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+                      {notificationUnreadCount > 9 ? "9+" : notificationUnreadCount}
+                    </span>
+                  )}
+                </Button>
+              )}
+              {/* Project folders - Mobile (only when signed in) */}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate("/my-gigs")}
+                  title="My projects"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                </Button>
+              )}
               {/* Cart - Mobile */}
               <Button
                 variant="ghost"
@@ -533,7 +633,59 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           }}
                         >
                           <LayoutDashboard className="h-4 w-4" />
-                          <span className="font-medium">Dashboard</span>
+                        <span className="font-medium">Dashboard</span>
+                        </button>
+                      )}
+
+                      {user && (
+                        <button
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                            isActive("/messages") 
+                              ? "bg-accent text-accent-foreground" 
+                              : "hover:bg-muted/50"
+                          )}
+                          onClick={() => {
+                            navigate("/messages");
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          <span className="font-medium">Messages</span>
+                        </button>
+                      )}
+                      {user && (
+                        <button
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                            isActive("/notifications") 
+                              ? "bg-accent text-accent-foreground" 
+                              : "hover:bg-muted/50"
+                          )}
+                          onClick={() => {
+                            navigate("/notifications");
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <BellRing className="h-4 w-4" />
+                          <span className="font-medium">Notifications</span>
+                        </button>
+                      )}
+                      {user && (
+                        <button
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                            isActive("/my-gigs") 
+                              ? "bg-accent text-accent-foreground" 
+                              : "hover:bg-muted/50"
+                          )}
+                          onClick={() => {
+                            navigate("/my-gigs");
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <FolderOpen className="h-4 w-4" />
+                          <span className="font-medium">My projects</span>
                         </button>
                       )}
 
