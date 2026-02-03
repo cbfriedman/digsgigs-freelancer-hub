@@ -263,10 +263,9 @@ export default function Messages() {
         return;
       }
 
-      const { error } = await supabase.from("messages").insert({
-        conversation_id: selectedConversation,
-        sender_id: currentUser.id,
-        content: validated.content,
+      const { error } = await supabase.rpc("send_message", {
+        _conversation_id: selectedConversation,
+        _content: validated.content,
       });
 
       if (error) throw error;

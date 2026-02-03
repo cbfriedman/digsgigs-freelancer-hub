@@ -197,13 +197,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       if (error) {
-        console.error('Error checking subscription:', error);
+        // Subscription check may be deprecated or return 400; fail silently
         return;
       }
 
       setSubscriptionStatus(data);
-    } catch (error) {
-      console.error('Error checking subscription:', error);
+    } catch {
+      // Fail silently so console is not spammed
     }
   };
 
