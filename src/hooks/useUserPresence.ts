@@ -14,11 +14,13 @@ export function useUserPresence() {
   );
 
   useEffect(() => {
+    let mounted = true;
     const channel = supabase.channel(USER_PRESENCE_CHANNEL, {
       config: { presence: { key: observerKeyRef.current } },
     });
 
     const refreshOnline = () => {
+      if (!mounted) return;
       const state = channel.presenceState();
       const online = new Set<string>();
       Object.values(state).forEach((presences: { user_id?: string }[]) => {
@@ -29,13 +31,26 @@ export function useUserPresence() {
       setOnlineUserIds(online);
     };
 
-    channel
-      .on('presence', { event: 'sync' }, refreshOnline)
-      .on('presence', { event: 'join' }, refreshOnline)
-      .on('presence', { event: 'leave' }, refreshOnline)
-      .subscribe();
+    const setup = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        await supabase.realtime.setAuth(session.access_token);
+      }
+      channel
+        .on('presence', { event: 'sync' }, refreshOnline)
+        .on('presence', { event: 'join' }, refreshOnline)
+        .on('presence', { event: 'leave' }, refreshOnline)
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            refreshOnline();
+            setTimeout(refreshOnline, 500);
+          }
+        });
+    };
+    setup();
 
     return () => {
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
@@ -57,16 +72,30 @@ export function useTrackUserPresence() {
     const channel = supabase.channel(USER_PRESENCE_CHANNEL, {
       config: { presence: { key: user.id } },
     });
+
+    const trackPresence = () => {
+      channel.track({
+        user_id: user.id,
+        online_at: new Date().toISOString(),
+      });
+    };
+
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        await channel.track({
-          user_id: user.id,
-          online_at: new Date().toISOString(),
-        });
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await supabase.realtime.setAuth(session.access_token);
+        }
+        await trackPresence();
       }
     });
 
+    const heartbeat = setInterval(() => {
+      trackPresence();
+    }, 25_000);
+
     return () => {
+      clearInterval(heartbeat);
       supabase.removeChannel(channel);
     };
   }, [user?.id]);

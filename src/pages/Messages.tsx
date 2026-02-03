@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, 
   MoreHorizontal, ExternalLink, Briefcase, FileCheck, Hourglass, 
@@ -64,11 +64,14 @@ interface Conversation {
   digger_profiles: {
     handle: string;
     profession: string;
+    profile_image_url?: string | null;
   } | null;
   consumer_profile?: { full_name: string | null } | null;
   /** Last message preview (from get_my_conversations) */
   last_message_content?: string | null;
   last_message_sender_id?: string | null;
+  /** Partner avatar URL (digger profile image or null for consumers) */
+  partner_avatar_url?: string | null;
 }
 
 interface Message {
@@ -332,6 +335,7 @@ export default function Messages() {
         gig_title: string | null;
         digger_handle: string | null;
         digger_profession: string | null;
+        digger_profile_image_url?: string | null;
         last_message_content?: string | null;
         last_message_sender_id?: string | null;
       }>) || [];
@@ -347,10 +351,15 @@ export default function Messages() {
         gigs: c.gig_title != null ? { title: c.gig_title } : null,
         digger_profiles:
           c.digger_handle != null || c.digger_profession != null
-            ? { handle: c.digger_handle ?? "", profession: c.digger_profession ?? "" }
+            ? {
+                handle: c.digger_handle ?? "",
+                profession: c.digger_profession ?? "",
+                profile_image_url: c.digger_profile_image_url ?? null,
+              }
             : null,
         last_message_content: c.last_message_content ?? null,
         last_message_sender_id: c.last_message_sender_id ?? null,
+        partner_avatar_url: c.digger_profile_image_url ?? null,
       }));
 
       if (isAdmin) {
@@ -827,6 +836,9 @@ export default function Messages() {
                         >
                           <div className="relative shrink-0">
                             <Avatar className="h-11 w-11 ring-1 ring-border/50">
+                              {conv.partner_avatar_url && (
+                                <AvatarImage src={conv.partner_avatar_url} alt="" className="object-cover" />
+                              )}
                               <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
                                 {partnerName[0].toUpperCase()}
                               </AvatarFallback>
@@ -934,6 +946,7 @@ export default function Messages() {
                   partnerName={partnerName}
                   subtitle={getConversationSubtitle(selectedConv)}
                   isOnline={getPartnerIsOnline(selectedConv)}
+                  partnerAvatarUrl={selectedConv?.partner_avatar_url}
                   showBackButton={isMobile}
                   onBack={handleBackToList}
                   onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
@@ -996,6 +1009,9 @@ export default function Messages() {
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar className="h-12 w-12 shrink-0 ring-2 ring-background shadow-sm">
+                    {selectedConv?.partner_avatar_url && (
+                      <AvatarImage src={selectedConv.partner_avatar_url} alt="" className="object-cover" />
+                    )}
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                       {partnerName[0].toUpperCase()}
                     </AvatarFallback>

@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowLeft, Video, Calendar, MoreHorizontal, Phone } from "lucide-react";
@@ -8,6 +8,7 @@ interface ChatHeaderProps {
   partnerName: string;
   subtitle: string;
   isOnline?: boolean;
+  partnerAvatarUrl?: string | null;
   showBackButton?: boolean;
   onBack?: () => void;
   onMoreClick?: () => void;
@@ -18,6 +19,7 @@ export function ChatHeader({
   partnerName,
   subtitle,
   isOnline = false,
+  partnerAvatarUrl,
   showBackButton = false,
   onBack,
   onMoreClick,
@@ -47,6 +49,9 @@ export function ChatHeader({
         {/* Avatar */}
         <div className="relative shrink-0">
           <Avatar className="h-10 w-10 sm:h-11 sm:w-11 ring-2 ring-background shadow-sm">
+            {partnerAvatarUrl && (
+              <AvatarImage src={partnerAvatarUrl} alt="" className="object-cover" />
+            )}
             <AvatarFallback className="bg-primary/10 text-primary font-semibold">
               {initial}
             </AvatarFallback>
