@@ -162,14 +162,96 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 Home
               </button>
 
-              {user && (
-                <button
-                  onClick={() => navigate("/role-dashboard")}
-                  className={cn(navLinkClass, isActive("/role-dashboard") && navLinkActiveClass)}
-                >
-                  Dashboard
-                </button>
-              )}
+              {/* Hire / Find talent */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
+                    Hire freelancers
+                    <ChevronDown className="h-4 w-4 opacity-70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate("/post-gig")} className="cursor-pointer">
+                    Post a project
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/browse-diggers")} className="cursor-pointer">
+                    Browse diggers
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/browse-gigs")} className="cursor-pointer">
+                    Browse gigs
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Find work */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
+                    Find work
+                    <ChevronDown className="h-4 w-4 opacity-70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate("/browse-gigs")} className="cursor-pointer">
+                    Browse gigs
+                  </DropdownMenuItem>
+                  {user && (
+                    <DropdownMenuItem onClick={() => navigate("/my-bids")} className="cursor-pointer">
+                      My bids
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => navigate("/register?mode=signup&type=digger")} className="cursor-pointer">
+                    Become a digger
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Why Digs & Gigs */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
+                    Why Digs & Gigs
+                    <ChevronDown className="h-4 w-4 opacity-70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate("/about")} className="cursor-pointer">
+                    About
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/how-it-works")} className="cursor-pointer">
+                    How it works
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/faq")} className="cursor-pointer">
+                    FAQ
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/compare")} className="cursor-pointer">
+                    Compare
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* What's new */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
+                    What&apos;s new
+                    <ChevronDown className="h-4 w-4 opacity-70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate("/blog")} className="cursor-pointer">
+                    Blog
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Pricing - direct link */}
+              <button
+                onClick={() => navigate("/pricing")}
+                className={cn(navLinkClass, isActive("/pricing") && navLinkActiveClass)}
+              >
+                Pricing
+              </button>
 
               {user && userRoles.includes('admin') && (
                 <button
@@ -380,6 +462,61 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       >
                         <Home className="h-4 w-4" />
                         <span className="font-medium">Home</span>
+                      </button>
+
+                      <button
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                          isActive("/post-gig") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+                        )}
+                        onClick={() => { navigate("/post-gig"); setMobileMenuOpen(false); }}
+                      >
+                        <span className="font-medium">Post a project</span>
+                      </button>
+                      <button
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                          isActive("/browse-gigs") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+                        )}
+                        onClick={() => { navigate("/browse-gigs"); setMobileMenuOpen(false); }}
+                      >
+                        <span className="font-medium">Browse gigs</span>
+                      </button>
+                      <button
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                          isActive("/browse-diggers") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+                        )}
+                        onClick={() => { navigate("/browse-diggers"); setMobileMenuOpen(false); }}
+                      >
+                        <span className="font-medium">Browse diggers</span>
+                      </button>
+                      <button
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                          isActive("/about") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+                        )}
+                        onClick={() => { navigate("/about"); setMobileMenuOpen(false); }}
+                      >
+                        <span className="font-medium">About</span>
+                      </button>
+                      <button
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                          isActive("/blog") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+                        )}
+                        onClick={() => { navigate("/blog"); setMobileMenuOpen(false); }}
+                      >
+                        <span className="font-medium">Blog</span>
+                      </button>
+                      <button
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                          isActive("/pricing") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+                        )}
+                        onClick={() => { navigate("/pricing"); setMobileMenuOpen(false); }}
+                      >
+                        <span className="font-medium">Pricing</span>
                       </button>
 
                       {user && (
