@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowLeft, Video, Calendar, MoreHorizontal, Phone } from "lucide-react";
@@ -46,22 +46,28 @@ export function ChatHeader({
           </Button>
         )}
 
-        {/* Avatar */}
-        <div className="relative shrink-0">
-          <Avatar className="h-10 w-10 sm:h-11 sm:w-11 ring-2 ring-background shadow-sm">
-            {partnerAvatarUrl && (
-              <AvatarImage src={partnerAvatarUrl} alt="" className="object-cover" />
-            )}
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {initial}
-            </AvatarFallback>
-          </Avatar>
-          <span
-            className={cn(
-              "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
-              isOnline ? "bg-success" : "bg-muted-foreground/40"
-            )}
-          />
+        {/* Profile photo above avatar */}
+        <div className="relative shrink-0 flex flex-col items-center gap-1.5">
+          {partnerAvatarUrl && (
+            <img
+              src={partnerAvatarUrl}
+              alt=""
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover ring-2 ring-background shadow-sm"
+            />
+          )}
+          <div className="relative">
+            <Avatar className="h-10 w-10 sm:h-11 sm:w-11 ring-2 ring-background shadow-sm">
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                {initial}
+              </AvatarFallback>
+            </Avatar>
+            <span
+              className={cn(
+                "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
+                isOnline ? "bg-success" : "bg-muted-foreground/40"
+              )}
+            />
+          </div>
         </div>
 
         {/* Name and subtitle */}
