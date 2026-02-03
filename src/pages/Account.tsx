@@ -1,97 +1,67 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
-import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import PageLayout from "@/components/layout/PageLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2, Mail, CreditCard, BarChart3, Bell } from "lucide-react";
 
 export default function Account() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate("/register");
-      return;
     }
-    loadProfile();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
-  const loadProfile = async () => {
-    if (!user?.id) return;
-    try {
-      // Note: avatar_url is stored in profile-photos bucket, not in profiles table
-      // Check for existing photo in storage
-      const { data: files } = await supabase.storage
-        .from("profile-photos")
-        .list(user.id, { limit: 1 });
-      if (files && files.length > 0) {
-        const { data: urlData } = supabase.storage
-          .from("profile-photos")
-          .getPublicUrl(`${user.id}/${files[0].name}`);
-        if (urlData?.publicUrl) setAvatarUrl(urlData.publicUrl);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
-  const handlePhotoChange = async (url: string) => {
-    if (!user?.id) return;
-    // Photo is already uploaded via ProfilePhotoUpload component to storage
-    // Just update local state
-    setAvatarUrl(url);
-    toast({
-      title: "Profile photo updated",
-      description: "Your photo will appear in messages and across the site.",
-    });
-  };
+  if (!user) {
+    return null;
+  }
 
-  if (!user) return null;
+  const settingsLinks = [
+    { path: "/email-preferences", label: "Email preferences", icon: Mail, description: "Manage report frequency and notifications" },
+    { path: "/payment-methods", label: "Payment methods", icon: CreditCard, description: "Add or update payment methods" },
+    { path: "/lead-limits", label: "Lead limits", icon: BarChart3, description: "Set lead limits (diggers only)" },
+    { path: "/notifications", label: "Notifications", icon: Bell, description: "View and manage notifications" },
+  ];
 
   return (
-    <PageLayout>
-      <div className="max-w-2xl mx-auto py-6 px-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4 -ml-2"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <Card>
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>
-              Update your profile photo. It will appear in messages and anywhere your account is shown.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {loading ? (
-              <div className="h-24 rounded-lg bg-muted/50 animate-pulse" />
-            ) : (
-              <ProfilePhotoUpload
-                currentPhotoUrl={avatarUrl ?? undefined}
-                onPhotoChange={handlePhotoChange}
-              />
-            )}
-            <div className="text-sm text-muted-foreground border-t pt-4">
-              <p>Signed in as <strong className="text-foreground">{user.email}</strong></p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </PageLayout>
+    <div className="container max-w-2xl py-6 sm:py-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+          <CardDescription>
+            Manage your account and preferences.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {settingsLinks.map(({ path, label, icon: Icon, description }) => (
+            <Button
+              key={path}
+              variant="ghost"
+              className="h-auto w-full justify-start gap-3 px-4 py-3 text-left"
+              onClick={() => navigate(path)}
+            >
+              <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-medium">{label}</span>
+                <span className="text-xs text-muted-foreground">{description}</span>
+              </div>
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

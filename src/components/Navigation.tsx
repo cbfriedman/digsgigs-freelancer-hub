@@ -70,17 +70,19 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
 
-  // Fetch user profile photo and display name
+  // Fetch user profile photo and display name (header avatar = auth photo when available)
   useEffect(() => {
     if (!user?.id) {
       setUserPhotoUrl(null);
       setUserDisplayName(null);
       return;
     }
+    const authPhoto = (user as any).user_metadata?.avatar_url || (user as any).user_metadata?.picture || null;
+    setUserPhotoUrl(authPhoto);
     const fetchUserProfile = async () => {
       try {
-        // Get profile photo from digger_profiles (if user has digger role)
-        if (userRoles.includes('digger')) {
+        // Use auth photo for header; fallback to digger_profiles only if no auth photo
+        if (!authPhoto && userRoles.includes('digger')) {
           const { data: diggerProfile } = await supabase
             .from('digger_profiles')
             .select('profile_image_url')
@@ -106,7 +108,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
       }
     };
     fetchUserProfile();
-  }, [user?.id, userRoles]);
+  }, [user?.id, user?.user_metadata, userRoles]);
 
   // Scroll detection for navbar styling
   useEffect(() => {

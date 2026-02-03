@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowLeft, Bell, Check, Trash2, Mail, MessageSquare, DollarSign, Briefcase, Filter } from "lucide-react";
+import { Bell, Check, Trash2, Mail, MessageSquare, DollarSign, Briefcase, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,23 +51,6 @@ const Notifications = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            digsandgigs
-          </h1>
-          <div className="w-32" />
-        </div>
-      </nav>
-
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           {/* Header */}

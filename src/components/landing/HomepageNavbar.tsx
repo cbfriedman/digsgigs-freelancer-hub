@@ -50,9 +50,11 @@ export const HomepageNavbar = () => {
       setUserPhotoUrl(null);
       return;
     }
+    const authPhoto = (user as any).user_metadata?.avatar_url || (user as any).user_metadata?.picture || null;
+    setUserPhotoUrl(authPhoto);
     const fetchUserPhoto = async () => {
       try {
-        if (userRoles?.includes("digger")) {
+        if (!authPhoto && userRoles?.includes("digger")) {
           const { data } = await supabase
             .from("digger_profiles")
             .select("profile_image_url")
@@ -69,7 +71,7 @@ export const HomepageNavbar = () => {
       }
     };
     fetchUserPhoto();
-  }, [user?.id, userRoles]);
+  }, [user?.id, user?.user_metadata, userRoles]);
 
   useEffect(() => {
     const handleScroll = () => {

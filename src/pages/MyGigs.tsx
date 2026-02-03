@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, DollarSign, Calendar, Tag, Users, AlertCircle } from "lucide-react";
+import { DollarSign, Calendar, Tag, Users, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Navigation } from "@/components/Navigation";
 import {
@@ -167,16 +167,6 @@ const MyGigs = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <nav className="border-b border-border/50">
-          <div className="container mx-auto px-4 flex h-16 items-center">
-            <h1 
-              className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-              onClick={() => navigate("/")}
-            >
-              digsandgigs
-            </h1>
-          </div>
-        </nav>
         <div className="container mx-auto px-4 py-12 text-center">
           <p className="text-muted-foreground">Loading your gigs...</p>
         </div>
@@ -186,21 +176,6 @@ const MyGigs = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            digsandgigs
-          </h1>
-          <Button variant="ghost" onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
-      </nav>
-
       <div className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="mb-8 flex items-center justify-between">
           <div>

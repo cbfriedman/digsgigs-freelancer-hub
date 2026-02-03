@@ -282,7 +282,7 @@ const EditDiggerProfile = () => {
         
         setExpectedLeadVolume(profile.expected_lead_volume);
         setExpectedLeadPeriod(profile.expected_lead_period || 'monthly');
-        setPhotoUrl(profile.profile_image_url || "");
+        setPhotoUrl(profile.profile_image_url || (user as any)?.user_metadata?.avatar_url || (user as any)?.user_metadata?.picture || "");
         setTitle(profile.custom_occupation_title || "");
         setTagline(profile.tagline || "");
         setWorkPhotos(profile.work_photos || []);
