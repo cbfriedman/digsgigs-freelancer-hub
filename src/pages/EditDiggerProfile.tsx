@@ -392,6 +392,14 @@ const EditDiggerProfile = () => {
 
       if (error) throw error;
 
+      // Sync profile photo to auth user so header/avatar show the new photo
+      await supabase.auth.updateUser({
+        data: {
+          avatar_url: photoUrl || "",
+          picture: photoUrl || "",
+        },
+      });
+
       // Update profession assignments
       // First, delete existing assignments
       const { error: deleteAssignmentsError } = await supabase

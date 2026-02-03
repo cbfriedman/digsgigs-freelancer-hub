@@ -186,6 +186,11 @@ export default function ProfileCreationDemo() {
         if (error) throw error;
       }
 
+      // Sync profile photo to auth so header/avatar show the new photo
+      await supabase.auth.updateUser({
+        data: { avatar_url: photoUrl || "", picture: photoUrl || "" },
+      });
+
       toast.success("Profile saved successfully!");
     } catch (error) {
       console.error("Error saving profile:", error);
