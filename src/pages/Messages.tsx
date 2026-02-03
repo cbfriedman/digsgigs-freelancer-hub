@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import PageLayout from "@/components/layout/PageLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { 
   MessageInput, 
   MessageBubble, 
@@ -878,12 +879,10 @@ export default function Messages() {
       className="flex flex-col min-h-0"
     >
       <div className="flex flex-1 min-h-0 border-t border-border/30">
-        {/* Left: Conversation list */}
-        {showConversationList && (
-          <div className={`
-            ${isMobile ? 'w-full' : 'w-80 lg:w-96'} 
-            border-r border-border/30 flex flex-col min-h-0 bg-background shrink-0
-          `}>
+        {isMobile ? (
+          <>
+            {showConversationList && (
+              <div className="w-full border-r border-border/30 flex flex-col min-h-0 bg-background shrink-0">
             {/* Header - Chats style */}
             <div className="shrink-0 p-4 pb-3 border-b border-border/40 bg-background">
               <div className="flex items-center justify-between gap-2 mb-4">
@@ -1037,7 +1036,8 @@ export default function Messages() {
                   <div className="px-2 py-1 space-y-0.5">
                     {filteredConversations.map((conv) => {
                       const partnerName = getConversationPartner(conv);
-                      const roleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
+                      const rawRoleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
+                      const roleOrTitle = rawRoleOrTitle.length > 35 ? `${rawRoleOrTitle.slice(0, 35)}…` : rawRoleOrTitle;
                       const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
                       const lastSnippet = conv?.last_message_content
                         ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content
@@ -1188,15 +1188,15 @@ export default function Messages() {
                                 </DropdownMenu>
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>
                               {roleOrTitle}
                             </p>
                             {lastSnippet && (
                               <p className={cn(
-                                "text-xs truncate mt-0.5",
+                                "text-xs truncate mt-0.5 min-w-0",
                                 hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90"
-                              )}>
-                                {lastSnippet.length > 42 ? `${lastSnippet.slice(0, 42)}...` : lastSnippet}
+                              )} title={lastSnippet}>
+                                {lastSnippet.length > 40 ? `${lastSnippet.slice(0, 40)}…` : lastSnippet}
                               </p>
                             )}
                           </div>
@@ -1207,11 +1207,9 @@ export default function Messages() {
                 )}
               </ScrollArea>
           </div>
-        )}
-
-        {/* Center: Chat area */}
-        {showChatArea && (
-          <div className={`flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden ${isMobile && !selectedConversation ? 'hidden' : ''}`}>
+            )}
+            {showChatArea && (
+              <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden">
             {selectedConversation ? (
               <>
                 {/* Chat header */}
@@ -1269,6 +1267,155 @@ export default function Messages() {
               <EmptyConversation variant="no-selection" />
             )}
           </div>
+            )}
+          </>
+        ) : (
+          <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0 min-w-0">
+            <ResizablePanel defaultSize={28} minSize={22} maxSize={50} className="flex flex-col min-h-0 min-w-0">
+              <div className="h-full min-h-0 flex flex-col border-r border-border/30 bg-background overflow-hidden">
+                <div className="shrink-0 p-4 pb-3 border-b border-border/40 bg-background">
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <h1 className="text-xl font-bold text-foreground tracking-tight">Chats</h1>
+                    <div className="flex items-center gap-1">
+                      {isAdmin && (
+                        <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground" title="Chat with user">
+                              <UserPlus className="h-5 w-5" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)]">
+                            <DialogHeader>
+                              <DialogTitle>Start a new conversation</DialogTitle>
+                              <DialogDescription>Search by name to start a support conversation.</DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 pt-2">
+                              <div className="flex gap-2">
+                                <Input placeholder="Search by name..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runUserSearch()} className="h-10" />
+                                <Button type="button" onClick={runUserSearch} disabled={userSearchLoading}><Search className="h-4 w-4" /></Button>
+                              </div>
+                              <ScrollArea className="h-[240px] rounded-lg border border-border/50 bg-muted/30">
+                                {userSearchResults.length === 0 && !userSearchLoading && <p className="text-sm text-muted-foreground text-center py-8">{userSearch.trim() ? "No users found." : "Type a name and search."}</p>}
+                                <div className="p-2 space-y-1">
+                                  {userSearchResults.map((u) => (
+                                    <button key={u.id} type="button" disabled={startingChatUserId !== null} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors disabled:opacity-50 text-left" onClick={(e) => { e.preventDefault(); e.stopPropagation(); startOrOpenAdminChat(u.id); }}>
+                                      <Avatar className="h-8 w-8"><AvatarFallback className="bg-primary/10 text-primary text-sm">{(u.full_name?.[0] || "?").toUpperCase()}</AvatarFallback></Avatar>
+                                      <span className="flex-1 truncate font-medium">{u.full_name?.trim() || "Unnamed"}</span>
+                                      {startingChatUserId === u.id && <span className="text-xs text-muted-foreground">Opening…</span>}
+                                    </button>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground" title="More options"><MoreHorizontal className="h-5 w-5" /></Button>
+                    </div>
+                  </div>
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <Input placeholder="Search conversations" value={listSearch} onChange={(e) => setListSearch(e.target.value)} className="pl-9 h-10 rounded-xl bg-muted/40 border-border/50 focus-visible:ring-2 focus-visible:ring-primary/20" />
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button variant={listFilter === "all" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "all" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("all")}>All</Button>
+                    <Button variant={listFilter === "favorites" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "favorites" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("favorites")}>Favorites</Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="rounded-full h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="More filters"><MoreHorizontal className="h-4 w-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setShowHidden((prev) => !prev)}>{showHidden ? "Hide hidden conversations" : "Show hidden conversations"}</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+                <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
+                  {filteredConversations.length === 0 ? (
+                    <div className="p-6 text-center">
+                      <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-sm text-muted-foreground">{listSearch.trim() ? "No matches." : "No conversations yet."}</p>
+                    </div>
+                  ) : (
+                    <div className="px-2 py-1 space-y-0.5">
+                      {filteredConversations.map((conv) => {
+                        const partnerName = getConversationPartner(conv);
+                        const rawRoleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
+                        const roleOrTitle = rawRoleOrTitle.length > 35 ? `${rawRoleOrTitle.slice(0, 35)}…` : rawRoleOrTitle;
+                        const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
+                        const lastSnippet = conv?.last_message_content ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content : null;
+                        const isStarred = starredIds.includes(conv.id);
+                        const isPinned = pinnedIds.includes(conv.id);
+                        const unreadCount = conv.unread_count ?? 0;
+                        const hasUnread = unreadCount > 0;
+                        return (
+                          <div key={conv.id} role="button" tabIndex={0} onClick={() => setSelectedConversation(conv.id)} onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)} className={cn("group w-full flex items-start gap-3 p-3 text-left transition-colors cursor-pointer rounded-xl", "hover:bg-muted/60", selectedConversation === conv.id ? "bg-muted shadow-sm ring-1 ring-border/50" : "bg-transparent")}>
+                            <div className="relative shrink-0">
+                              <Avatar className="h-11 w-11 ring-1 ring-border/50">
+                                {conv.partner_avatar_url && <AvatarImage src={conv.partner_avatar_url} alt="" className="object-cover" />}
+                                <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">{partnerName[0].toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <span className={cn("absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background", getPartnerIsOnline(conv) ? "bg-success" : "bg-muted-foreground/50")} title={getPartnerIsOnline(conv) ? "Online" : "Offline"} />
+                            </div>
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                              <div className="flex items-center justify-between gap-2 min-w-0">
+                                <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")}>{partnerName}</p>
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <span className="text-xs text-muted-foreground">{format(new Date(conv.updated_at), "M/d/yy")}</span>
+                                  {hasUnread && <span className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0" title={`${unreadCount} unread`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); toggleStarred(conv.id); }} title={isStarred ? "Remove from favorites" : "Add to favorites"}><Star className={`h-4 w-4 ${isStarred ? "fill-amber-400 text-amber-500" : ""}`} /></Button>
+                                  <Button variant="ghost" size="icon" className={`h-7 w-7 transition-opacity ${isPinned ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} onClick={(e) => { e.stopPropagation(); togglePinned(conv.id); }} title={isPinned ? "Unpin" : "Pin to top"}><Pin className={`h-4 w-4 ${isPinned ? "fill-muted-foreground text-muted-foreground" : ""}`} /></Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()} title="More options"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleStarred(conv.id); }}>{isStarred ? "Remove from Favorites" : "Add to Favorites"}</DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePinned(conv.id); }}>{isPinned ? "Unpin from top" : "Pin to top"}</DropdownMenuItem>
+                                      {hiddenIds.includes(conv.id) ? <DropdownMenuItem onClick={(e) => { e.stopPropagation(); unhideConversation(conv.id); }}>Unhide</DropdownMenuItem> : <DropdownMenuItem onClick={(e) => { e.stopPropagation(); hideConversation(conv.id); }}>Hide</DropdownMenuItem>}
+                                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConversationId(conv.id); }}><Trash2 className="h-4 w-4 mr-2" />Delete chat</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>{roleOrTitle}</p>
+                              {lastSnippet && <p className={cn("text-xs truncate mt-0.5 min-w-0", hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90")} title={lastSnippet}>{lastSnippet.length > 40 ? `${lastSnippet.slice(0, 40)}…` : lastSnippet}</p>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle className="shrink-0 bg-border" />
+            <ResizablePanel defaultSize={72} minSize={50} className="flex flex-col min-h-0 min-w-0">
+              <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden">
+                {selectedConversation ? (
+                  <>
+                    <ChatHeader partnerName={partnerName} subtitle={getConversationSubtitle(selectedConv)} isOnline={getPartnerIsOnline(selectedConv)} partnerAvatarUrl={selectedConv?.partner_avatar_url} showBackButton={isMobile} onBack={handleBackToList} onMoreClick={() => setShowInfoPanel(!showInfoPanel)} />
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                      <ScrollArea className="h-full min-h-0">
+                        <div className="p-4 sm:p-6 space-y-1">
+                          {messages.length === 0 ? <EmptyConversation variant="no-messages" partnerName={partnerName} /> : messagesByDate.map(([dateKey, dayMessages]) => (
+                            <div key={dateKey}>
+                              <DateSeparator date={dateKey} />
+                              <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} />)}</div>
+                            </div>
+                          ))}
+                          <div ref={messagesEndRef} />
+                        </div>
+                      </ScrollArea>
+                    </div>
+                    <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
+                      <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} placeholder="Type a message..." maxLength={5000} />
+                    </div>
+                  </>
+                ) : (
+                  <EmptyConversation variant="no-selection" />
+                )}
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         )}
 
         {/* Right: Contact / Activity panel */}
