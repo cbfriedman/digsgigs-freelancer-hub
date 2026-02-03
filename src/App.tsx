@@ -7,6 +7,7 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } fr
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
+import { useTrackUserPresence } from "./hooks/useUserPresence";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
@@ -111,6 +112,7 @@ const queryClient = new QueryClient();
 // Component to track digger presence
 const PresenceTracker = () => {
   useTrackDiggerPresence();
+  useTrackUserPresence();
   return null;
 };
 

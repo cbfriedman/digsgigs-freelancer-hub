@@ -16,6 +16,7 @@ import { z } from "zod";
 import { useProxyEmail } from "@/hooks/useProxyEmail";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
+import { useUserPresence } from "@/hooks/useUserPresence";
 import {
   Dialog,
   DialogContent,
@@ -119,6 +120,7 @@ export default function Messages() {
 
   const isAdmin = userRoles.includes("admin");
   const { onlineDiggers } = useDiggerPresence();
+  const { onlineUserIds } = useUserPresence();
 
   // Starred and hidden conversation ids (per user, persisted in localStorage)
   const getStorageKey = (suffix: string) =>
@@ -641,6 +643,18 @@ export default function Messages() {
   const selectedConv = conversations.find((c) => c.id === selectedConversation);
   const partnerName = getConversationPartner(selectedConv);
 
+  /** Partner is online: use user presence for support chat or consumer; digger presence for digger. */
+  const getPartnerIsOnline = (conv: Conversation | undefined) => {
+    if (!conv || !currentUser?.id) return false;
+    if (conv.admin_id) {
+      const partnerUserId = currentUser.id === conv.admin_id ? conv.consumer_id : conv.admin_id;
+      return onlineUserIds.has(partnerUserId);
+    }
+    if (currentUser.id === conv.consumer_id)
+      return !!(conv.digger_id && onlineDiggers.has(conv.digger_id));
+    return onlineUserIds.has(conv.consumer_id);
+  };
+
   if (loading) {
     return (
       <PageLayout showFooter={false} maxWidth="full" padded={false}>
@@ -820,11 +834,9 @@ export default function Messages() {
                             <span
                               className={cn(
                                 "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
-                                conv.digger_id && onlineDiggers.has(conv.digger_id)
-                                  ? "bg-success"
-                                  : "bg-muted-foreground/50"
+                                getPartnerIsOnline(conv) ? "bg-success" : "bg-muted-foreground/50"
                               )}
-                              title={conv.digger_id && onlineDiggers.has(conv.digger_id) ? "Online" : "Offline"}
+                              title={getPartnerIsOnline(conv) ? "Online" : "Offline"}
                             />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -921,7 +933,7 @@ export default function Messages() {
                 <ChatHeader
                   partnerName={partnerName}
                   subtitle={getConversationSubtitle(selectedConv)}
-                  isOnline={!!(selectedConv?.digger_id && onlineDiggers.has(selectedConv.digger_id))}
+                  isOnline={getPartnerIsOnline(selectedConv)}
                   showBackButton={isMobile}
                   onBack={handleBackToList}
                   onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
