@@ -133,7 +133,7 @@ export default function HireAPro() {
               Get proposals in hours. Pay just 8% when you hire—not 20%.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <div className="flex justify-center mb-8">
               <Button 
                 size="lg" 
                 className="text-lg px-10 py-6 bg-gradient-accent text-accent-foreground shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5"
@@ -141,14 +141,6 @@ export default function HireAPro() {
               >
                 Post Your Project Free
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="text-lg px-10 py-6 border-2 hover:bg-muted transition-all duration-300"
-                onClick={() => navigate("/browse-diggers")}
-              >
-                Browse Pros
               </Button>
             </div>
 
