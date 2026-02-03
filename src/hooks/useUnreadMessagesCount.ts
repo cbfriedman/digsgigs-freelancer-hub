@@ -18,8 +18,12 @@ export function useUnreadMessagesCount() {
         } = await supabase.auth.getUser();
         if (!user?.id || !mounted) return;
 
-        // Get conversation IDs where current user is participant (consumer or digger)
-        const [{ data: asConsumer }, { data: asDigger }] = await Promise.all([
+        // Get conversation IDs where current user is participant (consumer, digger, or admin support)
+        const [
+          { data: asConsumer },
+          { data: asDigger },
+          { data: asAdmin },
+        ] = await Promise.all([
           supabase.from("conversations").select("id").eq("consumer_id", user.id),
           (async () => {
             const { data: profiles } = await supabase
@@ -30,9 +34,10 @@ export function useUnreadMessagesCount() {
             if (ids.length === 0) return { data: [] as { id: string }[] };
             return supabase.from("conversations").select("id").in("digger_id", ids);
           })(),
+          supabase.from("conversations").select("id").eq("admin_id", user.id),
         ]);
         const seen = new Set<string>();
-        [...(asConsumer || []), ...(asDigger || [])].forEach((c) => seen.add(c.id));
+        [...(asConsumer || []), ...(asDigger || []), ...(asAdmin || [])].forEach((c) => seen.add(c.id));
         const conversationIds = Array.from(seen);
         if (conversationIds.length === 0) {
           if (mounted) setCount(0);

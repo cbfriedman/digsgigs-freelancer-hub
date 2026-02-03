@@ -6,13 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, MessageSquare, Mail, Copy, Check, Inbox, Shield, Clock, Users } from "lucide-react";
+import { Send, MessageSquare, Mail, Copy, Check, Inbox, Shield, Clock, Users, UserPlus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { z } from "zod";
 import { useProxyEmail } from "@/hooks/useProxyEmail";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import PageLayout from "@/components/layout/PageLayout";
 
 // SECURITY: Input validation schema
@@ -25,9 +34,10 @@ const messageSchema = z.object({
 
 interface Conversation {
   id: string;
-  gig_id: string;
+  gig_id: string | null;
   consumer_id: string;
-  digger_id: string;
+  digger_id: string | null;
+  admin_id: string | null;
   updated_at: string;
   gigs: {
     title: string;
@@ -36,6 +46,8 @@ interface Conversation {
     handle: string;
     profession: string;
   } | null;
+  /** For admin conversations: consumer's display name (from profiles) */
+  consumer_profile?: { full_name: string | null } | null;
 }
 
 interface Message {
@@ -49,6 +61,7 @@ interface Message {
 export default function Messages() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userRoles } = useAuth();
   const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(
@@ -60,6 +73,12 @@ export default function Messages() {
   const [loading, setLoading] = useState(true);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [partnerProxyEmail, setPartnerProxyEmail] = useState<string | null>(null);
+  const [adminChatOpen, setAdminChatOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<{ id: string; full_name: string | null }[]>([]);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+
+  const isAdmin = userRoles.includes("admin");
 
   // Get current user's proxy email
   const { proxyEmail: myProxyEmail } = useProxyEmail(currentUser?.id || null);
@@ -72,7 +91,7 @@ export default function Messages() {
     if (currentUser) {
       loadConversations();
     }
-  }, [currentUser]);
+  }, [currentUser, isAdmin]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -86,36 +105,29 @@ export default function Messages() {
     const conv = conversations.find(c => c.id === conversationId);
     if (!conv || !currentUser) return;
 
-    // Get the other user's ID
-    const partnerId = currentUser.id === conv.consumer_id 
-      ? conv.digger_id // Partner is the digger - need to get user_id from digger_profiles
-      : conv.consumer_id;
+    let partnerUserId: string | null = null;
 
-    if (!partnerId) return;
+    // Admin support conversation
+    if (conv.admin_id) {
+      partnerUserId = currentUser.id === conv.admin_id ? conv.consumer_id : conv.admin_id;
+    } else {
+      // Gig conversation: consumer + digger
+      const partnerId = currentUser.id === conv.consumer_id
+        ? conv.digger_id
+        : conv.consumer_id;
+      if (!partnerId) return;
+      partnerUserId = conv.consumer_id === currentUser.id && conv.digger_id
+        ? (await supabase.from("digger_profiles").select("user_id").eq("id", conv.digger_id).single()).data?.user_id ?? null
+        : conv.consumer_id;
+    }
+
+    if (!partnerUserId) return;
 
     try {
-      // If current user is consumer, partner is digger - need to get digger's user_id
-      let partnerUserId = partnerId;
-      
-      if (currentUser.id === conv.consumer_id && conv.digger_id) {
-        const { data: diggerProfile } = await supabase
-          .from('digger_profiles')
-          .select('user_id')
-          .eq('id', conv.digger_id)
-          .single();
-        
-        if (diggerProfile) {
-          partnerUserId = diggerProfile.user_id;
-        }
-      }
-
-      const { data, error } = await supabase.functions.invoke('get-proxy-email', {
-        body: { user_id: partnerUserId }
+      const { data, error } = await supabase.functions.invoke("get-proxy-email", {
+        body: { user_id: partnerUserId },
       });
-
-      if (!error && data?.proxy_email) {
-        setPartnerProxyEmail(data.proxy_email);
-      }
+      if (!error && data?.proxy_email) setPartnerProxyEmail(data.proxy_email);
     } catch (err) {
       console.error("Error loading partner proxy email:", err);
     }
@@ -148,7 +160,27 @@ export default function Messages() {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      setConversations((data as Conversation[]) || []);
+      const list = (data as Conversation[]) || [];
+
+      // Enrich admin conversations with consumer display names (admins can view profiles)
+      if (isAdmin) {
+        const adminConvos = list.filter((c) => c.admin_id);
+        const consumerIds = [...new Set(adminConvos.map((c) => c.consumer_id))];
+        if (consumerIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", consumerIds);
+          const nameById = new Map((profiles || []).map((p) => [p.id, { full_name: p.full_name }]));
+          list.forEach((c) => {
+            if (c.admin_id && c.consumer_id) {
+              (c as Conversation).consumer_profile = nameById.get(c.consumer_id) ?? null;
+            }
+          });
+        }
+      }
+
+      setConversations(list);
     } catch (error: any) {
       toast({
         title: "Error loading conversations",
@@ -256,6 +288,12 @@ export default function Messages() {
   };
 
   const getConversationPartner = (conv: Conversation) => {
+    if (conv.admin_id) {
+      if (currentUser?.id === conv.admin_id) {
+        return conv.consumer_profile?.full_name?.trim() || "User";
+      }
+      return "Support";
+    }
     if (currentUser?.id === conv.consumer_id) {
       return conv.digger_profiles?.handle || "Unknown Digger";
     }
@@ -275,6 +313,70 @@ export default function Messages() {
       toast({
         title: "Failed to copy",
         description: "Please manually copy the email address",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Admin: search users (profiles) for "Chat with user"
+  const runUserSearch = async () => {
+    if (!userSearch.trim() || !isAdmin) return;
+    setUserSearchLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .or(`full_name.ilike.%${userSearch.trim()}%`)
+        .limit(20);
+      if (error) throw error;
+      setUserSearchResults((data as { id: string; full_name: string | null }[]) || []);
+    } catch (e) {
+      toast({ title: "Search failed", variant: "destructive" });
+      setUserSearchResults([]);
+    } finally {
+      setUserSearchLoading(false);
+    }
+  };
+
+  // Admin: find or create admin conversation and open it
+  const startOrOpenAdminChat = async (consumerId: string) => {
+    if (!currentUser?.id || !isAdmin) return;
+    try {
+      const { data: existing } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("admin_id", currentUser.id)
+        .eq("consumer_id", consumerId)
+        .maybeSingle();
+      if (existing?.id) {
+        setSelectedConversation(existing.id);
+        setAdminChatOpen(false);
+        setUserSearch("");
+        setUserSearchResults([]);
+        return;
+      }
+      const { data: inserted, error } = await supabase
+        .from("conversations")
+        .insert({
+          admin_id: currentUser.id,
+          consumer_id: consumerId,
+          gig_id: null,
+          digger_id: null,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      if (inserted?.id) {
+        await loadConversations();
+        setSelectedConversation(inserted.id);
+        setAdminChatOpen(false);
+        setUserSearch("");
+        setUserSearchResults([]);
+      }
+    } catch (e: any) {
+      toast({
+        title: "Could not start chat",
+        description: e?.message || "Please try again",
         variant: "destructive",
       });
     }
@@ -310,8 +412,61 @@ export default function Messages() {
               </p>
             </div>
             
-            {/* Trust Indicators */}
-            <div className="flex flex-wrap gap-3">
+            {/* Trust Indicators + Admin Chat with user */}
+            <div className="flex flex-wrap items-center gap-3">
+              {isAdmin && (
+                <Dialog open={adminChatOpen} onOpenChange={setAdminChatOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      Chat with user
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Chat with any user</DialogTitle>
+                      <DialogDescription>
+                        Search by name and start a support conversation. The user will see it in their Messages.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Search by name..."
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && runUserSearch()}
+                        />
+                        <Button type="button" onClick={runUserSearch} disabled={userSearchLoading}>
+                          <Search className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <ScrollArea className="h-[240px] rounded-md border p-2">
+                        {userSearchResults.length === 0 && !userSearchLoading && (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            {userSearch.trim() ? "No users found. Try a different name." : "Type a name and search."}
+                          </p>
+                        )}
+                        {userSearchLoading && (
+                          <p className="text-sm text-muted-foreground text-center py-4">Searching...</p>
+                        )}
+                        {userSearchResults.map((u) => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted text-left text-sm"
+                            onClick={() => startOrOpenAdminChat(u.id)}
+                          >
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span>{u.full_name?.trim() || "Unnamed"}</span>
+                            <span className="text-xs text-muted-foreground">({u.id.slice(0, 8)}…)</span>
+                          </button>
+                        ))}
+                      </ScrollArea>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
               <Badge variant="outline" className="gap-1.5 px-3 py-1.5 bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400">
                 <Shield className="h-3.5 w-3.5" />
                 Private & Secure
@@ -384,7 +539,7 @@ export default function Messages() {
                               </span>
                             </div>
                             <p className="text-sm text-muted-foreground truncate mt-0.5">
-                              {conv.gigs?.title || "General inquiry"}
+                              {conv.admin_id ? "Support chat" : (conv.gigs?.title || "General inquiry")}
                             </p>
                           </div>
                         </div>
@@ -418,7 +573,9 @@ export default function Messages() {
                           )}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {conversations.find((c) => c.id === selectedConversation)?.gigs?.title || "General inquiry"}
+                          {conversations.find((c) => c.id === selectedConversation)?.admin_id
+                            ? "Support chat"
+                            : (conversations.find((c) => c.id === selectedConversation)?.gigs?.title || "General inquiry")}
                         </p>
                       </div>
                     </div>
