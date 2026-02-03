@@ -355,20 +355,13 @@ export default function Messages() {
         setUserSearchResults([]);
         return;
       }
-      const { data: inserted, error } = await supabase
-        .from("conversations")
-        .insert({
-          admin_id: currentUser.id,
-          consumer_id: consumerId,
-          gig_id: null,
-          digger_id: null,
-        })
-        .select("id")
-        .single();
+      const { data: conversationId, error } = await supabase.rpc("create_admin_conversation", {
+        target_user_id: consumerId,
+      });
       if (error) throw error;
-      if (inserted?.id) {
+      if (conversationId) {
         await loadConversations();
-        setSelectedConversation(inserted.id);
+        setSelectedConversation(conversationId);
         setAdminChatOpen(false);
         setUserSearch("");
         setUserSearchResults([]);
