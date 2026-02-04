@@ -24,7 +24,8 @@ $functions = @(
     "award-lead",
     "match-leads-to-diggers",
     "stripe-webhook-lead-purchase",
-    "send-gig-confirmation"
+    "send-gig-confirmation",
+    "elevenlabs-conversation-token"
 )
 
 foreach ($func in $functions) {

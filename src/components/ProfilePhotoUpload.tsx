@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, User } from "lucide-react";
+import { Upload, User, X } from "lucide-react";
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -62,19 +61,42 @@ export const ProfilePhotoUpload = ({ currentPhotoUrl, onPhotoChange, companyName
     }
   };
 
+  const handleRemovePhoto = () => {
+    onPhotoChange("");
+    toast({
+      title: "Photo removed",
+      description: "Profile photo has been removed.",
+    });
+  };
+
   return (
     <div className="space-y-4">
       <Label>Profile Photo</Label>
       <div className="flex items-center gap-4">
-        <Avatar className="h-24 w-24">
-          {currentPhotoUrl ? (
-            <AvatarImage src={currentPhotoUrl} alt="Profile" />
-          ) : (
-            <AvatarFallback className="bg-primary/10">
+        <div className="relative">
+          {/* Default circle + user icon is always visible; custom photo only overlaid when present */}
+          <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-primary/10 flex items-center justify-center">
+            {currentPhotoUrl ? (
+              <img
+                src={currentPhotoUrl}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
+            ) : (
               <User className="h-12 w-12 text-primary" />
-            </AvatarFallback>
+            )}
+          </div>
+          {currentPhotoUrl && (
+            <button
+              type="button"
+              onClick={handleRemovePhoto}
+              className="absolute -top-1 -right-1 h-7 w-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md border-2 border-background focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+              aria-label="Remove profile photo"
+            >
+              <X className="h-4 w-4" strokeWidth={2.5} />
+            </button>
           )}
-        </Avatar>
+        </div>
         <div className="flex-1">
           <input
             type="file"

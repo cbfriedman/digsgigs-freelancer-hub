@@ -38,7 +38,7 @@ export default function MyProfiles() {
   });
 
   const handleCreateNewProfile = () => {
-    navigate("/profile-categories");
+    navigate("/edit-digger-profile");
   };
 
   useEffect(() => {

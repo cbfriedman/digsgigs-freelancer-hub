@@ -101,19 +101,27 @@ const EditDiggerProfile = () => {
     .map(k => k.trim())
     .filter(k => k.length > 0);
 
-  // Merge saved profile with current form state so completion widget updates live and can reach 100%
+  // Merge saved profile with current form state so completion widget updates live; use draft when creating new profile
   const displayProfileForCompletion = useMemo(() => {
-    if (!profileData) return null;
+    const base = profileData || {};
     return {
-      ...profileData,
-      bio: bio || profileData.bio,
-      profile_image_url: photoUrl || profileData.profile_image_url,
-      work_photos: workPhotos.length > 0 ? workPhotos : (profileData.work_photos || []),
-      hourly_rate_min: hourlyRateMin ?? profileData.hourly_rate_min,
-      hourly_rate_max: hourlyRateMax ?? profileData.hourly_rate_max,
-      certifications: certifications.length > 0 ? certifications : (profileData.certifications || []),
+      ...base,
+      bio: bio || base.bio || null,
+      profile_image_url: photoUrl || base.profile_image_url || null,
+      work_photos: workPhotos.length > 0 ? workPhotos : (base.work_photos || []),
+      hourly_rate_min: hourlyRateMin ?? base.hourly_rate_min ?? null,
+      hourly_rate_max: hourlyRateMax ?? base.hourly_rate_max ?? null,
+      certifications: certifications.length > 0 ? certifications : (base.certifications || []),
+      pricing_model: pricingModel || base.pricing_model || null,
+      years_experience: base.years_experience ?? null,
+      is_insured: base.is_insured ?? null,
+      is_bonded: base.is_bonded ?? null,
+      is_licensed: base.is_licensed ?? null,
+      keywords: base.keywords || null,
+      skills: base.skills || null,
+      portfolio_url: base.portfolio_url || null,
     };
-  }, [profileData, bio, photoUrl, workPhotos, hourlyRateMin, hourlyRateMax, certifications]);
+  }, [profileData, bio, photoUrl, workPhotos, hourlyRateMin, hourlyRateMax, certifications, pricingModel]);
 
   // Match pending profession names to IDs once professions are loaded
   useEffect(() => {
@@ -548,9 +556,9 @@ const EditDiggerProfile = () => {
           </p>
         </div>
           
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Form - left on desktop */}
+          <div className="lg:col-span-2 lg:col-start-1 order-1 space-y-6">
             {/* Profile Photo Section */}
             <Card className="overflow-hidden border-border/50 hover:shadow-md transition-shadow" id="photos">
               <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
@@ -1100,21 +1108,19 @@ const EditDiggerProfile = () => {
             </Card>
           </div>
 
-          {/* Sidebar with Completion Widget */}
-          <div className="lg:col-span-1">
+          {/* Sidebar with Completion Widget - always visible on the right */}
+          <div className="lg:col-span-1 lg:col-start-3 order-2 min-w-0">
             <div className="sticky top-24">
-              {displayProfileForCompletion && (
-                <ProfileCompletionWidget
-                  profile={displayProfileForCompletion}
-                  profileId={profileId}
-                  onNavigateToSection={(section) => {
-                    const element = document.getElementById(section);
-                    if (element) {
-                      element.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }
-                  }}
-                />
-              )}
+              <ProfileCompletionWidget
+                profile={displayProfileForCompletion}
+                profileId={profileId}
+                onNavigateToSection={(section) => {
+                  const element = document.getElementById(section);
+                  if (element) {
+                    element.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
