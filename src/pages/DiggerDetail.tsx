@@ -26,6 +26,7 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { BioGenerator } from "@/components/BioGenerator";
 import { Textarea } from "@/components/ui/textarea";
+import { ProfileHeader, ProfileAbout, WorkSamplesGallery, QuickContactCard, ReferencesSection } from "@/components/digger-profile";
 
 interface Reference {
   id: string;
@@ -668,7 +669,75 @@ const DiggerDetail = () => {
         
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card>
+            {/* Public Gigger View - Use new components for non-owners */}
+            {!isOwnProfile ? (
+              <>
+                {/* Enhanced Profile Header for Giggers */}
+                <Card>
+                  <CardContent className="p-8">
+                    <ProfileHeader
+                      profileImageUrl={digger.profile_image_url}
+                      businessName={digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business"}
+                      profession={getDisplayProfession()}
+                      isOnline={isOnline}
+                      averageRating={digger.average_rating}
+                      totalRatings={digger.total_ratings}
+                      yearsExperience={digger.years_experience}
+                      completionRate={digger.completion_rate}
+                      responseTimeHours={digger.response_time_hours}
+                      hourlyRateDisplay={formatHourlyRate()}
+                      country={digger.country}
+                      isVerified={true}
+                      isInsured={digger.is_insured}
+                      isBonded={digger.is_bonded}
+                      isLicensed={digger.is_licensed}
+                      isAnonymized={!hasViewAccess}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* About and Skills */}
+                <ProfileAbout
+                  bio={digger.bio}
+                  skills={digger.skills}
+                  categories={(digger.digger_categories || []).map(dc => ({
+                    name: dc.categories?.name || '',
+                    description: dc.categories?.description
+                  }))}
+                  portfolioUrl={digger.portfolio_url}
+                  offersFreEstimates={digger.offers_free_estimates}
+                />
+
+                {/* Work Samples Gallery */}
+                <WorkSamplesGallery 
+                  photos={digger.work_photos || []} 
+                  businessName={digger.business_name}
+                />
+
+                {/* References */}
+                <ReferencesSection references={references} />
+
+                {/* Reviews */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Star className="h-5 w-5 text-primary" />
+                      Reviews & Ratings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RatingsList 
+                      diggerId={id!} 
+                      isDigger={false}
+                      diggerName={digger.business_name}
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              /* Owner View - Original detailed management interface */
+              <>
+              <Card>
               <CardContent className="p-8">
                 <div className="flex items-start gap-6 mb-6">
                   <div className="relative">
@@ -693,18 +762,7 @@ const DiggerDetail = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl font-bold">
-                        {isOwnProfile 
-                          ? (digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business Name")
-                          : (() => {
-                              // Abbreviate business name for non-owners to conceal identity
-                              const name = digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business";
-                              const words = name.split(' ');
-                              if (words.length === 1) {
-                                return name.length > 3 ? name.substring(0, 3) + '...' : name;
-                              }
-                              return words.map(w => w.charAt(0)).join('.') + '.';
-                            })()
-                        }
+                        {digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business Name"}
                       </h1>
                       <div className="flex items-center gap-1.5 bg-background border border-border/50 px-3 py-1 rounded-full">
                         <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
@@ -905,424 +963,62 @@ const DiggerDetail = () => {
               </CardContent>
             </Card>
 
-
-            {/* Conditional Content Based on Profile Ownership */}
-            {isOwnProfile ? (
-              /* Owner Dashboard */
-              <div className="space-y-6">
-                {/* Profile Actions Card - Prominent Edit/View buttons */}
-                <Card className="bg-primary/5 border-primary/20">
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">Your Profile</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {!digger.bio || !digger.profile_image_url ? 
-                            'Complete your profile to attract more clients' : 
-                            'Your profile is looking great!'}
-                        </p>
-                      </div>
-                      <div className="flex gap-3">
-                        <Button 
-                          variant="outline"
-                          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        >
-                          View Profile
-                        </Button>
-                        <Button 
-                          variant="secondary"
-                          onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
-                        >
-                          Save and Continue
-                        </Button>
-                        <Button onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Profile
-                        </Button>
-                      </div>
+            {/* Owner Dashboard Stats */}
+            <div className="space-y-6">
+              {/* Profile Actions Card */}
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">Your Profile</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {!digger.bio || !digger.profile_image_url ? 
+                          'Complete your profile to attract more clients' : 
+                          'Your profile is looking great!'}
+                      </p>
                     </div>
-                    
-                    {/* Profile completion prompts */}
-                    {(!digger.bio || !digger.profile_image_url || (references.length === 0)) && (
-                      <div className="mt-4 pt-4 border-t border-primary/10">
-                        <p className="text-sm font-medium mb-3">Complete your profile:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {!digger.profile_image_url && (
-                            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
-                              <Camera className="h-3 w-3 mr-1" />
-                              Add Photo
-                            </Badge>
-                          )}
-                          {!digger.bio && (
-                            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              Add Bio
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Stats Summary - Clickable */}
-                <Card className="bg-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      📊 Profile Stats
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div 
-                        className="bg-primary/10 rounded-lg p-4 text-center cursor-pointer hover:bg-primary/20 transition-colors"
-                        onClick={() => {
-                          const el = document.getElementById('purchased-leads-section');
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                      >
-                        <div className="text-3xl font-bold text-primary">{totalLeadsSold}</div>
-                        <div className="text-sm text-muted-foreground">Leads Purchased</div>
-                      </div>
-                      <div className="bg-green-500/10 rounded-lg p-4 text-center">
-                        <div className="text-3xl font-bold text-green-600">
-                          ${leadBalance?.balance?.toFixed(2) || '0.00'}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Account Balance</div>
-                      </div>
-                      <div 
-                        className="bg-yellow-500/10 rounded-lg p-4 text-center cursor-pointer hover:bg-yellow-500/20 transition-colors"
-                        onClick={() => {
-                          const el = document.getElementById('pending-purchases-section');
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                      >
-                        <div className="text-3xl font-bold text-yellow-600">
-                          {leadPurchases.filter(p => p.status === 'pending').length}
-                        </div>
-                        <div className="text-sm text-muted-foreground">Pending</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Account Balance Card */}
-                <Card className="bg-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Wallet className="h-5 w-5" />
-                      Account Balance
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <div className="text-3xl font-bold text-primary">
-                          ${leadBalance?.balance?.toFixed(2) || '0.00'}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Available for lead purchases</p>
-                      </div>
-                      <Button onClick={() => navigate('/checkout')} variant="outline">
-                        Add Funds
-                      </Button>
-                    </div>
-                    {leadBalance && (
-                      <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                        <div>
-                          <div className="text-lg font-semibold text-green-600">
-                            ${leadBalance.total_deposited.toFixed(2)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">Total Deposited</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-semibold text-red-600">
-                            ${leadBalance.total_spent.toFixed(2)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">Total Spent</div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Your Keywords Summary */}
-                {(digger as any).keywords && Array.isArray((digger as any).keywords) && (digger as any).keywords.length > 0 && (
-                  <Card className="bg-card">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        🏷️ Your Keywords
-                      </CardTitle>
-                      <CardDescription>
-                        Keywords that match you to relevant leads
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {((digger as any).keywords as string[]).map((keyword: string, idx: number) => (
-                          <Badge key={idx} variant="secondary" className="px-3 py-1">
-                            {keyword}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-
-                {/* Pending Purchases */}
-                <div id="pending-purchases-section">
-                  <Card className="bg-card">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-yellow-500" />
-                        Pending Purchases ({leadPurchases.filter(p => p.status === 'pending').length})
-                      </CardTitle>
-                      <CardDescription>
-                        Complete these purchases or modify your selection
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {leadPurchases.filter(p => p.status === 'pending').length > 0 ? (
-                        <div className="space-y-4">
-                          {leadPurchases.filter(p => p.status === 'pending').map((purchase) => (
-                            <div key={purchase.id} className="border rounded-lg p-4 bg-yellow-500/5">
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Clock className="h-4 w-4 text-yellow-500" />
-                                    <h5 className="font-semibold truncate">
-                                      {purchase.gig?.title || "Lead"}
-                                    </h5>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                                    {purchase.gig?.description || "No description"}
-                                  </p>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline">{purchase.exclusivity_type || "Standard"}</Badge>
-                                    <span className="text-sm font-semibold">${purchase.amount_paid.toFixed(2)}</span>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  <Button size="sm" onClick={() => navigate(`/checkout?leadId=${purchase.id}`)}>
-                                    Complete
-                                  </Button>
-                                  <Button size="sm" variant="outline" onClick={() => navigate(`/gig/${purchase.gig_id}`)}>
-                                    View
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-center text-muted-foreground py-4">No pending purchases</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Purchased Leads with Return Option */}
-                <div id="purchased-leads-section">
-                  <Card className="bg-card">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        Purchased Leads ({totalLeadsSold})
-                      </CardTitle>
-                      <CardDescription>
-                        View your purchased leads and request credit for bad leads
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {leadPurchases.filter(p => p.status === 'completed').length > 0 ? (
-                        <div className="space-y-4">
-                          {leadPurchases.filter(p => p.status === 'completed').slice(0, 5).map((purchase) => {
-                            const canReturn = purchase.exclusivity_type?.toLowerCase().includes('exclusive') || 
-                                            purchase.exclusivity_type?.toLowerCase().includes('semi') ||
-                                            purchase.gig?.is_confirmed_lead;
-                            
-                            return (
-                              <div key={purchase.id} className="border rounded-lg p-4">
-                                <div className="flex items-start justify-between gap-4">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                      <h5 className="font-semibold truncate">
-                                        {purchase.gig?.title || "Lead"}
-                                      </h5>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                                      {purchase.gig?.description || "No description"}
-                                    </p>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <Badge variant={
-                                        purchase.exclusivity_type?.toLowerCase().includes('24') ? 'default' :
-                                        purchase.exclusivity_type?.toLowerCase().includes('semi') ? 'secondary' : 'outline'
-                                      }>
-                                        {purchase.exclusivity_type || "Standard"}
-                                      </Badge>
-                                      {purchase.gig?.is_confirmed_lead && (
-                                        <Badge variant="default" className="bg-green-600">Confirmed</Badge>
-                                      )}
-                                      <span className="text-sm">${purchase.amount_paid.toFixed(2)}</span>
-                                      <span className="text-sm text-muted-foreground">
-                                        {new Date(purchase.purchased_at).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-col gap-2">
-                                    <Button size="sm" variant="outline" onClick={() => navigate(`/gig/${purchase.gig_id}`)}>
-                                      Details
-                                    </Button>
-                                    {canReturn && (
-                                      <LeadReturnDialog
-                                        leadPurchaseId={purchase.id}
-                                        gigTitle={purchase.gig?.title || "Lead"}
-                                        onSuccess={loadData}
-                                        buttonClassName="text-xs"
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          {totalLeadsSold > 5 && (
-                            <Button 
-                              variant="link" 
-                              className="w-full" 
-                              onClick={() => navigate(`/my-leads?profileId=${id}`)}
-                            >
-                              View all {totalLeadsSold} leads →
-                            </Button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                          <p className="text-muted-foreground">No leads purchased yet</p>
-                          <Button 
-                            variant="link" 
-                            onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
-                          >
-                            Browse leads to purchase
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Bad Lead Alert */}
-                <Card className="bg-yellow-500/5 border-yellow-500/20">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-semibold text-yellow-800 dark:text-yellow-400">
-                          Received a Bad Lead?
-                        </h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          You can request credit within 24 hours for confirmed, semi-exclusive, or exclusive leads 
-                          that don't match your service area or specialty. Click "Request Credit" on any eligible lead above.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              /* Hiring Interface for Other Profiles */
-              <>
-                {/* Contact Info Unlock Section */}
-                {!hasViewAccess && currentUser && (
-              <Card className="border-primary/50 bg-primary/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    🔒 Contact Information Locked
-                  </CardTitle>
-                  <CardDescription>
-                    Unlock this digger&apos;s full contact information to connect directly.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    onClick={handleUnlockContact}
-                    disabled={isUnlocking}
-                  >
-                    {isUnlocking ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        🔓 View Contact Information
-                      </>
-                    )}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Pay per lead — no membership required for Diggers
-                  </p>
+                    <Button onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-            )}
 
-            {hasViewAccess && (
-              <DiggerPricingSelector
-                diggerId={digger.id}
-                gigId={id || ''}
-                pricingModel={digger.pricing_model || 'both'}
-                subscriptionTier={digger.subscription_tier || 'free'}
-                hourlyRateMin={digger.hourly_rate_min}
-                hourlyRateMax={digger.hourly_rate_max}
-                offersFreEstimates={digger.offers_free_estimates}
-                businessName={digger.business_name}
-                onSelectPricing={(model) => {
-                  toast.success(`Lead purchased successfully! You can now contact ${digger.business_name}`);
-                }}
-              />
-            )}
-              </>
-            )}
-
-            {references.length > 0 && (
+              {/* Lead Stats Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Client References</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    Lead Stats
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {references.map((ref) => {
-                    const request = referenceRequests[ref.id];
-                    const canShowContact = request?.status === 'approved';
-                    
-                    return (
-                      <div key={ref.id} className="border border-border rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{ref.reference_name}</h3>
-                            <p className="text-sm text-muted-foreground italic">Reference verified by platform</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {ref.is_verified && (
-                              <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
-                                Verified
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        {ref.project_description && (
-                          <p className="text-sm text-muted-foreground mt-2">{ref.project_description}</p>
-                        )}
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-primary/10 rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-primary">
+                        {totalLeadsSold}
                       </div>
-                    );
-                  })}
+                      <div className="text-sm text-muted-foreground">Completed</div>
+                    </div>
+                    <div className="bg-yellow-500/10 rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-yellow-600">
+                        {leadPurchases.filter(p => p.status === 'pending').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Pending</div>
+                    </div>
+                    <div className="bg-green-500/10 rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-green-600">
+                        ${leadBalance?.balance?.toFixed(2) || '0.00'}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Balance</div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            )}
+            </div>
 
+            {/* Reviews for Owner */}
             <Card>
               <CardHeader>
                 <CardTitle>Reviews & Ratings</CardTitle>
@@ -1330,46 +1026,78 @@ const DiggerDetail = () => {
               <CardContent>
                 <RatingsList 
                   diggerId={id!} 
-                  isDigger={currentUser?.id === digger.user_id}
+                  isDigger={true}
                   diggerName={digger.business_name}
                 />
               </CardContent>
             </Card>
+          </>
+            )}
           </div>
 
+          {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="space-y-6 sticky top-24">
               {!isOwnProfile && (
                 <>
-                  <Card>
-                    <CardContent className="p-6 space-y-3">
-                      <Button 
-                        className="w-full" 
-                        size="lg"
-                        onClick={handleSendMessage}
-                      >
-                        <MessageSquare className="mr-2 h-5 w-5" />
-                        Send Message
-                      </Button>
-                      {digger.phone && hasViewAccess && (
-                        <Button 
-                          className="w-full" 
-                          size="lg"
-                          variant="secondary"
-                          onClick={handleCallDigger}
-                          disabled={isCallingDigger}
-                        >
-                          <Phone className="mr-2 h-5 w-5" />
-                          {isCallingDigger ? 'Connecting...' : 'Call Digger'}
-                        </Button>
-                      )}
-                      <p className="text-xs text-muted-foreground text-center">
-                        Start a conversation to discuss your project with this digger
-                      </p>
-                    </CardContent>
-                  </Card>
+                  {/* Quick Contact Card for Giggers */}
+                  <QuickContactCard
+                    hasViewAccess={hasViewAccess}
+                    isUnlocking={isUnlocking}
+                    isCallingDigger={isCallingDigger}
+                    phone={digger.phone}
+                    offersFreEstimates={digger.offers_free_estimates}
+                    hourlyRateDisplay={formatHourlyRate()}
+                    onSendMessage={handleSendMessage}
+                    onCallDigger={handleCallDigger}
+                    onUnlockContact={handleUnlockContact}
+                  />
 
+                  {hasViewAccess && (
+                    <DiggerPricingSelector
+                      diggerId={digger.id}
+                      gigId={id || ''}
+                      pricingModel={digger.pricing_model || 'both'}
+                      subscriptionTier={digger.subscription_tier || 'free'}
+                      hourlyRateMin={digger.hourly_rate_min}
+                      hourlyRateMax={digger.hourly_rate_max}
+                      offersFreEstimates={digger.offers_free_estimates}
+                      businessName={digger.business_name}
+                      onSelectPricing={(model) => {
+                        toast.success(`Lead purchased successfully! You can now contact ${digger.business_name}`);
+                      }}
+                    />
+                  )}
                 </>
+              )}
+
+              {isOwnProfile && (
+                <Card>
+                  <CardContent className="p-6 space-y-3">
+                    <Button 
+                      className="w-full" 
+                      onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Profile
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => navigate('/checkout')}
+                    >
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Add Funds
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      variant="secondary"
+                      onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
+                    >
+                      Browse Leads
+                    </Button>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Google Search Preview */}
