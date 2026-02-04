@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -648,17 +648,13 @@ const DiggerDetail = () => {
         })}
       />
       <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
+        <div className="container mx-auto px-4 flex h-16 items-center">
           <h1 
             className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
             onClick={() => navigate("/")}
           >
             digsandgigs
           </h1>
-          <Button variant="ghost" onClick={() => navigate("/browse-diggers")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Browse
-          </Button>
         </div>
       </nav>
 

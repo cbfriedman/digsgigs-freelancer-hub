@@ -85,6 +85,27 @@ const EditDiggerProfile = () => {
   const [certifications, setCertifications] = useState<string[]>([]);
   const [stateProvince, setStateProvince] = useState<string>("");
 
+  // Sync profile photo to auth, profiles, and all digger profiles so Digger/Gigger stay in sync
+  const handlePhotoChange = async (url: string) => {
+    setPhotoUrl(url);
+    if (user) {
+      try {
+        const existingMetadata = user.user_metadata || {};
+        await supabase.auth.updateUser({
+          data: {
+            ...existingMetadata,
+            avatar_url: url || "",
+            picture: url || "",
+          },
+        });
+        await supabase.from("profiles").update({ avatar_url: url || null }).eq("id", user.id);
+        await supabase.from("digger_profiles").update({ profile_image_url: url || null }).eq("user_id", user.id);
+      } catch (e) {
+        console.warn("Failed to sync photo:", e);
+      }
+    }
+  };
+
   // Memoize regions for the selected country (service area)
   const availableRegions = useMemo(() => {
     return getRegionsForCountry(country);
@@ -575,7 +596,7 @@ const EditDiggerProfile = () => {
               <CardContent className="pt-4">
                 <ProfilePhotoUpload
                   currentPhotoUrl={photoUrl}
-                  onPhotoChange={setPhotoUrl}
+                  onPhotoChange={handlePhotoChange}
                   companyName={businessName}
                 />
               </CardContent>

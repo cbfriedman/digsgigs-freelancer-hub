@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Sparkles,
   Users,
+  User,
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
@@ -624,17 +625,30 @@ export default function RoleDashboard() {
                       </span>
                       <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                     </Button>
-                    <Button 
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        handleSwitchRole('gigger');
-                        navigate('/post-gig');
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Post New Gig
-                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          handleSwitchRole('gigger');
+                          navigate('/my-profiles');
+                        }}
+                      >
+                        <User className="h-4 w-4 mr-1" />
+                        My Profile
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          handleSwitchRole('gigger');
+                          navigate('/post-gig');
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Post New Gig
+                      </Button>
+                    </div>
                   </div>
                 </>
               ) : (

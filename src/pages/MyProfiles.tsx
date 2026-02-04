@@ -6,10 +6,13 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Star, Edit, Trash2, RefreshCw, Briefcase, TrendingUp, Users, Sparkles, Lightbulb } from "lucide-react";
+import { Plus, Star, Edit, Trash2, RefreshCw, Briefcase, TrendingUp, Users, Lightbulb, User, Save } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/utils/retryWithBackoff";
+import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 
 interface ProfileWithStats {
   id: string;
@@ -27,7 +30,7 @@ interface ProfileWithStats {
 }
 
 export default function MyProfiles() {
-  const { user } = useAuth();
+  const { user, activeRole, userRoles, switchRole } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [profiles, setProfiles] = useState<ProfileWithStats[]>([]);
@@ -37,20 +40,36 @@ export default function MyProfiles() {
     profileId: null,
   });
 
+  // Gigger simple profile state (photo + about me)
+  const [giggerPhotoUrl, setGiggerPhotoUrl] = useState("");
+  const [giggerAboutMe, setGiggerAboutMe] = useState("");
+  const [giggerSaving, setGiggerSaving] = useState(false);
+  const [giggerProfileLoading, setGiggerProfileLoading] = useState(true);
+
+  const isDiggerView = activeRole === "digger";
+  const isGiggerView = activeRole === "gigger";
+  const hasDiggerRole = userRoles.includes("digger");
+  const hasGiggerRole = userRoles.includes("gigger");
+
   const handleCreateNewProfile = () => {
     navigate("/edit-digger-profile");
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && isDiggerView) {
       loadProfiles();
+    } else if (user && isGiggerView) {
+      loadGiggerProfile();
+    } else {
+      setLoading(false);
+      setGiggerProfileLoading(false);
     }
-  }, [user]);
+  }, [user, isDiggerView, isGiggerView]);
 
-  // Refresh profiles if coming from registration
+  // Refresh profiles if coming from registration (digger only)
   useEffect(() => {
     const justRegistered = searchParams.get('registered') === 'true';
-    if (justRegistered && user) {
+    if (justRegistered && user && isDiggerView) {
       console.log('Just registered, refreshing profiles...');
       setLoading(true);
       
@@ -88,20 +107,23 @@ export default function MyProfiles() {
         retryLoadProfiles();
       }, 800);
     }
-  }, [user, searchParams, setSearchParams]);
+  }, [user, searchParams, setSearchParams, isDiggerView]);
 
   // Refresh profiles when page becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && user) {
-        console.log("MyProfiles: Page became visible, refreshing profiles");
-        loadProfiles();
+        if (isDiggerView) {
+          loadProfiles();
+        } else if (isGiggerView) {
+          loadGiggerProfile();
+        }
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user]);
+  }, [user, isDiggerView, isGiggerView]);
 
   const loadProfiles = async () => {
     if (!user) {
@@ -190,6 +212,72 @@ export default function MyProfiles() {
     }
   };
 
+  const loadGiggerProfile = async () => {
+    if (!user) {
+      setGiggerProfileLoading(false);
+      return;
+    }
+    setGiggerProfileLoading(true);
+    try {
+      const [profileResult, diggerResult] = await Promise.all([
+        supabase.from("profiles").select("avatar_url, about_me").eq("id", user.id).maybeSingle(),
+        supabase.from("digger_profiles").select("profile_image_url").eq("user_id", user.id).not("profile_image_url", "is", null).limit(1).maybeSingle(),
+      ]);
+      const profile = profileResult.data;
+      const error = profileResult.error;
+      const authPhoto = (user as any).user_metadata?.avatar_url || (user as any).user_metadata?.picture || null;
+      const diggerPhoto = diggerResult.data?.profile_image_url || null;
+      const photoUrl = profile?.avatar_url || authPhoto || diggerPhoto || "";
+      setGiggerPhotoUrl(photoUrl);
+      setGiggerAboutMe((profile as any)?.about_me || "");
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error loading gigger profile:", error);
+      const authPhoto = (user as any).user_metadata?.avatar_url || (user as any).user_metadata?.picture || null;
+      const { data: diggerProfile } = await supabase.from("digger_profiles").select("profile_image_url").eq("user_id", user.id).not("profile_image_url", "is", null).limit(1).maybeSingle();
+      setGiggerPhotoUrl(authPhoto || diggerProfile?.profile_image_url || "");
+      setGiggerAboutMe("");
+    } finally {
+      setGiggerProfileLoading(false);
+    }
+  };
+
+  const handleGiggerPhotoChange = async (url: string) => {
+    setGiggerPhotoUrl(url);
+    if (!user) return;
+    try {
+      const existingMetadata = user.user_metadata || {};
+      await supabase.auth.updateUser({
+        data: { ...existingMetadata, avatar_url: url || "", picture: url || "" },
+      });
+      await supabase.from("profiles").update({ avatar_url: url || null }).eq("id", user.id);
+      await supabase.from("digger_profiles").update({ profile_image_url: url || null }).eq("user_id", user.id);
+    } catch (e) {
+      console.warn("Failed to sync photo:", e);
+    }
+  };
+
+  const handleSaveGiggerProfile = async () => {
+    if (!user) return;
+    setGiggerSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          about_me: giggerAboutMe.trim() || null,
+          avatar_url: giggerPhotoUrl || null,
+        })
+        .eq("id", user.id);
+      if (error) throw error;
+      toast.success("Profile saved");
+    } catch (error) {
+      console.error("Error saving gigger profile:", error);
+      toast.error("Failed to save profile");
+    } finally {
+      setGiggerSaving(false);
+    }
+  };
+
   const handleSetPrimary = async (profileId: string) => {
     if (!user) return;
 
@@ -244,19 +332,120 @@ export default function MyProfiles() {
     }
   };
 
-  if (loading) {
+  const isLoading = (isDiggerView && loading) || (isGiggerView && giggerProfileLoading);
+
+  if (isLoading) {
     return (
       <PageLayout maxWidth="wide">
         <div className="flex items-center justify-center py-20">
           <div className="text-center space-y-4">
             <RefreshCw className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground">Loading your profiles...</p>
+            <p className="text-muted-foreground">
+              {isGiggerView ? "Loading your profile..." : "Loading your profiles..."}
+            </p>
           </div>
         </div>
       </PageLayout>
     );
   }
 
+  // Show role switch prompt when user has both roles but current view doesn't match
+  if (!isDiggerView && !isGiggerView) {
+    return (
+      <PageLayout maxWidth="wide">
+        <Card className="max-w-lg mx-auto mt-12">
+          <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground mb-4">
+              Switch to Digger or Gigger to manage your profile.
+            </p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              {hasDiggerRole && (
+                <Button onClick={() => switchRole("digger")} variant="outline" className="gap-2">
+                  <Briefcase className="h-4 w-4" />
+                  Switch to Digger
+                </Button>
+              )}
+              {hasGiggerRole && (
+                <Button onClick={() => switchRole("gigger")} variant="outline" className="gap-2">
+                  <User className="h-4 w-4" />
+                  Switch to Gigger
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </PageLayout>
+    );
+  }
+
+  // Gigger view: simple photo + about me
+  if (isGiggerView) {
+    return (
+      <PageLayout maxWidth="wide">
+        <div className="mb-8 animate-fade-in-up">
+          <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-2">
+            My Profile
+          </h1>
+          <p className="text-muted-foreground">
+            Add a photo and a short intro so professionals know who they&apos;re working with
+          </p>
+        </div>
+
+        {/* Role switcher when user has both roles */}
+        {hasDiggerRole && (
+          <Card className="mb-6 border-primary/20 animate-fade-in-up">
+            <CardContent className="py-3">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <p className="text-sm text-muted-foreground">
+                  You also have Digger profiles. Switch to manage them.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => switchRole("digger")} className="gap-1.5">
+                  <Briefcase className="h-3.5 w-3.5" />
+                  Switch to Digger
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="max-w-2xl animate-fade-in-up">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Your Profile
+            </CardTitle>
+            <CardDescription>
+              A simple profile helps build trust when posting projects
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ProfilePhotoUpload
+              currentPhotoUrl={giggerPhotoUrl}
+              onPhotoChange={handleGiggerPhotoChange}
+              companyName={(user as any)?.user_metadata?.full_name}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="about-me">About Me</Label>
+              <Textarea
+                id="about-me"
+                placeholder="A brief intro about yourself or your project needs (optional)"
+                value={giggerAboutMe}
+                onChange={(e) => setGiggerAboutMe(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+            <Button onClick={handleSaveGiggerProfile} disabled={giggerSaving} className="gap-2">
+              <Save className="h-4 w-4" />
+              {giggerSaving ? "Saving..." : "Save Profile"}
+            </Button>
+          </CardContent>
+        </Card>
+      </PageLayout>
+    );
+  }
+
+  // Digger view: multiple profiles
   return (
     <PageLayout maxWidth="wide">
       {/* Header Section */}
@@ -288,6 +477,23 @@ export default function MyProfiles() {
           </div>
         </div>
       </div>
+
+      {/* Role switcher when user has both roles */}
+      {hasGiggerRole && (
+        <Card className="mb-6 border-accent/20 animate-fade-in-up">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <p className="text-sm text-muted-foreground">
+                You also have a Gigger profile. Switch to edit it.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => switchRole("gigger")} className="gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                Switch to Gigger
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pro Tip Banner */}
       <Card className="mb-8 border-accent/30 bg-gradient-to-r from-accent/5 to-primary/5 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
