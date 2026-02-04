@@ -134,6 +134,72 @@ export type Database = {
           },
         ]
       }
+      ai_callback_requests: {
+        Row: {
+          call_completed_at: string | null
+          created_at: string
+          extracted_data: Json | null
+          gig_created: boolean | null
+          gig_id: string | null
+          id: string
+          name: string | null
+          phone: string
+          retell_call_id: string | null
+          scheduled_for: string | null
+          source: string | null
+          status: string
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          call_completed_at?: string | null
+          created_at?: string
+          extracted_data?: Json | null
+          gig_created?: boolean | null
+          gig_id?: string | null
+          id?: string
+          name?: string | null
+          phone: string
+          retell_call_id?: string | null
+          scheduled_for?: string | null
+          source?: string | null
+          status?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          call_completed_at?: string | null
+          created_at?: string
+          extracted_data?: Json | null
+          gig_created?: boolean | null
+          gig_id?: string | null
+          id?: string
+          name?: string | null
+          phone?: string
+          retell_call_id?: string | null
+          scheduled_for?: string | null
+          source?: string | null
+          status?: string
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_callback_requests_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_callback_requests_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "safe_public_gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bids: {
         Row: {
           accepted_payment_methods: string[] | null

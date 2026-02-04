@@ -12,11 +12,13 @@ import {
   Zap,
   Star,
   MessageSquare,
-  FileCheck
+  FileCheck,
+  Sparkles
 } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import SEOHead from "@/components/SEOHead";
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
+import { VoiceIntakeOptions } from "@/components/hire-pro/VoiceIntakeOptions";
 
 const benefits = [
   {
@@ -133,17 +135,6 @@ export default function HireAPro() {
               Get proposals in hours. Pay just 8% when you hire—not 20%.
             </p>
 
-            <div className="flex justify-center mb-8">
-              <Button 
-                size="lg" 
-                className="text-lg px-10 py-6 bg-gradient-accent text-accent-foreground shadow-accent hover:shadow-accent-lg transition-all duration-300 hover:-translate-y-0.5"
-                onClick={handlePostProject}
-              >
-                Post Your Project Free
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-
             <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
               <span className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-success" />
@@ -159,6 +150,24 @@ export default function HireAPro() {
               </span>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Voice Intake Options Section */}
+      <section className="section-padding bg-card border-y border-border/50">
+        <div className="container-wide">
+          <div className="text-center mb-8">
+            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 px-4 py-2 text-sm font-medium">
+              <Sparkles className="h-4 w-4 mr-2" />
+              New: Tell Us About Your Project
+            </Badge>
+            <h2 className="mb-2">Start Your Project</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Prefer to talk? Our AI assistant can capture your project details over the phone in just 2-3 minutes.
+            </p>
+          </div>
+          
+          <VoiceIntakeOptions displayPhoneNumber="(Coming Soon)" />
         </div>
       </section>
 
