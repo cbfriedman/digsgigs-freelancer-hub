@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe, Mic } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
@@ -19,6 +19,7 @@ import { formatSelectionDisplay } from "@/config/regionOptions";
 import PageLayout from "@/components/layout/PageLayout";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
+import { FloatingVoiceAgent, ExtractedGigData } from "@/components/FloatingVoiceAgent";
 
 const PostGig = () => {
   const navigate = useNavigate();
@@ -41,8 +42,30 @@ const PostGig = () => {
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
 
+  // Voice agent state
+  const [isVoiceAgentOpen, setIsVoiceAgentOpen] = useState(false);
+
   // Get current problem option for clarifying question
   const selectedProblem = getProblemById(selectedProblemId);
+
+  // Handle data extracted from voice agent
+  const handleVoiceDataExtracted = useCallback((data: ExtractedGigData) => {
+    if (data.problemId) {
+      setSelectedProblemId(data.problemId);
+      // Auto-select first clarifying option if we have a problem
+      const problem = getProblemById(data.problemId);
+      if (problem && problem.clarifyingOptions.length > 0 && clarifyingAnswers.length === 0) {
+        setClarifyingAnswers([problem.clarifyingOptions[0].value]);
+      }
+    }
+    if (data.description) setDescription(data.description);
+    if (data.budgetMin) setBudgetMin(formatCurrency(String(data.budgetMin)));
+    if (data.budgetMax) setBudgetMax(formatCurrency(String(data.budgetMax)));
+    if (data.timeline) setTimeline(data.timeline);
+    if (data.clientName) setClientName(data.clientName);
+    if (data.clientEmail) setClientEmail(data.clientEmail);
+    if (data.clientPhone) setClientPhone(data.clientPhone);
+  }, [clarifyingAnswers.length]);
 
   // Calculate current step for progress indicator
   const getCurrentStep = () => {
@@ -279,6 +302,16 @@ const PostGig = () => {
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Describe your project and we'll connect you with qualified freelancers ready to help.
           </p>
+          
+          {/* Voice Assistant Option */}
+          <Button
+            variant="outline"
+            onClick={() => setIsVoiceAgentOpen(true)}
+            className="mt-2 gap-2 border-primary/30 hover:bg-primary/5"
+          >
+            <Mic className="h-4 w-4" />
+            Or talk to Alexis instead
+          </Button>
         </div>
 
         {/* Trust Indicators */}
@@ -669,6 +702,13 @@ const PostGig = () => {
         onCancel={() => {
           setShowWarningDialog(false);
         }}
+      />
+
+      {/* Floating Voice Agent */}
+      <FloatingVoiceAgent
+        isOpen={isVoiceAgentOpen}
+        onClose={() => setIsVoiceAgentOpen(false)}
+        onDataExtracted={handleVoiceDataExtracted}
       />
     </PageLayout>
   );
