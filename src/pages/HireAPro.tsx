@@ -110,64 +110,19 @@ export default function HireAPro() {
         keywords="hire freelancer, hire developer, find designer, tech talent, software development, web design"
       />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden section-padding bg-gradient-hero">
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-primary/10" />
-        <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-accent/10 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-primary/10 rounded-full blur-3xl opacity-40" />
-        
-        <div className="container-wide relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <Badge className="mb-6 bg-accent/10 text-accent border-accent/20 px-4 py-2 text-sm font-medium">
-              <Zap className="h-4 w-4 mr-2" />
-              Post for Free • Pay Only When You Hire
-            </Badge>
-            
-            <h1 className="mb-6">
-              Hire Top{" "}
-              <span className="text-gradient-accent">Tech Talent</span>
-              {" "}in{" "}
-              <span className="text-gradient-primary">Hours, Not Days</span>
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-              Connect with vetted US-based developers, designers, and digital experts. 
-              Post for free, get proposals fast.
-            </p>
-
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Free to post
-              </span>
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                No upfront fees
-              </span>
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Cancel anytime
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Voice Intake Options Section */}
-      <section className="section-padding bg-card border-y border-border/50">
+      {/* Voice Intake Section - Primary Focus */}
+      <section className="section-padding pt-8 md:pt-12">
         <div className="container-wide">
           <div className="text-center mb-8">
-            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 px-4 py-2 text-sm font-medium">
-              <Sparkles className="h-4 w-4 mr-2" />
-              New: Tell Us About Your Project
-            </Badge>
-            <h2 className="mb-2">Start Your Project</h2>
+            <h1 className="text-3xl md:text-4xl font-display font-bold mb-3">
+              Tell Us About Your Project
+            </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Prefer to talk? Our AI assistant can capture your project details over the phone in just 2-3 minutes.
+              Fill out the form or let our AI assistant capture your project details over the phone in just 2-3 minutes.
             </p>
           </div>
           
-          <VoiceIntakeOptions displayPhoneNumber="(Coming Soon)" />
+          <VoiceIntakeOptions displayPhoneNumber="(412) 545-7108" />
         </div>
       </section>
 
