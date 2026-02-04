@@ -165,7 +165,7 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
       if (authUser?.user) {
         if (!email) email = authUser.user.email ?? undefined;
-        if (!name) name = (authUser.user.user_metadata?.full_name as string) || (authUser.user.user_metadata?.name as string) ?? undefined;
+        if (!name) name = ((authUser.user.user_metadata?.full_name as string) || (authUser.user.user_metadata?.name as string)) || undefined;
       }
       if (!email && userId) {
         const { data: profile } = await supabaseAdmin.from("profiles").select("full_name").eq("id", userId).maybeSingle();
