@@ -24,6 +24,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { useCart } from "@/contexts/CartContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
+import { usePlatformCounts } from "@/hooks/usePlatformCounts";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
@@ -66,6 +67,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const { cartCount } = useCart();
   const { unreadCount: notificationUnreadCount } = useNotifications();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const { hasEnoughDiggers } = usePlatformCounts();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
@@ -183,9 +185,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <DropdownMenuItem onClick={() => navigate("/post-gig")} className="cursor-pointer">
                     Post a project
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/browse-diggers")} className="cursor-pointer">
-                    Browse diggers
-                  </DropdownMenuItem>
+                  {hasEnoughDiggers && (
+                    <DropdownMenuItem onClick={() => navigate("/browse-diggers")} className="cursor-pointer">
+                      Browse diggers
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/browse-gigs")} className="cursor-pointer">
                     Browse gigs
                   </DropdownMenuItem>
@@ -589,15 +593,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       >
                         <span className="font-medium">Browse gigs</span>
                       </button>
-                      <button
-                        className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                          isActive("/browse-diggers") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-                        )}
-                        onClick={() => { navigate("/browse-diggers"); setMobileMenuOpen(false); }}
-                      >
-                        <span className="font-medium">Browse diggers</span>
-                      </button>
+                      {hasEnoughDiggers && (
+                        <button
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                            isActive("/browse-diggers") ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+                          )}
+                          onClick={() => { navigate("/browse-diggers"); setMobileMenuOpen(false); }}
+                        >
+                          <span className="font-medium">Browse diggers</span>
+                        </button>
+                      )}
                       <button
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
