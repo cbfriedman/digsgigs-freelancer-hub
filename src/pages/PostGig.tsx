@@ -229,9 +229,10 @@ const PostGig = () => {
           consumer_email: finalClientEmail.trim(),
           consumer_phone: finalClientPhone.trim() || null,
           category_id: categoryId,
-          status: "pending_confirmation",
-          confirmation_status: "pending",
-          is_confirmed_lead: false,
+          status: "open",
+          confirmation_status: "confirmed",
+          is_confirmed_lead: true,
+          confirmed_at: new Date().toISOString(),
           preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
         })
         .select()
@@ -239,18 +240,15 @@ const PostGig = () => {
 
       if (gigError) throw gigError;
 
-      await supabase.functions.invoke("send-gig-confirmation", {
-        body: {
-          gigId: gigData.id,
-          email: finalClientEmail.trim(),
-          gigTitle: title,
-          gigDescription: finalDescription.trim(),
-          location: "Remote",
-          budgetMin: finalBudgetMin,
-          budgetMax: finalBudgetMax,
-          keywords: category?.name ? [category.name] : [],
-        }
-      }).catch(err => console.error("Confirmation email error:", err));
+      // Send management email with edit/cancel links (no confirmation required)
+      supabase.functions.invoke("send-gig-management-email", {
+        body: { gigId: gigData.id }
+      }).catch(err => console.error("Management email error:", err));
+
+      // Blast to PRO diggers immediately
+      supabase.functions.invoke("blast-lead-to-diggers", {
+        body: { leadId: gigData.id, proOnly: true }
+      }).catch(err => console.error("Pro blast error:", err));
 
       const projectLink = `${window.location.origin}/gig/${gigData.id}`;
       supabase.functions.invoke("send-consumer-onboarding-email", {
@@ -269,8 +267,8 @@ const PostGig = () => {
         trackEvent('Lead', { content_name: 'Gig Posted', content_ids: [gigData.id] });
       }
 
-      toast.success("Check your email to confirm your project!");
-      navigate(`/gig-pending?gigId=${gigData.id}&email=${encodeURIComponent(finalClientEmail.trim())}`);
+      toast.success("Your project is live! Check your email for management links.");
+      navigate(`/gig-confirmed?gigId=${gigData.id}`);
     } catch (error: any) {
       console.error("Error posting gig:", error);
       toast.error("Failed to post project. Please try again.");
