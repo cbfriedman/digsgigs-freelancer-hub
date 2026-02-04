@@ -27,11 +27,6 @@ const benefits = [
     description: "Post your project and receive proposals from qualified pros within hours, not days."
   },
   {
-    icon: DollarSign,
-    title: "Only 8% Referral Fee",
-    description: "Pay just 8% when you hire—far less than the 20% charged by Upwork and Fiverr."
-  },
-  {
     icon: Shield,
     title: "Vetted US-Based Talent",
     description: "Work with professionals in your timezone who understand your market."
@@ -40,6 +35,11 @@ const benefits = [
     icon: Users,
     title: "Curated Matches",
     description: "Receive 3-5 highly relevant proposals instead of sorting through hundreds."
+  },
+  {
+    icon: Zap,
+    title: "Free to Post",
+    description: "No upfront costs, no credit card required. Pay nothing until you hire."
   }
 ];
 
@@ -126,13 +126,13 @@ export default function HireAPro() {
             <h1 className="mb-6">
               Hire Top{" "}
               <span className="text-gradient-accent">Tech Talent</span>
-              {" "}Without the{" "}
-              <span className="text-gradient-primary">Platform Tax</span>
+              {" "}in{" "}
+              <span className="text-gradient-primary">Hours, Not Days</span>
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
               Connect with vetted US-based developers, designers, and digital experts. 
-              Get proposals in hours. Pay just 8% when you hire—not 20%.
+              Post for free, get proposals fast.
             </p>
 
             <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
@@ -171,24 +171,6 @@ export default function HireAPro() {
         </div>
       </section>
 
-      {/* Comparison Banner */}
-      <section className="py-8 bg-primary/5 border-y border-primary/10">
-        <div className="container-wide">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 text-center">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-primary">8%</span>
-              <span className="text-sm text-muted-foreground">Our<br/>Fee</span>
-            </div>
-            <span className="text-muted-foreground font-medium">vs</span>
-            <div className="flex items-center gap-3 opacity-50">
-              <span className="text-3xl font-bold line-through">20%</span>
-              <span className="text-sm text-muted-foreground">Upwork &<br/>Fiverr</span>
-            </div>
-            <ArrowRight className="h-5 w-5 text-success hidden md:block" />
-            <span className="text-success font-semibold">Save 60% on every hire</span>
-          </div>
-        </div>
-      </section>
 
       {/* Benefits Grid */}
       <section className="section-padding">
