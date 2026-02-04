@@ -15,7 +15,10 @@ import {
   BellRing,
   FolderOpen,
   Sparkles,
-  Settings
+  Settings,
+  Briefcase,
+  Rocket,
+  ArrowRight
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +44,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface NavigationProps {
   showBackButton?: boolean;
@@ -69,6 +80,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
+  const [showGetStartedModal, setShowGetStartedModal] = useState(false);
 
   // Fetch user profile photo and display name (header avatar = auth photo when available)
   useEffect(() => {
@@ -301,11 +313,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => navigate("/get-free-quote")}
+                    onClick={() => navigate("/register")}
                     className="bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 text-accent-foreground shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                    Get Started
+                    Sign Up
                   </Button>
                 </div>
               ) : (
@@ -767,12 +779,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           <Button
                             className="w-full bg-gradient-to-r from-accent to-accent/80"
                             onClick={() => {
-                              navigate("/get-free-quote");
                               setMobileMenuOpen(false);
+                              navigate("/register");
                             }}
                           >
                             <Sparkles className="h-4 w-4 mr-2" />
-                            Get Started
+                            Sign Up
                           </Button>
                         </>
                       ) : (
@@ -796,6 +808,73 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
           </div>
         </div>
       </nav>
+      <Dialog open={showGetStartedModal} onOpenChange={setShowGetStartedModal}>
+        <DialogContent className="max-w-2xl sm:rounded-2xl">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-2xl font-semibold">How do you want to get started?</DialogTitle>
+            <DialogDescription>
+              Choose the path that matches your goals and we&apos;ll tailor the onboarding experience for you.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowGetStartedModal(false);
+                navigate("/register?type=gigger");
+              }}
+              className="group flex h-full flex-col rounded-2xl border border-border/60 bg-background/90 p-5 text-left shadow-sm transition-all hover:border-accent hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            >
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Briefcase className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">For clients</p>
+                  <h3 className="text-lg font-semibold text-foreground">Hire top freelancers</h3>
+                </div>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                Post projects for free, review tailored proposals, and only pay when you unlock the leads you want.
+              </p>
+              <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover:gap-2">
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowGetStartedModal(false);
+                navigate("/register?type=digger");
+              }}
+              className="group flex h-full flex-col rounded-2xl border border-border/60 bg-background/90 p-5 text-left shadow-sm transition-all hover:border-accent hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            >
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-secondary/20 text-secondary-foreground">
+                  <Rocket className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">For freelancers</p>
+                  <h3 className="text-lg font-semibold text-foreground">Find vetted projects</h3>
+                </div>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                Get instant access to curated opportunities, bid on gigs, and keep 100% of what you earn.
+              </p>
+              <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover:gap-2">
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowGetStartedModal(false)}>
+              Maybe later
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );

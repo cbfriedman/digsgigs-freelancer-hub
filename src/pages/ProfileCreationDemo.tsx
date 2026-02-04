@@ -186,9 +186,20 @@ export default function ProfileCreationDemo() {
         if (error) throw error;
       }
 
-      // Sync profile photo to auth so header/avatar show the new photo
+      // Sync profile photo to auth (preserving existing metadata like phone)
+      const existingMetadata = user?.user_metadata || {};
+      const metadataUpdates: Record<string, any> = {
+        ...existingMetadata,
+        avatar_url: photoUrl || "",
+        picture: photoUrl || "",
+      };
+
+      if (existingMetadata.phone && !metadataUpdates.phone) {
+        metadataUpdates.phone = existingMetadata.phone;
+      }
+
       await supabase.auth.updateUser({
-        data: { avatar_url: photoUrl || "", picture: photoUrl || "" },
+        data: metadataUpdates,
       });
 
       toast.success("Profile saved successfully!");

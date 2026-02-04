@@ -392,12 +392,29 @@ const EditDiggerProfile = () => {
 
       if (error) throw error;
 
-      // Sync profile photo to auth user so header/avatar show the new photo
+      // Sync profile photo (and preserve existing metadata like phone) to auth user
+      const existingMetadata = user?.user_metadata || {};
+      const metadataUpdates: Record<string, any> = {
+        ...existingMetadata,
+        avatar_url: photoUrl || "",
+        picture: photoUrl || "",
+      };
+
+      if (phone) {
+        const normalizedPhone = phone.startsWith("+") ? phone : `+${phone}`;
+        metadataUpdates.phone = normalizedPhone;
+
+        try {
+          await supabase.functions.invoke('sync-auth-phone', {
+            body: { userId: user.id, phone: normalizedPhone },
+          });
+        } catch (functionError) {
+          console.error("sync-auth-phone invocation failed:", functionError);
+        }
+      }
+
       await supabase.auth.updateUser({
-        data: {
-          avatar_url: photoUrl || "",
-          picture: photoUrl || "",
-        },
+        data: metadataUpdates,
       });
 
       // Update profession assignments

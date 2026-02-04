@@ -216,6 +216,9 @@ const Register = () => {
   const [roleFormData, setRoleFormData] = useState<RoleFormData>({});
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
 
+  // Freelancer flow: opt-in for helpful emails (job leads, tips)
+  const [diggerEmailOptIn, setDiggerEmailOptIn] = useState(true);
+
   // UTM and campaign tracking
   const { getCampaignData, clearUTMData } = useUTMTracking();
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
@@ -587,6 +590,14 @@ const Register = () => {
         if (profileError) {
           console.error("Error updating profile phone:", profileError);
           // Don't fail registration if profile update fails
+        }
+
+        try {
+          await supabase.functions.invoke('sync-auth-phone', {
+            body: { userId: authData.user.id, phone: formattedPhone },
+          });
+        } catch (functionError) {
+          console.error("Edge function sync-auth-phone failed:", functionError);
         }
       }
 
@@ -1727,10 +1738,22 @@ const Register = () => {
               <AuthLogo />
               
               <CardTitle className="text-2xl font-bold">
-                {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome back" : step === 1 ? "Create a new account" : step === 3 ? "Select Your Role" : currentRole === 'digger' ? "Complete Your Profile" : "Complete Your Profile"}
+                {isPasswordResetMode ? "Set New Password" : isSignInMode ? "Welcome back" : step === 1
+                  ? selectedRoles.has('gigger')
+                    ? "Sign up to hire talent"
+                    : selectedRoles.has('digger')
+                      ? "Sign up to find work you love"
+                      : "Create a new account"
+                  : step === 3 ? "Select Your Role" : currentRole === 'digger' ? "Complete Your Profile" : "Complete Your Profile"}
               </CardTitle>
               <CardDescription className="text-base">
-                {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : step === 1 ? "Get matched with jobs tailored to your skills, passions, and experience and track your applications – all for free." : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
+                {isPasswordResetMode ? "Enter your new password below" : isSignInMode ? "Sign in to your account" : step === 1
+                  ? selectedRoles.has('gigger')
+                    ? "Post projects for free, review tailored proposals, and hire the best talent for your team."
+                    : selectedRoles.has('digger')
+                      ? "Get matched with jobs tailored to your skills, passions, and experience – all for free."
+                      : "Get matched with jobs tailored to your skills, passions, and experience and track your applications – all for free."
+                  : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
               </CardDescription>
             </CardHeader>
 
@@ -2085,8 +2108,39 @@ const Register = () => {
                   </div>
                 )}
 
-                {/* Full Name Field */}
-                {!isFromGigPosting && (
+                {/* Name Fields - First/Last when role preselected (like reference), else Full name */}
+                {!isFromGigPosting && (selectedRoles.has('gigger') || selectedRoles.has('digger') ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        placeholder="First name"
+                        value={firstName}
+                        autoComplete="given-name"
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                        maxLength={50}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        placeholder="Last name"
+                        value={lastName}
+                        autoComplete="family-name"
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        maxLength={50}
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                ) : (
                   <div className="space-y-2">
                     <Label htmlFor="fullName">Full name</Label>
                     <Input
@@ -2101,14 +2155,16 @@ const Register = () => {
                       className="h-11"
                     />
                   </div>
-                )}
+                ))}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">
+                    {selectedRoles.has('gigger') ? "Work email address" : "Email"}
+                  </Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder={selectedRoles.has('gigger') ? "work@company.com" : "your@email.com"}
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -2196,13 +2252,27 @@ const Register = () => {
                   </div>
                 )}
 
+                {/* Freelancer flow: opt-in for helpful emails */}
+                {!isFromGigPosting && selectedRoles.has('digger') && (
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="digger-email-optin"
+                      checked={diggerEmailOptIn}
+                      onCheckedChange={(checked) => setDiggerEmailOptIn(!!checked)}
+                    />
+                    <Label htmlFor="digger-email-optin" className="text-sm font-normal leading-relaxed cursor-pointer">
+                      Send me helpful emails to find rewarding work and job leads.
+                    </Label>
+                  </div>
+                )}
+
                 {/* Sign Up Button */}
                 <Button 
                   type="submit" 
                   className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
                   disabled={loading}
                 >
-                  {loading ? "Creating Account..." : "Sign up"}
+                  {loading ? "Creating Account..." : (selectedRoles.has('gigger') || selectedRoles.has('digger') ? "Create my account" : "Sign up")}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
