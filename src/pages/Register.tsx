@@ -482,9 +482,10 @@ const Register = () => {
         });
       }
 
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+
       // Hybrid passwordless flow for gig posting - send OTP, no account creation
       if (isFromGigPosting) {
-        const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
         
         // Generate OTP code
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -538,90 +539,39 @@ const Register = () => {
         return;
       }
 
-      // SIMPLIFIED WORKFLOW: Create account and proceed directly to role selection
-      // Email verification is temporarily disabled (can be enabled via Admin Dashboard)
-      
-      // Format phone number (ensure it starts with +) - phone is now optional
-      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
-      
-      // Create account - Supabase auto-confirm is enabled
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: formattedPhone,
-          },
-          emailRedirectTo: `${window.location.origin}/role-dashboard`,
+      // SIGNUP VERIFICATION: send OTP for new registrations (no confirmation email)
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      const { error: otpError } = await supabase.functions.invoke('send-otp', {
+        body: {
+          email,
+          phone: formattedPhone,
+          code: otpCode,
+          name: fullName || 'User',
+          method: verificationMethod,
         },
       });
 
-      if (authError) {
-        // Server-side validation: Check if email already exists
-        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
-          setExistingAccountError(true);
-          toast.error("This email is already registered. Please sign in instead.");
-        } else {
-          toast.error(authError.message || "Failed to create account. Please try again.");
+      if (otpError) {
+        console.error("OTP send error:", otpError);
+        let errorMessage = "Failed to send verification code. Please try again.";
+        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
+          errorMessage = "Email service is not configured. Please contact support.";
+        } else if (otpError.message) {
+          errorMessage = otpError.message;
         }
+        toast.error(errorMessage);
         setLoading(false);
         isSendingOtpRef.current = false;
         return;
       }
 
-      if (!authData.user) {
-        toast.error("Failed to create account. Please try again.");
-        setLoading(false);
-        isSendingOtpRef.current = false;
-        return;
-      }
-
-      // Store user ID for later use
-      setUserId(authData.user.id);
-
-      // Update profiles table with phone number if provided
-      if (formattedPhone) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ phone: formattedPhone })
-          .eq('id', authData.user.id);
-        
-        if (profileError) {
-          console.error("Error updating profile phone:", profileError);
-          // Don't fail registration if profile update fails
-        }
-
-        try {
-          await supabase.functions.invoke('sync-auth-phone', {
-            body: { userId: authData.user.id, phone: formattedPhone },
-          });
-        } catch (functionError) {
-          console.error("Edge function sync-auth-phone failed:", functionError);
-        }
-      }
-
-      // Account created successfully - proceed directly to role selection
-      // Email verification is disabled, so we skip step 2 (OTP)
-      toast.success("Account created successfully! Now select your role.");
-      setStep(3); // Go directly to role selection
+      setOtpSent(true);
+      toast.success("Verification code sent! Please check your email.");
+      setStep(2);
       setLoading(false);
       isSendingOtpRef.current = false;
-      
-      // Track the successful signup
-      try {
-        if (fbConfigured) {
-          trackFBEvent('CompleteRegistration', { currency: 'USD', value: 0 });
-        }
-        if (gaConfigured) {
-          trackGAConversion(0, 'USD');
-        }
-        if (redditConfigured) {
-          trackRedditEvent('SignUp');
-        }
-      } catch (trackError) {
-        console.warn("Tracking error (non-critical):", trackError);
-      }
+      return;
 
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -724,21 +674,83 @@ const Register = () => {
         return;
       }
       
-      // Code is verified! Account was already created in pending state
-      // Now we just need to confirm the email address
-      
-      if (!userId) {
-        toast.error("Account not found. Please start registration again.");
+      // Code is verified for signup: create the auth user without sending a confirmation email
+      try {
+        const { data: createUserData, error: createUserError } = await supabase.functions.invoke('create-auth-user', {
+          body: {
+            email,
+            password,
+            fullName,
+            phone: formattedPhone,
+          },
+        });
+
+        if (createUserError) {
+          console.error("Create user error:", createUserError);
+          const errorMessage = createUserError.message?.includes('already exists')
+            ? "This email is already registered. Please sign in instead."
+            : createUserError.message || "Failed to create account. Please try again.";
+          toast.error(errorMessage);
+          setLoading(false);
+          return;
+        }
+
+        if (!createUserData?.userId) {
+          toast.error("Failed to create account. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        // Sign in the newly created user so role setup works
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError || !signInData.session) {
+          toast.error(signInError?.message || "Account created, but sign-in failed. Please sign in.");
+          setLoading(false);
+          setIsSignInMode(true);
+          return;
+        }
+
+        setUserId(createUserData.userId);
+
+        // Update profiles table with phone number if provided
+        if (formattedPhone) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ phone: formattedPhone })
+            .eq('id', createUserData.userId);
+
+          if (profileError) {
+            console.error("Error updating profile phone:", profileError);
+          }
+        }
+
+        toast.success("Email verified! Your account is ready.");
+        setStep(3);
+
+        // Track the successful signup
+        try {
+          if (fbConfigured) {
+            trackFBEvent('CompleteRegistration', { currency: 'USD', value: 0 });
+          }
+          if (gaConfigured) {
+            trackGAConversion(0, 'USD');
+          }
+          if (redditConfigured) {
+            trackRedditEvent('SignUp');
+          }
+        } catch (trackError) {
+          console.warn("Tracking error (non-critical):", trackError);
+        }
+      } catch (createError: any) {
+        console.error("Create user exception:", createError);
+        toast.error(createError.message || "Failed to create account. Please try again.");
         setLoading(false);
         return;
       }
-
-      // Confirm email verification (update email_confirmed_at in auth.users)
-      // This is handled automatically by Supabase when we mark the verification code as verified
-      // The verify-custom-otp function should handle this, but we can also manually confirm if needed
-      
-      toast.success("Email verified successfully! Account activated.");
-      setStep(3); // Go to role selection
     } catch (error: any) {
       console.error("Verification error:", error);
       toast.error(error.message || "Invalid verification code");
