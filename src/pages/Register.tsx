@@ -601,15 +601,16 @@ const Register = () => {
         return;
       }
 
-      // Format phone number for verification
+      // Format phone number for verification (E.164)
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
-      
-      // Verify OTP code using edge function (checks database)
+      const verifyBody: { email?: string; phone?: string; code: string } = {
+        code: String(verificationCode).trim(),
+      };
+      if (email?.trim()) verifyBody.email = email.trim();
+      if (formattedPhone) verifyBody.phone = formattedPhone;
+
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
-        body: {
-          email: email,
-          code: verificationCode,
-        },
+        body: verifyBody,
       });
 
       if (verifyError) {
@@ -1324,26 +1325,27 @@ const Register = () => {
       }
 
       toast.success("Registration complete! Redirecting to your dashboard...", { duration: 3000 });
-      
-      // Send welcome email and wait for completion (or timeout) so redirect doesn't cancel the request
-      const primaryRole = selectedRoles.has('digger') ? 'digger' : 'gigger';
-      const welcomeEmailPayload = {
+
+      // Send one role-specific welcome email per selected role (Digger and/or Gigger)
+      const campaign = getCampaignData();
+      const basePayload = {
         userId: verifiedUserId,
         email,
         name: fullName,
-        role: primaryRole,
-        utmSource: getCampaignData()?.utm_source,
-        utmMedium: getCampaignData()?.utm_medium,
-        utmCampaign: getCampaignData()?.utm_campaign,
+        utmSource: campaign?.utm_source,
+        utmMedium: campaign?.utm_medium,
+        utmCampaign: campaign?.utm_campaign,
       };
-      const welcomeEmailSent = supabase.functions.invoke('send-welcome-email', { body: welcomeEmailPayload });
+      const rolesToEmail = Array.from(selectedRoles).filter((r): r is 'digger' | 'gigger' => r === 'digger' || r === 'gigger');
+      const welcomeEmailPromises = rolesToEmail.map((role) =>
+        supabase.functions.invoke('send-welcome-email', { body: { ...basePayload, role } })
+      );
       const welcomeEmailTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Welcome email timeout')), 12000)
+        setTimeout(() => reject(new Error('Welcome email timeout')), 15000)
       );
       try {
-        const { error } = await Promise.race([welcomeEmailSent, welcomeEmailTimeout]);
-        if (error) console.error('Welcome email function error:', error);
-        else console.log('Welcome email sent successfully');
+        await Promise.race([Promise.all(welcomeEmailPromises), welcomeEmailTimeout]);
+        console.log('Welcome email(s) sent for role(s):', rolesToEmail.join(', ') || 'none');
       } catch (err: any) {
         if (err?.message !== 'Welcome email timeout') {
           console.error('Welcome email failed (non-critical):', err?.message ?? err);
@@ -1507,12 +1509,15 @@ const Register = () => {
         return;
       }
 
-      // Verify OTP code
+      const verifyBody: { email?: string; phone?: string; code: string } = {
+        code: String(verificationCode).trim(),
+      };
+      if (email?.trim()) verifyBody.email = email.trim();
+      const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
+      if (formattedPhone) verifyBody.phone = formattedPhone;
+
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
-        body: {
-          email: email,
-          code: verificationCode,
-        },
+        body: verifyBody,
       });
 
       if (verifyError) {
@@ -2420,7 +2425,7 @@ const Register = () => {
                               <h3 className="font-semibold">Find Work as a Professional (Digger)</h3>
                               <Badge variant="secondary">🔧</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="text-sm text-foreground/85 mt-1">
                               Get matched with gigs, purchase leads, bid on projects, and grow your business.
                             </p>
                           </div>
@@ -2449,7 +2454,7 @@ const Register = () => {
                           <h3 className="font-semibold">Hire Professionals (Gigger)</h3>
                           <Badge variant="secondary">📋</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm text-foreground/85 mt-1">
                           Post gigs, receive bids from qualified professionals, and hire the best talent.
                         </p>
                       </div>

@@ -1,6 +1,28 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-import { getCorsHeaders, handleOptionsRequest } from "../_shared/cors.ts";
+
+// Inline CORS so this function deploys without _shared (Supabase bundles per-function)
+const ALLOWED_ORIGINS = [
+  "https://digsgigs-freelancer-hub.vercel.app",
+  "https://digsandgigs.com",
+  "https://www.digsandgigs.com",
+  "https://digsandgigs.net",
+  "https://www.digsandgigs.net",
+  "http://localhost:8080",
+  "http://localhost:5173",
+];
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = (origin && ALLOWED_ORIGINS.includes(origin)) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+function handleOptionsRequest(origin: string | null): Response {
+  return new Response(null, { status: 204, headers: getCorsHeaders(origin) });
+}
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 

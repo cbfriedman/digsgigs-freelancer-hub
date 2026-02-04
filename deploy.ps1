@@ -18,6 +18,8 @@ Write-Host "`n⚡ Step 2: Deploying Edge Functions..." -ForegroundColor Cyan
 $functions = @(
     "send-otp",
     "verify-custom-otp",
+    "send-welcome-email",
+    "record-email-unsubscribe",
     "create-lead-purchase-checkout",
     "award-lead",
     "match-leads-to-diggers",

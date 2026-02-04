@@ -177,19 +177,23 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Check if verification code exists and is valid
+    // Normalize email to lowercase to match send-otp storage (it stores email?.toLowerCase())
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : undefined;
+    const normalizedPhone = typeof phone === "string" ? phone.trim() : undefined;
+
     let query = supabaseAdmin
       .from("verification_codes")
       .select("*")
-      .eq("code", code)
+      .eq("code", String(code).trim())
       .eq("verified", false)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1);
 
-    if (email) {
-      query = query.eq("email", email);
-    } else if (phone) {
-      query = query.eq("phone", phone);
+    if (normalizedEmail) {
+      query = query.eq("email", normalizedEmail);
+    } else if (normalizedPhone) {
+      query = query.eq("phone", normalizedPhone);
     }
 
     const { data: verificationCode, error: fetchError } = await query.single();
