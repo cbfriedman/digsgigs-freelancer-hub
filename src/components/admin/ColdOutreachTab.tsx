@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -342,7 +343,7 @@ sarah@example.com,Sarah,Davis,digger,finance`;
   const previewEmailForLead = async (lead: ColdLead) => {
     setPreviewingEmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-cold-email', {
+      const data = await invokeEdgeFunction<{ subject?: string; body?: string }>(supabase, 'generate-cold-email', {
         body: {
           leadType: lead.lead_type,
           industry: lead.industry || 'general',
@@ -352,16 +353,14 @@ sarah@example.com,Sarah,Davis,digger,finance`;
         },
       });
 
-      if (error) throw error;
-
       setEmailPreview({
-        subject: data.subject,
-        body: data.body,
+        subject: data.subject ?? '',
+        body: data.body ?? '',
       });
       toast.success("Email preview generated!");
     } catch (error: any) {
       console.error("Error generating preview:", error);
-      toast.error("Failed to generate preview: " + error.message);
+      toast.error("Failed to generate preview: " + (error?.message ?? "Unknown error"));
     } finally {
       setPreviewingEmail(false);
     }

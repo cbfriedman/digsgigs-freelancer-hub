@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { DollarSign, Clock, FileText, Loader2 } from "lucide-react";
 import { useCommissionCalculator } from "@/hooks/useCommissionCalculator";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 
 interface DiggerPricingSelectorProps {
@@ -57,28 +58,28 @@ export const DiggerPricingSelector = ({
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-lead-purchase-checkout', {
-        body: {
-          diggerId,
-          gigId,
-          pricingModel: selectedModel,
-        },
-      });
+      const data = await invokeEdgeFunction<{ url?: string; success?: boolean; message?: string }>(
+        supabase,
+        'create-lead-purchase-checkout',
+        {
+          body: {
+            diggerId,
+            gigId,
+            pricingModel: selectedModel,
+          },
+        }
+      );
 
-      if (error) throw error;
-
-      if (data.url) {
-        // Open Stripe checkout in new tab
+      if (data?.url) {
         window.open(data.url, '_blank');
         toast.success('Redirecting to payment...');
-      } else if (data.success) {
-        // Free lead access granted
+      } else if (data?.success) {
         toast.success(data.message || 'Lead access granted!');
         onSelectPricing(selectedModel);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error purchasing lead:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to process lead purchase');
+      toast.error(error?.message ?? 'Failed to process lead purchase');
     } finally {
       setIsLoading(false);
     }

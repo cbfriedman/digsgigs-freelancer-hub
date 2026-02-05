@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -43,11 +44,9 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
         exclusivityType: 'non-exclusive'
       }));
       
-      const { data, error } = await supabase.functions.invoke("create-bulk-lead-purchase", {
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, "create-bulk-lead-purchase", {
         body: { purchases },
       });
-
-      if (error) throw error;
 
       if (data?.url) {
         window.open(data.url, "_blank");
@@ -60,7 +59,7 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
       console.error("Checkout error:", error);
       toast({
         title: "Checkout Failed",
-        description: error.message || "Failed to create checkout session",
+        description: error?.message || "Failed to create checkout session",
         variant: "destructive",
       });
     } finally {

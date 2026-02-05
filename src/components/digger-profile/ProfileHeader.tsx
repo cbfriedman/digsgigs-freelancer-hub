@@ -76,12 +76,12 @@ export const ProfileHeader = ({
     : businessName;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Main Header */}
-      <div className="flex flex-col sm:flex-row items-start gap-6">
+      <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
         {/* Avatar */}
-        <div className="relative">
-          <Avatar className="h-28 w-28 border-4 border-primary/20">
+        <div className="relative shrink-0">
+          <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-2 sm:border-4 border-primary/20">
             <AvatarImage src={profileImageUrl || undefined} alt={businessName} />
             <AvatarFallback className="bg-primary/10 text-primary text-3xl font-bold">
               {getInitials(businessName)}
@@ -92,9 +92,9 @@ export const ProfileHeader = ({
         </div>
 
         {/* Name and Primary Info */}
-        <div className="flex-1 space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-bold text-foreground">{displayName}</h1>
+        <div className="flex-1 min-w-0 space-y-2 sm:space-y-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground break-words">{displayName}</h1>
             {isVerified && (
               <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                 <Shield className="w-3.5 h-3.5 mr-1" />
@@ -144,63 +144,63 @@ export const ProfileHeader = ({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
         {/* Rating */}
-        <div className="bg-accent/30 rounded-xl p-4 text-center">
+        <div className="bg-accent/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center min-w-0">
           <div className="flex items-center justify-center gap-1.5 mb-1">
-            <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-            <span className="text-2xl font-bold text-foreground">
+            <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400 shrink-0" />
+            <span className="text-xl sm:text-2xl font-bold text-foreground truncate">
               {averageRating > 0 ? averageRating.toFixed(1) : 'New'}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">
             {totalRatings > 0 ? `${totalRatings} reviews` : 'No reviews yet'}
           </p>
         </div>
 
         {/* Experience */}
         {yearsExperience && yearsExperience > 0 && (
-          <div className="bg-accent/30 rounded-xl p-4 text-center">
+          <div className="bg-accent/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center min-w-0">
             <div className="flex items-center justify-center gap-1.5 mb-1">
-              <Award className="w-5 h-5 text-primary" />
-              <span className="text-2xl font-bold text-foreground">{yearsExperience}</span>
+              <Award className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" />
+              <span className="text-xl sm:text-2xl font-bold text-foreground">{yearsExperience}</span>
             </div>
-            <p className="text-sm text-muted-foreground">Years Experience</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Years Experience</p>
           </div>
         )}
 
         {/* Completion Rate */}
         {completionRate !== null && completionRate !== undefined && completionRate > 0 && (
-          <div className="bg-accent/30 rounded-xl p-4 text-center">
+          <div className="bg-accent/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center min-w-0">
             <div className="flex items-center justify-center gap-1.5 mb-1">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <span className="text-2xl font-bold text-foreground">{completionRate}%</span>
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 shrink-0" />
+              <span className="text-xl sm:text-2xl font-bold text-foreground">{completionRate}%</span>
             </div>
-            <p className="text-sm text-muted-foreground">Completion Rate</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Completion Rate</p>
           </div>
         )}
 
         {/* Response Time */}
         {responseTimeHours !== null && responseTimeHours !== undefined && responseTimeHours > 0 && (
-          <div className="bg-accent/30 rounded-xl p-4 text-center">
+          <div className="bg-accent/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center min-w-0">
             <div className="flex items-center justify-center gap-1.5 mb-1">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <span className="text-2xl font-bold text-foreground">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 shrink-0" />
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {responseTimeHours < 24 ? `${responseTimeHours}h` : `${Math.round(responseTimeHours / 24)}d`}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">Response Time</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Response Time</p>
           </div>
         )}
 
         {/* Hourly Rate */}
         {hourlyRateDisplay && (
-          <div className="bg-accent/30 rounded-xl p-4 text-center">
+          <div className="bg-accent/30 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center min-w-0">
             <div className="flex items-center justify-center gap-1.5 mb-1">
-              <DollarSign className="w-5 h-5 text-green-600" />
-              <span className="text-lg font-bold text-foreground">{hourlyRateDisplay}</span>
+              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 shrink-0" />
+              <span className="text-base sm:text-lg font-bold text-foreground truncate">{hourlyRateDisplay}</span>
             </div>
-            <p className="text-sm text-muted-foreground">Hourly Rate</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Hourly Rate</p>
           </div>
         )}
       </div>

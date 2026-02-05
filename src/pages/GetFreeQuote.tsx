@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,14 +147,12 @@ export default function GetFreeQuote() {
     setIsVerifying(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("verify-phone-sms", {
+      await invokeEdgeFunction(supabase, "verify-phone-sms", {
         body: {
           consentRecordId,
           code: verificationCode,
         },
       });
-
-      if (error) throw error;
 
       // Track Lead conversion on successful SMS verification
       trackEvent('Lead', {

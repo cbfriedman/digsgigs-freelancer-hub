@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 
 export interface GigData {
@@ -52,24 +53,22 @@ export function useGigAssistant() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("gig-assistant-chat", {
-        body: {
-          messages: updatedMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          currentData: extractedData,
-        },
-      });
-
-      if (error) {
-        console.error("Edge function error:", error);
-        toast.error("Failed to get response. Please try again.");
-        return;
-      }
+      const data = await invokeEdgeFunction<{ content?: string; extractedData?: GigData }>(
+        supabase,
+        "gig-assistant-chat",
+        {
+          body: {
+            messages: updatedMessages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+            currentData: extractedData,
+          },
+        }
+      );
 
       // Add assistant response
-      if (data.content) {
+      if (data?.content) {
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: data.content },
@@ -85,9 +84,9 @@ export function useGigAssistant() {
           ),
         }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Send message error:", err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(err?.message || "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }

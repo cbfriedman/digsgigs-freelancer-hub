@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -316,7 +317,7 @@ const Transactions = () => {
         totalCommission,
       } : undefined;
 
-      const { data, error } = await supabase.functions.invoke('send-transaction-report', {
+      await invokeEdgeFunction(supabase, 'send-transaction-report', {
         body: {
           transactions: filteredTransactions,
           userType,
@@ -324,8 +325,6 @@ const Transactions = () => {
           dateRange: dateRangeText,
         },
       });
-
-      if (error) throw error;
 
       toast({
         title: "Report sent!",
@@ -335,7 +334,7 @@ const Transactions = () => {
       console.error('Error sending email report:', error);
       toast({
         title: "Failed to send email",
-        description: error.message || "Please try again later",
+        description: error?.message || "Please try again later",
         variant: "destructive",
       });
     } finally {
@@ -347,11 +346,9 @@ const Transactions = () => {
     setTriggeringMonthly(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-monthly-reports', {
+      const data = await invokeEdgeFunction<{ message?: string }>(supabase, 'send-monthly-reports', {
         body: {},
       });
-
-      if (error) throw error;
 
       toast({
         title: "Monthly reports triggered!",
@@ -361,7 +358,7 @@ const Transactions = () => {
       console.error('Error triggering monthly reports:', error);
       toast({
         title: "Failed to trigger reports",
-        description: error.message || "Please try again later",
+        description: error?.message || "Please try again later",
         variant: "destructive",
       });
     } finally {

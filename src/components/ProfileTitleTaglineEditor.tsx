@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,7 @@ export const ProfileTitleTaglineEditor = ({
       setCurrentType(type);
       setShowSuggestions(true);
       
-      const { data, error } = await supabase.functions.invoke('generate-profile-suggestions', {
+      const data = await invokeEdgeFunction<{ suggestions?: string[] }>(supabase, 'generate-profile-suggestions', {
         body: {
           companyName,
           profession,
@@ -48,14 +49,12 @@ export const ProfileTitleTaglineEditor = ({
         }
       });
 
-      if (error) throw error;
-
-      setSuggestions(data.suggestions || []);
-    } catch (error) {
+      setSuggestions(data?.suggestions || []);
+    } catch (error: any) {
       console.error('Error generating suggestions:', error);
       toast({
         title: "Error",
-        description: "Failed to generate suggestions. Please try again.",
+        description: error?.message || "Failed to generate suggestions. Please try again.",
         variant: "destructive",
       });
     } finally {

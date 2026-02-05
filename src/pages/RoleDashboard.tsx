@@ -537,7 +537,7 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('digger');
-                          navigate('/profile-categories');
+                          navigate('/create-digger-profile');
                         }}
                       >
                         <Plus className="h-4 w-4 mr-1" />

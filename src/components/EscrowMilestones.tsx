@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,11 +79,9 @@ export const EscrowMilestones = ({ gigId, isConsumer }: EscrowMilestonesProps) =
     setReleasing(milestoneId);
 
     try {
-      const { error } = await supabase.functions.invoke("release-milestone", {
+      await invokeEdgeFunction(supabase, "release-milestone", {
         body: { milestoneId },
       });
-
-      if (error) throw error;
 
       toast({
         title: "Milestone released!",
@@ -94,7 +93,7 @@ export const EscrowMilestones = ({ gigId, isConsumer }: EscrowMilestonesProps) =
       console.error("Error releasing milestone:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to release milestone",
+        description: error?.message || "Failed to release milestone",
         variant: "destructive",
       });
     } finally {

@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Loader2, MapPin, X, Sparkles } from "lucide-react";
+import { Target, Loader2, MapPin, X, Sparkles, ShieldAlert } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -132,6 +134,68 @@ export const CategoryBrowserWithDescription = () => {
     setSelectedStates([]);
   }, [country]);
 
+  // Load existing profile's location when editing
+  useEffect(() => {
+    if (!existingProfileId || !user) return;
+    const load = async () => {
+      const { data, error } = await supabase
+        .from('digger_profiles')
+        .select('location, country, service_zip_codes, service_radius_center, service_radius_miles')
+        .eq('id', existingProfileId)
+        .single();
+      if (error || !data) return;
+      setCountry(data.country || '');
+      setServiceZipCodes(Array.isArray(data.service_zip_codes) ? data.service_zip_codes.join(', ') : (data.service_zip_codes || ''));
+      setServiceRadiusCenter(data.service_radius_center || '');
+      setServiceRadiusMiles(data.service_radius_miles ?? 25);
+      if (data.location && data.location !== 'Not specified') {
+        const parts = data.location.split(',').map((p: string) => p.trim()).filter(Boolean);
+        const regions = data.country ? getRegionsForCountry(data.country) : [];
+        if (parts.length >= 2 && regions.length > 0) {
+          const possibleStates = parts.slice(1, -1);
+          setSelectedStates(possibleStates.filter((s: string) => regions.includes(s)));
+        }
+        const firstPart = parts[0];
+        if (firstPart && firstPart !== data.country && !regions.includes(firstPart)) {
+          setCity(firstPart);
+        }
+      }
+    };
+    load();
+  }, [existingProfileId, user]);
+
+  // When creating an additional profile (no existingProfileId), pre-fill location from user's first digger profile
+  useEffect(() => {
+    if (existingProfileId || !user || country) return;
+    const loadFirstProfile = async () => {
+      const { data: profiles, error } = await supabase
+        .from('digger_profiles')
+        .select('location, country, service_zip_codes, service_radius_center, service_radius_miles')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      if (error || !profiles?.length) return;
+      const p = profiles[0];
+      setCountry(p.country || '');
+      setServiceZipCodes(Array.isArray(p.service_zip_codes) ? p.service_zip_codes.join(', ') : (p.service_zip_codes || ''));
+      setServiceRadiusCenter(p.service_radius_center || '');
+      setServiceRadiusMiles(p.service_radius_miles ?? 25);
+      if (p.location && p.location !== 'Not specified') {
+        const parts = p.location.split(',').map((x: string) => x.trim()).filter(Boolean);
+        const regions = p.country ? getRegionsForCountry(p.country) : [];
+        if (parts.length >= 2 && regions.length > 0) {
+          const possibleStates = parts.slice(1, -1);
+          setSelectedStates(possibleStates.filter((s: string) => regions.includes(s)));
+        }
+        const firstPart = parts[0];
+        if (firstPart && firstPart !== p.country && !regions.includes(firstPart)) {
+          setCity(firstPart);
+        }
+      }
+    };
+    loadFirstProfile();
+  }, [user, existingProfileId]);
+
   // Auto-generate profile name from selected professions
   useEffect(() => {
     if (selectedProfessionIds.length > 0 && !existingProfileId) {
@@ -165,13 +229,13 @@ export const CategoryBrowserWithDescription = () => {
         setTimeout(() => reject(new Error('Request timeout')), 10000)
       );
 
-      const edgeFunctionPromise = supabase.functions.invoke('suggest-keywords-from-description', {
-        body: { description: descriptionText }
-      });
+      const edgeFunctionPromise = invokeEdgeFunction<{ keywords?: string[] }>(
+        supabase,
+        'suggest-keywords-from-description',
+        { body: { description: descriptionText } }
+      );
 
-      const { data, error } = await Promise.race([edgeFunctionPromise, timeoutPromise]) as any;
-
-      if (error) throw error;
+      const data = await Promise.race([edgeFunctionPromise, timeoutPromise]) as { keywords?: string[] } | undefined;
 
       if (data?.keywords && data.keywords.length > 0) {
         setSuggestedKeywords(data.keywords);
@@ -180,7 +244,7 @@ export const CategoryBrowserWithDescription = () => {
         return;
       }
     } catch (error: any) {
-      console.log("Edge function failed, using local keyword suggestions:", error);
+      console.log("Edge function failed, using local keyword suggestions:", error?.message ?? error);
       
       // Fallback to local keyword generation
       const categoryToprofession: Record<string, string> = {
@@ -228,10 +292,10 @@ export const CategoryBrowserWithDescription = () => {
     return `Describe your expertise in ${selectedProfessions.join(', ')}...`;
   };
 
-  // AI-powered description enhancement
+  // AI-powered description enhancement (works with or without existing text; uses selected professions)
   const handleEnhanceDescription = async () => {
-    if (!description.trim() || description.trim().length < 10) {
-      toast.error("Please enter at least 10 characters to enhance");
+    if (selectedProfessionIds.length === 0) {
+      toast.error("Please select at least one profession first");
       return;
     }
 
@@ -242,22 +306,28 @@ export const CategoryBrowserWithDescription = () => {
         .filter(Boolean)
         .map(p => p!.name);
 
-      const { data, error } = await supabase.functions.invoke('enhance-gig-description', {
-        body: { 
-          description: description,
-          labels: selectedProfessionNames.join(', ')
+      const descriptionToSend = description.trim();
+      const data = await invokeEdgeFunction<{ enhancedDescription?: string; error?: string }>(
+        supabase,
+        'enhance-gig-description',
+        {
+          body: {
+            description: descriptionToSend || undefined,
+            labels: selectedProfessionNames.join(', '),
+            professions: selectedProfessionNames,
+          },
         }
-      });
-
-      if (error) throw error;
+      );
 
       if (data?.enhancedDescription) {
         setDescription(data.enhancedDescription);
         toast.success("Description enhanced with AI!");
+      } else if (data?.error) {
+        toast.error(data.error);
       }
     } catch (error: any) {
       console.error("Failed to enhance description:", error);
-      toast.error("Failed to enhance description. Please try again.");
+      toast.error(error?.message || "Failed to enhance description. Please try again.");
     } finally {
       setIsEnhancingDescription(false);
     }
@@ -309,14 +379,14 @@ export const CategoryBrowserWithDescription = () => {
             />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
               <p className="text-sm text-muted-foreground flex-1">
-                Be specific about your services and expertise in your selected professions
+                Be specific about your services and expertise. You can leave the box blank and click &quot;Enhance with AI&quot; to generate a description from your selected professions.
               </p>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={handleEnhanceDescription}
-                disabled={isEnhancingDescription || !description.trim() || description.trim().length < 10}
+                disabled={isEnhancingDescription || selectedProfessionIds.length === 0}
                 className="shrink-0 w-full sm:w-auto min-h-[44px] sm:min-h-0 touch-manipulation"
               >
                 {isEnhancingDescription ? (
@@ -446,6 +516,13 @@ export const CategoryBrowserWithDescription = () => {
             {/* Location Preferences Section */}
             <Card className="p-3 sm:p-4 border-2 border-primary/20 bg-primary/5 mt-4 overflow-x-hidden">
               <div className="space-y-4">
+                <Alert className="border-amber-500/50 bg-amber-500/10">
+                  <ShieldAlert className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-800 dark:text-amber-200">Enter accurate location</AlertTitle>
+                  <AlertDescription>
+                    Please enter your <strong>correct country and location</strong>. This information may be used for identity or business verification later. Inaccurate details can delay or affect verification.
+                  </AlertDescription>
+                </Alert>
                 <div>
                   <Label className="text-base font-semibold flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
@@ -681,16 +758,22 @@ export const CategoryBrowserWithDescription = () => {
                   try {
                     // Check if we're editing an existing profile or creating new
                     if (existingProfileId) {
-                      // UPDATE existing profile
+                      // UPDATE existing profile — keep location thoroughly
                       const zipCodesArray = locationPreferenceType === "zip_codes" && serviceZipCodes
                         ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
                         : null;
+                      const locationParts: string[] = [];
+                      if (city.trim()) locationParts.push(city.trim());
+                      if (selectedStates.length > 0) locationParts.push(selectedStates.join(', '));
+                      if (country) locationParts.push(country);
+                      const locationString = locationParts.length > 0 ? locationParts.join(', ') : 'Not specified';
 
                       const { error: updateError } = await supabase
                         .from('digger_profiles')
                         .update({
                           keywords: selected,
                           profile_name: profileName.trim(),
+                          location: locationString,
                           service_zip_codes: zipCodesArray,
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,

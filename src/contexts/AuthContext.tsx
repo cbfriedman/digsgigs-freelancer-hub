@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction } from '@/lib/invokeEdgeFunction';
 import { toast } from 'sonner';
 
 type UserAppRole = 'digger' | 'gigger' | 'admin';
@@ -190,17 +191,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       if (!session) return;
 
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
+      const data = await invokeEdgeFunction(supabase, 'check-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
-
-      if (error) {
-        // Subscription check may be deprecated or return 400; fail silently
-        return;
-      }
-
       setSubscriptionStatus(data);
     } catch {
       // Fail silently so console is not spammed

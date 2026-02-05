@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -476,10 +477,10 @@ export default function Messages() {
     if (!partnerUserId) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke("get-proxy-email", {
+      const data = await invokeEdgeFunction<{ proxy_email?: string }>(supabase, "get-proxy-email", {
         body: { user_id: partnerUserId },
       });
-      if (!error && data?.proxy_email) setPartnerProxyEmail(data.proxy_email);
+      if (data?.proxy_email) setPartnerProxyEmail(data.proxy_email);
     } catch (err) {
       console.error("Error loading partner proxy email:", err);
     }

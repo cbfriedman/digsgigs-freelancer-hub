@@ -61,7 +61,7 @@ export default function MyProfiles() {
   const hasGiggerRole = userRoles.includes("gigger");
 
   const handleCreateNewProfile = () => {
-    navigate("/edit-digger-profile");
+    navigate("/create-digger-profile");
   };
 
   useEffect(() => {

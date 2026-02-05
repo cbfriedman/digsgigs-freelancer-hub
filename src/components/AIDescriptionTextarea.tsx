@@ -3,6 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 
 interface AIDescriptionTextareaProps {
@@ -41,27 +42,22 @@ export function AIDescriptionTextarea({
 
     setIsEnhancing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("enhance-gig-description", {
-        body: {
-          description: value.trim(),
-          problemLabel,
-          clarifyingLabel,
-        },
-      });
-
-      if (error) {
-        console.error("Enhancement error:", error);
-        // Show more actionable error message
-        const errorMsg = error.message || "Failed to enhance";
-        toast.error(`Enhancement failed: ${errorMsg}`);
-        return;
-      }
+      const data = await invokeEdgeFunction<{ enhancedDescription?: string; error?: string }>(
+        supabase,
+        "enhance-gig-description",
+        {
+          body: {
+            description: value.trim(),
+            problemLabel,
+            clarifyingLabel,
+          },
+        }
+      );
 
       if (data?.enhancedDescription) {
         onChange(data.enhancedDescription);
         toast.success("Description enhanced!");
       } else if (data?.error) {
-        // Show the specific backend error message
         toast.error(data.error);
       } else {
         toast.error("No enhanced description received");

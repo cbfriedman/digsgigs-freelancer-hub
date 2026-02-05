@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -94,11 +95,9 @@ export default function AdminLeadDistributionTest() {
   };
 
   const callAdminFunction = async (action: string, params: Record<string, any> = {}) => {
-    const { data, error } = await supabase.functions.invoke("admin-test-lead-distribution", {
+    return invokeEdgeFunction(supabase, "admin-test-lead-distribution", {
       body: { action, ...params }
     });
-    if (error) throw error;
-    return data;
   };
 
   const loadSystemStatus = async () => {
@@ -106,7 +105,7 @@ export default function AdminLeadDistributionTest() {
       const result = await callAdminFunction("get-system-status");
       setSystemStatus(result.data);
     } catch (error: any) {
-      toast.error("Failed to load system status: " + error.message);
+      toast.error("Failed to load system status: " + (error?.message ?? "Unknown error"));
     }
   };
 
@@ -115,7 +114,7 @@ export default function AdminLeadDistributionTest() {
       const result = await callAdminFunction("get-queue-details");
       setQueueEntries(result.data.entries);
     } catch (error: any) {
-      toast.error("Failed to load queue: " + error.message);
+      toast.error("Failed to load queue: " + (error?.message ?? "Unknown error"));
     }
   };
 
@@ -140,7 +139,7 @@ export default function AdminLeadDistributionTest() {
       setPreviewResult(result.data);
       toast.success(`Found ${result.data.matchCount} matching diggers`);
     } catch (error: any) {
-      toast.error("Preview failed: " + error.message);
+      toast.error("Preview failed: " + (error?.message ?? "Unknown error"));
     } finally {
       setActionLoading(null);
     }
@@ -178,7 +177,7 @@ export default function AdminLeadDistributionTest() {
       await loadSystemStatus();
       await loadQueueDetails();
     } catch (error: any) {
-      toast.error("Expiration check failed: " + error.message);
+      toast.error("Expiration check failed: " + (error?.message ?? "Unknown error"));
     } finally {
       setActionLoading(null);
     }
@@ -193,7 +192,7 @@ export default function AdminLeadDistributionTest() {
       await loadSystemStatus();
       await loadQueueDetails();
     } catch (error: any) {
-      toast.error("Semi-exclusive expiration check failed: " + error.message);
+      toast.error("Semi-exclusive expiration check failed: " + (error?.message ?? "Unknown error"));
     } finally {
       setActionLoading(null);
     }

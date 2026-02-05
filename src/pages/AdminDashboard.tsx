@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -223,17 +224,15 @@ const AdminDashboard = () => {
   const triggerReminderJob = async () => {
     setTriggeringJob(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-profile-reminders", {
+      const data = await invokeEdgeFunction<{ remindersSent?: number }>(supabase, "send-profile-reminders", {
         body: { manual_trigger: true },
       });
-
-      if (error) throw error;
 
       toast.success(`Reminder job completed! ${data.remindersSent} reminders sent.`);
       await loadDashboardData();
     } catch (error: any) {
       console.error("Error triggering reminder job:", error);
-      toast.error("Failed to trigger reminder job: " + error.message);
+      toast.error("Failed to trigger reminder job: " + (error?.message ?? "Unknown error"));
     } finally {
       setTriggeringJob(false);
     }
@@ -281,14 +280,12 @@ const AdminDashboard = () => {
   const sendTestEmail = async () => {
     setSendingTestEmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke('notify-keyword-request', {
-        body: { 
+      const data = await invokeEdgeFunction<{ emailsSent?: number }>(supabase, 'notify-keyword-request', {
+        body: {
           profession: 'Test Profession (Software Developer)',
           requestId: 'test-' + Date.now()
         }
       });
-
-      if (error) throw error;
 
       toast.success("Test email sent successfully!", {
         description: data?.emailsSent ? `Sent to ${data.emailsSent} admin(s)` : "Check admin inboxes"
@@ -306,13 +303,11 @@ const AdminDashboard = () => {
   const checkUpgradeSavings = async () => {
     setCheckingUpgrades(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-upgrade-savings');
-
-      if (error) throw error;
+      const data = await invokeEdgeFunction<{ notificationsSent?: number }>(supabase, 'check-upgrade-savings');
 
       toast.success("Upgrade savings check completed!", {
-        description: data?.notificationsSent 
-          ? `Sent ${data.notificationsSent} notification(s) to eligible diggers` 
+        description: data?.notificationsSent
+          ? `Sent ${data.notificationsSent} notification(s) to eligible diggers`
           : "No eligible diggers found"
       });
     } catch (error: any) {

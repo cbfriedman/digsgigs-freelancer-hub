@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -433,7 +434,7 @@ export default function Checkout() {
       const totalFromSelections = selectionsWithPricing.reduce((sum, sel) => sum + sel.subtotal, 0);
       const freshDiscount = calculateBulkDiscount(totalFromSelections);
 
-      const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, "create-bulk-lead-checkout", {
         body: {
           selections: selectionsWithPricing,
           totalAmount: freshDiscount.finalTotal,
@@ -448,19 +449,18 @@ export default function Checkout() {
         },
       });
 
-      if (error) throw error;
       if (!data?.url) throw new Error("No checkout URL received");
 
       // Mark checkout as initiated to prevent useEffect from re-running
       checkoutInitiatedRef.current = true;
-      
+
       // Store URL and show dialog for user to click
       console.log('[Checkout] Stripe URL received:', data.url);
       setStripeCheckoutUrl(data.url);
       setProcessing(false);
     } catch (error: any) {
       console.error("Checkout error:", error);
-      toast.error(error.message || "Failed to process checkout");
+      toast.error(error?.message || "Failed to process checkout");
       setProcessing(false);
     }
   };
@@ -495,7 +495,7 @@ export default function Checkout() {
       const totalFromSelections = selectionsWithPricing.reduce((sum, sel) => sum + sel.subtotal, 0);
       const freshDiscount = calculateBulkDiscount(totalFromSelections);
 
-      const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, "create-bulk-lead-checkout", {
         body: {
           selections: selectionsWithPricing,
           totalAmount: freshDiscount.finalTotal,
@@ -510,7 +510,6 @@ export default function Checkout() {
         },
       });
 
-      if (error) throw error;
       if (!data?.url) throw new Error("No checkout URL received");
 
       // Open fresh checkout URL immediately
@@ -518,7 +517,7 @@ export default function Checkout() {
       setStripeCheckoutUrl(data.url);
     } catch (error: any) {
       console.error("Checkout error:", error);
-      toast.error(error.message || "Failed to create checkout session");
+      toast.error(error?.message || "Failed to create checkout session");
     } finally {
       setProcessing(false);
     }

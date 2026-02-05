@@ -187,7 +187,7 @@ export const DiggerProfileSelector = () => {
     // Store the profile name in sessionStorage for the category browser to use
     sessionStorage.setItem('newProfileName', newProfileName.trim());
     setCreateProfileDialog(false);
-    navigate("/profile-categories");
+    navigate("/create-digger-profile");
   };
 
   const handleEditProfile = (profileId: string) => {

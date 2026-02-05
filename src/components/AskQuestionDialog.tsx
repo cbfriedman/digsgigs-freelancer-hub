@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MessageBlockedAlert } from "@/components/MessageBlockedAlert";
 import { ViolationType } from "@/types/messageModeration";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Shield, Send, AlertTriangle } from "lucide-react";
 
@@ -87,16 +88,18 @@ export const AskQuestionDialog = ({
     setViolations([]);
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-anonymous-question', {
-        body: {
-          gigId,
-          bidId,
-          diggerId,
-          message: message.trim(),
-        },
-      });
-
-      if (error) throw error;
+      const data = await invokeEdgeFunction<{ blocked?: boolean; violations?: string[] }>(
+        supabase,
+        'send-anonymous-question',
+        {
+          body: {
+            gigId,
+            bidId,
+            diggerId,
+            message: message.trim(),
+          },
+        }
+      );
 
       if (data.blocked) {
         setBlocked(true);
@@ -115,7 +118,7 @@ export const AskQuestionDialog = ({
       console.error('Error sending question:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send question. Please try again.",
+        description: error?.message || "Failed to send question. Please try again.",
         variant: "destructive",
       });
     } finally {

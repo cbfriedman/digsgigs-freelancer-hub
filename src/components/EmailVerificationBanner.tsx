@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 
 export const EmailVerificationBanner = () => {
@@ -27,23 +28,14 @@ export const EmailVerificationBanner = () => {
     setSending(true);
     try {
       // Send OTP code for verification
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: {
-          email: user.email,
-        },
+      await invokeEdgeFunction(supabase, 'send-otp', {
+        body: { email: user.email },
       });
-
-      if (error) {
-        console.error("Error sending verification code:", error);
-        toast.error("Failed to send verification code. Please try again.");
-      } else {
-        toast.success("Verification code sent! Please check your email.");
-        // Navigate to register page to enter verification code
-        navigate('/register');
-      }
-    } catch (error) {
+      toast.success("Verification code sent! Please check your email.");
+      navigate('/register');
+    } catch (error: any) {
       console.error("Error sending verification code:", error);
-      toast.error("Failed to send verification code. Please try again.");
+      toast.error(error?.message || "Failed to send verification code. Please try again.");
     } finally {
       setSending(false);
     }

@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AlertCircle, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 
 interface LeadReturnDialogProps {
@@ -45,20 +46,22 @@ export const LeadReturnDialog = ({ leadPurchaseId, gigTitle, onSuccess, buttonCl
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('process-lead-return', {
-        body: {
-          leadPurchaseId,
-          issueType: selectedReason,
-          description: description || RETURN_REASONS.find(r => r.id === selectedReason)?.label || ""
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
+      const data = await invokeEdgeFunction<{ autoApproved?: boolean; message?: string }>(
+        supabase,
+        'process-lead-return',
+        {
+          body: {
+            leadPurchaseId,
+            issueType: selectedReason,
+            description: description || RETURN_REASONS.find(r => r.id === selectedReason)?.label || ""
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
         }
-      });
+      );
 
-      if (error) throw error;
-
-      if (data.autoApproved) {
+      if (data?.autoApproved) {
         toast.success(data.message, {
           description: "The credit has been added to your account.",
           duration: 5000,
@@ -77,7 +80,7 @@ export const LeadReturnDialog = ({ leadPurchaseId, gigTitle, onSuccess, buttonCl
       onSuccess?.();
     } catch (error: any) {
       console.error("Error submitting return request:", error);
-      toast.error(error.message || "Failed to submit return request");
+      toast.error(error?.message || "Failed to submit return request");
     } finally {
       setSubmitting(false);
     }

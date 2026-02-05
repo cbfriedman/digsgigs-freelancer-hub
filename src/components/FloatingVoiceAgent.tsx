@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 
 // Define the shape of extracted gig data
@@ -99,9 +100,11 @@ export function FloatingVoiceAgent({
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
       // Get signed URL from edge function
-      const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
+      const data = await invokeEdgeFunction<{ signedUrl?: string }>(
+        supabase,
+        "elevenlabs-conversation-token"
+      );
 
-      if (error) throw error;
       if (!data?.signedUrl) {
         throw new Error("No signed URL received");
       }
@@ -110,15 +113,15 @@ export function FloatingVoiceAgent({
       await conversation.startSession({
         signedUrl: data.signedUrl,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to start conversation:", error);
-      
+
       if (error instanceof DOMException && error.name === "NotAllowedError") {
         toast.error("Microphone access required", {
           description: "Please allow microphone access to use voice features.",
         });
       } else {
-        toast.error("Couldn't connect to voice agent", {
+        toast.error(error?.message || "Couldn't connect to voice agent", {
           description: "Please try again or use the form instead.",
         });
       }

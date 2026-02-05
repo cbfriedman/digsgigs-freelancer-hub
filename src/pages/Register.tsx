@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -491,7 +492,7 @@ const Register = () => {
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         
         // Send OTP via unified edge function
-        const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp', {
+        await invokeEdgeFunction(supabase, 'send-otp', {
           body: {
             email,
             phone: formattedPhone,
@@ -500,35 +501,6 @@ const Register = () => {
             method: verificationMethod,
           },
         });
-
-      if (otpError) {
-        console.error("OTP send error:", otpError);
-        console.error("OTP error details:", {
-          name: otpError.name,
-          message: otpError.message,
-          context: otpError.context
-        });
-        
-        let errorMessage = "Failed to send verification code. Please try again.";
-        
-        // Provide more specific error messages
-        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
-          errorMessage = "Email service is not configured. Please contact support.";
-        } else if (otpError.message?.includes('500') || otpError.message?.includes('non-2xx')) {
-          errorMessage = "Server error. Please check that the send-otp function is deployed and RESEND_API_KEY is set.";
-        } else if (otpError.message) {
-          errorMessage = otpError.message;
-        }
-        
-        toast.error(errorMessage, {
-          description: "Check browser console for details",
-          duration: 5000
-        });
-        setLoading(false);
-        isSendingOtpRef.current = false;
-        return;
-      }
-
         // OTP sent successfully - move to verification step
         setOtpSent(true);
         const methodText = verificationMethod === 'email' ? 'email' : 'phone';
@@ -542,23 +514,24 @@ const Register = () => {
       // SIGNUP VERIFICATION: send OTP for new registrations (no confirmation email)
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-      const { error: otpError } = await supabase.functions.invoke('send-otp', {
-        body: {
-          email,
-          phone: formattedPhone,
-          code: otpCode,
-          name: fullName || 'User',
-          method: verificationMethod,
-        },
-      });
-
-      if (otpError) {
-        console.error("OTP send error:", otpError);
+      try {
+        await invokeEdgeFunction(supabase, 'send-otp', {
+          body: {
+            email,
+            phone: formattedPhone,
+            code: otpCode,
+            name: fullName || 'User',
+            method: verificationMethod,
+          },
+        });
+      } catch (otpErr: any) {
+        console.error("OTP send error:", otpErr);
         let errorMessage = "Failed to send verification code. Please try again.";
-        if (otpError.message?.includes('RESEND_API_KEY') || otpError.message?.includes('not configured')) {
+        const msg = otpErr?.message ?? "";
+        if (msg.includes('RESEND_API_KEY') || msg.includes('not configured')) {
           errorMessage = "Email service is not configured. Please contact support.";
-        } else if (otpError.message) {
-          errorMessage = otpError.message;
+        } else if (msg) {
+          errorMessage = msg;
         }
         toast.error(errorMessage);
         setLoading(false);
@@ -609,23 +582,25 @@ const Register = () => {
       if (email?.trim()) verifyBody.email = email.trim();
       if (formattedPhone) verifyBody.phone = formattedPhone;
 
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
-        body: verifyBody,
-      });
-
-      if (verifyError) {
+      let verifyData: { success?: boolean } | undefined;
+      try {
+        verifyData = await invokeEdgeFunction<{ success?: boolean }>(supabase, 'verify-custom-otp', {
+          body: verifyBody,
+        });
+      } catch (verifyError: any) {
         console.error("OTP verification error:", verifyError);
-        const errorMessage = verifyError.message?.includes('expired') 
+        const msg = verifyError?.message ?? "";
+        const errorMessage = msg.includes('expired')
           ? "Verification code has expired. Please request a new code."
-          : verifyError.message?.includes('Invalid') 
+          : msg.includes('Invalid')
           ? "Invalid verification code. Please check your code and try again."
-          : verifyError.message || "Invalid or expired verification code. Please try again.";
+          : msg || "Invalid or expired verification code. Please try again.";
         toast.error(errorMessage);
         setLoading(false);
         return;
       }
 
-      if (!verifyData || !verifyData.success) {
+      if (!verifyData?.success) {
         toast.error("Invalid or expired verification code. Please check your code and try again.");
         setLoading(false);
         return;
@@ -677,20 +652,22 @@ const Register = () => {
       
       // Code is verified for signup: create the auth user without sending a confirmation email
       try {
-        const { data: createUserData, error: createUserError } = await supabase.functions.invoke('create-auth-user', {
-          body: {
-            email,
-            password,
-            fullName,
-            phone: formattedPhone,
-          },
-        });
-
-        if (createUserError) {
-          console.error("Create user error:", createUserError);
-          const errorMessage = createUserError.message?.includes('already exists')
+        let createUserData: { userId?: string } | undefined;
+        try {
+          createUserData = await invokeEdgeFunction<{ userId?: string }>(supabase, 'create-auth-user', {
+            body: {
+              email,
+              password,
+              fullName,
+              phone: formattedPhone,
+            },
+          });
+        } catch (createUserErr: any) {
+          console.error("Create user error:", createUserErr);
+          const msg = createUserErr?.message ?? "";
+          const errorMessage = msg.includes('already exists')
             ? "This email is already registered. Please sign in instead."
-            : createUserError.message || "Failed to create account. Please try again.";
+            : msg || "Failed to create account. Please try again.";
           toast.error(errorMessage);
           setLoading(false);
           return;
@@ -770,8 +747,7 @@ const Register = () => {
       // Format phone number
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
       
-      // Send OTP via unified edge function
-      const { data, error } = await supabase.functions.invoke('send-otp', {
+      await invokeEdgeFunction(supabase, 'send-otp', {
         body: {
           email,
           phone: formattedPhone,
@@ -781,24 +757,16 @@ const Register = () => {
         },
       });
 
-      if (error) {
-        console.error("Resend OTP error:", error);
-        // Check if it's a configuration error
-        if (error.message?.includes('RESEND_API_KEY') || error.message?.includes('not configured')) {
-          toast.error("Email service is not configured. Please contact support.");
-        } else {
-          toast.error(error.message || "Failed to resend verification code");
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Clear old verification code input
       setVerificationCode("");
       toast.success("Verification code resent! Please check your email.");
     } catch (error: any) {
       console.error("Resend error:", error);
-      toast.error(error.message || "Failed to resend verification code");
+      const msg = error?.message ?? "";
+      if (msg.includes('RESEND_API_KEY') || msg.includes('not configured')) {
+        toast.error("Email service is not configured. Please contact support.");
+      } else {
+        toast.error(msg || "Failed to resend verification code");
+      }
     } finally {
       setLoading(false);
     }
@@ -1516,23 +1484,25 @@ const Register = () => {
       const formattedPhone = phone && phone.startsWith('+') ? phone : phone ? `+${phone}` : null;
       if (formattedPhone) verifyBody.phone = formattedPhone;
 
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-custom-otp', {
-        body: verifyBody,
-      });
-
-      if (verifyError) {
+      let verifyData: { success?: boolean } | undefined;
+      try {
+        verifyData = await invokeEdgeFunction<{ success?: boolean }>(supabase, 'verify-custom-otp', {
+          body: verifyBody,
+        });
+      } catch (verifyError: any) {
         console.error("OTP verification error:", verifyError);
-        const errorMessage = verifyError.message?.includes('expired') 
+        const msg = verifyError?.message ?? "";
+        const errorMessage = msg.includes('expired')
           ? "Verification code has expired. Please request a new code."
-          : verifyError.message?.includes('Invalid') 
+          : msg.includes('Invalid')
           ? "Invalid verification code. Please check your code and try again."
-          : verifyError.message || "Invalid or expired verification code. Please try again.";
+          : msg || "Invalid or expired verification code. Please try again.";
         toast.error(errorMessage);
         setLoading(false);
         return;
       }
 
-      if (!verifyData || !verifyData.success) {
+      if (!verifyData?.success) {
         toast.error("Invalid or expired verification code. Please check your code and try again.");
         setLoading(false);
         return;

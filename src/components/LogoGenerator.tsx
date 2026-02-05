@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 import { Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
 
@@ -20,29 +21,21 @@ Ultra high resolution. 1:1 aspect ratio.`;
   const generateLogo = async () => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-step-image", {
+      const data = await invokeEdgeFunction<{ imageUrl?: string; error?: string }>(supabase, "generate-step-image", {
         body: { prompt: logoPrompt },
       });
-
-      if (error) {
-        console.error("Error generating logo:", error);
-        toast.error(`Failed to generate logo: ${error.message || 'Unknown error'}`);
-        return;
-      }
 
       if (data?.imageUrl) {
         setGeneratedImageUrl(data.imageUrl);
         toast.success("Logo generated successfully!");
       } else if (data?.error) {
-        console.error("API error:", data.error);
-        toast.error(`API error: ${data.error}`);
+        toast.error(data.error);
       } else {
-        console.error("No imageUrl in response:", data);
         toast.error("No image was generated. Please try again.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error:", err);
-      toast.error(`An error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      toast.error(err?.message || "An error occurred");
     } finally {
       setIsGenerating(false);
     }

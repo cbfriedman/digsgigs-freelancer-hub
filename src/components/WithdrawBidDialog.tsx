@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -34,14 +35,11 @@ export const WithdrawBidDialog = ({
   const handleWithdraw = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("withdraw-bid", {
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, "withdraw-bid", {
         body: { bidId },
       });
 
-      if (error) throw error;
-
-      // Redirect to Stripe checkout for penalty payment
-      if (data.url) {
+      if (data?.url) {
         window.open(data.url, "_blank");
         toast.info("Complete the penalty payment to withdraw your bid");
       }
@@ -51,7 +49,7 @@ export const WithdrawBidDialog = ({
       }
     } catch (error: any) {
       console.error("Error withdrawing bid:", error);
-      toast.error(error.message || "Failed to initiate bid withdrawal");
+      toast.error(error?.message || "Failed to initiate bid withdrawal");
     } finally {
       setLoading(false);
     }

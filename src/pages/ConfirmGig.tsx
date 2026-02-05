@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { supabase, supabaseAnonKey } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Loader2 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 
@@ -21,14 +22,12 @@ const ConfirmGig = () => {
 
     const confirm = async () => {
       try {
-        const { error } = await supabase.functions.invoke("verify-gig-confirmation", {
+        await invokeEdgeFunction(supabase, "verify-gig-confirmation", {
           body: { gigId },
           headers: {
             Authorization: `Bearer ${supabaseAnonKey}`,
           },
         });
-
-        if (error) throw error;
         navigate(`/gig-confirmed?gigId=${gigId}`, { replace: true });
       } catch {
         navigate(`/review-gig?gigId=${gigId}`, { replace: true });

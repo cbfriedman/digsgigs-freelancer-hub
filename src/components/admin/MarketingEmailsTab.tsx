@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -96,9 +97,7 @@ export const MarketingEmailsTab = () => {
   const triggerReengagementCheck = async () => {
     setTriggeringReengagement(true);
     try {
-      const { data, error } = await supabase.functions.invoke("check-inactive-users");
-
-      if (error) throw error;
+      const data = await invokeEdgeFunction<{ emailsSent?: number }>(supabase, "check-inactive-users");
 
       toast.success(`Re-engagement check completed!`, {
         description: `${data?.emailsSent || 0} emails sent to inactive users`
@@ -107,7 +106,7 @@ export const MarketingEmailsTab = () => {
     } catch (error: any) {
       console.error("Error triggering re-engagement:", error);
       toast.error("Failed to trigger re-engagement check", {
-        description: error.message
+        description: error?.message
       });
     } finally {
       setTriggeringReengagement(false);
@@ -131,7 +130,7 @@ export const MarketingEmailsTab = () => {
     setSendingMarketing(true);
     try {
       const latestHtml = marketingEditorGetHtmlRef.current?.()?.trim() || marketingBodyHtml?.trim() || undefined;
-      const { data, error } = await supabase.functions.invoke("send-marketing-email", {
+      await invokeEdgeFunction(supabase, "send-marketing-email", {
         body: {
           email: marketingEmail,
           name: marketingName || undefined,
@@ -142,17 +141,15 @@ export const MarketingEmailsTab = () => {
         }
       });
 
-      if (error) throw error;
-
       toast.success("Marketing email sent!", {
         description: `Email sent to ${marketingEmail}`
       });
-      
+
       await loadEmailData();
     } catch (error: any) {
       console.error("Error sending marketing email:", error);
       toast.error("Failed to send marketing email", {
-        description: error.message
+        description: error?.message
       });
     } finally {
       setSendingMarketing(false);
@@ -181,11 +178,9 @@ export const MarketingEmailsTab = () => {
         };
       }
 
-      const { data, error } = await supabase.functions.invoke("send-community-email", {
+      const data = await invokeEdgeFunction<{ message?: string; sentCount?: number }>(supabase, "send-community-email", {
         body
       });
-
-      if (error) throw error;
 
       if (communityAudience === 'single') {
         toast.success("Community email sent!", {
@@ -198,12 +193,12 @@ export const MarketingEmailsTab = () => {
           description: data?.message || `Sent to ${data?.sentCount || 0} users`
         });
       }
-      
+
       await loadEmailData();
     } catch (error: any) {
       console.error("Error sending community email:", error);
       toast.error("Failed to send community email", {
-        description: error.message
+        description: error?.message
       });
     } finally {
       setSendingCommunity(false);

@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Sparkles, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { GOOGLE_CPC_KEYWORDS, calculateExclusiveLeadPrice, calculateNonExclusiveLeadPrice } from "@/config/googleCpcKeywords";
@@ -64,20 +65,17 @@ export const AIPoweredKeywordInput = () => {
 
     try {
       // Add timeout to prevent indefinite hanging
-      const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout - please try again')), 30000)
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout - please try again")), 30000)
       );
 
-      const invokePromise = supabase.functions.invoke('suggest-keywords-from-description', {
-        body: { description: description.trim() }
-      });
+      const invokePromise = invokeEdgeFunction<{ keywords?: string[] }>(
+        supabase,
+        "suggest-keywords-from-description",
+        { body: { description: description.trim() } }
+      );
 
-      const { data, error } = await Promise.race([invokePromise, timeout]) as any;
-
-      if (error) {
-        console.error("Function returned error:", error);
-        throw error;
-      }
+      const data = await Promise.race([invokePromise, timeout]);
 
       if (data?.keywords) {
         setSuggestedKeywords(data.keywords);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -202,11 +203,9 @@ export default function LeadUnlock() {
 
     setUnlocking(true);
     try {
-      const { data, error } = await supabase.functions.invoke("subscriber-lead-checkout", {
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, "subscriber-lead-checkout", {
         body: { subscriberId: subscriber.id, leadId: id }
       });
-
-      if (error) throw error;
 
       if (data?.url) {
         window.location.href = data.url;
@@ -215,7 +214,7 @@ export default function LeadUnlock() {
       }
     } catch (error: any) {
       console.error("Subscriber unlock error:", error);
-      toast.error(error.message || "Failed to start checkout");
+      toast.error(error?.message || "Failed to start checkout");
     } finally {
       setUnlocking(false);
     }
@@ -241,11 +240,9 @@ export default function LeadUnlock() {
 
     setUnlocking(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-lead-unlock-checkout", {
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, "create-lead-unlock-checkout", {
         body: { leadId: id }
       });
-
-      if (error) throw error;
 
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -254,7 +251,7 @@ export default function LeadUnlock() {
       }
     } catch (error: any) {
       console.error("Unlock error:", error);
-      toast.error(error.message || "Failed to start checkout");
+      toast.error(error?.message || "Failed to start checkout");
     } finally {
       setUnlocking(false);
     }

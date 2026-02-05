@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -68,18 +69,20 @@ export const CompleteWorkDialog = ({
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-transaction', {
-        body: {
-          bidId,
-          totalAmount: parseFloat(finalAmount),
-        },
-      });
-
-      if (error) throw error;
+      const data = await invokeEdgeFunction<{ transaction?: { digger_payout?: number } }>(
+        supabase,
+        'create-transaction',
+        {
+          body: {
+            bidId,
+            totalAmount: parseFloat(finalAmount),
+          },
+        }
+      );
 
       toast({
         title: "Work completed!",
-        description: `Transaction created successfully. Digger will receive $${data.transaction.digger_payout.toFixed(2)}. View it in Transaction History.`,
+        description: `Transaction created successfully. Digger will receive $${(data?.transaction?.digger_payout ?? 0).toFixed(2)}. View it in Transaction History.`,
       });
 
       setOpen(false);
@@ -88,7 +91,7 @@ export const CompleteWorkDialog = ({
       console.error('Error completing work:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to complete work",
+        description: error?.message || "Failed to complete work",
         variant: "destructive",
       });
     } finally {

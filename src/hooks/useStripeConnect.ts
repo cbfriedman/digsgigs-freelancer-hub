@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
 
 export const useStripeConnect = () => {
@@ -38,17 +39,18 @@ export const useStripeConnect = () => {
   const createConnectAccount = async () => {
     setCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-connect-account");
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, "create-connect-account");
 
-      if (error) throw error;
-
-      // Redirect to Stripe Connect onboarding
-      window.location.href = data.url;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No redirect URL returned");
+      }
     } catch (error: any) {
       console.error("Error creating Connect account:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create Stripe Connect account",
+        description: error?.message || "Failed to create Stripe Connect account",
         variant: "destructive",
       });
       setCreating(false);

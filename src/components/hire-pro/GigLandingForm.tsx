@@ -20,8 +20,9 @@
  } from "lucide-react";
  import { PROBLEM_OPTIONS, TIMELINE_OPTIONS } from "@/config/giggerProblems";
  import { RegionCountrySelector } from "@/components/RegionCountrySelector";
- import { supabase } from "@/integrations/supabase/client";
- import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { toast } from "sonner";
  
  interface GigLandingFormProps {
    onComplete?: (data: FormData) => void;
@@ -163,21 +164,23 @@
          .filter(Boolean)
          .join(', ');
  
-       const { data, error } = await supabase.functions.invoke("enhance-description", {
-         body: {
-           description,
-           context: typeLabels,
-         },
-       });
- 
-       if (error) throw error;
+       const data = await invokeEdgeFunction<{ enhanced?: string }>(
+         supabase,
+         "enhance-description",
+         {
+           body: {
+             description,
+             context: typeLabels,
+           },
+         }
+       );
        if (data?.enhanced) {
          setDescription(data.enhanced);
          toast.success("Description enhanced!");
        }
-     } catch (err) {
+     } catch (err: any) {
        console.error("Enhancement error:", err);
-       toast.error("Couldn't enhance description");
+       toast.error(err?.message ?? "Couldn't enhance description");
      } finally {
        setIsEnhancing(false);
      }

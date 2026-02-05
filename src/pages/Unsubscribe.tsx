@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,10 +49,9 @@ export default function Unsubscribe() {
     }
     setIsSubmittingPhone(true);
     try {
-      const { error } = await supabase.functions.invoke("revoke-consent", {
+      await invokeEdgeFunction(supabase, "revoke-consent", {
         body: { phone: `+1${phoneDigits}`, method: "web_form" },
       });
-      if (error) throw error;
       setSuccessPhone(true);
       toast({
         title: "Unsubscribed Successfully",
@@ -81,11 +81,10 @@ export default function Unsubscribe() {
     }
     setIsSubmittingEmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke("record-email-unsubscribe", {
+      const data = await invokeEdgeFunction<{ error?: string }>(supabase, "record-email-unsubscribe", {
         body: { email: toUnsubscribe, source: "link" },
       });
-      if (error) throw error;
-      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      if (data?.error) throw new Error(data.error);
       setSuccessEmail(true);
       setEmail(toUnsubscribe);
       toast({

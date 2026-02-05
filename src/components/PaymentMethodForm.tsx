@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 import { Loader2, CreditCard } from "lucide-react";
 
@@ -38,16 +39,15 @@ const PaymentMethodFormInner = ({ onSuccess, onCancel }: PaymentMethodFormProps)
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-setup-intent");
+      const data = await invokeEdgeFunction<{ clientSecret?: string }>(supabase, "create-setup-intent");
 
-      if (error) throw error;
-      if (!data.clientSecret) throw new Error("No client secret returned");
+      if (!data?.clientSecret) throw new Error("No client secret returned");
 
       setClientSecret(data.clientSecret);
       toast.success("Ready to save payment method");
     } catch (error: any) {
       console.error("Error creating setup intent:", error);
-      toast.error(error.message || "Failed to initialize payment form");
+      toast.error(error?.message || "Failed to initialize payment form");
     } finally {
       setLoading(false);
     }
@@ -87,24 +87,18 @@ const PaymentMethodFormInner = ({ onSuccess, onCancel }: PaymentMethodFormProps)
         throw new Error("Setup Intent not completed");
       }
 
-      // Save payment method to database
-      const { data: saveData, error: saveError } = await supabase.functions.invoke(
-        "manage-payment-methods",
-        {
-          body: {
-            setupIntentId: setupIntent.id,
-            paymentMethodId: setupIntent.payment_method,
-          },
-        }
-      );
-
-      if (saveError) throw saveError;
+      await invokeEdgeFunction(supabase, "manage-payment-methods", {
+        body: {
+          setupIntentId: setupIntent.id,
+          paymentMethodId: setupIntent.payment_method,
+        },
+      });
 
       toast.success("Payment method saved successfully!");
       onSuccess?.();
     } catch (error: any) {
       console.error("Error saving payment method:", error);
-      toast.error(error.message || "Failed to save payment method");
+      toast.error(error?.message || "Failed to save payment method");
     } finally {
       setSaving(false);
     }

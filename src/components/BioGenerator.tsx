@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Sparkles, Copy, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 
 interface BioGeneratorProps {
   profession: string;
@@ -32,7 +33,7 @@ export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGene
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-bio", {
+      const data = await invokeEdgeFunction<{ bio?: string }>(supabase, "generate-bio", {
         body: {
           profession,
           yearsExperience: yearsExperience ? parseInt(yearsExperience) : null,
@@ -42,25 +43,20 @@ export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGene
         }
       });
 
-      if (error) {
-        if (error.message.includes("Rate limit")) {
-          toast.error("Please wait a moment before generating again");
-        } else if (error.message.includes("credits")) {
-          toast.error("AI credits exhausted. Please contact support.");
-        } else {
-          toast.error("Failed to generate bio. Please try again.");
-        }
-        console.error("Bio generation error:", error);
-        return;
-      }
-
       if (data?.bio) {
         setGeneratedBio(data.bio);
         toast.success("Bio generated successfully!");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating bio:", error);
-      toast.error("Failed to generate bio. Please try again.");
+      const msg = error?.message ?? "";
+      if (msg.includes("Rate limit")) {
+        toast.error("Please wait a moment before generating again");
+      } else if (msg.includes("credits")) {
+        toast.error("AI credits exhausted. Please contact support.");
+      } else {
+        toast.error(msg || "Failed to generate bio. Please try again.");
+      }
     } finally {
       setIsGenerating(false);
     }

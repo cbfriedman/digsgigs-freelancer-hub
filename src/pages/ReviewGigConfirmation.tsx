@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase, supabaseAnonKey } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,29 +64,22 @@ const ReviewGigConfirmation = () => {
 
     setConfirming(true);
     try {
-      // Call the verify-gig-confirmation function via supabase functions.
       // Always send Authorization so it works when user opens review page from email link (no session).
-      const { data, error: confirmError } = await supabase.functions.invoke("verify-gig-confirmation", {
+      await invokeEdgeFunction(supabase, "verify-gig-confirmation", {
         body: { gigId },
         headers: {
           Authorization: `Bearer ${supabaseAnonKey}`,
         },
       });
 
-      if (confirmError) {
-        throw confirmError;
-      }
-
-      // Show success message and redirect
       toast.success("Project confirmed! Redirecting...");
-      
-      // Small delay to show the success message
+
       setTimeout(() => {
         navigate(`/gig-confirmed?gigId=${gigId}`);
       }, 500);
     } catch (err: any) {
       console.error("Error confirming gig:", err);
-      toast.error(err.message || "Failed to confirm gig. Please try again.");
+      toast.error(err?.message || "Failed to confirm gig. Please try again.");
       setConfirming(false);
     }
   };

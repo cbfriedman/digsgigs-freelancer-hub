@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 
 const GigPendingConfirmation = () => {
@@ -68,8 +69,7 @@ const GigPendingConfirmation = () => {
         throw new Error("Could not find the project.");
       }
 
-      // Call send-gig-confirmation again
-      const { error } = await supabase.functions.invoke("send-gig-confirmation", {
+      await invokeEdgeFunction(supabase, "send-gig-confirmation", {
         body: {
           gigId: gig.id,
           email: gig.consumer_email,
@@ -81,8 +81,6 @@ const GigPendingConfirmation = () => {
           keywords: [],
         },
       });
-
-      if (error) throw error;
 
       const newCount = resendCount + 1;
       const now = new Date();
@@ -98,7 +96,7 @@ const GigPendingConfirmation = () => {
       toast.success("Confirmation email resent! Please check your inbox.");
     } catch (error: any) {
       console.error("Resend error:", error);
-      toast.error(error.message || "Failed to resend email. Please try again.");
+      toast.error(error?.message || "Failed to resend email. Please try again.");
     } finally {
       setResendLoading(false);
     }

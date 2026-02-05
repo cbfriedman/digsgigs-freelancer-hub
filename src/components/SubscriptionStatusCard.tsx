@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 import { formatSubscriptionPrice, GEOGRAPHIC_TIER_LABELS, PRICE_LOCK_PERIOD_MONTHS, PRICE_LOCK_CLICK_THRESHOLD } from "@/config/subscriptionTiers";
 
@@ -60,15 +61,9 @@ export function SubscriptionStatusCard({ diggerProfileId }: SubscriptionStatusCa
   const checkSubscription = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('check-geo-subscription', {
+      const data = await invokeEdgeFunction(supabase, 'check-geo-subscription', {
         body: { digger_profile_id: diggerProfileId }
       });
-
-      if (error) {
-        console.error('Error checking subscription:', error);
-        return;
-      }
-
       setSubscriptionData(data);
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -80,16 +75,14 @@ export function SubscriptionStatusCard({ diggerProfileId }: SubscriptionStatusCa
   const handleManageSubscription = async () => {
     try {
       setManagingSubscription(true);
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-
-      if (error) throw error;
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, 'customer-portal');
 
       if (data?.url) {
         window.open(data.url, '_blank');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error opening customer portal:', error);
-      toast.error('Failed to open subscription management');
+      toast.error(error?.message || 'Failed to open subscription management');
     } finally {
       setManagingSubscription(false);
     }

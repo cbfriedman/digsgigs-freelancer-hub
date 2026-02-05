@@ -28,13 +28,13 @@ export const QuickContactCard = ({
 }: QuickContactCardProps) => {
   return (
     <Card className="border-primary/20 shadow-lg">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Contact This Professional</CardTitle>
-        <CardDescription>
+      <CardHeader className="px-4 sm:px-6 pb-2 sm:pb-3">
+        <CardTitle className="text-base sm:text-lg">Contact This Professional</CardTitle>
+        <CardDescription className="text-sm">
           Get in touch to discuss your project
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
         {/* Quick Stats */}
         <div className="flex flex-wrap gap-2">
           {offersFreEstimates && (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -220,10 +221,9 @@ const AdminUserManagement = () => {
   const handleSuspendUser = async () => {
     if (!selectedUser) return;
     try {
-      const { data, error } = await supabase.functions.invoke("admin-manage-user", {
+      const data = await invokeEdgeFunction<{ error?: string }>(supabase, "admin-manage-user", {
         body: { action: "suspend", userId: selectedUser },
       });
-      if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success("User suspended successfully");
       await loadUsers();
@@ -239,10 +239,9 @@ const AdminUserManagement = () => {
   const handleUnsuspendUser = async () => {
     if (!selectedUser) return;
     try {
-      const { data, error } = await supabase.functions.invoke("admin-manage-user", {
+      const data = await invokeEdgeFunction<{ error?: string }>(supabase, "admin-manage-user", {
         body: { action: "unsuspend", userId: selectedUser },
       });
-      if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success("User unsuspended successfully");
       await loadUsers();
@@ -258,10 +257,9 @@ const AdminUserManagement = () => {
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
     try {
-      const { data, error } = await supabase.functions.invoke("admin-manage-user", {
+      const data = await invokeEdgeFunction<{ error?: string }>(supabase, "admin-manage-user", {
         body: { action: "delete", userId: selectedUser },
       });
-      if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success("User deleted successfully");
       await loadUsers();

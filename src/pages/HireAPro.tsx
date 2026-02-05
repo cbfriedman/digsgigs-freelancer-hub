@@ -24,6 +24,7 @@ import SEOHead from "@/components/SEOHead";
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 import { GigLandingForm } from "@/components/hire-pro/GigLandingForm";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
 import { normalizeToE164US } from "@/lib/phone";
 import { PhoneCallCard } from "@/components/hire-pro/PhoneCallCard";
@@ -127,20 +128,18 @@ export default function HireAPro() {
     trackButtonClick('Request Callback', 'hire-a-pro');
 
     try {
-      const { data, error } = await supabase.functions.invoke("request-ai-callback", {
-        body: {
-          phone: normalizedPhone,
-          name: callbackName || "Guest",
-          source: "hire-a-pro-landing"
+      const data = await invokeEdgeFunction<{ success?: boolean; error?: string }>(
+        supabase,
+        "request-ai-callback",
+        {
+          body: {
+            phone: normalizedPhone,
+            name: callbackName || "Guest",
+            source: "hire-a-pro-landing"
+          }
         }
-      });
-
-      console.log("Callback response:", { data, error });
-
-      if (error) {
-        console.error("Edge function error:", error);
-        throw error;
-      }
+      );
+      console.log("Callback response:", data);
 
       if (data?.success) {
         toast.success("We'll call you within 5 minutes!", {

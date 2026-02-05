@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -147,7 +148,7 @@ export default function Subscription() {
     try {
       setSubscribing(true);
       
-      const { data, error } = await supabase.functions.invoke('create-geo-subscription-checkout', {
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, 'create-geo-subscription-checkout', {
         body: {
           digger_profile_id: diggerProfile.id,
           geographic_tier: selectedTier,
@@ -156,8 +157,6 @@ export default function Subscription() {
         }
       });
 
-      if (error) throw error;
-
       if (data?.url) {
         window.location.href = data.url;
       } else {
@@ -165,7 +164,7 @@ export default function Subscription() {
       }
     } catch (error: any) {
       console.error('Error creating checkout:', error);
-      toast.error(error.message || 'Failed to start checkout');
+      toast.error(error?.message || 'Failed to start checkout');
     } finally {
       setSubscribing(false);
     }

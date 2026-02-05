@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CreditCard, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLeadCostForIndustry, calculateBulkDiscount } from "@/config/pricing";
 
@@ -83,7 +84,7 @@ export default function LeadCheckout() {
       console.log("Starting checkout with selections:", selections);
       console.log("Total amount:", discountInfo.finalTotal);
       
-      const { data, error } = await supabase.functions.invoke("create-bulk-lead-checkout", {
+      const data = await invokeEdgeFunction<{ url?: string }>(supabase, "create-bulk-lead-checkout", {
         body: {
           selections: selections,
           totalAmount: discountInfo.originalTotal,
@@ -98,16 +99,10 @@ export default function LeadCheckout() {
         }
       });
 
-      console.log("Edge function response:", { data, error });
-
-      if (error) {
-        console.error("Edge function error:", error);
-        throw error;
-      }
+      console.log("Edge function response:", data);
 
       if (data?.url) {
         console.log("Redirecting to:", data.url);
-        // Redirect to Stripe checkout in the same window
         window.location.href = data.url;
       } else {
         console.error("No URL in response:", data);
@@ -117,7 +112,7 @@ export default function LeadCheckout() {
       console.error("Checkout error:", error);
       toast({
         title: "Checkout Failed",
-        description: error.message || "Failed to create checkout session",
+        description: error?.message || "Failed to create checkout session",
         variant: "destructive"
       });
     } finally {

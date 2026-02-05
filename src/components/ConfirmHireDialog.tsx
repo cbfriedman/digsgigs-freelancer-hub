@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -74,17 +75,19 @@ export function ConfirmHireDialog({
     try {
       // For exclusive bids, redirect to deposit payment first
       if (isExclusive) {
-        const { data, error } = await supabase.functions.invoke("charge-gigger-deposit", {
-          body: {
-            gigId,
-            bidId,
-            giggerId: (await supabase.auth.getUser()).data.user?.id,
-            diggerId,
-            origin: window.location.origin,
-          },
-        });
-
-        if (error) throw error;
+        const data = await invokeEdgeFunction<{ requiresPayment?: boolean; checkoutUrl?: string }>(
+          supabase,
+          "charge-gigger-deposit",
+          {
+            body: {
+              gigId,
+              bidId,
+              giggerId: (await supabase.auth.getUser()).data.user?.id,
+              diggerId,
+              origin: window.location.origin,
+            },
+          }
+        );
 
         if (data?.requiresPayment && data?.checkoutUrl) {
           // Redirect to Stripe checkout
@@ -123,7 +126,7 @@ export function ConfirmHireDialog({
       console.error("Error confirming hire:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to confirm hire",
+        description: error?.message || "Failed to confirm hire",
         variant: "destructive",
       });
     } finally {

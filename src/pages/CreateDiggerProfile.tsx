@@ -3,7 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { CategoryBrowserWithDescription } from "@/components/CategoryBrowserWithDescription";
 
-export default function ProfileCategoryBrowser() {
+export default function CreateDiggerProfile() {
   return (
     <>
       <Helmet>

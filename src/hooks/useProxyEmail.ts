@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 
 export function useProxyEmail(userId: string | null) {
   const [proxyEmail, setProxyEmail] = useState<string | null>(null);
@@ -17,18 +18,15 @@ export function useProxyEmail(userId: string | null) {
       setError(null);
       
       try {
-        const { data, error: fnError } = await supabase.functions.invoke('get-proxy-email', {
+        const data = await invokeEdgeFunction<{ proxy_email?: string }>(supabase, 'get-proxy-email', {
           body: { user_id: userId }
         });
-
-        if (fnError) throw fnError;
-        
         if (data?.proxy_email) {
           setProxyEmail(data.proxy_email);
         }
       } catch (err: any) {
         console.error("Error fetching proxy email:", err);
-        setError(err.message || "Failed to fetch proxy email");
+        setError(err?.message || "Failed to fetch proxy email");
       } finally {
         setLoading(false);
       }

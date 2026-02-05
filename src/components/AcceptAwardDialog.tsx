@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -48,16 +49,17 @@ export function AcceptAwardDialog({
   const handleAcceptAward = async () => {
     setAccepting(true);
     try {
-      // Call the digger-accept-award function which will charge the referral fee
-      const { data, error } = await supabase.functions.invoke("digger-accept-award", {
-        body: {
-          bidId,
-          gigId,
-          diggerId,
-        },
-      });
-
-      if (error) throw error;
+      const data = await invokeEdgeFunction<{ requiresPayment?: boolean; checkoutUrl?: string }>(
+        supabase,
+        "digger-accept-award",
+        {
+          body: {
+            bidId,
+            gigId,
+            diggerId,
+          },
+        }
+      );
 
       // If payment requires checkout (no saved payment method)
       if (data?.requiresPayment && data?.checkoutUrl) {
@@ -81,7 +83,7 @@ export function AcceptAwardDialog({
       console.error("Error accepting award:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to accept award",
+        description: error?.message || "Failed to accept award",
         variant: "destructive",
       });
     } finally {

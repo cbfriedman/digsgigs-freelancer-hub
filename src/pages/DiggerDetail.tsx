@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText, Search } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText, Search, MapPin } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -69,6 +70,8 @@ interface Digger {
   business_name: string;
   profession: string;
   profile_name?: string | null;
+  tagline: string | null;
+  availability: string | null;
   bio: string | null;
   location: string;
   phone: string;
@@ -129,9 +132,28 @@ const DiggerDetail = () => {
   const [leadBalance, setLeadBalance] = useState<LeadBalance | null>(null);
   const [totalLeadsSold, setTotalLeadsSold] = useState(0);
 
+  // People also viewed (related diggers)
+  const [relatedDiggers, setRelatedDiggers] = useState<{ id: string; business_name: string; profession: string | null; profile_image_url: string | null; custom_occupation_title: string | null }[]>([]);
+
   useEffect(() => {
     loadData();
   }, [id]);
+
+  // Fetch related diggers for "People also viewed" when viewing another's profile
+  useEffect(() => {
+    if (!id || !digger || isOwnProfile) return;
+    const loadRelated = async () => {
+      const profession = digger.profession || '';
+      const categoryIds = (digger.digger_categories || []).map((dc: { categories?: { name: string } }) => dc.categories?.name).filter(Boolean);
+      const { data } = await supabase
+        .from("digger_profiles")
+        .select("id, business_name, profession, profile_image_url, custom_occupation_title")
+        .neq("id", id)
+        .limit(8);
+      if (data?.length) setRelatedDiggers(data);
+    };
+    loadRelated();
+  }, [id, digger, isOwnProfile]);
 
   const loadData = async () => {
     if (!id) return;
@@ -413,21 +435,19 @@ const DiggerDetail = () => {
 
     setIsUnlocking(true);
     try {
-      const { data, error } = await supabase.functions.invoke("charge-profile-view", {
+      const data = await invokeEdgeFunction<{
+        requiresGig?: boolean;
+        notRelated?: boolean;
+        alreadyPaid?: boolean;
+        success?: boolean;
+        message?: string;
+        url?: string;
+        totalCharge?: number;
+        viewFee?: number;
+        leadCost?: number;
+      }>(supabase, "charge-profile-view", {
         body: { diggerId: digger.id },
       });
-
-      if (error) {
-        // Check if it's an access denied error
-        if (error.status === 403 || error.message?.includes('must post') || error.message?.includes('not related')) {
-          toast.error(error.message || "You can only view diggers related to your posted gigs.");
-          if (error.message?.includes('must post')) {
-            navigate("/post-gig");
-          }
-          return;
-        }
-        throw error;
-      }
 
       // Handle access denied responses
       if (data.requiresGig) {
@@ -469,19 +489,17 @@ const DiggerDetail = () => {
         toast.info(`Total charge: $${data.totalCharge} ($${data.viewFee} view fee + $${data.leadCost} lead cost)`);
       }
     } catch (error: any) {
-      // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
         console.error("Error unlocking contact:", error);
       }
-      
-      // Check if it's an access denied error
-      if (error.status === 403 || error.message?.includes('must post') || error.message?.includes('not related')) {
-        toast.error(error.message || "You can only view diggers related to your posted gigs.");
-        if (error.message?.includes('must post')) {
+      const msg = error?.message ?? "";
+      if (msg.includes("must post") || msg.includes("not related")) {
+        toast.error(msg || "You can only view diggers related to your posted gigs.");
+        if (msg.includes("must post")) {
           navigate("/post-gig");
         }
       } else {
-        toast.error(error.message || "Failed to unlock contact information");
+        toast.error(msg || "Failed to unlock contact information");
       }
     } finally {
       setIsUnlocking(false);
@@ -638,8 +656,8 @@ const DiggerDetail = () => {
         })}
       />
 
-      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-12 max-w-5xl">
-        <div className="sticky top-16 z-10 bg-background py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-12 mb-4">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12 max-w-5xl">
+        <div className="sticky top-14 sm:top-16 z-10 bg-background py-2 sm:py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-4 sm:-mt-6 md:-mt-8 lg:-mt-12 mb-3 sm:mb-4">
           <Breadcrumb 
             items={[
               { label: "Browse Diggers", href: "/browse-diggers" },
@@ -648,70 +666,107 @@ const DiggerDetail = () => {
           />
         </div>
         
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            {/* Public Gigger View - Use new components for non-owners */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Main content - Himalayas-style left column */}
+          <div className="lg:col-span-2 space-y-6 order-2 lg:order-1 min-w-0">
             {!isOwnProfile ? (
               <>
-                {/* Enhanced Profile Header for Giggers */}
-                <Card>
-                  <CardContent className="p-8">
-                    <ProfileHeader
-                      profileImageUrl={digger.profile_image_url}
-                      businessName={digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business"}
-                      profession={getDisplayProfession()}
-                      isOnline={isOnline}
-                      averageRating={digger.average_rating}
-                      totalRatings={digger.total_ratings}
-                      yearsExperience={digger.years_experience}
-                      completionRate={digger.completion_rate}
-                      responseTimeHours={digger.response_time_hours}
-                      hourlyRateDisplay={formatHourlyRate()}
-                      country={digger.country}
-                      isVerified={true}
-                      isInsured={digger.is_insured}
-                      isBonded={digger.is_bonded}
-                      isLicensed={digger.is_licensed}
-                      isAnonymized={!hasViewAccess}
-                    />
+                {/* Centered profile header - name, handle, tagline, location */}
+                <Card className="overflow-hidden">
+                  <CardContent className="p-6 sm:p-8 lg:p-10">
+                    <div className="flex flex-col items-center text-center">
+                      <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-primary/20 mb-4">
+                        <AvatarImage src={digger.profile_image_url || undefined} alt={digger.business_name} />
+                        <AvatarFallback className="bg-primary/10 text-primary text-3xl font-bold">
+                          {(digger.business_name || digger.profile_name || "?").slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
+                        {!hasViewAccess ? (digger.business_name || digger.profile_name || "").split(" ").map(w => w.charAt(0) + ".").join("") + "." : (digger.business_name || digger.profile_name || digger.profiles?.full_name || "Professional")}
+                      </h1>
+                      {digger.handle && (
+                        <p className="text-muted-foreground text-sm sm:text-base mb-2">@{digger.handle}</p>
+                      )}
+                      <p className="text-lg text-muted-foreground max-w-xl mb-3">
+                        {digger.tagline || getDisplayProfession()}
+                      </p>
+                      {digger.country && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span className="text-xl">{getCountryFlag(digger.country)}</span>
+                          <span>{[digger.location, digger.country].filter(Boolean).join(", ")}</span>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* About and Skills */}
-                <ProfileAbout
-                  bio={digger.bio}
-                  skills={digger.skills}
-                  categories={(digger.digger_categories || []).map(dc => ({
-                    name: dc.categories?.name || '',
-                    description: dc.categories?.description
-                  }))}
-                  portfolioUrl={digger.portfolio_url}
-                  offersFreEstimates={digger.offers_free_estimates}
-                />
+                {/* What I offer - short pitch (tagline) */}
+                {digger.tagline && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">What I offer</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground leading-relaxed">{digger.tagline}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-                {/* Work Samples Gallery */}
-                <WorkSamplesGallery 
-                  photos={digger.work_photos || []} 
-                  businessName={digger.business_name}
-                />
+                {/* About / Professional summary */}
+                {digger.bio && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-primary" />
+                        About
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{digger.bio}</p>
+                      {digger.offers_free_estimates && (
+                        <div className="mt-4 inline-flex items-center gap-2 bg-green-500/10 text-green-700 dark:text-green-400 px-3 py-2 rounded-lg text-sm font-medium">
+                          ✓ Offers Free Estimates
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
-                {/* References */}
+                {/* Skills & expertise - badge grid */}
+                {((digger.skills?.length ?? 0) > 0 || (digger.digger_categories?.length ?? 0) > 0) && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Skills & expertise</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {(digger.digger_categories || []).map((dc, idx) => (
+                          <Badge key={`cat-${idx}`} variant="default" className="px-3 py-1">
+                            {dc.categories?.name || ""}
+                          </Badge>
+                        ))}
+                        {(digger.skills || []).map((skill, idx) => (
+                          <Badge key={`skill-${idx}`} variant="secondary" className="px-3 py-1">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <WorkSamplesGallery photos={digger.work_photos || []} businessName={digger.business_name} />
                 <ReferencesSection references={references} />
 
-                {/* Reviews */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Star className="h-5 w-5 text-primary" />
-                      Reviews & Ratings
+                  <CardHeader className="px-4 sm:px-6">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Star className="h-5 w-5 text-primary shrink-0" />
+                      Reviews & ratings
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <RatingsList 
-                      diggerId={id!} 
-                      isDigger={false}
-                      diggerName={digger.business_name}
-                    />
+                  <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+                    <RatingsList diggerId={id!} isDigger={false} diggerName={digger.business_name} />
                   </CardContent>
                 </Card>
               </>
@@ -719,10 +774,10 @@ const DiggerDetail = () => {
               /* Owner View - Original detailed management interface */
               <>
               <Card>
-              <CardContent className="p-8">
-                <div className="flex items-start gap-6 mb-6">
-                  <div className="relative">
-                    <Avatar className="h-24 w-24">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
+                <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-4 sm:mb-6">
+                  <div className="relative shrink-0">
+                    <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
                       <AvatarImage src={digger.profile_image_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-2xl">
                         {getInitials(digger.handle)}
@@ -740,9 +795,9 @@ const DiggerDetail = () => {
                       </Button>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-bold">
+                  <div className="flex-1 min-w-0 w-full">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                      <h1 className="text-2xl sm:text-3xl font-bold break-words">
                         {digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business Name"}
                       </h1>
                       <div className="flex items-center gap-1.5 bg-background border border-border/50 px-3 py-1 rounded-full">
@@ -944,67 +999,12 @@ const DiggerDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Owner Dashboard Stats */}
-            <div className="space-y-6">
-              {/* Profile Actions Card */}
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">Your Profile</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {!digger.bio || !digger.profile_image_url ? 
-                          'Complete your profile to attract more clients' : 
-                          'Your profile is looking great!'}
-                      </p>
-                    </div>
-                    <Button onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Profile
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Lead Stats Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    Lead Stats
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-primary/10 rounded-lg p-4 text-center">
-                      <div className="text-3xl font-bold text-primary">
-                        {totalLeadsSold}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Completed</div>
-                    </div>
-                    <div className="bg-yellow-500/10 rounded-lg p-4 text-center">
-                      <div className="text-3xl font-bold text-yellow-600">
-                        {leadPurchases.filter(p => p.status === 'pending').length}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Pending</div>
-                    </div>
-                    <div className="bg-green-500/10 rounded-lg p-4 text-center">
-                      <div className="text-3xl font-bold text-green-600">
-                        ${leadBalance?.balance?.toFixed(2) || '0.00'}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Balance</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Reviews for Owner */}
             <Card>
-              <CardHeader>
-                <CardTitle>Reviews & Ratings</CardTitle>
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="text-lg sm:text-xl">Reviews & Ratings</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
                 <RatingsList 
                   diggerId={id!} 
                   isDigger={true}
@@ -1016,12 +1016,67 @@ const DiggerDetail = () => {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="space-y-6 sticky top-24">
+          {/* Sidebar - order first on mobile so actions are visible without scrolling */}
+          <div className="lg:col-span-1 order-1 lg:order-2 min-w-0">
+            <div className="space-y-4 sm:space-y-6 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
               {!isOwnProfile && (
                 <>
-                  {/* Quick Contact Card for Giggers */}
+                  <Card>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground"}`} />
+                        <span className="text-sm font-medium">
+                          {isOnline ? "Open to opportunities" : "Currently offline"}
+                        </span>
+                      </div>
+                      {digger.country && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4 shrink-0" />
+                          <span>{[digger.location, digger.country].filter(Boolean).join(", ")}</span>
+                        </div>
+                      )}
+                      {digger.portfolio_url && (
+                        <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
+                          <Globe className="h-4 w-4 shrink-0" />
+                          Portfolio
+                        </a>
+                      )}
+                      {formatHourlyRate() && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="font-medium">{formatHourlyRate()}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  {(digger.digger_categories?.length ?? 0) > 0 && (
+                    <Card>
+                      <CardHeader className="py-3 px-4">
+                        <CardTitle className="text-sm font-medium">Job categories</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 px-4 pb-4">
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          {(digger.digger_categories || []).map((dc, idx) => (
+                            <li key={idx}>{dc.categories?.name || ""}</li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {(digger.skills?.length ?? 0) > 0 && (
+                    <Card>
+                      <CardHeader className="py-3 px-4">
+                        <CardTitle className="text-sm font-medium">Skills</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 px-4 pb-4">
+                        <div className="flex flex-wrap gap-1.5 text-xs">
+                          {(digger.skills || []).map((skill, idx) => (
+                            <Badge key={idx} variant="outline" className="font-normal text-xs">{skill}</Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                   <QuickContactCard
                     hasViewAccess={hasViewAccess}
                     isUnlocking={isUnlocking}
@@ -1049,50 +1104,118 @@ const DiggerDetail = () => {
                       }}
                     />
                   )}
+                  {relatedDiggers.length > 0 && (
+                    <Card>
+                      <CardHeader className="py-3 px-4">
+                        <CardTitle className="text-sm font-medium">People also viewed</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 px-4 pb-4">
+                        <ul className="space-y-3">
+                          {relatedDiggers.slice(0, 6).map((d) => (
+                            <li key={d.id}>
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/digger/${d.id}`)}
+                                className="flex items-center gap-3 w-full text-left rounded-lg p-2 -mx-2 hover:bg-accent/50 transition-colors"
+                              >
+                                <Avatar className="h-9 w-9 shrink-0">
+                                  <AvatarImage src={d.profile_image_url || undefined} />
+                                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                    {(d.business_name || "?").slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-sm truncate">{d.business_name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {d.custom_occupation_title || d.profession || "Professional"}
+                                  </p>
+                                </div>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => navigate("/browse-diggers")}>
+                          View all talent
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
                 </>
               )}
 
               {isOwnProfile && (
                 <>
+                  {/* Lead Stats */}
                   <Card>
-                    <CardContent className="p-4 sm:p-5 space-y-3">
+                    <CardHeader className="py-2.5 sm:py-3 px-3 sm:px-4">
+                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                        <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                        Lead Stats
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-0 px-3 sm:px-4 pb-3 sm:pb-4">
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                        <div className="bg-primary/10 rounded-lg p-2 sm:p-3 text-center min-w-0">
+                          <div className="text-base sm:text-lg md:text-xl font-bold text-primary truncate" title={String(totalLeadsSold)}>{totalLeadsSold}</div>
+                          <div className="text-[10px] sm:text-xs text-muted-foreground">Completed</div>
+                        </div>
+                        <div className="bg-yellow-500/10 rounded-lg p-2 sm:p-3 text-center min-w-0">
+                          <div className="text-base sm:text-lg md:text-xl font-bold text-yellow-600 truncate" title={String(leadPurchases.filter(p => p.status === 'pending').length)}>
+                            {leadPurchases.filter(p => p.status === 'pending').length}
+                          </div>
+                          <div className="text-[10px] sm:text-xs text-muted-foreground">Pending</div>
+                        </div>
+                        <div className="bg-green-500/10 rounded-lg p-2 sm:p-3 text-center min-w-0">
+                          <div className="text-sm sm:text-base md:text-lg font-bold text-green-600 truncate" title={`$${leadBalance?.balance?.toFixed(2) || '0.00'}`}>
+                            ${leadBalance?.balance?.toFixed(2) || '0.00'}
+                          </div>
+                          <div className="text-[10px] sm:text-xs text-muted-foreground">Balance</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3">
                       <Button
-                        className="w-full"
+                        className="w-full min-h-10 sm:min-h-11"
+                        size="sm"
                         onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
                       >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit Profile
+                        <Edit className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">Edit Profile</span>
                       </Button>
                       <Button
                         variant="secondary"
-                        className="w-full"
+                        className="w-full min-h-10 sm:min-h-11"
+                        size="sm"
                         onClick={() => navigate('/checkout')}
                       >
-                        <Wallet className="h-4 w-4 mr-2" />
-                        Add Funds
+                        <Wallet className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">Add Funds</span>
                       </Button>
                       <Button
                         variant="secondary"
-                        className="w-full"
+                        className="w-full min-h-10 sm:min-h-11"
+                        size="sm"
                         onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
                       >
-                        <Search className="h-4 w-4 mr-2" />
-                        Browse Leads
+                        <Search className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">Browse Leads</span>
                       </Button>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="py-3 px-4">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <Wallet className="h-4 w-4" />
+                    <CardHeader className="py-2.5 sm:py-3 px-3 sm:px-4">
+                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                        <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                         Account balance
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="py-0 px-4 pb-4">
-                      <div className="text-xl font-bold text-primary mb-1">
+                    <CardContent className="py-0 px-3 sm:px-4 pb-3 sm:pb-4">
+                      <div className="text-lg sm:text-xl font-bold text-primary mb-1 truncate" title={`$${leadBalance?.balance?.toFixed(2) ?? '0.00'}`}>
                         ${leadBalance?.balance?.toFixed(2) ?? '0.00'}
                       </div>
-                      <p className="text-xs text-muted-foreground mb-3">Available for lead purchases</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">Available for lead purchases</p>
                       <Button
                         variant="outline"
                         size="sm"
@@ -1104,13 +1227,13 @@ const DiggerDetail = () => {
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="py-3 px-4">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-yellow-500" />
+                    <CardHeader className="py-2.5 sm:py-3 px-3 sm:px-4">
+                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-500 shrink-0" />
                         Pending purchases
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="py-0 px-4 pb-4">
+                    <CardContent className="py-0 px-3 sm:px-4 pb-3 sm:pb-4">
                       {leadPurchases.filter(p => p.status === 'pending').length > 0 ? (
                         <>
                           <p className="text-sm font-semibold text-yellow-600 mb-2">
@@ -1131,15 +1254,15 @@ const DiggerDetail = () => {
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardHeader className="py-3 px-4">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <CardHeader className="py-2.5 sm:py-3 px-3 sm:px-4">
+                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 shrink-0" />
                         Purchased leads
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="py-0 px-4 pb-4">
+                    <CardContent className="py-0 px-3 sm:px-4 pb-3 sm:pb-4">
                       <p className="text-sm font-semibold text-green-600 mb-1">{totalLeadsSold} leads</p>
-                      <p className="text-xs text-muted-foreground mb-3">View and manage your leads</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">View and manage your leads</p>
                       <Button
                         variant="outline"
                         size="sm"

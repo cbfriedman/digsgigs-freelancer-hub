@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Loader2, Plus, X, Play, History } from "lucide-react";
 import {
   Table,
@@ -204,20 +205,18 @@ const AdminBlog = () => {
   const handleGenerateNow = async () => {
     setGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-blog-post");
-
-      if (error) throw error;
+      const data = await invokeEdgeFunction<{ post?: { title?: string } }>(supabase, "generate-blog-post");
 
       toast({
         title: "Success",
-        description: `Blog post "${data.post.title}" generated successfully!`,
+        description: `Blog post "${data.post?.title}" generated successfully!`,
       });
 
       loadData(); // Reload to show new post in history
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error?.message ?? "Failed to generate post",
         variant: "destructive",
       });
     } finally {

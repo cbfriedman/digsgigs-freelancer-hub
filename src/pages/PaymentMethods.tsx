@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -56,16 +57,13 @@ export default function PaymentMethods() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke("manage-payment-methods", {
+      const data = await invokeEdgeFunction<{ paymentMethods?: unknown[] }>(supabase, "manage-payment-methods", {
         method: "GET",
       });
-
-      if (error) throw error;
-
       setPaymentMethods(data.paymentMethods || []);
     } catch (error: any) {
       console.error("Error loading payment methods:", error);
-      toast.error(error.message || "Failed to load payment methods");
+      toast.error(error?.message || "Failed to load payment methods");
     } finally {
       setLoading(false);
     }
@@ -78,13 +76,10 @@ export default function PaymentMethods() {
 
     try {
       setDeletingId(paymentMethodId);
-      const { error } = await supabase.functions.invoke("manage-payment-methods", {
+      await invokeEdgeFunction(supabase, "manage-payment-methods", {
         method: "DELETE",
         body: { paymentMethodId },
       });
-
-      if (error) throw error;
-
       toast.success("Payment method deleted");
       loadPaymentMethods();
     } catch (error: any) {
@@ -97,18 +92,15 @@ export default function PaymentMethods() {
 
   const handleSetDefault = async (paymentMethodId: string) => {
     try {
-      const { error } = await supabase.functions.invoke("manage-payment-methods", {
+      await invokeEdgeFunction(supabase, "manage-payment-methods", {
         method: "PATCH",
         body: { paymentMethodId, isDefault: true },
       });
-
-      if (error) throw error;
-
       toast.success("Default payment method updated");
       loadPaymentMethods();
     } catch (error: any) {
       console.error("Error setting default payment method:", error);
-      toast.error(error.message || "Failed to update default payment method");
+      toast.error(error?.message || "Failed to update default payment method");
     }
   };
 

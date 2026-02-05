@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -119,7 +120,7 @@ export const EscrowContractDialog = ({
 
       // Confirm payment on backend
       const paymentIntentId = clientSecret?.split("_secret_")[0] || clientSecret;
-      await supabase.functions.invoke("confirm-escrow-payment", {
+      await invokeEdgeFunction(supabase, "confirm-escrow-payment", {
         body: {
           escrowContractId,
           paymentIntentId,
@@ -137,7 +138,7 @@ export const EscrowContractDialog = ({
       console.error("Error creating escrow:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create escrow contract",
+        description: error?.message || "Failed to create escrow contract",
         variant: "destructive",
       });
     } finally {

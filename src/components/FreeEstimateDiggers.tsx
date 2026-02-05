@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,22 +93,19 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
       const digger = diggers.find(d => d.id === diggerId);
       const price = getFreeEstimatePrice(digger?.subscription_tier || 'free');
 
-      const { data, error } = await supabase.functions.invoke("request-free-estimate", {
+      await invokeEdgeFunction(supabase, "request-free-estimate", {
         body: { gigId, diggerId },
       });
-
-      if (error) throw error;
 
       toast.success(
         `Estimate requested! The digger will be notified and must pay $${price} to accept.`,
         { duration: 5000 }
       );
-      
-      // Reload to update the UI
+
       setTimeout(() => loadDiggers(), 1000);
     } catch (error: any) {
       console.error("Error requesting estimate:", error);
-      toast.error(error.message || "Failed to request estimate");
+      toast.error(error?.message || "Failed to request estimate");
     } finally {
       setRequesting(null);
     }

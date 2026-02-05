@@ -101,13 +101,13 @@ import FBDiggerLanding from "./pages/FBDiggerLanding";
 import ApplyDiggerFB from "./pages/ApplyDiggerFB";
 import ApplyLanding from "./pages/ApplyLanding";
 import PaymentMethods from "./pages/PaymentMethods";
-import ProfileCategoryBrowser from "./pages/ProfileCategoryBrowser";
 import BidTemplatePreview from "./pages/BidTemplatePreview";
 import LeadUnlockPreview from "./pages/LeadUnlockPreview";
 import Subscribe from "./pages/Subscribe";
 import ImportSubscribers from "./pages/admin/ImportSubscribers";
 import BecomeADigger from "./pages/BecomeADigger";
 import HireAPro from "./pages/HireAPro";
+import CreateDiggerProfile from "./pages/CreateDiggerProfile";
 
 const queryClient = new QueryClient();
 
@@ -321,8 +321,8 @@ const router = createBrowserRouter(
         element: <Pricing />,
       },
       {
-        path: "/profile-categories",
-        element: <ProtectedRoute><ProfileCategoryBrowser /></ProtectedRoute>,
+        path: "/create-digger-profile",
+        element: <ProtectedRoute><CreateDiggerProfile /></ProtectedRoute>,
       },
       {
         path: "/keyword-summary",
