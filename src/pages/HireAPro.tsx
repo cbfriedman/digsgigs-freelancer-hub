@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,19 +7,25 @@ import {
   ArrowRight, 
   CheckCircle2, 
   Clock, 
-  DollarSign, 
   Shield, 
   Users, 
   Zap,
   Star,
   MessageSquare,
   FileCheck,
-  Sparkles
+  Phone,
+  PhoneOutgoing,
+  Loader2
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PageLayout } from "@/components/layout/PageLayout";
 import SEOHead from "@/components/SEOHead";
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
-import { VoiceIntakeOptions } from "@/components/hire-pro/VoiceIntakeOptions";
+import { GigFormChatbot } from "@/components/hire-pro/GigFormChatbot";
+import { GigData } from "@/hooks/useGigAssistant";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const benefits = [
   {
@@ -93,13 +100,69 @@ const categories = [
   "Copywriting"
 ];
 
+const DISPLAY_PHONE = "(412) 545-7108";
+
 export default function HireAPro() {
   const navigate = useNavigate();
   const { trackButtonClick } = useGA4Tracking();
+  const [extractedData, setExtractedData] = useState<GigData | null>(null);
+  const [showCallbackForm, setShowCallbackForm] = useState(false);
+  const [callbackPhone, setCallbackPhone] = useState("");
+  const [callbackName, setCallbackName] = useState("");
+  const [isRequestingCallback, setIsRequestingCallback] = useState(false);
 
   const handlePostProject = () => {
     trackButtonClick('Post a Project', 'hire-a-pro');
     navigate("/post-gig");
+  };
+
+  const handleDataUpdate = (data: GigData) => {
+    setExtractedData(data);
+  };
+
+  const handleFormComplete = (data: GigData) => {
+    // Navigate to post-gig with pre-filled data
+    toast.success("Great! Let's complete your project posting.");
+    navigate("/post-gig", { state: { prefillData: data } });
+  };
+
+  const handlePhoneClick = () => {
+    trackButtonClick('Call Phone Number', 'hire-a-pro');
+    window.location.href = `tel:${DISPLAY_PHONE.replace(/\D/g, '')}`;
+  };
+
+  const handleRequestCallback = async () => {
+    if (!callbackPhone.trim()) {
+      toast.error("Please enter your phone number");
+      return;
+    }
+
+    setIsRequestingCallback(true);
+    trackButtonClick('Request Callback', 'hire-a-pro');
+
+    try {
+      const { error } = await supabase.functions.invoke("request-ai-callback", {
+        body: {
+          phone: callbackPhone,
+          name: callbackName || "Guest",
+          source: "hire-a-pro-landing"
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("We'll call you within 5 minutes!", {
+        description: "Our AI assistant Morgan will help you describe your project."
+      });
+      setShowCallbackForm(false);
+      setCallbackPhone("");
+      setCallbackName("");
+    } catch (err) {
+      console.error("Callback request error:", err);
+      toast.error("Couldn't schedule callback. Please try again.");
+    } finally {
+      setIsRequestingCallback(false);
+    }
   };
 
   return (
@@ -110,22 +173,154 @@ export default function HireAPro() {
         keywords="hire freelancer, hire developer, find designer, tech talent, software development, web design"
       />
 
-      {/* Voice Intake Section - Primary Focus */}
-      <section className="section-padding pt-8 md:pt-12">
+      {/* Main Section - Project Details First */}
+      <section className="section-padding pt-6 md:pt-8">
         <div className="container-wide">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-display font-bold mb-3">
-              Tell Us About Your Project
+          {/* Header */}
+          <div className="text-center mb-6">
+            <Badge variant="secondary" className="mb-3 bg-success/10 text-success border-success/20">
+              <Zap className="h-3 w-3 mr-1" />
+              Free to post • No obligations
+            </Badge>
+            <h1 className="text-2xl md:text-3xl font-display font-bold mb-2">
+              Tell Us What You Need
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Fill out the form or let our AI assistant capture your project details over the phone in just 2-3 minutes.
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Describe your project and we'll connect you with qualified freelancers ready to help.
             </p>
           </div>
-          
-          <VoiceIntakeOptions displayPhoneNumber="(412) 545-7108" />
+
+          {/* Main Grid - Chat + Contact Options */}
+          <div className="grid lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {/* Chatbot - Takes 2 columns */}
+            <div className="lg:col-span-2">
+              <GigFormChatbot 
+                onDataUpdate={handleDataUpdate}
+                onComplete={handleFormComplete}
+              />
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                Chat with Morgan to describe your project, or use the options on the right.
+              </p>
+            </div>
+
+            {/* Contact Options - 1 column */}
+            <div className="space-y-4">
+              {/* Request Callback */}
+              <Card className={`p-5 border-2 transition-all duration-300 ${
+                showCallbackForm ? 'border-primary/50 shadow-lg' : 'border-border/50 hover:border-primary/50'
+              }`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <PhoneOutgoing className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Request a Callback</h4>
+                    <p className="text-xs text-muted-foreground">We'll call you in 5 min</p>
+                  </div>
+                </div>
+                
+                {showCallbackForm ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="callback-name" className="text-xs">Your Name</Label>
+                      <Input
+                        id="callback-name"
+                        placeholder="John"
+                        value={callbackName}
+                        onChange={(e) => setCallbackName(e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="callback-phone" className="text-xs">Phone Number *</Label>
+                      <Input
+                        id="callback-phone"
+                        type="tel"
+                        placeholder="(555) 123-4567"
+                        value={callbackPhone}
+                        onChange={(e) => setCallbackPhone(e.target.value)}
+                        className="h-9"
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => setShowCallbackForm(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        className="flex-1 bg-gradient-primary"
+                        onClick={handleRequestCallback}
+                        disabled={isRequestingCallback}
+                      >
+                        {isRequestingCallback ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>Call Me</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => setShowCallbackForm(true)}
+                  >
+                    Get a Call
+                    <Phone className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </Card>
+
+              {/* Call Us Directly */}
+              <Card 
+                className="p-5 border-2 border-border/50 hover:border-success/50 cursor-pointer transition-all duration-300"
+                onClick={handlePhoneClick}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+                    <Phone className="h-5 w-5 text-success" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Call Us Directly</h4>
+                    <p className="text-xs text-muted-foreground">Speak to Morgan now</p>
+                  </div>
+                </div>
+                <div className="font-mono text-xl font-bold text-success text-center py-2">
+                  {DISPLAY_PHONE}
+                </div>
+              </Card>
+
+              {/* Fill Out Form Option */}
+              <Card 
+                className="p-5 border-2 border-border/50 hover:border-accent/50 cursor-pointer transition-all duration-300"
+                onClick={handlePostProject}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                    <FileCheck className="h-5 w-5 text-accent" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Full Project Form</h4>
+                    <p className="text-xs text-muted-foreground">Detailed submission</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="w-full">
+                  Open Form
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Card>
+            </div>
+          </div>
         </div>
       </section>
-
 
       {/* Benefits Grid */}
       <section className="section-padding">

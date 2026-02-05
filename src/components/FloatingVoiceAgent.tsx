@@ -61,11 +61,11 @@ export function FloatingVoiceAgent({
       update_gig_details: handleUpdateGigDetails,
     },
     onConnect: () => {
-      console.log("Connected to Alexis");
+      console.log("Connected to Morgan");
       toast.success("Connected! Start describing your project.");
     },
     onDisconnect: () => {
-      console.log("Disconnected from Alexis");
+      console.log("Disconnected from Morgan");
       setIsConnecting(false);
     },
     onMessage: (message: unknown) => {
@@ -155,7 +155,7 @@ export function FloatingVoiceAgent({
               <Phone className={`h-5 w-5 ${isConnected ? "text-success" : "text-primary"}`} />
             </div>
             <div>
-              <h3 className="font-semibold">Alexis</h3>
+              <h3 className="font-semibold">Morgan</h3>
               <p className="text-xs text-muted-foreground">
                 {isConnected 
                   ? isSpeaking ? "Speaking..." : "Listening..." 
@@ -195,14 +195,14 @@ export function FloatingVoiceAgent({
                   )}
                 </div>
                 <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
-                  {isSpeaking ? "Alexis is speaking" : "Listening to you"}
+                  {isSpeaking ? "Morgan is speaking" : "Listening to you"}
                 </Badge>
               </div>
             ) : (
               <div className="text-center">
                 <p className="text-sm text-muted-foreground mb-4">
-                  Click the button below to start talking with Alexis. 
-                  She'll help capture your project details.
+                  Click the button below to start talking with Morgan. 
+                  He'll help capture your project details.
                 </p>
               </div>
             )}
@@ -283,7 +283,7 @@ export function FloatingVoiceAgent({
               ) : (
                 <>
                   <Mic className="mr-2 h-4 w-4" />
-                  Start Talking to Alexis
+                  Start Talking to Morgan
                 </>
               )}
             </Button>
