@@ -1,11 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Shield, UserCog, Users, RefreshCw, MoreVertical, UserX, Trash2, UserCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import { ArrowLeft, Shield, UserCog, Users, RefreshCw, MoreVertical, UserX, Trash2, UserCheck, Search } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Navigation } from "@/components/Navigation";
@@ -35,6 +46,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type SortOption = "date_desc" | "date_asc" | "name_asc" | "name_desc" | "email_asc" | "email_desc" | "role";
+
 interface UserWithRoles {
   id: string;
   email: string;
@@ -43,7 +56,10 @@ interface UserWithRoles {
   created_at: string;
   roles: string[];
   is_suspended: boolean;
+  avatar_url: string | null;
 }
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 const AdminUserManagement = () => {
   const navigate = useNavigate();
@@ -54,6 +70,13 @@ const AdminUserManagement = () => {
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [actionType, setActionType] = useState<"add" | "remove" | "suspend" | "unsuspend" | "delete">("add");
+  // Filters & sort
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("date_desc");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
     checkAdminAccess();
@@ -119,14 +142,15 @@ const AdminUserManagement = () => {
       // Combine profiles with their roles
       const usersWithRoles: UserWithRoles[] = (profiles || []).map(profile => ({
         id: profile.id,
-        email: profile.email,
+        email: profile.email ?? "",
         full_name: profile.full_name,
-        user_type: profile.user_type,
+        user_type: profile.user_type ?? "",
         created_at: profile.created_at,
         roles: userRoles
           ?.filter(ur => ur.user_id === profile.id)
           .map(ur => ur.app_role) || [],
-        is_suspended: false,
+        is_suspended: (profile as { is_suspended?: boolean }).is_suspended ?? false,
+        avatar_url: profile.avatar_url ?? null,
       }));
 
       setUsers(usersWithRoles);
@@ -269,6 +293,77 @@ const AdminUserManagement = () => {
     }
   };
 
+  const getInitials = (name: string | null, email: string) => {
+    if (name?.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    }
+    if (email) return email.slice(0, 2).toUpperCase();
+    return "?";
+  };
+
+  // Filter, sort, and paginate users
+  const { filteredUsers, totalFiltered, totalPages, paginatedUsers, startIndex } = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    let list = users.filter((u) => {
+      const matchSearch =
+        !q ||
+        (u.full_name ?? "").toLowerCase().includes(q) ||
+        (u.email ?? "").toLowerCase().includes(q);
+      const matchRole =
+        roleFilter === "all" || u.roles.includes(roleFilter);
+      return matchSearch && matchRole;
+    });
+
+    const sorted = [...list].sort((a, b) => {
+      switch (sortBy) {
+        case "date_desc":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "date_asc":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "name_asc":
+          return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+        case "name_desc":
+          return (b.full_name ?? "").localeCompare(a.full_name ?? "");
+        case "email_asc":
+          return (a.email ?? "").localeCompare(b.email ?? "");
+        case "email_desc":
+          return (b.email ?? "").localeCompare(a.email ?? "");
+        case "role": {
+          const aRoles = a.roles.join(",");
+          const bRoles = b.roles.join(",");
+          return aRoles.localeCompare(bRoles) || (a.email ?? "").localeCompare(b.email ?? "");
+        }
+        default:
+          return 0;
+      }
+    });
+
+    const total = sorted.length;
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    const currentPage = Math.min(Math.max(1, page), pages);
+    const start = (currentPage - 1) * pageSize;
+    const paginated = sorted.slice(start, start + pageSize);
+
+    return {
+      filteredUsers: sorted,
+      totalFiltered: total,
+      totalPages: pages,
+      paginatedUsers: paginated,
+      startIndex: start,
+    };
+  }, [users, searchQuery, roleFilter, sortBy, page, pageSize]);
+
+  // Keep page in bounds when filters change
+  useEffect(() => {
+    if (page > totalPages && totalPages > 0) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(Math.max(1, Math.min(newPage, totalPages)));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -305,14 +400,17 @@ const AdminUserManagement = () => {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <UserCog className="h-5 w-5" />
                   All Users
+                  <Badge variant="secondary" className="font-normal">
+                    Total: {users.length} user{users.length !== 1 ? "s" : ""}
+                  </Badge>
                 </CardTitle>
                 <CardDescription>
-                  View and manage roles for all registered users
+                  View and manage roles for all registered users. Use filters and pagination to find users quickly.
                 </CardDescription>
               </div>
               <Button
@@ -324,12 +422,63 @@ const AdminUserManagement = () => {
                 Refresh
               </Button>
             </div>
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-3 pt-4 border-t mt-4">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1); }}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="digger">Digger</SelectItem>
+                  <SelectItem value="gigger">Gigger</SelectItem>
+                  <SelectItem value="telemarketer">Telemarketer</SelectItem>
+                  <SelectItem value="moderator">Moderator</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={(v) => { setSortBy(v as SortOption); setPage(1); }}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date_desc">Newest first</SelectItem>
+                  <SelectItem value="date_asc">Oldest first</SelectItem>
+                  <SelectItem value="name_asc">Name A → Z</SelectItem>
+                  <SelectItem value="name_desc">Name Z → A</SelectItem>
+                  <SelectItem value="email_asc">Email A → Z</SelectItem>
+                  <SelectItem value="email_desc">Email Z → A</SelectItem>
+                  <SelectItem value="role">By role</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n} per page</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12 text-center">#</TableHead>
+                    <TableHead className="w-14">Photo</TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Type</TableHead>
@@ -340,8 +489,30 @@ const AdminUserManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
+                  {paginatedUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        {totalFiltered === 0 && users.length > 0
+                          ? "No users match the current filters."
+                          : users.length === 0
+                            ? "No users yet."
+                            : "No users on this page."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedUsers.map((user, index) => (
                     <TableRow key={user.id}>
+                      <TableCell className="text-center font-medium text-muted-foreground">
+                        {startIndex + index + 1}
+                      </TableCell>
+                      <TableCell>
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={user.avatar_url ?? undefined} alt={user.full_name ?? user.email} />
+                          <AvatarFallback className="bg-muted text-xs">
+                            {getInitials(user.full_name, user.email)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {user.full_name || "—"}
                       </TableCell>
@@ -451,10 +622,58 @@ const AdminUserManagement = () => {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ))
+                  )}
                 </TableBody>
               </Table>
             </div>
+            {/* Pagination */}
+            {totalFiltered > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1}–{Math.min(startIndex + pageSize, totalFiltered)} of {totalFiltered} user{totalFiltered !== 1 ? "s" : ""}
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={(e) => { e.preventDefault(); if (page > 1) handlePageChange(page - 1); }}
+                        className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        href="#"
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((p) => {
+                        if (totalPages <= 7) return true;
+                        if (p === 1 || p === totalPages) return true;
+                        if (Math.abs(p - page) <= 1) return true;
+                        return false;
+                      })
+                      .map((p, i, arr) => (
+                        <PaginationItem key={p}>
+                          {i > 0 && arr[i - 1] !== p - 1 && (
+                            <PaginationEllipsis />
+                          )}
+                          <PaginationLink
+                            onClick={(e) => { e.preventDefault(); handlePageChange(p); }}
+                            isActive={page === p}
+                            href="#"
+                          >
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={(e) => { e.preventDefault(); if (page < totalPages) handlePageChange(page + 1); }}
+                        className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        href="#"
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
 

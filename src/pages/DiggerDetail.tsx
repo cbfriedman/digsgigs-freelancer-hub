@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText, Search } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -19,7 +19,6 @@ import { OptimizedImage } from "@/components/OptimizedImage";
 import { DiggerPricingSelector } from "@/components/DiggerPricingSelector";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
-import { LeadReturnDialog } from "@/components/LeadReturnDialog";
 import { ProfileClickPricingCard } from "@/components/ProfileClickPricingCard";
 import { useProfileCallTracking } from "@/hooks/useProfileCallTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
@@ -598,16 +597,6 @@ const DiggerDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <nav className="border-b border-border/50">
-          <div className="container mx-auto px-4 flex h-16 items-center">
-            <h1 
-              className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-              onClick={() => navigate("/")}
-            >
-              digsandgigs
-            </h1>
-          </div>
-        </nav>
         <div className="container mx-auto px-4 py-12 text-center">
           <p className="text-muted-foreground">Loading...</p>
         </div>
@@ -648,24 +637,16 @@ const DiggerDetail = () => {
           image: digger.profile_image_url || undefined
         })}
       />
-      <nav className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-50">
-        <div className="container mx-auto px-4 flex h-16 items-center">
-          <h1 
-            className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            digsandgigs
-          </h1>
-        </div>
-      </nav>
 
-      <div className="container mx-auto px-4 py-12 max-w-5xl">
-        <Breadcrumb 
-          items={[
-            { label: "Browse Diggers", href: "/browse-diggers" },
-            { label: digger.business_name, href: `/digger/${digger.id}` }
-          ]} 
-        />
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-12 max-w-5xl">
+        <div className="sticky top-16 z-10 bg-background py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-6 sm:-mt-12 mb-4">
+          <Breadcrumb 
+            items={[
+              { label: "Browse Diggers", href: "/browse-diggers" },
+              { label: digger.business_name, href: `/digger/${digger.id}` }
+            ]} 
+          />
+        </div>
         
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -772,8 +753,8 @@ const DiggerDetail = () => {
                       </div>
                     </div>
                     <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="text-xl text-muted-foreground">{getDisplayProfession()}</p>
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <p className="text-lg sm:text-xl text-muted-foreground">{getDisplayProfession()}</p>
                         <Badge variant="default" className="bg-primary text-primary-foreground">
                           <Star className="h-3 w-3 mr-1 fill-current" />
                           Primary Specialty
@@ -785,10 +766,10 @@ const DiggerDetail = () => {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                       <div className="flex items-center gap-1">
-                        <Star className="h-5 w-5 fill-accent text-accent" />
-                        <span className="font-semibold text-lg">{digger.average_rating.toFixed(1)}</span>
+                        <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-accent text-accent shrink-0" />
+                        <span className="font-semibold text-base sm:text-lg">{digger.average_rating.toFixed(1)}</span>
                         <span className="text-muted-foreground">({digger.total_ratings} reviews)</span>
                       </div>
                       {formatHourlyRate() && (
@@ -890,7 +871,7 @@ const DiggerDetail = () => {
                     <Separator className="my-6" />
                     <div>
                       <h2 className="text-lg font-semibold mb-3">Work Samples</h2>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                         {digger.work_photos.map((photo, idx) => (
                           <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
                             <OptimizedImage
@@ -1072,32 +1053,104 @@ const DiggerDetail = () => {
               )}
 
               {isOwnProfile && (
-                <Card>
-                  <CardContent className="p-6 space-y-3">
-                    <Button 
-                      className="w-full" 
-                      onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Profile
-                    </Button>
-                    <Button 
-                      className="w-full" 
-                      variant="outline"
-                      onClick={() => navigate('/checkout')}
-                    >
-                      <Wallet className="mr-2 h-4 w-4" />
-                      Add Funds
-                    </Button>
-                    <Button 
-                      className="w-full" 
-                      variant="secondary"
-                      onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
-                    >
-                      Browse Leads
-                    </Button>
-                  </CardContent>
-                </Card>
+                <>
+                  <Card>
+                    <CardContent className="p-4 sm:p-5 space-y-3">
+                      <Button
+                        className="w-full"
+                        onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => navigate('/checkout')}
+                      >
+                        <Wallet className="h-4 w-4 mr-2" />
+                        Add Funds
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
+                      >
+                        <Search className="h-4 w-4 mr-2" />
+                        Browse Leads
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="py-3 px-4">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Wallet className="h-4 w-4" />
+                        Account balance
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-0 px-4 pb-4">
+                      <div className="text-xl font-bold text-primary mb-1">
+                        ${leadBalance?.balance?.toFixed(2) ?? '0.00'}
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">Available for lead purchases</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => navigate('/checkout')}
+                      >
+                        Add funds
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="py-3 px-4">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-yellow-500" />
+                        Pending purchases
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-0 px-4 pb-4">
+                      {leadPurchases.filter(p => p.status === 'pending').length > 0 ? (
+                        <>
+                          <p className="text-sm font-semibold text-yellow-600 mb-2">
+                            {leadPurchases.filter(p => p.status === 'pending').length} pending
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => navigate('/checkout')}
+                          >
+                            View & complete
+                          </Button>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No pending purchases</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="py-3 px-4">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        Purchased leads
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-0 px-4 pb-4">
+                      <p className="text-sm font-semibold text-green-600 mb-1">{totalLeadsSold} leads</p>
+                      <p className="text-xs text-muted-foreground mb-3">View and manage your leads</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => navigate(`/my-leads?profileId=${id}`)}
+                      >
+                        View all leads
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </>
               )}
 
               {/* Google Search Preview */}
