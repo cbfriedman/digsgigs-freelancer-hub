@@ -20,7 +20,6 @@
  } from "lucide-react";
  import { PROBLEM_OPTIONS, TIMELINE_OPTIONS } from "@/config/giggerProblems";
  import { RegionCountrySelector } from "@/components/RegionCountrySelector";
- import { formatSelectionDisplay } from "@/config/regionOptions";
  import { supabase } from "@/integrations/supabase/client";
  import { toast } from "sonner";
  
@@ -55,7 +54,6 @@
    const [budgetMin, setBudgetMin] = useState("");
    const [budgetMax, setBudgetMax] = useState("");
    const [timeline, setTimeline] = useState("");
-   const [preferredRegions, setPreferredRegions] = useState<string[]>([]);
    const [isEnhancing, setIsEnhancing] = useState(false);
    const [budgetError, setBudgetError] = useState<string | null>(null);
    const [suggestedBudget, setSuggestedBudget] = useState<{ min: number; max: number } | null>(null);
@@ -218,7 +216,7 @@
        budgetMin: parseCurrency(budgetMin),
        budgetMax: parseCurrency(budgetMax),
        timeline,
-       preferredRegions,
+      preferredRegions: [],
      };
  
      if (onComplete) {
@@ -233,7 +231,7 @@
              budgetMin: parseCurrency(budgetMin),
              budgetMax: parseCurrency(budgetMax),
              timeline,
-             preferredRegions,
+            preferredRegions: [],
              additionalTypes: selectedProjectTypes.slice(1),
            }
          }
@@ -247,7 +245,7 @@
      if (selectedProjectTypes.length === 0) return 1;
      if (!description.trim()) return 2;
      if (!budgetMin || !budgetMax || !timeline) return 3;
-     return 4;
+    return 3;
    };
  
    return (
@@ -273,7 +271,7 @@
                <Label className="text-base font-semibold">
                  What are you trying to do? <span className="text-destructive">*</span>
                </Label>
-               <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Step 1 of 4</span>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Step 1 of 3</span>
              </div>
              <p className="text-sm text-muted-foreground">
                Select all project types that apply to your needs.
@@ -323,7 +321,7 @@
                <Label htmlFor="description" className="text-base font-semibold">
                  Project Description <span className="text-destructive">*</span>
                </Label>
-               <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Step 2 of 4</span>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Step 2 of 3</span>
              </div>
              <p className="text-sm text-muted-foreground">
                Describe what you want done. Include any specific requirements, goals, or examples.
@@ -366,7 +364,7 @@
                  <DollarSign className="h-5 w-5 text-success" />
                  Budget & Timeline
                </h3>
-               <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">Step 3 of 4</span>
+              <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">Step 3 of 3</span>
              </div>
  
              {/* Suggested Budget */}
@@ -452,28 +450,6 @@
                  </SelectContent>
                </Select>
              </div>
-           </div>
- 
-           {/* Step 4: Preferred Location (Optional) */}
-           <div className="space-y-3">
-             <div className="flex items-center justify-between">
-               <Label className="text-base font-semibold">
-                 Preferred Freelancer Location <Badge variant="outline" className="ml-2 text-xs">Optional</Badge>
-               </Label>
-               <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Step 4 of 4</span>
-             </div>
-             <p className="text-sm text-muted-foreground">
-               Select regions or specific countries where you'd prefer freelancers to be located. Leave empty for all regions.
-             </p>
-             <RegionCountrySelector
-               selectedValues={preferredRegions}
-               onChange={setPreferredRegions}
-             />
-             {preferredRegions.length > 0 && (
-               <div className="text-xs text-muted-foreground">
-                 Selected: {formatSelectionDisplay(preferredRegions)}
-               </div>
-             )}
            </div>
  
            {/* Submit Button */}
