@@ -275,26 +275,6 @@ export default function HireAPro() {
                 displayPhone={DISPLAY_PHONE}
                 onCallClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro')}
               />
-
-              {/* Fill Out Form Option */}
-              <Card 
-                className="p-5 border-2 border-border/50 hover:border-accent/50 cursor-pointer transition-all duration-300"
-                onClick={handlePostProject}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                    <FileCheck className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Full Project Form</h4>
-                    <p className="text-xs text-muted-foreground">Detailed submission</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="w-full">
-                  Open Form
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Card>
             </div>
           </div>
         </div>
