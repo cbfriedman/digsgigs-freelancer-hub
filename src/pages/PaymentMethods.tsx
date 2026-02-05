@@ -57,7 +57,7 @@ export default function PaymentMethods() {
 
     try {
       setLoading(true);
-      const data = await invokeEdgeFunction<{ paymentMethods?: unknown[] }>(supabase, "manage-payment-methods", {
+      const data = await invokeEdgeFunction<{ paymentMethods?: PaymentMethod[] }>(supabase, "manage-payment-methods", {
         method: "GET",
       });
       setPaymentMethods(data.paymentMethods || []);

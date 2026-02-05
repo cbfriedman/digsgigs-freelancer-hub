@@ -191,7 +191,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       if (!session) return;
 
-      const data = await invokeEdgeFunction(supabase, 'check-subscription', {
+      const data = await invokeEdgeFunction<SubscriptionStatus>(supabase, 'check-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
