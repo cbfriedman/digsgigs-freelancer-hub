@@ -15,6 +15,7 @@ import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizeToE164US } from "@/lib/phone";
+import { PhoneCallCard } from "@/components/hire-pro/PhoneCallCard";
 
 interface VoiceIntakeOptionsProps {
   displayPhoneNumber?: string;
@@ -185,26 +186,12 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
         </Card>
 
         {/* Option 3: Call Us Directly */}
-        <a 
-          href="tel:+14125457108"
-          onClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro-voice')}
-          className="block"
-        >
-          <Card className="group p-6 cursor-pointer border-2 border-border/50 hover:border-success/50 hover:shadow-card-hover transition-all duration-300">
-            <div className="text-center">
-              <div className="w-14 h-14 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <Phone className="h-7 w-7 text-success" />
-              </div>
-              <h4 className="font-semibold text-lg mb-2">Call Us Directly</h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Speak to our AI assistant now
-              </p>
-              <div className="font-mono text-xl font-bold text-success group-hover:scale-105 transition-transform">
-                {displayPhoneNumber}
-              </div>
-            </div>
-          </Card>
-        </a>
+        <PhoneCallCard
+          phoneE164={"+14125457108"}
+          displayPhone={displayPhoneNumber}
+          subtitle="Speak to our AI assistant now"
+          onCallClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro-voice')}
+        />
       </div>
 
       <p className="text-center text-xs text-muted-foreground mt-6">

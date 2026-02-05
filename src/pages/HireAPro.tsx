@@ -26,6 +26,7 @@ import { GigLandingForm } from "@/components/hire-pro/GigLandingForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizeToE164US } from "@/lib/phone";
+import { PhoneCallCard } from "@/components/hire-pro/PhoneCallCard";
 
 const benefits = [
   {
@@ -269,26 +270,11 @@ export default function HireAPro() {
               </Card>
 
               {/* Call Us Directly */}
-              <a 
-                href="tel:+14125457108"
-                onClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro')}
-                className="block"
-              >
-                <Card className="p-5 border-2 border-border/50 hover:border-success/50 cursor-pointer transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                      <Phone className="h-5 w-5 text-success" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Call Us Directly</h4>
-                      <p className="text-xs text-muted-foreground">Speak to Morgan now</p>
-                    </div>
-                  </div>
-                  <div className="font-mono text-xl font-bold text-success text-center py-2">
-                    {DISPLAY_PHONE}
-                  </div>
-                </Card>
-              </a>
+              <PhoneCallCard
+                phoneE164={"+14125457108"}
+                displayPhone={DISPLAY_PHONE}
+                onCallClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro')}
+              />
 
               {/* Fill Out Form Option */}
               <Card 
