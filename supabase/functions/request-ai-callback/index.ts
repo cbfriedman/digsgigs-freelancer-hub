@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Morgan assistant ID for project intake
+const VAPI_ASSISTANT_ID = "efb351af-09d6-4145-be8b-311c61f909f8";
+
 interface CallbackRequest {
   phone: string;
   name?: string;
@@ -24,7 +27,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const retellApiKey = Deno.env.get("RETELL_API_KEY");
+    const vapiApiKey = Deno.env.get("VAPI_API_KEY");
+    const vapiPhoneNumberId = Deno.env.get("VAPI_PHONE_NUMBER_ID");
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase configuration");
@@ -39,16 +43,24 @@ serve(async (req) => {
       );
     }
 
-    // Clean phone number
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length < 10) {
+    // Clean phone number - ensure E.164 format for US numbers
+    let cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length === 10) {
+      cleanPhone = `+1${cleanPhone}`;
+    } else if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) {
+      cleanPhone = `+${cleanPhone}`;
+    } else if (!cleanPhone.startsWith('+')) {
+      cleanPhone = `+${cleanPhone}`;
+    }
+
+    if (cleanPhone.length < 11) {
       return new Response(
         JSON.stringify({ error: "Invalid phone number" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    logStep("Callback request received", { phone: cleanPhone, name, source });
+    logStep("Callback request received", { phone: cleanPhone.slice(0, 5) + '***', name, source });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -70,68 +82,62 @@ serve(async (req) => {
       logStep("Insert error (table may not exist)", { error: insertError.message });
     }
 
-    // If Retell API key is configured, initiate the call
-    if (retellApiKey) {
-      logStep("Initiating Retell call", { phone: cleanPhone });
-
-      const retellAgentId = Deno.env.get("RETELL_AGENT_ID");
-      
-      if (!retellAgentId) {
-        logStep("Retell agent ID not configured - call queued for later");
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: "Callback scheduled",
-            callbackId: callbackRecord?.id 
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    // If Vapi API key is configured, initiate the call
+    if (vapiApiKey && vapiPhoneNumberId) {
+      logStep("Initiating Vapi outbound call", { phone: cleanPhone.slice(0, 5) + '***' });
 
       try {
-        const retellResponse = await fetch("https://api.retellai.com/v2/create-phone-call", {
+        const vapiResponse = await fetch("https://api.vapi.ai/call/phone", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${retellApiKey}`,
+            "Authorization": `Bearer ${vapiApiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            agent_id: retellAgentId,
-            to_number: `+1${cleanPhone}`,
-            from_number: Deno.env.get("RETELL_FROM_NUMBER") || undefined,
-            metadata: {
-              callback_id: callbackRecord?.id,
+            assistantId: VAPI_ASSISTANT_ID,
+            phoneNumberId: vapiPhoneNumberId,
+            customer: {
+              number: cleanPhone,
               name: name || "Guest",
-              source: source || "unknown",
+            },
+            assistantOverrides: {
+              metadata: {
+                callback_id: callbackRecord?.id,
+                name: name || "Guest",
+                source: source || "unknown",
+              },
             },
           }),
         });
 
-        if (!retellResponse.ok) {
-          const errorText = await retellResponse.text();
-          logStep("Retell API error", { status: retellResponse.status, error: errorText });
+        if (!vapiResponse.ok) {
+          const errorText = await vapiResponse.text();
+          logStep("Vapi API error", { status: vapiResponse.status, error: errorText });
           // Still return success - the callback is queued
         } else {
-          const retellData = await retellResponse.json();
-          logStep("Retell call initiated", { callId: retellData.call_id });
+          const vapiData = await vapiResponse.json();
+          logStep("Vapi call initiated", { callId: vapiData.id });
 
           // Update the callback record with the call ID
           if (callbackRecord?.id) {
             await supabase
               .from("ai_callback_requests")
               .update({ 
-                retell_call_id: retellData.call_id,
+                vapi_call_id: vapiData.id,
                 status: "initiated"
               })
               .eq("id", callbackRecord.id);
           }
         }
-      } catch (retellError) {
-        logStep("Retell call failed", { error: String(retellError) });
+      } catch (vapiError) {
+        logStep("Vapi call failed", { error: String(vapiError) });
         // Continue - callback is still queued
       }
     } else {
-      logStep("Retell API key not configured - callback queued for manual processing");
+      logStep("Vapi API not fully configured - callback queued for manual processing", {
+        hasApiKey: !!vapiApiKey,
+        hasPhoneNumberId: !!vapiPhoneNumberId,
+      });
     }
 
     return new Response(
