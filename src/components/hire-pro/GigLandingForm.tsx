@@ -276,14 +276,14 @@
              <p className="text-sm text-muted-foreground">
                Select all project types that apply to your needs.
              </p>
-             <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-2">
                {PROBLEM_OPTIONS.map((option) => {
                  const isChecked = selectedProjectTypes.includes(option.id);
                  return (
                    <label
                      key={option.id}
                      htmlFor={`project-type-${option.id}`}
-                     className={`flex items-center gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all ${
+                    className={`flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer transition-all text-sm ${
                        isChecked 
                          ? 'border-primary bg-primary/5 shadow-sm' 
                          : 'border-border/50 hover:border-primary/30 hover:bg-muted/50'
@@ -293,10 +293,10 @@
                        id={`project-type-${option.id}`}
                        checked={isChecked}
                        onCheckedChange={(checked) => handleProjectTypeToggle(option.id, checked === true)}
-                       className="h-5 w-5"
+                      className="h-4 w-4"
                      />
-                     <span className="flex-1 text-sm font-medium">{option.label}</span>
-                     {isChecked && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                    <span className="flex-1 text-xs font-medium leading-tight">{option.label}</span>
+                    {isChecked && <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />}
                    </label>
                  );
                })}
