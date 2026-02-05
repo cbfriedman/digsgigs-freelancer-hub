@@ -126,11 +126,6 @@ export default function HireAPro() {
     navigate("/post-gig", { state: { prefillData: data } });
   };
 
-  const handlePhoneClick = () => {
-    trackButtonClick('Call Phone Number', 'hire-a-pro');
-    window.location.href = `tel:${DISPLAY_PHONE.replace(/\D/g, '')}`;
-  };
-
   const handleRequestCallback = async () => {
     if (!callbackPhone.trim()) {
       toast.error("Please enter your phone number");
@@ -289,23 +284,26 @@ export default function HireAPro() {
               </Card>
 
               {/* Call Us Directly */}
-              <Card 
-                className="p-5 border-2 border-border/50 hover:border-success/50 cursor-pointer transition-all duration-300"
-                onClick={handlePhoneClick}
+              <a 
+                href="tel:+14125457108"
+                onClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro')}
+                className="block"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                    <Phone className="h-5 w-5 text-success" />
+                <Card className="p-5 border-2 border-border/50 hover:border-success/50 cursor-pointer transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+                      <Phone className="h-5 w-5 text-success" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Call Us Directly</h4>
+                      <p className="text-xs text-muted-foreground">Speak to Morgan now</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold">Call Us Directly</h4>
-                    <p className="text-xs text-muted-foreground">Speak to Morgan now</p>
+                  <div className="font-mono text-xl font-bold text-success text-center py-2">
+                    {DISPLAY_PHONE}
                   </div>
-                </div>
-                <div className="font-mono text-xl font-bold text-success text-center py-2">
-                  {DISPLAY_PHONE}
-                </div>
-              </Card>
+                </Card>
+              </a>
 
               {/* Fill Out Form Option */}
               <Card 
