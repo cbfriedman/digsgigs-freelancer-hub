@@ -308,7 +308,7 @@ const PostGig = () => {
             className="mt-2 gap-2 border-primary/30 hover:bg-primary/5"
           >
             <Mic className="h-4 w-4" />
-            Or talk to Alexis instead
+            Or talk to Morgan instead
           </Button>
         </div>
 
