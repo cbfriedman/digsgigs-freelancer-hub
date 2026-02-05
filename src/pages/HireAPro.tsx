@@ -141,7 +141,7 @@ export default function HireAPro() {
     trackButtonClick('Request Callback', 'hire-a-pro');
 
     try {
-      const { error } = await supabase.functions.invoke("request-ai-callback", {
+      const { data, error } = await supabase.functions.invoke("request-ai-callback", {
         body: {
           phone: callbackPhone,
           name: callbackName || "Guest",
@@ -149,14 +149,23 @@ export default function HireAPro() {
         }
       });
 
-      if (error) throw error;
+      console.log("Callback response:", { data, error });
 
-      toast.success("We'll call you within 5 minutes!", {
-        description: "Our AI assistant Morgan will help you describe your project."
-      });
-      setShowCallbackForm(false);
-      setCallbackPhone("");
-      setCallbackName("");
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
+
+      if (data?.success) {
+        toast.success("We'll call you within 5 minutes!", {
+          description: "Our AI assistant Morgan will help you describe your project."
+        });
+        setShowCallbackForm(false);
+        setCallbackPhone("");
+        setCallbackName("");
+      } else {
+        throw new Error(data?.error || "Unknown error");
+      }
     } catch (err) {
       console.error("Callback request error:", err);
       toast.error("Couldn't schedule callback. Please try again.");
