@@ -122,6 +122,13 @@ export type Database = {
             foreignKeyName: "ai_call_logs_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_logs_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -189,6 +196,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_callback_requests_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -295,6 +309,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bids_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -985,6 +1006,13 @@ export type Database = {
             foreignKeyName: "contact_reveals_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_reveals_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -1028,6 +1056,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -1823,6 +1858,13 @@ export type Database = {
             foreignKeyName: "escrow_contracts_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_contracts_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -1912,6 +1954,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigger_deposits_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -2242,6 +2291,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_form_responses_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -2627,6 +2683,13 @@ export type Database = {
             foreignKeyName: "lead_exclusivity_queue_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_exclusivity_queue_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -2772,6 +2835,13 @@ export type Database = {
             foreignKeyName: "lead_purchases_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_purchases_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -2840,6 +2910,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_unlocks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -3028,6 +3105,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_violations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -3333,6 +3417,13 @@ export type Database = {
             foreignKeyName: "pending_penalty_payments_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_penalty_payments_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -3413,6 +3504,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_award_conversations_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -3915,6 +4013,13 @@ export type Database = {
             foreignKeyName: "ratings_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -4089,6 +4194,13 @@ export type Database = {
             foreignKeyName: "referral_payments_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_payments_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -4244,6 +4356,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriber_lead_purchases_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -4418,6 +4537,13 @@ export type Database = {
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemarketer_commissions_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs_public"
             referencedColumns: ["id"]
           },
           {
@@ -4599,6 +4725,13 @@ export type Database = {
             foreignKeyName: "transactions_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
+            referencedRelation: "gigs_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
             referencedRelation: "safe_public_gigs"
             referencedColumns: ["id"]
           },
@@ -4739,6 +4872,80 @@ export type Database = {
       }
     }
     Views: {
+      gigs_public: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_confirmed_lead: boolean | null
+          lead_source: string | null
+          location: string | null
+          location_lat: number | null
+          location_lng: number | null
+          naics_codes: string[] | null
+          preferred_regions: string[] | null
+          purchase_count: number | null
+          sic_codes: string[] | null
+          status: string | null
+          timeline: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_confirmed_lead?: boolean | null
+          lead_source?: string | null
+          location?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          naics_codes?: string[] | null
+          preferred_regions?: string[] | null
+          purchase_count?: number | null
+          sic_codes?: string[] | null
+          status?: string | null
+          timeline?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_confirmed_lead?: boolean | null
+          lead_source?: string | null
+          location?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          naics_codes?: string[] | null
+          preferred_regions?: string[] | null
+          purchase_count?: number | null
+          sic_codes?: string[] | null
+          status?: string | null
+          timeline?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gigs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safe_public_gigs: {
         Row: {
           ai_matched_codes: boolean | null
@@ -4932,6 +5139,14 @@ export type Database = {
       }
       can_access_conversation: {
         Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_access_gig: {
+        Args: { _gig_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_access_gig_documents: {
+        Args: { _file_path: string; _user_id: string }
         Returns: boolean
       }
       check_rate_limit: {
