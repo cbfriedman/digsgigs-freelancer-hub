@@ -25,6 +25,7 @@ import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 import { GigLandingForm } from "@/components/hire-pro/GigLandingForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { normalizeToE164US } from "@/lib/phone";
 
 const benefits = [
   {
@@ -115,7 +116,8 @@ export default function HireAPro() {
   };
 
   const handleRequestCallback = async () => {
-    if (!callbackPhone.trim()) {
+    const normalizedPhone = normalizeToE164US(callbackPhone);
+    if (!normalizedPhone) {
       toast.error("Please enter your phone number");
       return;
     }
@@ -126,7 +128,7 @@ export default function HireAPro() {
     try {
       const { data, error } = await supabase.functions.invoke("request-ai-callback", {
         body: {
-          phone: callbackPhone,
+          phone: normalizedPhone,
           name: callbackName || "Guest",
           source: "hire-a-pro-landing"
         }
@@ -151,7 +153,8 @@ export default function HireAPro() {
       }
     } catch (err) {
       console.error("Callback request error:", err);
-      toast.error("Couldn't schedule callback. Please try again.");
+      const message = err instanceof Error ? err.message : "Couldn't schedule callback. Please try again.";
+      toast.error(message);
     } finally {
       setIsRequestingCallback(false);
     }
