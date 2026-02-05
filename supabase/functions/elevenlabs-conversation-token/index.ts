@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -31,9 +32,12 @@ serve(async (req) => {
       );
     }
 
-    // Get conversation token from ElevenLabs for WebRTC
+    console.log("Requesting signed URL for agent:", ELEVENLABS_AGENT_ID);
+
+    // Get signed URL from ElevenLabs for WebSocket connection
+    // IMPORTANT: The endpoint uses a hyphen (get-signed-url), not underscore
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${ELEVENLABS_AGENT_ID}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${ELEVENLABS_AGENT_ID}`,
       {
         method: "GET",
         headers: {
@@ -46,7 +50,7 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: "Failed to get conversation token", details: errorText }),
+        JSON.stringify({ error: "Failed to get signed URL", details: errorText }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -64,7 +68,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Error getting conversation token:", error);
+    console.error("Error getting signed URL:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
