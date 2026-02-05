@@ -14,6 +14,7 @@ import {
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { normalizeToE164US } from "@/lib/phone";
 
 interface VoiceIntakeOptionsProps {
   displayPhoneNumber?: string;
@@ -33,7 +34,8 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
   };
 
   const handleRequestCallback = async () => {
-    if (!callbackPhone.trim()) {
+    const normalizedPhone = normalizeToE164US(callbackPhone);
+    if (!normalizedPhone) {
       toast.error("Please enter your phone number");
       return;
     }
@@ -44,7 +46,7 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
     try {
       const { data, error } = await supabase.functions.invoke("request-ai-callback", {
         body: {
-          phone: callbackPhone,
+          phone: normalizedPhone,
           name: callbackName || "Guest",
           source: "hire-a-pro-landing"
         }
@@ -69,7 +71,8 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
       }
     } catch (err) {
       console.error("Callback request error:", err);
-      toast.error("Couldn't schedule callback. Please try again.");
+      const message = err instanceof Error ? err.message : "Couldn't schedule callback. Please try again.";
+      toast.error(message);
     } finally {
       setIsRequestingCallback(false);
     }
