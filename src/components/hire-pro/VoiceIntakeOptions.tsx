@@ -75,11 +75,6 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
     }
   };
 
-  const handlePhoneClick = () => {
-    trackButtonClick('Call Phone Number', 'hire-a-pro-voice');
-    window.location.href = `tel:${displayPhoneNumber.replace(/\D/g, '')}`;
-  };
-
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -187,23 +182,26 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
         </Card>
 
         {/* Option 3: Call Us Directly */}
-        <Card 
-          className="group p-6 cursor-pointer border-2 border-border/50 hover:border-success/50 hover:shadow-card-hover transition-all duration-300"
-          onClick={handlePhoneClick}
+        <a 
+          href="tel:+14125457108"
+          onClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro-voice')}
+          className="block"
         >
-          <div className="text-center">
-            <div className="w-14 h-14 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-              <Phone className="h-7 w-7 text-success" />
+          <Card className="group p-6 cursor-pointer border-2 border-border/50 hover:border-success/50 hover:shadow-card-hover transition-all duration-300">
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <Phone className="h-7 w-7 text-success" />
+              </div>
+              <h4 className="font-semibold text-lg mb-2">Call Us Directly</h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                Speak to our AI assistant now
+              </p>
+              <div className="font-mono text-xl font-bold text-success group-hover:scale-105 transition-transform">
+                {displayPhoneNumber}
+              </div>
             </div>
-            <h4 className="font-semibold text-lg mb-2">Call Us Directly</h4>
-            <p className="text-sm text-muted-foreground mb-4">
-              Speak to our AI assistant now
-            </p>
-            <div className="font-mono text-xl font-bold text-success group-hover:scale-105 transition-transform">
-              {displayPhoneNumber}
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </a>
       </div>
 
       <p className="text-center text-xs text-muted-foreground mt-6">
