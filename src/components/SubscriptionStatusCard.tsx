@@ -61,7 +61,7 @@ export function SubscriptionStatusCard({ diggerProfileId }: SubscriptionStatusCa
   const checkSubscription = async () => {
     try {
       setLoading(true);
-      const data = await invokeEdgeFunction(supabase, 'check-geo-subscription', {
+      const data = await invokeEdgeFunction<SubscriptionData>(supabase, 'check-geo-subscription', {
         body: { digger_profile_id: diggerProfileId }
       });
       setSubscriptionData(data);

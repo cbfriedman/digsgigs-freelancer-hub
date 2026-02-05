@@ -103,7 +103,8 @@ export const AskQuestionDialog = ({
 
       if (data.blocked) {
         setBlocked(true);
-        setViolations(data.violations || ['contact_email']);
+        // Cast violations to ViolationType[] - edge function returns known violation types
+        setViolations((data.violations || ['contact_email']) as ViolationType[]);
         return;
       }
 

@@ -94,15 +94,15 @@ export default function AdminLeadDistributionTest() {
     }
   };
 
-  const callAdminFunction = async (action: string, params: Record<string, any> = {}) => {
-    return invokeEdgeFunction(supabase, "admin-test-lead-distribution", {
+  const callAdminFunction = async <T = unknown>(action: string, params: Record<string, any> = {}): Promise<T> => {
+    return invokeEdgeFunction<T>(supabase, "admin-test-lead-distribution", {
       body: { action, ...params }
     });
   };
 
   const loadSystemStatus = async () => {
     try {
-      const result = await callAdminFunction("get-system-status");
+      const result = await callAdminFunction<{ data: SystemStatus }>("get-system-status");
       setSystemStatus(result.data);
     } catch (error: any) {
       toast.error("Failed to load system status: " + (error?.message ?? "Unknown error"));
@@ -111,7 +111,7 @@ export default function AdminLeadDistributionTest() {
 
   const loadQueueDetails = async () => {
     try {
-      const result = await callAdminFunction("get-queue-details");
+      const result = await callAdminFunction<{ data: { entries: QueueEntry[] } }>("get-queue-details");
       setQueueEntries(result.data.entries);
     } catch (error: any) {
       toast.error("Failed to load queue: " + (error?.message ?? "Unknown error"));
@@ -120,7 +120,7 @@ export default function AdminLeadDistributionTest() {
 
   const loadPurchaseDetails = async () => {
     try {
-      const result = await callAdminFunction("get-purchase-details");
+      const result = await callAdminFunction<{ data: { purchases: any[] } }>("get-purchase-details");
       setPurchases(result.data.purchases);
     } catch (error: any) {
       toast.error("Failed to load purchases: " + error.message);
@@ -135,7 +135,7 @@ export default function AdminLeadDistributionTest() {
     
     setActionLoading("preview");
     try {
-      const result = await callAdminFunction("preview-matching", { gigId: selectedGig });
+      const result = await callAdminFunction<{ data: PreviewResult }>("preview-matching", { gigId: selectedGig });
       setPreviewResult(result.data);
       toast.success(`Found ${result.data.matchCount} matching diggers`);
     } catch (error: any) {
