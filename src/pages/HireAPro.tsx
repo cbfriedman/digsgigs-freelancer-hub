@@ -22,8 +22,7 @@ import { Label } from "@/components/ui/label";
 import { PageLayout } from "@/components/layout/PageLayout";
 import SEOHead from "@/components/SEOHead";
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
-import { GigFormChatbot } from "@/components/hire-pro/GigFormChatbot";
-import { GigData } from "@/hooks/useGigAssistant";
+import { GigLandingForm } from "@/components/hire-pro/GigLandingForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -105,7 +104,6 @@ const DISPLAY_PHONE = "(412) 545-7108";
 export default function HireAPro() {
   const navigate = useNavigate();
   const { trackButtonClick } = useGA4Tracking();
-  const [extractedData, setExtractedData] = useState<GigData | null>(null);
   const [showCallbackForm, setShowCallbackForm] = useState(false);
   const [callbackPhone, setCallbackPhone] = useState("");
   const [callbackName, setCallbackName] = useState("");
@@ -114,16 +112,6 @@ export default function HireAPro() {
   const handlePostProject = () => {
     trackButtonClick('Post a Project', 'hire-a-pro');
     navigate("/post-gig");
-  };
-
-  const handleDataUpdate = (data: GigData) => {
-    setExtractedData(data);
-  };
-
-  const handleFormComplete = (data: GigData) => {
-    // Navigate to post-gig with pre-filled data
-    toast.success("Great! Let's complete your project posting.");
-    navigate("/post-gig", { state: { prefillData: data } });
   };
 
   const handleRequestCallback = async () => {
@@ -196,15 +184,9 @@ export default function HireAPro() {
 
           {/* Main Grid - Chat + Contact Options */}
           <div className="grid lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {/* Chatbot - Takes 2 columns */}
+            {/* Form - Takes 2 columns */}
             <div className="lg:col-span-2">
-              <GigFormChatbot 
-                onDataUpdate={handleDataUpdate}
-                onComplete={handleFormComplete}
-              />
-              <p className="text-xs text-muted-foreground text-center mt-3">
-                Chat with Morgan to describe your project, or use the options on the right.
-              </p>
+              <GigLandingForm />
             </div>
 
             {/* Contact Options - 1 column */}
