@@ -9,7 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Star, Edit, Trash2, RefreshCw, Briefcase, TrendingUp, Users, Lightbulb, User, Save } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, Star, Edit, Trash2, RefreshCw, Briefcase, TrendingUp, Users, Lightbulb, User, Save, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { retryWithBackoff } from "@/utils/retryWithBackoff";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
@@ -45,6 +53,7 @@ export default function MyProfiles() {
   const [giggerAboutMe, setGiggerAboutMe] = useState("");
   const [giggerSaving, setGiggerSaving] = useState(false);
   const [giggerProfileLoading, setGiggerProfileLoading] = useState(true);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   const isDiggerView = activeRole === "digger";
   const isGiggerView = activeRole === "gigger";
@@ -70,6 +79,7 @@ export default function MyProfiles() {
   useEffect(() => {
     const justRegistered = searchParams.get('registered') === 'true';
     if (justRegistered && user && isDiggerView) {
+      setShowWelcomeModal(true);
       console.log('Just registered, refreshing profiles...');
       setLoading(true);
       
@@ -441,6 +451,30 @@ export default function MyProfiles() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Welcome modal after registration (Gigger view) */}
+        <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
+                <Briefcase className="h-8 w-8 text-accent" />
+              </div>
+              <DialogTitle className="text-center text-xl">Welcome, Project Poster!</DialogTitle>
+              <DialogDescription className="text-center text-base">
+                You&apos;re ready to find talented professionals for your projects. Add your photo and a short intro here to build trust when you connect with service providers. You can post your first gig anytime from the dashboard.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button onClick={() => { setShowWelcomeModal(false); }} className="w-full sm:w-auto">
+                Complete My Profile
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button variant="outline" onClick={() => { setShowWelcomeModal(false); navigate('/post-gig'); }} className="w-full sm:w-auto">
+                Post a Gig Instead
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </PageLayout>
     );
   }
@@ -703,6 +737,30 @@ export default function MyProfiles() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Welcome modal after registration */}
+      <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <DialogTitle className="text-center text-xl">Welcome to Digs & Gigs!</DialogTitle>
+            <DialogDescription className="text-center text-base">
+              Please complete your profile to get the most out of the platform. Add your photo, services, and details to attract clients and stand out.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button onClick={() => { setShowWelcomeModal(false); navigate('/edit-digger-profile'); }} className="w-full sm:w-auto">
+              Complete My Profile
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button variant="outline" onClick={() => setShowWelcomeModal(false)} className="w-full sm:w-auto">
+              I&apos;ll do it later
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 }

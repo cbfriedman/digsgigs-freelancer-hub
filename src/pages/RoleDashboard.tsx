@@ -22,6 +22,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface RoleStats {
   digger?: {
@@ -43,6 +51,7 @@ export default function RoleDashboard() {
   const { toast } = useToast();
   const [stats, setStats] = useState<RoleStats>({});
   const [isCheckingRoles, setIsCheckingRoles] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const hasCheckedRolesRef = useRef(false);
   const hasFetchedStatsRef = useRef(false);
   
@@ -157,6 +166,7 @@ export default function RoleDashboard() {
   useEffect(() => {
     const justRegistered = searchParams.get('registered') === 'true';
     if (justRegistered && user?.id) {
+      setShowWelcomeModal(true);
       console.log('User just registered, refreshing roles and stats...');
       
       refreshRoles().then(async () => {
@@ -537,23 +547,14 @@ export default function RoleDashboard() {
                   </div>
                 </>
               ) : (
-                /* Registration CTA */
                 <div className="text-center py-8 px-4">
                   <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                     <Wrench className="h-8 w-8 text-primary" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Become a Digger</h3>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                     Register as a service provider to find work opportunities and connect with clients looking for your skills.
                   </p>
-                  <Button 
-                    size="lg"
-                    className="w-full sm:w-auto"
-                    onClick={() => navigate('/register?complete=true&type=digger')}
-                  >
-                    Register as Digger
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
                 </div>
               )}
             </CardContent>
@@ -652,24 +653,14 @@ export default function RoleDashboard() {
                   </div>
                 </>
               ) : (
-                /* Registration CTA */
                 <div className="text-center py-8 px-4">
                   <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
                     <Briefcase className="h-8 w-8 text-accent" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Become a Gigger</h3>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                     Register as a project poster to find talented service providers and get your projects done.
                   </p>
-                  <Button 
-                    size="lg"
-                    variant="hero"
-                    className="w-full sm:w-auto"
-                    onClick={handleRegisterGigger}
-                  >
-                    Register as Gigger
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
                 </div>
               )}
             </CardContent>
@@ -695,6 +686,48 @@ export default function RoleDashboard() {
           </Card>
         )}
       </div>
+
+      {/* Welcome modal after registration */}
+      <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            {userRoles.includes('gigger') && !userRoles.includes('digger') ? (
+              <>
+                <DialogTitle className="text-center text-xl">Welcome, Project Poster!</DialogTitle>
+                <DialogDescription className="text-center text-base">
+                  You&apos;re ready to find talented professionals for your projects. Post your first gig to get matched with qualified service providers who can help. Add a photo and intro to your profile to build trust when you connect.
+                </DialogDescription>
+              </>
+            ) : (
+              <>
+                <DialogTitle className="text-center text-xl">Welcome to Digs & Gigs!</DialogTitle>
+                <DialogDescription className="text-center text-base">
+                  Please complete your profile to get the most out of the platform. Add your photo, services, and details to attract clients and stand out.
+                </DialogDescription>
+              </>
+            )}
+          </DialogHeader>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            {userRoles.includes('digger') ? (
+              <Button onClick={() => { setShowWelcomeModal(false); navigate('/edit-digger-profile'); }} className="w-full sm:w-auto">
+                Complete My Profile
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : userRoles.includes('gigger') ? (
+              <Button onClick={() => { setShowWelcomeModal(false); navigate('/post-gig'); }} className="w-full sm:w-auto">
+                Post My First Gig
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : null}
+            <Button variant="outline" onClick={() => setShowWelcomeModal(false)} className="w-full sm:w-auto">
+              I&apos;ll do it later
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 }
