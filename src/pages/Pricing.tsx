@@ -38,7 +38,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (8% referral fee, no caps). Gigger pays 15% deposit. No subscriptions. Bogus leads refundable. Prices subject to change." />
+        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (8% referral fee, $50 minimum). Gigger pays 15% deposit. No subscriptions. Bogus leads refundable. Prices subject to change." />
       </Helmet>
       
       <PageLayout showNav={true} showFooter={true} maxWidth="full" padded={false}>
@@ -171,7 +171,7 @@ export default function Pricing() {
 
                     <div className="flex justify-center">
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-accent">No Caps</div>
+                        <div className="text-3xl font-bold text-accent">$50 Minimum</div>
                         <div className="text-xs text-muted-foreground font-medium">Deducted from Gigger deposit</div>
                       </div>
                     </div>

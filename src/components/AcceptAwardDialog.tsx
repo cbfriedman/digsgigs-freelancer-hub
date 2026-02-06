@@ -15,9 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertTriangle, CreditCard } from "lucide-react";
 
 // Referral fee configuration
-const REFERRAL_FEE_RATE = 0.025; // 2.5%
-const REFERRAL_FEE_MIN = 100; // $100 minimum
-const REFERRAL_FEE_CAP = 249; // $249 cap
+const REFERRAL_FEE_RATE = 0.08; // 8%
+const REFERRAL_FEE_MIN = 50; // $50 minimum (no cap)
 const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
 interface AcceptAwardDialogProps {
@@ -41,7 +40,7 @@ export function AcceptAwardDialog({
 }: AcceptAwardDialogProps) {
   const isExclusive = pricingModel === "success_based";
   const calculatedFee = bidAmount * REFERRAL_FEE_RATE;
-  const referralFee = Math.max(REFERRAL_FEE_MIN, Math.min(calculatedFee, REFERRAL_FEE_CAP));
+  const referralFee = Math.max(REFERRAL_FEE_MIN, calculatedFee); // 8% with $50 minimum, no cap
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
@@ -141,7 +140,7 @@ export function AcceptAwardDialog({
                   ${referralFee.toFixed(0)}
                 </p>
                 <p className="text-xs text-orange-600">
-                  (${REFERRAL_FEE_MIN} minimum, ${REFERRAL_FEE_CAP} maximum)
+                  (${REFERRAL_FEE_MIN} minimum, no cap)
                 </p>
               </div>
             </div>

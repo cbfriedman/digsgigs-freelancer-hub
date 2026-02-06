@@ -43,8 +43,7 @@ const bidSchema = z.object({
 
 // Referral fee configuration - must match edge function
 const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
-const REFERRAL_FEE_MIN = 10; // $10 minimum
-const REFERRAL_FEE_CAP = 249; // $249 cap
+const REFERRAL_FEE_MIN = 50; // $50 minimum (no cap)
 // Non-exclusive pricing for deposit calculation
 const NON_EXCLUSIVE_RATE = 0.02; // 2%
 const NON_EXCLUSIVE_MIN = 3; // $3 minimum
@@ -165,7 +164,7 @@ export const BidSubmissionTemplate = ({
 
   const calculateReferralFee = (amount: number): number => {
     const fee = amount * REFERRAL_FEE_RATE;
-    return Math.max(REFERRAL_FEE_MIN, Math.min(fee, REFERRAL_FEE_CAP));
+    return Math.max(REFERRAL_FEE_MIN, fee); // 8% with $50 minimum, no cap
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -222,7 +221,7 @@ export const BidSubmissionTemplate = ({
       // Add referral fee info for success-based bids
       if (pricingModel === "success_based") {
         bidData.referral_fee_rate = REFERRAL_FEE_RATE;
-        bidData.referral_fee_cap_cents = REFERRAL_FEE_CAP * 100;
+        // No cap, just minimum
       }
 
       const { data: insertedBid, error } = await supabase
@@ -351,7 +350,7 @@ export const BidSubmissionTemplate = ({
                     Exclusive Engagement Selected
                   </p>
                   <p className="text-orange-700 dark:text-orange-300">
-                    You pay nothing upfront. A one-time 2% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) 
+                    You pay nothing upfront. An 8% referral fee (${REFERRAL_FEE_MIN} minimum) 
                     will be charged only if you're awarded and accept the job.
                   </p>
                 </div>
@@ -400,7 +399,6 @@ export const BidSubmissionTemplate = ({
               {pricingModel === "success_based" && parsedMin > 0 && parsedMax > 0 && (
                 <p className="text-xs text-muted-foreground">
                   Referral fee if selected: ${estimatedFeeMin.toFixed(2)} – ${estimatedFeeMax.toFixed(2)}
-                  {(estimatedFeeMin >= REFERRAL_FEE_CAP || estimatedFeeMax >= REFERRAL_FEE_CAP) && " (capped at $249)"}
                 </p>
               )}
             </div>
@@ -644,7 +642,7 @@ export const BidSubmissionTemplate = ({
 
             {pricingModel === "success_based" && (
               <p className="text-xs text-center text-muted-foreground">
-                By submitting, you agree to pay a 2% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) if you're awarded and accept this job.
+                By submitting, you agree to pay an 8% referral fee (${REFERRAL_FEE_MIN} minimum) if you're awarded and accept this job.
               </p>
             )}
           </form>

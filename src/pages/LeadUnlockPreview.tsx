@@ -27,8 +27,7 @@ type PricingOption = "pay_per_lead" | "success_based";
 
 // Referral fee configuration
 const REFERRAL_FEE_RATE = 0.08; // 8%
-const REFERRAL_FEE_MIN = 50; // $50 minimum
-const REFERRAL_FEE_CAP = 249; // $249 cap
+const REFERRAL_FEE_MIN = 50; // $50 minimum (no cap)
 const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
 // Sample lead data for demo
@@ -73,14 +72,14 @@ export default function LeadUnlockPreview() {
     const max = sampleLead.budget_max || min;
     const midpoint = (min + max) / 2;
     
-    // 2.5% of midpoint, with $100 min and $249 cap
+    // 8% of budget with $50 minimum, no cap
     const calcMidpointFee = midpoint * REFERRAL_FEE_RATE;
-    const midpointFee = Math.max(REFERRAL_FEE_MIN, Math.min(calcMidpointFee, REFERRAL_FEE_CAP));
+    const midpointFee = Math.max(REFERRAL_FEE_MIN, calcMidpointFee);
     
     const calcMinFee = min * REFERRAL_FEE_RATE;
     const calcMaxFee = max * REFERRAL_FEE_RATE;
-    const minFee = Math.max(REFERRAL_FEE_MIN, Math.min(calcMinFee, REFERRAL_FEE_CAP));
-    const maxFee = Math.max(REFERRAL_FEE_MIN, Math.min(calcMaxFee, REFERRAL_FEE_CAP));
+    const minFee = Math.max(REFERRAL_FEE_MIN, calcMinFee);
+    const maxFee = Math.max(REFERRAL_FEE_MIN, calcMaxFee);
     
     return { 
       min: Math.round(minFee), 
@@ -344,7 +343,7 @@ export default function LeadUnlockPreview() {
                           <span className="text-2xl font-bold text-orange-500">${exclusiveFee.toFixed(0)}</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          8% referral fee (${REFERRAL_FEE_MIN}–${REFERRAL_FEE_CAP}) when awarded. Fee paid from Gigger's 5% down-payment.
+                          8% referral fee (${REFERRAL_FEE_MIN} minimum) when awarded. Fee paid from Gigger's 5% down-payment.
                         </p>
                         <div className="mt-2 text-xs text-muted-foreground">
                           Estimated fee if awarded: ${estimatedFee.min} – ${estimatedFee.max}
