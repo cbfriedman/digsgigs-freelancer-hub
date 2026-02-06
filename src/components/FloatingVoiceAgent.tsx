@@ -120,6 +120,21 @@ export function FloatingVoiceAgent({
         toast.error("Microphone access required", {
           description: "Please allow microphone access to use voice features.",
         });
+      } else if (
+        (error instanceof DOMException && error.name === "NotFoundError") ||
+        (error?.message && String(error.message).toLowerCase().includes("device not found"))
+      ) {
+        toast.error("No microphone found", {
+          description: "Connect a microphone or headset and refresh the page, or use the form to type your project details.",
+        });
+      } else if (
+        error?.message?.includes("socket error") ||
+        error?.message?.includes("connection was closed") ||
+        error?.name === "SessionConnectionError"
+      ) {
+        toast.error("Voice connection failed", {
+          description: "Check your internet connection, refresh the page, and try again. You can also use the form to type your project details.",
+        });
       } else {
         toast.error(error?.message || "Couldn't connect to voice agent", {
           description: "Please try again or use the form instead.",
