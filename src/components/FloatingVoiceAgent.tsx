@@ -135,6 +135,14 @@ export function FloatingVoiceAgent({
         toast.error("Voice connection failed", {
           description: "Check your internet connection, refresh the page, and try again. You can also use the form to type your project details.",
         });
+      } else if (
+        error?.message?.includes("rawAudioProcessor worklet") ||
+        error?.message?.includes("AudioWorklet") ||
+        error?.message?.includes("worklet module")
+      ) {
+        toast.error("Voice setup failed", {
+          description: "Try refreshing the page or use a different browser (e.g. Chrome). You can also use the form to type your project details.",
+        });
       } else {
         toast.error(error?.message || "Couldn't connect to voice agent", {
           description: "Please try again or use the form instead.",
