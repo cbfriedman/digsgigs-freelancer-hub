@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,22 +11,12 @@ import {
   Zap,
   Star,
   MessageSquare,
-  FileCheck,
-  Phone,
-  PhoneOutgoing,
-  Loader2
+  FileCheck
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { PageLayout } from "@/components/layout/PageLayout";
 import SEOHead from "@/components/SEOHead";
 import { useGA4Tracking } from "@/hooks/useGA4Tracking";
 import { GigLandingForm } from "@/components/hire-pro/GigLandingForm";
-import { supabase } from "@/integrations/supabase/client";
-import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
-import { toast } from "sonner";
-import { normalizeToE164US } from "@/lib/phone";
-import { PhoneCallCard } from "@/components/hire-pro/PhoneCallCard";
 
 const benefits = [
   {
@@ -102,62 +91,13 @@ const categories = [
   "Copywriting"
 ];
 
-const DISPLAY_PHONE = "(412) 545-7108";
-
 export default function HireAPro() {
   const navigate = useNavigate();
   const { trackButtonClick } = useGA4Tracking();
-  const [showCallbackForm, setShowCallbackForm] = useState(false);
-  const [callbackPhone, setCallbackPhone] = useState("");
-  const [callbackName, setCallbackName] = useState("");
-  const [isRequestingCallback, setIsRequestingCallback] = useState(false);
 
   const handlePostProject = () => {
     trackButtonClick('Post a Project', 'hire-a-pro');
     navigate("/post-gig");
-  };
-
-  const handleRequestCallback = async () => {
-    const normalizedPhone = normalizeToE164US(callbackPhone);
-    if (!normalizedPhone) {
-      toast.error("Please enter your phone number");
-      return;
-    }
-
-    setIsRequestingCallback(true);
-    trackButtonClick('Request Callback', 'hire-a-pro');
-
-    try {
-      const data = await invokeEdgeFunction<{ success?: boolean; error?: string }>(
-        supabase,
-        "request-ai-callback",
-        {
-          body: {
-            phone: normalizedPhone,
-            name: callbackName || "Guest",
-            source: "hire-a-pro-landing"
-          }
-        }
-      );
-      console.log("Callback response:", data);
-
-      if (data?.success) {
-        toast.success("We'll be in touch soon.", {
-          description: "A team member will follow up to help with your project."
-        });
-        setShowCallbackForm(false);
-        setCallbackPhone("");
-        setCallbackName("");
-      } else {
-        throw new Error(data?.error || "Unknown error");
-      }
-    } catch (err) {
-      console.error("Callback request error:", err);
-      const message = err instanceof Error ? err.message : "Couldn't schedule callback. Please try again.";
-      toast.error(message);
-    } finally {
-      setIsRequestingCallback(false);
-    }
   };
 
   return (
@@ -185,96 +125,9 @@ export default function HireAPro() {
             </p>
           </div>
 
-          {/* Main Grid - Chat + Contact Options */}
-          <div className="grid lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {/* Form - Takes 2 columns */}
-            <div className="lg:col-span-2">
-              <GigLandingForm />
-            </div>
-
-            {/* Contact Options - 1 column */}
-            <div className="space-y-4">
-              {/* Request Callback */}
-              <Card className={`p-5 border-2 transition-all duration-300 ${
-                showCallbackForm ? 'border-primary/50 shadow-lg' : 'border-border/50 hover:border-primary/50'
-              }`}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <PhoneOutgoing className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Request a Callback</h4>
-                    <p className="text-xs text-muted-foreground">We'll be in touch soon</p>
-                  </div>
-                </div>
-                
-                {showCallbackForm ? (
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="callback-name" className="text-xs">Your Name</Label>
-                      <Input
-                        id="callback-name"
-                        placeholder="John"
-                        value={callbackName}
-                        onChange={(e) => setCallbackName(e.target.value)}
-                        className="h-9"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="callback-phone" className="text-xs">Phone Number *</Label>
-                      <Input
-                        id="callback-phone"
-                        type="tel"
-                        placeholder="(555) 123-4567"
-                        value={callbackPhone}
-                        onChange={(e) => setCallbackPhone(e.target.value)}
-                        className="h-9"
-                        required
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => setShowCallbackForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        className="flex-1 bg-gradient-primary"
-                        onClick={handleRequestCallback}
-                        disabled={isRequestingCallback}
-                      >
-                        {isRequestingCallback ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>Call Me</>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => setShowCallbackForm(true)}
-                  >
-                    Get a Call
-                    <Phone className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-              </Card>
-
-              {/* Call Us Directly */}
-              <PhoneCallCard
-                phoneE164={"+14125457108"}
-                displayPhone={DISPLAY_PHONE}
-                onCallClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro')}
-              />
-            </div>
+          {/* Form - Full width */}
+          <div className="max-w-3xl mx-auto">
+            <GigLandingForm />
           </div>
         </div>
       </section>
