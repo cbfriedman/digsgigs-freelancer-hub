@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useConversation } from "@elevenlabs/react";
 import { Mic, MicOff, X, Phone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,22 @@ export interface ExtractedGigData {
   clientPhone?: string;
 }
 
+/** Normalize agent tool params to ExtractedGigData (supports snake_case from ElevenLabs) */
+function normalizeExtractedData(params: Record<string, unknown>): ExtractedGigData {
+  const num = (v: unknown) => (v === undefined || v === null || v === "" ? undefined : Number(v));
+  const str = (v: unknown) => (v === undefined || v === null ? undefined : String(v).trim() || undefined);
+  return {
+    problemId: str(params.problemId ?? params.problem_id),
+    description: str(params.description ?? params.project_description),
+    budgetMin: num(params.budgetMin ?? params.budget_min) ?? undefined,
+    budgetMax: num(params.budgetMax ?? params.budget_max) ?? undefined,
+    timeline: str(params.timeline),
+    clientName: str(params.clientName ?? params.client_name),
+    clientEmail: str(params.clientEmail ?? params.client_email),
+    clientPhone: str(params.clientPhone ?? params.client_phone),
+  };
+}
+
 interface FloatingVoiceAgentProps {
   onDataExtracted?: (data: ExtractedGigData) => void;
   isOpen?: boolean;
@@ -33,27 +49,33 @@ export function FloatingVoiceAgent({
 }: FloatingVoiceAgentProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedGigData>({});
+  const extractedDataRef = useRef<ExtractedGigData>({});
   const [transcriptHistory, setTranscriptHistory] = useState<Array<{role: string; text: string}>>([]);
 
+  useEffect(() => {
+    extractedDataRef.current = extractedData;
+  }, [extractedData]);
+
   // Handle the client tool calls from the agent
-  const handleUpdateGigDetails = useCallback((params: ExtractedGigData) => {
-    console.log("Agent extracted data:", params);
-    
+  const handleUpdateGigDetails = useCallback((params: Record<string, unknown>) => {
+    const normalized = normalizeExtractedData(params || {});
+    console.log("Agent extracted data (raw):", params, "normalized:", normalized);
+
     // Merge with existing data (don't overwrite with undefined)
-    const newData = { ...extractedData };
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        (newData as any)[key] = value;
+    const newData: ExtractedGigData = { ...extractedData };
+    (Object.entries(normalized) as [keyof ExtractedGigData, unknown][]).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        newData[key] = value as never;
       }
     });
-    
+
     setExtractedData(newData);
-    
-    // Notify parent component
+
+    // Notify parent so form updates immediately
     if (onDataExtracted) {
       onDataExtracted(newData);
     }
-    
+
     return "Form updated successfully";
   }, [extractedData, onDataExtracted]);
 
@@ -160,6 +182,11 @@ export function FloatingVoiceAgent({
   const handleClose = () => {
     if (conversation.status === "connected") {
       stopConversation();
+    }
+    // Sync latest accumulated voice data to the form when closing
+    const latest = extractedDataRef.current;
+    if (onDataExtracted && Object.keys(latest).length > 0) {
+      onDataExtracted(latest);
     }
     onClose?.();
   };

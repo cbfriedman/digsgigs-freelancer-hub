@@ -66,23 +66,23 @@ const PostGig = () => {
   // Get current problem option for clarifying question
   const selectedProblem = getProblemById(selectedProblemId);
 
-  // Handle data extracted from voice agent
+  // Handle data extracted from voice agent (called when agent uses update_gig_details tool or when modal closes)
   const handleVoiceDataExtracted = useCallback((data: ExtractedGigData) => {
+    if (!data || typeof data !== "object") return;
     if (data.problemId) {
       setSelectedProblemId(data.problemId);
-      // Auto-select first clarifying option if we have a problem
       const problem = getProblemById(data.problemId);
       if (problem && problem.clarifyingOptions.length > 0 && clarifyingAnswers.length === 0) {
         setClarifyingAnswers([problem.clarifyingOptions[0].value]);
       }
     }
-    if (data.description) setDescription(data.description);
-    if (data.budgetMin) setBudgetMin(formatCurrency(String(data.budgetMin)));
-    if (data.budgetMax) setBudgetMax(formatCurrency(String(data.budgetMax)));
-    if (data.timeline) setTimeline(data.timeline);
-    if (data.clientName) setClientName(data.clientName);
-    if (data.clientEmail) setClientEmail(data.clientEmail);
-    if (data.clientPhone) setClientPhone(data.clientPhone);
+    if (data.description) setDescription(String(data.description).trim());
+    if (data.budgetMin != null) setBudgetMin(formatCurrency(String(data.budgetMin)));
+    if (data.budgetMax != null) setBudgetMax(formatCurrency(String(data.budgetMax)));
+    if (data.timeline) setTimeline(String(data.timeline).trim());
+    if (data.clientName) setClientName(String(data.clientName).trim());
+    if (data.clientEmail) setClientEmail(String(data.clientEmail).trim());
+    if (data.clientPhone) setClientPhone(String(data.clientPhone).trim());
   }, [clarifyingAnswers.length]);
 
   // Calculate current step for progress indicator
