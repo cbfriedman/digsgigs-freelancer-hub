@@ -52,10 +52,10 @@ export const PricingPreviewSection = () => {
               </p>
               
               <div className="mb-2">
-                <span className="text-4xl font-display font-bold text-primary">2%</span>
+                <span className="text-4xl font-display font-bold text-primary">3%</span>
                 <span className="text-lg text-muted-foreground ml-2">of budget</span>
               </div>
-              <p className="text-sm text-muted-foreground">$10 min – $49 max</p>
+              <p className="text-sm text-muted-foreground">$20 min – $69 max</p>
             </Card>
 
             {/* Exclusive */}

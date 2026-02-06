@@ -165,7 +165,7 @@ export default function Subscribe() {
             <div className="bg-card border rounded-lg p-4 text-center">
               <DollarSign className="w-8 h-8 text-primary mx-auto mb-2" />
               <h3 className="font-semibold">Pay Per Lead</h3>
-              <p className="text-sm text-muted-foreground">Only pay for leads you want ($9-$49)</p>
+              <p className="text-sm text-muted-foreground">Only pay for leads you want ($20-$69)</p>
             </div>
             <div className="bg-card border rounded-lg p-4 text-center">
               <Users className="w-8 h-8 text-primary mx-auto mb-2" />

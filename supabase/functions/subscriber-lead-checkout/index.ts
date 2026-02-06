@@ -70,13 +70,13 @@ serve(async (req) => {
     
     if (!priceCents && lead.budget_min && lead.budget_max) {
       const avgBudget = (lead.budget_min + lead.budget_max) / 2;
-      priceCents = Math.round(avgBudget * 0.08 * 100);
+      priceCents = Math.round(avgBudget * 0.03 * 100);
       priceCents = Math.round(priceCents / 100) * 100;
-      priceCents = Math.min(4900, Math.max(900, priceCents)); // $9-$49 range
+      priceCents = Math.min(6900, Math.max(2000, priceCents)); // $20-$69 range
     }
 
     if (!priceCents) {
-      priceCents = 900; // Default $9
+      priceCents = 2000; // Default $20
     }
 
     console.log(`[subscriber-lead-checkout] Price: ${priceCents} cents`);

@@ -5,7 +5,7 @@
  * Optimized for FB ad messaging:
  * - "Bid for Exclusive Jobs — Pay Only if Selected"
  * - Two-path structure: Non-Exclusive Leads vs Exclusive Awards
- * - Clear pricing: $10-$49 leads, 8% referral fee from client's 5% deposit
+ * - Clear pricing: $20-$69 leads, 8% referral fee from client's deposit
  */
 
 import { useEffect, useRef } from 'react';
@@ -195,7 +195,7 @@ const ApplyDiggerFB = () => {
                     {[
                       'Project requests sent to your inbox in real time',
                       'Pay only for the projects you choose',
-                      '$10–$49 based on project budget',
+                      '$20–$69 based on project budget',
                       'Other professionals may also engage'
                     ].map((item, index) => (
                       <li key={index} className="flex items-start gap-3">
@@ -274,7 +274,7 @@ const ApplyDiggerFB = () => {
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-3">Project Requests</h3>
                   <div className="text-3xl font-bold text-foreground mb-3">
-                    From $10 <span className="text-lg font-normal text-muted-foreground">— Max $49</span>
+                    From $20 <span className="text-lg font-normal text-muted-foreground">— Max $69</span>
                   </div>
                   <p className="text-muted-foreground">
                     Pay only for the projects you choose to pursue.
@@ -407,7 +407,7 @@ const ApplyDiggerFB = () => {
                 <CardContent className="p-6 text-center">
                   <Target className="h-8 w-8 text-primary mx-auto mb-3" />
                   <h3 className="font-semibold text-foreground mb-2">Pay Per Project</h3>
-                  <p className="text-sm text-muted-foreground">$10–$49 per project, nothing more</p>
+                  <p className="text-sm text-muted-foreground">$20–$69 per project, nothing more</p>
                 </CardContent>
               </Card>
               
