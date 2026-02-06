@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, ArrowRight, DollarSign } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { MultiCategorySubcategorySelector, CategorySelection } from "@/components/MultiCategorySubcategorySelector";
@@ -118,7 +118,7 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
               Allow Direct Contact
             </Label>
             <p className="text-sm text-muted-foreground">
-              Let Giggers request your contact information to reach you outside the platform.
+              Let Giggers pay $20 to request your contact information and reach you outside the platform.
             </p>
           </div>
           <Switch
@@ -127,14 +127,6 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
             onCheckedChange={setAllowGiggerContact}
           />
         </div>
-        {allowGiggerContact && (
-          <div className="flex items-center gap-2 pt-2 border-t border-border">
-            <DollarSign className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">
-              Earn $20 for each contact request
-            </span>
-          </div>
-        )}
       </div>
 
       <div className="flex gap-2 pt-4">
