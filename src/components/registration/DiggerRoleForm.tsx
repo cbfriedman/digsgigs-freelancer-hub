@@ -118,7 +118,7 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
               Allow Direct Contact
             </Label>
             <p className="text-sm text-muted-foreground">
-              Let Giggers find and contact you directly. Pay a flat $35 per contact request instead of $20–$69 per lead unlock.
+              Let Giggers find and contact you directly. Pay a flat $35 (non-refundable) per contact request instead of $20–$69 per lead unlock.
             </p>
           </div>
           <Switch
