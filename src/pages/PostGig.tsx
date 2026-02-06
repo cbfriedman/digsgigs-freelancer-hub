@@ -9,7 +9,7 @@ import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe, Mic } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import SEOHead from "@/components/SEOHead";
@@ -21,7 +21,7 @@ import { formatSelectionDisplay } from "@/config/regionOptions";
 import PageLayout from "@/components/layout/PageLayout";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
-import { FloatingVoiceAgent, ExtractedGigData } from "@/components/FloatingVoiceAgent";
+
 
 const PostGig = () => {
   const navigate = useNavigate();
@@ -44,46 +44,10 @@ const PostGig = () => {
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [matchedKeywords, setMatchedKeywords] = useState<string[]>([]);
 
-  // Voice agent state
-  const [isVoiceAgentOpen, setIsVoiceAgentOpen] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState<"idle" | "checking" | "available" | "unavailable">("idle");
-
-  // Check AI Voice backend availability once on mount
-  useEffect(() => {
-    let cancelled = false;
-    setVoiceStatus("checking");
-    invokeEdgeFunction(supabase, "elevenlabs-conversation-token")
-      .then((data: { signedUrl?: string }) => {
-        if (!cancelled && data?.signedUrl) setVoiceStatus("available");
-        else if (!cancelled) setVoiceStatus("unavailable");
-      })
-      .catch(() => {
-        if (!cancelled) setVoiceStatus("unavailable");
-      });
-    return () => { cancelled = true; };
-  }, []);
 
   // Get current problem option for clarifying question
   const selectedProblem = getProblemById(selectedProblemId);
 
-  // Handle data extracted from voice agent (called when agent uses update_gig_details tool or when modal closes)
-  const handleVoiceDataExtracted = useCallback((data: ExtractedGigData) => {
-    if (!data || typeof data !== "object") return;
-    if (data.problemId) {
-      setSelectedProblemId(data.problemId);
-      const problem = getProblemById(data.problemId);
-      if (problem && problem.clarifyingOptions.length > 0 && clarifyingAnswers.length === 0) {
-        setClarifyingAnswers([problem.clarifyingOptions[0].value]);
-      }
-    }
-    if (data.description) setDescription(String(data.description).trim());
-    if (data.budgetMin != null) setBudgetMin(formatCurrency(String(data.budgetMin)));
-    if (data.budgetMax != null) setBudgetMax(formatCurrency(String(data.budgetMax)));
-    if (data.timeline) setTimeline(String(data.timeline).trim());
-    if (data.clientName) setClientName(String(data.clientName).trim());
-    if (data.clientEmail) setClientEmail(String(data.clientEmail).trim());
-    if (data.clientPhone) setClientPhone(String(data.clientPhone).trim());
-  }, [clarifyingAnswers.length]);
 
   // Calculate current step for progress indicator
   const getCurrentStep = () => {
@@ -318,28 +282,6 @@ const PostGig = () => {
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Describe your project and we'll connect you with qualified freelancers ready to help.
           </p>
-          
-          {/* Voice Assistant Option */}
-          <div className="mt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsVoiceAgentOpen(true)}
-              disabled={voiceStatus === "unavailable"}
-              className="gap-2 border-primary/30 hover:bg-primary/5"
-            >
-              <Mic className="h-4 w-4" />
-              Or talk to Morgan instead
-            </Button>
-            {voiceStatus === "checking" && (
-              <Badge variant="secondary" className="text-xs font-normal">Checking voice…</Badge>
-            )}
-            {voiceStatus === "available" && (
-              <Badge variant="secondary" className="text-xs font-normal bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">Voice ready</Badge>
-            )}
-            {voiceStatus === "unavailable" && (
-              <Badge variant="secondary" className="text-xs font-normal text-muted-foreground">Voice unavailable</Badge>
-            )}
-          </div>
         </div>
 
         {/* Trust Indicators */}
@@ -730,13 +672,6 @@ const PostGig = () => {
         onCancel={() => {
           setShowWarningDialog(false);
         }}
-      />
-
-      {/* Floating Voice Agent */}
-      <FloatingVoiceAgent
-        isOpen={isVoiceAgentOpen}
-        onClose={() => setIsVoiceAgentOpen(false)}
-        onDataExtracted={handleVoiceDataExtracted}
       />
     </PageLayout>
   );
