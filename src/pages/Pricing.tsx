@@ -24,11 +24,11 @@ import {
 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
-// Dynamic pricing examples (2% formula with $10 min, $49 max)
+// Dynamic pricing examples (3% formula with $20 min, $69 max)
 const PRICING_EXAMPLES = [
-  { budget: "$150–$500", average: 325, price: 10, note: "(minimum)" },
-  { budget: "$500–$1,000", average: 750, price: 15, note: "" },
-  { budget: "$2,500+", average: 3000, price: 49, note: "(cap)" },
+  { budget: "$150–$666", average: 400, price: 20, note: "(minimum)" },
+  { budget: "$700–$1,500", average: 1100, price: 33, note: "" },
+  { budget: "$2,300+", average: 2500, price: 69, note: "(cap)" },
 ];
 
 export default function Pricing() {
@@ -38,7 +38,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Two pricing options: Pay-per-lead (2% of budget, $10-$49) or exclusive jobs (8% referral fee, $50 minimum). Gigger pays 15% deposit. No subscriptions. Bogus leads refundable. Prices subject to change." />
+        <meta name="description" content="Two pricing options: Pay-per-lead (3% of budget, $20-$69) or exclusive jobs (8% referral fee, $50 minimum). Gigger pays 15% deposit. No subscriptions. Bogus leads refundable. Prices subject to change." />
       </Helmet>
       
       <PageLayout showNav={true} showFooter={true} maxWidth="full" padded={false}>
@@ -104,20 +104,20 @@ export default function Pricing() {
                     </p>
                     
                     <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-5 border border-primary/10">
-                      <div className="text-sm text-center mb-2 text-muted-foreground font-medium">Pricing Formula</div>
+                    <div className="text-sm text-center mb-2 text-muted-foreground font-medium">Pricing Formula</div>
                       <div className="text-center font-mono font-bold text-primary text-lg">
-                        Higher of 2% or $10
+                        Higher of 3% or $20
                       </div>
                     </div>
 
                     <div className="flex justify-center gap-8">
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-primary">$10</div>
+                        <div className="text-3xl font-bold text-primary">$20</div>
                         <div className="text-xs text-muted-foreground font-medium">Minimum</div>
                       </div>
                       <div className="w-px bg-border" />
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-primary">$49</div>
+                        <div className="text-3xl font-bold text-primary">$69</div>
                         <div className="text-xs text-muted-foreground font-medium">Maximum</div>
                       </div>
                     </div>
@@ -225,11 +225,11 @@ export default function Pricing() {
                   <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-accent/5 rounded-2xl p-8 border border-primary/10">
                     <div className="text-lg md:text-xl mb-4">
                       <span className="font-mono font-bold text-primary">
-                        Lead Price = Higher of [ (Budget Avg × 2%) ] or [ $10 ]
+                        Lead Price = Higher of [ (Budget Avg × 3%) ] or [ $20 ]
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Rounded to the nearest dollar • <span className="font-semibold">$49 maximum</span>
+                      Rounded to the nearest dollar • <span className="font-semibold">$69 maximum</span>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground italic">
@@ -269,7 +269,7 @@ export default function Pricing() {
                           Average: ${example.average.toLocaleString()}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          × 2% = ${Math.round(example.average * 0.02)}
+                          × 3% = ${Math.round(example.average * 0.03)}
                         </div>
                       </div>
                       <div className="text-5xl font-bold text-primary mb-1">

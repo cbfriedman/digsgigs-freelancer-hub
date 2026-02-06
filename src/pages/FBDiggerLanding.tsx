@@ -308,7 +308,7 @@ const FBDiggerLanding = () => {
                       <p className="font-semibold text-lg">Non-Exclusive Projects</p>
                       <p className="text-sm text-muted-foreground">Pay per project you choose</p>
                     </div>
-                    <p className="text-2xl font-bold text-primary">$10–$49</p>
+                    <p className="text-2xl font-bold text-primary">$20–$69</p>
                   </div>
                   
                   <div className="flex justify-between items-center pb-4 border-b">
@@ -381,7 +381,7 @@ const FBDiggerLanding = () => {
               <AccordionItem value="cost">
                 <AccordionTrigger className="text-left">How much do projects cost?</AccordionTrigger>
                 <AccordionContent>
-                  Non-exclusive projects range from $10 to $49 depending on the project size (2% of the project midpoint, min $10, max $49). For exclusive awards, there's an 8% referral fee ($50-$249) that comes from the client's deposit—not your pocket.
+                  Non-exclusive projects range from $20 to $69 depending on the project size (3% of the project midpoint, min $20, max $69). For exclusive awards, there's an 8% referral fee ($50 minimum) that comes from the client's deposit—not your pocket.
                 </AccordionContent>
               </AccordionItem>
               

@@ -23,6 +23,7 @@ const ANGI_CPL_TIERS = {
 const SUBSCRIBER_CPL_MULTIPLIER = 0.65;     // 65% of Angi CPL
 const NON_SUBSCRIBER_CPL_MULTIPLIER = 0.90; // 90% of Angi CPL
 const GRACE_PERIOD_DAYS = 10;
+const DIGGER_CONTACT_FEE_CENTS = 3500; // $35 flat fee for direct contact requests
 
 // Founding Digger fixed pricing (during 1-year lock period)
 const FOUNDING_DIGGER_PRICES = {

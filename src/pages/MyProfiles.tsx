@@ -545,7 +545,7 @@ export default function MyProfiles() {
               <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-700 dark:text-green-400">
                   <span className="font-medium">📋 Non-Exclusive:</span>
-                  <span>$10-$49/lead</span>
+                  <span>$20-$69/lead</span>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400">
                   <span className="font-medium">⭐ Exclusive:</span>
