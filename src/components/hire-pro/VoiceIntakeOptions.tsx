@@ -60,8 +60,8 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
       console.log("Callback response:", data);
 
       if (data?.success) {
-        toast.success("We'll call you within 5 minutes!", {
-          description: "Our AI assistant Morgan will help you describe your project."
+        toast.success("We'll be in touch soon.", {
+          description: "A team member will follow up to help with your project."
         });
         setShowCallbackForm(false);
         setCallbackPhone("");
@@ -119,7 +119,7 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
             </div>
             <h4 className="font-semibold text-lg mb-2">Request a Callback</h4>
             <p className="text-sm text-muted-foreground mb-4">
-              We'll call you within 5 minutes
+              We'll be in touch soon
             </p>
             
             {showCallbackForm ? (
@@ -188,7 +188,7 @@ export function VoiceIntakeOptions({ displayPhoneNumber = "(555) 123-DIGS" }: Vo
         <PhoneCallCard
           phoneE164={"+14125457108"}
           displayPhone={displayPhoneNumber}
-          subtitle="Speak to our AI assistant now"
+          subtitle="Talk to our team"
           onCallClick={() => trackButtonClick('Call Phone Number', 'hire-a-pro-voice')}
         />
       </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe, Mic } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
@@ -44,6 +46,22 @@ const PostGig = () => {
 
   // Voice agent state
   const [isVoiceAgentOpen, setIsVoiceAgentOpen] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState<"idle" | "checking" | "available" | "unavailable">("idle");
+
+  // Check AI Voice backend availability once on mount
+  useEffect(() => {
+    let cancelled = false;
+    setVoiceStatus("checking");
+    invokeEdgeFunction(supabase, "elevenlabs-conversation-token")
+      .then((data: { signedUrl?: string }) => {
+        if (!cancelled && data?.signedUrl) setVoiceStatus("available");
+        else if (!cancelled) setVoiceStatus("unavailable");
+      })
+      .catch(() => {
+        if (!cancelled) setVoiceStatus("unavailable");
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // Get current problem option for clarifying question
   const selectedProblem = getProblemById(selectedProblemId);
@@ -302,14 +320,26 @@ const PostGig = () => {
           </p>
           
           {/* Voice Assistant Option */}
-          <Button
-            variant="outline"
-            onClick={() => setIsVoiceAgentOpen(true)}
-            className="mt-2 gap-2 border-primary/30 hover:bg-primary/5"
-          >
-            <Mic className="h-4 w-4" />
-            Or talk to Morgan instead
-          </Button>
+          <div className="mt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsVoiceAgentOpen(true)}
+              disabled={voiceStatus === "unavailable"}
+              className="gap-2 border-primary/30 hover:bg-primary/5"
+            >
+              <Mic className="h-4 w-4" />
+              Or talk to Morgan instead
+            </Button>
+            {voiceStatus === "checking" && (
+              <Badge variant="secondary" className="text-xs font-normal">Checking voice…</Badge>
+            )}
+            {voiceStatus === "available" && (
+              <Badge variant="secondary" className="text-xs font-normal bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">Voice ready</Badge>
+            )}
+            {voiceStatus === "unavailable" && (
+              <Badge variant="secondary" className="text-xs font-normal text-muted-foreground">Voice unavailable</Badge>
+            )}
+          </div>
         </div>
 
         {/* Trust Indicators */}

@@ -34,7 +34,7 @@ export function PhoneCallCard({
   phoneE164,
   displayPhone,
   title = "Call Us Directly",
-  subtitle = "Speak to Morgan now",
+  subtitle = "Talk to our team",
   onCallClick,
 }: PhoneCallCardProps) {
   const digitsOnly = phoneE164.replace(/\D/g, "");

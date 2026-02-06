@@ -142,8 +142,8 @@ export default function HireAPro() {
       console.log("Callback response:", data);
 
       if (data?.success) {
-        toast.success("We'll call you within 5 minutes!", {
-          description: "Our AI assistant Morgan will help you describe your project."
+        toast.success("We'll be in touch soon.", {
+          description: "A team member will follow up to help with your project."
         });
         setShowCallbackForm(false);
         setCallbackPhone("");
@@ -204,7 +204,7 @@ export default function HireAPro() {
                   </div>
                   <div>
                     <h4 className="font-semibold">Request a Callback</h4>
-                    <p className="text-xs text-muted-foreground">We'll call you in 5 min</p>
+                    <p className="text-xs text-muted-foreground">We'll be in touch soon</p>
                   </div>
                 </div>
                 
