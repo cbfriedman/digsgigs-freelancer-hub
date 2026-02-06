@@ -24,8 +24,7 @@ interface BidSubmissionTemplateDemoProps {
 
 // Referral fee configuration - must match edge function
 const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
-const REFERRAL_FEE_MIN = 10; // $10 minimum
-const REFERRAL_FEE_CAP = 249; // $249 cap
+const REFERRAL_FEE_MIN = 50; // $50 minimum (no cap)
 // Non-exclusive pricing for deposit calculation
 const NON_EXCLUSIVE_RATE = 0.02; // 2%
 const NON_EXCLUSIVE_MIN = 3; // $3 minimum
@@ -138,7 +137,7 @@ export function BidSubmissionTemplateDemo({
   const calculateReferralFee = () => {
     const rangeAverage = (parseFloat(amountMin) + parseFloat(amountMax)) / 2;
     const fee = rangeAverage * REFERRAL_FEE_RATE;
-    return Math.min(Math.max(fee, REFERRAL_FEE_MIN), REFERRAL_FEE_CAP);
+    return Math.max(fee, REFERRAL_FEE_MIN); // 8% with $50 minimum, no cap
   };
 
   // Calculate non-exclusive lead cost for deposit formula
@@ -347,7 +346,7 @@ export function BidSubmissionTemplateDemo({
                     based on the range average (${rangeAverage.toLocaleString()}).
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Fee range: ${REFERRAL_FEE_MIN} minimum – ${REFERRAL_FEE_CAP} cap
+                    8% referral fee (${REFERRAL_FEE_MIN} minimum, no cap)
                   </p>
                   <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 font-medium">
                     Gigger's 5% down-payment (${giggerDeposit.toFixed(0)}) is released to {isDiggerView ? "you" : "Digger"} as an advance toward the total award.
