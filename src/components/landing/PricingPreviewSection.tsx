@@ -52,10 +52,10 @@ export const PricingPreviewSection = () => {
               </p>
               
               <div className="mb-2">
-                <span className="text-4xl font-display font-bold text-primary">2%</span>
+                <span className="text-4xl font-display font-bold text-primary">3%</span>
                 <span className="text-lg text-muted-foreground ml-2">of budget</span>
               </div>
-              <p className="text-sm text-muted-foreground">$10 min – $49 max</p>
+              <p className="text-sm text-muted-foreground">$20 min – $69 max</p>
             </Card>
 
             {/* Exclusive */}
@@ -74,7 +74,7 @@ export const PricingPreviewSection = () => {
                 <span className="text-4xl font-display font-bold text-accent">8%</span>
                 <span className="text-lg text-muted-foreground ml-2">referral fee</span>
               </div>
-              <p className="text-sm text-muted-foreground">No caps — deducted from Gigger deposit</p>
+              <p className="text-sm text-muted-foreground">$50 minimum — deducted from Gigger deposit</p>
             </Card>
           </div>
 

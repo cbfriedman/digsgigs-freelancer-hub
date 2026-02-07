@@ -132,7 +132,7 @@ export default function BecomeADigger() {
                     <div className="text-left">
                       <h4 className="font-semibold text-sm">Option 1: Pay Per Lead</h4>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Browse leads and unlock the ones you want for <span className="font-medium text-foreground">$9-$49</span>. 
+                        Browse leads and unlock the ones you want for <span className="font-medium text-foreground">$20-$69</span>. 
                         Contact info revealed instantly. No further fees.
                       </p>
                     </div>
@@ -184,7 +184,7 @@ export default function BecomeADigger() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                    <span>Choose to unlock leads ($9-$49) OR wait to be awarded (8% fee)</span>
+                    <span>Choose to unlock leads ($20-$69) OR wait to be awarded (8% fee)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />

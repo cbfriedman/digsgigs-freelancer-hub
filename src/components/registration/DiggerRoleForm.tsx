@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -24,6 +25,7 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
   const [companyName, setCompanyName] = useState("");
   const [selectedServices, setSelectedServices] = useState<CategorySelection[]>([]);
   const [skillsSummary, setSkillsSummary] = useState("");
+  const [allowGiggerContact, setAllowGiggerContact] = useState(false);
 
   // Memoize the callback to prevent infinite loops
   const handleSelectionChange = useCallback((items: CategorySelection[]) => {
@@ -50,6 +52,7 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
         // Keep full structured selection for future use
         selectedServices,
         skillsSummary,
+        allowGiggerContact,
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -105,6 +108,25 @@ const DiggerRoleForm = ({ onComplete, onBack }: DiggerRoleFormProps) => {
         <p className="text-xs text-muted-foreground">
           {skillsSummary.length}/500 characters
         </p>
+      </div>
+
+      {/* Direct Contact Option */}
+      <div className="bg-accent/30 border border-border rounded-lg p-4 space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="allowGiggerContact" className="text-base font-medium cursor-pointer">
+              Allow Direct Contact
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Let Giggers find and contact you directly. Pay a flat $35 (non-refundable) per contact request instead of $20–$69 per lead unlock.
+            </p>
+          </div>
+          <Switch
+            id="allowGiggerContact"
+            checked={allowGiggerContact}
+            onCheckedChange={setAllowGiggerContact}
+          />
+        </div>
       </div>
 
       <div className="flex gap-2 pt-4">
