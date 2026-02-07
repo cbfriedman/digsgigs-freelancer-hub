@@ -201,7 +201,7 @@ export default async function handler(
         // Fetch digger profiles
         const { data: diggersData } = await supabase
           .from('digger_profiles')
-          .select('id, updated_at')
+          .select('id, handle, updated_at')
           .order('updated_at', { ascending: false })
           .limit(5000);
         diggers = diggersData || [];
@@ -279,7 +279,8 @@ export default async function handler(
     // Add digger profiles
     for (const digger of diggers) {
       xml += '  <url>\n';
-      xml += `    <loc>${baseUrl}/diggers/${digger.id}</loc>\n`;
+      const diggerSlug = (digger.handle && String(digger.handle).trim()) ? String(digger.handle).toLowerCase() : digger.id;
+      xml += `    <loc>${baseUrl}/digger/${diggerSlug}</loc>\n`;
       xml += `    <lastmod>${digger.updated_at || now}</lastmod>\n`;
       xml += '    <changefreq>weekly</changefreq>\n';
       xml += '    <priority>0.6</priority>\n';

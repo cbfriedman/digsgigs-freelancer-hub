@@ -13,9 +13,10 @@ import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 import { getIndustryConfig } from "@/config/industryConfig";
+import { SUPPORT_EMAIL } from "@/config/siteContact";
 
-// TCPA-compliant consent text - DO NOT MODIFY without legal review
-const CONSENT_TEXT = `By checking this box and clicking "Get My Free Quote", I expressly consent to receive telemarketing calls and text messages, including calls made using an automatic telephone dialing system or an artificial or prerecorded voice, from DigsandGigs and its partners at the telephone number I provided above. I understand that my consent is not a condition of purchase. Message and data rates may apply. I can opt out at any time by replying STOP or by contacting us at support@digsandgigs.com.`;
+// TCPA-compliant consent text - DO NOT MODIFY without legal review. Support contact from siteContact.
+const getConsentText = () => `By checking this box and clicking "Get My Free Quote", I expressly consent to receive telemarketing calls and text messages, including calls made using an automatic telephone dialing system or an artificial or prerecorded voice, from DigsandGigs and its partners at the telephone number I provided above. I understand that my consent is not a condition of purchase. Message and data rates may apply. I can opt out at any time by replying STOP or by contacting us at ${SUPPORT_EMAIL}.`;
 
 const CONSENT_VERSION = "1.0";
 
@@ -109,7 +110,7 @@ export default function GetFreeQuote() {
           phone: normalizePhone(formData.phone),
           email: formData.email,
           propertyAddress: formData.propertyAddress,
-          consentText: CONSENT_TEXT,
+          consentText: getConsentText(),
           consentVersion: CONSENT_VERSION,
           ipAddress: "captured-server-side",
           userAgent: navigator.userAgent,
@@ -301,7 +302,7 @@ export default function GetFreeQuote() {
                       />
                       <div className="text-sm">
                         <label htmlFor="consent" className="cursor-pointer leading-relaxed text-muted-foreground">
-                          {CONSENT_TEXT}
+                          {getConsentText()}
                         </label>
                       </div>
                     </div>

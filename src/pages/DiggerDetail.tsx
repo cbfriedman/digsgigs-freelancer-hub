@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, Wallet, ShoppingCart, Clock, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText, Search, MapPin } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Crown, Pencil, Upload, Trash2, ImagePlus } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -24,6 +24,7 @@ import { ProfileClickPricingCard } from "@/components/ProfileClickPricingCard";
 import { useProfileCallTracking } from "@/hooks/useProfileCallTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BioGenerator } from "@/components/BioGenerator";
 import { Textarea } from "@/components/ui/textarea";
 import { ProfileHeader, ProfileAbout, WorkSamplesGallery, QuickContactCard, ReferencesSection } from "@/components/digger-profile";
@@ -42,27 +43,6 @@ interface ReferenceRequest {
   status: string;
 }
 
-interface LeadPurchase {
-  id: string;
-  gig_id: string;
-  purchase_price: number;
-  amount_paid: number;
-  exclusivity_type: string | null;
-  status: string | null;
-  purchased_at: string;
-  gig: {
-    title: string;
-    description: string;
-    is_confirmed_lead: boolean | null;
-  } | null;
-}
-
-interface LeadBalance {
-  balance: number;
-  total_deposited: number;
-  total_spent: number;
-}
-
 interface Digger {
   id: string;
   user_id: string;
@@ -74,6 +54,7 @@ interface Digger {
   availability: string | null;
   bio: string | null;
   location: string;
+  city?: string | null;
   phone: string;
   hourly_rate: number | null;
   hourly_rate_min: number | null;
@@ -82,9 +63,12 @@ interface Digger {
   average_rating: number;
   total_ratings: number;
   profile_image_url: string | null;
+  cover_photo_url?: string | null;
   portfolio_url: string | null;
+  portfolio_urls?: string[] | null;
   work_photos: string[] | null;
   skills: string[] | null;
+  keywords?: string[] | null;
   completion_rate: number | null;
   response_time_hours: number | null;
   is_insured: boolean;
@@ -100,10 +84,15 @@ interface Digger {
   subscription_tier: string | null;
   offers_free_estimates: boolean | null;
   country: string | null;
+  verified?: boolean | null;
+  stripe_connect_onboarded?: boolean | null;
+  stripe_connect_charges_enabled?: boolean | null;
   profiles: {
     full_name: string | null;
     email: string;
+    avatar_url?: string | null;
   };
+  created_at?: string | null;
   digger_categories: {
     categories: {
       name: string;
@@ -112,9 +101,47 @@ interface Digger {
   }[];
 }
 
+const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
+/** Format: "Hongqiang C. @jackson325" or just "@jackson325" if no real name */
+const formatDisplayName = (fullName: string | null | undefined, handle: string | null | undefined): string => {
+  const parts: string[] = [];
+  if (fullName && fullName.trim()) {
+    const names = fullName.trim().split(/\s+/);
+    const first = names[0];
+    const lastInitial = names.length > 1 ? names[names.length - 1].charAt(0) + '.' : '';
+    parts.push(`${first} ${lastInitial}`.trim());
+  }
+  if (handle && handle.trim()) {
+    parts.push(`@${handle.replace(/^@/, '')}`);
+  }
+  return parts.join(' ') || '';
+};
+
+/** Profile URL: /digger/username or /digger/uuid */
+const getDiggerProfileUrl = (d: { id: string; handle?: string | null }) =>
+  (d.handle && d.handle.trim()) ? `/digger/${d.handle.replace(/^@/, '').toLowerCase()}` : `/digger/${d.id}`;
+
+const formatCurrency = (value: number | null | undefined): string => {
+  if (value == null || Number.isNaN(value)) return "$0";
+  return `$${Math.round(value).toLocaleString()}`;
+};
+
+const formatJoinDate = (createdAt: string | null | undefined): string => {
+  if (!createdAt) return "";
+  try {
+    const d = new Date(createdAt);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return "";
+  }
+};
+
 const DiggerDetail = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const { id: slug } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const viewAsClient = searchParams.get("as") === "client";
   const [digger, setDigger] = useState<Digger | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [referenceRequests, setReferenceRequests] = useState<Record<string, ReferenceRequest>>({});
@@ -123,40 +150,43 @@ const DiggerDetail = () => {
   const [hasViewAccess, setHasViewAccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
-  const { isOnline } = useDiggerPresence(id);
+  const [totalEarnings, setTotalEarnings] = useState<number | null>(null);
+  const { isOnline } = useDiggerPresence(digger?.id ?? '');
   const { recordCall, isRecording: isCallingDigger } = useProfileCallTracking();
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   
-  // Owner dashboard states
-  const [leadPurchases, setLeadPurchases] = useState<LeadPurchase[]>([]);
-  const [leadBalance, setLeadBalance] = useState<LeadBalance | null>(null);
-  const [totalLeadsSold, setTotalLeadsSold] = useState(0);
-
   // People also viewed (related diggers)
-  const [relatedDiggers, setRelatedDiggers] = useState<{ id: string; business_name: string; profession: string | null; profile_image_url: string | null; custom_occupation_title: string | null }[]>([]);
+  const [relatedDiggers, setRelatedDiggers] = useState<{ id: string; handle: string | null; business_name: string; profession: string | null; profile_image_url: string | null; custom_occupation_title: string | null }[]>([]);
+  const [activeTab, setActiveTab] = useState("general");
+  const [profilePhotoDialogOpen, setProfilePhotoDialogOpen] = useState(false);
+  const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
+  const profilePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const [coverPhotoDialogOpen, setCoverPhotoDialogOpen] = useState(false);
+  const [coverPhotoUploading, setCoverPhotoUploading] = useState(false);
+  const coverPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     loadData();
-  }, [id]);
+  }, [slug]);
 
   // Fetch related diggers for "People also viewed" when viewing another's profile
   useEffect(() => {
-    if (!id || !digger || isOwnProfile) return;
+    if (!slug || !digger || isOwnProfile) return;
     const loadRelated = async () => {
       const profession = digger.profession || '';
       const categoryIds = (digger.digger_categories || []).map((dc: { categories?: { name: string } }) => dc.categories?.name).filter(Boolean);
       const { data } = await supabase
         .from("digger_profiles")
-        .select("id, business_name, profession, profile_image_url, custom_occupation_title")
-        .neq("id", id)
+        .select("id, handle, business_name, profession, profile_image_url, custom_occupation_title")
+        .neq("id", digger.id)
         .limit(8);
       if (data?.length) setRelatedDiggers(data);
     };
     loadRelated();
-  }, [id, digger, isOwnProfile]);
+  }, [slug, digger, isOwnProfile]);
 
   const loadData = async () => {
-    if (!id) return;
+    if (!slug) return;
 
     const { data: { session } } = await supabase.auth.getSession();
     setCurrentUser(session?.user || null);
@@ -171,11 +201,10 @@ const DiggerDetail = () => {
       
       // If user is a digger, check if they're viewing their own profile
       if (profile?.user_type === "digger") {
-        const { data: diggerProfile } = await supabase
-          .from("digger_profiles")
-          .select("user_id")
-          .eq("id", id)
-          .single();
+        const fetchBySlug = isUuid(slug)
+          ? supabase.from("digger_profiles").select("user_id").eq("id", slug)
+          : supabase.from("digger_profiles").select("user_id").eq("handle", slug.toLowerCase());
+        const { data: diggerProfile } = await fetchBySlug.maybeSingle();
         
         // Block if digger is trying to view another digger's profile
         if (diggerProfile && diggerProfile.user_id !== session.user.id) {
@@ -186,18 +215,11 @@ const DiggerDetail = () => {
       }
     }
 
-    // Fetch digger data first
-    const { data: diggerData, error: diggerError } = await supabase
-      .from("digger_profiles")
-      .select(`
-        *,
-        profiles!digger_profiles_user_id_fkey (full_name, email),
-        digger_categories (
-          categories (name, description)
-        )
-      `)
-      .eq("id", id)
-      .single();
+    // Fetch digger by UUID or username (handle)
+    const fetchQuery = isUuid(slug)
+      ? supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url), digger_categories (categories (name, description))`).eq("id", slug)
+      : supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url), digger_categories (categories (name, description))`).eq("handle", slug.toLowerCase());
+    const { data: diggerData, error: diggerError } = await fetchQuery.single();
 
     if (diggerError || !diggerData) {
       toast.error("Digger not found");
@@ -205,14 +227,37 @@ const DiggerDetail = () => {
       return;
     }
 
+    const profileId = diggerData.id;
     setDigger(diggerData);
+    // Load total earnings for this digger (completed transactions only)
+    try {
+      const { data: earningsRows } = await supabase
+        .from("transactions")
+        .select("digger_payout, status, completed_at")
+        .eq("digger_id", diggerData.id);
+      const sum = (earningsRows || []).reduce((acc, row) => {
+        const isCompleted = row.completed_at != null || row.status === "completed";
+        return isCompleted ? acc + (row.digger_payout || 0) : acc;
+      }, 0);
+      setTotalEarnings(sum);
+    } catch {
+      setTotalEarnings(null);
+    }
     setIsOwnProfile(session?.user?.id === diggerData.user_id);
+
+    // Replace URL with username-based when profile has handle (primary profile)
+    if (diggerData.handle) {
+      const cleanUrl = `/digger/${diggerData.handle.replace(/^@/, '').trim().toLowerCase()}`;
+      if (window.location.pathname !== cleanUrl) {
+        window.history.replaceState(null, '', cleanUrl);
+      }
+    }
 
     // Record profile click when a non-owner views (for analytics)
     if (session?.user?.id !== diggerData.user_id) {
       try {
         await supabase.functions.invoke('record-profile-click', {
-          body: { digger_profile_id: id }
+          body: { digger_profile_id: profileId }
         });
       } catch (error) {
         console.error('Failed to record click:', error);
@@ -226,14 +271,12 @@ const DiggerDetail = () => {
           .from("profile_views")
           .select("*")
           .eq("consumer_id", session.user.id)
-          .eq("digger_id", id)
+          .eq("digger_id", profileId)
           .maybeSingle(); // Use maybeSingle() instead of single() to handle cases where no record exists
         
         if (profileViewError && profileViewError.code !== 'PGRST116') {
-          // PGRST116 means no rows found, which is expected - ignore it
           console.error('Error checking profile view access:', profileViewError);
         }
-        
         setHasViewAccess(!!profileView);
       } catch (error) {
         // Silently fail - view access check shouldn't block page load
@@ -245,7 +288,7 @@ const DiggerDetail = () => {
     const { data: referencesData } = await supabase
       .from("references")
       .select("*")
-      .eq("digger_id", id);
+      .eq("digger_id", profileId);
 
     setReferences(referencesData || []);
     setLoading(false);
@@ -277,52 +320,109 @@ const DiggerDetail = () => {
       }
     }
 
-    // Load owner-specific data if viewing own profile
-    if (session?.user?.id === diggerData.user_id) {
-      // Fetch lead purchases
-      const { data: purchasesData } = await supabase
-        .from("lead_purchases")
-        .select(`
-          id,
-          gig_id,
-          purchase_price,
-          amount_paid,
-          exclusivity_type,
-          status,
-          purchased_at,
-          gig:gigs(title, description, is_confirmed_lead)
-        `)
-        .eq("digger_id", id)
-        .order("purchased_at", { ascending: false });
+  };
 
-      if (purchasesData) {
-        setLeadPurchases(purchasesData.map(p => ({
-          ...p,
-          gig: Array.isArray(p.gig) ? p.gig[0] : p.gig
-        })));
-        setTotalLeadsSold(purchasesData.filter(p => p.status === "completed").length);
-      }
+  const handleShare = () => {
+    const url = `${window.location.origin}${getDiggerProfileUrl(digger!)}`;
+    navigator.clipboard.writeText(url).then(() => toast.success("Profile link copied to clipboard")).catch(() => toast.error("Could not copy link"));
+  };
 
-      // Fetch lead balance
+  const handleProfilePhotoReplace = () => {
+    profilePhotoInputRef.current?.click();
+  };
+
+  const syncProfilePhotoEverywhere = async (url: string | null) => {
+    if (!digger) return;
+    const userId = digger.user_id;
+    const photo = url || null;
+    const authValue = url || "";
+    const { error: diggerErr } = await supabase.from("digger_profiles").update({ profile_image_url: photo }).eq("user_id", userId);
+    if (diggerErr) throw diggerErr;
+    const { error: profileErr } = await supabase.from("profiles").update({ avatar_url: photo }).eq("id", userId);
+    if (profileErr) console.warn("Failed to sync profiles.avatar_url:", profileErr);
+    if (currentUser?.id === userId) {
       try {
-        const { data: balanceData, error: balanceError } = await supabase
-          .from("digger_lead_balance")
-          .select("balance, total_deposited, total_spent")
-          .eq("digger_id", id)
-          .maybeSingle(); // Use maybeSingle() instead of single() - balance might not exist yet
-
-        if (balanceError && balanceError.code !== 'PGRST116') {
-          // PGRST116 means no rows found, which is expected for new diggers - ignore it
-          console.error('Error fetching lead balance:', balanceError);
-        }
-
-        if (balanceData) {
-          setLeadBalance(balanceData);
-        }
-      } catch (error) {
-        // Silently fail - balance fetch shouldn't block page load
-        console.error('Failed to fetch lead balance:', error);
+        const existingMetadata = currentUser.user_metadata || {};
+        await supabase.auth.updateUser({ data: { ...existingMetadata, avatar_url: authValue, picture: authValue } });
+        const { data: { session } } = await supabase.auth.refreshSession();
+        if (session?.user) setCurrentUser(session.user);
+      } catch (e) {
+        console.warn("Failed to sync auth user_metadata:", e);
       }
+    }
+  };
+
+  const handleProfilePhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!digger || !e.target.files?.length) return;
+    try {
+      setProfilePhotoUploading(true);
+      const file = e.target.files[0];
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("profile-photos").upload(fileName, file, { cacheControl: "3600", upsert: false });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("profile-photos").getPublicUrl(fileName);
+      await syncProfilePhotoEverywhere(publicUrl);
+      setDigger((d) => (d ? { ...d, profile_image_url: publicUrl, profiles: { ...d.profiles, avatar_url: publicUrl } } : null));
+      setProfilePhotoDialogOpen(false);
+      toast.success("Profile photo updated");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload photo");
+    } finally {
+      setProfilePhotoUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleProfilePhotoRemove = async () => {
+    if (!digger) return;
+    try {
+      await syncProfilePhotoEverywhere(null);
+      setDigger((d) => (d ? { ...d, profile_image_url: null, profiles: { ...d.profiles, avatar_url: null } } : null));
+      setProfilePhotoDialogOpen(false);
+      toast.success("Profile photo removed");
+    } catch (err: any) {
+      toast.error("Failed to remove photo");
+    }
+  };
+
+  const handleCoverPhotoReplace = () => {
+    coverPhotoInputRef.current?.click();
+  };
+
+  const handleCoverPhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!digger || !e.target.files?.length) return;
+    try {
+      setCoverPhotoUploading(true);
+      const file = e.target.files[0];
+      const fileExt = file.name.split(".").pop();
+      const fileName = `cover-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("profile-photos").upload(fileName, file, { cacheControl: "3600", upsert: false });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("profile-photos").getPublicUrl(fileName);
+      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: publicUrl }).eq("id", digger.id);
+      if (error) throw error;
+      setDigger((d) => (d ? { ...d, cover_photo_url: publicUrl } : null));
+      setCoverPhotoDialogOpen(false);
+      toast.success("Cover photo updated");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload cover photo");
+    } finally {
+      setCoverPhotoUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleCoverPhotoRemove = async () => {
+    if (!digger) return;
+    try {
+      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: null }).eq("id", digger.id);
+      if (error) throw error;
+      setDigger((d) => (d ? { ...d, cover_photo_url: null } : null));
+      setCoverPhotoDialogOpen(false);
+      toast.success("Cover photo removed");
+    } catch (err: any) {
+      toast.error("Failed to remove cover photo");
     }
   };
 
@@ -413,10 +513,10 @@ const DiggerDetail = () => {
       return;
     }
 
-    if (!digger || !id) return;
+    if (!digger) return;
 
     // Record the call (this charges the digger, not the caller)
-    const result = await recordCall(id);
+    const result = await recordCall(digger.id);
     
     if (result.success) {
       // Open the phone dialer with the digger's phone number
@@ -506,56 +606,70 @@ const DiggerDetail = () => {
     }
   };
 
+  /** Service location = where they offer service (e.g. Guangdong, China). Derive country for the flag from location text. */
+  const getServiceLocationCountry = (): string | null => {
+    const parts = [digger?.city, digger?.location].filter(Boolean).join(", ").trim();
+    if (!parts) return null;
+    const lastPart = parts.split(",").map((p) => p.trim()).filter(Boolean).pop() ?? "";
+    return lastPart || null;
+  };
+
+  const getServiceLocationDisplay = (): string => {
+    return [digger?.city, digger?.location].filter(Boolean).join(", ") || "";
+  };
+
   const getCountryFlag = (countryName: string): string => {
     const flags: { [key: string]: string } = {
-      "United States": "🇺🇸",
-      "Canada": "🇨🇦",
-      "United Kingdom": "🇬🇧",
-      "Australia": "🇦🇺",
-      "Germany": "🇩🇪",
-      "France": "🇫🇷",
-      "Spain": "🇪🇸",
-      "Italy": "🇮🇹",
-      "Mexico": "🇲🇽",
-      "Brazil": "🇧🇷",
-      "India": "🇮🇳",
-      "China": "🇨🇳",
-      "Japan": "🇯🇵",
-      "South Korea": "🇰🇷",
-      "Netherlands": "🇳🇱",
-      "Sweden": "🇸🇪",
-      "Norway": "🇳🇴",
-      "Denmark": "🇩🇰",
-      "Finland": "🇫🇮",
-      "Poland": "🇵🇱",
-      "Ireland": "🇮🇪",
-      "Switzerland": "🇨🇭",
-      "Austria": "🇦🇹",
-      "Belgium": "🇧🇪",
-      "Portugal": "🇵🇹",
-      "Greece": "🇬🇷",
-      "New Zealand": "🇳🇿",
-      "Singapore": "🇸🇬",
-      "South Africa": "🇿🇦",
-      "Argentina": "🇦🇷",
-      "Chile": "🇨🇱",
-      "Colombia": "🇨🇴",
-      "Peru": "🇵🇪",
-      "Israel": "🇮🇱",
-      "UAE": "🇦🇪",
-      "Saudi Arabia": "🇸🇦",
-      "Turkey": "🇹🇷",
-      "Thailand": "🇹🇭",
-      "Vietnam": "🇻🇳",
-      "Philippines": "🇵🇭",
-      "Indonesia": "🇮🇩",
-      "Malaysia": "🇲🇾",
-      "Egypt": "🇪🇬",
-      "Nigeria": "🇳🇬",
-      "Kenya": "🇰🇪",
+      "US": "🇺🇸", "United States": "🇺🇸",
+      "CA": "🇨🇦", "Canada": "🇨🇦",
+      "GB": "🇬🇧", "UK": "🇬🇧", "United Kingdom": "🇬🇧",
+      "AU": "🇦🇺", "Australia": "🇦🇺",
+      "DE": "🇩🇪", "Germany": "🇩🇪",
+      "FR": "🇫🇷", "France": "🇫🇷",
+      "ES": "🇪🇸", "Spain": "🇪🇸",
+      "IT": "🇮🇹", "Italy": "🇮🇹",
+      "MX": "🇲🇽", "Mexico": "🇲🇽",
+      "BR": "🇧🇷", "Brazil": "🇧🇷",
+      "IN": "🇮🇳", "India": "🇮🇳",
+      "CN": "🇨🇳", "China": "🇨🇳",
+      "JP": "🇯🇵", "Japan": "🇯🇵",
+      "KR": "🇰🇷", "South Korea": "🇰🇷",
+      "NL": "🇳🇱", "Netherlands": "🇳🇱",
+      "SE": "🇸🇪", "Sweden": "🇸🇪",
+      "NO": "🇳🇴", "Norway": "🇳🇴",
+      "DK": "🇩🇰", "Denmark": "🇩🇰",
+      "FI": "🇫🇮", "Finland": "🇫🇮",
+      "PL": "🇵🇱", "Poland": "🇵🇱",
+      "IE": "🇮🇪", "Ireland": "🇮🇪",
+      "CH": "🇨🇭", "Switzerland": "🇨🇭",
+      "AT": "🇦🇹", "Austria": "🇦🇹",
+      "BE": "🇧🇪", "Belgium": "🇧🇪",
+      "PT": "🇵🇹", "Portugal": "🇵🇹",
+      "GR": "🇬🇷", "Greece": "🇬🇷",
+      "NZ": "🇳🇿", "New Zealand": "🇳🇿",
+      "SG": "🇸🇬", "Singapore": "🇸🇬",
+      "ZA": "🇿🇦", "South Africa": "🇿🇦",
+      "AR": "🇦🇷", "Argentina": "🇦🇷",
+      "CL": "🇨🇱", "Chile": "🇨🇱",
+      "CO": "🇨🇴", "Colombia": "🇨🇴",
+      "PE": "🇵🇪", "Peru": "🇵🇪",
+      "IL": "🇮🇱", "Israel": "🇮🇱",
+      "AE": "🇦🇪", "UAE": "🇦🇪",
+      "SA": "🇸🇦", "Saudi Arabia": "🇸🇦",
+      "TR": "🇹🇷", "Turkey": "🇹🇷",
+      "TH": "🇹🇭", "Thailand": "🇹🇭",
+      "VN": "🇻🇳", "Vietnam": "🇻🇳",
+      "PH": "🇵🇭", "Philippines": "🇵🇭",
+      "ID": "🇮🇩", "Indonesia": "🇮🇩",
+      "MY": "🇲🇾", "Malaysia": "🇲🇾",
+      "EG": "🇪🇬", "Egypt": "🇪🇬",
+      "NG": "🇳🇬", "Nigeria": "🇳🇬",
+      "KE": "🇰🇪", "Kenya": "🇰🇪",
       "Other": "🌍"
     };
-    return flags[countryName] || "🌍";
+    const key = (countryName || "").trim();
+    if (!key) return "🌍";
+    return flags[key] || flags[key.toUpperCase()] || flags[key.charAt(0).toUpperCase() + key.slice(1).toLowerCase()] || "🌍";
   };
 
   const getInitials = (handle: string | null) => {
@@ -626,15 +740,93 @@ const DiggerDetail = () => {
 
   const displayProfession = getDisplayProfession();
   const occupationBadge = getOccupationBadge();
+  const verificationItems = [
+    { label: "ID verified", isActive: !!digger.verified, icon: User },
+    { label: "Phone", isActive: !!digger.phone && digger.phone !== "Not specified", icon: Phone },
+    { label: "Email", isActive: !!digger.profiles?.email, icon: Mail },
+    { label: "Payment", isActive: !!(digger.stripe_connect_onboarded || digger.stripe_connect_charges_enabled), icon: CreditCard },
+  ];
+
+  // Effective avatar: profile photo first, then profiles.avatar_url, then auth metadata for own profile
+  const effectiveAvatarUrl = digger.profile_image_url
+    || digger.profiles?.avatar_url
+    || (isOwnProfile ? (currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture) : null)
+    || undefined;
 
   return (
     <div className="min-h-screen bg-background">
+      <input
+        ref={profilePhotoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleProfilePhotoFileChange}
+      />
+      <Dialog open={profilePhotoDialogOpen} onOpenChange={setProfilePhotoDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Profile photo</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={handleProfilePhotoReplace}
+              disabled={profilePhotoUploading}
+            >
+              <Upload className="h-4 w-4" />
+              {profilePhotoUploading ? "Uploading…" : "Replace image"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleProfilePhotoRemove}
+            >
+              <Trash2 className="h-4 w-4" />
+              Remove image
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <input
+        ref={coverPhotoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleCoverPhotoFileChange}
+      />
+      <Dialog open={coverPhotoDialogOpen} onOpenChange={setCoverPhotoDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cover photo</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={handleCoverPhotoReplace}
+              disabled={coverPhotoUploading}
+            >
+              <ImagePlus className="h-4 w-4" />
+              {coverPhotoUploading ? "Uploading…" : "Replace image"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleCoverPhotoRemove}
+            >
+              <Trash2 className="h-4 w-4" />
+              Remove image
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <SEOHead
         title={`${digger.business_name} - ${displayProfession} in ${digger.location}`}
         description={`${digger.bio || `Professional ${displayProfession} services in ${digger.location}`}. ${digger.average_rating ? `Rated ${digger.average_rating}/5 stars` : 'Available for hire'}. ${digger.hourly_rate ? `Starting at $${digger.hourly_rate}/hour` : 'Contact for pricing'}.`}
         keywords={`${displayProfession}, ${digger.location}, contractor, service professional, ${digger.skills?.join(', ') || ''}`}
         ogType="profile"
-        ogImage={digger.profile_image_url || undefined}
+        ogImage={effectiveAvatarUrl}
         structuredData={generateLocalBusinessSchema({
           name: digger.business_name,
           description: digger.bio || `Professional ${displayProfession} services`,
@@ -652,16 +844,16 @@ const DiggerDetail = () => {
             ratingValue: digger.average_rating,
             reviewCount: digger.total_ratings || 0
           } : undefined,
-          image: digger.profile_image_url || undefined
+          image: effectiveAvatarUrl
         })}
       />
 
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12 max-w-5xl">
+      <div className="w-full px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12">
         <div className="sticky top-14 sm:top-16 z-10 bg-background py-2 sm:py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-4 sm:-mt-6 md:-mt-8 lg:-mt-12 mb-3 sm:mb-4">
           <Breadcrumb 
             items={[
               { label: "Browse Diggers", href: "/browse-diggers" },
-              { label: digger.business_name, href: `/digger/${digger.id}` }
+              { label: digger.business_name, href: getDiggerProfileUrl(digger) }
             ]} 
           />
         </div>
@@ -669,50 +861,118 @@ const DiggerDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main content - Himalayas-style left column */}
           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1 min-w-0">
-            {!isOwnProfile ? (
+            {(!isOwnProfile || viewAsClient) ? (
               <>
-                {/* Centered profile header - name, handle, tagline, location */}
-                <Card className="overflow-hidden">
-                  <CardContent className="p-6 sm:p-8 lg:p-10">
-                    <div className="flex flex-col items-center text-center">
-                      <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-primary/20 mb-4">
-                        <AvatarImage src={digger.profile_image_url || undefined} alt={digger.business_name} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-3xl font-bold">
-                          {(digger.business_name || digger.profile_name || "?").slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
-                        {!hasViewAccess ? (digger.business_name || digger.profile_name || "").split(" ").map(w => w.charAt(0) + ".").join("") + "." : (digger.business_name || digger.profile_name || digger.profiles?.full_name || "Professional")}
-                      </h1>
-                      {digger.handle && (
-                        <p className="text-muted-foreground text-sm sm:text-base mb-2">@{digger.handle}</p>
-                      )}
-                      <p className="text-lg text-muted-foreground max-w-xl mb-3">
-                        {digger.tagline || getDisplayProfession()}
-                      </p>
-                      {digger.country && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <span className="text-xl">{getCountryFlag(digger.country)}</span>
-                          <span>{[digger.location, digger.country].filter(Boolean).join(", ")}</span>
+                {/* Hero: cover + avatar on left (reference layout) */}
+                <Card className="overflow-hidden border-0 shadow-lg">
+                  <div className="relative">
+                    <div 
+                      className="h-40 sm:h-52 md:h-60 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted"
+                      style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+                    />
+                    {/* Avatar on left, overlapping cover */}
+                    <div className="absolute left-4 sm:left-6 -bottom-12 sm:-bottom-14">
+                      <div className="relative">
+                        <Avatar className="h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 border-4 border-background shadow-xl">
+                          <AvatarImage src={effectiveAvatarUrl} alt={digger.business_name} />
+                          <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">
+                            {(digger.business_name || digger.profile_name || "?").slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* Online = green, Offline = grey (from useDiggerPresence / Realtime) */}
+                        <div className={`absolute top-2 left-2 w-4 h-4 rounded-full border-2 border-background ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online" : "Offline"} />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Profile header: name left, share/edit top right */}
+                  <CardContent className="pt-16 sm:pt-20 pb-4 px-4 sm:px-6">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                          {!hasViewAccess ? (digger.business_name || digger.profile_name || "").split(" ").map(w => w.charAt(0) + ".").join("") + "." : (formatDisplayName(digger.profiles?.full_name, digger.handle || digger.business_name) || digger.business_name || digger.profile_name || "Professional")}
+                        </h1>
+                        {(getServiceLocationDisplay() || digger.created_at) && (
+                          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
+                            {getServiceLocationDisplay() && (
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-base">{getCountryFlag(getServiceLocationCountry() || "")}</span>
+                                {getServiceLocationDisplay()}
+                              </span>
+                            )}
+                            {digger.created_at && (
+                              <span>Joined on {formatJoinDate(digger.created_at)}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-2.5 rounded-full border-2 border-primary/60 bg-primary/5 px-3 py-1.5">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-background">
+                            <Crown className="h-5 w-5 text-primary" />
+                          </div>
+                          <span className="text-base font-bold text-foreground">
+                            {digger.completion_rate ?? 0}% Job Success
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Tabs */}
+                    <div className="flex flex-wrap gap-1 mt-4 border-b border-border">
+                      <button type="button" onClick={() => setActiveTab("general")} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === "general" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                        General
+                      </button>
+                      {(digger.digger_categories || []).slice(0, 3).map((dc, idx) => (
+                        <button key={idx} type="button" onClick={() => setActiveTab(`cat-${idx}`)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === `cat-${idx}` ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                          {dc.categories?.name || ""}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Metrics row */}
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4">
+                      <div className="flex items-center gap-1.5">
+                        <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                        <span className="font-semibold">{digger.average_rating?.toFixed(1) || "New"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <MessageSquare className="h-5 w-5 text-orange-500" />
+                        <span>{digger.total_ratings || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <DollarSign className="h-5 w-5 text-green-600" />
+                        <span>{formatCurrency(totalEarnings)}</span>
+                      </div>
+                      {digger.completion_rate != null && (
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="font-medium">{digger.completion_rate}%</span>
                         </div>
                       )}
+                    </div>
+                    {/* Professional title + hourly rate */}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <p className="text-lg sm:text-xl font-bold flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
+                        {getDisplayProfession()}
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
+                      </p>
+                      {formatHourlyRate() && (
+                        <span className="text-sm sm:text-base font-semibold text-muted-foreground">
+                          {formatHourlyRate()}
+                        </span>
+                      )}
+                    </div>
+                    {/* Recommendations */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-muted-foreground text-sm">
+                      {references.length > 0 && <span>• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>}
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* What I offer - short pitch (tagline) */}
-                {digger.tagline && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">What I offer</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground leading-relaxed">{digger.tagline}</p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* About / Professional summary */}
+                {/* Bio */}
                 {digger.bio && (
                   <Card>
                     <CardHeader className="pb-2">
@@ -723,26 +983,21 @@ const DiggerDetail = () => {
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{digger.bio}</p>
-                      {digger.offers_free_estimates && (
-                        <div className="mt-4 inline-flex items-center gap-2 bg-green-500/10 text-green-700 dark:text-green-400 px-3 py-2 rounded-lg text-sm font-medium">
-                          ✓ Offers Free Estimates
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 )}
 
-                {/* Skills & expertise - badge grid */}
-                {((digger.skills?.length ?? 0) > 0 || (digger.digger_categories?.length ?? 0) > 0) && (
+                {/* Keywords */}
+                {((digger.keywords?.length ?? 0) > 0 || (digger.skills?.length ?? 0) > 0) && (
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Skills & expertise</CardTitle>
+                      <CardTitle className="text-lg">Keywords & skills</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
-                        {(digger.digger_categories || []).map((dc, idx) => (
-                          <Badge key={`cat-${idx}`} variant="default" className="px-3 py-1">
-                            {dc.categories?.name || ""}
+                        {(digger.keywords || []).map((kw, idx) => (
+                          <Badge key={`kw-${idx}`} variant="default" className="px-3 py-1">
+                            {kw}
                           </Badge>
                         ))}
                         {(digger.skills || []).map((skill, idx) => (
@@ -755,7 +1010,51 @@ const DiggerDetail = () => {
                   </Card>
                 )}
 
+                {/* Specialty / professions */}
+                {(digger.digger_categories?.length ?? 0) > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Specialty</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {(digger.digger_categories || []).map((dc, idx) => (
+                          <Badge key={`cat-${idx}`} variant="outline" className="px-3 py-1">
+                            {dc.categories?.name || ""}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Portfolio */}
+                {(digger.portfolio_url || (digger.portfolio_urls && digger.portfolio_urls.length > 0)) && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Globe className="h-5 w-5 text-primary" />
+                        Portfolio
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {digger.portfolio_url && (
+                        <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline font-medium">
+                          View portfolio →
+                        </a>
+                      )}
+                      {(digger.portfolio_urls || []).map((url, idx) => (
+                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block text-primary hover:underline text-sm mt-1">
+                          {url}
+                        </a>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
                 <WorkSamplesGallery photos={digger.work_photos || []} businessName={digger.business_name} />
+
+                {/* Work history / references */}
                 <ReferencesSection references={references} />
 
                 <Card>
@@ -766,121 +1065,138 @@ const DiggerDetail = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                    <RatingsList diggerId={id!} isDigger={false} diggerName={digger.business_name} />
+                    <RatingsList diggerId={digger.id} isDigger={false} diggerName={digger.business_name} />
                   </CardContent>
                 </Card>
               </>
             ) : (
-              /* Owner View - Original detailed management interface */
+              /* Owner View - Same reference layout with management actions */
               <>
-              <Card>
-              <CardContent className="p-4 sm:p-6 lg:p-8">
-                <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-4 sm:mb-6">
-                  <div className="relative shrink-0">
-                    <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
-                      <AvatarImage src={digger.profile_image_url || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                        {getInitials(digger.handle)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {isOwnProfile && !digger.profile_image_url && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
-                        onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
-                        title="Add profile photo"
-                      >
+              <Card className="overflow-hidden border-0 shadow-lg">
+                <div className="relative">
+                  <div 
+                    className="h-40 sm:h-52 md:h-60 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted"
+                    style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+                  />
+                  {/* Cover action buttons */}
+                  <div className="absolute top-3 right-3 flex flex-wrap gap-2">
+                    <Button variant="secondary" size="sm" className="bg-background/90 hover:bg-background shadow" onClick={() => setCoverPhotoDialogOpen(true)}>
+                      Upload cover photo
+                    </Button>
+                    <Button variant="secondary" size="sm" className="bg-background/90 hover:bg-background shadow" asChild>
+                      <a href={`${getDiggerProfileUrl(digger)}?as=client`} target="_blank" rel="noopener noreferrer">View client profile</a>
+                    </Button>
+                  </div>
+                  {/* Avatar on left with edit + online status */}
+                  <div className="absolute left-4 sm:left-6 -bottom-12 sm:-bottom-14">
+                    <div className="relative">
+                      <Avatar className="h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 border-4 border-background shadow-xl">
+                        <AvatarImage src={effectiveAvatarUrl} />
+                        <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">
+                          {getInitials(digger.handle || digger.business_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Button size="sm" variant="secondary" className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full p-0 shadow-md border-2 border-background" onClick={() => setProfilePhotoDialogOpen(true)} title="Edit profile photo">
                         <Camera className="h-4 w-4" />
                       </Button>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 w-full">
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                      <h1 className="text-2xl sm:text-3xl font-bold break-words">
-                        {digger.business_name || digger.profile_name || digger.profiles?.full_name || "Business Name"}
-                      </h1>
-                      <div className="flex items-center gap-1.5 bg-background border border-border/50 px-3 py-1 rounded-full">
-                        <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
-                        <span className="text-sm font-medium">
-                          {isOnline ? 'Online' : 'Offline'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <p className="text-lg sm:text-xl text-muted-foreground">{getDisplayProfession()}</p>
-                        <Badge variant="default" className="bg-primary text-primary-foreground">
-                          <Star className="h-3 w-3 mr-1 fill-current" />
-                          Primary Specialty
-                        </Badge>
-                      </div>
-                      {occupationBadge && (
-                        <Badge variant="outline" className="mt-2">
-                          {occupationBadge.label}: {occupationBadge.value}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-accent text-accent shrink-0" />
-                        <span className="font-semibold text-base sm:text-lg">{digger.average_rating.toFixed(1)}</span>
-                        <span className="text-muted-foreground">({digger.total_ratings} reviews)</span>
-                      </div>
-                      {formatHourlyRate() && (
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-5 w-5 text-muted-foreground" />
-                          <span className="font-semibold">{formatHourlyRate()}</span>
-                        </div>
-                      )}
-                      {digger.years_experience && (
-                        <div className="flex items-center gap-1">
-                          <Briefcase className="h-5 w-5 text-muted-foreground" />
-                          <span>{digger.years_experience} years experience</span>
-                        </div>
-                      )}
-                      {digger.country && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-lg">{getCountryFlag(digger.country)}</span>
-                          <span>{digger.country}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {digger.is_insured && (
-                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
-                          ✓ Insured
-                        </Badge>
-                      )}
-                      {digger.is_bonded && (
-                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
-                          ✓ Bonded
-                        </Badge>
-                      )}
-                      {digger.is_licensed === 'yes' && (
-                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                          ✓ Licensed
-                        </Badge>
-                      )}
-                      {digger.is_licensed === 'no' && (
-                        <Badge variant="secondary" className="bg-gray-500/10 text-gray-600 border-gray-500/20">
-                          Not Licensed
-                        </Badge>
-                      )}
-                      {digger.completion_rate !== null && (
-                        <Badge variant="secondary">
-                          {digger.completion_rate}% Completion Rate
-                        </Badge>
-                      )}
-                      {digger.response_time_hours !== null && (
-                        <Badge variant="secondary">
-                          Responds in {digger.response_time_hours}h
-                        </Badge>
-                      )}
+                      {/* Online = green, Offline = grey (from useDiggerPresence / Realtime) */}
+                      <div className={`absolute top-2 left-2 w-4 h-4 rounded-full border-2 border-background ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online" : "Offline"} />
                     </div>
                   </div>
                 </div>
+                <CardContent className="pt-16 sm:pt-20 pb-4 px-4 sm:px-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h1 className="text-2xl sm:text-3xl font-bold">
+                        {formatDisplayName(digger.profiles?.full_name, digger.handle || digger.business_name) || digger.business_name || digger.profile_name || "Professional"}
+                      </h1>
+                      {(getServiceLocationDisplay() || digger.created_at) && (
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
+                          {getServiceLocationDisplay() && (
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-base">{getCountryFlag(getServiceLocationCountry() || "")}</span>
+                              {getServiceLocationDisplay()}
+                            </span>
+                          )}
+                          {digger.created_at && (
+                            <span>Joined on {formatJoinDate(digger.created_at)}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2.5 rounded-full border-2 border-primary/60 bg-primary/5 px-3 py-1.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-background">
+                          <Crown className="h-5 w-5 text-primary" />
+                        </div>
+                        <span className="text-base font-bold text-foreground">
+                          {digger.completion_rate ?? 0}% Job Success
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile">
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/edit-digger-profile?profileId=${digger.id}`)} className="text-muted-foreground">
+                        Edit profile
+                      </Button>
+                    </div>
+                  </div>
+                  {/* Tabs */}
+                  <div className="flex flex-wrap gap-1 mt-4 border-b border-border">
+                    <button type="button" onClick={() => setActiveTab("general")} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === "general" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                      General
+                    </button>
+                    {(digger.digger_categories || []).slice(0, 3).map((dc, idx) => (
+                      <button key={idx} type="button" onClick={() => setActiveTab(`cat-${idx}`)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === `cat-${idx}` ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                        {dc.categories?.name || ""}
+                      </button>
+                    ))}
+                    <button type="button" onClick={() => navigate(`/edit-digger-profile?profileId=${digger.id}`)} className="px-4 py-2 text-sm font-medium border-b-2 -mb-px border-transparent text-muted-foreground hover:text-foreground flex items-center gap-1">
+                      Add profile <span className="text-primary">+</span>
+                    </button>
+                  </div>
+                  {/* Metrics row */}
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4">
+                    <div className="flex items-center gap-1.5">
+                      <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                      <span className="font-semibold">{digger.average_rating?.toFixed(1) || "New"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <MessageSquare className="h-5 w-5 text-orange-500" />
+                      <span>{digger.total_ratings || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                      <span>{formatCurrency(totalEarnings)}</span>
+                    </div>
+                    {digger.completion_rate != null && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="font-medium">{digger.completion_rate}%</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <p className="text-lg sm:text-xl font-bold flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
+                      {getDisplayProfession()}
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
+                    </p>
+                    {formatHourlyRate() && (
+                      <span className="text-sm sm:text-base font-semibold text-muted-foreground">
+                        {formatHourlyRate()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-muted-foreground text-sm">
+                    {references.length > 0 && <span>• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>}
+                  </div>
+                </CardContent>
+              </Card>
 
+              <Card>
+              <CardContent className="p-4 sm:p-6 lg:p-8">
                 {/* Bio Section - Show for all, with edit option for owners */}
                 <Separator className="my-6" />
                 <div>
@@ -894,7 +1210,7 @@ const DiggerDetail = () => {
                     <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
                       <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
                       <p className="text-muted-foreground mb-4">Add a professional bio to help clients learn about your services</p>
-                      <Button onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}>
+                      <Button onClick={() => navigate(`/edit-digger-profile?profileId=${digger.id}`)}>
                         <Sparkles className="h-4 w-4 mr-2" />
                         Add Bio with AI Assistance
                       </Button>
@@ -1006,7 +1322,7 @@ const DiggerDetail = () => {
               </CardHeader>
               <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
                 <RatingsList 
-                  diggerId={id!} 
+                  diggerId={digger.id} 
                   isDigger={true}
                   diggerName={digger.business_name}
                 />
@@ -1019,20 +1335,39 @@ const DiggerDetail = () => {
           {/* Sidebar - order first on mobile so actions are visible without scrolling */}
           <div className="lg:col-span-1 order-1 lg:order-2 min-w-0">
             <div className="space-y-4 sm:space-y-6 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
-              {!isOwnProfile && (
+              {/* Verification status (always visible in sidebar) */}
+              <Card>
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-medium">Verifications</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 px-4 pb-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    {verificationItems.map((item) => (
+                      <div key={item.label} className="flex items-center gap-2">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
+                          <item.icon className={`h-4 w-4 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
+                        </div>
+                        <span className={`text-xs font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              {(!isOwnProfile || viewAsClient) && (
                 <>
                   <Card>
                     <CardContent className="p-4 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground"}`} />
-                        <span className="text-sm font-medium">
+                      <div className={`flex items-center gap-2 text-sm font-medium ${isOnline ? "text-green-700 dark:text-green-400" : "text-gray-600 dark:text-gray-400"}`}>
+                        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online" : "Offline"} />
+                        <span>
                           {isOnline ? "Open to opportunities" : "Currently offline"}
                         </span>
                       </div>
-                      {digger.country && (
+                      {getServiceLocationDisplay() && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <MapPin className="h-4 w-4 shrink-0" />
-                          <span>{[digger.location, digger.country].filter(Boolean).join(", ")}</span>
+                          <span className="text-lg">{getCountryFlag(getServiceLocationCountry() || "")}</span>
+                          <span>{getServiceLocationDisplay()}</span>
                         </div>
                       )}
                       {digger.portfolio_url && (
@@ -1092,7 +1427,7 @@ const DiggerDetail = () => {
                   {hasViewAccess && (
                     <DiggerPricingSelector
                       diggerId={digger.id}
-                      gigId={id || ''}
+                      gigId=""
                       pricingModel={digger.pricing_model || 'both'}
                       subscriptionTier={digger.subscription_tier || 'free'}
                       hourlyRateMin={digger.hourly_rate_min}
@@ -1115,7 +1450,7 @@ const DiggerDetail = () => {
                             <li key={d.id}>
                               <button
                                 type="button"
-                                onClick={() => navigate(`/digger/${d.id}`)}
+                                onClick={() => navigate(getDiggerProfileUrl(d))}
                                 className="flex items-center gap-3 w-full text-left rounded-lg p-2 -mx-2 hover:bg-accent/50 transition-colors"
                               >
                                 <Avatar className="h-9 w-9 shrink-0">
@@ -1140,139 +1475,6 @@ const DiggerDetail = () => {
                       </CardContent>
                     </Card>
                   )}
-                </>
-              )}
-
-              {isOwnProfile && (
-                <>
-                  {/* Lead Stats */}
-                  <Card>
-                    <CardHeader className="py-2.5 sm:py-3 px-3 sm:px-4">
-                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                        <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                        Lead Stats
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-0 px-3 sm:px-4 pb-3 sm:pb-4">
-                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                        <div className="bg-primary/10 rounded-lg p-2 sm:p-3 text-center min-w-0">
-                          <div className="text-base sm:text-lg md:text-xl font-bold text-primary truncate" title={String(totalLeadsSold)}>{totalLeadsSold}</div>
-                          <div className="text-[10px] sm:text-xs text-muted-foreground">Completed</div>
-                        </div>
-                        <div className="bg-yellow-500/10 rounded-lg p-2 sm:p-3 text-center min-w-0">
-                          <div className="text-base sm:text-lg md:text-xl font-bold text-yellow-600 truncate" title={String(leadPurchases.filter(p => p.status === 'pending').length)}>
-                            {leadPurchases.filter(p => p.status === 'pending').length}
-                          </div>
-                          <div className="text-[10px] sm:text-xs text-muted-foreground">Pending</div>
-                        </div>
-                        <div className="bg-green-500/10 rounded-lg p-2 sm:p-3 text-center min-w-0">
-                          <div className="text-sm sm:text-base md:text-lg font-bold text-green-600 truncate" title={`$${leadBalance?.balance?.toFixed(2) || '0.00'}`}>
-                            ${leadBalance?.balance?.toFixed(2) || '0.00'}
-                          </div>
-                          <div className="text-[10px] sm:text-xs text-muted-foreground">Balance</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-3 sm:p-4 md:p-5 space-y-2.5 sm:space-y-3">
-                      <Button
-                        className="w-full min-h-10 sm:min-h-11"
-                        size="sm"
-                        onClick={() => navigate(`/edit-digger-profile?profileId=${id}`)}
-                      >
-                        <Edit className="h-4 w-4 mr-2 shrink-0" />
-                        <span className="truncate">Edit Profile</span>
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        className="w-full min-h-10 sm:min-h-11"
-                        size="sm"
-                        onClick={() => navigate('/checkout')}
-                      >
-                        <Wallet className="h-4 w-4 mr-2 shrink-0" />
-                        <span className="truncate">Add Funds</span>
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        className="w-full min-h-10 sm:min-h-11"
-                        size="sm"
-                        onClick={() => navigate(`/keyword-summary?profileId=${id}`)}
-                      >
-                        <Search className="h-4 w-4 mr-2 shrink-0" />
-                        <span className="truncate">Browse Leads</span>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="py-2.5 sm:py-3 px-3 sm:px-4">
-                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                        <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                        Account balance
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-0 px-3 sm:px-4 pb-3 sm:pb-4">
-                      <div className="text-lg sm:text-xl font-bold text-primary mb-1 truncate" title={`$${leadBalance?.balance?.toFixed(2) ?? '0.00'}`}>
-                        ${leadBalance?.balance?.toFixed(2) ?? '0.00'}
-                      </div>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">Available for lead purchases</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => navigate('/checkout')}
-                      >
-                        Add funds
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="py-2.5 sm:py-3 px-3 sm:px-4">
-                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-500 shrink-0" />
-                        Pending purchases
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-0 px-3 sm:px-4 pb-3 sm:pb-4">
-                      {leadPurchases.filter(p => p.status === 'pending').length > 0 ? (
-                        <>
-                          <p className="text-sm font-semibold text-yellow-600 mb-2">
-                            {leadPurchases.filter(p => p.status === 'pending').length} pending
-                          </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => navigate('/checkout')}
-                          >
-                            View & complete
-                          </Button>
-                        </>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">No pending purchases</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="py-2.5 sm:py-3 px-3 sm:px-4">
-                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 shrink-0" />
-                        Purchased leads
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="py-0 px-3 sm:px-4 pb-3 sm:pb-4">
-                      <p className="text-sm font-semibold text-green-600 mb-1">{totalLeadsSold} leads</p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 sm:mb-3">View and manage your leads</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => navigate(`/my-leads?profileId=${id}`)}
-                      >
-                        View all leads
-                      </Button>
-                    </CardContent>
-                  </Card>
                 </>
               )}
 

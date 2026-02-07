@@ -20,13 +20,16 @@ export const useDiggerPresence = (diggerId?: string) => {
     const refreshOnline = () => {
       if (!mounted) return;
       try {
-        const state = channel.presenceState();
+        const state = (channel.presenceState() ?? {}) as Record<string, unknown[]>;
         const online = new Set<string>();
-        Object.values(state).forEach((presences: unknown) => {
+        Object.values(state ?? {}).forEach((presences: unknown) => {
           const list = Array.isArray(presences) ? presences : [];
-          list.forEach((p: Record<string, unknown>) => {
-            const did = p?.digger_id ?? (p?.payload as Record<string, unknown>)?.digger_id;
-            if (typeof did === 'string') online.add(did);
+          list.forEach((p: unknown) => {
+            const row = p as Record<string, unknown>;
+            const did =
+              row?.digger_id ??
+              (row?.payload as Record<string, unknown> | undefined)?.digger_id;
+            if (typeof did === 'string' && did.length > 0) online.add(did);
           });
         });
         setOnlineDiggers(online);
@@ -47,19 +50,26 @@ export const useDiggerPresence = (diggerId?: string) => {
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             refreshOnline();
-            setTimeout(refreshOnline, 300);
-            setTimeout(refreshOnline, 1000);
+            setTimeout(refreshOnline, 200);
+            setTimeout(refreshOnline, 500);
+            setTimeout(refreshOnline, 1200);
           }
         });
     };
     setup();
 
     // Periodic refresh so online/offline updates in real time
-    const interval = setInterval(refreshOnline, 3000);
+    const interval = setInterval(refreshOnline, 2000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refreshOnline();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       mounted = false;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -107,26 +117,7 @@ export const useTrackDiggerPresence = () => {
         await supabase.realtime.setAuth(session.access_token);
       }
       try {
-        // First check if user has digger role - use RPC function to avoid RLS recursion
-        let hasDiggerRole = false;
-        
-        try {
-          const { data: rolesData, error: rolesError } = await (supabase
-            .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
-          
-          if (!rolesError && rolesData) {
-            hasDiggerRole = (rolesData as any[]).some((r: any) => r.app_role === 'digger' && r.is_active);
-          } else if (rolesError) {
-            console.warn('Could not check digger role for presence tracking:', rolesError);
-            return;
-          }
-        } catch (rpcError) {
-          console.warn('RPC function get_user_app_roles_safe failed:', rpcError);
-          return;
-        }
-
-        if (!hasDiggerRole) return;
-
+        // Resolve digger profile id: prefer RPC role check, fallback to direct digger_profiles lookup
         const { data: diggerProfile, error } = await supabase
           .from('digger_profiles')
           .select('id')
@@ -143,6 +134,17 @@ export const useTrackDiggerPresence = () => {
         }
 
         if (diggerProfile) {
+          // Optional: only track if user has digger app role (when RPC is available)
+          try {
+            const { data: rolesData, error: rolesError } = await (supabase
+              .rpc as any)('get_user_app_roles_safe', { _user_id: user.id });
+            if (!rolesError && rolesData) {
+              const hasDiggerRole = (rolesData as any[]).some((r: any) => r.app_role === 'digger' && r.is_active);
+              if (!hasDiggerRole) return;
+            }
+          } catch {
+            // RPC missing or failed: still track presence so online status works
+          }
           diggerProfileId = diggerProfile.id;
           channel.subscribe(async (status) => {
             if (status === 'SUBSCRIBED' && diggerProfileId) {
@@ -151,7 +153,7 @@ export const useTrackDiggerPresence = () => {
                 online_at: new Date().toISOString(),
               });
               if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-              heartbeatRef.current = setInterval(trackPresence, 25_000);
+              heartbeatRef.current = setInterval(trackPresence, 20_000);
             }
           });
         }
@@ -162,11 +164,20 @@ export const useTrackDiggerPresence = () => {
 
     setupPresence();
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && diggerProfileId) {
+        trackPresence();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
         heartbeatRef.current = null;
       }
+      void channel.untrack();
       supabase.removeChannel(channel);
     };
   }, [user]);

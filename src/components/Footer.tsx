@@ -13,6 +13,7 @@ import {
   Heart
 } from "lucide-react";
 import logo from "@/assets/digsandgigs-logo.png";
+import { SUPPORT_EMAIL } from "@/config/siteContact";
 
 const platformLinks = [
   { label: "How It Works", path: "/how-it-works" },
@@ -147,11 +148,11 @@ export const Footer = () => {
             {/* Contact */}
             <div className="mt-8 pt-6 border-t border-border/50">
               <a 
-                href="mailto:info@digsandgigs.net" 
+                href={`mailto:${SUPPORT_EMAIL}`} 
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 <Mail className="h-4 w-4" />
-                <span>info@digsandgigs.net</span>
+                <span>{SUPPORT_EMAIL}</span>
               </a>
             </div>
           </div>

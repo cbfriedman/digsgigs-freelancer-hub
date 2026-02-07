@@ -24,10 +24,12 @@ import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 
 interface ProfileWithStats {
   id: string;
+  handle: string | null;
   profile_name: string | null;
   business_name: string;
   profession: string;
   is_primary: boolean;
+  cover_photo_url: string | null;
   average_rating: number | null;
   total_ratings: number | null;
   profile_image_url: string | null;
@@ -42,6 +44,7 @@ export default function MyProfiles() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [profiles, setProfiles] = useState<ProfileWithStats[]>([]);
+  const [canonicalPhotoUrl, setCanonicalPhotoUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; profileId: string | null }>({
     open: false,
@@ -146,34 +149,32 @@ export default function MyProfiles() {
     try {
       console.log("MyProfiles: Loading profiles for user:", user.id);
       
-      const { data: profileCheck, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .single();
-      
-      if (profileError) {
-        console.error("MyProfiles: Error checking profiles table:", profileError);
-      }
-      
-      const { data: profilesData, error } = await retryWithBackoff(
-        async () => {
-          const result = await supabase
-            .from("digger_profiles")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("is_primary", { ascending: false })
-            .order("created_at", { ascending: true });
-          
-          if (result.error) {
-            throw result.error;
-          }
-          return result;
-        },
-        { maxAttempts: 3, initialDelay: 1000 }
-      );
+      const [profileResult, profilesResult] = await Promise.all([
+        supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle(),
+        retryWithBackoff(
+          async () => {
+            const result = await supabase
+              .from("digger_profiles")
+              .select("*")
+              .eq("user_id", user.id)
+              .order("is_primary", { ascending: false })
+              .order("created_at", { ascending: true });
+            if (result.error) throw result.error;
+            return result;
+          },
+          { maxAttempts: 3, initialDelay: 1000 }
+        ),
+      ]);
 
+      const profilesData = profilesResult?.data;
+      const error = profilesResult?.error;
       if (error) throw error;
+
+      // Canonical photo: same for all profiles (profiles.avatar_url > auth > any digger profile)
+      const authPhoto = (user as any).user_metadata?.avatar_url || (user as any).user_metadata?.picture || null;
+      const primaryOrFirstPhoto = profilesData?.find((p) => p.profile_image_url)?.profile_image_url || null;
+      const photo = profileResult?.data?.avatar_url || authPhoto || primaryOrFirstPhoto || "";
+      setCanonicalPhotoUrl(photo);
 
       if (profilesData) {
         const profilesWithStats = await Promise.all(
@@ -271,14 +272,23 @@ export default function MyProfiles() {
     if (!user) return;
     setGiggerSaving(true);
     try {
+      const avatarValue = giggerPhotoUrl || null;
       const { error } = await supabase
         .from("profiles")
         .update({
           about_me: giggerAboutMe.trim() || null,
-          avatar_url: giggerPhotoUrl || null,
+          avatar_url: avatarValue,
         })
         .eq("id", user.id);
       if (error) throw error;
+      // Sync avatar to digger profiles and auth so digger/gigger stay in sync
+      await supabase.from("digger_profiles").update({ profile_image_url: avatarValue }).eq("user_id", user.id);
+      try {
+        const existingMetadata = user.user_metadata || {};
+        await supabase.auth.updateUser({ data: { ...existingMetadata, avatar_url: giggerPhotoUrl || "", picture: giggerPhotoUrl || "" } });
+      } catch (e) {
+        console.warn("Failed to sync auth avatar:", e);
+      }
       toast.success("Profile saved");
     } catch (error) {
       console.error("Error saving gigger profile:", error);
@@ -293,8 +303,13 @@ export default function MyProfiles() {
 
     try {
       await retryWithBackoff(async () => {
-        await supabase.from("digger_profiles").update({ is_primary: false }).eq("user_id", user.id);
-        const { error } = await supabase.from("digger_profiles").update({ is_primary: true }).eq("id", profileId);
+        // Get username from any profile (handle or business_name)
+        const { data: profiles } = await supabase.from("digger_profiles").select("handle, business_name").eq("user_id", user.id);
+        const username = profiles?.find((p) => p.handle || p.business_name)?.handle || profiles?.find((p) => p.business_name)?.business_name || null;
+        // Clear handle from all profiles; primary gets the handle for /digger/username URL
+        await supabase.from("digger_profiles").update({ is_primary: false, handle: null }).eq("user_id", user.id);
+        const updatePayload: { is_primary: boolean; handle: string | null } = { is_primary: true, handle: username };
+        const { error } = await supabase.from("digger_profiles").update(updatePayload).eq("id", profileId);
         if (error) throw error;
       });
 
@@ -612,29 +627,46 @@ export default function MyProfiles() {
                 key={profile.id} 
                 className="relative overflow-hidden hover-lift cursor-pointer group border-border/50 hover:border-primary/30 transition-all duration-300 animate-fade-in-up"
                 style={{ animationDelay: `${0.3 + index * 0.1}s` }}
-                onClick={() => navigate(`/digger/${profile.id}`)}
+                onClick={() => navigate(profile.handle ? `/digger/${profile.handle.toLowerCase()}` : `/digger/${profile.id}`)}
               >
-                {/* Primary Badge */}
-                {profile.is_primary && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <Badge className="bg-primary text-primary-foreground gap-1 shadow-md">
+                {/* Cover image - above profile content */}
+                <div 
+                  className="h-24 sm:h-28 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted"
+                  style={profile.cover_photo_url ? { backgroundImage: `url(${profile.cover_photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+                />
+                {/* Primary Star - clickable to set primary (only one primary at a time) */}
+                <div 
+                  className="absolute top-0 right-0 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {profile.is_primary ? (
+                    <Badge className="bg-primary text-primary-foreground gap-1 shadow-md pointer-events-none">
                       <Star className="h-3 w-3 fill-current" />
                       Primary
                     </Badge>
-                  </div>
-                )}
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSetPrimary(profile.id)}
+                      title="Set as primary profile"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-border bg-background/80 hover:bg-primary/10 hover:border-primary/30 transition-colors"
+                    >
+                      <Star className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                    </button>
+                  )}
+                </div>
 
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-                <CardHeader className="relative pb-2">
+                <CardHeader className="relative pb-2 -mt-10 sm:-mt-12">
                   <div className="flex items-start gap-4">
-                    {/* Avatar */}
-                    {profile.profile_image_url ? (
+                    {/* Avatar - overlaps cover, use canonical photo so all profiles show same image */}
+                    {canonicalPhotoUrl ? (
                       <img 
-                        src={profile.profile_image_url} 
+                        src={canonicalPhotoUrl} 
                         alt={getProfileDisplayName(profile)} 
-                        className="w-16 h-16 rounded-xl object-cover border-2 border-border shadow-sm" 
+                        className="w-16 h-16 rounded-xl object-cover border-2 border-background shadow-md" 
                       />
                     ) : (
                       <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border-2 border-border">
@@ -691,17 +723,6 @@ export default function MyProfiles() {
                       <Edit className="h-3.5 w-3.5" />
                       Edit
                     </Button>
-                    {!profile.is_primary && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleSetPrimary(profile.id)} 
-                        title="Set as primary"
-                        className="hover:bg-primary/10 hover:border-primary/30"
-                      >
-                        <Star className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
                     <Button 
                       variant="outline" 
                       size="sm" 

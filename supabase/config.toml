@@ -177,10 +177,13 @@ verify_jwt = false
 [functions.dnc-scrub-phone]
 verify_jwt = false
 
-[functions.initiate-ai-call]
+[functions.revoke-consent]
+verify_jwt = false
+
+[functions.enqueue-message-notification]
 verify_jwt = true
 
-[functions.revoke-consent]
+[functions.process-message-notification-queue]
 verify_jwt = false
 
 [functions.auto-generate-blog]

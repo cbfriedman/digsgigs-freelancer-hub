@@ -217,6 +217,10 @@ export default {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
         },
+        "typing-dot": {
+          "0%, 60%, 100%": { opacity: "0.4", transform: "scale(0.8)" },
+          "30%": { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -235,6 +239,7 @@ export default {
         pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         shimmer: "shimmer 2s linear infinite",
         "spin-slow": "spin-slow 3s linear infinite",
+        "typing-dot": "typing-dot 1.4s ease-in-out infinite both",
       },
 
       /* =======================================================================

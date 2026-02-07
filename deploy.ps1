@@ -25,6 +25,7 @@ $functions = @(
     "match-leads-to-diggers",
     "stripe-webhook-lead-purchase",
     "send-gig-confirmation",
+    "submit-contact-form",
     "elevenlabs-conversation-token"
 )
 

@@ -1362,6 +1362,7 @@ export type Database = {
           city: string | null
           company_name: string | null
           completion_rate: number | null
+          cover_photo_url: string | null
           country: string | null
           created_at: string
           custom_occupation_title: string | null
@@ -1445,6 +1446,7 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           completion_rate?: number | null
+          cover_photo_url?: string | null
           country?: string | null
           created_at?: string
           custom_occupation_title?: string | null
@@ -1528,6 +1530,7 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           completion_rate?: number | null
+          cover_photo_url?: string | null
           country?: string | null
           created_at?: string
           custom_occupation_title?: string | null

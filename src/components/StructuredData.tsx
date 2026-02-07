@@ -1,4 +1,5 @@
 // Structured Data Generators for Schema.org JSON-LD
+import { SUPPORT_EMAIL } from "@/config/siteContact";
 
 interface LocalBusinessData {
   name?: string;
@@ -73,7 +74,7 @@ export const generateOrganizationSchema = () => {
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "Customer Service",
-      "email": "support@digsandgigs.com",
+      "email": SUPPORT_EMAIL,
       "availableLanguage": "English"
     }
   };

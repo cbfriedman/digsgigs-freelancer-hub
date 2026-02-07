@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, 
   MoreHorizontal, ExternalLink, Briefcase, FileCheck, Hourglass, 
-  ChevronDown, X, Star, Pin, Trash2 
+  ChevronDown, X, Star, Pin, Trash2, EyeOff, BellOff, Ban 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -30,6 +30,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -51,7 +52,8 @@ import {
   MessageBubble, 
   ChatHeader, 
   DateSeparator,
-  EmptyConversation 
+  EmptyConversation,
+  TypingIndicator,
 } from "@/components/messages";
 
 // SECURITY: Input validation schema
@@ -86,6 +88,12 @@ interface Conversation {
   partner_avatar_url?: string | null;
   /** Number of messages in this conversation not read by current user (from get_my_conversations) */
   unread_count?: number;
+  /** User has muted this conversation */
+  muted?: boolean;
+  /** Current user has blocked the partner in this conversation */
+  is_blocked?: boolean;
+  /** Partner's user id (for unblock) */
+  partner_user_id?: string | null;
 }
 
 interface Message {
@@ -136,6 +144,10 @@ export default function Messages() {
   const selectedConversationRef = useRef<string | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingSendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [partnerTypingUntil, setPartnerTypingUntil] = useState<number | null>(null);
 
   const isAdmin = userRoles.includes("admin");
   const { onlineDiggers } = useDiggerPresence();
@@ -307,6 +319,49 @@ export default function Messages() {
     toast({ title: "Conversation restored" });
   };
 
+  const handleMarkAsUnread = async (conversationId: string) => {
+    try {
+      await supabase.rpc("mark_conversation_messages_unread" as any, {
+        _conversation_id: conversationId,
+      });
+      await loadConversations();
+      toast({ title: "Marked as unread" });
+    } catch (e: any) {
+      toast({ title: "Failed to mark as unread", description: e?.message, variant: "destructive" });
+    }
+  };
+
+  const handleToggleMute = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase.rpc("toggle_conversation_mute" as any, {
+        _conversation_id: conversationId,
+      });
+      if (error) throw error;
+      await loadConversations();
+      toast({ title: data === true ? "Conversation muted" : "Conversation unmuted" });
+    } catch (e: any) {
+      toast({ title: "Failed to update mute", description: e?.message, variant: "destructive" });
+    }
+  };
+
+  const handleBlock = async (conv: Conversation) => {
+    try {
+      if (conv.is_blocked && conv.partner_user_id) {
+        await supabase.rpc("unblock_user" as any, { _blocked_user_id: conv.partner_user_id });
+        await loadConversations();
+        toast({ title: "User unblocked" });
+      } else {
+        await supabase.rpc("block_conversation_partner" as any, {
+          _conversation_id: conv.id,
+        });
+        await loadConversations();
+        toast({ title: "User blocked" });
+      }
+    } catch (e: any) {
+      toast({ title: "Failed to update block", description: e?.message, variant: "destructive" });
+    }
+  };
+
   // On mobile, show conversation list when no conversation selected
   const showConversationList = !isMobile || !selectedConversation;
   const showChatArea = !isMobile || selectedConversation;
@@ -456,6 +511,29 @@ export default function Messages() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Debounced broadcast "typing" when user types
+  useEffect(() => {
+    if (!selectedConversation || !currentUser?.id || newMessage.trim() === "") return;
+    if (typingSendTimeoutRef.current) clearTimeout(typingSendTimeoutRef.current);
+    typingSendTimeoutRef.current = setTimeout(() => {
+      const ch = messagesChannelRef.current;
+      if (ch) {
+        ch.send({
+          type: "broadcast",
+          event: "typing",
+          payload: { user_id: currentUser.id },
+        });
+      }
+      typingSendTimeoutRef.current = null;
+    }, 300);
+    return () => {
+      if (typingSendTimeoutRef.current) {
+        clearTimeout(typingSendTimeoutRef.current);
+        typingSendTimeoutRef.current = null;
+      }
+    };
+  }, [newMessage, selectedConversation, currentUser?.id]);
+
   const loadPartnerProxyEmail = async (conversationId: string) => {
     const conv = conversations.find(c => c.id === conversationId);
     if (!conv || !currentUser) return;
@@ -523,6 +601,9 @@ export default function Messages() {
         last_message_content?: string | null;
         last_message_sender_id?: string | null;
         unread_count?: number;
+        muted?: boolean;
+        is_blocked?: boolean;
+        partner_user_id?: string | null;
       }>) || [];
 
       const list: Conversation[] = raw.map((c) => {
@@ -550,6 +631,9 @@ export default function Messages() {
           last_message_sender_id: c.last_message_sender_id ?? null,
           partner_avatar_url: partnerAvatarUrl,
           unread_count: typeof c.unread_count === "number" ? c.unread_count : 0,
+          muted: c.muted ?? false,
+          is_blocked: c.is_blocked ?? false,
+          partner_user_id: c.partner_user_id ?? null,
         };
       });
 
@@ -627,7 +711,14 @@ export default function Messages() {
   const subscribeToMessages = async (
     conversationId: string
   ): Promise<() => void> => {
-    // Sync JWT to Realtime so RLS sees current user (fixes admin not receiving user messages in real time)
+    const uid = currentUserIdRef.current;
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    setPartnerTypingUntil(null);
+    messagesChannelRef.current = null;
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -668,9 +759,32 @@ export default function Messages() {
           );
         }
       )
+      .on(
+        "broadcast",
+        { event: "typing" },
+        (payload) => {
+          const userId = (payload.payload as { user_id?: string })?.user_id;
+          if (userId && userId !== uid) {
+            setPartnerTypingUntil(Date.now() + 3000);
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => {
+              setPartnerTypingUntil(null);
+              typingTimeoutRef.current = null;
+            }, 3000);
+          }
+        }
+      )
       .subscribe();
 
+    messagesChannelRef.current = channel;
+
     return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      setPartnerTypingUntil(null);
+      messagesChannelRef.current = null;
       supabase.removeChannel(channel);
     };
   };
@@ -693,7 +807,7 @@ export default function Messages() {
         return;
       }
 
-      const { error } = await supabase.rpc("send_message" as any, {
+      const { data: messageId, error } = await supabase.rpc("send_message" as any, {
         _conversation_id: selectedConversation,
         _content: validated.content,
       });
@@ -702,6 +816,14 @@ export default function Messages() {
       setNewMessage("");
       // Reload messages so the sent message appears immediately and persists after refresh
       await loadMessages(selectedConversation);
+      // Notify recipient by email (missed-message notification); fire-and-forget
+      if (messageId) {
+        supabase.functions
+          .invoke("enqueue-message-notification", {
+            body: { conversation_id: selectedConversation, message_id: messageId },
+          })
+          .catch(() => {});
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
@@ -1143,10 +1265,20 @@ export default function Messages() {
                                   <DropdownMenuItem
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      toggleStarred(conv.id);
+                                      window.open(`${window.location.origin}/messages?conversation=${conv.id}`, "_blank");
                                     }}
                                   >
-                                    {isStarred ? "Remove from Favorites" : "Add to Favorites"}
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Open in new window
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMarkAsUnread(conv.id);
+                                    }}
+                                  >
+                                    <EyeOff className="h-4 w-4 mr-2" />
+                                    Mark as unread
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={(e) => {
@@ -1154,27 +1286,49 @@ export default function Messages() {
                                       togglePinned(conv.id);
                                     }}
                                   >
-                                    {isPinned ? "Unpin from top" : "Pin to top"}
+                                    <Pin className="h-4 w-4 mr-2" />
+                                    {isPinned ? "Unpin" : "Pin"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleMute(conv.id);
+                                    }}
+                                  >
+                                    <BellOff className="h-4 w-4 mr-2" />
+                                    {conv.muted ? "Unmute" : "Mute"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleBlock(conv);
+                                    }}
+                                  >
+                                    <Ban className="h-4 w-4 mr-2" />
+                                    {conv.is_blocked ? "Unblock" : "Block"}
                                   </DropdownMenuItem>
                                   {hiddenIds.includes(conv.id) ? (
-                                      <DropdownMenuItem
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          unhideConversation(conv.id);
-                                        }}
-                                      >
-                                        Unhide
-                                      </DropdownMenuItem>
-                                    ) : (
-                                      <DropdownMenuItem
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          hideConversation(conv.id);
-                                        }}
-                                      >
-                                        Hide
-                                      </DropdownMenuItem>
-                                    )}
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        unhideConversation(conv.id);
+                                      }}
+                                    >
+                                      <EyeOff className="h-4 w-4 mr-2" />
+                                      Unhide
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        hideConversation(conv.id);
+                                      }}
+                                    >
+                                      <EyeOff className="h-4 w-4 mr-2" />
+                                      Hide
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     className="text-destructive focus:text-destructive"
                                     onClick={(e) => {
@@ -1183,7 +1337,7 @@ export default function Messages() {
                                     }}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete chat
+                                    Delete
                                   </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -1247,6 +1401,14 @@ export default function Messages() {
                             </div>
                           </div>
                         ))
+                      )}
+                      {partnerTypingUntil != null && (
+                        <div className="pt-1">
+                          <TypingIndicator
+                            partnerName={partnerName}
+                            partnerAvatarUrl={selectedConv?.partner_avatar_url}
+                          />
+                        </div>
                       )}
                       <div ref={messagesEndRef} />
                     </div>
@@ -1369,10 +1531,14 @@ export default function Messages() {
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()} title="More options"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleStarred(conv.id); }}>{isStarred ? "Remove from Favorites" : "Add to Favorites"}</DropdownMenuItem>
-                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePinned(conv.id); }}>{isPinned ? "Unpin from top" : "Pin to top"}</DropdownMenuItem>
-                                      {hiddenIds.includes(conv.id) ? <DropdownMenuItem onClick={(e) => { e.stopPropagation(); unhideConversation(conv.id); }}>Unhide</DropdownMenuItem> : <DropdownMenuItem onClick={(e) => { e.stopPropagation(); hideConversation(conv.id); }}>Hide</DropdownMenuItem>}
-                                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConversationId(conv.id); }}><Trash2 className="h-4 w-4 mr-2" />Delete chat</DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${window.location.origin}/messages?conversation=${conv.id}`, "_blank"); }}><ExternalLink className="h-4 w-4 mr-2" />Open in new window</DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkAsUnread(conv.id); }}><EyeOff className="h-4 w-4 mr-2" />Mark as unread</DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePinned(conv.id); }}><Pin className="h-4 w-4 mr-2" />{isPinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggleMute(conv.id); }}><BellOff className="h-4 w-4 mr-2" />{conv.muted ? "Unmute" : "Mute"}</DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleBlock(conv); }}><Ban className="h-4 w-4 mr-2" />{conv.is_blocked ? "Unblock" : "Block"}</DropdownMenuItem>
+                                      {hiddenIds.includes(conv.id) ? <DropdownMenuItem onClick={(e) => { e.stopPropagation(); unhideConversation(conv.id); }}><EyeOff className="h-4 w-4 mr-2" />Unhide</DropdownMenuItem> : <DropdownMenuItem onClick={(e) => { e.stopPropagation(); hideConversation(conv.id); }}><EyeOff className="h-4 w-4 mr-2" />Hide</DropdownMenuItem>}
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConversationId(conv.id); }}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </div>
@@ -1403,6 +1569,14 @@ export default function Messages() {
                               <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} />)}</div>
                             </div>
                           ))}
+                          {partnerTypingUntil != null && (
+                            <div className="pt-1">
+                              <TypingIndicator
+                                partnerName={partnerName}
+                                partnerAvatarUrl={selectedConv?.partner_avatar_url}
+                              />
+                            </div>
+                          )}
                           <div ref={messagesEndRef} />
                         </div>
                       </ScrollArea>

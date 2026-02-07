@@ -54,18 +54,14 @@ export const HomepageNavbar = () => {
     setUserPhotoUrl(authPhoto);
     const fetchUserPhoto = async () => {
       try {
-        if (!authPhoto && userRoles?.includes("digger")) {
-          const { data } = await supabase
-            .from("digger_profiles")
-            .select("profile_image_url")
-            .eq("user_id", user.id)
-            .not("profile_image_url", "is", null)
-            .limit(1)
-            .maybeSingle();
-          if (data?.profile_image_url) {
-            setUserPhotoUrl(data.profile_image_url);
-          }
-        }
+        const [profileResult, diggerResult] = await Promise.all([
+          supabase.from('profiles').select('avatar_url').eq('id', user.id).maybeSingle(),
+          userRoles?.includes('digger')
+            ? supabase.from('digger_profiles').select('profile_image_url').eq('user_id', user.id).not('profile_image_url', 'is', null).limit(1).maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]);
+        const syncedPhoto = authPhoto || profileResult.data?.avatar_url || diggerResult.data?.profile_image_url || null;
+        setUserPhotoUrl(syncedPhoto);
       } catch {
         // Silently fail
       }

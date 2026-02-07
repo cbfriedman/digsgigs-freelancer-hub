@@ -27,9 +27,12 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { useCart } from "@/contexts/CartContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
+import { useRecentConversations } from "@/hooks/useRecentConversations";
+import { useRecentGigs } from "@/hooks/useRecentGigs";
 import { usePlatformCounts } from "@/hooks/usePlatformCounts";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +41,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -76,15 +85,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [scrolled, setScrolled] = useState(false);
   const { user, userRoles, activeRole, switchRole, signOut } = useAuth();
   const { cartCount } = useCart();
-  const { unreadCount: notificationUnreadCount } = useNotifications();
+  const { unreadCount: notificationUnreadCount, notifications } = useNotifications();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const { conversations: recentConversations, loading: recentConversationsLoading } = useRecentConversations(user ?? null);
+  const { gigs: recentGigs, loading: recentGigsLoading } = useRecentGigs(user?.id);
   const { hasEnoughDiggers } = usePlatformCounts();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
 
-  // Fetch user profile photo and display name (header avatar = auth photo when available)
+  // Fetch user profile photo and display name (header avatar synced with profile photo)
   useEffect(() => {
     if (!user?.id) {
       setUserPhotoUrl(null);
@@ -92,37 +103,29 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
       return;
     }
     const authPhoto = (user as any).user_metadata?.avatar_url || (user as any).user_metadata?.picture || null;
-    setUserPhotoUrl(authPhoto);
+    const authPhotoValid = authPhoto && typeof authPhoto === 'string' && authPhoto.trim().length > 0;
+    setUserPhotoUrl(authPhotoValid ? authPhoto : null);
     const fetchUserProfile = async () => {
       try {
-        // Use auth photo for header; fallback to digger_profiles only if no auth photo
-        if (!authPhoto && userRoles.includes('digger')) {
-          const { data: diggerProfile } = await supabase
-            .from('digger_profiles')
-            .select('profile_image_url')
-            .eq('user_id', user.id)
-            .not('profile_image_url', 'is', null)
-            .limit(1)
-            .maybeSingle();
-          if (diggerProfile?.profile_image_url) {
-            setUserPhotoUrl(diggerProfile.profile_image_url);
-          }
-        }
-        // Get display name from profiles
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (profile?.full_name) {
-          setUserDisplayName(profile.full_name);
+        // Fetch profiles.avatar_url and digger_profiles.profile_image_url (always try both)
+        const [profileResult, diggerResult] = await Promise.all([
+          supabase.from('profiles').select('avatar_url, full_name').eq('id', user.id).maybeSingle(),
+          supabase.from('digger_profiles').select('profile_image_url').eq('user_id', user.id).not('profile_image_url', 'is', null).limit(1).maybeSingle(),
+        ]);
+        const profilesAvatar = profileResult.data?.avatar_url;
+        const diggerPhoto = diggerResult.data?.profile_image_url;
+        const toUrl = (v: unknown) => (v && typeof v === 'string' && v.trim().length > 0 ? v.trim() : null);
+        const syncedPhoto = toUrl(authPhoto) || toUrl(profilesAvatar) || toUrl(diggerPhoto) || null;
+        setUserPhotoUrl(syncedPhoto);
+        if (profileResult.data?.full_name) {
+          setUserDisplayName(profileResult.data.full_name);
         }
       } catch {
-        // Silently fail - fallback to initials
+        if (authPhotoValid) setUserPhotoUrl(authPhoto);
       }
     };
     fetchUserProfile();
-  }, [user?.id, user?.user_metadata, userRoles]);
+  }, [user?.id, user?.user_metadata]);
 
   // Scroll detection for navbar styling
   useEffect(() => {
@@ -326,46 +329,186 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  {/* Messages — only when signed in; unread count on top of icon */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative h-9 w-9 shrink-0 overflow-visible text-muted-foreground hover:text-foreground"
-                    onClick={() => navigate("/messages")}
-                    title={unreadMessagesCount > 0 ? `${unreadMessagesCount} unread messages` : "Messages"}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    {unreadMessagesCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center ring-2 ring-background">
-                        {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
-                      </span>
-                    )}
-                  </Button>
-                  {/* Notifications — only when signed in */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
-                    onClick={() => navigate("/notifications")}
-                    title="Notifications"
-                  >
-                    <BellRing className="h-4 w-4" />
-                    {notificationUnreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-                        {notificationUnreadCount > 9 ? "9+" : notificationUnreadCount}
-                      </span>
-                    )}
-                  </Button>
-                  {/* Project folders (My Gigs) — only when signed in */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
-                    onClick={() => navigate("/my-gigs")}
-                    title="My projects"
-                  >
-                    <FolderOpen className="h-4 w-4" />
-                  </Button>
+                  {/* Messages — only when signed in; hover shows recent messages dropdown */}
+                  <HoverCard openDelay={300} closeDelay={150}>
+                    <HoverCardTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="relative h-9 w-9 shrink-0 overflow-visible text-muted-foreground hover:text-foreground"
+                        onClick={() => navigate("/messages")}
+                        title={unreadMessagesCount > 0 ? `${unreadMessagesCount} unread messages` : "Messages"}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        {unreadMessagesCount > 0 && (
+                          <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center ring-2 ring-background">
+                            {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                          </span>
+                        )}
+                      </Button>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                      <div className="flex items-center justify-between px-4 py-3 border-b">
+                        <span className="font-semibold text-sm">Recent Messages</span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); navigate("/messages"); }}
+                          className="text-primary hover:underline text-xs font-medium"
+                        >
+                          View All
+                        </button>
+                      </div>
+                      <ScrollArea className="h-[280px]">
+                        {recentConversationsLoading ? (
+                          <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
+                        ) : recentConversations.length === 0 ? (
+                          <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No conversations yet</div>
+                        ) : (
+                          <ul className="py-1">
+                            {recentConversations.map((conv) => {
+                              const snippet = conv.lastMessageContent
+                                ? (conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent.length > 40 ? conv.lastMessageContent.slice(0, 40) + "…" : conv.lastMessageContent)
+                                : "No messages yet";
+                              const isToday = (d: Date) => {
+                                const today = new Date();
+                                return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+                              };
+                              const d = new Date(conv.updatedAt);
+                              const timeLabel = isToday(d)
+                                ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "h:mm a"))
+                                : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
+                              return (
+                                <li key={conv.id}>
+                                  <button
+                                    type="button"
+                                    className="w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                                    onClick={(e) => { e.preventDefault(); navigate(`/messages?conversation=${conv.id}`); }}
+                                  >
+                                    <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/50">
+                                      <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" className="object-cover" />
+                                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                                        {conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="font-medium text-sm truncate">{conv.partnerDisplayName}</span>
+                                        <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground truncate mt-0.5">{snippet}</p>
+                                    </div>
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </ScrollArea>
+                    </HoverCardContent>
+                  </HoverCard>
+                  {/* Notifications — only when signed in; hover shows recent */}
+                  <HoverCard openDelay={300} closeDelay={150}>
+                    <HoverCardTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="relative h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => navigate("/notifications")}
+                        title="Notifications"
+                      >
+                        <BellRing className="h-4 w-4" />
+                        {notificationUnreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+                            {notificationUnreadCount > 9 ? "9+" : notificationUnreadCount}
+                          </span>
+                        )}
+                      </Button>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                      <div className="flex items-center justify-between px-4 py-3 border-b">
+                        <span className="font-semibold text-sm">Recent Notifications</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                      </div>
+                      <ScrollArea className="h-[280px]">
+                        {notifications.length === 0 ? (
+                          <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No notifications yet</div>
+                        ) : (
+                          <ul className="py-1">
+                            {notifications.slice(0, 6).map((n) => {
+                              const d = new Date(n.created_at);
+                              const isToday = (x: Date) => { const t = new Date(); return x.getDate() === t.getDate() && x.getMonth() === t.getMonth() && x.getFullYear() === t.getFullYear(); };
+                              const timeLabel = isToday(d) ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "h:mm a")) : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
+                              const msg = (n.message || "").length > 50 ? (n.message || "").slice(0, 50) + "…" : (n.message || "—");
+                              return (
+                                <li key={n.id}>
+                                  <button
+                                    type="button"
+                                    className={cn("w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors", !n.read && "bg-primary/5")}
+                                    onClick={(e) => { e.preventDefault(); navigate(n.link || "/notifications"); }}
+                                  >
+                                    <div className="flex items-center justify-between w-full gap-2">
+                                      <span className={cn("font-medium text-sm truncate flex-1", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
+                                      <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate w-full">{msg}</p>
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </ScrollArea>
+                    </HoverCardContent>
+                  </HoverCard>
+                  {/* Project folders (My Gigs) — only when signed in; hover shows recent */}
+                  <HoverCard openDelay={300} closeDelay={150}>
+                    <HoverCardTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => navigate("/my-gigs")}
+                        title="My projects"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                      </Button>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                      <div className="flex items-center justify-between px-4 py-3 border-b">
+                        <span className="font-semibold text-sm">My Projects</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                      </div>
+                      <ScrollArea className="h-[280px]">
+                        {recentGigsLoading ? (
+                          <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
+                        ) : recentGigs.length === 0 ? (
+                          <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No projects yet</div>
+                        ) : (
+                          <ul className="py-1">
+                            {recentGigs.map((g) => {
+                              const d = new Date(g.created_at);
+                              const timeLabel = format(d, "MMM d, yyyy");
+                              return (
+                                <li key={g.id}>
+                                  <button
+                                    type="button"
+                                    className="w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                                    onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}
+                                  >
+                                    <div className="flex items-center justify-between w-full gap-2">
+                                      <span className="font-medium text-sm truncate flex-1">{g.title || "Untitled project"}</span>
+                                      <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0">{g.status}</Badge>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">{timeLabel}</p>
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </ScrollArea>
+                    </HoverCardContent>
+                  </HoverCard>
                   {/* User Menu (avatar dropdown: Dark Mode, Role, Dashboard, Sign Out) */}
                   <DropdownMenu modal={true}>
                     <DropdownMenuTrigger asChild>
@@ -471,51 +614,163 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
             {/* Mobile Navigation */}
             <div className="flex md:hidden items-center gap-1">
-              {/* Messages - Mobile (only when signed in); unread count on top of icon */}
+              {/* Messages - Mobile (only when signed in); tap/hover shows recent messages */}
               {user && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-9 w-9 overflow-visible text-muted-foreground hover:text-foreground"
-                  onClick={() => navigate("/messages")}
-                  title={unreadMessagesCount > 0 ? `${unreadMessagesCount} unread messages` : "Messages"}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  {unreadMessagesCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center ring-2 ring-background">
-                      {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
-                    </span>
-                  )}
-                </Button>
+                <HoverCard openDelay={200} closeDelay={150}>
+                  <HoverCardTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative h-9 w-9 overflow-visible text-muted-foreground hover:text-foreground"
+                      onClick={() => navigate("/messages")}
+                      title={unreadMessagesCount > 0 ? `${unreadMessagesCount} unread messages` : "Messages"}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      {unreadMessagesCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center ring-2 ring-background">
+                          {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                        </span>
+                      )}
+                    </Button>
+                  </HoverCardTrigger>
+                  <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                    <div className="flex items-center justify-between px-4 py-3 border-b">
+                      <span className="font-semibold text-sm">Recent Messages</span>
+                      <button type="button" onClick={(e) => { e.preventDefault(); navigate("/messages"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                    </div>
+                    <ScrollArea className="h-[280px]">
+                      {recentConversationsLoading ? (
+                        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
+                      ) : recentConversations.length === 0 ? (
+                        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No conversations yet</div>
+                      ) : (
+                        <ul className="py-1">
+                          {recentConversations.map((conv) => {
+                            const snippet = conv.lastMessageContent ? (conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent.length > 40 ? conv.lastMessageContent.slice(0, 40) + "…" : conv.lastMessageContent) : "No messages yet";
+                            const d = new Date(conv.updatedAt);
+                            const isToday = (x: Date) => { const t = new Date(); return x.getDate() === t.getDate() && x.getMonth() === t.getMonth() && x.getFullYear() === t.getFullYear(); };
+                            const timeLabel = isToday(d) ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "h:mm a")) : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
+                            return (
+                              <li key={conv.id}>
+                                <button type="button" className="w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-muted/60" onClick={(e) => { e.preventDefault(); navigate(`/messages?conversation=${conv.id}`); }}>
+                                  <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/50">
+                                    <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" className="object-cover" />
+                                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">{conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="font-medium text-sm truncate">{conv.partnerDisplayName}</span>
+                                      <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate mt-0.5">{snippet}</p>
+                                  </div>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </ScrollArea>
+                  </HoverCardContent>
+                </HoverCard>
               )}
-              {/* Notifications - Mobile (only when signed in) */}
+              {/* Notifications - Mobile (only when signed in); tap/hover shows recent */}
               {user && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
-                  onClick={() => navigate("/notifications")}
-                  title="Notifications"
-                >
-                  <BellRing className="h-4 w-4" />
-                  {notificationUnreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-                      {notificationUnreadCount > 9 ? "9+" : notificationUnreadCount}
-                    </span>
-                  )}
-                </Button>
+                <HoverCard openDelay={200} closeDelay={150}>
+                  <HoverCardTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
+                      onClick={() => navigate("/notifications")}
+                      title="Notifications"
+                    >
+                      <BellRing className="h-4 w-4" />
+                      {notificationUnreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+                          {notificationUnreadCount > 9 ? "9+" : notificationUnreadCount}
+                        </span>
+                      )}
+                    </Button>
+                  </HoverCardTrigger>
+                  <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                    <div className="flex items-center justify-between px-4 py-3 border-b">
+                      <span className="font-semibold text-sm">Recent Notifications</span>
+                      <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                    </div>
+                    <ScrollArea className="h-[280px]">
+                      {notifications.length === 0 ? (
+                        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No notifications yet</div>
+                      ) : (
+                        <ul className="py-1">
+                          {notifications.slice(0, 6).map((n) => {
+                            const d = new Date(n.created_at);
+                            const isToday = (x: Date) => { const t = new Date(); return x.getDate() === t.getDate() && x.getMonth() === t.getMonth() && x.getFullYear() === t.getFullYear(); };
+                            const timeLabel = isToday(d) ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "h:mm a")) : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
+                            const msg = (n.message || "").length > 50 ? (n.message || "").slice(0, 50) + "…" : (n.message || "—");
+                            return (
+                              <li key={n.id}>
+                                <button type="button" className={cn("w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60", !n.read && "bg-primary/5")} onClick={(e) => { e.preventDefault(); navigate(n.link || "/notifications"); }}>
+                                  <div className="flex items-center justify-between w-full gap-2">
+                                    <span className={cn("font-medium text-sm truncate flex-1", !n.read && "font-semibold")}>{n.title || "Notification"}</span>
+                                    <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground truncate w-full">{msg}</p>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </ScrollArea>
+                  </HoverCardContent>
+                </HoverCard>
               )}
-              {/* Project folders - Mobile (only when signed in) */}
+              {/* Project folders - Mobile (only when signed in); tap/hover shows recent */}
               {user && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-muted-foreground hover:text-foreground"
-                  onClick={() => navigate("/my-gigs")}
-                  title="My projects"
-                >
-                  <FolderOpen className="h-4 w-4" />
-                </Button>
+                <HoverCard openDelay={200} closeDelay={150}>
+                  <HoverCardTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                      onClick={() => navigate("/my-gigs")}
+                      title="My projects"
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                    </Button>
+                  </HoverCardTrigger>
+                  <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                    <div className="flex items-center justify-between px-4 py-3 border-b">
+                      <span className="font-semibold text-sm">My Projects</span>
+                      <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                    </div>
+                    <ScrollArea className="h-[280px]">
+                      {recentGigsLoading ? (
+                        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
+                      ) : recentGigs.length === 0 ? (
+                        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No projects yet</div>
+                      ) : (
+                        <ul className="py-1">
+                          {recentGigs.map((g) => {
+                            const timeLabel = format(new Date(g.created_at), "MMM d, yyyy");
+                            return (
+                              <li key={g.id}>
+                                <button type="button" className="w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}>
+                                  <div className="flex items-center justify-between w-full gap-2">
+                                    <span className="font-medium text-sm truncate flex-1">{g.title || "Untitled project"}</span>
+                                    <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0">{g.status}</Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">{timeLabel}</p>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </ScrollArea>
+                  </HoverCardContent>
+                </HoverCard>
               )}
               {/* Cart - Mobile */}
               <Button

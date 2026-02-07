@@ -4,9 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Target, Loader2, MapPin, X, Sparkles, ShieldAlert } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Target, Loader2, MapPin, X, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { toast } from "sonner";
@@ -108,10 +106,12 @@ export const CategoryBrowserWithDescription = () => {
   const [serviceRadiusCenter, setServiceRadiusCenter] = useState("");
   const [serviceRadiusMiles, setServiceRadiusMiles] = useState<number>(25);
   const [country, setCountry] = useState("");
-  const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const [selectedState, setSelectedState] = useState<string>("");
   const [city, setCity] = useState("");
   const [isEnhancingDescription, setIsEnhancingDescription] = useState(false);
   const [userPhone, setUserPhone] = useState<string | null>(null);
+  const [formStep, setFormStep] = useState<1 | 2>(2); // Step 1 (location) removed - go directly to professions
+  const [isCreatingAdditionalProfile, setIsCreatingAdditionalProfile] = useState(false);
 
   // Fetch phone from profiles table on mount
   useEffect(() => {
@@ -131,8 +131,13 @@ export const CategoryBrowserWithDescription = () => {
 
   // Reset state when country changes
   useEffect(() => {
-    setSelectedStates([]);
+    setSelectedState("");
   }, [country]);
+
+  // When editing existing profile, skip to step 2
+  useEffect(() => {
+    if (existingProfileId) setFormStep(2);
+  }, [existingProfileId]);
 
   // Load existing profile's location when editing
   useEffect(() => {
@@ -152,8 +157,8 @@ export const CategoryBrowserWithDescription = () => {
         const parts = data.location.split(',').map((p: string) => p.trim()).filter(Boolean);
         const regions = data.country ? getRegionsForCountry(data.country) : [];
         if (parts.length >= 2 && regions.length > 0) {
-          const possibleStates = parts.slice(1, -1);
-          setSelectedStates(possibleStates.filter((s: string) => regions.includes(s)));
+          const possibleStates = parts.slice(1, -1).filter((s: string) => regions.includes(s));
+          setSelectedState(possibleStates[0] || '');
         }
         const firstPart = parts[0];
         if (firstPart && firstPart !== data.country && !regions.includes(firstPart)) {
@@ -164,7 +169,7 @@ export const CategoryBrowserWithDescription = () => {
     load();
   }, [existingProfileId, user]);
 
-  // When creating an additional profile (no existingProfileId), pre-fill location from user's first digger profile
+  // When creating an additional profile (no existingProfileId), pre-fill location and skip country step
   useEffect(() => {
     if (existingProfileId || !user || country) return;
     const loadFirstProfile = async () => {
@@ -175,6 +180,7 @@ export const CategoryBrowserWithDescription = () => {
         .order('created_at', { ascending: true })
         .limit(1);
       if (error || !profiles?.length) return;
+      setIsCreatingAdditionalProfile(true);
       const p = profiles[0];
       setCountry(p.country || '');
       setServiceZipCodes(Array.isArray(p.service_zip_codes) ? p.service_zip_codes.join(', ') : (p.service_zip_codes || ''));
@@ -184,14 +190,16 @@ export const CategoryBrowserWithDescription = () => {
         const parts = p.location.split(',').map((x: string) => x.trim()).filter(Boolean);
         const regions = p.country ? getRegionsForCountry(p.country) : [];
         if (parts.length >= 2 && regions.length > 0) {
-          const possibleStates = parts.slice(1, -1);
-          setSelectedStates(possibleStates.filter((s: string) => regions.includes(s)));
+          const possibleStates = parts.slice(1, -1).filter((s: string) => regions.includes(s));
+          setSelectedState(possibleStates[0] || '');
         }
         const firstPart = parts[0];
         if (firstPart && firstPart !== p.country && !regions.includes(firstPart)) {
           setCity(firstPart);
         }
       }
+      // Skip location step - user doesn't need to select country; use inherited from first profile
+      setFormStep(2);
     };
     loadFirstProfile();
   }, [user, existingProfileId]);
@@ -338,9 +346,11 @@ export const CategoryBrowserWithDescription = () => {
       <CardHeader className="p-4 sm:p-6">
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
-          <CardTitle className="text-lg sm:text-xl">Browse Categories</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">
+            Browse Categories
+          </CardTitle>
         </div>
-        {selectedProfessionIds.length > 0 && !existingProfileId && (
+        {selectedProfessionIds.length > 0 && !existingProfileId && formStep === 2 && (
           <div className="mt-2 p-3 sm:p-3 bg-primary/10 border border-primary/20 rounded-lg">
             <p className="text-sm sm:text-sm font-medium text-primary break-words">
               Creating Profile: <span className="font-bold">{profileName || 'Enter name below'}</span>
@@ -355,6 +365,9 @@ export const CategoryBrowserWithDescription = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+        {/* Professions, keywords, etc. (location step removed) */}
+        {((existingProfileId) || formStep === 2) && (
+        <>
         {/* Profession Selection */}
         <div className="space-y-3">
           <Label>Select Your Professions *</Label>
@@ -405,7 +418,7 @@ export const CategoryBrowserWithDescription = () => {
           </div>
         )}
 
-        {/* Save and Continue Button - Always visible when professions selected */}
+        {/* Save and Continue / Save and Later Buttons - Always visible when professions selected */}
         {selectedProfessionIds.length > 0 && !suggestedKeywords.length && (
           <div className="space-y-4">
             {description && (
@@ -417,24 +430,26 @@ export const CategoryBrowserWithDescription = () => {
               </p>
             </div>
             )}
-            <Button 
-              className="w-full min-h-[44px] sm:min-h-0 touch-manipulation" 
-              size="lg"
-              onClick={handleContinue}
-              disabled={isProcessing || !description.trim()}
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing your specialties...
-                </>
-              ) : (
-                'Save and Continue'
-              )}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                className="flex-1 min-h-[44px] sm:min-h-0 touch-manipulation" 
+                size="lg"
+                onClick={handleContinue}
+                disabled={isProcessing || !description.trim()}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Save and Continue'
+                )}
+              </Button>
+            </div>
             {!description.trim() && (
               <p className="text-xs text-muted-foreground text-center">
-                Please describe your specialties above to continue
+                Add a description for better keyword suggestions.
               </p>
             )}
           </div>
@@ -516,13 +531,6 @@ export const CategoryBrowserWithDescription = () => {
             {/* Location Preferences Section */}
             <Card className="p-3 sm:p-4 border-2 border-primary/20 bg-primary/5 mt-4 overflow-x-hidden">
               <div className="space-y-4">
-                <Alert className="border-amber-500/50 bg-amber-500/10">
-                  <ShieldAlert className="h-4 w-4 text-amber-600" />
-                  <AlertTitle className="text-amber-800 dark:text-amber-200">Enter accurate location</AlertTitle>
-                  <AlertDescription>
-                    Please enter your <strong>correct country and location</strong>. This information may be used for identity or business verification later. Inaccurate details can delay or affect verification.
-                  </AlertDescription>
-                </Alert>
                 <div>
                   <Label className="text-base font-semibold flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
@@ -564,59 +572,20 @@ export const CategoryBrowserWithDescription = () => {
                 {/* State/Province - Required (when country has regions and not "All Countries") */}
                 {country && country !== "All Countries" && getRegionsForCountry(country).length > 0 && (
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-1">
-                      {getRegionLabel(country)} <span className="text-destructive font-semibold">*</span>
-                      <span className="text-xs text-destructive">(required)</span>
+                    <Label htmlFor="state_browser" className="flex items-center gap-1">
+                      {getRegionLabel(country)} / Territory <span className="text-destructive font-semibold">*</span>
                     </Label>
-                    <div className={`rounded-md border p-3 max-h-48 overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch ${selectedStates.length === 0 ? 'border-destructive/50' : 'border-input'}`}>
-                      {/* All option */}
-                      <div className="flex items-center space-x-2 pb-2 border-b border-border mb-2 min-h-[44px] sm:min-h-0 touch-manipulation">
-                        <Checkbox
-                          id="state_all"
-                          checked={selectedStates.length === getRegionsForCountry(country).length}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedStates(getRegionsForCountry(country));
-                            } else {
-                              setSelectedStates([]);
-                            }
-                          }}
-                          className="h-5 w-5 sm:h-4 sm:w-4"
-                        />
-                        <Label htmlFor="state_all" className="cursor-pointer font-medium flex-1 py-2 sm:py-0">
-                          All {getRegionLabel(country)}s
-                        </Label>
-                      </div>
-                      {/* Individual state options */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {getRegionsForCountry(country).map((region) => (
-                          <div key={region} className="flex items-center space-x-2 min-h-[44px] sm:min-h-0 touch-manipulation">
-                            <Checkbox
-                              id={`state_${region}`}
-                              checked={selectedStates.includes(region)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedStates(prev => [...prev, region]);
-                                } else {
-                                  setSelectedStates(prev => prev.filter(s => s !== region));
-                                }
-                              }}
-                              className="h-5 w-5 sm:h-4 sm:w-4"
-                            />
-                            <Label htmlFor={`state_${region}`} className="cursor-pointer text-sm font-normal flex-1 py-2 sm:py-0">
-                              {region}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedStates.length === 0 
-                        ? 'Select at least one state/province' 
-                        : selectedStates.length === getRegionsForCountry(country).length 
-                          ? 'All states selected' 
-                          : `${selectedStates.length} selected`}
-                    </p>
+                    <select
+                      id="state_browser"
+                      value={selectedState}
+                      onChange={(e) => setSelectedState(e.target.value)}
+                      className={`flex h-12 sm:h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background touch-manipulation ${!selectedState ? 'border-destructive/50' : 'border-input'}`}
+                    >
+                      <option value="">Select a {getRegionLabel(country).toLowerCase()}...</option>
+                      {getRegionsForCountry(country).map((region) => (
+                        <option key={region} value={region}>{region}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
@@ -747,7 +716,7 @@ export const CategoryBrowserWithDescription = () => {
                   }
 
                   const regions = getRegionsForCountry(country);
-                  if (regions.length > 0 && selectedStates.length === 0) {
+                  if (regions.length > 0 && !selectedState) {
                     toast.error(`Please select at least one ${getRegionLabel(country).toLowerCase()}`);
                     return;
                   }
@@ -764,7 +733,7 @@ export const CategoryBrowserWithDescription = () => {
                         : null;
                       const locationParts: string[] = [];
                       if (city.trim()) locationParts.push(city.trim());
-                      if (selectedStates.length > 0) locationParts.push(selectedStates.join(', '));
+                      if (selectedState) locationParts.push(selectedState);
                       if (country) locationParts.push(country);
                       const locationString = locationParts.length > 0 ? locationParts.join(', ') : 'Not specified';
 
@@ -861,20 +830,27 @@ export const CategoryBrowserWithDescription = () => {
                         ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
                         : null;
 
-                      // Build location string from city, state, and country
-                      const locationParts: string[] = [];
-                      if (city.trim()) locationParts.push(city.trim());
-                      if (selectedStates.length > 0) locationParts.push(selectedStates.join(', '));
-                      if (country) locationParts.push(country);
-                      const locationString = locationParts.length > 0 
-                        ? locationParts.join(', ')
-                        : 'Not specified';
+                      // Inherit username and location from existing profile when creating additional profiles
+                      const { data: existingProfile } = await supabase
+                        .from('digger_profiles')
+                        .select('handle, business_name, company_name, country, location, state')
+                        .eq('user_id', user.id)
+                        .limit(1)
+                        .maybeSingle();
+                      const inheritedUsername = existingProfile?.handle || existingProfile?.business_name || '';
+                      const countryToUse = country || existingProfile?.country || null;
+                      const stateToUse = selectedState || existingProfile?.state || null;
+                      const locationString = (city.trim() || selectedState || country)
+                        ? [city.trim(), selectedState, country].filter(Boolean).join(', ')
+                        : (existingProfile?.location || 'Not specified');
 
                       const { data: newProfile, error: createError } = await supabase
                         .from('digger_profiles')
                         .insert({
                           user_id: user.id,
-                          business_name: '', // Business name is separate - user sets it later
+                          business_name: inheritedUsername,
+                          company_name: inheritedUsername || null,
+                          handle: null,
                           profile_name: profileName.trim(),
                           keywords: selected,
                           location: locationString,
@@ -883,7 +859,8 @@ export const CategoryBrowserWithDescription = () => {
                           service_zip_codes: zipCodesArray,
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
-                          country: country,
+                          country: countryToUse,
+                          state: stateToUse,
                         })
                         .select()
                         .single();
@@ -919,10 +896,10 @@ export const CategoryBrowserWithDescription = () => {
                       // Clear sessionStorage after successful profile creation
                       sessionStorage.removeItem('newProfileName');
                       
-                      toast.success(`Profile "${profileName.trim()}" created with ${selected.length} keywords and ${selectedProfessionIds.length} profession${selectedProfessionIds.length !== 1 ? 's' : ''}!`);
+                      toast.success(`Profile "${profileName.trim()}" created! Complete your profile to attract more clients.`);
 
-                      // Navigate to the new profile's detail page for lead purchasing
-                      navigate(`/digger/${newProfile.id}`, { replace: true });
+                      // Navigate to Edit profile page so diggers can complete their profile
+                      navigate(`/edit-digger-profile?profileId=${newProfile.id}`, { replace: true });
                     }
                   } catch (error: any) {
                     console.error("Error saving Digger profile:", error);
@@ -931,7 +908,7 @@ export const CategoryBrowserWithDescription = () => {
                     setIsProcessing(false);
                   }
                 }}
-                disabled={selectedKeywords.size === 0 || isProcessing || selectedProfessionIds.length === 0 || !profileName.trim() || !country || (getRegionsForCountry(country).length > 0 && selectedStates.length === 0)}
+                disabled={selectedKeywords.size === 0 || isProcessing || selectedProfessionIds.length === 0 || !profileName.trim()}
               >
                 {isProcessing ? (
                   <>
@@ -953,7 +930,7 @@ export const CategoryBrowserWithDescription = () => {
                   setNewKeyword("");
                   setProfileName("");
                   setCountry("");
-                  setSelectedStates([]);
+                  setSelectedState("");
                   setCity("");
                 }}
               >
@@ -961,6 +938,8 @@ export const CategoryBrowserWithDescription = () => {
               </Button>
             </div>
           </div>
+        )}
+        </>
         )}
       </CardContent>
     </Card>

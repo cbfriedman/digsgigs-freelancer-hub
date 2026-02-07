@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -18,6 +18,8 @@ import { FoundingDiggerTab } from "@/components/admin/FoundingDiggerTab";
 import { SignupAnalyticsDashboard } from "@/components/admin/SignupAnalyticsDashboard";
 import { GiveawayReportTab } from "@/components/admin/GiveawayReportTab";
 import { MessageViolationsDashboard } from "@/components/admin/MessageViolationsDashboard";
+import SupportInboxTab from "@/components/admin/SupportInboxTab";
+import MessageNotificationSettingsTab from "@/components/admin/MessageNotificationSettingsTab";
 import {
   Sidebar,
   SidebarContent,
@@ -77,6 +79,7 @@ const AdminDashboard = () => {
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [checkingUpgrades, setCheckingUpgrades] = useState(false);
+  const [supportInboxCount, setSupportInboxCount] = useState<number | null>(null);
 
   useEffect(() => {
     checkAdminAccess();
@@ -214,6 +217,12 @@ const AdminDashboard = () => {
       );
 
       setRecentReminders(remindersWithEmails);
+
+      // Support inbox count (for sidebar badge)
+      const { count: inboxCount } = await supabase
+        .from("contact_submissions")
+        .select("id", { count: "exact", head: true });
+      setSupportInboxCount(inboxCount ?? null);
 
     } catch (error) {
       console.error("Error loading dashboard data:", error);
@@ -464,6 +473,38 @@ const AdminDashboard = () => {
               </SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup>
+              <SidebarGroupLabel>Support</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab("support-inbox")}
+                      isActive={activeTab === "support-inbox"}
+                      tooltip="Contact Inbox"
+                    >
+                      <Inbox className="h-4 w-4" />
+                      <span>Contact Inbox</span>
+                      {supportInboxCount != null && supportInboxCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto size-5 rounded-full p-0 text-xs">
+                          {supportInboxCount > 99 ? "99+" : supportInboxCount}
+                        </Badge>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab("message-notifications")}
+                      isActive={activeTab === "message-notifications"}
+                      tooltip="Message email settings"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Message email settings</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
               <SidebarGroupLabel>Testing</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -540,6 +581,14 @@ const AdminDashboard = () => {
 
                 {activeTab === "signup-analytics" && (
                   <SignupAnalyticsDashboard />
+                )}
+
+                {activeTab === "support-inbox" && (
+                  <SupportInboxTab />
+                )}
+
+                {activeTab === "message-notifications" && (
+                  <MessageNotificationSettingsTab />
                 )}
 
                 {activeTab === "reminders" && (

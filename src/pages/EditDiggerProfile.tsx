@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles, DollarSign, Award, Camera, User, Briefcase, Settings } from "lucide-react";
+import { Loader2, Tag, MapPin, Plus, Search, X, Sparkles, DollarSign, Award, Camera, User, Briefcase, Settings, ImagePlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { KeywordSelector } from "@/components/KeywordSelector";
 // Note: Using native radio inputs for pricing model selection to ensure stable controlled component behavior
@@ -27,6 +27,7 @@ import { SafeProfessionSelector } from "@/components/SafeProfessionSelector";
 import { useProfessions } from "@/hooks/useProfessions";
 import { WorkSamplesUpload } from "@/components/WorkSamplesUpload";
 import { CertificationsInput } from "@/components/CertificationsInput";
+import { CoverPhotoUpload } from "@/components/CoverPhotoUpload";
 
 const EditDiggerProfile = () => {
   const navigate = useNavigate();
@@ -63,7 +64,8 @@ const EditDiggerProfile = () => {
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [keywordsInput, setKeywordsInput] = useState("");
-  const [profileId, setProfileId] = useState<string>("");
+  const initialProfileId = profileIdParam || searchParams.get('profileId') || '';
+  const [profileId, setProfileId] = useState<string>(initialProfileId);
   const [hourlyRateMin, setHourlyRateMin] = useState<number | null>(null);
   const [hourlyRateMax, setHourlyRateMax] = useState<number | null>(null);
   const [pricingModel, setPricingModel] = useState<string>("commission");
@@ -84,6 +86,8 @@ const EditDiggerProfile = () => {
   const [workPhotos, setWorkPhotos] = useState<string[]>([]);
   const [certifications, setCertifications] = useState<string[]>([]);
   const [stateProvince, setStateProvince] = useState<string>("");
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string>("");
+  const [usernameLocked, setUsernameLocked] = useState(false);
 
   // Sync profile photo to auth, profiles, and all digger profiles so Digger/Gigger stay in sync
   const handlePhotoChange = async (url: string) => {
@@ -172,17 +176,16 @@ const EditDiggerProfile = () => {
       return;
     }
     
-    // Support both URL params (/edit-digger-profile/:profileId) and query params (?profileId=xxx)
-    // Read searchParams once per effect run to avoid dependency issues
+    // Support both URL params (/edit-digger-profile/:id) and query params (?profileId=xxx)
     const profileIdFromQuery = searchParams.get('profileId');
     const profileIdFromUrl = profileIdParam || profileIdFromQuery;
     if (profileIdFromUrl) {
       setProfileId(profileIdFromUrl);
     }
-    
+
     loadProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, navigate, profileIdParam]); // Removed searchParams from deps to prevent loop - read it inside effect instead
+  }, [user, navigate, profileIdParam, searchParams.get('profileId')]);
 
   const loadProfile = async () => {
     if (!user) return;
@@ -210,7 +213,21 @@ const EditDiggerProfile = () => {
 
       if (profile) {
         setProfileId(profile.id);
-        setBusinessName(profile.business_name || "");
+        // Use handle from this profile, or inherit from another profile of same user
+        let usernameToShow = profile.handle || profile.business_name;
+        if (!usernameToShow && profile.profile_name) {
+          const sanitized = profile.profile_name.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || 'username';
+          usernameToShow = sanitized;
+        }
+        if (!usernameToShow && profiles && profiles.length > 1) {
+          const otherWithHandle = profiles.find((p: any) => p.id !== profile.id && (p.handle || p.business_name));
+          usernameToShow = otherWithHandle?.handle || otherWithHandle?.business_name;
+        }
+        if (!usernameToShow && profiles?.length === 1) {
+          const { data: otherProfile } = await supabase.from("digger_profiles").select("handle, business_name").eq("user_id", user.id).not("handle", "is", null).limit(1).maybeSingle();
+          usernameToShow = otherProfile?.handle || otherProfile?.business_name;
+        }
+        setBusinessName(usernameToShow ? (usernameToShow.startsWith('@') ? usernameToShow : `@${usernameToShow.replace(/^@/, '')}`) : "");
         
         // Load profession assignments from digger_profession_assignments table
         const { data: assignments, error: assignmentsError } = await supabase
@@ -232,26 +249,33 @@ const EditDiggerProfile = () => {
           setSelectedProfessionIds(professionIds);
         }
         
-        // Parse location - it may be stored as "State, Country" format
+        // Parse location - may be "City, State, Country" or "State, Country" (from Where You Reside / create flow)
         const storedLocation = profile.location || "";
-        // Check if the stored location matches a known country
         const knownCountry = ALL_COUNTRIES.find(c => 
           storedLocation === c.name || storedLocation.endsWith(`, ${c.name}`)
         );
         
         if (knownCountry && storedLocation.includes(', ')) {
-          // Location is in "State, Country" format
-          const parts = storedLocation.split(', ');
+          const parts = storedLocation.split(', ').map((p: string) => p.trim());
           const countryPart = parts[parts.length - 1];
-          const statePart = parts.slice(0, -1).join(', ');
+          const regions = getRegionsForCountry(countryPart);
+          // Find the part that matches a known state/region (so "City, State, Country" parses correctly)
+          let statePart = "";
+          for (let i = parts.length - 2; i >= 0; i--) {
+            if (regions.includes(parts[i])) {
+              statePart = parts[i];
+              break;
+            }
+          }
+          if (!statePart && parts.length >= 2) {
+            statePart = parts.slice(0, -1).join(', ');
+          }
           setLocation(countryPart);
           setStateProvince(statePart);
         } else if (knownCountry) {
-          // Location is just a country name
           setLocation(storedLocation);
           setStateProvince("");
         } else {
-          // Legacy location format or free-text
           setLocation(storedLocation);
           setStateProvince("");
         }
@@ -280,7 +304,17 @@ const EditDiggerProfile = () => {
           setServiceRadiusCenter(profile.service_radius_center || "");
           setServiceRadiusMiles(profile.service_radius_miles || 25);
         }
-                setCountry(profile.country || "United States");
+                // Use country from this profile, or inherit from another profile of same user
+                let countryToUse = profile.country;
+                if (!countryToUse && profiles && profiles.length > 1) {
+                  const otherWithCountry = profiles.find((p: any) => p.id !== profile.id && p.country);
+                  countryToUse = otherWithCountry?.country;
+                }
+                if (!countryToUse && profiles?.length === 1) {
+                  const { data: otherProfile } = await supabase.from("digger_profiles").select("country").eq("user_id", user.id).not("country", "is", null).limit(1).maybeSingle();
+                  countryToUse = otherProfile?.country;
+                }
+                setCountry(countryToUse || "United States");
                 // Load states if available
                 if (profile.state) {
                   setSelectedStates(profile.state.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0));
@@ -316,7 +350,11 @@ const EditDiggerProfile = () => {
         setTagline(profile.tagline || "");
         setWorkPhotos(profile.work_photos || []);
         setCertifications(profile.certifications || []);
+        setCoverPhotoUrl(profile.cover_photo_url || "");
         setProfileData(profile);
+        // Username cannot be changed once set (any profile of this user has handle)
+        const { data: anyWithHandle } = await supabase.from("digger_profiles").select("id").eq("user_id", user.id).not("handle", "is", null).limit(1).maybeSingle();
+        setUsernameLocked(!!anyWithHandle);
         
         // Category loading removed - using new taxonomy system with profession assignments
       }
@@ -347,7 +385,12 @@ const EditDiggerProfile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !profileId) return;
+    if (!user) return;
+    const effectiveProfileId = profileId || profileIdParam || searchParams.get('profileId');
+    if (!effectiveProfileId) {
+      toast.error("Profile is still loading. Please wait a moment and try again.");
+      return;
+    }
 
     // Only business name and phone are truly required - allow incomplete profiles
     if (!businessName) {
@@ -389,18 +432,50 @@ const EditDiggerProfile = () => {
       // Service area states for the state column
       const serviceAreaStates = selectedStates.length > 0 ? selectedStates.join(', ') : null;
 
+      const usernameClean = usernameLocked
+        ? (profileData?.handle || profileData?.business_name || '').replace(/^@/, '').trim().toLowerCase()
+        : (businessName.replace(/^@/, '').trim() || businessName.trim()).toLowerCase().replace(/[^a-z0-9_]/g, '');
+      if (!usernameLocked) {
+        if (!usernameClean || usernameClean.length < 2) {
+          toast.error("Username must be at least 2 characters and use only letters, numbers, and underscores.");
+          setLoading(false);
+          setIsUpdating(false);
+          return;
+        }
+        if (usernameClean.length > 30) {
+          toast.error("Username must be 30 characters or less.");
+          setLoading(false);
+          setIsUpdating(false);
+          return;
+        }
+      }
+      // When username locked, skip uniqueness check and handle updates
+      let canSetHandle = false;
+      if (!usernameLocked) {
+        const { data: existingHandle } = await supabase
+          .from("digger_profiles")
+          .select("user_id, id")
+          .ilike("handle", usernameClean)
+          .maybeSingle();
+        if (existingHandle && existingHandle.user_id !== user.id) {
+          toast.error("This username is already taken. Please choose another.");
+          setLoading(false);
+          setIsUpdating(false);
+          return;
+        }
+        canSetHandle = !existingHandle || existingHandle.id === effectiveProfileId;
+      }
       const { error } = await supabase
         .from("digger_profiles")
         .update({
-          business_name: businessName,
-          company_name: businessName,
+          ...(canSetHandle && !usernameLocked && profileData?.is_primary ? { handle: usernameClean } : !usernameLocked ? { handle: null } : {}),
+          ...(!usernameLocked ? { business_name: usernameClean, company_name: usernameClean } : {}),
           profession: professionString,
           location: businessLocation,
           phone,
           bio: bio || null,
           keywords: keywords.length > 0 ? keywords : null,
           pricing_model: pricingModel,
-          
           expected_lead_volume: expectedLeadVolume,
           expected_lead_period: expectedLeadPeriod,
           lead_tier_description: leadTierDescription || null,
@@ -414,12 +489,23 @@ const EditDiggerProfile = () => {
           state: serviceAreaStates,
           work_photos: workPhotos.length > 0 ? workPhotos : null,
           certifications: certifications.length > 0 ? certifications : null,
+          cover_photo_url: coverPhotoUrl || null,
           hourly_rate_min: hourlyRateMin,
           hourly_rate_max: hourlyRateMax,
         })
-        .eq("id", profileId);
+        .eq("id", effectiveProfileId);
 
       if (error) throw error;
+
+      // Sync business_name, company_name, country to all profiles when username not locked
+      if (!usernameLocked) {
+        await supabase
+          .from("digger_profiles")
+          .update({ business_name: usernameClean, company_name: usernameClean, country: country })
+          .eq("user_id", user.id);
+      } else {
+        await supabase.from("digger_profiles").update({ country: country }).eq("user_id", user.id);
+      }
 
       // Sync profile photo (and preserve existing metadata like phone) to auth user
       const existingMetadata = user?.user_metadata || {};
@@ -446,18 +532,21 @@ const EditDiggerProfile = () => {
         data: metadataUpdates,
       });
 
+      // Sync avatar to profiles so digger/gigger stay in sync
+      await supabase.from("profiles").update({ avatar_url: photoUrl || null }).eq("id", user.id);
+
       // Update profession assignments
       // First, delete existing assignments
       const { error: deleteAssignmentsError } = await supabase
         .from('digger_profession_assignments')
         .delete()
-        .eq('digger_profile_id', profileId);
+        .eq('digger_profile_id', effectiveProfileId);
 
       if (deleteAssignmentsError) throw deleteAssignmentsError;
 
       // Then, insert new assignments
       const assignments = selectedProfessionIds.map((professionId, index) => ({
-        digger_profile_id: profileId,
+        digger_profile_id: effectiveProfileId,
         profession_id: professionId,
         is_primary: index === 0 // First profession is primary
       }));
@@ -470,8 +559,8 @@ const EditDiggerProfile = () => {
 
       toast.success("Profile saved successfully!");
       
-      // Navigate immediately without delay to prevent loop
-      navigate(`/digger/${profileId}`, { replace: true });
+      // Navigate to profile using username URL when available
+      navigate(usernameClean ? `/digger/${usernameClean}` : `/digger/${effectiveProfileId}`, { replace: true });
     } catch (error: any) {
       // Error logging - consider using proper error tracking service in production
       if (import.meta.env.DEV) {
@@ -580,6 +669,27 @@ const EditDiggerProfile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Form - left on desktop */}
           <div className="lg:col-span-2 lg:col-start-1 order-1 space-y-6">
+            {/* Cover Photo Section */}
+            <Card className="overflow-hidden border-border/50 hover:shadow-md transition-shadow" id="cover-photo">
+              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <ImagePlus className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Cover Photo</CardTitle>
+                    <CardDescription>Banner shown behind your avatar on your profile</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <CoverPhotoUpload
+                  currentCoverUrl={coverPhotoUrl}
+                  onCoverChange={setCoverPhotoUrl}
+                />
+              </CardContent>
+            </Card>
+
             {/* Profile Photo Section */}
             <Card className="overflow-hidden border-border/50 hover:shadow-md transition-shadow" id="photos">
               <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
@@ -655,15 +765,23 @@ const EditDiggerProfile = () => {
               <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="businessName" className="text-sm font-medium">Business Name *</Label>
+                    <Label htmlFor="username" className="text-sm font-medium">Username *</Label>
                     <Input
-                      id="businessName"
+                      id="username"
                       value={businessName}
                       onChange={(e) => setBusinessName(e.target.value)}
-                      placeholder="Your business name"
+                      placeholder="e.g. @joason"
                       required
-                      className="border-border/50 focus:border-primary"
+                      disabled={usernameLocked}
+                      readOnly={usernameLocked}
+                      className="border-border/50 focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed"
                     />
+                    {businessName && (
+                      <p className="text-xs text-muted-foreground">Your profile will show as @{businessName.replace(/^@/, '').trim() || 'username'}</p>
+                    )}
+                    {usernameLocked && (
+                      <p className="text-xs text-muted-foreground">Username cannot be changed after it has been set.</p>
+                    )}
                   </div>
 
             {/* Optional Profile Title & Tagline */}

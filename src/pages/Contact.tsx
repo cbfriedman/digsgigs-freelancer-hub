@@ -6,11 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, MessageSquare, Clock } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import SEOHead from "@/components/SEOHead";
 import { Footer } from "@/components/Footer";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { SUPPORT_EMAIL } from "@/config/siteContact";
+import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -52,12 +55,22 @@ const Contact = () => {
       }
     }
 
-    // Simulate form submission (you can replace this with actual API call)
-    setTimeout(() => {
+    try {
+      await invokeEdgeFunction(supabase, "submit-contact-form", {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject || undefined,
+          message: formData.message,
+        },
+      });
       toast.success("Message sent successfully! We'll get back to you soon.");
       setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to send. Please try again.");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -169,46 +182,8 @@ const Contact = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         For general inquiries and support
                       </p>
-                      <a href="mailto:support@digsandgigs.net" className="text-primary hover:underline">
-                        support@digsandgigs.net
-                      </a>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
-                      <MessageSquare className="w-6 h-6 text-accent" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">Partnerships</h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        For business partnerships and collaborations
-                      </p>
-                      <a href="mailto:partnerships@digsandgigs.net" className="text-primary hover:underline">
-                        partnerships@digsandgigs.net
-                      </a>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                      <Clock className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">Press</h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        For media inquiries and press releases
-                      </p>
-                      <a href="mailto:press@digsandgigs.net" className="text-primary hover:underline">
-                        press@digsandgigs.net
+                      <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">
+                        {SUPPORT_EMAIL}
                       </a>
                     </div>
                   </div>

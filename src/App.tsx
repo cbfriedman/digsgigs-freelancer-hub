@@ -54,6 +54,7 @@ import TestResultsDashboard from "./pages/admin/TestResultsDashboard";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import AdminBlog from "./pages/AdminBlog";
+import AdminInbox from "./pages/AdminInbox";
 import Sitemap from "./pages/Sitemap";
 import SitemapXML from "./pages/SitemapXML";
 import FAQ from "./pages/FAQ";
@@ -411,6 +412,10 @@ const router = createBrowserRouter(
       {
         path: "/admin/blog",
         element: <ProtectedRoute><AdminBlog /></ProtectedRoute>,
+      },
+      {
+        path: "/admin/inbox",
+        element: <ProtectedRoute><AdminInbox /></ProtectedRoute>,
       },
       {
         path: "/admin/notifications",

@@ -22,7 +22,7 @@ export function useUserPresence() {
     const refreshOnline = () => {
       if (!mounted) return;
       try {
-        const state = channel.presenceState();
+        const state = channel.presenceState() ?? {};
         const online = new Set<string>();
         Object.values(state).forEach((presences: unknown) => {
           const list = Array.isArray(presences) ? presences : [];
@@ -49,19 +49,26 @@ export function useUserPresence() {
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             refreshOnline();
-            setTimeout(refreshOnline, 300);
-            setTimeout(refreshOnline, 1000);
+            setTimeout(refreshOnline, 200);
+            setTimeout(refreshOnline, 500);
+            setTimeout(refreshOnline, 1200);
           }
         });
     };
     setup();
 
     // Periodic refresh so online/offline updates in real time
-    const interval = setInterval(refreshOnline, 3000);
+    const interval = setInterval(refreshOnline, 2000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refreshOnline();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       mounted = false;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -102,14 +109,23 @@ export function useTrackUserPresence() {
         if (status === 'SUBSCRIBED') {
           await trackPresence();
           if (heartbeat) clearInterval(heartbeat);
-          heartbeat = setInterval(trackPresence, 25_000);
+          heartbeat = setInterval(trackPresence, 20_000);
         }
       });
     };
     setup();
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        trackPresence();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
       if (heartbeat) clearInterval(heartbeat);
+      void channel.untrack();
       supabase.removeChannel(channel);
     };
   }, [user?.id]);

@@ -275,6 +275,78 @@ export default function RoleDashboard() {
     });
   };
 
+  const handleRegisterDigger = async () => {
+    if (!user) return;
+
+    try {
+      if (userRoles.includes('digger')) {
+        await switchRole('digger');
+        navigate('/edit-digger-profile');
+        return;
+      }
+
+      let hasDiggerRole = false;
+      try {
+        const { data: hasRole, error: hasRoleError } = await supabase
+          .rpc('has_app_role', { _user_id: user.id, _role: 'digger' });
+        if (!hasRoleError && hasRole === true) hasDiggerRole = true;
+        else if (hasRoleError && userRoles.includes('digger')) hasDiggerRole = true;
+      } catch {
+        if (userRoles.includes('digger')) hasDiggerRole = true;
+      }
+
+      if (!hasDiggerRole) {
+        let roleError = null;
+        const { error: directInsertError } = await supabase
+          .from('user_app_roles')
+          .insert({ user_id: user.id, app_role: 'digger', is_active: true });
+        if (directInsertError?.code === '42P17' || directInsertError?.message?.includes('infinite recursion')) {
+          const { error: rpcError } = await (supabase.rpc as any)('insert_user_app_role', {
+            p_user_id: user.id,
+            p_app_role: 'digger',
+          });
+          if (rpcError) roleError = rpcError;
+        } else if (directInsertError) {
+          roleError = directInsertError;
+        }
+        if (roleError) {
+          toast({ title: "Error", description: "Failed to add Digger role.", variant: "destructive" });
+          return;
+        }
+      }
+
+      const { data: existingProfiles } = await supabase
+        .from('digger_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (!existingProfiles || existingProfiles.length === 0) {
+        const { error: createError } = await supabase
+          .from('digger_profiles')
+          .insert({
+            user_id: user.id,
+            business_name: '',
+            location: 'Not specified',
+            phone: (user as any).phone || 'Not specified',
+            is_primary: true,
+          });
+        if (createError) {
+          toast({ title: "Error", description: "Failed to create profile.", variant: "destructive" });
+          return;
+        }
+      }
+
+      await refreshRoles();
+      await switchRole('digger');
+      toast({ title: "Success", description: "Digger role added! Complete your profile." });
+      navigate('/edit-digger-profile');
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
+    }
+  };
+
   const handleRegisterGigger = async () => {
     if (!user) return;
     
@@ -476,9 +548,18 @@ export default function RoleDashboard() {
                       </Badge>
                     )}
                     {!userRoles.includes('digger') && (
-                      <Badge variant="secondary" className="font-medium">
-                        Not Registered
-                      </Badge>
+                      <>
+                        <Badge variant="secondary" className="font-medium">
+                          Not Registered
+                        </Badge>
+                        <Button
+                          size="sm"
+                          className="ml-auto"
+                          onClick={handleRegisterDigger}
+                        >
+                          Register as Freelancer
+                        </Button>
+                      </>
                     )}
                   </div>
                   <CardDescription className="mt-1">Service Provider — Find work opportunities</CardDescription>
@@ -580,9 +661,19 @@ export default function RoleDashboard() {
                       </Badge>
                     )}
                     {!userRoles.includes('gigger') && (
-                      <Badge variant="secondary" className="font-medium">
-                        Not Registered
-                      </Badge>
+                      <>
+                        <Badge variant="secondary" className="font-medium">
+                          Not Registered
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="hero"
+                          className="ml-auto"
+                          onClick={handleRegisterGigger}
+                        >
+                          Register as Client
+                        </Button>
+                      </>
                     )}
                   </div>
                   <CardDescription className="mt-1">Project Poster — Find talent for your projects</CardDescription>
