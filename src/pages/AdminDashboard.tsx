@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -20,6 +20,7 @@ import { GiveawayReportTab } from "@/components/admin/GiveawayReportTab";
 import { MessageViolationsDashboard } from "@/components/admin/MessageViolationsDashboard";
 import SupportInboxTab from "@/components/admin/SupportInboxTab";
 import MessageNotificationSettingsTab from "@/components/admin/MessageNotificationSettingsTab";
+import ManageGigsTab from "@/components/admin/ManageGigsTab";
 import {
   Sidebar,
   SidebarContent,
@@ -366,6 +367,7 @@ const AdminDashboard = () => {
     { id: "requests", label: "Keyword Requests", icon: Lightbulb },
     { id: "cpc-data", label: "CPC Data", icon: Database },
     { id: "giveaway", label: "Giveaway Report", icon: Crown },
+    { id: "manage-gigs", label: "Manage gigs", icon: Briefcase },
     { id: "test-results", label: "QA Test Results", icon: ClipboardCheck },
   ];
 
@@ -454,7 +456,7 @@ const AdminDashboard = () => {
               <SidebarGroupLabel>Data & Reports</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {menuItems.slice(7, 10).map((item) => {
+                  {menuItems.slice(7, 11).map((item) => {
                     const Icon = item.icon;
                     return (
                       <SidebarMenuItem key={item.id}>
@@ -589,6 +591,10 @@ const AdminDashboard = () => {
 
                 {activeTab === "message-notifications" && (
                   <MessageNotificationSettingsTab />
+                )}
+
+                {activeTab === "manage-gigs" && (
+                  <ManageGigsTab />
                 )}
 
                 {activeTab === "reminders" && (
