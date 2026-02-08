@@ -37,6 +37,8 @@ export const NotificationPanel = () => {
     markAsRead(notification.id);
     if (notification.type === "new_message" && notification.metadata?.conversation_id) {
       navigate(`/messages?conversation=${notification.metadata.conversation_id}`);
+    } else if (notification.type === "new_gig" && notification.metadata?.gig_id) {
+      navigate(notification.link || `/gig/${notification.metadata.gig_id}`);
     } else if (notification.link) {
       navigate(notification.link);
     }

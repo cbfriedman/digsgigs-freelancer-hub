@@ -9,9 +9,10 @@ import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe, UserCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { useAuth } from "@/contexts/AuthContext";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
@@ -26,7 +27,12 @@ import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 const PostGig = () => {
   const navigate = useNavigate();
   const { trackEvent, isConfigured } = useFacebookPixel();
+  const { user, userRoles, activeRole, switchRole } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // Show friendly alert when user is in digger mode or doesn't have gigger role
+  const showGiggerOnlyAlert = user && (activeRole === "digger" || !userRoles.includes("gigger"));
+  const hasGiggerRole = userRoles.includes("gigger");
   
   // Form fields - Problem-based approach
   const [selectedProblemId, setSelectedProblemId] = useState("");
@@ -196,11 +202,10 @@ const PostGig = () => {
         .join(', ');
       const title = `${problem?.label || 'Project'}${clarifyingLabels ? ` - ${clarifyingLabels}` : ''}`.trim();
 
-      const { data: gigData, error: gigError } = await supabase
-        .from("gigs")
-        .insert({
-          consumer_id: consumerId,
-          title: title,
+      // Use edge function so the gig is stored (bypasses RLS) and we get the row back for anon or any user
+      const response = await invokeEdgeFunction<{ data: { id: string; [key: string]: unknown } }>(supabase, "post-gig", {
+        body: {
+          title,
           description: finalDescription.trim(),
           requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingLabels || 'Not specified'}\nCategory: ${category?.name || "Not specified"}`,
           budget_min: finalBudgetMin,
@@ -211,16 +216,13 @@ const PostGig = () => {
           consumer_email: finalClientEmail.trim(),
           consumer_phone: finalClientPhone.trim() || null,
           category_id: categoryId,
-          status: "open",
-          confirmation_status: "confirmed",
-          is_confirmed_lead: true,
-          confirmed_at: new Date().toISOString(),
           preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
-        })
-        .select()
-        .single();
+          consumer_id: consumerId,
+        },
+      });
 
-      if (gigError) throw gigError;
+      const gigData = response?.data;
+      if (!gigData?.id) throw new Error("Failed to create project");
 
       // Send management email with edit/cancel links (no confirmation required)
       supabase.functions.invoke("send-gig-management-email", {
@@ -253,7 +255,14 @@ const PostGig = () => {
       navigate(`/gig-confirmed?gigId=${gigData.id}`);
     } catch (error: any) {
       console.error("Error posting gig:", error);
-      toast.error("Failed to post project. Please try again.");
+      const msg = error?.message ?? "";
+      if (msg.includes("Only giggers") || msg.includes("gigger")) {
+        toast.error("Post projects with your client account", {
+          description: "Switch to Gigger mode above, or sign up as a client to post.",
+        });
+      } else {
+        toast.error(msg || "Failed to post project. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -305,6 +314,57 @@ const PostGig = () => {
             <span className="text-xs text-muted-foreground">Direct Contact</span>
           </div>
         </div>
+
+        {/* Friendly alert: only client account (gigger mode) can post */}
+        {showGiggerOnlyAlert && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-5 shadow-sm sm:p-6"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <UserCircle className="h-7 w-7" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <h3 className="text-lg font-semibold text-foreground">
+                  Post projects with your client account (Gigger mode)
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  You're currently in Digger mode. To post a project and get quotes from freelancers, use your client account. Switch below or sign in with a client account.
+                </p>
+                <div className="flex flex-wrap gap-3 pt-1">
+                  {hasGiggerRole ? (
+                    <Button
+                      type="button"
+                      onClick={() => switchRole("gigger")}
+                      className="rounded-xl bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+                    >
+                      Switch to client mode
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => navigate("/register?type=gigger")}
+                      className="rounded-xl border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      Get a client account
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/role-dashboard")}
+                    className="rounded-xl text-muted-foreground hover:text-foreground"
+                  >
+                    Go to dashboard
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Progress Indicator */}
         <PostGigProgressDots currentStep={getCurrentStep()} totalSteps={4} />

@@ -75,13 +75,28 @@ serve(async (req) => {
     const userId = metadata.user_id;
     const diggerProfileId = metadata.digger_profile_id;
     const leadSelectionsJson = metadata.lead_selections;
-    const originalAmount = parseFloat(metadata.original_amount);
-    const discountAmount = parseFloat(metadata.discount_amount);
-    const finalAmount = parseFloat(metadata.final_amount);
+    const pendingPurchaseId = metadata.pending_purchase_id;
+
+    // Current flow uses pending_purchase_id (handled by main stripe-webhook); skip here
+    if (pendingPurchaseId) {
+      logStep("Using pending_purchase_id flow - handled by main stripe-webhook, skipping");
+      return new Response(JSON.stringify({ received: true, skipped: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     if (!userId || !diggerProfileId || !leadSelectionsJson) {
-      throw new Error("Missing required metadata");
+      logStep("Missing required metadata (legacy flow), skipping", { userId: !!userId, diggerProfileId: !!diggerProfileId, leadSelectionsJson: !!leadSelectionsJson });
+      return new Response(JSON.stringify({ received: true, skipped: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
+
+    const originalAmount = parseFloat(metadata.original_amount || "0");
+    const discountAmount = parseFloat(metadata.discount_amount || "0");
+    const finalAmount = parseFloat(metadata.final_amount || "0");
 
     const leadSelections = JSON.parse(leadSelectionsJson);
     logStep("Parsed lead selections", { count: leadSelections.length, originalAmount, discountAmount, finalAmount });

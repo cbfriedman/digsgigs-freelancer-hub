@@ -132,7 +132,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${origin}/lead/${leadId}?unlocked=true`,
+      success_url: `${origin}/lead/${leadId}/unlock?unlocked=true`,
       cancel_url: `${origin}/lead/${leadId}/unlock?canceled=true`,
       metadata: {
         leadId: leadId,

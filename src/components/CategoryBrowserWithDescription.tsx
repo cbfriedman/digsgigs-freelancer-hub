@@ -145,7 +145,7 @@ export const CategoryBrowserWithDescription = () => {
     const load = async () => {
       const { data, error } = await supabase
         .from('digger_profiles')
-        .select('location, country, service_zip_codes, service_radius_center, service_radius_miles')
+        .select('location, country, state, service_zip_codes, service_radius_center, service_radius_miles')
         .eq('id', existingProfileId)
         .single();
       if (error || !data) return;
@@ -156,7 +156,9 @@ export const CategoryBrowserWithDescription = () => {
       if (data.location && data.location !== 'Not specified') {
         const parts = data.location.split(',').map((p: string) => p.trim()).filter(Boolean);
         const regions = data.country ? getRegionsForCountry(data.country) : [];
-        if (parts.length >= 2 && regions.length > 0) {
+        if (data.state) {
+          setSelectedState(data.state);
+        } else if (parts.length >= 2 && regions.length > 0) {
           const possibleStates = parts.slice(1, -1).filter((s: string) => regions.includes(s));
           setSelectedState(possibleStates[0] || '');
         }
@@ -164,6 +166,8 @@ export const CategoryBrowserWithDescription = () => {
         if (firstPart && firstPart !== data.country && !regions.includes(firstPart)) {
           setCity(firstPart);
         }
+      } else if (data.state) {
+        setSelectedState(data.state);
       }
     };
     load();
@@ -175,7 +179,7 @@ export const CategoryBrowserWithDescription = () => {
     const loadFirstProfile = async () => {
       const { data: profiles, error } = await supabase
         .from('digger_profiles')
-        .select('location, country, service_zip_codes, service_radius_center, service_radius_miles')
+        .select('location, country, state, service_zip_codes, service_radius_center, service_radius_miles')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true })
         .limit(1);
@@ -189,7 +193,9 @@ export const CategoryBrowserWithDescription = () => {
       if (p.location && p.location !== 'Not specified') {
         const parts = p.location.split(',').map((x: string) => x.trim()).filter(Boolean);
         const regions = p.country ? getRegionsForCountry(p.country) : [];
-        if (parts.length >= 2 && regions.length > 0) {
+        if (p.state) {
+          setSelectedState(p.state);
+        } else if (parts.length >= 2 && regions.length > 0) {
           const possibleStates = parts.slice(1, -1).filter((s: string) => regions.includes(s));
           setSelectedState(possibleStates[0] || '');
         }
@@ -197,6 +203,8 @@ export const CategoryBrowserWithDescription = () => {
         if (firstPart && firstPart !== p.country && !regions.includes(firstPart)) {
           setCity(firstPart);
         }
+      } else if (p.state) {
+        setSelectedState(p.state);
       }
       // Skip location step - user doesn't need to select country; use inherited from first profile
       setFormStep(2);
@@ -435,7 +443,7 @@ export const CategoryBrowserWithDescription = () => {
                 className="flex-1 min-h-[44px] sm:min-h-0 touch-manipulation" 
                 size="lg"
                 onClick={handleContinue}
-                disabled={isProcessing || !description.trim()}
+                disabled={isProcessing}
               >
                 {isProcessing ? (
                   <>
@@ -747,6 +755,7 @@ export const CategoryBrowserWithDescription = () => {
                           service_radius_center: locationPreferenceType === "radius" ? serviceRadiusCenter || null : null,
                           service_radius_miles: locationPreferenceType === "radius" ? serviceRadiusMiles : null,
                           country: country,
+                          state: selectedState || null,
                           updated_at: new Date().toISOString(),
                         })
                         .eq('id', existingProfileId);

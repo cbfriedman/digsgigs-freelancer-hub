@@ -150,18 +150,88 @@ serve(async (req) => {
     // Prepare email content
     const baseUrl = Deno.env.get("SITE_URL") || "https://digsandgigs.net";
     const unlockUrl = `${baseUrl}/lead/${leadId}/unlock`;
+    const gigAppLink = `/gig/${leadId}`;
+
+    // Create in-app notifications for all eligible diggers (bell notification)
+    for (const digger of eligibleDiggers) {
+      try {
+        await supabase.rpc("create_notification", {
+          p_user_id: digger.user_id,
+          p_type: "new_gig",
+          p_title: proOnly ? "New project (early access)" : "New project posted",
+          p_message: `A new project is live: "${(lead.title || "").substring(0, 60)}${(lead.title?.length || 0) > 60 ? "…" : ""}"`,
+          p_link: gigAppLink,
+          p_metadata: { gig_id: leadId },
+        });
+      } catch (notifErr: unknown) {
+        console.warn(`[blast-lead-to-diggers] In-app notification failed for digger ${digger.user_id}:`, notifErr);
+      }
+    }
+    console.log(`[blast-lead-to-diggers] Created ${eligibleDiggers.length} in-app notifications for ${blastType} diggers`);
 
     const shortDescription = lead.description?.substring(0, 200) + (lead.description?.length > 200 ? "..." : "") || "";
     const budgetRange = lead.budget_min && lead.budget_max 
       ? `$${lead.budget_min.toLocaleString()} - $${lead.budget_max.toLocaleString()}`
       : "Not specified";
+    const gigViewUrl = `${baseUrl}/gig/${leadId}`;
 
-    // Add urgency messaging for Pro vs Non-Pro
-    const proExclusiveBanner = proOnly 
-      ? `<div style="background: linear-gradient(135deg, #5b21b6, #7c3aed); color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <strong>⚡ Pro Digger Early Access</strong> — You're seeing this 2 hours before other diggers!
-        </div>`
-      : '';
+    // Digger-friendly email: one main idea, two clear choices (bid free or unlock lead), warm tone,
+    // mobile-friendly stacked buttons, respectful footer. Respects preferences (recipients already filtered).
+    const buildDiggerEmailHtml = (recipientName: string, viewAndBidUrl: string, unlockLeadUrl: string, footerUnsubscribeUrl: string, options?: { proBanner?: boolean; showProTip?: boolean }) => {
+      const proBanner = options?.proBanner
+        ? `<div style="background: linear-gradient(135deg, #5b21b6, #7c3aed); color: white; padding: 14px 20px; border-radius: 12px; margin-bottom: 24px; text-align: center; font-size: 15px;">
+            <strong>⚡ Early access</strong> — You're seeing this project before other diggers. Reply fast for the best chance!
+          </div>`
+        : "";
+      const proTip = options?.showProTip
+        ? `<div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px 18px; margin: 24px 0; text-align: center;">
+            <p style="margin: 0; color: #166534; font-size: 14px;">💡 <strong>Pro tip:</strong> Pro diggers get new projects 2 hours earlier. <a href="${baseUrl}/pricing" style="color: #5b21b6; font-weight: 600;">See Pro benefits →</a></p>
+          </div>`
+        : "";
+      return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New project for you</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #374151; max-width: 560px; margin: 0 auto; padding: 24px; background: #fafafa;">
+  ${proBanner}
+  <div style="background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e5e7eb;">
+    <div style="padding: 28px 24px 20px;">
+      <p style="margin: 0 0 8px 0; font-size: 16px; color: #374151;">Hi ${recipientName},</p>
+      <p style="margin: 0 0 20px 0; font-size: 15px; color: #6b7280;">A new project just went live that might be a great fit for you. Take a look below — you can submit a bid for free, or unlock the lead to get the client's contact details.</p>
+      <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb;">
+        <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #111827; font-weight: 600;">${lead.title}</h2>
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563; line-height: 1.5;">${shortDescription}</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; color: #6b7280;">
+          <tr><td style="padding: 4px 0;"><strong style="color: #374151;">Budget</strong></td><td style="padding: 4px 0;">${budgetRange}</td></tr>
+          <tr><td style="padding: 4px 0;"><strong style="color: #374151;">Timeline</strong></td><td style="padding: 4px 0;">${lead.timeline || "Flexible"}</td></tr>
+          <tr><td style="padding: 4px 0;"><strong style="color: #374151;">Location</strong></td><td style="padding: 4px 0;">${lead.location || "Not specified"}</td></tr>
+        </table>
+      </div>
+      <p style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280;">Choose how you'd like to respond:</p>
+      <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
+        <tr><td style="padding: 0 0 10px 0;">
+          <a href="${viewAndBidUrl}" style="display: block; width: 100%; box-sizing: border-box; text-align: center; background: linear-gradient(135deg, #5b21b6, #7c3aed); color: white; text-decoration: none; padding: 16px 20px; border-radius: 10px; font-weight: 600; font-size: 16px;">View project &amp; bid</a>
+        </td></tr>
+        <tr><td style="padding: 0;">
+          <a href="${unlockLeadUrl}" style="display: block; width: 100%; box-sizing: border-box; text-align: center; background: #ffffff; color: #5b21b6; text-decoration: none; padding: 16px 20px; border-radius: 10px; font-weight: 600; font-size: 16px; border: 2px solid #5b21b6;">Unlock lead — $${priceDollars}</a>
+        </td></tr>
+      </table>
+      <p style="margin: 20px 0 0 0; font-size: 13px; color: #9ca3af;">Bidding is free. Unlock the lead when you're ready to get the client's contact info. No pressure — choose what works for you.</p>
+    </div>
+    <div style="padding: 16px 24px; background: #f9fafb; border-top: 1px solid #e5e7eb;">
+      <p style="margin: 0; font-size: 14px; color: #6b7280;">Happy hunting,<br><strong style="color: #374151;">The Digs &amp; Gigs team</strong></p>
+    </div>
+  </div>
+  ${proTip}
+  <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+    You're on this list as a digger. You can <a href="${footerUnsubscribeUrl}" style="color: #5b21b6;">unsubscribe</a> or update your preferences anytime.
+  </p>
+</body>
+</html>`;
+    };
 
     let emailsSent = 0;
     const errors: string[] = [];
@@ -170,66 +240,21 @@ serve(async (req) => {
     for (const digger of eligibleDiggers) {
       const profile = (digger as any).profiles;
       const email = profile?.email;
-      const name = profile?.full_name || digger.business_name || "Digger";
+      const name = profile?.full_name || digger.business_name || "there";
 
       if (!email) {
         console.warn(`[blast-lead-to-diggers] No email for digger ${digger.id}`);
         continue;
       }
 
+      const footerUnsubscribeUrl = `${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&type=leads`;
+
       try {
         await resend.emails.send({
           from: "Digs & Gigs <leads@digsandgigs.net>",
           to: [email],
-          subject: proOnly ? `⚡ Early Access: ${lead.title}` : `🎯 New Lead: ${lead.title}`,
-          html: `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>New Lead Available</title>
-            </head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
-              ${proExclusiveBanner}
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #5b21b6; margin: 0;">🎯 New Lead Available</h1>
-              </div>
-              
-              <p>Hi ${name},</p>
-              
-              <p>A new project has just been posted on Digs & Gigs:</p>
-              
-              <div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;">
-                <h2 style="margin: 0 0 16px 0; color: #111827;">${lead.title}</h2>
-                
-                <p style="margin: 0 0 12px 0;"><strong>Description:</strong><br>${shortDescription}</p>
-                
-                ${lead.requirements ? `<p style="margin: 0 0 12px 0;"><strong>Requirements:</strong><br>${lead.requirements}</p>` : ''}
-                
-                <p style="margin: 0 0 12px 0;"><strong>Budget Range:</strong> ${budgetRange}</p>
-                
-                <p style="margin: 0 0 12px 0;"><strong>Timeline:</strong> ${lead.timeline || "Flexible"}</p>
-                
-                <p style="margin: 0 0 12px 0;"><strong>Location:</strong> ${lead.location || "Not specified"}</p>
-              </div>
-              
-              <div style="text-align: center; margin: 32px 0;">
-                <p style="font-size: 24px; font-weight: bold; color: #5b21b6; margin: 0 0 16px 0;">
-                  Lead Price: $${priceDollars}
-                </p>
-                <a href="${unlockUrl}" style="display: inline-block; background: linear-gradient(135deg, #5b21b6, #7c3aed); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 18px;">
-                  Unlock This Lead – $${priceDollars}
-                </a>
-              </div>
-              
-              <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 32px;">
-                You're receiving this because you're a Digger on Digs & Gigs.<br>
-                <a href="${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&type=leads" style="color: #5b21b6;">Unsubscribe from lead notifications</a>
-              </p>
-            </body>
-            </html>
-          `,
+          subject: proOnly ? `⚡ New project: ${lead.title}` : `New project for you: ${lead.title}`,
+          html: buildDiggerEmailHtml(name, gigViewUrl, unlockUrl, footerUnsubscribeUrl, { proBanner: proOnly, showProTip: !proOnly }),
         });
 
         emailsSent++;
@@ -253,67 +278,14 @@ serve(async (req) => {
         if (alreadySent) continue;
 
         try {
-          // Use subscriber-specific unlock link
           const subscriberUnlockUrl = `${baseUrl}/lead/${leadId}/unlock?sub=${subscriber.id}`;
+          const footerUnsubscribeUrl = `${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&type=leads`;
 
           await resend.emails.send({
             from: "Digs & Gigs <leads@digsandgigs.net>",
             to: [email],
-            subject: `🎯 New Lead: ${lead.title}`,
-            html: `
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>New Lead Available</title>
-              </head>
-              <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                  <h1 style="color: #5b21b6; margin: 0;">🎯 New Lead Available</h1>
-                </div>
-                
-                <p>Hi ${name},</p>
-                
-                <p>A new project has just been posted on Digs & Gigs:</p>
-                
-                <div style="background: #f3f4f6; border-radius: 12px; padding: 24px; margin: 24px 0;">
-                  <h2 style="margin: 0 0 16px 0; color: #111827;">${lead.title}</h2>
-                  
-                  <p style="margin: 0 0 12px 0;"><strong>Description:</strong><br>${shortDescription}</p>
-                  
-                  ${lead.requirements ? `<p style="margin: 0 0 12px 0;"><strong>Requirements:</strong><br>${lead.requirements}</p>` : ''}
-                  
-                  <p style="margin: 0 0 12px 0;"><strong>Budget Range:</strong> ${budgetRange}</p>
-                  
-                  <p style="margin: 0 0 12px 0;"><strong>Timeline:</strong> ${lead.timeline || "Flexible"}</p>
-                  
-                  <p style="margin: 0 0 12px 0;"><strong>Location:</strong> ${lead.location || "Not specified"}</p>
-                </div>
-                
-                <div style="text-align: center; margin: 32px 0;">
-                  <p style="font-size: 24px; font-weight: bold; color: #5b21b6; margin: 0 0 16px 0;">
-                    Lead Price: $${priceDollars}
-                  </p>
-                  <a href="${subscriberUnlockUrl}" style="display: inline-block; background: linear-gradient(135deg, #5b21b6, #7c3aed); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: bold; font-size: 18px;">
-                    Unlock This Lead – $${priceDollars}
-                  </a>
-                </div>
-                
-                <div style="background: #fef3c7; border-radius: 8px; padding: 16px; margin: 24px 0; text-align: center;">
-                  <p style="margin: 0; color: #92400e; font-size: 14px;">
-                    <strong>💡 Tip:</strong> Pro Diggers get leads 2 hours earlier. 
-                    <a href="${baseUrl}/pro-digger-signup" style="color: #5b21b6; font-weight: bold;">Upgrade to Pro →</a>
-                  </p>
-                </div>
-                
-                <p style="color: #6b7280; font-size: 14px; text-align: center; margin-top: 32px;">
-                  You're receiving this because you subscribed to Digs & Gigs lead notifications.<br>
-                  <a href="${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&type=leads" style="color: #5b21b6;">Unsubscribe from lead notifications</a>
-                </p>
-              </body>
-              </html>
-            `,
+            subject: `New project for you: ${lead.title}`,
+            html: buildDiggerEmailHtml(name, gigViewUrl, subscriberUnlockUrl, footerUnsubscribeUrl, { showProTip: true }),
           });
 
           emailsSent++;

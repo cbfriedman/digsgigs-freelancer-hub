@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,8 @@ import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
 import { EscrowContractDialog } from "@/components/EscrowContractDialog";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
-import { Loader2 } from "lucide-react";
+import { DiggerProposalCard } from "@/components/DiggerProposalCard";
+import { Loader2, TrendingUp, DollarSign, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface Bid {
@@ -24,11 +25,12 @@ interface Bid {
   pricing_model?: string;
   digger_profiles: {
     id: string;
-    handle: string;
+    handle: string | null;
+    business_name?: string;
     profession: string;
-    profile_image_url: string;
-    average_rating: number;
-    total_ratings: number;
+    profile_image_url: string | null;
+    average_rating: number | null;
+    total_ratings: number | null;
     years_experience?: number;
     completion_rate?: number;
     response_time_hours?: number;
@@ -69,6 +71,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
           digger_profiles (
             id,
             handle,
+            business_name,
             profession,
             profile_image_url,
             average_rating,
@@ -115,6 +118,31 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
   useEffect(() => {
     loadBids();
   }, [loadBids]);
+
+  // Real-time: refresh bids when new proposals arrive or bids are updated
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  useEffect(() => {
+    const channel = supabase
+      .channel(`bids:gig:${gigId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "bids",
+          filter: `gig_id=eq.${gigId}`,
+        },
+        () => {
+          loadBids();
+        }
+      )
+      .subscribe();
+    channelRef.current = channel;
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
+  }, [gigId, loadBids]);
 
   const handleAcceptBid = async (bidId: string) => {
     setAccepting(bidId);
@@ -206,80 +234,95 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
     );
   }
 
-  // Get lowest bid for display
+  // Stats for gigger (owner)
+  const totalBids = bids.length;
+  const avgPrice =
+    totalBids > 0
+      ? bids.reduce((sum, b) => {
+          if (b.amount_min != null && b.amount_max != null) return sum + (b.amount_min + b.amount_max) / 2;
+          return sum + (b.amount_min ?? b.amount_max ?? b.amount);
+        }, 0) / totalBids
+      : 0;
   const lowestBid = bids[0];
-  const lowestAmount = lowestBid.amount_min || lowestBid.amount;
+  const lowestAmount = lowestBid ? (lowestBid.amount_min ?? lowestBid.amount) : 0;
+  const highestBid = bids[bids.length - 1];
+  const highestAmount = highestBid ? (highestBid.amount_max ?? highestBid.amount) : 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
         <div>
           <h3 className="text-xl font-semibold">
-            Proposals ({bids.length})
+            Proposals {totalBids > 0 && <span className="text-muted-foreground font-normal">({totalBids})</span>}
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Proposals are anonymous until you accept or unlock contact info
+            {isOwner
+              ? "Review proposals below. New bids appear in real time."
+              : "Proposals are anonymous until you accept or unlock contact info"}
           </p>
         </div>
-        {bids.length > 0 && (
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            Lowest: ${lowestAmount.toLocaleString()}
-          </Badge>
+        {totalBids > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Total bids</span>
+              <span className="font-semibold tabular-nums">{totalBids}</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Avg</span>
+              <span className="font-semibold tabular-nums">${Math.round(avgPrice).toLocaleString()}</span>
+            </div>
+            {lowestAmount > 0 && (
+              <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium">Lowest</span>
+                <span className="font-semibold tabular-nums text-green-600">${lowestAmount.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
         )}
       </div>
-      
-      {bids.map((bid, index) => (
-        <AnonymizedBidCard
-          key={bid.id}
-          bid={bid}
-          bidderNumber={index + 1}
-          diggerProfile={bid.digger_profiles}
-          referenceCount={bid.reference_count}
-          isLowestBid={index === 0}
-          isOwner={isOwner}
-          acceptingId={accepting}
-        >
-          {/* Action Buttons */}
-          {isOwner && bid.status === 'pending' && (
-            <Button
-              onClick={() => handleAcceptBid(bid.id)}
-              disabled={accepting === bid.id}
-            >
-              {accepting === bid.id ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Accepting...
-                </>
-              ) : (
-                'Accept Proposal'
-              )}
-            </Button>
-          )}
 
-          {isOwner && bid.status === 'accepted' && !bid.awarded && (
-            <ConfirmHireDialog
-              bidId={bid.id}
+      {isOwner
+        ? bids.map((bid) => (
+            <DiggerProposalCard
+              key={bid.id}
+              bid={bid}
+              gigTitle={gigTitle}
               gigId={gigId}
-              diggerId={bid.digger_profiles.id}
-              diggerName={`Bidder #${index + 1}`}
-              bidAmount={bid.amount}
-              gigTitle={gigTitle}
-              pricingModel={bid.pricing_model}
-              onConfirm={loadBids}
+              diggerProfile={bid.digger_profiles}
+              referenceCount={bid.reference_count}
+              isOwner={true}
+              isFixedPrice={isFixedPrice}
+              onAccept={() => handleAcceptBid(bid.id)}
+              onConfirmHire={loadBids}
+              onCompleteWork={loadBids}
+              acceptingId={accepting}
             />
-          )}
-
-          {isOwner && bid.status === 'accepted' && !isFixedPrice && bid.awarded && (
-            <CompleteWorkDialog
-              bidId={bid.id}
-              bidAmount={bid.amount}
-              diggerId={bid.digger_profiles.id}
-              gigTitle={gigTitle}
-              onComplete={loadBids}
-            />
-          )}
-        </AnonymizedBidCard>
-      ))}
+          ))
+        : bids.map((bid, index) => (
+            <AnonymizedBidCard
+              key={bid.id}
+              bid={bid}
+              bidderNumber={index + 1}
+              diggerProfile={bid.digger_profiles}
+              referenceCount={bid.reference_count}
+              isLowestBid={index === 0}
+              isOwner={false}
+              acceptingId={accepting}
+            >
+              {bid.status === "accepted" && !isFixedPrice && bid.awarded && (
+                <CompleteWorkDialog
+                  bidId={bid.id}
+                  bidAmount={bid.amount}
+                  diggerId={bid.digger_profiles.id}
+                  gigTitle={gigTitle}
+                  onComplete={loadBids}
+                />
+              )}
+            </AnonymizedBidCard>
+          ))}
 
       {selectedBid && (
         <EscrowContractDialog
