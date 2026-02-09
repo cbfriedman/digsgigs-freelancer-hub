@@ -27,8 +27,9 @@ export function useUserPresence() {
         Object.values(state).forEach((presences: unknown) => {
           const list = Array.isArray(presences) ? presences : [];
           list.forEach((p: Record<string, unknown>) => {
-            const uid = p?.user_id ?? (p?.payload as Record<string, unknown>)?.user_id;
-            if (typeof uid === 'string') online.add(uid);
+            const raw = p?.user_id ?? (p?.payload as Record<string, unknown>)?.user_id;
+            const uid = typeof raw === 'string' ? raw : (raw != null ? String(raw) : null);
+            if (uid && uid.length > 0) online.add(uid);
           });
         });
         setOnlineUserIds(online);
@@ -58,7 +59,7 @@ export function useUserPresence() {
     setup();
 
     // Periodic refresh so online/offline updates in real time
-    const interval = setInterval(refreshOnline, 2000);
+    const interval = setInterval(refreshOnline, 1500);
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') refreshOnline();

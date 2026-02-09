@@ -1082,17 +1082,20 @@ export default function Messages() {
   const selectedConv = conversations.find((c) => c.id === selectedConversation);
   const partnerName = getConversationPartner(selectedConv);
 
-  /** Partner is online: use user presence for support chat or consumer; digger presence for digger. */
+  /** Partner is online: use user presence for support chat or consumer; digger presence for digger. Real-time via useUserPresence / useDiggerPresence. */
   const getPartnerIsOnline = (conv: Conversation | undefined) => {
     if (!conv || !currentUser?.id) return false;
     if (conv.admin_id) {
       const partnerUserId = currentUser.id === conv.admin_id ? conv.consumer_id : conv.admin_id;
-      return onlineUserIds.has(partnerUserId);
+      return partnerUserId != null && onlineUserIds.has(String(partnerUserId));
     }
     if (currentUser.id === conv.consumer_id)
-      return !!(conv.digger_id && onlineDiggers.has(conv.digger_id));
-    return onlineUserIds.has(conv.consumer_id);
+      return !!(conv.digger_id && onlineDiggers.has(String(conv.digger_id)));
+    return conv.consumer_id != null && onlineUserIds.has(String(conv.consumer_id));
   };
+
+  /** Current user appears online when viewing Messages (they are tracked by PresenceTracker in App). */
+  const iAmOnline = true;
 
   if (loading) {
     return (
@@ -1748,6 +1751,23 @@ export default function Messages() {
                 >
                   <X className="h-4 w-4" />
                 </Button>
+              </div>
+
+              {/* Online status: You + Partner (real-time green/grey) */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Online status</h4>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/30">
+                    <span className={cn("h-2.5 w-2.5 rounded-full border-2 border-background shrink-0", iAmOnline ? "bg-success" : "bg-muted-foreground/50")} title={iAmOnline ? "Online" : "Offline"} />
+                    <span className="text-sm font-medium text-foreground">You</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{iAmOnline ? "Online" : "Offline"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/30">
+                    <span className={cn("h-2.5 w-2.5 rounded-full border-2 border-background shrink-0", getPartnerIsOnline(selectedConv) ? "bg-success" : "bg-muted-foreground/50")} title={getPartnerIsOnline(selectedConv) ? "Online" : "Offline"} />
+                    <span className="text-sm font-medium text-foreground">{partnerName}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{getPartnerIsOnline(selectedConv) ? "Online" : "Offline"}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Local time */}

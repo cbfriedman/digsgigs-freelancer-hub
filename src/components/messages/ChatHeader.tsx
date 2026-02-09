@@ -59,8 +59,9 @@ export function ChatHeader({
           <span
             className={cn(
               "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
-              isOnline ? "bg-success" : "bg-muted-foreground/40"
+              isOnline ? "bg-success" : "bg-muted-foreground/50"
             )}
+            title={isOnline ? "Online" : "Offline"}
           />
         </div>
 

@@ -26,10 +26,11 @@ export const useDiggerPresence = (diggerId?: string) => {
           const list = Array.isArray(presences) ? presences : [];
           list.forEach((p: unknown) => {
             const row = p as Record<string, unknown>;
-            const did =
+            const raw =
               row?.digger_id ??
               (row?.payload as Record<string, unknown> | undefined)?.digger_id;
-            if (typeof did === 'string' && did.length > 0) online.add(did);
+            const did = typeof raw === 'string' ? raw : (raw != null ? String(raw) : null);
+            if (did && did.length > 0) online.add(did);
           });
         });
         setOnlineDiggers(online);
@@ -59,7 +60,7 @@ export const useDiggerPresence = (diggerId?: string) => {
     setup();
 
     // Periodic refresh so online/offline updates in real time
-    const interval = setInterval(refreshOnline, 2000);
+    const interval = setInterval(refreshOnline, 1500);
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') refreshOnline();
