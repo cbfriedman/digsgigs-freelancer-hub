@@ -252,7 +252,7 @@ const MyBids = () => {
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground mb-2">
-                        Your Proposal
+                        Your bid
                       </div>
                       <p className="text-sm line-clamp-4">{bid.proposal}</p>
                     </div>

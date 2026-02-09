@@ -257,8 +257,8 @@ const PostGig = () => {
       console.error("Error posting gig:", error);
       const msg = error?.message ?? "";
       if (msg.includes("Only giggers") || msg.includes("gigger")) {
-        toast.error("Post projects with your client account", {
-          description: "Switch to Gigger mode above, or sign up as a client to post.",
+        toast.error("Post gigs with your Gigger account", {
+          description: "Switch to Gigger mode above, or sign up as a Gigger to post.",
         });
       } else {
         toast.error(msg || "Failed to post project. Please try again.");
@@ -274,8 +274,8 @@ const PostGig = () => {
     <PageLayout maxWidth="tight" navProps={{ showBackButton: true, backLabel: "Back" }}>
       <SEOHead
         title="Post a Project — Get Freelance Quotes | Digs & Gigs"
-        description="Post your project and get connected with skilled freelancers instantly."
-        keywords="post project, hire freelancer, get quotes"
+        description="Post a gig and get bids from Diggers. No cost to post—pay when you award or unlock leads."
+        keywords="post gig, hire digger, get bids"
       />
 
       <div className="space-y-8 animate-fade-in-up">
@@ -289,7 +289,7 @@ const PostGig = () => {
             Tell Us What You Need
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Describe your project and we'll connect you with qualified freelancers ready to help.
+            Describe your gig. Diggers will bid and you'll see proposals here—award when you're ready.
           </p>
         </div>
 
@@ -327,10 +327,10 @@ const PostGig = () => {
               </div>
               <div className="min-w-0 flex-1 space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">
-                  Post projects with your client account (Gigger mode)
+                  Post gigs with your Gigger account
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  You're currently in Digger mode. To post a project and get quotes from freelancers, use your client account. Switch below or sign in with a client account.
+                  You're in Digger mode. To post a gig and get bids from Diggers, switch to Gigger or sign up as a Gigger.
                 </p>
                 <div className="flex flex-wrap gap-3 pt-1">
                   {hasGiggerRole ? (
@@ -339,7 +339,7 @@ const PostGig = () => {
                       onClick={() => switchRole("gigger")}
                       className="rounded-xl bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
                     >
-                      Switch to client mode
+                      Switch to Gigger
                     </Button>
                   ) : (
                     <Button
@@ -348,7 +348,7 @@ const PostGig = () => {
                       onClick={() => navigate("/register?type=gigger")}
                       className="rounded-xl border-primary/30 text-primary hover:bg-primary/10"
                     >
-                      Get a client account
+                      Get a Gigger account
                     </Button>
                   )}
                   <Button
@@ -421,7 +421,7 @@ const PostGig = () => {
                     <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">Step 2 of 4</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Select all that apply to help us find the right freelancers.
+                    Select all that apply so Diggers can find your gig.
                   </p>
                   <div className="grid gap-3 mt-4">
                     {selectedProblem.clarifyingOptions.map((option) => {
@@ -489,7 +489,7 @@ const PostGig = () => {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Budget Range <span className="text-destructive">*</span></Label>
                     <p className="text-xs text-muted-foreground">
-                      Enter your expected budget range. This helps freelancers understand your expectations.
+                      Enter your expected budget range. This helps Diggers tailor their bids.
                     </p>
                     <div className="grid grid-cols-2 gap-4 mt-2">
                       <div className="space-y-1.5">
@@ -552,7 +552,7 @@ const PostGig = () => {
                       Preferred Freelancer Location <span className="text-muted-foreground text-xs">(optional)</span>
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Select regions or specific countries where you'd prefer freelancers to be located. 
+                      Select regions or countries where you'd prefer Diggers to be located. 
                       Leave empty for all regions. Click a region to expand and select individual countries.
                     </p>
                     {preferredRegions.length > 0 && (
@@ -621,7 +621,7 @@ const PostGig = () => {
                       Phone Number <span className="text-muted-foreground text-xs">(optional)</span>
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Add your phone if you'd like freelancers to call you directly.
+                      Add your phone if you'd like Diggers to call you directly.
                     </p>
                     <Input
                       id="clientPhone"
@@ -685,7 +685,7 @@ const PostGig = () => {
                       <CheckCircle2 className="h-3 w-3 text-green-700 dark:text-green-300" />
                     </div>
                     <span className="text-sm text-green-800 dark:text-green-200">
-                      <strong>Get contacted directly</strong> — Freelancers reach out with proposals
+                      <strong>Get bids from Diggers</strong> — They'll send proposals; you award when ready
                     </span>
                   </li>
                 </ul>
@@ -713,7 +713,7 @@ const PostGig = () => {
 
               {/* Trust Footer */}
               <p className="text-center text-xs text-muted-foreground">
-                By posting, you agree to our terms. Your information is kept private and only shared with freelancers who unlock your project.
+                By posting, you agree to our terms. Your info is private and only shared with Diggers who unlock your lead.
               </p>
             </form>
           </CardContent>

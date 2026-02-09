@@ -214,7 +214,7 @@ const MyGigs = () => {
           <div>
             <h1 className="text-4xl font-bold mb-2">My Gigs</h1>
             <p className="text-muted-foreground">
-              Manage your posted gigs, watch proposals in real time, and review lead requests
+              Your gigs are live. Review bids from Diggers in real time and award when you're ready.
             </p>
           </div>
           <div className="flex gap-2">
@@ -228,9 +228,9 @@ const MyGigs = () => {
         {gigs.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">You haven't posted any gigs yet.</p>
+              <p className="text-muted-foreground mb-4">Post your first gig. Diggers are waiting to bid.</p>
               <Button onClick={() => navigate("/post-gig")}>
-                Post Your First Gig
+                Post a gig
               </Button>
             </CardContent>
           </Card>
@@ -255,7 +255,7 @@ const MyGigs = () => {
                         {bidStatsByGigId[gig.id]?.count != null && bidStatsByGigId[gig.id].count > 0 && (
                           <Badge variant="secondary" className="flex items-center gap-1">
                             <FileText className="h-3 w-3" />
-                            {bidStatsByGigId[gig.id].count} {bidStatsByGigId[gig.id].count === 1 ? "proposal" : "proposals"}
+                            {bidStatsByGigId[gig.id].count} {bidStatsByGigId[gig.id].count === 1 ? "bid" : "bids"}
                             {bidStatsByGigId[gig.id].avgPrice > 0 && (
                               <span className="opacity-80"> · Avg ${Math.round(bidStatsByGigId[gig.id].avgPrice).toLocaleString()}</span>
                             )}
@@ -297,14 +297,14 @@ const MyGigs = () => {
                     </div>
                   </div>
 
-                  {/* Always-visible action row: View proposals / View project + View Issues */}
+                  {/* Action row: View bids / View gig + View Issues */}
                   <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-2">
                     <Button
                       onClick={() => navigate(`/gig/${gig.id}`)}
                       className="flex-1 min-w-0"
                     >
                       <FileText className="mr-2 h-4 w-4" />
-                      {bidStatsByGigId[gig.id]?.count ? "View proposals" : "View project"}
+                      {bidStatsByGigId[gig.id]?.count ? "View bids" : "View gig"}
                     </Button>
                     <Button 
                       variant="outline" 

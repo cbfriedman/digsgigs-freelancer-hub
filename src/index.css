@@ -569,3 +569,9 @@
     transform: translateX(0);
   }
 }
+
+/* Role mode: Gigger vs Digger (data-role-mode in App RootLayout). See docs/GIGGER_DIGGER_UX_AND_TONE.md */
+[data-role-mode="gigger"] .role-accent { color: hsl(var(--accent)); }
+[data-role-mode="gigger"] .role-accent-bg { background-color: hsl(var(--accent) / 0.1); }
+[data-role-mode="digger"] .role-accent { color: hsl(var(--primary)); }
+[data-role-mode="digger"] .role-accent-bg { background-color: hsl(var(--primary) / 0.1); }

@@ -208,7 +208,7 @@ export default function MyLeads() {
           ) : leads.length === 0 ? (
             <Card className="p-12 text-center">
               <p className="text-muted-foreground mb-4">
-                You haven't received any leads yet.
+                Find your next gig. Browse open gigs or buy leads when you're ready.
               </p>
               <p className="text-sm text-muted-foreground mb-6">
                 Leads will automatically appear here when new gigs match your profile keywords.

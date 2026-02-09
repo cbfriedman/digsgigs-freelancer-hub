@@ -510,7 +510,7 @@ const BrowseDiggers = () => {
           <p className="text-muted-foreground">
             {userRole === "gigger" 
               ? "View diggers related to your posted gigs. Clicking on a profile will charge the digger to reveal their contact information."
-              : "Find the perfect freelancer for your project"}
+              : "Find the right Digger for your gig"}
           </p>
         </div>
 

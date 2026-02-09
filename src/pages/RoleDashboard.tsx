@@ -562,7 +562,7 @@ export default function RoleDashboard() {
                       </>
                     )}
                   </div>
-                  <CardDescription className="mt-1">Service Provider — Find work opportunities</CardDescription>
+                  <CardDescription className="mt-1">Find gigs, bid or buy leads, get awarded</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -634,7 +634,7 @@ export default function RoleDashboard() {
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Become a Digger</h3>
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                    Register as a service provider to find work opportunities and connect with clients looking for your skills.
+                    Find gigs, bid or buy leads, and chat with Giggers. No membership—pay per lead or 8% when awarded.
                   </p>
                 </div>
               )}
@@ -676,7 +676,7 @@ export default function RoleDashboard() {
                       </>
                     )}
                   </div>
-                  <CardDescription className="mt-1">Project Poster — Find talent for your projects</CardDescription>
+                  <CardDescription className="mt-1">Post gigs, review bids, award Diggers</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -750,7 +750,7 @@ export default function RoleDashboard() {
                   </div>
                   <h3 className="font-semibold text-foreground mb-2">Become a Gigger</h3>
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                    Register as a project poster to find talented service providers and get your projects done.
+                    Post gigs for free. Diggers will bid—review and award when you're ready.
                   </p>
                 </div>
               )}
@@ -769,7 +769,7 @@ export default function RoleDashboard() {
                 <div className="flex-1">
                   <h3 className="font-semibold text-foreground mb-1">Pro Tip</h3>
                   <p className="text-sm text-muted-foreground">
-                    You can have both Digger and Gigger roles active at the same time. Switch between them seamlessly to find work or post projects!
+                    You can be both a Digger and a Gigger. Switch roles anytime to find gigs or post your own.
                   </p>
                 </div>
               </div>
@@ -787,16 +787,16 @@ export default function RoleDashboard() {
             </div>
             {userRoles.includes('gigger') && !userRoles.includes('digger') ? (
               <>
-                <DialogTitle className="text-center text-xl">Welcome, Project Poster!</DialogTitle>
+                <DialogTitle className="text-center text-xl">Welcome, Gigger!</DialogTitle>
                 <DialogDescription className="text-center text-base">
-                  You&apos;re ready to find talented professionals for your projects. Post your first gig to get matched with qualified service providers who can help. Add a photo and intro to your profile to build trust when you connect.
+                  Post your first gig—Diggers will bid and you'll see proposals here. Award when you're ready and chat in Messages.
                 </DialogDescription>
               </>
             ) : (
               <>
                 <DialogTitle className="text-center text-xl">Welcome to Digs & Gigs!</DialogTitle>
                 <DialogDescription className="text-center text-base">
-                  Please complete your profile to get the most out of the platform. Add your photo, services, and details to attract clients and stand out.
+                  Complete your profile so Giggers can find you. Add a photo, services, and details to stand out and get awarded.
                 </DialogDescription>
               </>
             )}

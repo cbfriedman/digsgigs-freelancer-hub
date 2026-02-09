@@ -220,7 +220,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
   if (loading) {
     return (
       <div className="flex justify-center py-8">
-        <LoadingSpinner label="Loading proposals..." />
+        <LoadingSpinner label="Loading bids..." />
       </div>
     );
   }
@@ -229,7 +229,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          No proposals yet. Check back soon!
+          No bids yet. Diggers will appear here when they bid.
         </CardContent>
       </Card>
     );
@@ -254,12 +254,12 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
         <div>
           <h3 className="text-xl font-semibold">
-            Proposals {totalBids > 0 && <span className="text-muted-foreground font-normal">({totalBids})</span>}
+            Bids {totalBids > 0 && <span className="text-muted-foreground font-normal">({totalBids})</span>}
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
             {isOwner
-              ? "Review proposals below. New bids appear in real time."
-              : "Proposals are anonymous until you accept or unlock contact info"}
+              ? "Review bids below. New bids appear in real time."
+              : "Bids are anonymous until you award or unlock contact info."}
           </p>
         </div>
         {totalBids > 0 && (

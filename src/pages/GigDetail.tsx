@@ -473,7 +473,7 @@ const GigDetail = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    When you&apos;re awarded a job, we charge an <strong>8% referral fee</strong> (from the Gigger&apos;s deposit). 
+                    When you&apos;re awarded the gig, we charge an <strong>8% referral fee</strong> (from the Gigger&apos;s deposit). 
                     You can also buy leads upfront. No subscription required.
                   </p>
                 </CardContent>
@@ -488,8 +488,8 @@ const GigDetail = () => {
                   diggerId={diggerId}
                   onSuccess={() => {
                     toast({
-                      title: "Proposal submitted!",
-                      description: "The client will review your proposal.",
+                      title: "Bid submitted!",
+                      description: "The Gigger will review your bid.",
                     });
                     loadData();
                   }}
@@ -522,15 +522,24 @@ const GigDetail = () => {
               </Card>
             )}
 
-            {/* Logged in but not a Digger or no digger profile — need to complete setup to see bid form */}
-            {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && (
+            {/* Only Diggers can bid. Gigger-only users see an info message; users with Digger role but no profile see setup CTA. */}
+            {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && !userRoles?.includes('digger') && (
+              <Card id="bid">
+                <CardContent className="pt-6">
+                  <p className="text-center text-muted-foreground">
+                    Only <strong>Diggers</strong> can bid on gigs. You&apos;re in Gigger mode—switch to Digger to bid, or post your own gigs as a Gigger.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+            {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && userRoles?.includes('digger') && (
               <Card id="bid">
                 <CardContent className="pt-6 space-y-4">
                   <p className="text-center text-muted-foreground">
-                    To place a bid you need an active <strong>Digger</strong> profile (contractor/freelancer).
+                    To place a bid you need an active <strong>Digger</strong> profile.
                   </p>
                   <p className="text-sm text-center text-muted-foreground">
-                    Go to your dashboard and choose &quot;Become a Digger&quot; or complete your Digger profile, then return here to submit your bid.
+                    Complete your Digger profile in the dashboard, then return here to submit your bid.
                   </p>
                   <Button
                     className="w-full"

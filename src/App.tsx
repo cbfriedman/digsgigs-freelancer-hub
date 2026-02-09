@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
 import { useTrackUserPresence } from "./hooks/useUserPresence";
@@ -120,17 +120,19 @@ const PresenceTracker = () => {
   return null;
 };
 
-// Layout wrapper: persistent header (like Upwork) + page content
+// Layout wrapper: persistent header + page content. data-role-mode enables Gigger vs Digger styling (see docs/GIGGER_DIGGER_UX_AND_TONE.md).
 const RootLayout = () => {
   const location = useLocation();
   const pathname = location.pathname;
+  const { activeRole } = useAuth();
   const isBlogPost = /^\/blog\/[^/]+$/.test(pathname);
   const isBlogIndex = pathname === "/blog";
   const showBackButton = isBlogPost || isBlogIndex;
   const backTo = isBlogPost ? "/blog" : "/";
   const backLabel = isBlogPost ? "Back to Blog" : "Back to Home";
+  const roleMode = activeRole === "digger" || activeRole === "gigger" ? activeRole : "";
   return (
-    <>
+    <div {...(roleMode ? { "data-role-mode": roleMode } : {})} className="contents">
       <Navigation
         showBackButton={showBackButton}
         backTo={backTo}
@@ -139,7 +141,7 @@ const RootLayout = () => {
       <PageViewTracker />
       <Outlet />
       <FloatingChatButton />
-    </>
+    </div>
   );
 };
 

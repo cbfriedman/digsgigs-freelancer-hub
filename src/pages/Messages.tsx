@@ -968,7 +968,7 @@ export default function Messages() {
     if (currentUser?.id === conv.consumer_id) {
       return conv.digger_profiles?.handle || "Unknown Digger";
     }
-    return conv.consumer_profile?.full_name?.trim() || "Client";
+    return conv.consumer_profile?.full_name?.trim() || "Gigger";
   };
 
   const getConversationSubtitle = (conv: Conversation | undefined) => {
@@ -1783,7 +1783,7 @@ export default function Messages() {
                   onClick={() => navigate(`/gig/${selectedConv.gig_id}`)}
                 >
                   <ExternalLink className="h-4 w-4" />
-                  View proposal / gig
+                  View gig
                 </Button>
               )}
 

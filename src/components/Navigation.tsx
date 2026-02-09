@@ -200,21 +200,22 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 Home
               </button>
 
-              {/* Hire Freelancers — client-focused */}
+              {/* Gigger-related menu: show when in Gigger mode or when not in Digger mode (guest or both roles) */}
+              {activeRole !== "digger" && (
               <NavDropdown
                 trigger={
                   <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
-                    Hire freelancers
+                    Hire Diggers
                     <ChevronDown className="h-4 w-4 opacity-70" />
                   </button>
                 }
               >
                 <DropdownMenuItem onClick={() => navigate("/post-gig")} className="cursor-pointer">
-                  Post a project
+                  Post a gig
                 </DropdownMenuItem>
                 {hasEnoughDiggers && (
                   <DropdownMenuItem onClick={() => navigate("/browse-diggers")} className="cursor-pointer">
-                    Browse freelancers
+                    Browse Diggers
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => navigate("/get-free-quote")} className="cursor-pointer">
@@ -225,19 +226,21 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </DropdownMenuItem>
                 {user && userRoles.includes('gigger') && (
                   <DropdownMenuItem onClick={() => navigate("/my-gigs")} className="cursor-pointer">
-                    My projects
+                    My gigs
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => navigate("/pricing")} className="cursor-pointer">
                   Pricing
                 </DropdownMenuItem>
               </NavDropdown>
+              )}
 
-              {/* Find work — freelancer-focused */}
+              {/* Digger-related menu: show when in Digger mode or when not in Gigger mode (guest or both roles) */}
+              {activeRole !== "gigger" && (
               <NavDropdown
                 trigger={
                   <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
-                    Find work
+                    Find gigs
                     <ChevronDown className="h-4 w-4 opacity-70" />
                   </button>
                 }
@@ -257,6 +260,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   Digger guide
                 </DropdownMenuItem>
               </NavDropdown>
+              )}
 
               {/* Why Digs & Gigs — trust & info */}
               <NavDropdown
@@ -492,40 +496,46 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <FolderOpen className="h-4 w-4" />
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
-                      <div className="flex items-center justify-between px-4 py-3 border-b">
-                        <span className="font-semibold text-sm">My Projects</span>
-                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                    <HoverCardContent side="bottom" align="end" className="w-[20rem] min-w-0 max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
+<div className="w-full min-w-0 max-w-full overflow-hidden box-border" style={{ maxWidth: "20rem" }}>
+                        <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+                        <span className="font-semibold text-sm truncate min-w-0">My Projects</span>
+                          <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
+                        </div>
+                        <ScrollArea className="h-[280px] w-full min-w-0 max-w-full overflow-hidden">
+                          <div className="w-full min-w-0 max-w-full overflow-hidden pr-4">
+                            {recentGigsLoading ? (
+                              <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
+                            ) : recentGigs.length === 0 ? (
+                              <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No projects yet</div>
+                            ) : (
+                              <ul className="py-1 w-full min-w-0 list-none">
+                                {recentGigs.map((g) => {
+                                  const d = new Date(g.created_at);
+                                  const timeLabel = format(d, "MMM d, yyyy");
+                                  const title = g.title || "Untitled project";
+                                  const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
+                                  return (
+                                    <li key={g.id} className="w-full min-w-0 overflow-hidden border-b-0">
+                                      <button
+                                        type="button"
+                                        className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors overflow-hidden box-border"
+                                        onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}
+                                      >
+                                        <div className="w-full min-w-0 flex items-center justify-between gap-2 overflow-hidden">
+                                          <span className="font-medium text-sm truncate min-w-0 block max-w-[calc(100%-3.5rem)]" title={title}>{displayTitle}</span>
+                                          <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 flex-shrink-0">{g.status}</Badge>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                          </div>
+                        </ScrollArea>
                       </div>
-                      <ScrollArea className="h-[280px]">
-                        {recentGigsLoading ? (
-                          <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
-                        ) : recentGigs.length === 0 ? (
-                          <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No projects yet</div>
-                        ) : (
-                          <ul className="py-1">
-                            {recentGigs.map((g) => {
-                              const d = new Date(g.created_at);
-                              const timeLabel = format(d, "MMM d, yyyy");
-                              return (
-                                <li key={g.id}>
-                                  <button
-                                    type="button"
-                                    className="w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors"
-                                    onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}
-                                  >
-                                    <div className="flex items-center justify-between w-full gap-2">
-                                      <span className="font-medium text-sm truncate flex-1">{g.title || "Untitled project"}</span>
-                                      <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0">{g.status}</Badge>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">{timeLabel}</p>
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </ScrollArea>
                     </HoverCardContent>
                   </HoverCard>
                   )}
@@ -760,35 +770,41 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       <FolderOpen className="h-4 w-4" />
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
-                    <div className="flex items-center justify-between px-4 py-3 border-b">
-                      <span className="font-semibold text-sm">My Projects</span>
-                      <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
+                  <HoverCardContent side="bottom" align="end" className="w-[20rem] min-w-0 max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
+                    <div className="w-full min-w-0 max-w-full overflow-hidden box-border" style={{ maxWidth: "20rem" }}>
+                      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+                        <span className="font-semibold text-sm truncate min-w-0">My Projects</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
+                      </div>
+                      <ScrollArea className="h-[280px] w-full min-w-0 max-w-full overflow-hidden">
+                        <div className="w-full min-w-0 max-w-full overflow-hidden pr-4">
+                          {recentGigsLoading ? (
+                            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
+                          ) : recentGigs.length === 0 ? (
+                            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No projects yet</div>
+                          ) : (
+                            <ul className="py-1 w-full min-w-0 list-none">
+                              {recentGigs.map((g) => {
+                                const timeLabel = format(new Date(g.created_at), "MMM d, yyyy");
+                                const title = g.title || "Untitled project";
+                                const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
+                                return (
+                                  <li key={g.id} className="w-full min-w-0 overflow-hidden">
+                                    <button type="button" className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}>
+                                      <div className="w-full min-w-0 flex items-center justify-between gap-2 overflow-hidden">
+                                        <span className="font-medium text-sm truncate min-w-0 block max-w-[calc(100%-3.5rem)]" title={title}>{displayTitle}</span>
+                                        <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 flex-shrink-0">{g.status}</Badge>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </div>
+                      </ScrollArea>
                     </div>
-                    <ScrollArea className="h-[280px]">
-                      {recentGigsLoading ? (
-                        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
-                      ) : recentGigs.length === 0 ? (
-                        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No projects yet</div>
-                      ) : (
-                        <ul className="py-1">
-                          {recentGigs.map((g) => {
-                            const timeLabel = format(new Date(g.created_at), "MMM d, yyyy");
-                            return (
-                              <li key={g.id}>
-                                <button type="button" className="w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}>
-                                  <div className="flex items-center justify-between w-full gap-2">
-                                    <span className="font-medium text-sm truncate flex-1">{g.title || "Untitled project"}</span>
-                                    <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0">{g.status}</Badge>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground">{timeLabel}</p>
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </ScrollArea>
                   </HoverCardContent>
                 </HoverCard>
               )}
@@ -862,8 +878,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <span className="font-medium">Home</span>
                       </button>
 
-                      {/* Hire freelancers */}
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">Hire freelancers</p>
+                      {/* Gigger-related: Hire Diggers (hidden in Digger mode) */}
+                      {activeRole !== "digger" && (
+                      <>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">Hire Diggers</p>
                       <button
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
@@ -871,7 +889,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                         onClick={() => { navigate("/post-gig"); setMobileMenuOpen(false); }}
                       >
-                        <span className="font-medium">Post a project</span>
+                        <span className="font-medium">Post a gig</span>
                       </button>
                       {hasEnoughDiggers && (
                         <button
@@ -881,7 +899,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           )}
                           onClick={() => { navigate("/browse-diggers"); setMobileMenuOpen(false); }}
                         >
-                          <span className="font-medium">Browse freelancers</span>
+                          <span className="font-medium">Browse Diggers</span>
                         </button>
                       )}
                       <button
@@ -911,9 +929,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       >
                         <span className="font-medium">Pricing</span>
                       </button>
+                      </>
+                      )}
 
-                      {/* Find work */}
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">Find work</p>
+                      {/* Digger-related: Find gigs (hidden in Gigger mode) */}
+                      {activeRole !== "gigger" && (
+                      <>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">Find gigs</p>
                       <button
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
@@ -952,6 +974,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       >
                         <span className="font-medium">Digger guide</span>
                       </button>
+                      </>
+                      )}
 
                       {/* Why Digs & Gigs */}
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-4 pb-1">Why Digs & Gigs</p>
@@ -1196,12 +1220,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <Briefcase className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">For clients</p>
-                  <h3 className="text-lg font-semibold text-foreground">Hire top freelancers</h3>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">For Giggers</p>
+                  <h3 className="text-lg font-semibold text-foreground">Hire Diggers for your gigs</h3>
                 </div>
               </div>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                Post projects for free, review tailored proposals, and only pay when you unlock the leads you want.
+                Post gigs for free, review bids from Diggers, and only pay when you award or unlock leads.
               </p>
               <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover:gap-2">
                 Continue
@@ -1221,12 +1245,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <Rocket className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">For freelancers</p>
-                  <h3 className="text-lg font-semibold text-foreground">Find vetted projects</h3>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">For Diggers</p>
+                  <h3 className="text-lg font-semibold text-foreground">Find gigs & snag leads</h3>
                 </div>
               </div>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                Get instant access to curated opportunities, bid on gigs, and keep 100% of what you earn.
+                Browse open gigs, bid or buy leads, get awarded—and keep the rest. No membership required.
               </p>
               <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover:gap-2">
                 Continue

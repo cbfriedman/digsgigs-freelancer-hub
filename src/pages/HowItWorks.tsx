@@ -34,7 +34,7 @@ const HowItWorks = () => {
     {
       number: 2,
       title: "Diggers Get Matched Instantly",
-      description: "Our system identifies freelancers whose skills and expertise align with your project requirements.",
+      description: "Our system identifies Diggers whose skills match your gig.",
       icon: Zap,
       color: "accent",
       highlight: "Smart matching"
@@ -50,7 +50,7 @@ const HowItWorks = () => {
     {
       number: 4,
       title: "Connect & Communicate",
-      description: "Send proposals, share files, and discuss project details directly — all within the platform.",
+      description: "Send bids, share files, and discuss the gig in Messages—all in one place.",
       icon: MessageSquare,
       color: "accent",
       highlight: "Direct contact"
@@ -69,14 +69,14 @@ const HowItWorks = () => {
     {
       icon: DollarSign,
       title: "No Commissions",
-      description: "Keep 100% of what you earn. We never take a cut of your projects.",
+      description: "Keep 100% of what you earn. We never take a cut of your gigs.",
       gradient: "from-green-500/10 to-emerald-500/10",
       iconColor: "text-green-600"
     },
     {
       icon: Users,
       title: "No Bidding Wars",
-      description: "Choose the clients you want. No racing to the bottom on price.",
+      description: "Choose the Giggers you want. No racing to the bottom on price.",
       gradient: "from-blue-500/10 to-indigo-500/10",
       iconColor: "text-blue-600"
     },
@@ -101,11 +101,11 @@ const HowItWorks = () => {
     >
       <SEOHead
         title="How Digs & Gigs Works — Fair, Simple Freelancing"
-        description="No commissions. No bidding wars. Learn how freelancers and clients connect instantly on Digs & Gigs."
-        keywords="how it works, freelance marketplace, no commissions, no bidding wars, hire freelancers, find clients"
+        description="No commissions. No bidding wars. See how Diggers and Giggers connect on Digs & Gigs."
+        keywords="how it works, gigs, diggers, giggers, no commissions, post gig, find leads"
         structuredData={generateFAQSchema([
-          { question: "How do clients post projects?", answer: "Clients describe what they need — design, development, writing, business services, marketing, etc. — and get matched instantly with qualified freelancers." },
-          { question: "How do freelancers find work?", answer: "Freelancers create a profile, select their skills & categories, and receive matched project requests. They pay only for lead reveals ($10/$25 first year for Founders)." },
+          { question: "How do Giggers post gigs?", answer: "Giggers describe what they need and post a gig. Diggers bid or buy leads—you review and award when ready." },
+          { question: "How do Diggers find gigs?", answer: "Diggers create a profile, browse gigs or get matched, and bid or buy leads. Pay per lead or 8% when awarded—no membership." },
           { question: "Are there any commissions?", answer: "No. Freelancers keep 100% of what they earn. There are no commissions, no bidding wars, and no race to the bottom." }
         ])}
       />
@@ -120,7 +120,7 @@ const HowItWorks = () => {
             Simple. Transparent. Built for Results.
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Connect with top talent or find your next project in just a few steps.
+            Connect with Diggers or find your next gig in a few steps.
           </p>
           
           {/* Trust Signals */}
@@ -141,7 +141,7 @@ const HowItWorks = () => {
         <div className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-3">The Process</h2>
-            <p className="text-muted-foreground">From project to payment in 5 simple steps</p>
+            <p className="text-muted-foreground">From gig to payment in 5 simple steps</p>
           </div>
 
           <div className="relative">
@@ -274,7 +274,7 @@ const HowItWorks = () => {
         <div className="text-center animate-fade-in-up" style={{ animationDelay: '600ms' }}>
           <h2 className="text-2xl md:text-3xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-            Join thousands of freelancers and clients connecting on Digs & Gigs.
+            Join Diggers and Giggers connecting on Digs & Gigs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 

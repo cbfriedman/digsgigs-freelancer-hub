@@ -180,9 +180,9 @@ export function DiggerProposalCard({
           <p className="font-medium text-foreground">{gigTitle}</p>
         </div>
 
-        {/* Proposal description */}
+        {/* Bid description */}
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5">Proposal</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5">Bid</p>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
             {displayProposal}
             {truncated && !showFullProposal && (

@@ -14,7 +14,7 @@ import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
-import { GigAdvancedFilters } from "@/components/GigAdvancedFilters";
+import { GigAdvancedFilters, type GigFilters } from "@/components/GigAdvancedFilters";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
 import SEOHead from "@/components/SEOHead";
@@ -24,6 +24,18 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 interface Category {
   id: string;
   name: string;
+  parent_category_id?: string | null;
+}
+
+/** Expand selected category IDs: when a parent is selected, include all its subcategory IDs so gigs match. */
+function expandCategoryIds(selectedIds: string[], allCategories: Category[]): string[] {
+  const out = new Set<string>();
+  for (const id of selectedIds) {
+    out.add(id);
+    const children = allCategories.filter((c) => c.parent_category_id === id);
+    children.forEach((c) => out.add(c.id));
+  }
+  return Array.from(out);
 }
 
 interface Gig {
@@ -44,18 +56,11 @@ interface Gig {
   } | null;
 }
 
-interface GigFilters {
-  budgetRange: [number, number];
-  selectedCategories: string[];
-  locationRadius: number;
-  locationLat?: number;
-  locationLng?: number;
-}
-
 const BrowseGigs = () => {
   const navigate = useNavigate();
   const [gigs, setGigs] = useState<Gig[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  /** All categories from DB (parents + subcategories) for filters and dropdown */
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -72,6 +77,8 @@ const BrowseGigs = () => {
     budgetRange: [0, 50000],
     selectedCategories: [],
     locationRadius: 50,
+    postedSince: 'all',
+    sortBy: 'newest',
   });
   const [showEscrowGigs, setShowEscrowGigs] = useState(true);
   const { addToCart, removeFromCart, isInCart, cartCount } = useCart();
@@ -168,8 +175,7 @@ const BrowseGigs = () => {
 
     const { data: categoriesData, error: categoriesError } = await supabase
       .from("categories")
-      .select("id, name")
-      .is("parent_category_id", null)
+      .select("id, name, parent_category_id")
       .order("name");
 
     if (categoriesError) {
@@ -177,7 +183,7 @@ const BrowseGigs = () => {
       toast.error("Failed to load categories");
     }
 
-    setCategories(categoriesData || []);
+    setAllCategories(categoriesData || []);
 
     let query = supabase
       .from("gigs")
@@ -220,7 +226,17 @@ const BrowseGigs = () => {
       query = query.lte("budget_max", advancedFilters.budgetRange[1]);
     }
     if (advancedFilters.selectedCategories.length > 0) {
-      query = query.in("category_id", advancedFilters.selectedCategories);
+      const categoryList = categoriesData || [];
+      const categoryIds = expandCategoryIds(advancedFilters.selectedCategories, categoryList);
+      query = query.in("category_id", categoryIds);
+    }
+
+    if (advancedFilters.postedSince !== 'all') {
+      const since = new Date();
+      if (advancedFilters.postedSince === '24h') since.setDate(since.getDate() - 1);
+      else if (advancedFilters.postedSince === '7d') since.setDate(since.getDate() - 7);
+      else if (advancedFilters.postedSince === '30d') since.setDate(since.getDate() - 30);
+      query = query.gte('created_at', since.toISOString());
     }
 
     const { data, error } = await query;
@@ -265,9 +281,28 @@ const BrowseGigs = () => {
   const newGigs = filteredGigs.filter(gig => !isOldGig(gig.created_at));
   const oldGigs = filteredGigs.filter(gig => isOldGig(gig.created_at));
 
-  const displayGigs = limitReached && (diggerProfile as any)?.lead_limit_enabled 
-    ? oldGigs  // If limit reached, only show old gigs
-    : filteredGigs; // Otherwise show all gigs
+  let displayGigs = limitReached && (diggerProfile as any)?.lead_limit_enabled 
+    ? oldGigs 
+    : filteredGigs;
+
+  const sortGigs = <T extends { created_at: string; budget_min: number | null; budget_max: number | null }>(list: T[]) => {
+    const sorted = [...list];
+    switch (advancedFilters.sortBy) {
+      case 'oldest':
+        sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        break;
+      case 'budget_asc':
+        sorted.sort((a, b) => (a.budget_min ?? 0) - (b.budget_min ?? 0));
+        break;
+      case 'budget_desc':
+        sorted.sort((a, b) => (b.budget_max ?? b.budget_min ?? 0) - (a.budget_max ?? a.budget_min ?? 0));
+        break;
+      default:
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return sorted;
+  };
+  displayGigs = sortGigs(displayGigs);
 
   const formatBudget = (min: number | null, max: number | null) => {
     if (!min && !max) return "Budget not specified";
@@ -281,7 +316,7 @@ const BrowseGigs = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Browse Local Service Gigs - Find Projects & Jobs"
-        description="Discover local service projects and gigs posted by clients. Search by category, location, and budget. Connect with clients seeking professionals for plumbing, electrical, landscaping, handyman services, and more."
+        description="Discover open gigs posted by Giggers. Search by category, location, and budget. Bid or buy leads—get awarded and keep the rest."
         keywords="service gigs, local jobs, contractor projects, freelance gigs, home service jobs, find work, service opportunities"
         structuredData={generateBreadcrumbSchema([
           { name: "Home", url: "https://digsandgigs.com" },
@@ -334,7 +369,7 @@ const BrowseGigs = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat) => (
+              {allCategories.filter((c) => !c.parent_category_id).map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
               ))}
             </SelectContent>
@@ -370,13 +405,20 @@ const BrowseGigs = () => {
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <div className="md:col-span-1">
             <GigAdvancedFilters
-              categories={categories}
+              categories={allCategories}
               filters={advancedFilters}
               onFiltersChange={setAdvancedFilters}
             />
             <SavedSearchesList 
               searchType="gigs" 
-              onApplySearch={(appliedFilters) => setAdvancedFilters(appliedFilters as GigFilters)}
+              onApplySearch={(appliedFilters) => setAdvancedFilters({
+                budgetRange: [0, 50000],
+                selectedCategories: [],
+                locationRadius: 50,
+                postedSince: 'all',
+                sortBy: 'newest',
+                ...(appliedFilters as Partial<GigFilters>),
+              })}
             />
           </div>
 
@@ -516,7 +558,7 @@ const BrowseGigs = () => {
                             <TooltipContent className="max-w-xs">
                               <p className="font-semibold mb-1">Hourly Pricing Model</p>
                               <p className="text-sm mb-2">
-                                You pay tier-based cost upfront (Free: $3, Pro: $1.50, Premium: $0). When awarded the job, pay an additional 1 hour of your rate. No commission on completed work.
+                                You pay tier-based cost upfront (Free: $3, Pro: $1.50, Premium: $0). When awarded the gig, pay an additional 1 hour of your rate. No commission on completed work.
                               </p>
                               <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={() => navigate("/pricing-strategy")}>
                                 Learn pricing strategies →

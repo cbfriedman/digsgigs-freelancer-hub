@@ -41,7 +41,7 @@ export const HeroSection = () => {
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in-up stagger-1 leading-relaxed">
             Connect with top software developers, designers, and digital experts. 
-            Post projects or find leads instantly.
+            Post gigs or find leads instantly.
           </p>
 
           {/* Value Props Grid */}
@@ -55,7 +55,7 @@ export const HeroSection = () => {
                 <h3 className="font-display font-semibold text-lg text-accent">For Clients</h3>
               </div>
               <ul className="space-y-3">
-                {["Post projects for free", "Receive multiple proposals", "No platform fees on projects"].map((item, i) => (
+                {["Post gigs for free", "Receive bids from Diggers", "No platform fees on gigs"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
                     <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                     <span>{item}</span>

@@ -1084,7 +1084,7 @@ const DiggerDetail = () => {
                       Upload cover photo
                     </Button>
                     <Button variant="secondary" size="sm" className="bg-background/90 hover:bg-background shadow" asChild>
-                      <a href={`${getDiggerProfileUrl(digger)}?as=client`} target="_blank" rel="noopener noreferrer">View client profile</a>
+                      <a href={`${getDiggerProfileUrl(digger)}?as=client`} target="_blank" rel="noopener noreferrer">View as Gigger</a>
                     </Button>
                   </div>
                   {/* Avatar on left with edit + online status */}
@@ -1209,7 +1209,7 @@ const DiggerDetail = () => {
                   ) : isOwnProfile ? (
                     <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
                       <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                      <p className="text-muted-foreground mb-4">Add a professional bio to help clients learn about your services</p>
+                      <p className="text-muted-foreground mb-4">Add a professional bio to help Giggers learn about your services</p>
                       <Button onClick={() => navigate(`/edit-digger-profile?profileId=${digger.id}`)}>
                         <Sparkles className="h-4 w-4 mr-2" />
                         Add Bio with AI Assistance
@@ -1305,7 +1305,7 @@ const DiggerDetail = () => {
                     </div>
                   ) : isOwnProfile ? (
                     <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
-                      <p className="text-muted-foreground mb-4">Add references from past clients to build trust</p>
+                      <p className="text-muted-foreground mb-4">Add references from past Giggers to build trust</p>
                       <p className="text-sm text-muted-foreground">Reference management coming soon</p>
                     </div>
                   ) : (

@@ -17,11 +17,11 @@ import { SUPPORT_EMAIL } from "@/config/siteContact";
 
 const platformLinks = [
   { label: "How It Works", path: "/how-it-works" },
-  { label: "Browse Freelancers", path: "/browse-diggers" },
-  { label: "Browse Projects", path: "/browse-gigs" },
+  { label: "Browse Diggers", path: "/browse-diggers" },
+  { label: "Browse Gigs", path: "/browse-gigs" },
   { label: "Pricing", path: "/pricing" },
-  { label: "Post a Project", path: "/post-gig" },
-  { label: "Apply as Freelancer", path: "/apply-digger" },
+  { label: "Post a gig", path: "/post-gig" },
+  { label: "Become a Digger", path: "/apply-digger" },
 ];
 
 const companyLinks = [
@@ -69,8 +69,7 @@ export const Footer = () => {
               />
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed mb-6 max-w-xs">
-              Connecting skilled freelancers and service professionals with clients worldwide. 
-              No commissions, no bidding wars—just quality connections.
+              Connect Diggers with Giggers. Post gigs, bid or buy leads, get awarded—no membership required.
             </p>
             
             {/* Trust Badges */}

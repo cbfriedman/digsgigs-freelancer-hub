@@ -21,7 +21,7 @@ export function EmptyConversation({
           </div>
           <h3 className="font-semibold text-foreground mb-2">Start the conversation</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Say hello to {partnerName || "your contact"} and begin discussing your project details.
+            Say hello to {partnerName || "them"} and start chatting about the gig.
           </p>
         </div>
       </div>
@@ -36,7 +36,7 @@ export function EmptyConversation({
         </div>
         <h3 className="text-lg font-semibold text-foreground mb-2">Select a conversation</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Choose a conversation from the list to view messages and continue your discussions.
+          Pick a chat from the list to view messages and keep the conversation going.
         </p>
       </div>
     </div>
