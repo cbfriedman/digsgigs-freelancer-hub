@@ -8,8 +8,9 @@ import { EscrowContractDialog } from "@/components/EscrowContractDialog";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
 import { DiggerProposalCard } from "@/components/DiggerProposalCard";
-import { Loader2, TrendingUp, DollarSign, FileText } from "lucide-react";
+import { TrendingUp, DollarSign, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface Bid {
   id: string;
@@ -219,7 +220,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
   if (loading) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <LoadingSpinner label="Loading proposals..." />
       </div>
     );
   }

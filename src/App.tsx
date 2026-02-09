@@ -15,6 +15,7 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { FloatingChatButton } from "./components/FloatingChatButton";
 import { Navigation } from "./components/Navigation";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
+import { GlobalMessageSound } from "./components/GlobalMessageSound";
 // Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
@@ -247,7 +248,7 @@ const router = createBrowserRouter(
       },
       {
         path: "/my-gigs",
-        element: <ProtectedRoute><MyGigs /></ProtectedRoute>,
+        element: <ProtectedRoute requireRole="gigger"><MyGigs /></ProtectedRoute>,
       },
       {
         path: "/my-bids",
@@ -562,6 +563,7 @@ const App = () => {
                 <Sonner />
                 <GlobalAnalytics />
                 <PresenceTracker />
+                <GlobalMessageSound />
                 <RouterProvider router={router} />
               </TooltipProvider>
             </CartProvider>

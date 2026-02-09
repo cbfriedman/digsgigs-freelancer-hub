@@ -29,7 +29,7 @@ export function ChatHeader({
 
   return (
     <div className={cn(
-      "flex items-center justify-between gap-3 px-4 py-3",
+      "shrink-0 flex items-center justify-between gap-3 px-4 py-3",
       "border-b border-border/50 bg-card/80 backdrop-blur-sm",
       className
     )}>

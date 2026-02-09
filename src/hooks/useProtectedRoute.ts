@@ -4,8 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
+type AppRole = 'gigger' | 'digger' | 'admin';
+
 interface UseProtectedRouteOptions {
   requireVerified?: boolean;
+  requireRole?: AppRole;
   redirectTo?: string;
   redirectIfAuthenticated?: boolean;
 }
@@ -13,11 +16,12 @@ interface UseProtectedRouteOptions {
 export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
   const {
     requireVerified = false, // Changed default: allow unverified users to access platform
+    requireRole,
     redirectTo = '/register',
     redirectIfAuthenticated = false,
   } = options;
 
-  const { user, loading, userRoles } = useAuth();
+  const { user, loading, userRoles, rolesFetched } = useAuth();
   const navigate = useNavigate();
   const [hasCheckedRoles, setHasCheckedRoles] = useState(false);
   const [userHasRoles, setUserHasRoles] = useState(false);
@@ -122,6 +126,18 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
       return;
     }
 
+    // Require specific role (e.g. only giggers can access My Gigs) — wait for roles to load so giggers aren't redirected briefly
+    if (requireRole && user && rolesFetched && Array.isArray(userRoles) && !userRoles.includes(requireRole)) {
+      const message = requireRole === 'gigger'
+        ? 'Only client accounts (giggers) can view My Gigs.'
+        : requireRole === 'digger'
+          ? 'Only diggers can access this page.'
+          : 'You don\'t have access to this page.';
+      toast.error(message);
+      navigate('/role-dashboard');
+      return;
+    }
+
     // Require email verification (but allow access to register page for unverified users)
     // Note: For OTP-based sign-in, email_confirmed_at may be set via admin API, so we check if user exists and has roles
     if (requireVerified && user && !user.email_confirmed_at) {
@@ -203,7 +219,7 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
       }
       return;
     }
-  }, [user, loading, navigate, requireVerified, redirectTo, redirectIfAuthenticated, hasCheckedRoles, userHasRoles, userRoles, hasCheckedDatabaseRoles]);
+  }, [user, loading, navigate, requireVerified, requireRole, redirectTo, redirectIfAuthenticated, hasCheckedRoles, userHasRoles, userRoles, rolesFetched, hasCheckedDatabaseRoles]);
 
-  return { user, loading, userRoles, isVerified: !!user?.email_confirmed_at };
+  return { user, loading, userRoles, rolesFetched, isVerified: !!user?.email_confirmed_at };
 };

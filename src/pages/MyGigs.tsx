@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign, Calendar, Tag, Users, AlertCircle } from "lucide-react";
+import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Navigation } from "@/components/Navigation";
 import {
@@ -50,9 +50,12 @@ interface LeadIssue {
   };
 }
 
+type BidStats = { count: number; avgPrice: number };
+
 const MyGigs = () => {
   const navigate = useNavigate();
   const [gigs, setGigs] = useState<Gig[]>([]);
+  const [bidStatsByGigId, setBidStatsByGigId] = useState<Record<string, BidStats>>({});
   const [loading, setLoading] = useState(true);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [gigIssues, setGigIssues] = useState<LeadIssue[]>([]);
@@ -85,9 +88,39 @@ const MyGigs = () => {
       toast.error("Failed to load gigs");
     } else {
       setGigs(data || []);
+      if ((data || []).length > 0) {
+        loadBidStats(data.map((g: Gig) => g.id));
+      }
     }
 
     setLoading(false);
+  };
+
+  const loadBidStats = async (gigIds: string[]) => {
+    const { data: bids, error } = await supabase
+      .from("bids")
+      .select("gig_id, amount, amount_min, amount_max")
+      .in("gig_id", gigIds);
+
+    if (error || !bids?.length) {
+      setBidStatsByGigId({});
+      return;
+    }
+
+    const stats: Record<string, BidStats> = {};
+    for (const gigId of gigIds) {
+      const gigBids = bids.filter((b: { gig_id: string }) => b.gig_id === gigId);
+      const count = gigBids.length;
+      const avgPrice =
+        count > 0
+          ? gigBids.reduce((sum: number, b: { amount_min?: number; amount_max?: number; amount: number }) => {
+              if (b.amount_min != null && b.amount_max != null) return sum + (b.amount_min + b.amount_max) / 2;
+              return sum + (b.amount_min ?? b.amount_max ?? b.amount);
+            }, 0) / count
+          : 0;
+      stats[gigId] = { count, avgPrice };
+    }
+    setBidStatsByGigId(stats);
   };
 
   const toggleGigStatus = async (gigId: string, currentStatus: string) => {
@@ -181,7 +214,7 @@ const MyGigs = () => {
           <div>
             <h1 className="text-4xl font-bold mb-2">My Gigs</h1>
             <p className="text-muted-foreground">
-              Manage your posted gigs and review lead requests
+              Manage your posted gigs, watch proposals in real time, and review lead requests
             </p>
           </div>
           <div className="flex gap-2">
@@ -206,9 +239,9 @@ const MyGigs = () => {
             {gigs.map((gig) => (
               <Card key={gig.id} className="overflow-hidden">
                 <CardContent className="p-6">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
                         <h3 className="text-xl font-semibold">{gig.title}</h3>
                         <Badge variant={gig.status === "open" ? "secondary" : "outline"}>
                           {gig.status}
@@ -217,6 +250,15 @@ const MyGigs = () => {
                           <Badge variant="outline" className="flex items-center gap-1">
                             <Users className="h-3 w-3" />
                             {gig.purchase_count} {gig.purchase_count === 1 ? "purchase" : "purchases"}
+                          </Badge>
+                        )}
+                        {bidStatsByGigId[gig.id]?.count != null && bidStatsByGigId[gig.id].count > 0 && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <FileText className="h-3 w-3" />
+                            {bidStatsByGigId[gig.id].count} {bidStatsByGigId[gig.id].count === 1 ? "proposal" : "proposals"}
+                            {bidStatsByGigId[gig.id].avgPrice > 0 && (
+                              <span className="opacity-80"> · Avg ${Math.round(bidStatsByGigId[gig.id].avgPrice).toLocaleString()}</span>
+                            )}
                           </Badge>
                         )}
                       </div>
@@ -243,28 +285,35 @@ const MyGigs = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 items-end">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor={`status-${gig.id}`} className="text-sm">
-                          {gig.status === "open" ? "Active" : "Closed"}
-                        </Label>
-                        <Switch
-                          id={`status-${gig.id}`}
-                          checked={gig.status === "open"}
-                          onCheckedChange={() => toggleGigStatus(gig.id, gig.status)}
-                        />
-                      </div>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => viewIssues(gig)}
-                        className="w-full"
-                      >
-                        <AlertCircle className="mr-2 h-4 w-4" />
-                        View Issues
-                      </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Label htmlFor={`status-${gig.id}`} className="text-sm whitespace-nowrap">
+                        {gig.status === "open" ? "Active" : "Closed"}
+                      </Label>
+                      <Switch
+                        id={`status-${gig.id}`}
+                        checked={gig.status === "open"}
+                        onCheckedChange={() => toggleGigStatus(gig.id, gig.status)}
+                      />
                     </div>
+                  </div>
+
+                  {/* Always-visible action row: View proposals / View project + View Issues */}
+                  <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-2">
+                    <Button
+                      onClick={() => navigate(`/gig/${gig.id}`)}
+                      className="flex-1 min-w-0"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      {bidStatsByGigId[gig.id]?.count ? "View proposals" : "View project"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => viewIssues(gig)}
+                      className="flex-1 min-w-0"
+                    >
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      View Issues
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

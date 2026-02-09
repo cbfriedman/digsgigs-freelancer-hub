@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, DollarSign, Calendar, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, DollarSign, Calendar, Clock, CheckCircle, XCircle } from "lucide-react";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatDistanceToNow } from "date-fns";
 import { WithdrawBidDialog } from "@/components/WithdrawBidDialog";
 import { StripeConnectBanner } from "@/components/StripeConnectBanner";
@@ -13,12 +14,15 @@ import { StripeConnectBanner } from "@/components/StripeConnectBanner";
 interface Bid {
   id: string;
   amount: number;
+  amount_min?: number;
+  amount_max?: number;
   timeline: string;
   proposal: string;
   status: string;
   created_at: string;
   withdrawn_at: string | null;
   withdrawal_penalty: number | null;
+  gig_id?: string;
   gigs: {
     id: string;
     title: string;
@@ -74,19 +78,22 @@ const MyBids = () => {
       return;
     }
 
-    // Get all bids
+    // Get all bids (with nested gig via gig_id; use hint because gigs also has awarded_bid_id -> bids)
     const { data, error } = await supabase
       .from("bids")
       .select(`
         id,
         amount,
+        amount_min,
+        amount_max,
         timeline,
         proposal,
         status,
         created_at,
         withdrawn_at,
         withdrawal_penalty,
-        gigs (
+        gig_id,
+        gigs!gig_id (
           id,
           title,
           description,
@@ -102,9 +109,18 @@ const MyBids = () => {
     if (error) {
       console.error("Error loading bids:", error);
       toast.error("Failed to load your bids");
-    } else {
-      setBids(data || []);
+      setBids([]);
+      setLoading(false);
+      return;
     }
+
+    // If we got bids but gigs are null (RLS blocked nested gig), ensure migration 20260218000000 is applied.
+    // Still show the bid and link to gig page (where can_access_gig via bid will allow access).
+    const bidsWithGigs = (data || []).map((b: any) => ({
+      ...b,
+      gigs: b.gigs ?? (b.gig_id ? { id: b.gig_id, title: "Project", description: null, budget_min: null, budget_max: null, location: "", status: "open" } : null),
+    }));
+    setBids(bidsWithGigs);
     setLoading(false);
   };
 
@@ -138,7 +154,7 @@ const MyBids = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingSpinner label="Loading your bids..." />
       </div>
     );
   }

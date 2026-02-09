@@ -28,18 +28,21 @@ export function TypingIndicator({
           {partnerName[0]?.toUpperCase() ?? "?"}
         </AvatarFallback>
       </Avatar>
-      <div className="flex items-center gap-1 px-3 py-2 rounded-2xl rounded-bl-md bg-card border border-border/50 shadow-sm">
+      <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl rounded-bl-md bg-muted/60 border border-border/40 shadow-sm">
         <span
-          className="w-2 h-2 rounded-full bg-primary animate-typing-dot"
+          className="typing-dot-sm rounded-full bg-primary animate-typing-dot"
           style={{ animationDelay: "0ms" }}
+          aria-hidden
         />
         <span
-          className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-typing-dot"
-          style={{ animationDelay: "160ms" }}
+          className="typing-dot-md rounded-full bg-accent animate-typing-dot"
+          style={{ animationDelay: "0.2s" }}
+          aria-hidden
         />
         <span
-          className="w-2 h-2 rounded-full bg-muted-foreground/60 animate-typing-dot"
-          style={{ animationDelay: "320ms" }}
+          className="typing-dot-sm rounded-full bg-primary animate-typing-dot"
+          style={{ animationDelay: "0.4s" }}
+          aria-hidden
         />
       </div>
     </div>

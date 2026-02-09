@@ -10,7 +10,8 @@ interface MessageInputProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
-  onFileSelect?: (files: File[]) => void;
+  /** Called when user sends with attachments. Parent should upload, send message with content + attachments, then clear message. */
+  onFileSelect?: (files: File[], content: string) => void;
   disabled?: boolean;
   placeholder?: string;
   maxLength?: number;
@@ -29,9 +30,35 @@ export function MessageInput({
 }: MessageInputProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const addFiles = useCallback((files: FileList | File[]) => {
+    const list = Array.isArray(files) ? files : Array.from(files);
+    if (list.length > 0) {
+      setSelectedFiles(prev => [...prev, ...list]);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes("Files")) setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
+  }, [addFiles]);
 
   const handleEmojiClick = useCallback((emojiData: EmojiClickData) => {
     const emoji = emojiData.emoji;
@@ -63,20 +90,19 @@ export function MessageInput({
 
   const handleSend = () => {
     if (selectedFiles.length > 0 && onFileSelect) {
-      onFileSelect(selectedFiles);
+      onFileSelect(selectedFiles, value.trim());
       setSelectedFiles([]);
+      onChange("");
+      return;
     }
     if (value.trim()) {
       onSend();
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isImage: boolean) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setSelectedFiles(prev => [...prev, ...files]);
-    }
-    // Reset input
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files?.length) addFiles(files);
     e.target.value = "";
   };
 
@@ -114,8 +140,18 @@ export function MessageInput({
         </div>
       )}
 
-      {/* Input area */}
-      <div className="flex items-end gap-2 bg-card rounded-xl border border-border/50 p-2 shadow-card transition-shadow focus-within:shadow-md focus-within:border-primary/30">
+      {/* Input area with drag-and-drop */}
+      <div
+        role="region"
+        aria-label="Message composer"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          "flex items-end gap-2 bg-card rounded-xl border border-border/50 p-2 shadow-card transition-shadow focus-within:shadow-md focus-within:border-primary/30",
+          isDragging && "ring-2 ring-primary/50 border-primary/50 bg-primary/5"
+        )}
+      >
         {/* Toolbar */}
         <div className="flex items-center gap-0.5 shrink-0 pb-1">
           {/* Emoji picker */}
@@ -145,13 +181,14 @@ export function MessageInput({
             </PopoverContent>
           </Popover>
 
-          {/* File attachment */}
+          {/* Attach any file (images, PDF, doc, zip, etc.) */}
           <Button
             type="button"
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
             onClick={() => fileInputRef.current?.click()}
+            title="Attach files"
           >
             <Paperclip className="h-5 w-5" />
           </Button>
@@ -160,27 +197,8 @@ export function MessageInput({
             type="file"
             className="hidden"
             multiple
-            onChange={(e) => handleFileChange(e, false)}
-            accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.csv"
-          />
-
-          {/* Image attachment */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 hidden sm:flex"
-            onClick={() => imageInputRef.current?.click()}
-          >
-            <Image className="h-5 w-5" />
-          </Button>
-          <input
-            ref={imageInputRef}
-            type="file"
-            className="hidden"
-            multiple
-            accept="image/*"
-            onChange={(e) => handleFileChange(e, true)}
+            onChange={handleFileChange}
+            accept="*"
           />
         </div>
 

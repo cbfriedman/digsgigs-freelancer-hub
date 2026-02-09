@@ -36,6 +36,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Footer } from "@/components/Footer";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+
 interface ReminderStats {
   total: number;
   day3: number;
@@ -344,10 +346,7 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading admin dashboard...</p>
-        </div>
+        <LoadingSpinner label="Loading admin dashboard..." />
       </div>
     );
   }

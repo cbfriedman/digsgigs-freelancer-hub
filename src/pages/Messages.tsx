@@ -11,6 +11,7 @@ import {
   MoreHorizontal, ExternalLink, Briefcase, FileCheck, Hourglass, 
   ChevronDown, X, Star, Pin, Trash2, EyeOff, BellOff, Ban 
 } from "lucide-react";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { z } from "zod";
@@ -102,6 +103,7 @@ interface Message {
   sender_id: string;
   created_at: string;
   read_at: string | null;
+  attachments?: { name: string; path: string; type: string }[];
 }
 
 interface RawConversation {
@@ -122,7 +124,7 @@ export default function Messages() {
   const { toast } = useToast();
   const { userRoles } = useAuth();
   const isMobile = useIsMobile();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(
     searchParams.get("conversation")
@@ -406,6 +408,95 @@ export default function Messages() {
     }
   }, [currentUser, isAdmin]);
 
+  // Client (gigger) opened Messages with ?gig=&digger= from proposal Chat: find or create conversation
+  useEffect(() => {
+    const gigId = searchParams.get("gig");
+    const diggerId = searchParams.get("digger");
+    if (!currentUser?.id || !gigId || !diggerId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: gig, error: gigError } = await supabase
+          .from("gigs")
+          .select("id, consumer_id")
+          .eq("id", gigId)
+          .single();
+
+        if (gigError || !gig) {
+          toast({ title: "Project not found", variant: "destructive" });
+          setSearchParams((p) => {
+            const next = new URLSearchParams(p);
+            next.delete("gig");
+            next.delete("digger");
+            return next;
+          });
+          return;
+        }
+        if (gig.consumer_id !== currentUser.id) {
+          toast({ title: "You can only start chats for your own projects", variant: "destructive" });
+          setSearchParams((p) => {
+            const next = new URLSearchParams(p);
+            next.delete("gig");
+            next.delete("digger");
+            return next;
+          });
+          return;
+        }
+
+        const { data: existing } = await supabase
+          .from("conversations" as any)
+          .select("id")
+          .eq("gig_id", gigId)
+          .eq("digger_id", diggerId)
+          .eq("consumer_id", currentUser.id)
+          .is("admin_id", null)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (existing?.id) {
+          setSelectedConversation(existing.id);
+          setSearchParams({ conversation: existing.id });
+          await loadConversations();
+          return;
+        }
+
+        const { data: newConv, error: insertError } = await supabase
+          .from("conversations" as any)
+          .insert({
+            gig_id: gigId,
+            digger_id: diggerId,
+            consumer_id: currentUser.id,
+          } as any)
+          .select("id")
+          .single();
+
+        if (cancelled) return;
+        if (insertError) throw insertError;
+        if (newConv?.id) {
+          setSelectedConversation(newConv.id);
+          setSearchParams({ conversation: newConv.id });
+          await loadConversations();
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          toast({
+            title: "Could not start conversation",
+            description: e?.message ?? "Something went wrong",
+            variant: "destructive",
+          });
+          setSearchParams((p) => {
+            const next = new URLSearchParams(p);
+            next.delete("gig");
+            next.delete("digger");
+            return next;
+          });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentUser?.id, searchParams.get("gig"), searchParams.get("digger")]);
+
   // Sync selected conversation from URL (e.g. after clicking a message notification)
   useEffect(() => {
     const q = searchParams.get("conversation");
@@ -476,7 +567,6 @@ export default function Messages() {
             };
             const partnerName = getPartnerName(conv);
             if (msg.conversation_id !== selectedId) {
-              playNotificationSound();
               toast({
                 title: "New message",
                 description: `${partnerName}: ${(msg.content ?? "").slice(0, 80)}${(msg.content?.length ?? 0) > 80 ? "…" : ""}`,
@@ -597,6 +687,7 @@ export default function Messages() {
         digger_profession: string | null;
         digger_profile_image_url?: string | null;
         consumer_avatar_url?: string | null;
+        consumer_full_name?: string | null;
         admin_avatar_url?: string | null;
         last_message_content?: string | null;
         last_message_sender_id?: string | null;
@@ -609,7 +700,7 @@ export default function Messages() {
       const list: Conversation[] = raw.map((c) => {
         const partnerAvatarUrl = c.admin_id
           ? (currentUser?.id === c.admin_id ? (c.consumer_avatar_url ?? null) : (c.admin_avatar_url ?? null))
-          : (c.digger_profile_image_url ?? null);
+          : (currentUser?.id === c.consumer_id ? (c.digger_profile_image_url ?? null) : (c.consumer_avatar_url ?? null));
         return {
           id: c.id,
           gig_id: c.gig_id,
@@ -627,6 +718,7 @@ export default function Messages() {
                   profile_image_url: c.digger_profile_image_url ?? null,
                 }
               : null,
+          consumer_profile: c.consumer_id != null ? { full_name: c.consumer_full_name ?? null } : null,
           last_message_content: c.last_message_content ?? null,
           last_message_sender_id: c.last_message_sender_id ?? null,
           partner_avatar_url: partnerAvatarUrl,
@@ -690,24 +782,6 @@ export default function Messages() {
     }
   };
 
-  const playNotificationSound = () => {
-    try {
-      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 800;
-      osc.type = "sine";
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.15);
-    } catch {
-      // ignore
-    }
-  };
-
   const subscribeToMessages = async (
     conversationId: string
   ): Promise<() => void> => {
@@ -739,9 +813,6 @@ export default function Messages() {
         (payload) => {
           const newMsg = payload.new as Message;
           setMessages((prev) => [...prev, newMsg]);
-          if (newMsg.sender_id !== currentUserIdRef.current) {
-            playNotificationSound();
-          }
         }
       )
       .on(
@@ -810,13 +881,12 @@ export default function Messages() {
       const { data: messageId, error } = await supabase.rpc("send_message" as any, {
         _conversation_id: selectedConversation,
         _content: validated.content,
+        _attachments: [],
       });
 
       if (error) throw error;
       setNewMessage("");
-      // Reload messages so the sent message appears immediately and persists after refresh
       await loadMessages(selectedConversation);
-      // Notify recipient by email (missed-message notification); fire-and-forget
       if (messageId) {
         supabase.functions
           .invoke("enqueue-message-notification", {
@@ -841,6 +911,52 @@ export default function Messages() {
     }
   };
 
+  const sendMessageWithAttachments = async (files: File[], content: string) => {
+    if (!selectedConversation || !currentUser?.id) {
+      toast({
+        title: "Error",
+        description: "Please sign in and select a conversation.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const bucket = "message-attachments";
+      const attachments: { name: string; path: string; type: string }[] = [];
+      for (const file of files) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 200) || "file";
+        const path = `${selectedConversation}/${currentUser.id}/${crypto.randomUUID()}_${safeName}`;
+        const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+        if (uploadError) throw uploadError;
+        attachments.push({ name: file.name, path, type: file.type || "application/octet-stream" });
+      }
+      const { data: messageId, error } = await supabase.rpc("send_message" as any, {
+        _conversation_id: selectedConversation,
+        _content: content.trim(),
+        _attachments: attachments,
+      });
+      if (error) throw error;
+      setNewMessage("");
+      await loadMessages(selectedConversation);
+      if (messageId) {
+        supabase.functions
+          .invoke("enqueue-message-notification", {
+            body: { conversation_id: selectedConversation, message_id: messageId },
+          })
+          .catch(() => {});
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error sending attachments",
+        description: error.message ?? "Upload or send failed.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getConversationPartner = (conv: Conversation | undefined) => {
     if (!conv) return "Unknown";
     if (conv.admin_id) {
@@ -852,7 +968,7 @@ export default function Messages() {
     if (currentUser?.id === conv.consumer_id) {
       return conv.digger_profiles?.handle || "Unknown Digger";
     }
-    return "Client";
+    return conv.consumer_profile?.full_name?.trim() || "Client";
   };
 
   const getConversationSubtitle = (conv: Conversation | undefined) => {
@@ -980,14 +1096,15 @@ export default function Messages() {
 
   if (loading) {
     return (
-      <PageLayout showFooter={false} maxWidth="full" padded={false}>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-4 animate-fade-in">
-            <div className="h-14 w-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center animate-pulse">
-              <MessageSquare className="h-7 w-7 text-primary" />
-            </div>
-            <p className="text-muted-foreground font-medium">Loading conversations...</p>
-          </div>
+      <PageLayout
+        showFooter={false}
+        maxWidth="full"
+        padded={false}
+        wrapperClassName="h-[calc(100vh-var(--header-height))] flex flex-col"
+        className="flex flex-1 min-h-0"
+      >
+        <div className="flex flex-1 items-center justify-center">
+          <LoadingSpinner label="Loading conversations..." />
         </div>
       </PageLayout>
     );
@@ -998,10 +1115,10 @@ export default function Messages() {
       showFooter={false}
       maxWidth="full"
       padded={false}
-      wrapperClassName="h-[calc(100vh-4rem)] overflow-hidden"
-      className="flex flex-col min-h-0"
+      wrapperClassName="h-[calc(100vh-var(--header-height))] overflow-hidden flex flex-col"
+      className="flex flex-col flex-1 min-h-0"
     >
-      <div className="flex flex-1 min-h-0 border-t border-border/30">
+      <div className="flex flex-1 min-h-0 min-w-0 border-t border-border/30 overflow-hidden">
         {isMobile ? (
           <>
             {showConversationList && (
@@ -1396,6 +1513,7 @@ export default function Messages() {
                                   timestamp={msg.created_at}
                                   isOwn={msg.sender_id === currentUser?.id}
                                   isRead={!!msg.read_at}
+                                  attachments={msg.attachments}
                                 />
                               ))}
                             </div>
@@ -1421,6 +1539,7 @@ export default function Messages() {
                     value={newMessage}
                     onChange={setNewMessage}
                     onSend={sendMessage}
+                    onFileSelect={sendMessageWithAttachments}
                     placeholder="Type a message..."
                     maxLength={5000}
                   />
@@ -1559,6 +1678,7 @@ export default function Messages() {
               <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-background overflow-hidden">
                 {selectedConversation ? (
                   <>
+                    {/* Thread header + message list + input all fit within (viewport - site header) */}
                     <ChatHeader partnerName={partnerName} subtitle={getConversationSubtitle(selectedConv)} isOnline={getPartnerIsOnline(selectedConv)} partnerAvatarUrl={selectedConv?.partner_avatar_url} showBackButton={isMobile} onBack={handleBackToList} onMoreClick={() => setShowInfoPanel(!showInfoPanel)} />
                     <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                       <ScrollArea className="h-full min-h-0">
@@ -1566,7 +1686,7 @@ export default function Messages() {
                           {messages.length === 0 ? <EmptyConversation variant="no-messages" partnerName={partnerName} /> : messagesByDate.map(([dateKey, dayMessages]) => (
                             <div key={dateKey}>
                               <DateSeparator date={dateKey} />
-                              <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} />)}</div>
+                              <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} attachments={msg.attachments} />)}</div>
                             </div>
                           ))}
                           {partnerTypingUntil != null && (
@@ -1582,7 +1702,7 @@ export default function Messages() {
                       </ScrollArea>
                     </div>
                     <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
-                      <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} placeholder="Type a message..." maxLength={5000} />
+                      <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} onFileSelect={sendMessageWithAttachments} placeholder="Type a message..." maxLength={5000} />
                     </div>
                   </>
                 ) : (

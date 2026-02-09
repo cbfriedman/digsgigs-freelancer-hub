@@ -19,6 +19,9 @@
      Primary: Purple (#5B21B6) | Accent: Orange (#F97316)
      --------------------------------------------------------------------------- */
   :root {
+    /* Layout: nav bar height (match Navigation.tsx h-16) for viewport calculations */
+    --header-height: 4rem;
+
     /* Core Brand Colors */
     --primary: 262 83% 42%;
     --primary-foreground: 0 0% 100%;
@@ -198,6 +201,16 @@
     @apply border-border;
   }
 
+  /* Disable all animations and transitions platform-wide (except AI chat, loading spinners, typing dots) */
+  *:not(#ai-chat-root):not(#ai-chat-root *):not(.animate-spin):not(.animate-typing-dot):not(.loading-spinner-wrapper),
+  *:not(#ai-chat-root):not(#ai-chat-root *)::before,
+  *:not(#ai-chat-root):not(#ai-chat-root *)::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+
   html {
     @apply scroll-smooth;
     -webkit-font-smoothing: antialiased;
@@ -274,6 +287,66 @@
   }
 }
 
+/* Global: professional loading spinner and vibrant typing indicator (excluded from reset above) */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes loading-pulse {
+  0%, 100% { opacity: 0.92; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite !important;
+}
+.loading-spinner-wrapper {
+  animation: loading-pulse 2s ease-in-out infinite !important;
+}
+
+/* Typing indicator: smooth pulse; dots use alternate size (sm/md/sm) and color (primary/accent/primary) */
+@keyframes typing-dot {
+  0%, 100% {
+    opacity: 0.5;
+    transform: translateY(0) scale(0.9);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.08);
+    box-shadow: 0 0 6px 1px currentColor;
+  }
+}
+.animate-typing-dot {
+  animation: typing-dot 0.6s cubic-bezier(0.4, 0, 0.2, 1) infinite both !important;
+}
+.typing-dot-sm {
+  width: 0.375rem;
+  height: 0.375rem;
+}
+.typing-dot-md {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+/* AI chat panel: same typing-dot animation, alternate size/color via classes */
+#ai-chat-root .chat-typing-dot {
+  animation: typing-dot 0.6s cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+}
+#ai-chat-root .chat-typing-dot-2 { animation-delay: 0.2s; }
+#ai-chat-root .chat-typing-dot-3 { animation-delay: 0.4s; }
+#ai-chat-root .typing-dot-sm { width: 0.375rem; height: 0.375rem; }
+#ai-chat-root .typing-dot-md { width: 0.5rem; height: 0.5rem; }
+#ai-chat-root .animate-spin,
+#ai-chat-root .ai-chat-spin {
+  animation: spin 1s linear infinite !important;
+}
+#ai-chat-root .chat-panel-enter {
+  animation: chat-panel-enter 0.25s ease-out forwards;
+}
+@keyframes chat-panel-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* -----------------------------------------------------------------------------
    5. UTILITY CLASSES
    ----------------------------------------------------------------------------- */
@@ -339,20 +412,12 @@
     box-shadow: var(--shadow-accent-lg);
   }
 
-  /* Interactive Utilities */
-  .hover-lift {
-    @apply transition-all duration-300 ease-out;
-  }
-  
+  /* Interactive Utilities (no transition: disabled globally) */
   .hover-lift:hover {
     @apply -translate-y-1;
     box-shadow: var(--shadow-card-hover);
   }
 
-  .hover-scale {
-    @apply transition-transform duration-200 ease-out;
-  }
-  
   .hover-scale:hover {
     @apply scale-[1.02];
   }
@@ -371,7 +436,7 @@
   }
   
   .link-underline::after {
-    @apply absolute bottom-0 left-0 h-0.5 w-full origin-bottom-right scale-x-0 bg-primary transition-transform duration-300 ease-out content-[''];
+    @apply absolute bottom-0 left-0 h-0.5 w-full origin-bottom-right scale-x-0 bg-primary content-[''];
   }
   
   .link-underline:hover::after {
@@ -410,39 +475,39 @@
    6. ANIMATION CLASSES
    ----------------------------------------------------------------------------- */
 @layer utilities {
-  /* Fade animations */
+  /* Fade animations (disabled: duration 0s via global rule) */
   .animate-fade-in {
-    animation: fade-in 0.5s ease-out forwards;
+    animation: fade-in 0s ease-out forwards;
   }
   
   .animate-fade-in-up {
-    animation: fade-in-up 0.5s ease-out forwards;
+    animation: fade-in-up 0s ease-out forwards;
   }
   
   .animate-fade-in-down {
-    animation: fade-in-down 0.5s ease-out forwards;
+    animation: fade-in-down 0s ease-out forwards;
   }
 
   /* Scale animations */
   .animate-scale-in {
-    animation: scale-in 0.3s ease-out forwards;
+    animation: scale-in 0s ease-out forwards;
   }
 
   /* Slide animations */
   .animate-slide-in-left {
-    animation: slide-in-left 0.4s ease-out forwards;
+    animation: slide-in-left 0s ease-out forwards;
   }
   
   .animate-slide-in-right {
-    animation: slide-in-right 0.4s ease-out forwards;
+    animation: slide-in-right 0s ease-out forwards;
   }
 
-  /* Stagger delay utilities */
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
+  /* Stagger delay utilities (no-op when animations are disabled) */
+  .stagger-1 { animation-delay: 0s; }
+  .stagger-2 { animation-delay: 0s; }
+  .stagger-3 { animation-delay: 0s; }
+  .stagger-4 { animation-delay: 0s; }
+  .stagger-5 { animation-delay: 0s; }
 }
 
 @keyframes fade-in {

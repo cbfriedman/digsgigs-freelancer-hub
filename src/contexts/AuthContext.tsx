@@ -18,6 +18,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   userRoles: UserAppRole[];
+  rolesFetched: boolean;
   activeRole: UserAppRole | null;
   subscriptionStatus: SubscriptionStatus | null;
   loading: boolean;
@@ -49,6 +50,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRoles, setUserRoles] = useState<UserAppRole[]>([]);
+  const [rolesFetched, setRolesFetched] = useState(false);
   const [activeRole, setActiveRole] = useState<UserAppRole | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,12 +104,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         // Don't clear existing roles on error - keep what we have
         // This prevents blocking users if there's a temporary error
+        setRolesFetched(true);
         return;
       }
 
       const roles = (data || []).map(r => r.app_role as UserAppRole);
       console.log('Fetched roles:', roles);
       setUserRoles(roles);
+      setRolesFetched(true);
 
       // Set active role to the most recently used, or first role if none set
       if (roles.length > 0) {
@@ -207,6 +211,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null);
       setSession(null);
       setUserRoles([]);
+      setRolesFetched(false);
       setActiveRole(null);
       setSubscriptionStatus(null);
 
@@ -266,6 +271,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setSession(null);
           setUser(null);
           setUserRoles([]);
+          setRolesFetched(false);
           setActiveRole(null);
           setSubscriptionStatus(null);
           return;
@@ -339,6 +345,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }, 0);
         } else {
           setUserRoles([]);
+          setRolesFetched(false);
           setActiveRole(null);
           setSubscriptionStatus(null);
         }
@@ -391,6 +398,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     user,
     session,
     userRoles,
+    rolesFetched,
     activeRole,
     subscriptionStatus,
     loading,

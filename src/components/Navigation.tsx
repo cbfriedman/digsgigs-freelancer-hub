@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -139,28 +139,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const navLinkClass = "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-3 py-2 rounded-md hover:bg-accent/50";
   const navLinkActiveClass = "text-foreground bg-accent/50";
 
-  const HOVER_DELAY = 100;
-  const NavDropdown = ({ trigger, children }: { trigger: React.ReactNode; children: React.ReactNode }) => {
-    const [open, setOpen] = useState(false);
-    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const clearClose = () => {
-      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
-    };
-    const scheduleClose = () => {
-      clearClose();
-      timeoutRef.current = setTimeout(() => setOpen(false), HOVER_DELAY);
-    };
-    return (
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild onMouseEnter={() => { clearClose(); setOpen(true); }} onMouseLeave={scheduleClose}>
-          {trigger}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48" onMouseEnter={() => { clearClose(); setOpen(true); }} onMouseLeave={scheduleClose}>
-          {children}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  };
+  // Click-only dropdown (no hover open, no animation)
+  const NavDropdown = ({ trigger, children }: { trigger: React.ReactNode; children: React.ReactNode }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {trigger}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={6} className="w-52 min-w-[13rem] py-1.5">
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -203,7 +192,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 />
               </div>
               {/* Nav links — immediately after logo (desktop only) */}
-              <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
+              <nav className="hidden md:flex h-full items-center gap-0.5 lg:gap-1">
               <button
                 onClick={() => navigate("/")}
                 className={cn(navLinkClass, isActive("/") && navLinkActiveClass)}
@@ -234,7 +223,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 <DropdownMenuItem onClick={() => navigate("/hire-a-pro")} className="cursor-pointer">
                   Hire a pro
                 </DropdownMenuItem>
-                {user && (
+                {user && userRoles.includes('gigger') && (
                   <DropdownMenuItem onClick={() => navigate("/my-gigs")} className="cursor-pointer">
                     My projects
                   </DropdownMenuItem>
@@ -489,7 +478,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </ScrollArea>
                     </HoverCardContent>
                   </HoverCard>
-                  {/* Project folders (My Gigs) — only when signed in; hover shows recent */}
+                  {/* Project folders (My Gigs) — only for giggers; hover shows recent */}
+                  {userRoles.includes('gigger') && (
                   <HoverCard openDelay={300} closeDelay={150}>
                     <HoverCardTrigger asChild>
                       <Button
@@ -538,6 +528,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </ScrollArea>
                     </HoverCardContent>
                   </HoverCard>
+                  )}
                   {/* User Menu (avatar dropdown: Dark Mode, Role, Dashboard, Sign Out) */}
                   <DropdownMenu modal={true}>
                     <DropdownMenuTrigger asChild>
@@ -554,11 +545,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     <DropdownMenuContent 
                       align="end" 
                       sideOffset={8}
-                      className="w-52 bg-background/95 backdrop-blur-xl border shadow-xl z-[10000]"
+                      className="w-56 min-w-[14rem] py-2"
                     >
-                      <div className="px-2 py-1.5">
+                      <div className="px-3 py-2">
                         <p className="text-sm font-medium truncate">{userDisplayName || user.email?.split('@')[0]}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => navigate('/my-profiles')} className="cursor-pointer">
@@ -609,7 +600,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         Dashboard
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive focus:text-destructive">
+                      <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive focus:bg-destructive/10 focus:text-destructive">
                         <LogOut className="h-4 w-4 mr-2" />
                         Sign Out
                       </DropdownMenuItem>
@@ -755,8 +746,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </HoverCardContent>
                 </HoverCard>
               )}
-              {/* Project folders - Mobile (only when signed in); tap/hover shows recent */}
-              {user && (
+              {/* Project folders - Mobile (only for giggers); tap/hover shows recent */}
+              {user && userRoles.includes('gigger') && (
                 <HoverCard openDelay={200} closeDelay={150}>
                   <HoverCardTrigger asChild>
                     <Button
@@ -1065,7 +1056,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           <span className="font-medium">Notifications</span>
                         </button>
                       )}
-                      {user && (
+                      {user && userRoles.includes('gigger') && (
                         <button
                           className={cn(
                             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
