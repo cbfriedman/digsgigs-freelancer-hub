@@ -12,16 +12,17 @@ export function FloatingChatButton() {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const showButton = AI_CHAT_PAGES.includes(pathname);
-  // When user is logged in, stack above the message widget (bottom-20); otherwise bottom-5
-  const bottomClass = user ? "bottom-20" : "bottom-5";
+  // Flush left, bottom - fully matched to left side to align with AI panel.
+  const positionClass = "bottom-5 left-4 md:bottom-6 md:left-4";
 
   if (!showButton) return null;
 
   return (
     <>
-      <Button
-        onClick={() => setChatOpen(true)}
-        className={`fixed ${bottomClass} right-5 md:right-6 z-[98]
+      {!chatOpen && (
+        <Button
+          onClick={() => setChatOpen(true)}
+          className={`fixed ${positionClass} z-[98]
           h-12 w-12 p-0 rounded-full
           sm:h-11 sm:w-auto sm:min-w-[140px] sm:px-4 sm:gap-2.5
           md:min-w-[152px] md:px-5
@@ -34,6 +35,7 @@ export function FloatingChatButton() {
         <MessageCircle className="h-5 w-5 shrink-0 sm:h-[18px] sm:w-[18px]" />
         <span className="hidden sm:inline">Ask AI</span>
       </Button>
+      )}
 
       <AIChatbot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </>

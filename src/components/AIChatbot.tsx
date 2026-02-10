@@ -304,7 +304,12 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
   return (
     <>
       {isOpen && (
-        <>
+        <div className="fixed inset-0 z-40 animate-in fade-in-0 duration-200" aria-hidden>
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-[2px]"
+            onClick={onClose}
+            aria-hidden
+          />
           <style dangerouslySetInnerHTML={{ __html: `
             @keyframes ai-chat-spin {
               to { transform: rotate(360deg); }
@@ -325,10 +330,10 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
           <Card
             id="ai-chat-root"
             className="ai-chat-allow-animations chat-panel-enter fixed z-50 flex flex-col overflow-hidden
-              rounded-2xl border border-border/60 bg-card shadow-xl
-              w-[calc(100vw-1.5rem)] max-w-[24rem] h-[min(600px,calc(100vh-6rem))]
-              bottom-4 left-1/2 -translate-x-1/2
-              sm:left-auto sm:right-6 sm:translate-x-0 sm:bottom-6 sm:w-96 sm:max-w-none sm:h-[600px]"
+              rounded-2xl border border-border/60 bg-card shadow-2xl
+              w-[calc(100vw-2rem)] max-w-[24rem] h-[min(600px,calc(100vh-6rem))]
+              bottom-4 left-4 right-4 mx-auto
+              sm:left-4 sm:right-auto sm:bottom-6 sm:mx-0 sm:w-96 sm:max-w-none sm:h-[600px]"
           >
           <CardHeader className="shrink-0 flex flex-row items-center justify-between space-y-0 py-3 px-4 border-b border-border/50 bg-muted/30">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
@@ -380,11 +385,11 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
                 </div>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {messages.map((message, index) => (
                   <div
                     key={index}
-                    className={`flex gap-2.5 sm:gap-3 ${
+                    className={`flex gap-3 sm:gap-4 ${
                       message.role === "assistant" ? "justify-start" : "justify-end"
                     }`}
                   >
@@ -394,7 +399,7 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
                       </div>
                     )}
                     <div
-                      className={`rounded-2xl px-3.5 py-2.5 max-w-[85%] sm:max-w-[80%] ${
+                      className={`rounded-2xl px-4 py-3 max-w-[85%] sm:max-w-[80%] ${
                         message.role === "assistant"
                           ? "rounded-bl-md bg-muted/80 text-foreground"
                           : "rounded-br-md bg-primary text-primary-foreground"
@@ -455,7 +460,7 @@ export default function AIChatbot({ isOpen, onClose }: AIChatbotProps) {
             </div>
           </CardContent>
         </Card>
-        </>
+        </div>
       )}
     </>
   );
