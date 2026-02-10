@@ -13,6 +13,7 @@ import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import Index from "./pages/Index";
 import { PageViewTracker } from "./components/PageViewTracker";
 import { FloatingChatButton } from "./components/FloatingChatButton";
+import { FloatingMessageWidget } from "./components/FloatingMessageWidget";
 import { Navigation } from "./components/Navigation";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
 import { GlobalMessageSound } from "./components/GlobalMessageSound";
@@ -141,6 +142,7 @@ const RootLayout = () => {
       <PageViewTracker />
       <Outlet />
       <FloatingChatButton />
+      <FloatingMessageWidget />
     </div>
   );
 };

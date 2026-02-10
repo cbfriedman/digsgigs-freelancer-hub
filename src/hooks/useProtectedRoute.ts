@@ -21,7 +21,7 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
     redirectIfAuthenticated = false,
   } = options;
 
-  const { user, loading, userRoles, rolesFetched } = useAuth();
+  const { user, loading, userRoles, rolesFetched, activeRole } = useAuth();
   const navigate = useNavigate();
   const [hasCheckedRoles, setHasCheckedRoles] = useState(false);
   const [userHasRoles, setUserHasRoles] = useState(false);
@@ -126,16 +126,28 @@ export const useProtectedRoute = (options: UseProtectedRouteOptions = {}) => {
       return;
     }
 
-    // Require specific role (e.g. only giggers can access My Gigs) — wait for roles to load so giggers aren't redirected briefly
-    if (requireRole && user && rolesFetched && Array.isArray(userRoles) && !userRoles.includes(requireRole)) {
-      const message = requireRole === 'gigger'
-        ? 'Only client accounts (giggers) can view My Gigs.'
-        : requireRole === 'digger'
-          ? 'Only diggers can access this page.'
-          : 'You don\'t have access to this page.';
-      toast.error(message);
-      navigate('/role-dashboard');
-      return;
+    // Require specific role (e.g. only giggers can access My Gigs)
+    if (requireRole && user && rolesFetched && Array.isArray(userRoles)) {
+      const hasRequiredRole = userRoles.includes(requireRole);
+      // For My Gigs: user must have gigger role AND be in Gigger mode (not Digger mode)
+      const mustBeInGiggerMode = requireRole === 'gigger';
+      const isInCorrectMode = !mustBeInGiggerMode || activeRole === 'gigger';
+
+      if (!hasRequiredRole) {
+        const message = requireRole === 'gigger'
+          ? 'My Gigs is for clients. Switch to Gigger or sign up as a client to post and manage projects.'
+          : requireRole === 'digger'
+            ? 'This page is for Diggers. Switch to Digger mode in the dashboard.'
+            : 'You don\'t have access to this page.';
+        toast.error(message);
+        navigate('/role-dashboard');
+        return;
+      }
+      if (mustBeInGiggerMode && !isInCorrectMode) {
+        toast.info('My Gigs is for client (Gigger) mode. Switch to Gigger in the menu to manage your projects.');
+        navigate('/role-dashboard');
+        return;
+      }
     }
 
     // Require email verification (but allow access to register page for unverified users)

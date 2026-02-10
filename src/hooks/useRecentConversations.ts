@@ -40,6 +40,7 @@ export function useRecentConversations(currentUser: User | null) {
           digger_handle: string | null;
           digger_profile_image_url?: string | null;
           consumer_avatar_url?: string | null;
+          consumer_full_name?: string | null;
           admin_avatar_url?: string | null;
           last_message_content?: string | null;
           last_message_sender_id?: string | null;
@@ -52,18 +53,18 @@ export function useRecentConversations(currentUser: User | null) {
           let partnerAvatarUrl: string | null = null;
           if (c.admin_id) {
             if (uid === c.admin_id) {
-              partnerDisplayName = "User";
-              partnerAvatarUrl = c.consumer_avatar_url ?? null;
+              partnerDisplayName = (c.consumer_full_name || c.digger_handle || "Client").trim() || "Client";
+              partnerAvatarUrl = c.consumer_avatar_url ?? c.digger_profile_image_url ?? null;
             } else {
               partnerDisplayName = "Support";
               partnerAvatarUrl = c.admin_avatar_url ?? null;
             }
           } else {
             if (uid === c.consumer_id) {
-              partnerDisplayName = c.digger_handle || "Digger";
+              partnerDisplayName = (c.digger_handle || "Digger").trim() || "Digger";
               partnerAvatarUrl = c.digger_profile_image_url ?? null;
             } else {
-              partnerDisplayName = "Client";
+              partnerDisplayName = (c.consumer_full_name || "Client").trim() || "Client";
               partnerAvatarUrl = c.consumer_avatar_url ?? null;
             }
           }

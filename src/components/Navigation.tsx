@@ -62,6 +62,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface NavigationProps {
   showBackButton?: boolean;
@@ -369,7 +370,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
                       <div className="flex items-center justify-between px-4 py-3 border-b">
                         <span className="font-semibold text-sm">Recent Messages</span>
                         <button
@@ -380,7 +381,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           View All
                         </button>
                       </div>
-                      <ScrollArea className="h-[280px]">
+                      <ScrollArea className="h-[320px]">
                         {recentConversationsLoading ? (
                           <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                         ) : recentConversations.length === 0 ? (
@@ -389,7 +390,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           <ul className="py-1">
                             {recentConversations.map((conv) => {
                               const snippet = conv.lastMessageContent
-                                ? (conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent.length > 40 ? conv.lastMessageContent.slice(0, 40) + "…" : conv.lastMessageContent)
+                                ? (conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent.length > 80 ? conv.lastMessageContent.slice(0, 80) + "…" : conv.lastMessageContent)
                                 : "No messages yet";
                               const isToday = (d: Date) => {
                                 const today = new Date();
@@ -397,7 +398,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               };
                               const d = new Date(conv.updatedAt);
                               const timeLabel = isToday(d)
-                                ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "h:mm a"))
+                                ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "HH:mm"))
                                 : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
                               return (
                                 <li key={conv.id}>
@@ -412,12 +413,26 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                         {conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}
                                       </AvatarFallback>
                                     </Avatar>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center justify-between gap-2">
-                                        <span className="font-medium text-sm truncate">{conv.partnerDisplayName}</span>
-                                        <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                    <div className="min-w-0 flex-1 overflow-hidden pr-1">
+                                      <div className="flex items-center justify-between gap-3 min-w-0">
+                                        <Tooltip delayDuration={400}>
+                                          <TooltipTrigger asChild>
+                                            <span className="font-medium text-sm truncate min-w-0 block">{conv.partnerDisplayName}</span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-[240px]">
+                                            <p className="break-words">{conv.partnerDisplayName}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                        <span className="text-xs text-muted-foreground shrink-0 min-w-[4rem] text-right">{timeLabel}</span>
                                       </div>
-                                      <p className="text-xs text-muted-foreground truncate mt-0.5">{snippet}</p>
+                                      <Tooltip delayDuration={400}>
+                                        <TooltipTrigger asChild>
+                                          <p className="text-xs text-muted-foreground line-clamp-2 break-words mt-0.5 cursor-default">{snippet}</p>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-[280px]">
+                                          <p className="break-words text-xs">{(conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent || "No messages yet")}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
                                     </div>
                                   </button>
                                 </li>
@@ -446,12 +461,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         )}
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
                       <div className="flex items-center justify-between px-4 py-3 border-b">
                         <span className="font-semibold text-sm">Recent Notifications</span>
                         <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
                       </div>
-                      <ScrollArea className="h-[280px]">
+                      <ScrollArea className="h-[320px]">
                         {notifications.length === 0 ? (
                           <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No notifications yet</div>
                         ) : (
@@ -496,14 +511,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <FolderOpen className="h-4 w-4" />
                       </Button>
                     </HoverCardTrigger>
-                    <HoverCardContent side="bottom" align="end" className="w-[20rem] min-w-0 max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
-<div className="w-full min-w-0 max-w-full overflow-hidden box-border" style={{ maxWidth: "20rem" }}>
-                        <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+                    <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
                         <span className="font-semibold text-sm truncate min-w-0">My Projects</span>
-                          <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
-                        </div>
-                        <ScrollArea className="h-[280px] w-full min-w-0 max-w-full overflow-hidden">
-                          <div className="w-full min-w-0 max-w-full overflow-hidden pr-4">
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
+                      </div>
+                      <ScrollArea className="h-[320px] w-full min-w-0 max-w-full overflow-hidden">
+                          <div className="w-full min-w-0 max-w-full overflow-hidden pr-5">
                             {recentGigsLoading ? (
                               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                             ) : recentGigs.length === 0 ? (
@@ -522,9 +536,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                         className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors overflow-hidden box-border"
                                         onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}
                                       >
-                                        <div className="w-full min-w-0 flex items-center justify-between gap-2 overflow-hidden">
-                                          <span className="font-medium text-sm truncate min-w-0 block max-w-[calc(100%-3.5rem)]" title={title}>{displayTitle}</span>
-                                          <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 flex-shrink-0">{g.status}</Badge>
+                                        <div className="w-full min-w-0 flex items-center justify-between gap-2">
+                                          <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
+                                          <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
                                         </div>
                                         <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                       </button>
@@ -535,7 +549,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             )}
                           </div>
                         </ScrollArea>
-                      </div>
                     </HoverCardContent>
                   </HoverCard>
                   )}
@@ -663,12 +676,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
                     <div className="flex items-center justify-between px-4 py-3 border-b">
                       <span className="font-semibold text-sm">Recent Messages</span>
                       <button type="button" onClick={(e) => { e.preventDefault(); navigate("/messages"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
                     </div>
-                    <ScrollArea className="h-[280px]">
+                    <ScrollArea className="h-[320px]">
                       {recentConversationsLoading ? (
                         <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                       ) : recentConversations.length === 0 ? (
@@ -676,10 +689,10 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       ) : (
                         <ul className="py-1">
                           {recentConversations.map((conv) => {
-                            const snippet = conv.lastMessageContent ? (conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent.length > 40 ? conv.lastMessageContent.slice(0, 40) + "…" : conv.lastMessageContent) : "No messages yet";
+                            const snippet = conv.lastMessageContent ? (conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent.length > 80 ? conv.lastMessageContent.slice(0, 80) + "…" : conv.lastMessageContent) : "No messages yet";
                             const d = new Date(conv.updatedAt);
                             const isToday = (x: Date) => { const t = new Date(); return x.getDate() === t.getDate() && x.getMonth() === t.getMonth() && x.getFullYear() === t.getFullYear(); };
-                            const timeLabel = isToday(d) ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "h:mm a")) : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
+                            const timeLabel = isToday(d) ? (Date.now() - d.getTime() < 60_000 ? "Just now" : format(d, "HH:mm")) : (Date.now() - d.getTime() < 24 * 60 * 60 * 1000 ? "Yesterday" : format(d, "MMM d"));
                             return (
                               <li key={conv.id}>
                                 <button type="button" className="w-full flex items-start gap-3 px-4 py-2.5 text-left hover:bg-muted/60" onClick={(e) => { e.preventDefault(); navigate(`/messages?conversation=${conv.id}`); }}>
@@ -687,12 +700,26 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                     <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" className="object-cover" />
                                     <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">{conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}</AvatarFallback>
                                   </Avatar>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="font-medium text-sm truncate">{conv.partnerDisplayName}</span>
-                                      <span className="text-xs text-muted-foreground shrink-0">{timeLabel}</span>
+                                  <div className="min-w-0 flex-1 overflow-hidden pr-1">
+                                    <div className="flex items-center justify-between gap-3 min-w-0">
+                                      <Tooltip delayDuration={400}>
+                                        <TooltipTrigger asChild>
+                                          <span className="font-medium text-sm truncate min-w-0 block">{conv.partnerDisplayName}</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-[240px]">
+                                          <p className="break-words">{conv.partnerDisplayName}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                      <span className="text-xs text-muted-foreground shrink-0 min-w-[4rem] text-right">{timeLabel}</span>
                                     </div>
-                                    <p className="text-xs text-muted-foreground truncate mt-0.5">{snippet}</p>
+                                    <Tooltip delayDuration={400}>
+                                      <TooltipTrigger asChild>
+                                        <p className="text-xs text-muted-foreground line-clamp-2 break-words mt-0.5 cursor-default">{snippet}</p>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-[280px]">
+                                        <p className="break-words text-xs">{(conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent || "No messages yet")}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
                                   </div>
                                 </button>
                               </li>
@@ -723,12 +750,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       )}
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-80 p-0 bg-popover border shadow-xl z-[10000]">
+                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000]">
                     <div className="flex items-center justify-between px-4 py-3 border-b">
                       <span className="font-semibold text-sm">Recent Notifications</span>
                       <button type="button" onClick={(e) => { e.preventDefault(); navigate("/notifications"); }} className="text-primary hover:underline text-xs font-medium">View All</button>
                     </div>
-                    <ScrollArea className="h-[280px]">
+                    <ScrollArea className="h-[320px]">
                       {notifications.length === 0 ? (
                         <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No notifications yet</div>
                       ) : (
@@ -770,14 +797,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       <FolderOpen className="h-4 w-4" />
                     </Button>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="end" className="w-[20rem] min-w-0 max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
-                    <div className="w-full min-w-0 max-w-full overflow-hidden box-border" style={{ maxWidth: "20rem" }}>
+                  <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
                         <span className="font-semibold text-sm truncate min-w-0">My Projects</span>
                         <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                       </div>
-                      <ScrollArea className="h-[280px] w-full min-w-0 max-w-full overflow-hidden">
-                        <div className="w-full min-w-0 max-w-full overflow-hidden pr-4">
+                      <ScrollArea className="h-[320px] w-full min-w-0 max-w-full overflow-hidden">
+                        <div className="w-full min-w-0 max-w-full overflow-hidden pr-5">
                           {recentGigsLoading ? (
                             <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                           ) : recentGigs.length === 0 ? (
@@ -791,9 +817,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 return (
                                   <li key={g.id} className="w-full min-w-0 overflow-hidden">
                                     <button type="button" className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}>
-                                      <div className="w-full min-w-0 flex items-center justify-between gap-2 overflow-hidden">
-                                        <span className="font-medium text-sm truncate min-w-0 block max-w-[calc(100%-3.5rem)]" title={title}>{displayTitle}</span>
-                                        <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 flex-shrink-0">{g.status}</Badge>
+                                      <div className="w-full min-w-0 flex items-center justify-between gap-2">
+                                        <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
+                                        <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
                                       </div>
                                       <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                     </button>
@@ -804,7 +830,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           )}
                         </div>
                       </ScrollArea>
-                    </div>
                   </HoverCardContent>
                 </HoverCard>
               )}
