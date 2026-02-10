@@ -114,7 +114,11 @@ export function FloatingMessageWidget() {
           filter: `conversation_id=eq.${convId}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
+          const incoming = payload.new as Message;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === incoming.id)) return prev;
+            return [...prev, incoming];
+          });
         }
       )
       .subscribe();
@@ -154,6 +158,16 @@ export function FloatingMessageWidget() {
     }
     setSending(true);
     setInput("");
+    // Optimistic update: show sent message immediately in the message box
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: trimmed,
+      sender_id: user.id,
+      created_at: new Date().toISOString(),
+      read_at: null,
+    };
+    setMessages((prev) => [...prev, optimisticMessage]);
     try {
       const { data: messageId, error } = await supabase.rpc("send_message" as any, {
         _conversation_id: selectedConv.id,
@@ -162,6 +176,13 @@ export function FloatingMessageWidget() {
       });
       if (error) throw error;
       if (messageId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? { ...m, id: String(messageId), created_at: new Date().toISOString() }
+              : m
+          )
+        );
         supabase.functions
           .invoke("enqueue-message-notification", {
             body: { conversation_id: selectedConv.id, message_id: messageId },
@@ -170,6 +191,7 @@ export function FloatingMessageWidget() {
       }
     } catch (e: any) {
       toast.error(e?.message || "Failed to send");
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setInput(trimmed);
     } finally {
       setSending(false);
@@ -325,7 +347,7 @@ export function FloatingMessageWidget() {
             ) : (
               /* Chat view */
               <>
-                <ScrollArea className="flex-1 px-3">
+                <ScrollArea className="flex-1 min-h-0 px-3">
                   {loadingMessages ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -348,13 +370,13 @@ export function FloatingMessageWidget() {
                           >
                             <div
                               className={cn(
-                                "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                                "min-w-0 max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
                                 isOwn
                                   ? "bg-primary text-primary-foreground rounded-br-md"
-                                  : "bg-muted rounded-bl-md"
+                                  : "bg-muted text-foreground rounded-bl-md"
                               )}
                             >
-                              <p className="break-words whitespace-pre-wrap">{m.content}</p>
+                              <p className="break-words whitespace-pre-wrap overflow-visible">{m.content}</p>
                               <p
                                 className={cn(
                                   "text-[10px] mt-1",
@@ -380,7 +402,7 @@ export function FloatingMessageWidget() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
                       placeholder="Type a message..."
-                      className="flex-1"
+                      className="flex-1 min-w-0 text-foreground"
                       disabled={sending}
                     />
                     <Button
