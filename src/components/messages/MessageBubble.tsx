@@ -54,14 +54,14 @@ export function MessageBubble({
         <div className="w-8 h-8 rounded-full bg-muted shrink-0" />
       )}
 
-      <div className={cn("group max-w-[85%] sm:max-w-[75%]")}>
+      <div className={cn("group min-w-0 max-w-[85%] sm:max-w-[75%]")}>
         {senderName && !isOwn && (
           <p className="text-xs text-muted-foreground mb-1 ml-3">{senderName}</p>
         )}
 
         <div
           className={cn(
-            "relative rounded-2xl px-4 py-2.5 shadow-sm transition-all",
+            "relative overflow-hidden rounded-2xl px-4 py-2.5 shadow-sm transition-all",
             isOwn
               ? "bg-primary text-primary-foreground rounded-br-md ml-auto"
               : "bg-card border border-border/50 rounded-bl-md shadow-card"
@@ -117,7 +117,7 @@ export function MessageBubble({
           )}
 
           {content ? (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
               {content}
             </p>
           ) : attachments.length > 0 ? null : (

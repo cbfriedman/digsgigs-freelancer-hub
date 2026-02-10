@@ -291,7 +291,7 @@ export function FloatingMessageWidget() {
           <div className="flex-1 min-h-0 flex flex-col">
             {!selectedConv ? (
               /* Conversation list */
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 min-w-0 overflow-hidden">
                 {convLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -309,12 +309,15 @@ export function FloatingMessageWidget() {
                     </Button>
                   </div>
                 ) : (
-                  <ul className="py-2">
-                    {conversations.map((c) => (
-                      <li key={c.id}>
+                  <ul className="py-2 min-w-0 overflow-hidden">
+                    {conversations.map((c) => {
+                      const snippet = (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
+                      const display = snippet.length > 55 ? snippet.slice(0, 55) + "…" : snippet;
+                      return (
+                      <li key={c.id} className="min-w-0 overflow-hidden">
                         <button
                           type="button"
-                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors text-left"
+                          className="w-full min-w-0 flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors text-left overflow-hidden"
                           onClick={() => setSelectedConv(c)}
                         >
                           <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/50">
@@ -323,16 +326,15 @@ export function FloatingMessageWidget() {
                               {c.partnerDisplayName[0]?.toUpperCase() ?? "?"}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-medium text-sm truncate">{c.partnerDisplayName}</span>
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <div className="flex items-center justify-between gap-2 min-w-0">
+                              <span className="font-medium text-sm truncate min-w-0">{c.partnerDisplayName}</span>
                               <span className="text-xs text-muted-foreground shrink-0">
                                 {format(new Date(c.updatedAt), "HH:mm")}
                               </span>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {c.lastMessageFromMe ? "You: " : ""}
-                              {c.lastMessageContent || "No messages"}
+                            <p className="text-xs text-muted-foreground truncate min-w-0" title={c.lastMessageContent || undefined}>
+                              {display}
                             </p>
                           </div>
                           {c.unreadCount > 0 && (
@@ -340,7 +342,8 @@ export function FloatingMessageWidget() {
                           )}
                         </button>
                       </li>
-                    ))}
+                    );
+                    })}
                   </ul>
                 )}
               </ScrollArea>
@@ -370,13 +373,13 @@ export function FloatingMessageWidget() {
                           >
                             <div
                               className={cn(
-                                "min-w-0 max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                                "min-w-0 max-w-[85%] overflow-hidden rounded-2xl px-4 py-2.5 text-sm",
                                 isOwn
                                   ? "bg-primary text-primary-foreground rounded-br-md"
                                   : "bg-muted text-foreground rounded-bl-md"
                               )}
                             >
-                              <p className="break-words whitespace-pre-wrap overflow-visible">{m.content}</p>
+                              <p className="break-words whitespace-pre-wrap [overflow-wrap:anywhere]">{m.content}</p>
                               <p
                                 className={cn(
                                   "text-[10px] mt-1",
