@@ -393,7 +393,7 @@ export function FloatingMessageWidget() {
                 </Button>
               </div>
             </div>
-            <ScrollArea className="flex-1 min-w-0 overflow-hidden">
+            <ScrollArea className="flex-1 min-w-0 max-w-full overflow-hidden">
               {convLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -407,28 +407,28 @@ export function FloatingMessageWidget() {
                   </Button>
                 </div>
               ) : (
-                <ul className="py-2 min-w-0 overflow-hidden">
+                <ul className="py-2 min-w-0 max-w-full overflow-hidden">
                   {conversations.map((c) => {
                     const snippet = (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
-                    const display = snippet.length > 55 ? snippet.slice(0, 55) + "…" : snippet;
+                    const display = snippet.length > 45 ? snippet.slice(0, 45) + "…" : snippet;
                     const isOpenChat = openChats.some((o) => o.id === c.id);
                     return (
-                      <li key={c.id} className="min-w-0 overflow-hidden">
+                      <li key={c.id} className="min-w-0 max-w-full overflow-hidden list-none">
                         <button
                           type="button"
-                          className="w-full min-w-0 flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors text-left overflow-hidden"
+                          className="w-full max-w-full min-w-0 flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors text-left overflow-hidden"
                           onClick={() => openChat(c)}
                         >
-                          <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/50">
+                          <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/50 flex-shrink-0">
                             <AvatarImage src={c.partnerAvatarUrl || undefined} alt="" />
                             <AvatarFallback className="bg-primary/10 text-primary text-sm">
                               {c.partnerDisplayName[0]?.toUpperCase() ?? "?"}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="min-w-0 flex-1 overflow-hidden">
+                          <div className="min-w-0 flex-1 overflow-hidden basis-0">
                             <div className="flex items-center justify-between gap-2 min-w-0">
                               <span className="font-medium text-sm truncate min-w-0">{c.partnerDisplayName}</span>
-                              <span className="text-xs text-muted-foreground shrink-0">
+                              <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap tabular-nums min-w-[2.5rem] text-right">
                                 {format(new Date(c.updatedAt), "HH:mm")}
                               </span>
                             </div>
@@ -437,7 +437,7 @@ export function FloatingMessageWidget() {
                             </p>
                           </div>
                           {c.unreadCount > 0 && !isOpenChat && (
-                            <span className="h-2.5 min-w-[10px] rounded-full bg-primary shrink-0" />
+                            <span className="h-2.5 min-w-[10px] rounded-full bg-primary shrink-0 flex-shrink-0" />
                           )}
                         </button>
                       </li>
