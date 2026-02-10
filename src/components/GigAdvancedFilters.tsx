@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Save, Bell, Lightbulb } from "lucide-react";
+import { X, Save, Bell, Lightbulb, Briefcase } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,9 +23,26 @@ export interface Category {
   parent_category_id?: string | null;
 }
 
+/** Profession from DB (industry_categories + professions) with keywords for matching gigs */
+export interface ProfessionOption {
+  id: string;
+  name: string;
+  keywords: string[];
+}
+
+export interface IndustryCategoryWithProfessions {
+  id: string;
+  name: string;
+  professions: ProfessionOption[];
+}
+
 export interface GigFilters {
   budgetRange: [number, number];
   selectedCategories: string[];
+  /** Profession IDs (selecting a profession = all its keywords) */
+  selectedProfessionIds: string[];
+  /** Individual keywords selected (each item can be toggled) */
+  selectedKeywords: string[];
   locationRadius: number;
   locationLat?: number;
   locationLng?: number;
@@ -58,24 +75,51 @@ const SORT_OPTIONS: { value: GigFilters["sortBy"]; label: string }[] = [
 const DEFAULT_FILTERS: GigFilters = {
   budgetRange: [0, 50000],
   selectedCategories: [],
+  selectedProfessionIds: [],
+  selectedKeywords: [],
   locationRadius: 50,
   postedSince: "all",
   sortBy: "newest",
 };
 
 interface GigAdvancedFiltersProps {
-  categories: Category[];
+  /** Legacy categories (optional – main filter is professions & keywords) */
+  categories?: Category[];
+  /** Real professions + keywords from industry_categories & professions tables */
+  categoriesWithProfessions?: IndustryCategoryWithProfessions[];
   filters: GigFilters;
   onFiltersChange: (filters: GigFilters) => void;
 }
 
 export const GigAdvancedFilters = ({
-  categories,
+  categories = [],
+  categoriesWithProfessions = [],
   filters,
   onFiltersChange,
 }: GigAdvancedFiltersProps) => {
   const [searchName, setSearchName] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const selectedProfessionIds = filters.selectedProfessionIds ?? [];
+  const selectedKeywords = filters.selectedKeywords ?? [];
+
+  const handleProfessionToggle = (professionId: string) => {
+    const next = selectedProfessionIds.includes(professionId)
+      ? selectedProfessionIds.filter((id) => id !== professionId)
+      : [...selectedProfessionIds, professionId];
+    onFiltersChange({ ...filters, selectedProfessionIds: next });
+  };
+
+  const handleKeywordToggle = (keyword: string) => {
+    const key = keyword.toLowerCase();
+    const next = selectedKeywords.some((k) => k.toLowerCase() === key)
+      ? selectedKeywords.filter((k) => k.toLowerCase() !== key)
+      : [...selectedKeywords, keyword];
+    onFiltersChange({ ...filters, selectedKeywords: next });
+  };
+
+  const isKeywordSelected = (keyword: string) =>
+    selectedKeywords.some((k) => k.toLowerCase() === keyword.toLowerCase());
 
   const handleBudgetChange = (value: number[]) => {
     onFiltersChange({ ...filters, budgetRange: [value[0], value[1]] });
@@ -144,6 +188,8 @@ export const GigAdvancedFilters = ({
     filters.budgetRange[0] !== 0 ||
     filters.budgetRange[1] !== 50000 ||
     filters.selectedCategories.length > 0 ||
+    (filters.selectedProfessionIds?.length ?? 0) > 0 ||
+    (filters.selectedKeywords?.length ?? 0) > 0 ||
     filters.locationRadius !== 50 ||
     filters.postedSince !== "all" ||
     filters.sortBy !== "newest";
@@ -261,71 +307,88 @@ export const GigAdvancedFilters = ({
             </p>
           </div>
 
-          {/* Categories – grouped by parent to match project/gig categories */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Categories</Label>
-            <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-              {(() => {
-                const parents = categories.filter((c) => !c.parent_category_id);
-                const getChildren = (parentId: string) =>
-                  categories.filter((c) => c.parent_category_id === parentId);
-                return parents.map((parent) => {
-                  const subcategories = getChildren(parent.id);
-                  return (
-                    <div key={parent.id} className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`category-${parent.id}`}
-                          checked={filters.selectedCategories.includes(parent.id)}
-                          onCheckedChange={() => handleCategoryToggle(parent.id)}
-                        />
-                        <label
-                          htmlFor={`category-${parent.id}`}
-                          className="text-sm font-medium cursor-pointer"
-                        >
-                          {parent.name}
-                        </label>
-                      </div>
-                      {subcategories.map((sub) => (
-                        <div
-                          key={sub.id}
-                          className="flex items-center space-x-2 pl-6"
-                        >
+          {/* Professions & keywords – profession and each keyword selectable */}
+          {categoriesWithProfessions.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Briefcase className="h-4 w-4" />
+                Professions & keywords
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Select a profession (all its keywords) or pick individual keywords. Gigs match if title/description contain any selected keyword.
+              </p>
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {categoriesWithProfessions.map((cat) => (
+                  <div key={cat.id} className="space-y-1.5">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-1">
+                      {cat.name}
+                    </div>
+                    {cat.professions.map((prof) => (
+                      <div key={prof.id} className="space-y-1.5 pl-2">
+                        <div className="flex items-center gap-2">
                           <Checkbox
-                            id={`category-${sub.id}`}
-                            checked={filters.selectedCategories.includes(sub.id)}
-                            onCheckedChange={() => handleCategoryToggle(sub.id)}
+                            id={`prof-${prof.id}`}
+                            checked={selectedProfessionIds.includes(prof.id)}
+                            onCheckedChange={() => handleProfessionToggle(prof.id)}
                           />
                           <label
-                            htmlFor={`category-${sub.id}`}
-                            className="text-sm cursor-pointer"
+                            htmlFor={`prof-${prof.id}`}
+                            className="text-sm cursor-pointer font-medium"
                           >
-                            {sub.name}
+                            {prof.name}
                           </label>
                         </div>
-                      ))}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-            {filters.selectedCategories.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {filters.selectedCategories.map((catId) => {
-                  const category = categories.find((c) => c.id === catId);
-                  return category ? (
-                    <Badge key={catId} variant="secondary" className="gap-1">
-                      {category.name}
+                        {prof.keywords?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pl-6">
+                            {prof.keywords.map((kw) => {
+                              const selected = isKeywordSelected(kw);
+                              return (
+                                <Badge
+                                  key={`${prof.id}-${kw}`}
+                                  variant={selected ? "default" : "outline"}
+                                  className="cursor-pointer text-xs font-normal py-0.5 px-2 hover:opacity-90"
+                                  onClick={() => handleKeywordToggle(kw)}
+                                >
+                                  {kw}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              {(selectedProfessionIds.length > 0 || selectedKeywords.length > 0) && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedProfessionIds.map((profId) => {
+                    const prof = categoriesWithProfessions
+                      .flatMap((c) => c.professions)
+                      .find((p) => p.id === profId);
+                    return prof ? (
+                      <Badge key={`p-${profId}`} variant="secondary" className="gap-1">
+                        {prof.name}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => handleProfessionToggle(profId)}
+                        />
+                      </Badge>
+                    ) : null;
+                  })}
+                  {selectedKeywords.map((kw) => (
+                    <Badge key={`k-${kw}`} variant="secondary" className="gap-1">
+                      {kw}
                       <X
                         className="h-3 w-3 cursor-pointer"
-                        onClick={() => handleCategoryToggle(catId)}
+                        onClick={() => handleKeywordToggle(kw)}
                       />
                     </Badge>
-                  ) : null;
-                })}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Save search */}
           <div className="space-y-2 pt-3 border-t">

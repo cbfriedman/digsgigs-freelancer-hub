@@ -14,17 +14,43 @@ import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
-import { GigAdvancedFilters, type GigFilters } from "@/components/GigAdvancedFilters";
+import { GigAdvancedFilters, type GigFilters, type IndustryCategoryWithProfessions } from "@/components/GigAdvancedFilters";
+import { useProfessions } from "@/hooks/useProfessions";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
 import SEOHead from "@/components/SEOHead";
 import { generateBreadcrumbSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
 
+/** Names used when posting gigs (PostGig) – show these first in filters so they match project categories. */
+const PROJECT_CATEGORY_NAMES = [
+  "Web Development",
+  "Graphic Design",
+  "Digital Marketing",
+  "Content Writing",
+  "Software & Web Development",
+  "Design & Creative",
+  "Marketing & Growth",
+  "AI & Automation",
+  "Business Systems & Operations",
+  "Content & Media",
+];
+
 interface Category {
   id: string;
   name: string;
   parent_category_id?: string | null;
+}
+
+function sortCategoriesForDisplay<T extends { name: string }>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const aProject = PROJECT_CATEGORY_NAMES.indexOf(a.name);
+    const bProject = PROJECT_CATEGORY_NAMES.indexOf(b.name);
+    if (aProject !== -1 && bProject !== -1) return aProject - bProject;
+    if (aProject !== -1) return -1;
+    if (bProject !== -1) return 1;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 /** Expand selected category IDs: when a parent is selected, include all its subcategory IDs so gigs match. */
@@ -58,9 +84,23 @@ interface Gig {
 
 const BrowseGigs = () => {
   const navigate = useNavigate();
+  const { categoriesWithProfessions: rawCategoriesWithProfessions } = useProfessions();
   const [gigs, setGigs] = useState<Gig[]>([]);
-  /** All categories from DB (parents + subcategories) for filters and dropdown */
+  /** All categories from DB (parents + subcategories) so all are displayed and filters match project category_id */
   const [allCategories, setAllCategories] = useState<Category[]>([]);
+
+  /** Real professions + keywords for filter UI and keyword matching */
+  const categoriesWithProfessions: IndustryCategoryWithProfessions[] = (rawCategoriesWithProfessions || []).map(
+    (c) => ({
+      id: c.id,
+      name: c.name,
+      professions: (c.professions || []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        keywords: Array.isArray(p.keywords) ? p.keywords : [],
+      })),
+    })
+  );
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -76,6 +116,8 @@ const BrowseGigs = () => {
   const [advancedFilters, setAdvancedFilters] = useState<GigFilters>({
     budgetRange: [0, 50000],
     selectedCategories: [],
+    selectedProfessionIds: [],
+    selectedKeywords: [],
     locationRadius: 50,
     postedSince: 'all',
     sortBy: 'newest',
@@ -183,7 +225,8 @@ const BrowseGigs = () => {
       toast.error("Failed to load categories");
     }
 
-    setAllCategories(categoriesData || []);
+    const allList = categoriesData || [];
+    setAllCategories(sortCategoriesForDisplay(allList));
 
     let query = supabase
       .from("gigs")
@@ -192,19 +235,11 @@ const BrowseGigs = () => {
         categories (name)
       `)
       .eq("status", "open")
+      .order("bumped_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
 
     if (selectedCategory !== "all") {
-      const { data: subcategories, error: subcategoriesError } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("parent_category_id", selectedCategory);
-      
-      if (subcategoriesError) {
-        console.error("Error loading subcategories:", subcategoriesError);
-      }
-      
-      const categoryIds = [selectedCategory, ...(subcategories?.map(sc => sc.id) || [])];
+      const categoryIds = expandCategoryIds([selectedCategory], allList);
       query = query.in("category_id", categoryIds);
     }
 
@@ -226,8 +261,10 @@ const BrowseGigs = () => {
       query = query.lte("budget_max", advancedFilters.budgetRange[1]);
     }
     if (advancedFilters.selectedCategories.length > 0) {
-      const categoryList = categoriesData || [];
-      const categoryIds = expandCategoryIds(advancedFilters.selectedCategories, categoryList);
+      const categoryIds = expandCategoryIds(
+        advancedFilters.selectedCategories,
+        allList
+      );
       query = query.in("category_id", categoryIds);
     }
 
@@ -251,19 +288,45 @@ const BrowseGigs = () => {
     setLoading(false);
   };
 
+  const selectedProfessionIds = advancedFilters.selectedProfessionIds ?? [];
+  const selectedKeywords = advancedFilters.selectedKeywords ?? [];
+  const professionKeywords =
+    selectedProfessionIds.length > 0 || selectedKeywords.length > 0
+      ? new Set([
+          ...categoriesWithProfessions
+            .flatMap((c) => c.professions)
+            .filter((p) => selectedProfessionIds.includes(p.id))
+            .flatMap((p) => (p.keywords || []).map((k) => k.toLowerCase())),
+          ...selectedKeywords.map((k) => k.toLowerCase()),
+        ])
+      : null;
+
   const filteredGigs = gigs.filter((gig) => {
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = (
+    const matchesSearch =
+      !searchLower ||
       gig.title.toLowerCase().includes(searchLower) ||
-      gig.description.toLowerCase().includes(searchLower)
-    );
-    
-    // Apply escrow filter for diggers only
+      gig.description.toLowerCase().includes(searchLower);
+
+    if (!matchesSearch) return false;
+
     if (diggerProfile && !showEscrowGigs && (gig as any).escrow_requested_by_consumer) {
       return false;
     }
-    
-    return matchesSearch;
+
+    if (professionKeywords && professionKeywords.size > 0) {
+      const gigText = [
+        gig.title,
+        gig.description,
+        (gig as any).requirements || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+      const matchesProfession = [...professionKeywords].some((kw) => gigText.includes(kw));
+      if (!matchesProfession) return false;
+    }
+
+    return true;
   });
 
   const isOldGig = (createdAt: string) => {
@@ -406,6 +469,7 @@ const BrowseGigs = () => {
           <div className="md:col-span-1">
             <GigAdvancedFilters
               categories={allCategories}
+              categoriesWithProfessions={categoriesWithProfessions}
               filters={advancedFilters}
               onFiltersChange={setAdvancedFilters}
             />
@@ -414,6 +478,8 @@ const BrowseGigs = () => {
               onApplySearch={(appliedFilters) => setAdvancedFilters({
                 budgetRange: [0, 50000],
                 selectedCategories: [],
+                selectedProfessionIds: [],
+                selectedKeywords: [],
                 locationRadius: 50,
                 postedSince: 'all',
                 sortBy: 'newest',

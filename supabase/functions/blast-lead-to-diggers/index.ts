@@ -175,60 +175,46 @@ serve(async (req) => {
       : "Not specified";
     const gigViewUrl = `${baseUrl}/gig/${leadId}`;
 
-    // Digger-friendly email: one main idea, two clear choices (bid free or unlock lead), warm tone,
-    // mobile-friendly stacked buttons, respectful footer. Respects preferences (recipients already filtered).
-    const buildDiggerEmailHtml = (recipientName: string, viewAndBidUrl: string, unlockLeadUrl: string, footerUnsubscribeUrl: string, options?: { proBanner?: boolean; showProTip?: boolean }) => {
-      const proBanner = options?.proBanner
-        ? `<div style="background: linear-gradient(135deg, #5b21b6, #7c3aed); color: white; padding: 14px 20px; border-radius: 12px; margin-bottom: 24px; text-align: center; font-size: 15px;">
-            <strong>⚡ Early access</strong> — You're seeing this project before other diggers. Reply fast for the best chance!
-          </div>`
+    // Transactional-style email so it’s more likely to land in Primary, not Promotions:
+    // no emoji in subject, minimal marketing styling, notification tone, single clear CTA.
+    const buildDiggerEmailHtml = (recipientName: string, viewAndBidUrl: string, unlockLeadUrl: string, footerUnsubscribeUrl: string, options?: { earlyAccessLine?: boolean; showProTip?: boolean }) => {
+      const earlyAccessLine = options?.earlyAccessLine
+        ? `<p style="margin: 0 0 16px 0; font-size: 14px; color: #6b7280;">You're seeing this project before other diggers (early access).</p>`
         : "";
       const proTip = options?.showProTip
-        ? `<div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px 18px; margin: 24px 0; text-align: center;">
-            <p style="margin: 0; color: #166534; font-size: 14px;">💡 <strong>Pro tip:</strong> Pro diggers get new projects 2 hours earlier. <a href="${baseUrl}/pricing" style="color: #5b21b6; font-weight: 600;">See Pro benefits →</a></p>
-          </div>`
+        ? `<p style="margin: 16px 0 0 0; font-size: 13px; color: #6b7280;">Pro diggers get new projects earlier. <a href="${baseUrl}/pricing" style="color: #4f46e5;">Pricing</a></p>`
         : "";
       return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New project for you</title>
+  <title>New lead: ${lead.title?.substring(0, 50) || "Project"}...</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #374151; max-width: 560px; margin: 0 auto; padding: 24px; background: #fafafa;">
-  ${proBanner}
-  <div style="background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e5e7eb;">
-    <div style="padding: 28px 24px 20px;">
-      <p style="margin: 0 0 8px 0; font-size: 16px; color: #374151;">Hi ${recipientName},</p>
-      <p style="margin: 0 0 20px 0; font-size: 15px; color: #6b7280;">A new project just went live that might be a great fit for you. Take a look below — you can submit a bid for free, or unlock the lead to get the client's contact details.</p>
-      <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb;">
-        <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #111827; font-weight: 600;">${lead.title}</h2>
-        <p style="margin: 0 0 10px 0; font-size: 14px; color: #4b5563; line-height: 1.5;">${shortDescription}</p>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; color: #6b7280;">
-          <tr><td style="padding: 4px 0;"><strong style="color: #374151;">Budget</strong></td><td style="padding: 4px 0;">${budgetRange}</td></tr>
-          <tr><td style="padding: 4px 0;"><strong style="color: #374151;">Timeline</strong></td><td style="padding: 4px 0;">${lead.timeline || "Flexible"}</td></tr>
-          <tr><td style="padding: 4px 0;"><strong style="color: #374151;">Location</strong></td><td style="padding: 4px 0;">${lead.location || "Not specified"}</td></tr>
-        </table>
-      </div>
-      <p style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280;">Choose how you'd like to respond:</p>
-      <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
-        <tr><td style="padding: 0 0 10px 0;">
-          <a href="${viewAndBidUrl}" style="display: block; width: 100%; box-sizing: border-box; text-align: center; background: linear-gradient(135deg, #5b21b6, #7c3aed); color: white; text-decoration: none; padding: 16px 20px; border-radius: 10px; font-weight: 600; font-size: 16px;">View project &amp; bid</a>
-        </td></tr>
-        <tr><td style="padding: 0;">
-          <a href="${unlockLeadUrl}" style="display: block; width: 100%; box-sizing: border-box; text-align: center; background: #ffffff; color: #5b21b6; text-decoration: none; padding: 16px 20px; border-radius: 10px; font-weight: 600; font-size: 16px; border: 2px solid #5b21b6;">Unlock lead — $${priceDollars}</a>
-        </td></tr>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #374151; max-width: 560px; margin: 0 auto; padding: 24px; background: #fff;">
+  <div style="padding: 0 0 20px 0;">
+    <p style="margin: 0 0 8px 0; font-size: 16px; color: #111827;">Hi ${recipientName},</p>
+    <p style="margin: 0 0 12px 0; font-size: 15px; color: #4b5563;">A new project was posted on Digs &amp; Gigs. Details below.</p>
+    ${earlyAccessLine}
+    <div style="background: #f9fafb; border-radius: 8px; padding: 16px 20px; margin: 16px 0; border: 1px solid #e5e7eb;">
+      <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #111827;">${lead.title}</p>
+      <p style="margin: 0 0 12px 0; font-size: 14px; color: #4b5563; line-height: 1.5;">${shortDescription}</p>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #6b7280;">
+        <tr><td style="padding: 2px 0;"><strong style="color: #374151;">Budget</strong></td><td style="padding: 2px 0;">${budgetRange}</td></tr>
+        <tr><td style="padding: 2px 0;"><strong style="color: #374151;">Timeline</strong></td><td style="padding: 2px 0;">${lead.timeline || "Flexible"}</td></tr>
+        <tr><td style="padding: 2px 0;"><strong style="color: #374151;">Location</strong></td><td style="padding: 2px 0;">${lead.location || "Not specified"}</td></tr>
       </table>
-      <p style="margin: 20px 0 0 0; font-size: 13px; color: #9ca3af;">Bidding is free. Unlock the lead when you're ready to get the client's contact info. No pressure — choose what works for you.</p>
     </div>
-    <div style="padding: 16px 24px; background: #f9fafb; border-top: 1px solid #e5e7eb;">
-      <p style="margin: 0; font-size: 14px; color: #6b7280;">Happy hunting,<br><strong style="color: #374151;">The Digs &amp; Gigs team</strong></p>
-    </div>
+    <p style="margin: 0 0 12px 0; font-size: 14px; color: #374151;">View and bid (free), or unlock the lead for $${priceDollars} to get the client's contact details.</p>
+    <p style="margin: 0 0 8px 0;">
+      <a href="${viewAndBidUrl}" style="color: #4f46e5; font-weight: 600; text-decoration: none;">View project &amp; bid</a>
+    </p>
+    <p style="margin: 0 0 20px 0;">
+      <a href="${unlockLeadUrl}" style="color: #4f46e5; font-weight: 600; text-decoration: none;">Unlock lead ($${priceDollars})</a>
+    </p>
+    ${proTip}
+    <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af;">Digs &amp; Gigs. <a href="${footerUnsubscribeUrl}" style="color: #6b7280;">Unsubscribe from lead emails</a>.</p>
   </div>
-  ${proTip}
-  <p style="margin: 24px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
-    You're on this list as a digger. You can <a href="${footerUnsubscribeUrl}" style="color: #5b21b6;">unsubscribe</a> or update your preferences anytime.
-  </p>
 </body>
 </html>`;
     };
@@ -250,11 +236,14 @@ serve(async (req) => {
       const footerUnsubscribeUrl = `${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&type=leads`;
 
       try {
+        const subject = (lead.title?.length || 0) > 45
+          ? `New lead: ${(lead.title as string).substring(0, 45)}…`
+          : `New lead: ${lead.title}`;
         await resend.emails.send({
           from: "Digs & Gigs <leads@digsandgigs.net>",
           to: [email],
-          subject: proOnly ? `⚡ New project: ${lead.title}` : `New project for you: ${lead.title}`,
-          html: buildDiggerEmailHtml(name, gigViewUrl, unlockUrl, footerUnsubscribeUrl, { proBanner: proOnly, showProTip: !proOnly }),
+          subject: proOnly ? `[Early access] ${subject}` : subject,
+          html: buildDiggerEmailHtml(name, gigViewUrl, unlockUrl, footerUnsubscribeUrl, { earlyAccessLine: proOnly, showProTip: !proOnly }),
         });
 
         emailsSent++;
@@ -281,10 +270,13 @@ serve(async (req) => {
           const subscriberUnlockUrl = `${baseUrl}/lead/${leadId}/unlock?sub=${subscriber.id}`;
           const footerUnsubscribeUrl = `${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&type=leads`;
 
+          const subj = (lead.title?.length || 0) > 45
+            ? `New lead: ${(lead.title as string).substring(0, 45)}…`
+            : `New lead: ${lead.title}`;
           await resend.emails.send({
             from: "Digs & Gigs <leads@digsandgigs.net>",
             to: [email],
-            subject: `New project for you: ${lead.title}`,
+            subject: subj,
             html: buildDiggerEmailHtml(name, gigViewUrl, subscriberUnlockUrl, footerUnsubscribeUrl, { showProTip: true }),
           });
 

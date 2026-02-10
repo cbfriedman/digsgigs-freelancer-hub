@@ -306,10 +306,15 @@ export function GigLandingForm({ onComplete }: GigLandingFormProps) {
         body: { gigId: gigData.id }
       }).catch(err => console.error("Management email error:", err));
 
-      // Blast to PRO diggers immediately
+      // Blast to PRO diggers (early access)
       supabase.functions.invoke("blast-lead-to-diggers", {
         body: { leadId: gigData.id, proOnly: true }
       }).catch(err => console.error("Pro blast error:", err));
+
+      // Blast to all other diggers so every digger receives the lead email at their registered address
+      supabase.functions.invoke("blast-lead-to-diggers", {
+        body: { leadId: gigData.id, proOnly: false }
+      }).catch(err => console.error("Non-Pro blast error:", err));
 
       // Send consumer onboarding email
       const projectLink = `${window.location.origin}/gig/${gigData.id}`;

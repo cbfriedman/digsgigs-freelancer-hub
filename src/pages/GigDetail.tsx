@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare } from "lucide-react";
+import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
 import { BidsList } from "@/components/BidsList";
@@ -29,6 +29,12 @@ interface Gig {
   status: string;
   created_at: string;
   location: string;
+  timeline?: string | null;
+  category_id?: string | null;
+  requirements?: string | null;
+  preferred_regions?: string[] | null;
+  consumer_email?: string | null;
+  consumer_phone?: string | null;
   categories: {
     name: string;
     description: string | null;
@@ -177,6 +183,62 @@ const GigDetail = () => {
     return `$${min?.toLocaleString()} - $${max?.toLocaleString()}`;
   };
 
+  const [bumping, setBumping] = useState(false);
+  const [reposting, setReposting] = useState(false);
+
+  const handleBump = async () => {
+    if (!id || !gig) return;
+    setBumping(true);
+    const { error } = await supabase
+      .from("gigs")
+      .update({ bumped_at: new Date().toISOString() })
+      .eq("id", id);
+    setBumping(false);
+    if (error) {
+      toast({ title: "Failed to bump listing", variant: "destructive" });
+    } else {
+      toast({ title: "Listing bumped to the top. More diggers will see it." });
+      loadData();
+    }
+  };
+
+  const handleRepost = async () => {
+    if (!gig?.consumer_id) {
+      toast({ title: "Sign in with the account that posted this gig to repost.", variant: "destructive" });
+      return;
+    }
+    if (!window.confirm("Create a new listing with the same details? Your current listing stays as is. Diggers will be notified.")) return;
+    setReposting(true);
+    const insertPayload = {
+      title: gig.title,
+      description: gig.description,
+      budget_min: gig.budget_min ?? null,
+      budget_max: gig.budget_max ?? null,
+      timeline: gig.timeline ?? null,
+      location: gig.location ?? "Remote",
+      category_id: gig.category_id ?? null,
+      consumer_id: gig.consumer_id,
+      requirements: gig.requirements ?? null,
+      preferred_regions: gig.preferred_regions ?? null,
+      status: "open",
+      consumer_email: gig.consumer_email ?? null,
+      client_name: gig.client_name ?? null,
+      consumer_phone: gig.consumer_phone ?? null,
+      confirmation_status: "confirmed",
+      is_confirmed_lead: true,
+    };
+    const { data: newGig, error } = await supabase.from("gigs").insert(insertPayload).select("id").single();
+    setReposting(false);
+    if (error) {
+      toast({ title: "Failed to repost. Try again.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Reposted! Your new listing is live and diggers will be notified." });
+    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: newGig.id, proOnly: true } }).catch(() => {});
+    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: newGig.id, proOnly: false } }).catch(() => {});
+    navigate(`/gig/${newGig.id}`);
+  };
+
   const handleSendMessage = async () => {
     if (!currentUser) {
       toast({
@@ -303,6 +365,35 @@ const GigDetail = () => {
                   </span>
                 </div>
                 <CardTitle className="text-3xl">{gig.title}</CardTitle>
+                {isOwner && (
+                  <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t">
+                    {gig.status === "open" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBump}
+                        disabled={bumping}
+                        title="Bump this listing to the top so more diggers see it"
+                      >
+                        {bumping ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                        Bump listing
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRepost}
+                      disabled={reposting || !gig.consumer_id}
+                      title="Create a new listing with the same details"
+                    >
+                      {reposting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4 mr-1" />}
+                      Repost
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => navigate("/my-gigs")}>
+                      Manage in My Gigs
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>

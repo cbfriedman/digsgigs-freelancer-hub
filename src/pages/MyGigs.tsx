@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText } from "lucide-react";
+import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText, RefreshCw, Copy } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Navigation } from "@/components/Navigation";
 import {
@@ -30,9 +30,12 @@ interface Gig {
   status: string;
   purchase_count: number;
   created_at: string;
+  bumped_at?: string | null;
+  consumer_id?: string | null;
   categories: {
     name: string;
   } | null;
+  [key: string]: unknown;
 }
 
 interface LeadIssue {
@@ -60,6 +63,9 @@ const MyGigs = () => {
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [gigIssues, setGigIssues] = useState<LeadIssue[]>([]);
   const [showIssuesDialog, setShowIssuesDialog] = useState(false);
+  const [bumpingId, setBumpingId] = useState<string | null>(null);
+  const [repostingId, setRepostingId] = useState<string | null>(null);
+  const [repostConfirmGig, setRepostConfirmGig] = useState<Gig | null>(null);
 
   useEffect(() => {
     loadGigs();
@@ -137,6 +143,79 @@ const MyGigs = () => {
       toast.success(`Gig ${newStatus === "open" ? "reopened" : "closed"} successfully`);
       loadGigs();
     }
+  };
+
+  const handleBump = async (gigId: string) => {
+    setBumpingId(gigId);
+    const { error } = await supabase
+      .from("gigs")
+      .update({ bumped_at: new Date().toISOString() })
+      .eq("id", gigId);
+
+    setBumpingId(null);
+    if (error) {
+      toast.error("Failed to bump listing");
+    } else {
+      toast.success("Listing bumped to the top. More diggers will see it.");
+      loadGigs();
+    }
+  };
+
+  const handleRepostConfirm = () => {
+    if (!repostConfirmGig) return;
+    handleRepost(repostConfirmGig);
+    setRepostConfirmGig(null);
+  };
+
+  const handleRepost = async (gig: Gig) => {
+    const consumerId = (gig as Gig & { consumer_id?: string | null }).consumer_id;
+    if (!consumerId) {
+      toast.error("Sign in with the account that posted this gig to repost.");
+      return;
+    }
+
+    setRepostingId(gig.id);
+    const row = gig as Record<string, unknown>;
+    const insertPayload = {
+      title: row.title,
+      description: row.description,
+      budget_min: row.budget_min ?? null,
+      budget_max: row.budget_max ?? null,
+      timeline: row.timeline ?? null,
+      location: row.location ?? "Remote",
+      category_id: row.category_id ?? null,
+      consumer_id: consumerId,
+      requirements: row.requirements ?? null,
+      preferred_regions: Array.isArray(row.preferred_regions) ? row.preferred_regions : null,
+      status: "open",
+      consumer_email: row.consumer_email ?? null,
+      client_name: row.client_name ?? null,
+      consumer_phone: row.consumer_phone ?? null,
+      confirmation_status: "confirmed",
+      is_confirmed_lead: true,
+    };
+
+    const { data: newGig, error } = await supabase
+      .from("gigs")
+      .insert(insertPayload)
+      .select("id")
+      .single();
+
+    setRepostingId(null);
+    setRepostConfirmGig(null);
+
+    if (error) {
+      toast.error("Failed to repost. Try again.");
+      return;
+    }
+
+    toast.success("Reposted! Your new listing is live and diggers will be notified.");
+    loadGigs();
+
+    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: newGig.id, proOnly: true } }).catch(() => {});
+    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: newGig.id, proOnly: false } }).catch(() => {});
+
+    navigate(`/gig/${newGig.id}`);
   };
 
   const viewIssues = async (gig: Gig) => {
@@ -297,14 +376,44 @@ const MyGigs = () => {
                     </div>
                   </div>
 
-                  {/* Action row: View bids / View gig + View Issues */}
-                  <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-2">
+                  {/* Action row: View, Bump, Repost, Issues */}
+                  <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-2 flex-wrap">
                     <Button
                       onClick={() => navigate(`/gig/${gig.id}`)}
                       className="flex-1 min-w-0"
                     >
                       <FileText className="mr-2 h-4 w-4" />
                       {bidStatsByGigId[gig.id]?.count ? "View bids" : "View gig"}
+                    </Button>
+                    {gig.status === "open" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleBump(gig.id)}
+                        disabled={!!bumpingId}
+                        className="min-w-0"
+                        title="Bump this listing to the top so more diggers see it"
+                      >
+                        {bumpingId === gig.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                        )}
+                        Bump
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => setRepostConfirmGig(gig)}
+                      disabled={!!repostingId || !(gig as Gig & { consumer_id?: string | null }).consumer_id}
+                      className="min-w-0"
+                      title="Create a new listing with the same details (diggers will be notified)"
+                    >
+                      {repostingId === gig.id ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Copy className="mr-2 h-4 w-4" />
+                      )}
+                      Repost
                     </Button>
                     <Button 
                       variant="outline" 
@@ -321,6 +430,21 @@ const MyGigs = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!repostConfirmGig} onOpenChange={(open) => !open && setRepostConfirmGig(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Repost this listing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A new listing will be created with the same title, description, and budget. Your current listing stays as is. Diggers will be notified about the new post.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRepostConfirm}>Repost</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showIssuesDialog} onOpenChange={setShowIssuesDialog}>
         <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
