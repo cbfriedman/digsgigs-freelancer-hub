@@ -49,6 +49,10 @@ export function FloatingMessageWidget() {
   const [sendingMap, setSendingMap] = useState<Record<string, boolean>>({});
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
+  const conversationsRef = useRef<RecentConversation[]>([]);
+  const openChatRef = useRef<(conv: RecentConversation, bringToFront?: boolean) => void>(() => {});
+  const userIdRef = useRef<string | null>(null);
+  userIdRef.current = user?.id ?? null;
 
   const hideOnMessagesPage = pathname === MESSAGES_PAGE;
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
@@ -126,18 +130,29 @@ export function FloatingMessageWidget() {
   }, []);
 
   const openChat = useCallback(
-    (conv: RecentConversation) => {
+    (conv: RecentConversation, bringToFront = false) => {
+      let wasAlreadyOpen = false;
       setOpenChats((prev) => {
-        const exists = prev.some((c) => c.id === conv.id);
-        if (exists) return prev;
+        const idx = prev.findIndex((c) => c.id === conv.id);
+        if (idx >= 0) {
+          wasAlreadyOpen = true;
+          if (!bringToFront) return prev;
+          const without = prev.filter((c) => c.id !== conv.id);
+          return [...without, conv];
+        }
         const next = [...prev, conv].slice(-MAX_OPEN_CHATS);
         return next;
       });
-      loadMessages(conv.id);
-      subscribeToMessages(conv.id);
+      if (!wasAlreadyOpen) {
+        loadMessages(conv.id);
+        subscribeToMessages(conv.id);
+      }
     },
     [loadMessages, subscribeToMessages]
   );
+
+  conversationsRef.current = conversations;
+  openChatRef.current = openChat;
 
   const closeChat = useCallback((convId: string) => {
     setOpenChats((prev) => prev.filter((c) => c.id !== convId));
@@ -166,6 +181,34 @@ export function FloatingMessageWidget() {
       channelsRef.current = {};
     };
   }, []);
+
+  useEffect(() => {
+    if (!user?.id || hideOnMessagesPage) return;
+    const channel = supabase
+      .channel("incoming-messages-auto-open")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const msg = payload.new as { conversation_id: string; sender_id: string };
+          const uid = userIdRef.current;
+          if (!uid || msg.sender_id === uid) return;
+          const conv = conversationsRef.current.find((c) => c.id === msg.conversation_id);
+          if (conv) {
+            openChatRef.current(conv, true);
+            setIsOpen(true);
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, hideOnMessagesPage]);
 
   useEffect(() => {
     openChats.forEach((c) => {
