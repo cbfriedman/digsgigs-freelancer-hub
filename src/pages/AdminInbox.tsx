@@ -115,7 +115,7 @@ const AdminInbox = () => {
 
   const loadSubmissions = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("contact_submissions")
         .select("*")
         .order("created_at", { ascending: false });
@@ -135,7 +135,7 @@ const AdminInbox = () => {
   const updateSubmissionStatus = async (id: string, status: ContactStatus) => {
     setUpdatingStatusId(id);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("contact_submissions")
         .update({ status })
         .eq("id", id);

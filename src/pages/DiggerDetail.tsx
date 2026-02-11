@@ -400,7 +400,7 @@ const DiggerDetail = () => {
       const { error: uploadError } = await supabase.storage.from("profile-photos").upload(fileName, file, { cacheControl: "3600", upsert: false });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from("profile-photos").getPublicUrl(fileName);
-      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: publicUrl }).eq("id", digger.id);
+      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: publicUrl } as any).eq("id", digger.id);
       if (error) throw error;
       setDigger((d) => (d ? { ...d, cover_photo_url: publicUrl } : null));
       setCoverPhotoDialogOpen(false);
@@ -416,7 +416,7 @@ const DiggerDetail = () => {
   const handleCoverPhotoRemove = async () => {
     if (!digger) return;
     try {
-      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: null }).eq("id", digger.id);
+      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: null } as any).eq("id", digger.id);
       if (error) throw error;
       setDigger((d) => (d ? { ...d, cover_photo_url: null } : null));
       setCoverPhotoDialogOpen(false);

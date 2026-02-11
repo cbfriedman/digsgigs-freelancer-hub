@@ -149,7 +149,7 @@ const MyGigs = () => {
     setBumpingId(gigId);
     const { error } = await supabase
       .from("gigs")
-      .update({ bumped_at: new Date().toISOString() })
+      .update({ bumped_at: new Date().toISOString() } as any)
       .eq("id", gigId);
 
     setBumpingId(null);
@@ -197,7 +197,7 @@ const MyGigs = () => {
 
     const { data: newGig, error } = await supabase
       .from("gigs")
-      .insert(insertPayload)
+      .insert(insertPayload as any)
       .select("id")
       .single();
 

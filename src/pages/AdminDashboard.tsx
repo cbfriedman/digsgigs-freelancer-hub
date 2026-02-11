@@ -222,7 +222,7 @@ const AdminDashboard = () => {
       setRecentReminders(remindersWithEmails);
 
       // Support inbox count (for sidebar badge)
-      const { count: inboxCount } = await supabase
+      const { count: inboxCount } = await (supabase as any)
         .from("contact_submissions")
         .select("id", { count: "exact", head: true });
       setSupportInboxCount(inboxCount ?? null);

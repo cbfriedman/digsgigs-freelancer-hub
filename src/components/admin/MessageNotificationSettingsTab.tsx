@@ -22,7 +22,7 @@ export default function MessageNotificationSettingsTab() {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("message_notification_settings")
         .select("throttle_minutes, delay_minutes")
         .eq("id", SETTINGS_ROW_ID)
@@ -30,8 +30,8 @@ export default function MessageNotificationSettingsTab() {
 
       if (error) throw error;
       if (data) {
-        setThrottleMinutes(Number(data.throttle_minutes) ?? 30);
-        setDelayMinutes(Number(data.delay_minutes) ?? 0);
+        setThrottleMinutes(Number((data as any).throttle_minutes) ?? 30);
+        setDelayMinutes(Number((data as any).delay_minutes) ?? 0);
       }
     } catch (e) {
       console.error("Error loading message notification settings:", e);
@@ -47,7 +47,7 @@ export default function MessageNotificationSettingsTab() {
     const delay = Math.max(0, Math.min(60, Math.round(Number(delayMinutes) || 0)));
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("message_notification_settings")
         .update({
           throttle_minutes: throttle,

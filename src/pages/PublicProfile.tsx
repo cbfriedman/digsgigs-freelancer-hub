@@ -21,17 +21,18 @@ export default function PublicProfile() {
     let cancelled = false;
     if (!id) return;
     setLoading(true);
-    supabase
-      .from("profiles")
-      .select("id, full_name, avatar_url, about_me")
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data }) => {
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, about_me")
+          .eq("id", id)
+          .maybeSingle();
         if (!cancelled) setProfile((data as PublicProfileData) || null);
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };

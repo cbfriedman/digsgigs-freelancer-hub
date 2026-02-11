@@ -161,7 +161,7 @@ export const GigAdvancedFilters = ({
             user_id: user.id,
             search_type: "gigs",
             name: searchName,
-            filters: filters as Record<string, unknown>,
+            filters: filters as unknown as import("@/integrations/supabase/types").Json,
             email_alerts_enabled: true,
           },
         ]);
