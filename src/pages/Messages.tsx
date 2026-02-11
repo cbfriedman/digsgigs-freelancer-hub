@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAnonKey } from "@/integrations/supabase/client";
+import { uploadFileWithProgress } from "@/lib/uploadWithProgress";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 import PageLayout from "@/components/layout/PageLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -147,6 +149,7 @@ export default function Messages() {
   const [editingMessageContent, setEditingMessageContent] = useState("");
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
+  const [attachmentUploadProgress, setAttachmentUploadProgress] = useState<number | null>(null);
   const currentUserIdRef = useRef<string | undefined>(undefined);
   const selectedConversationRef = useRef<string | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
@@ -1020,19 +1023,31 @@ export default function Messages() {
       });
       return;
     }
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() || "https://njpjxasfesdapxukvyth.supabase.co";
+    const { data: { session } } = await supabase.auth.getSession();
+    const bucket = "message-attachments";
+    const attachments: { name: string; path: string; type: string }[] = [];
     try {
-      const bucket = "message-attachments";
-      const attachments: { name: string; path: string; type: string }[] = [];
-      for (const file of files) {
+      setAttachmentUploadProgress(0);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 200) || "file";
         const path = `${selectedConversation}/${currentUser.id}/${crypto.randomUUID()}_${safeName}`;
-        const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
-          cacheControl: "3600",
-          upsert: false,
+        await uploadFileWithProgress({
+          url: supabaseUrl,
+          accessToken: session?.access_token,
+          anonKey: supabaseAnonKey,
+          bucket,
+          path,
+          file,
+          onProgress: (percent) => {
+            const overall = (i + percent / 100) / files.length * 100;
+            setAttachmentUploadProgress(Math.round(overall));
+          },
         });
-        if (uploadError) throw uploadError;
         attachments.push({ name: file.name, path, type: file.type || "application/octet-stream" });
       }
+      setAttachmentUploadProgress(100);
       const { data: messageId, error } = await supabase.rpc("send_message" as any, {
         _conversation_id: selectedConversation,
         _content: content.trim(),
@@ -1055,6 +1070,8 @@ export default function Messages() {
         description: error.message ?? "Upload or send failed.",
         variant: "destructive",
       });
+    } finally {
+      setAttachmentUploadProgress(null);
     }
   };
 
@@ -1717,6 +1734,15 @@ export default function Messages() {
 
                 {/* Message input - fixed at bottom, never inside scroll, never scrolled */}
                 <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
+                  {attachmentUploadProgress != null && (
+                    <div className="mb-2 space-y-1">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Uploading attachments…</span>
+                        <span>{attachmentUploadProgress}%</span>
+                      </div>
+                      <Progress value={attachmentUploadProgress} className="h-1.5" />
+                    </div>
+                  )}
                   <MessageInput
                     value={newMessage}
                     onChange={setNewMessage}
@@ -1949,6 +1975,15 @@ export default function Messages() {
                       </ScrollArea>
                     </div>
                     <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
+                      {attachmentUploadProgress != null && (
+                        <div className="mb-2 space-y-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Uploading attachments…</span>
+                            <span>{attachmentUploadProgress}%</span>
+                          </div>
+                          <Progress value={attachmentUploadProgress} className="h-1.5" />
+                        </div>
+                      )}
                       <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} onFileSelect={sendMessageWithAttachments} placeholder="Type a message..." maxLength={5000} />
                     </div>
                   </>

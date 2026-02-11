@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseAnonKey } from "@/integrations/supabase/client";
+import { uploadFileWithProgress } from "@/lib/uploadWithProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRecentConversations, type RecentConversation } from "@/hooks/useRecentConversations";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
@@ -52,8 +53,10 @@ import {
 import { format } from "date-fns";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { isNotificationMuted, setNotificationMuted } from "@/lib/notificationSound";
+import { MessageInput, MessageBubble } from "@/components/messages";
 
 const messageSchema = z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long");
 
@@ -63,6 +66,7 @@ interface Message {
   sender_id: string;
   created_at: string;
   read_at: string | null;
+  attachments?: { name: string; path: string; type: string }[];
 }
 
 const MESSAGES_PAGE = "/messages";
@@ -96,6 +100,8 @@ export function FloatingMessageWidget() {
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
   const [deleteConvId, setDeleteConvId] = useState<string | null>(null);
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
+  const [attachmentUploadProgress, setAttachmentUploadProgress] = useState<number | null>(null);
+  const [attachmentUploadConvId, setAttachmentUploadConvId] = useState<string | null>(null);
 
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
@@ -398,6 +404,89 @@ export function FloatingMessageWidget() {
     [user?.id, inputMap]
   );
 
+  const handleSendWithAttachments = useCallback(
+    async (conv: RecentConversation, files: File[], content: string) => {
+      if (!user?.id) return;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() || "https://njpjxasfesdapxukvyth.supabase.co";
+      const { data: { session } } = await supabase.auth.getSession();
+      setSendingMap((prev) => ({ ...prev, [conv.id]: true }));
+      setInputMap((prev) => ({ ...prev, [conv.id]: "" }));
+      setAttachmentUploadConvId(conv.id);
+      setAttachmentUploadProgress(0);
+      const tempId = `temp-${Date.now()}`;
+      const optimisticMessage: Message = {
+        id: tempId,
+        content: content.trim() || "(attachment)",
+        sender_id: user.id,
+        created_at: new Date().toISOString(),
+        read_at: null,
+        attachments: files.map((f) => ({ name: f.name, path: "", type: f.type || "application/octet-stream" })),
+      };
+      setMessagesMap((prev) => ({
+        ...prev,
+        [conv.id]: [...(prev[conv.id] || []), optimisticMessage],
+      }));
+      const bucket = "message-attachments";
+      const attachments: { name: string; path: string; type: string }[] = [];
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 200) || "file";
+          const path = `${conv.id}/${user.id}/${crypto.randomUUID()}_${safeName}`;
+          await uploadFileWithProgress({
+            url: supabaseUrl,
+            accessToken: session?.access_token,
+            anonKey: supabaseAnonKey,
+            bucket,
+            path,
+            file,
+            onProgress: (percent) => {
+              const overall = (i + percent / 100) / files.length * 100;
+              setAttachmentUploadProgress(Math.round(overall));
+            },
+          });
+          attachments.push({ name: file.name, path, type: file.type || "application/octet-stream" });
+        }
+        setAttachmentUploadProgress(100);
+        const { data: messageId, error } = await supabase.rpc("send_message" as any, {
+          _conversation_id: conv.id,
+          _content: content.trim(),
+          _attachments: attachments,
+        });
+        if (error) throw error;
+        if (messageId) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("recent-conversations-refresh"));
+          }
+          setMessagesMap((prev) => ({
+            ...prev,
+            [conv.id]: (prev[conv.id] || []).map((m) =>
+              m.id === tempId ? { ...m, id: String(messageId), created_at: new Date().toISOString(), attachments } : m
+            ),
+          }));
+          supabase.functions
+            .invoke("enqueue-message-notification", {
+              body: { conversation_id: conv.id, message_id: messageId },
+            })
+            .catch(() => {});
+        }
+        loadMessages(conv.id);
+      } catch (e: any) {
+        toast.error(e?.message ?? "Error sending attachments");
+        setMessagesMap((prev) => ({
+          ...prev,
+          [conv.id]: (prev[conv.id] || []).filter((m) => m.id !== tempId),
+        }));
+        setInputMap((prev) => ({ ...prev, [conv.id]: content }));
+      } finally {
+        setSendingMap((prev) => ({ ...prev, [conv.id]: false }));
+        setAttachmentUploadProgress(null);
+        setAttachmentUploadConvId(null);
+      }
+    },
+    [user?.id, loadMessages]
+  );
+
   const openFullMessages = (conv?: RecentConversation) => {
     setIsOpen(false);
     navigate(conv ? `/messages?conversation=${conv.id}` : "/messages");
@@ -689,119 +778,44 @@ export function FloatingMessageWidget() {
                 <div className="py-3 space-y-2.5">
                   {[...(messagesMap[conv.id] || [])]
                     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                    .map((m) => {
-                      const isOwn = m.sender_id === user.id;
-                      const showActions = isOwn && !m.id.startsWith("temp-");
-                      return (
-                        <div key={m.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                          <div
-                            className={cn(
-                              "group relative min-w-0 max-w-[85%] overflow-hidden rounded-2xl px-3 py-2.5 text-sm shadow-sm",
-                              showActions && "pr-10",
-                              isOwn
-                                ? "bg-primary text-primary-foreground rounded-br-md"
-                                : "bg-muted text-foreground rounded-bl-md border border-border/40"
-                            )}
-                          >
-                            {showActions && (
-                              <div className="absolute top-1.5 right-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className={cn(
-                                        "h-7 w-7",
-                                        isOwn
-                                          ? "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/20"
-                                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                      )}
-                                      onClick={(e) => e.stopPropagation()}
-                                      title="Message options"
-                                    >
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-48 bg-popover">
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditMessage(conv.id, m.id);
-                                      }}
-                                    >
-                                      <Pencil className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCopyMessage(m.content || "");
-                                      }}
-                                    >
-                                      <Copy className="h-4 w-4 mr-2" />
-                                      Copy
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteMessage(conv.id, m.id);
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            )}
-                            <p className="break-words whitespace-pre-wrap [overflow-wrap:anywhere]">{m.content}</p>
-                            <p
-                              className={cn(
-                                "text-[10px] mt-1",
-                                isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
-                              )}
-                            >
-                              {format(new Date(m.created_at), "h:mm a")}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    .map((m) => (
+                      <MessageBubble
+                        key={m.id}
+                        content={m.content}
+                        timestamp={m.created_at}
+                        isOwn={m.sender_id === user.id}
+                        isRead={!!m.read_at}
+                        attachments={m.attachments}
+                        messageId={m.id}
+                        onEdit={(id) => handleEditMessage(conv.id, id)}
+                        onDelete={(id) => handleDeleteMessage(conv.id, id)}
+                        onCopy={handleCopyMessage}
+                      />
+                    ))}
                   <div ref={(el) => (endRefsMap.current[conv.id] = el)} />
                 </div>
               )}
             </ScrollArea>
-            <div className="p-3 border-t border-border/50 bg-background shrink-0 rounded-b-2xl">
-              <div className="flex gap-2 items-center">
-                <Input
-                  ref={(el) => (inputRefsMap.current[conv.id] = el)}
-                  value={inputMap[conv.id] ?? ""}
-                  onChange={(e) => setInputMap((prev) => ({ ...prev, [conv.id]: e.target.value }))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend(conv);
-                    }
-                  }}
-                  placeholder="Type a message..."
-                  className="flex-1 min-w-0 text-foreground text-sm h-10 rounded-xl border-border/60"
-                  disabled={sendingMap[conv.id]}
-                />
-                <Button
-                  size="icon"
-                  className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={() => handleSend(conv)}
-                  disabled={!(inputMap[conv.id] ?? "").trim() || sendingMap[conv.id]}
-                  title="Send"
-                >
-                  {sendingMap[conv.id] ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+            <div className="p-2 border-t border-border/50 bg-background shrink-0 rounded-b-2xl">
+              {attachmentUploadConvId === conv.id && attachmentUploadProgress != null && (
+                <div className="mb-2 space-y-1">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Uploading…</span>
+                    <span>{attachmentUploadProgress}%</span>
+                  </div>
+                  <Progress value={attachmentUploadProgress} className="h-1.5" />
+                </div>
+              )}
+              <MessageInput
+                value={inputMap[conv.id] ?? ""}
+                onChange={(v) => setInputMap((prev) => ({ ...prev, [conv.id]: v }))}
+                onSend={() => handleSend(conv)}
+                onFileSelect={(files, content) => handleSendWithAttachments(conv, files, content)}
+                disabled={sendingMap[conv.id]}
+                placeholder="Type a message..."
+                maxLength={5000}
+                className="min-w-0"
+              />
             </div>
           </div>
         </div>
