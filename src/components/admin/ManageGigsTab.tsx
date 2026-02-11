@@ -146,8 +146,8 @@ export default function ManageGigsTab() {
   };
 
   const openStatusEdit = (gig: GigRow) => {
-    setStatusEditId(g.id);
-    setStatusEditValue(g.status);
+    setStatusEditId(gig.id);
+    setStatusEditValue(gig.status);
   };
 
   const deleteGig = async (gigId: string) => {

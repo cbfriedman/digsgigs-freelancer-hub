@@ -471,7 +471,7 @@ export default function Messages() {
         }
 
         const { data: existing } = await supabase
-          .from("conversations" as any)
+          .from("conversations")
           .select("id")
           .eq("gig_id", gigId)
           .eq("digger_id", diggerId)
@@ -488,7 +488,7 @@ export default function Messages() {
         }
 
         const { data: newConv, error: insertError } = await supabase
-          .from("conversations" as any)
+          .from("conversations")
           .insert({
             gig_id: gigId,
             digger_id: diggerId,

@@ -213,7 +213,7 @@ export default function MyProfiles() {
           })
         );
 
-        setProfiles(profilesWithStats);
+        setProfiles(profilesWithStats as any);
       }
     } catch (error) {
       console.error("Error loading profiles:", error);
