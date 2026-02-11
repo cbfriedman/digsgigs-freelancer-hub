@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageCircle, Send, Loader2, ChevronUp, ExternalLink, MoreHorizontal, X } from "lucide-react";
+import { MessageCircle, Send, Loader2, ChevronUp, ExternalLink, MoreHorizontal, X, Bell, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +42,8 @@ export function FloatingMessageWidget() {
   const unreadCount = useUnreadMessagesCount();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [listSearch, setListSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"chats" | "requests">("chats");
   const [openChats, setOpenChats] = useState<RecentConversation[]>([]);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
   const [inputMap, setInputMap] = useState<Record<string, string>>({});
@@ -281,7 +283,14 @@ export function FloatingMessageWidget() {
 
   if (!user || hideOnMessagesPage) return null;
 
-  const listPanelWidth = "w-[calc(100vw-2rem)] max-w-[360px]";
+  const listPanelWidth = "w-[calc(100vw-2rem)] max-w-[380px]";
+  const filteredConvs = listSearch.trim()
+    ? conversations.filter(
+        (c) =>
+          c.partnerDisplayName.toLowerCase().includes(listSearch.toLowerCase()) ||
+          (c.lastMessageContent?.toLowerCase().includes(listSearch.toLowerCase()) ?? false)
+      )
+    : conversations;
 
   return (
     <div className="fixed bottom-0 right-0 z-[100] p-4 md:p-5 flex flex-row items-end gap-2 pointer-events-none [&>*]:pointer-events-auto">
@@ -389,69 +398,90 @@ export function FloatingMessageWidget() {
         </div>
       ))}
 
-      {/* Main panel: conversation list */}
+      {/* Main panel: Freelancer.com style - tab stays at bottom as header, content expands upward */}
       <div className={cn("flex flex-col items-end", listPanelWidth)}>
+        {/* Content - expands upward above the bottom tab */}
         <div
           className={cn(
-            "flex flex-col overflow-hidden w-full rounded-t-xl border-x border-t border-border/60 bg-card shadow-xl",
+            "flex flex-col overflow-hidden w-full border border-border/60 bg-card shadow-xl",
             "transition-all duration-300 ease-out origin-bottom",
-            isOpen ? "max-h-[min(480px,calc(100vh-10rem))] opacity-100" : "max-h-0 opacity-0 pointer-events-none border-0"
+            isOpen ? "max-h-[min(480px,calc(100vh-10rem))] opacity-100 rounded-xl" : "max-h-0 opacity-0 pointer-events-none border-0 rounded-t-xl"
           )}
         >
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b bg-background shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="relative">
-                  <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/50">
-                    <AvatarImage src={userAvatarUrl || undefined} alt="" />
-                    <AvatarFallback className="bg-muted text-muted-foreground text-sm">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {unreadCount > 0 && (
-                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
-                  )}
-                </div>
-                <h3 className="font-semibold text-sm">Messaging</h3>
-              </div>
-              <div className="flex items-center gap-0.5 shrink-0">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openFullMessages()}>
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Open full Messages
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openFullMessages()} title="Open in new view">
-                  <ExternalLink className="h-4 w-4" />
+            {/* Header: Messages + Bell + Chevron (above content, as in reference) */}
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-border/50 bg-card">
+              <span className="font-semibold text-sm text-foreground">Messages</span>
+              <div className="flex items-center gap-1.5">
+                <Button variant="ghost" size="icon" className="h-7 w-7 relative" onClick={() => navigate("/notifications")} title="Notifications">
+                  <Bell className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsOpen(false)} title="Minimize">
-                  <ChevronUp className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)} title="Minimize">
+                  <ChevronUp className="h-4 w-4 rotate-180" />
                 </Button>
               </div>
             </div>
+            {/* Search bar */}
+            <div className="shrink-0 px-3 py-2 border-b border-border/40">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search"
+                  value={listSearch}
+                  onChange={(e) => setListSearch(e.target.value)}
+                  className="pl-9 h-9 rounded-lg bg-muted/40 border-border/50 text-sm"
+                />
+              </div>
+            </div>
+            {/* Chats | Requests tabs */}
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-border/30 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab("chats")}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  activeTab === "chats" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                Chats
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("requests")}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  activeTab === "requests" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                Requests
+              </button>
+            </div>
             <ScrollArea className="flex-1 min-w-0 max-w-full overflow-hidden">
-              {convLoading ? (
+              {activeTab === "requests" ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <MessageCircle className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                  <p className="text-sm text-muted-foreground mb-2">View all requests in Messages</p>
+                  <Button variant="link" className="text-primary" onClick={() => openFullMessages()}>
+                    Open Messages
+                  </Button>
+                </div>
+              ) : convLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : conversations.length === 0 ? (
+              ) : filteredConvs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                   <MessageCircle className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                  <p className="text-sm text-muted-foreground">No conversations yet</p>
-                  <Button variant="link" className="mt-2 text-primary" onClick={() => openFullMessages()}>
-                    Go to Messages
-                  </Button>
+                  <p className="text-sm text-muted-foreground">{listSearch.trim() ? "No matches." : "No conversations yet"}</p>
+                  {!listSearch.trim() && (
+                    <Button variant="link" className="mt-2 text-primary" onClick={() => openFullMessages()}>
+                      Go to Messages
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <ul className="py-2 min-w-0 max-w-full overflow-hidden">
-                  {conversations.map((c) => {
+                  {filteredConvs.map((c) => {
                     const snippet = (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
                     const display = snippet.length > 45 ? snippet.slice(0, 45) + "…" : snippet;
                     const isOpenChat = openChats.some((o) => o.id === c.id);
@@ -492,33 +522,40 @@ export function FloatingMessageWidget() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsOpen((o) => !o)}
+        {/* Tab: only visible when collapsed - disappears when panel is open */}
+        {!isOpen && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setIsOpen(true)}
+          onKeyDown={(e) => e.key === "Enter" && setIsOpen(true)}
           className={cn(
-            "flex items-center justify-between gap-2.5 px-3 py-2 w-full",
+            "flex items-center justify-between gap-3 px-4 py-2.5 w-full cursor-pointer shrink-0",
             "rounded-t-xl rounded-b-md border border-border/60 bg-card shadow-lg",
             "hover:bg-muted/50 transition-colors"
           )}
-          aria-label={isOpen ? "Minimize messages" : "Open messages"}
+          aria-label="Open messages"
         >
-          <div className="relative">
-            <Avatar className="h-9 w-9 ring-1 ring-border/50">
-              <AvatarImage src={userAvatarUrl || undefined} alt="" />
-              <AvatarFallback className="bg-muted text-muted-foreground text-sm">{getUserInitials()}</AvatarFallback>
-            </Avatar>
-            {unreadCount > 0 && (
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-card" />
-            )}
+          <span className="font-semibold text-sm text-foreground">Messages</span>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 relative"
+              onClick={(e) => { e.stopPropagation(); navigate("/notifications"); }}
+              title="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </Button>
+            <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
-          <span className="font-medium text-sm text-foreground hidden sm:inline">Messaging</span>
-          <ChevronUp className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
-          {unreadCount > 0 && (
-            <span className="h-5 min-w-[1.25rem] px-1.5 rounded-full bg-primary text-[11px] font-semibold text-primary-foreground flex items-center justify-center">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          )}
-        </button>
+        </div>
+        )}
       </div>
     </div>
   );
