@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 interface ChatHeaderProps {
   partnerName: string;
   subtitle: string;
+  partnerProfileUrl?: string | null;
+  projectTitle?: string | null;
+  projectUrl?: string | null;
   isOnline?: boolean;
   partnerAvatarUrl?: string | null;
   showBackButton?: boolean;
@@ -18,6 +21,9 @@ interface ChatHeaderProps {
 export function ChatHeader({
   partnerName,
   subtitle,
+  partnerProfileUrl,
+  projectTitle,
+  projectUrl,
   isOnline = false,
   partnerAvatarUrl,
   showBackButton = false,
@@ -67,14 +73,29 @@ export function ChatHeader({
 
         {/* Name and subtitle */}
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-foreground truncate text-sm sm:text-base">
-            {partnerName}
-          </h2>
+          {partnerProfileUrl ? (
+            <a
+              href={partnerProfileUrl}
+              className="font-semibold text-foreground truncate text-sm sm:text-base block hover:underline"
+            >
+              {partnerName}
+            </a>
+          ) : (
+            <h2 className="font-semibold text-foreground truncate text-sm sm:text-base">
+              {partnerName}
+            </h2>
+          )}
           <p className="text-xs text-muted-foreground truncate mt-0.5 flex items-center gap-1">
             {isOnline && (
               <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
             )}
-            {isOnline ? "Active now" : subtitle}
+            {projectUrl && projectTitle ? (
+              <a href={projectUrl} className="truncate hover:underline">
+                {projectTitle}
+              </a>
+            ) : (
+              <span>{isOnline ? "Active now" : subtitle}</span>
+            )}
           </p>
         </div>
       </div>

@@ -1,9 +1,29 @@
+const MUTE_KEY = "notification-sound-muted";
+
+export function isNotificationMuted(): boolean {
+  try {
+    return localStorage.getItem(MUTE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setNotificationMuted(muted: boolean): void {
+  try {
+    localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Play a single, professional notification sound at maximum volume.
  * Used for new message alerts on both client (gigger) and freelancer (digger) side.
  * Plays globally (GlobalMessageSound) so users hear it even when not on the Messages page.
+ * Respects mute state set via the bell icon in the floating message widget.
  */
 export function playNotificationSound(): void {
+  if (isNotificationMuted()) return;
   try {
     const Ctx =
       window.AudioContext ||

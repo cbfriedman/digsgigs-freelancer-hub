@@ -155,6 +155,12 @@ export default function Messages() {
   const { onlineDiggers } = useDiggerPresence();
   const { onlineUserIds } = useUserPresence();
 
+  const refreshRecentConversations = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("recent-conversations-refresh"));
+    }
+  };
+
   // Starred and hidden conversation ids (per user, persisted in localStorage)
   const getStorageKey = (suffix: string) =>
     currentUser?.id ? `messages_${suffix}_${currentUser.id}` : null;
@@ -220,6 +226,15 @@ export default function Messages() {
     }
   }, [currentUser?.id]);
 
+  // Lock body scroll while on Messages page
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
+
   const toggleStarred = (conversationId: string) => {
     const key = getStorageKey("starred");
     if (!key) return;
@@ -241,6 +256,7 @@ export default function Messages() {
       return next;
     });
     if (selectedConversation === conversationId) setSelectedConversation(null);
+    refreshRecentConversations();
     toast({ title: "Conversation hidden", description: "You can restore it from filters later." });
   };
 
@@ -294,6 +310,7 @@ export default function Messages() {
         });
       }
       await loadConversations();
+      refreshRecentConversations();
       toast({ title: "Chat deleted" });
     } catch (err: any) {
       toast({
@@ -318,6 +335,7 @@ export default function Messages() {
       localStorage.setItem(key, JSON.stringify(next));
       return next;
     });
+    refreshRecentConversations();
     toast({ title: "Conversation restored" });
   };
 
@@ -887,6 +905,7 @@ export default function Messages() {
       if (error) throw error;
       setNewMessage("");
       await loadMessages(selectedConversation);
+      refreshRecentConversations();
       if (messageId) {
         supabase.functions
           .invoke("enqueue-message-notification", {
@@ -941,6 +960,7 @@ export default function Messages() {
       if (error) throw error;
       setNewMessage("");
       await loadMessages(selectedConversation);
+      refreshRecentConversations();
       if (messageId) {
         supabase.functions
           .invoke("enqueue-message-notification", {
@@ -1034,6 +1054,7 @@ export default function Messages() {
         setAdminChatOpen(false);
         setUserSearch("");
         setUserSearchResults([]);
+        refreshRecentConversations();
         toast({ title: "Chat opened", description: "Conversation selected." });
         return;
       }
@@ -1044,6 +1065,7 @@ export default function Messages() {
       const id = Array.isArray(conversationId) ? conversationId?.[0] : (conversationId as unknown as string);
       if (id) {
         await loadConversations();
+        refreshRecentConversations();
         setSelectedConversation(id);
         setAdminChatOpen(false);
         setUserSearch("");
@@ -1081,6 +1103,23 @@ export default function Messages() {
 
   const selectedConv = conversations.find((c) => c.id === selectedConversation);
   const partnerName = getConversationPartner(selectedConv);
+  const partnerProfileUrl = (() => {
+    if (!selectedConv || !currentUser?.id) return null;
+    if (selectedConv.admin_id) {
+      if (currentUser.id === selectedConv.admin_id) {
+        return selectedConv.consumer_id ? `/profile/${selectedConv.consumer_id}` : null;
+      }
+      return null;
+    }
+    if (currentUser.id === selectedConv.consumer_id) {
+      const handle = selectedConv.digger_profiles?.handle?.replace(/^@/, "").trim().toLowerCase();
+      if (handle) return `/digger/${handle}`;
+      return selectedConv.digger_id ? `/digger/${selectedConv.digger_id}` : null;
+    }
+    return selectedConv.consumer_id ? `/profile/${selectedConv.consumer_id}` : null;
+  })();
+  const projectTitle = selectedConv?.gigs?.title || null;
+  const projectUrl = selectedConv?.gig_id ? `/gig/${selectedConv.gig_id}` : null;
 
   /** Partner is online: use user presence for support chat or consumer; digger presence for digger. Real-time via useUserPresence / useDiggerPresence. */
   const getPartnerIsOnline = (conv: Conversation | undefined) => {
@@ -1104,7 +1143,7 @@ export default function Messages() {
         maxWidth="full"
         padded={false}
         wrapperClassName="h-[calc(100vh-var(--header-height))] flex flex-col"
-        className="flex flex-1 min-h-0"
+        className="flex flex-1 min-h-0 pt-[var(--header-height)]"
       >
         <div className="flex flex-1 items-center justify-center">
           <LoadingSpinner label="Loading conversations..." />
@@ -1119,7 +1158,7 @@ export default function Messages() {
       maxWidth="full"
       padded={false}
       wrapperClassName="h-[calc(100vh-var(--header-height))] overflow-hidden flex flex-col"
-      className="flex flex-col flex-1 min-h-0"
+      className="flex flex-col flex-1 min-h-0 pt-[var(--header-height)]"
     >
       <div className="flex flex-1 min-h-0 min-w-0 border-t border-border/30 overflow-hidden">
         {isMobile ? (
@@ -1491,6 +1530,9 @@ export default function Messages() {
                 <ChatHeader
                   partnerName={partnerName}
                   subtitle={getConversationSubtitle(selectedConv)}
+                  partnerProfileUrl={partnerProfileUrl}
+                  projectTitle={projectTitle}
+                  projectUrl={projectUrl}
                   isOnline={getPartnerIsOnline(selectedConv)}
                   partnerAvatarUrl={selectedConv?.partner_avatar_url}
                   showBackButton={isMobile}

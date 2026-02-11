@@ -8,17 +8,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageCircle, Send, Loader2, ChevronUp, ExternalLink, MoreHorizontal, X, Bell, Search } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  MessageCircle,
+  Send,
+  Loader2,
+  ChevronUp,
+  ExternalLink,
+  MoreHorizontal,
+  X,
+  Bell,
+  BellOff,
+  Search,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { isNotificationMuted, setNotificationMuted } from "@/lib/notificationSound";
 
 const messageSchema = z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long");
 
@@ -42,15 +54,25 @@ export function FloatingMessageWidget() {
   const unreadCount = useUnreadMessagesCount();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(() => isNotificationMuted());
   const [listSearch, setListSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"chats" | "requests">("chats");
   const [openChats, setOpenChats] = useState<RecentConversation[]>([]);
+  const [collapsedChats, setCollapsedChats] = useState<Record<string, boolean>>({});
+  const [archivedChats, setArchivedChats] = useState<Record<string, boolean>>({});
+  const [mutedChats, setMutedChats] = useState<Record<string, boolean>>({});
+  const [blockedChats, setBlockedChats] = useState<Record<string, boolean>>({});
+  const [openMenuChatId, setOpenMenuChatId] = useState<string | null>(null);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
   const [inputMap, setInputMap] = useState<Record<string, string>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [sendingMap, setSendingMap] = useState<Record<string, boolean>>({});
+
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
+  const inputRefsMap = useRef<Record<string, HTMLInputElement | null>>({});
+  const scrollAreaRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
+  const pendingAutoScrollRef = useRef<Record<string, boolean>>({});
   const conversationsRef = useRef<RecentConversation[]>([]);
   const openChatRef = useRef<(conv: RecentConversation, bringToFront?: boolean) => void>(() => {});
   const userIdRef = useRef<string | null>(null);
@@ -74,6 +96,12 @@ export function FloatingMessageWidget() {
     loadAvatar();
   }, [user?.id]);
 
+  const toggleMute = () => {
+    const next = !isNotificationMuted();
+    setNotificationMuted(next);
+    setSoundMuted(next);
+  };
+
   const getUserInitials = () => {
     const name = (user as any)?.user_metadata?.full_name || user?.email?.split("@")[0] || "?";
     return String(name)
@@ -83,6 +111,23 @@ export function FloatingMessageWidget() {
       .slice(0, 2)
       .toUpperCase();
   };
+
+  const scrollToEnd = useCallback((convId: string) => {
+    const scrollArea = scrollAreaRefsMap.current[convId];
+    const viewport = scrollArea?.querySelector("[data-radix-scroll-area-viewport]") as HTMLDivElement | null;
+    if (viewport) {
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+      setTimeout(() => {
+        viewport.scrollTo({ top: viewport.scrollHeight, behavior: "auto" });
+      }, 50);
+      return;
+    }
+    const el = endRefsMap.current[convId];
+    el?.scrollIntoView({ behavior: "smooth", block: "end" });
+    setTimeout(() => {
+      endRefsMap.current[convId]?.scrollIntoView({ behavior: "auto", block: "end" });
+    }, 50);
+  }, []);
 
   const loadMessages = useCallback(
     async (convId: string) => {
@@ -94,6 +139,9 @@ export function FloatingMessageWidget() {
         });
         if (error) throw error;
         setMessagesMap((prev) => ({ ...prev, [convId]: (data as Message[]) || [] }));
+        requestAnimationFrame(() => {
+          scrollToEnd(convId);
+        });
         await supabase.rpc("mark_conversation_messages_read" as any, {
           _conversation_id: convId,
         });
@@ -103,7 +151,7 @@ export function FloatingMessageWidget() {
         setLoadingMap((prev) => ({ ...prev, [convId]: false }));
       }
     },
-    [user?.id]
+    [user?.id, scrollToEnd]
   );
 
   const subscribeToMessages = useCallback((convId: string) => {
@@ -145,12 +193,24 @@ export function FloatingMessageWidget() {
         const next = [...prev, conv].slice(-MAX_OPEN_CHATS);
         return next;
       });
+      pendingAutoScrollRef.current[conv.id] = true;
       if (!wasAlreadyOpen) {
         loadMessages(conv.id);
         subscribeToMessages(conv.id);
       }
+      setCollapsedChats((prev) => ({ ...prev, [conv.id]: false }));
+      requestAnimationFrame(() => {
+        scrollToEnd(conv.id);
+        inputRefsMap.current[conv.id]?.focus();
+      });
+      setTimeout(() => {
+        scrollToEnd(conv.id);
+      }, 300);
+      setTimeout(() => {
+        scrollToEnd(conv.id);
+      }, 600);
     },
-    [loadMessages, subscribeToMessages]
+    [loadMessages, subscribeToMessages, scrollToEnd]
   );
 
   conversationsRef.current = conversations;
@@ -158,6 +218,12 @@ export function FloatingMessageWidget() {
 
   const closeChat = useCallback((convId: string) => {
     setOpenChats((prev) => prev.filter((c) => c.id !== convId));
+    setCollapsedChats((prev) => {
+      const next = { ...prev };
+      delete next[convId];
+      return next;
+    });
+    delete pendingAutoScrollRef.current[convId];
     const ch = channelsRef.current[convId];
     if (ch) {
       supabase.removeChannel(ch);
@@ -199,10 +265,15 @@ export function FloatingMessageWidget() {
           const msg = payload.new as { conversation_id: string; sender_id: string };
           const uid = userIdRef.current;
           if (!uid || msg.sender_id === uid) return;
+          setIsOpen(true);
           const conv = conversationsRef.current.find((c) => c.id === msg.conversation_id);
           if (conv) {
             openChatRef.current(conv, true);
-            setIsOpen(true);
+          } else {
+            setTimeout(() => {
+              const latest = conversationsRef.current.find((c) => c.id === msg.conversation_id);
+              if (latest) openChatRef.current(latest, true);
+            }, 300);
           }
         }
       )
@@ -214,10 +285,26 @@ export function FloatingMessageWidget() {
 
   useEffect(() => {
     openChats.forEach((c) => {
+      if (collapsedChats[c.id]) return;
       const el = endRefsMap.current[c.id];
       el?.scrollIntoView({ behavior: "smooth", block: "end" });
     });
-  }, [openChats, messagesMap]);
+  }, [openChats, messagesMap, collapsedChats]);
+
+  useEffect(() => {
+    openChats.forEach((c) => {
+      if (collapsedChats[c.id]) return;
+      if (!pendingAutoScrollRef.current[c.id]) return;
+      if (!messagesMap[c.id]) return;
+      pendingAutoScrollRef.current[c.id] = false;
+      requestAnimationFrame(() => {
+        scrollToEnd(c.id);
+      });
+      setTimeout(() => {
+        scrollToEnd(c.id);
+      }, 120);
+    });
+  }, [openChats, messagesMap, collapsedChats, scrollToEnd]);
 
   const handleSend = useCallback(
     async (conv: RecentConversation) => {
@@ -250,6 +337,9 @@ export function FloatingMessageWidget() {
         });
         if (error) throw error;
         if (messageId) {
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("recent-conversations-refresh"));
+          }
           setMessagesMap((prev) => ({
             ...prev,
             [conv.id]: (prev[conv.id] || []).map((m) =>
@@ -271,6 +361,9 @@ export function FloatingMessageWidget() {
         setInputMap((prev) => ({ ...prev, [conv.id]: trimmed }));
       } finally {
         setSendingMap((prev) => ({ ...prev, [conv.id]: false }));
+        requestAnimationFrame(() => {
+          inputRefsMap.current[conv.id]?.focus();
+        });
       }
     },
     [user?.id, inputMap]
@@ -294,18 +387,48 @@ export function FloatingMessageWidget() {
 
   return (
     <div className="fixed bottom-0 right-0 z-[100] p-4 md:p-5 flex flex-row items-end gap-2 pointer-events-none [&>*]:pointer-events-auto">
-      {/* Open chat boxes - left to right in order */}
       {openChats.map((conv) => (
         <div
           key={conv.id}
           className={cn(
             "flex flex-col overflow-hidden rounded-t-xl border border-b-0 border-border/60 bg-card shadow-xl",
             CHAT_BOX_WIDTH,
-            "h-[min(420px,calc(100vh-10rem))]",
+            collapsedChats[conv.id] ? "h-[52px]" : "h-[min(420px,calc(100vh-10rem))]",
+            "transition-[height] duration-200 ease-out",
             "animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
           )}
         >
-          <div className="flex items-center justify-between px-3 py-2 border-b bg-background shrink-0">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest("[data-chat-actions]")) return;
+              setCollapsedChats((prev) => {
+                const next = !prev[conv.id];
+                if (!next) {
+                  setTimeout(() => {
+                    scrollToEnd(conv.id);
+                  }, 200);
+                }
+                return { ...prev, [conv.id]: next };
+              });
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              if ((e.target as HTMLElement).closest("[data-chat-actions]")) return;
+              setCollapsedChats((prev) => {
+                const next = !prev[conv.id];
+                if (!next) {
+                  setTimeout(() => {
+                    scrollToEnd(conv.id);
+                  }, 200);
+                }
+                return { ...prev, [conv.id]: next };
+              });
+            }}
+            className="flex items-center justify-between px-3 py-2 border-b bg-background shrink-0 cursor-pointer"
+            aria-label={collapsedChats[conv.id] ? "Expand chat" : "Collapse chat"}
+          >
             <div className="flex items-center gap-2 min-w-0">
               <Avatar className="h-8 w-8 shrink-0 ring-1 ring-border/50">
                 <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" />
@@ -313,19 +436,140 @@ export function FloatingMessageWidget() {
                   {conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}
                 </AvatarFallback>
               </Avatar>
-              <h3 className="font-semibold text-sm truncate">{conv.partnerDisplayName}</h3>
+              <div className="min-w-0 flex-1">
+                {conv.partnerProfileUrl ? (
+                  <button
+                    type="button"
+                    className="font-semibold text-sm truncate hover:underline text-left block"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(conv.partnerProfileUrl as string);
+                    }}
+                    title="View profile"
+                  >
+                    {conv.partnerDisplayName}
+                  </button>
+                ) : (
+                  <h3 className="font-semibold text-sm truncate">{conv.partnerDisplayName}</h3>
+                )}
+                {conv.gigId ? (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground truncate hover:underline text-left block"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/gig/${conv.gigId}`);
+                    }}
+                    title="View project"
+                  >
+                    {(() => {
+                      const title = conv.partnerJobTitle?.trim() || "View project";
+                      return title.length > 36 ? `${title.slice(0, 36)}…` : title;
+                    })()}
+                  </button>
+                ) : (
+                  <p className="text-xs text-muted-foreground truncate">
+                    {conv.partnerJobTitle?.trim() || "Direct message"}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-0.5 shrink-0">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openFullMessages(conv)} title="Open full">
+            <div
+              data-chat-actions
+              className="flex items-center gap-0.5 shrink-0"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <DropdownMenu
+                modal={false}
+                open={openMenuChatId === conv.id}
+                onOpenChange={(open) => setOpenMenuChatId(open ? conv.id : null)}
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onPointerEnter={() => setOpenMenuChatId(conv.id)}
+                    title="Chat options"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-52 p-2"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerLeave={() => setOpenMenuChatId(null)}
+                >
+                  <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+                    <span className="text-sm">Archive chat</span>
+                    <Switch
+                      checked={!!archivedChats[conv.id]}
+                      onCheckedChange={(checked) =>
+                        setArchivedChats((prev) => ({ ...prev, [conv.id]: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+                    <span className="text-sm">Mute notifications</span>
+                    <Switch
+                      checked={!!mutedChats[conv.id]}
+                      onCheckedChange={(checked) =>
+                        setMutedChats((prev) => ({ ...prev, [conv.id]: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+                    <span className="text-sm">Block user</span>
+                    <Switch
+                      checked={!!blockedChats[conv.id]}
+                      onCheckedChange={(checked) =>
+                        setBlockedChats((prev) => ({ ...prev, [conv.id]: checked }))
+                      }
+                    />
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openFullMessages(conv);
+                }}
+                title="Open full"
+              >
                 <ExternalLink className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => closeChat(conv.id)} title="Close">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeChat(conv.id);
+                }}
+                title="Close"
+              >
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
-          <div className="flex-1 min-h-0 flex flex-col">
-            <ScrollArea className="flex-1 min-h-0 px-3">
+          <div
+            className={cn(
+              "flex-1 min-h-0 flex flex-col transition-opacity duration-200",
+              collapsedChats[conv.id] ? "opacity-0 pointer-events-none" : "opacity-100"
+            )}
+          >
+            <ScrollArea
+              ref={(el) => (scrollAreaRefsMap.current[conv.id] = el)}
+              className="flex-1 min-h-0 px-3"
+            >
               {loadingMap[conv.id] ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -336,31 +580,33 @@ export function FloatingMessageWidget() {
                 </div>
               ) : (
                 <div className="py-3 space-y-2">
-                  {(messagesMap[conv.id] || []).map((m) => {
-                    const isOwn = m.sender_id === user.id;
-                    return (
-                      <div key={m.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                        <div
-                          className={cn(
-                            "min-w-0 max-w-[85%] overflow-hidden rounded-2xl px-3 py-2 text-sm",
-                            isOwn
-                              ? "bg-primary text-primary-foreground rounded-br-md"
-                              : "bg-muted text-foreground rounded-bl-md"
-                          )}
-                        >
-                          <p className="break-words whitespace-pre-wrap [overflow-wrap:anywhere]">{m.content}</p>
-                          <p
+                  {[...(messagesMap[conv.id] || [])]
+                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                    .map((m) => {
+                      const isOwn = m.sender_id === user.id;
+                      return (
+                        <div key={m.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                          <div
                             className={cn(
-                              "text-[10px] mt-0.5",
-                              isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
+                              "min-w-0 max-w-[85%] overflow-hidden rounded-2xl px-3 py-2 text-sm",
+                              isOwn
+                                ? "bg-primary text-primary-foreground rounded-br-md"
+                                : "bg-muted text-foreground rounded-bl-md"
                             )}
                           >
-                            {format(new Date(m.created_at), "h:mm a")}
-                          </p>
+                            <p className="break-words whitespace-pre-wrap [overflow-wrap:anywhere]">{m.content}</p>
+                            <p
+                              className={cn(
+                                "text-[10px] mt-0.5",
+                                isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
+                              )}
+                            >
+                              {format(new Date(m.created_at), "h:mm a")}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   <div ref={(el) => (endRefsMap.current[conv.id] = el)} />
                 </div>
               )}
@@ -368,6 +614,7 @@ export function FloatingMessageWidget() {
             <div className="p-2 border-t bg-background shrink-0">
               <div className="flex gap-2">
                 <Input
+                  ref={(el) => (inputRefsMap.current[conv.id] = el)}
                   value={inputMap[conv.id] ?? ""}
                   onChange={(e) => setInputMap((prev) => ({ ...prev, [conv.id]: e.target.value }))}
                   onKeyDown={(e) => {
@@ -398,30 +645,48 @@ export function FloatingMessageWidget() {
         </div>
       ))}
 
-      {/* Main panel: Freelancer.com style - tab stays at bottom as header, content expands upward */}
       <div className={cn("flex flex-col items-end", listPanelWidth)}>
-        {/* Content - expands upward above the bottom tab */}
         <div
           className={cn(
             "flex flex-col overflow-hidden w-full border border-border/60 bg-card shadow-xl",
             "transition-all duration-300 ease-out origin-bottom",
-            isOpen ? "max-h-[min(480px,calc(100vh-10rem))] opacity-100 rounded-xl" : "max-h-0 opacity-0 pointer-events-none border-0 rounded-t-xl"
+            isOpen
+              ? "h-[min(480px,calc(100vh-10rem))] opacity-100 rounded-xl"
+              : "h-0 opacity-0 pointer-events-none border-0 rounded-t-xl"
           )}
         >
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-            {/* Header: Messages + Bell + Chevron (above content, as in reference) */}
-            <div className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-border/50 bg-card">
-              <span className="font-semibold text-sm text-foreground">Messages</span>
-              <div className="flex items-center gap-1.5">
-                <Button variant="ghost" size="icon" className="h-7 w-7 relative" onClick={() => navigate("/notifications")} title="Notifications">
-                  <Bell className="h-4 w-4" />
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => setIsOpen(false)}
+              onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
+              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-border/50 bg-card cursor-pointer"
+              aria-label="Collapse messages"
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(MESSAGES_PAGE);
+                }}
+                className="font-semibold text-sm text-foreground hover:underline text-left"
+              >
+                Messages
+              </button>
+              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 relative"
+                  onClick={toggleMute}
+                  title={soundMuted ? "Unmute notifications" : "Mute notifications"}
+                >
+                  {soundMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)} title="Minimize">
-                  <ChevronUp className="h-4 w-4 rotate-180" />
-                </Button>
+                <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-muted-foreground" aria-hidden />
               </div>
             </div>
-            {/* Search bar */}
             <div className="shrink-0 px-3 py-2 border-b border-border/40">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -433,14 +698,15 @@ export function FloatingMessageWidget() {
                 />
               </div>
             </div>
-            {/* Chats | Requests tabs */}
             <div className="flex items-center gap-1 px-3 py-2 border-b border-border/30 shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveTab("chats")}
                 className={cn(
                   "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                  activeTab === "chats" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  activeTab === "chats"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 Chats
@@ -450,7 +716,9 @@ export function FloatingMessageWidget() {
                 onClick={() => setActiveTab("requests")}
                 className={cn(
                   "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                  activeTab === "requests" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  activeTab === "requests"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 Requests
@@ -522,39 +790,41 @@ export function FloatingMessageWidget() {
           </div>
         </div>
 
-        {/* Tab: only visible when collapsed - disappears when panel is open */}
         {!isOpen && (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setIsOpen(true)}
-          onKeyDown={(e) => e.key === "Enter" && setIsOpen(true)}
-          className={cn(
-            "flex items-center justify-between gap-3 px-4 py-2.5 w-full cursor-pointer shrink-0",
-            "rounded-t-xl rounded-b-md border border-border/60 bg-card shadow-lg",
-            "hover:bg-muted/50 transition-colors"
-          )}
-          aria-label="Open messages"
-        >
-          <span className="font-semibold text-sm text-foreground">Messages</span>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 relative"
-              onClick={(e) => { e.stopPropagation(); navigate("/notifications"); }}
-              title="Notifications"
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setIsOpen(true)}
+            onKeyDown={(e) => e.key === "Enter" && setIsOpen(true)}
+            className={cn(
+              "flex items-center justify-between gap-3 px-4 py-2.5 w-full cursor-pointer shrink-0",
+              "rounded-t-xl rounded-b-md border border-border/60 bg-card shadow-lg"
+            )}
+            aria-label="Open messages"
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(MESSAGES_PAGE);
+              }}
+              className="font-semibold text-sm text-foreground hover:underline text-left"
             >
-              <Bell className="h-4 w-4" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </Button>
-            <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+              Messages
+            </button>
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 relative"
+                onClick={toggleMute}
+                title={soundMuted ? "Unmute notifications" : "Mute notifications"}
+              >
+                {soundMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+              </Button>
+              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+            </div>
           </div>
-        </div>
         )}
       </div>
     </div>

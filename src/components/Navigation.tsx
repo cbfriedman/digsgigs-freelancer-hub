@@ -95,6 +95,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
+  const [openNavMenu, setOpenNavMenu] = useState<string | null>(null);
+  const [openUserMenu, setOpenUserMenu] = useState(false);
 
   // Fetch user profile photo and display name (header avatar synced with profile photo)
   useEffect(() => {
@@ -140,13 +142,30 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const navLinkClass = "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-3 py-2 rounded-md hover:bg-accent/50";
   const navLinkActiveClass = "text-foreground bg-accent/50";
 
-  // Click-only dropdown (no hover open, no animation)
-  const NavDropdown = ({ trigger, children }: { trigger: React.ReactNode; children: React.ReactNode }) => (
-    <DropdownMenu>
+  const NavDropdown = ({
+    id,
+    trigger,
+    children,
+  }: {
+    id: string;
+    trigger: React.ReactNode;
+    children: React.ReactNode;
+  }) => (
+    <DropdownMenu
+      modal={false}
+      open={openNavMenu === id}
+      onOpenChange={(open) => setOpenNavMenu(open ? id : null)}
+    >
       <DropdownMenuTrigger asChild>
-        {trigger}
+        <div onPointerEnter={() => setOpenNavMenu(id)}>{trigger}</div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6} className="w-52 min-w-[13rem] py-1.5">
+      <DropdownMenuContent
+        align="start"
+        sideOffset={6}
+        className="w-52 min-w-[13rem] py-1.5"
+        onPointerEnter={() => setOpenNavMenu(id)}
+        onPointerLeave={() => setOpenNavMenu(null)}
+      >
         {children}
       </DropdownMenuContent>
     </DropdownMenu>
@@ -204,6 +223,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               {/* Gigger-related menu: show when in Gigger mode or when not in Digger mode (guest or both roles) */}
               {activeRole !== "digger" && (
               <NavDropdown
+                id="hire"
                 trigger={
                   <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
                     Hire Diggers
@@ -239,6 +259,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
               {/* Digger-related menu: show when in Digger mode or when not in Gigger mode (guest or both roles) */}
               {activeRole !== "gigger" && (
               <NavDropdown
+                id="find"
                 trigger={
                   <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
                     Find gigs
@@ -265,6 +286,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
               {/* Why Digs & Gigs — trust & info */}
               <NavDropdown
+                id="why"
                 trigger={
                   <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
                     Why Digs & Gigs
@@ -288,6 +310,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
 
               {/* What's new */}
               <NavDropdown
+                id="whatsnew"
                 trigger={
                   <button className={cn(navLinkClass, "flex items-center gap-0.5")}>
                     What&apos;s new
@@ -553,9 +576,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </HoverCard>
                   )}
                   {/* User Menu (avatar dropdown: Dark Mode, Role, Dashboard, Sign Out) */}
-                  <DropdownMenu modal={true}>
+                  <DropdownMenu modal={false} open={openUserMenu} onOpenChange={setOpenUserMenu}>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-1.5 px-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 px-2"
+                        onPointerEnter={() => setOpenUserMenu(true)}
+                      >
                         <Avatar className="h-7 w-7">
                           <AvatarImage src={userPhotoUrl || undefined} alt="Profile" />
                           <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-xs font-medium">
@@ -569,6 +597,8 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       align="end" 
                       sideOffset={8}
                       className="w-56 min-w-[14rem] py-2"
+                      onPointerEnter={() => setOpenUserMenu(true)}
+                      onPointerLeave={() => setOpenUserMenu(false)}
                     >
                       <div className="px-3 py-2">
                         <p className="text-sm font-medium truncate">{userDisplayName || user.email?.split('@')[0]}</p>

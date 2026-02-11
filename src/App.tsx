@@ -45,6 +45,7 @@ import DiggerGuide from "./pages/DiggerGuide";
 import SavedSearches from "./pages/SavedSearches";
 import Messages from "./pages/Messages";
 import ProfileCompletion from "./pages/ProfileCompletion";
+import PublicProfile from "./pages/PublicProfile";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminNotificationPreferences from "./pages/AdminNotificationPreferences";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -241,6 +242,10 @@ const router = createBrowserRouter(
       {
         path: "/profile-completion",
         element: <ProtectedRoute><ProfileCompletion /></ProtectedRoute>,
+      },
+      {
+        path: "/profile/:id",
+        element: <ProtectedRoute><PublicProfile /></ProtectedRoute>,
       },
       {
         path: "/post-gig",
