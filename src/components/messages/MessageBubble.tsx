@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Check, CheckCheck, Paperclip, Download } from "lucide-react";
+import { Check, CheckCheck, Paperclip, Download, MoreVertical, Pencil, Trash2, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const BUCKET = "message-attachments";
 const SIGNED_URL_EXPIRY = 60 * 60; // 1 hour
@@ -15,6 +22,11 @@ interface MessageBubbleProps {
   senderName?: string;
   showAvatar?: boolean;
   attachments?: { name: string; path: string; type: string }[];
+  /** When set with isOwn, shows three-dot menu with Edit, Copy, Delete */
+  messageId?: string;
+  onEdit?: (messageId: string) => void;
+  onDelete?: (messageId: string) => void;
+  onCopy?: (content: string) => void;
 }
 
 function useSignedUrls(paths: string[]) {
@@ -43,10 +55,15 @@ export function MessageBubble({
   senderName,
   showAvatar = false,
   attachments = [],
+  messageId,
+  onEdit,
+  onDelete,
+  onCopy,
 }: MessageBubbleProps) {
   const timeStr = format(new Date(timestamp), "h:mm a");
   const paths = attachments.map((a) => a.path);
   const signedUrls = useSignedUrls(paths);
+  const showActions = isOwn && messageId && (onEdit || onDelete || onCopy);
 
   return (
     <div className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}>
@@ -62,11 +79,72 @@ export function MessageBubble({
         <div
           className={cn(
             "relative overflow-hidden rounded-2xl px-4 py-2.5 shadow-sm transition-all",
+            showActions && "pr-10",
             isOwn
               ? "bg-primary text-primary-foreground rounded-br-md ml-auto"
               : "bg-card border border-border/50 rounded-bl-md shadow-card"
           )}
         >
+          {/* Three-dot menu for own messages - padding-right above keeps content clear of this button */}
+          {showActions && (
+            <div className="absolute top-1.5 right-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-7 w-7",
+                      isOwn
+                        ? "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/20"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    )}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Message options"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-popover">
+                  {onEdit && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(messageId!);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                  )}
+                  {onCopy && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCopy(content || "");
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(messageId!);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+
           {/* Attachments */}
           {attachments.length > 0 && (
             <div className={cn("flex flex-wrap gap-2 mb-2", content ? "mb-2" : "")}>

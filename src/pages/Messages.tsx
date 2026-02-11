@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -142,6 +143,10 @@ export default function Messages() {
   const [startingChatUserId, setStartingChatUserId] = useState<string | null>(null);
   const [listSearch, setListSearch] = useState("");
   const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageContent, setEditingMessageContent] = useState("");
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const currentUserIdRef = useRef<string | undefined>(undefined);
   const selectedConversationRef = useRef<string | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
@@ -930,6 +935,82 @@ export default function Messages() {
     }
   };
 
+  const handleEditMessage = (messageId: string) => {
+    const msg = messages.find((m) => m.id === messageId);
+    if (msg) {
+      setEditingMessageId(messageId);
+      setEditingMessageContent(msg.content || "");
+    }
+  };
+
+  const updateMessage = async () => {
+    if (!editingMessageId || !selectedConversation || !currentUser?.id) return;
+    try {
+      const validated = messageSchema.parse({ content: editingMessageContent });
+      const { error } = await supabase
+        .from("messages")
+        .update({ content: validated.content })
+        .eq("id", editingMessageId)
+        .eq("sender_id", currentUser.id);
+      if (error) throw error;
+      setEditingMessageId(null);
+      setEditingMessageContent("");
+      await loadMessages(selectedConversation);
+      toast({ title: "Message updated" });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Invalid message",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error updating message",
+          description: error?.message ?? "Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    setDeleteMessageId(messageId);
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (!deleteMessageId || !selectedConversation || !currentUser?.id) return;
+    setIsDeletingMessage(true);
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", deleteMessageId)
+        .eq("sender_id", currentUser.id);
+      if (error) throw error;
+      setDeleteMessageId(null);
+      await loadMessages(selectedConversation);
+      toast({ title: "Message deleted" });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Could not delete message",
+        description: err?.message ?? "Please try again.",
+      });
+    } finally {
+      setIsDeletingMessage(false);
+      setDeleteMessageId(null);
+    }
+  };
+
+  const handleCopyMessage = (content: string) => {
+    if (!content) return;
+    navigator.clipboard.writeText(content).then(
+      () => toast({ title: "Copied to clipboard" }),
+      () => toast({ title: "Copy failed", variant: "destructive" })
+    );
+  };
+
   const sendMessageWithAttachments = async (files: File[], content: string) => {
     if (!selectedConversation || !currentUser?.id) {
       toast({
@@ -1318,6 +1399,22 @@ export default function Messages() {
                   <div className="px-2 py-1 space-y-0.5">
                     {filteredConversations.map((conv) => {
                       const partnerName = getConversationPartner(conv);
+                      const partnerProfileUrl = (() => {
+                        if (!currentUser?.id) return null;
+                        if (conv.admin_id) {
+                          if (currentUser.id === conv.admin_id) {
+                            return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
+                          }
+                          return null;
+                        }
+                        if (currentUser.id === conv.consumer_id) {
+                          const handle = conv.digger_profiles?.handle?.replace(/^@/, "").trim().toLowerCase();
+                          if (handle) return `/digger/${handle}`;
+                          return conv.digger_id ? `/digger/${conv.digger_id}` : null;
+                        }
+                        return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
+                      })();
+                      const projectUrl = conv?.gig_id ? `/gig/${conv.gig_id}` : null;
                       const rawRoleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
                       const roleOrTitle = rawRoleOrTitle.length > 35 ? `${rawRoleOrTitle.slice(0, 35)}…` : rawRoleOrTitle;
                       const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
@@ -1362,12 +1459,28 @@ export default function Messages() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className={cn(
-                                "truncate shrink min-w-0 text-foreground",
-                                hasUnread ? "font-semibold" : "font-medium"
-                              )}>
-                                {partnerName}
-                              </p>
+                              {partnerProfileUrl ? (
+                                <button
+                                  type="button"
+                                  className={cn(
+                                    "truncate shrink min-w-0 text-foreground text-left hover:underline",
+                                    hasUnread ? "font-semibold" : "font-medium"
+                                  )}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(partnerProfileUrl);
+                                  }}
+                                >
+                                  {partnerName}
+                                </button>
+                              ) : (
+                                <p className={cn(
+                                  "truncate shrink min-w-0 text-foreground",
+                                  hasUnread ? "font-semibold" : "font-medium"
+                                )}>
+                                  {partnerName}
+                                </p>
+                              )}
                               <div className="flex items-center gap-0.5 shrink-0">
                                 <span className="text-xs text-muted-foreground">
                                   {format(new Date(conv.updated_at), "M/d/yy")}
@@ -1502,9 +1615,23 @@ export default function Messages() {
                                 </DropdownMenu>
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>
-                              {roleOrTitle}
-                            </p>
+                            {projectUrl ? (
+                              <button
+                                type="button"
+                                className="text-xs text-muted-foreground truncate mt-0.5 min-w-0 hover:underline text-left"
+                                title={rawRoleOrTitle}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(projectUrl);
+                                }}
+                              >
+                                {roleOrTitle}
+                              </button>
+                            ) : (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>
+                                {roleOrTitle}
+                              </p>
+                            )}
                             {lastSnippet && (
                               <p className={cn(
                                 "text-xs truncate mt-0.5 min-w-0",
@@ -1533,6 +1660,12 @@ export default function Messages() {
                   partnerProfileUrl={partnerProfileUrl}
                   projectTitle={projectTitle}
                   projectUrl={projectUrl}
+                  onPartnerClick={() => {
+                    if (partnerProfileUrl) navigate(partnerProfileUrl);
+                  }}
+                  onProjectClick={() => {
+                    if (projectUrl) navigate(projectUrl);
+                  }}
                   isOnline={getPartnerIsOnline(selectedConv)}
                   partnerAvatarUrl={selectedConv?.partner_avatar_url}
                   showBackButton={isMobile}
@@ -1559,6 +1692,10 @@ export default function Messages() {
                                   isOwn={msg.sender_id === currentUser?.id}
                                   isRead={!!msg.read_at}
                                   attachments={msg.attachments}
+                                  messageId={msg.id}
+                                  onEdit={handleEditMessage}
+                                  onDelete={handleDeleteMessage}
+                                  onCopy={handleCopyMessage}
                                 />
                               ))}
                             </div>
@@ -1667,6 +1804,22 @@ export default function Messages() {
                     <div className="px-2 py-1 space-y-0.5">
                       {filteredConversations.map((conv) => {
                         const partnerName = getConversationPartner(conv);
+                        const partnerProfileUrl = (() => {
+                          if (!currentUser?.id) return null;
+                          if (conv.admin_id) {
+                            if (currentUser.id === conv.admin_id) {
+                              return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
+                            }
+                            return null;
+                          }
+                          if (currentUser.id === conv.consumer_id) {
+                            const handle = conv.digger_profiles?.handle?.replace(/^@/, "").trim().toLowerCase();
+                            if (handle) return `/digger/${handle}`;
+                            return conv.digger_id ? `/digger/${conv.digger_id}` : null;
+                          }
+                          return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
+                        })();
+                        const projectUrl = conv?.gig_id ? `/gig/${conv.gig_id}` : null;
                         const rawRoleOrTitle = conv?.admin_id ? "Support chat" : (conv?.gigs?.title || conv?.digger_profiles?.profession || "General inquiry");
                         const roleOrTitle = rawRoleOrTitle.length > 35 ? `${rawRoleOrTitle.slice(0, 35)}…` : rawRoleOrTitle;
                         const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
@@ -1686,7 +1839,25 @@ export default function Messages() {
                             </div>
                             <div className="flex-1 min-w-0 overflow-hidden">
                               <div className="flex items-center justify-between gap-2 min-w-0">
-                                <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")}>{partnerName}</p>
+                                {partnerProfileUrl ? (
+                                  <button
+                                    type="button"
+                                    className={cn(
+                                      "truncate min-w-0 text-foreground flex-1 text-left hover:underline",
+                                      hasUnread ? "font-semibold" : "font-medium"
+                                    )}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(partnerProfileUrl);
+                                    }}
+                                  >
+                                    {partnerName}
+                                  </button>
+                                ) : (
+                                  <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")}>
+                                    {partnerName}
+                                  </p>
+                                )}
                                 <div className="flex items-center gap-0.5 shrink-0">
                                   <span className="text-xs text-muted-foreground">{format(new Date(conv.updated_at), "M/d/yy")}</span>
                                   {hasUnread && <span className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0" title={`${unreadCount} unread`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
@@ -1707,7 +1878,21 @@ export default function Messages() {
                                   </DropdownMenu>
                                 </div>
                               </div>
-                              <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>{roleOrTitle}</p>
+                              {projectUrl ? (
+                                <button
+                                  type="button"
+                                  className="text-xs text-muted-foreground truncate mt-0.5 min-w-0 hover:underline text-left"
+                                  title={rawRoleOrTitle}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(projectUrl);
+                                  }}
+                                >
+                                  {roleOrTitle}
+                                </button>
+                              ) : (
+                                <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>{roleOrTitle}</p>
+                              )}
                               {lastSnippet && <p className={cn("text-xs truncate mt-0.5 min-w-0", hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90")} title={lastSnippet}>{lastSnippet.length > 40 ? `${lastSnippet.slice(0, 40)}…` : lastSnippet}</p>}
                             </div>
                           </div>
@@ -1724,14 +1909,31 @@ export default function Messages() {
                 {selectedConversation ? (
                   <>
                     {/* Thread header + message list + input all fit within (viewport - site header) */}
-                    <ChatHeader partnerName={partnerName} subtitle={getConversationSubtitle(selectedConv)} isOnline={getPartnerIsOnline(selectedConv)} partnerAvatarUrl={selectedConv?.partner_avatar_url} showBackButton={isMobile} onBack={handleBackToList} onMoreClick={() => setShowInfoPanel(!showInfoPanel)} />
+                    <ChatHeader
+                      partnerName={partnerName}
+                      subtitle={getConversationSubtitle(selectedConv)}
+                      partnerProfileUrl={partnerProfileUrl}
+                      projectTitle={projectTitle}
+                      projectUrl={projectUrl}
+                      onPartnerClick={() => {
+                        if (partnerProfileUrl) navigate(partnerProfileUrl);
+                      }}
+                      onProjectClick={() => {
+                        if (projectUrl) navigate(projectUrl);
+                      }}
+                      isOnline={getPartnerIsOnline(selectedConv)}
+                      partnerAvatarUrl={selectedConv?.partner_avatar_url}
+                      showBackButton={isMobile}
+                      onBack={handleBackToList}
+                      onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
+                    />
                     <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                       <ScrollArea className="h-full min-h-0">
                         <div className="p-4 sm:p-6 space-y-1">
                           {messages.length === 0 ? <EmptyConversation variant="no-messages" partnerName={partnerName} /> : messagesByDate.map(([dateKey, dayMessages]) => (
                             <div key={dateKey}>
                               <DateSeparator date={dateKey} />
-                              <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} attachments={msg.attachments} />)}</div>
+                              <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} attachments={msg.attachments} messageId={msg.id} onEdit={handleEditMessage} onDelete={handleDeleteMessage} onCopy={handleCopyMessage} />)}</div>
                             </div>
                           ))}
                           {partnerTypingUntil != null && (
@@ -1916,6 +2118,54 @@ export default function Messages() {
           </div>
         )}
       </div>
+
+      {/* Edit message dialog */}
+      <Dialog open={!!editingMessageId} onOpenChange={(open) => !open && setEditingMessageId(null)}>
+        <DialogContent className="sm:max-w-md" onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Edit message</DialogTitle>
+            <DialogDescription>Change the message text and save.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Textarea
+              value={editingMessageContent}
+              onChange={(e) => setEditingMessageContent(e.target.value)}
+              placeholder="Message content"
+              className="min-h-[100px] resize-y"
+              maxLength={5000}
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <Button variant="outline" onClick={() => setEditingMessageId(null)}>Cancel</Button>
+              <Button onClick={updateMessage}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete message confirmation */}
+      <AlertDialog open={!!deleteMessageId} onOpenChange={(open) => !open && setDeleteMessageId(null)}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This message will be permanently removed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingMessage}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingMessage}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDeleteMessage();
+              }}
+            >
+              {isDeletingMessage ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!deleteConversationId} onOpenChange={(open) => !open && setDeleteConversationId(null)}>
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>

@@ -10,6 +10,8 @@ interface ChatHeaderProps {
   partnerProfileUrl?: string | null;
   projectTitle?: string | null;
   projectUrl?: string | null;
+  onPartnerClick?: () => void;
+  onProjectClick?: () => void;
   isOnline?: boolean;
   partnerAvatarUrl?: string | null;
   showBackButton?: boolean;
@@ -24,6 +26,8 @@ export function ChatHeader({
   partnerProfileUrl,
   projectTitle,
   projectUrl,
+  onPartnerClick,
+  onProjectClick,
   isOnline = false,
   partnerAvatarUrl,
   showBackButton = false,
@@ -74,12 +78,16 @@ export function ChatHeader({
         {/* Name and subtitle */}
         <div className="min-w-0 flex-1">
           {partnerProfileUrl ? (
-            <a
-              href={partnerProfileUrl}
-              className="font-semibold text-foreground truncate text-sm sm:text-base block hover:underline"
+            <button
+              type="button"
+              className="font-semibold text-foreground truncate text-sm sm:text-base block hover:underline text-left pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPartnerClick?.();
+              }}
             >
               {partnerName}
-            </a>
+            </button>
           ) : (
             <h2 className="font-semibold text-foreground truncate text-sm sm:text-base">
               {partnerName}
@@ -90,9 +98,16 @@ export function ChatHeader({
               <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
             )}
             {projectUrl && projectTitle ? (
-              <a href={projectUrl} className="truncate hover:underline">
+              <button
+                type="button"
+                className="truncate hover:underline text-left pointer-events-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onProjectClick?.();
+                }}
+              >
                 {projectTitle}
-              </a>
+              </button>
             ) : (
               <span>{isOnline ? "Active now" : subtitle}</span>
             )}

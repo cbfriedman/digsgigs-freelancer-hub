@@ -16,16 +16,39 @@ import {
   ChevronUp,
   ExternalLink,
   MoreHorizontal,
+  MoreVertical,
   X,
   Bell,
   BellOff,
   Search,
+  Pencil,
+  Trash2,
+  Copy,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -43,7 +66,7 @@ interface Message {
 }
 
 const MESSAGES_PAGE = "/messages";
-const CHAT_BOX_WIDTH = "w-[320px]";
+const CHAT_BOX_WIDTH = "w-[340px]";
 const MAX_OPEN_CHATS = 4;
 
 export function FloatingMessageWidget() {
@@ -67,6 +90,12 @@ export function FloatingMessageWidget() {
   const [inputMap, setInputMap] = useState<Record<string, string>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [sendingMap, setSendingMap] = useState<Record<string, boolean>>({});
+  const [editingConvId, setEditingConvId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageContent, setEditingMessageContent] = useState("");
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+  const [deleteConvId, setDeleteConvId] = useState<string | null>(null);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
 
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
@@ -374,6 +403,83 @@ export function FloatingMessageWidget() {
     navigate(conv ? `/messages?conversation=${conv.id}` : "/messages");
   };
 
+  const handleEditMessage = (convId: string, messageId: string) => {
+    const list = messagesMap[convId] || [];
+    const msg = list.find((x) => x.id === messageId);
+    if (msg && !messageId.startsWith("temp-")) {
+      setEditingConvId(convId);
+      setEditingMessageId(messageId);
+      setEditingMessageContent(msg.content || "");
+    }
+  };
+
+  const updateMessage = async () => {
+    if (!editingConvId || !editingMessageId || !user?.id) return;
+    const parsed = messageSchema.safeParse(editingMessageContent);
+    if (!parsed.success) {
+      toast.error("Message must be 1-5000 characters");
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .update({ content: parsed.data })
+        .eq("id", editingMessageId)
+        .eq("sender_id", user.id);
+      if (error) throw error;
+      setMessagesMap((prev) => ({
+        ...prev,
+        [editingConvId]: (prev[editingConvId] || []).map((m) =>
+          m.id === editingMessageId ? { ...m, content: parsed.data } : m
+        ),
+      }));
+      setEditingConvId(null);
+      setEditingMessageId(null);
+      setEditingMessageContent("");
+      toast.success("Message updated");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to update message");
+    }
+  };
+
+  const handleDeleteMessage = (convId: string, messageId: string) => {
+    if (messageId.startsWith("temp-")) return;
+    setDeleteConvId(convId);
+    setDeleteMessageId(messageId);
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (!deleteConvId || !deleteMessageId || !user?.id) return;
+    setIsDeletingMessage(true);
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", deleteMessageId)
+        .eq("sender_id", user.id);
+      if (error) throw error;
+      setMessagesMap((prev) => ({
+        ...prev,
+        [deleteConvId]: (prev[deleteConvId] || []).filter((m) => m.id !== deleteMessageId),
+      }));
+      toast.success("Message deleted");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not delete message");
+    } finally {
+      setIsDeletingMessage(false);
+      setDeleteMessageId(null);
+      setDeleteConvId(null);
+    }
+  };
+
+  const handleCopyMessage = (content: string) => {
+    if (!content) return;
+    navigator.clipboard.writeText(content).then(
+      () => toast.success("Copied to clipboard"),
+      () => toast.error("Copy failed")
+    );
+  };
+
   if (!user || hideOnMessagesPage) return null;
 
   const listPanelWidth = "w-[calc(100vw-2rem)] max-w-[380px]";
@@ -386,18 +492,19 @@ export function FloatingMessageWidget() {
     : conversations;
 
   return (
-    <div className="fixed bottom-0 right-0 z-[100] p-4 md:p-5 flex flex-row items-end gap-2 pointer-events-none [&>*]:pointer-events-auto">
+    <div className="fixed bottom-0 right-0 z-[100] p-4 md:p-5 flex flex-row items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
       {openChats.map((conv) => (
         <div
           key={conv.id}
           className={cn(
-            "flex flex-col overflow-hidden rounded-t-xl border border-b-0 border-border/60 bg-card shadow-xl",
+            "flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-xl",
             CHAT_BOX_WIDTH,
-            collapsedChats[conv.id] ? "h-[52px]" : "h-[min(420px,calc(100vh-10rem))]",
+            collapsedChats[conv.id] ? "h-[56px]" : "h-[min(440px,calc(100vh-10rem))]",
             "transition-[height] duration-200 ease-out",
             "animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
           )}
         >
+          {/* Floating message box header: avatar, name, description, three-dot, expand, close */}
           <div
             role="button"
             tabIndex={0}
@@ -426,13 +533,13 @@ export function FloatingMessageWidget() {
                 return { ...prev, [conv.id]: next };
               });
             }}
-            className="flex items-center justify-between px-3 py-2 border-b bg-background shrink-0 cursor-pointer"
+            className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border/50 bg-background/95 shrink-0 cursor-pointer rounded-t-2xl"
             aria-label={collapsedChats[conv.id] ? "Expand chat" : "Collapse chat"}
           >
-            <div className="flex items-center gap-2 min-w-0">
-              <Avatar className="h-8 w-8 shrink-0 ring-1 ring-border/50">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/40">
                 <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" />
-                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                <AvatarFallback className="bg-primary/10 text-primary text-sm">
                   {conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}
                 </AvatarFallback>
               </Avatar>
@@ -440,7 +547,7 @@ export function FloatingMessageWidget() {
                 {conv.partnerProfileUrl ? (
                   <button
                     type="button"
-                    className="font-semibold text-sm truncate hover:underline text-left block"
+                    className="font-semibold text-sm truncate hover:underline text-left block w-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(conv.partnerProfileUrl as string);
@@ -452,26 +559,26 @@ export function FloatingMessageWidget() {
                 ) : (
                   <h3 className="font-semibold text-sm truncate">{conv.partnerDisplayName}</h3>
                 )}
-                {conv.gigId ? (
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground truncate hover:underline text-left block"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/gig/${conv.gigId}`);
-                    }}
-                    title="View project"
-                  >
-                    {(() => {
-                      const title = conv.partnerJobTitle?.trim() || "View project";
-                      return title.length > 36 ? `${title.slice(0, 36)}…` : title;
-                    })()}
-                  </button>
-                ) : (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {conv.partnerJobTitle?.trim() || "Direct message"}
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground truncate mt-0.5" title={conv.partnerJobTitle || (conv.gigId ? "View project" : undefined)}>
+                  {conv.gigId ? (
+                    <button
+                      type="button"
+                      className="text-left truncate block w-full hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/gig/${conv.gigId}`);
+                      }}
+                    >
+                      {(conv.partnerJobTitle?.trim() || "View project").length > 38
+                        ? `${(conv.partnerJobTitle?.trim() || "View project").slice(0, 38)}…`
+                        : (conv.partnerJobTitle?.trim() || "View project")}
+                    </button>
+                  ) : (
+                    (conv.partnerJobTitle?.trim() || "Direct message").length > 38
+                      ? `${(conv.partnerJobTitle?.trim() || "Direct message").slice(0, 38)}…`
+                      : (conv.partnerJobTitle?.trim() || "Direct message")
+                  )}
+                </p>
               </div>
             </div>
             <div
@@ -489,7 +596,7 @@ export function FloatingMessageWidget() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className="h-8 w-8"
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     onPointerEnter={() => setOpenMenuChatId(conv.id)}
@@ -537,38 +644,38 @@ export function FloatingMessageWidget() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();
                   openFullMessages(conv);
                 }}
-                title="Open full"
+                title="Open in full page"
               >
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ExternalLink className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeChat(conv.id);
                 }}
                 title="Close"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
           <div
             className={cn(
-              "flex-1 min-h-0 flex flex-col transition-opacity duration-200",
+              "flex-1 min-h-0 flex flex-col transition-opacity duration-200 rounded-b-2xl overflow-hidden",
               collapsedChats[conv.id] ? "opacity-0 pointer-events-none" : "opacity-100"
             )}
           >
             <ScrollArea
               ref={(el) => (scrollAreaRefsMap.current[conv.id] = el)}
-              className="flex-1 min-h-0 px-3"
+              className="flex-1 min-h-0 px-3 border-border/30"
             >
               {loadingMap[conv.id] ? (
                 <div className="flex items-center justify-center py-12">
@@ -579,26 +686,80 @@ export function FloatingMessageWidget() {
                   No messages yet. Say hello!
                 </div>
               ) : (
-                <div className="py-3 space-y-2">
+                <div className="py-3 space-y-2.5">
                   {[...(messagesMap[conv.id] || [])]
                     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
                     .map((m) => {
                       const isOwn = m.sender_id === user.id;
+                      const showActions = isOwn && !m.id.startsWith("temp-");
                       return (
                         <div key={m.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
                           <div
                             className={cn(
-                              "min-w-0 max-w-[85%] overflow-hidden rounded-2xl px-3 py-2 text-sm",
+                              "group relative min-w-0 max-w-[85%] overflow-hidden rounded-2xl px-3 py-2.5 text-sm shadow-sm",
+                              showActions && "pr-10",
                               isOwn
                                 ? "bg-primary text-primary-foreground rounded-br-md"
-                                : "bg-muted text-foreground rounded-bl-md"
+                                : "bg-muted text-foreground rounded-bl-md border border-border/40"
                             )}
                           >
+                            {showActions && (
+                              <div className="absolute top-1.5 right-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className={cn(
+                                        "h-7 w-7",
+                                        isOwn
+                                          ? "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/20"
+                                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                      )}
+                                      onClick={(e) => e.stopPropagation()}
+                                      title="Message options"
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48 bg-popover">
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditMessage(conv.id, m.id);
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCopyMessage(m.content || "");
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Copy
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteMessage(conv.id, m.id);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
                             <p className="break-words whitespace-pre-wrap [overflow-wrap:anywhere]">{m.content}</p>
                             <p
                               className={cn(
-                                "text-[10px] mt-0.5",
-                                isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
+                                "text-[10px] mt-1",
+                                isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                               )}
                             >
                               {format(new Date(m.created_at), "h:mm a")}
@@ -611,8 +772,8 @@ export function FloatingMessageWidget() {
                 </div>
               )}
             </ScrollArea>
-            <div className="p-2 border-t bg-background shrink-0">
-              <div className="flex gap-2">
+            <div className="p-3 border-t border-border/50 bg-background shrink-0 rounded-b-2xl">
+              <div className="flex gap-2 items-center">
                 <Input
                   ref={(el) => (inputRefsMap.current[conv.id] = el)}
                   value={inputMap[conv.id] ?? ""}
@@ -624,14 +785,15 @@ export function FloatingMessageWidget() {
                     }
                   }}
                   placeholder="Type a message..."
-                  className="flex-1 min-w-0 text-foreground text-sm h-9"
+                  className="flex-1 min-w-0 text-foreground text-sm h-10 rounded-xl border-border/60"
                   disabled={sendingMap[conv.id]}
                 />
                 <Button
                   size="icon"
-                  className="h-9 w-9 shrink-0 rounded-full"
+                  className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => handleSend(conv)}
                   disabled={!(inputMap[conv.id] ?? "").trim() || sendingMap[conv.id]}
+                  title="Send"
                 >
                   {sendingMap[conv.id] ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -648,20 +810,20 @@ export function FloatingMessageWidget() {
       <div className={cn("flex flex-col items-end", listPanelWidth)}>
         <div
           className={cn(
-            "flex flex-col overflow-hidden w-full border border-border/60 bg-card shadow-xl",
+            "flex flex-col overflow-hidden w-full border border-border/60 bg-card shadow-xl rounded-2xl",
             "transition-all duration-300 ease-out origin-bottom",
             isOpen
-              ? "h-[min(480px,calc(100vh-10rem))] opacity-100 rounded-xl"
-              : "h-0 opacity-0 pointer-events-none border-0 rounded-t-xl"
+              ? "h-[min(480px,calc(100vh-10rem))] opacity-100"
+              : "h-0 opacity-0 pointer-events-none border-0"
           )}
         >
-          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl">
             <div
               role="button"
               tabIndex={0}
               onClick={() => setIsOpen(false)}
               onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
-              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-border/50 bg-card cursor-pointer"
+              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-border/50 bg-background/95 cursor-pointer rounded-t-2xl"
               aria-label="Collapse messages"
             >
               <button
@@ -798,7 +960,7 @@ export function FloatingMessageWidget() {
             onKeyDown={(e) => e.key === "Enter" && setIsOpen(true)}
             className={cn(
               "flex items-center justify-between gap-3 px-4 py-2.5 w-full cursor-pointer shrink-0",
-              "rounded-t-xl rounded-b-md border border-border/60 bg-card shadow-lg"
+              "rounded-2xl border border-border/60 bg-card shadow-xl hover:shadow-2xl transition-shadow"
             )}
             aria-label="Open messages"
           >
@@ -827,6 +989,49 @@ export function FloatingMessageWidget() {
           </div>
         )}
       </div>
+
+      {/* Edit message dialog */}
+      <Dialog open={!!editingMessageId} onOpenChange={(open) => !open && (setEditingMessageId(null), setEditingConvId(null))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit message</DialogTitle>
+            <DialogDescription>Change the message text and save.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Textarea
+              value={editingMessageContent}
+              onChange={(e) => setEditingMessageContent(e.target.value)}
+              placeholder="Message content"
+              className="min-h-[100px] resize-y"
+              maxLength={5000}
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <Button variant="outline" onClick={() => { setEditingMessageId(null); setEditingConvId(null); }}>Cancel</Button>
+              <Button onClick={updateMessage}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete message confirmation */}
+      <AlertDialog open={!!deleteMessageId} onOpenChange={(open) => !open && (setDeleteMessageId(null), setDeleteConvId(null))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>This message will be permanently removed. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingMessage}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingMessage}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => { e.preventDefault(); confirmDeleteMessage(); }}
+            >
+              {isDeletingMessage ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
