@@ -350,7 +350,7 @@ const EditDiggerProfile = () => {
         setTagline(profile.tagline || "");
         setWorkPhotos(profile.work_photos || []);
         setCertifications(profile.certifications || []);
-        setCoverPhotoUrl(profile.cover_photo_url || "");
+        setCoverPhotoUrl((profile as any).cover_photo_url || "");
         setProfileData(profile);
         // Username cannot be changed once set (any profile of this user has handle)
         const { data: anyWithHandle } = await supabase.from("digger_profiles").select("id").eq("user_id", user.id).not("handle", "is", null).limit(1).maybeSingle();

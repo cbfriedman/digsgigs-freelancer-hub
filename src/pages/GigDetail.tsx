@@ -193,7 +193,7 @@ const GigDetail = () => {
     setBumping(true);
     const { error } = await supabase
       .from("gigs")
-      .update({ bumped_at: new Date().toISOString() })
+      .update({ bumped_at: new Date().toISOString() } as any)
       .eq("id", id);
     setBumping(false);
     if (error) {
