@@ -167,7 +167,7 @@ export function MessageInput({
               </Button>
             </PopoverTrigger>
             <PopoverContent 
-              className="w-auto p-0 border-0 shadow-lg" 
+              className="w-auto p-0 border-0 shadow-lg z-[110]" 
               align="start"
               side="top"
               sideOffset={8}

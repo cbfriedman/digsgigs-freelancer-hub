@@ -59,7 +59,9 @@ const GigDetail = () => {
   const [hasLeadPurchase, setHasLeadPurchase] = useState(false);
   const REFERRAL_FEE_RATE = 0.08;
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
-  const { userRoles } = useAuth();
+  const { userRoles, activeRole } = useAuth();
+  /** In gigger mode we hide digger-only content (bid form, budget analysis, etc.); in digger mode or no role we show it for diggers */
+  const showDiggerContent = isDigger && (activeRole !== "gigger");
 
   useEffect(() => {
     loadData();
@@ -416,7 +418,7 @@ const GigDetail = () => {
                     </div>
                   )}
 
-                  {!canSeeBudget && isDigger && (
+                  {!canSeeBudget && showDiggerContent && (
                     <div className="flex items-start gap-3">
                       <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <div>
@@ -472,8 +474,8 @@ const GigDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Budget Analysis for Diggers */}
-            {isDigger && gig.budget_min && (
+            {/* Budget Analysis for Diggers (hidden in gigger mode) */}
+            {showDiggerContent && gig.budget_min && (
               <Card className="bg-accent/5 border-accent/20">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -541,8 +543,8 @@ const GigDetail = () => {
               categories={gig.categories?.name ? [gig.categories.name] : undefined}
             />
 
-            {/* Bids Section */}
-            {(isOwner || isDigger) && (
+            {/* Bids Section: owner manages bids; digger sees their bids (hidden in gigger mode for non-owners) */}
+            {(isOwner || showDiggerContent) && (
               <BidsList 
                 gigId={id!} 
                 gigTitle={gig.title} 
@@ -553,8 +555,8 @@ const GigDetail = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Referral fee info for Diggers - no membership required */}
-            {isDigger && (
+            {/* Referral fee info for Diggers (hidden in gigger mode) */}
+            {showDiggerContent && (
               <Card className="bg-primary/5 border-primary/20">
                 <CardHeader>
                   <div className="flex items-center gap-2">
@@ -571,8 +573,8 @@ const GigDetail = () => {
               </Card>
             )}
 
-            {/* Bid Form */}
-            {isDigger && diggerId && gig.status === 'open' && !existingBid && (
+            {/* Bid Form (only in digger mode) */}
+            {showDiggerContent && diggerId && gig.status === 'open' && !existingBid && (
               <div id="bid">
                 <BidSubmissionTemplate
                   gigId={id!}
@@ -588,7 +590,7 @@ const GigDetail = () => {
               </div>
             )}
 
-            {existingBid && (
+            {existingBid && showDiggerContent && (
               <Card>
                 <CardHeader>
                   <CardTitle>Your Bid</CardTitle>
@@ -613,8 +615,29 @@ const GigDetail = () => {
               </Card>
             )}
 
-            {/* Only Diggers can bid. Gigger-only users see an info message; users with Digger role but no profile see setup CTA. */}
-            {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && !userRoles?.includes('digger') && (
+            {/* Gigger mode, not owner: show post-a-gig CTA instead of bid prompts */}
+            {activeRole === 'gigger' && !isOwner && currentUser && gig.status === 'open' && (
+              <Card id="bid">
+                <CardContent className="pt-6 space-y-4">
+                  <p className="text-center text-muted-foreground">
+                    You&apos;re viewing as a <strong>Gigger</strong>. Post your own gig to receive bids from Diggers.
+                  </p>
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => navigate('/post-gig')}
+                  >
+                    Post a gig
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Have a Digger account? Switch to Digger mode in the nav to bid on this gig.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Only Diggers can bid (hidden when in gigger mode) */}
+            {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && !userRoles?.includes('digger') && activeRole !== 'gigger' && (
               <Card id="bid">
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground">
@@ -623,7 +646,7 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
-            {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && userRoles?.includes('digger') && (
+            {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && userRoles?.includes('digger') && activeRole !== 'gigger' && (
               <Card id="bid">
                 <CardContent className="pt-6 space-y-4">
                   <p className="text-center text-muted-foreground">
@@ -642,7 +665,7 @@ const GigDetail = () => {
               </Card>
             )}
 
-            {/* Not logged in — prompt to sign in */}
+            {/* Not logged in — prompt to sign in (digger CTA) */}
             {!currentUser && !isOwner && gig.status === 'open' && (
               <Card id="bid">
                 <CardContent className="pt-6">

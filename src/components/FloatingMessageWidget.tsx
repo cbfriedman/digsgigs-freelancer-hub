@@ -102,6 +102,7 @@ export function FloatingMessageWidget() {
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const [attachmentUploadProgress, setAttachmentUploadProgress] = useState<number | null>(null);
   const [attachmentUploadConvId, setAttachmentUploadConvId] = useState<string | null>(null);
+  const [replyingToMap, setReplyingToMap] = useState<Record<string, { id: string; content: string } | null>>({});
 
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
@@ -173,7 +174,16 @@ export function FloatingMessageWidget() {
           _conversation_id: convId,
         });
         if (error) throw error;
-        setMessagesMap((prev) => ({ ...prev, [convId]: (data as Message[]) || [] }));
+        const fromServer = (data as Message[]) || [];
+        setMessagesMap((prev) => {
+          const existing = prev[convId] || [];
+          const serverIds = new Set(fromServer.map((m) => m.id));
+          const fromRealtime = existing.filter((m) => !serverIds.has(m.id));
+          const merged = [...fromServer, ...fromRealtime].sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+          return { ...prev, [convId]: merged };
+        });
         requestAnimationFrame(() => {
           scrollToEnd(convId);
         });
@@ -230,8 +240,8 @@ export function FloatingMessageWidget() {
       });
       pendingAutoScrollRef.current[conv.id] = true;
       if (!wasAlreadyOpen) {
-        loadMessages(conv.id);
         subscribeToMessages(conv.id);
+        loadMessages(conv.id);
       }
       setCollapsedChats((prev) => ({ ...prev, [conv.id]: false }));
       requestAnimationFrame(() => {
@@ -297,18 +307,35 @@ export function FloatingMessageWidget() {
           table: "messages",
         },
         (payload) => {
-          const msg = payload.new as { conversation_id: string; sender_id: string };
+          const msg = payload.new as Message & { conversation_id: string };
           const uid = userIdRef.current;
           if (!uid || msg.sender_id === uid) return;
           setIsOpen(true);
-          const conv = conversationsRef.current.find((c) => c.id === msg.conversation_id);
-          if (conv) {
+          const addMessageToConv = (convId: string) => {
+            setMessagesMap((prev) => {
+              const list = prev[convId] || [];
+              if (list.some((m) => m.id === msg.id)) return prev;
+              return { ...prev, [convId]: [...list, msg] };
+            });
+          };
+          const tryOpenChat = (conv: RecentConversation) => {
+            addMessageToConv(conv.id);
             openChatRef.current(conv, true);
+          };
+          let conv = conversationsRef.current.find((c) => c.id === msg.conversation_id);
+          if (conv) {
+            tryOpenChat(conv);
           } else {
-            setTimeout(() => {
-              const latest = conversationsRef.current.find((c) => c.id === msg.conversation_id);
-              if (latest) openChatRef.current(latest, true);
-            }, 300);
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("recent-conversations-refresh"));
+            }
+            const retryDelays = [350, 600, 1000];
+            retryDelays.forEach((delay) => {
+              setTimeout(() => {
+                conv = conversationsRef.current.find((c) => c.id === msg.conversation_id);
+                if (conv) tryOpenChat(conv);
+              }, delay);
+            });
           }
         }
       )
@@ -341,10 +368,20 @@ export function FloatingMessageWidget() {
     });
   }, [openChats, messagesMap, collapsedChats, scrollToEnd]);
 
+  const handleReplyToMessage = useCallback((convId: string, messageId: string, content: string) => {
+    setReplyingToMap((prev) => ({ ...prev, [convId]: { id: messageId, content: content.slice(0, 200) } }));
+  }, []);
+
   const handleSend = useCallback(
     async (conv: RecentConversation) => {
-      const trimmed = (inputMap[conv.id] ?? "").trim();
+      let trimmed = (inputMap[conv.id] ?? "").trim();
       if (!trimmed || !user?.id) return;
+      const replyingTo = replyingToMap[conv.id];
+      if (replyingTo?.content) {
+        const quoteLine = replyingTo.content.split("\n")[0].slice(0, 100);
+        trimmed = `> ${quoteLine}${quoteLine.length >= 100 ? "…" : ""}\n\n${trimmed}`;
+        setReplyingToMap((prev) => ({ ...prev, [conv.id]: null }));
+      }
       const parsed = messageSchema.safeParse(trimmed);
       if (!parsed.success) {
         toast.error("Message must be 1-5000 characters");
@@ -401,7 +438,7 @@ export function FloatingMessageWidget() {
         });
       }
     },
-    [user?.id, inputMap]
+    [user?.id, inputMap, replyingToMap]
   );
 
   const handleSendWithAttachments = useCallback(
@@ -541,6 +578,13 @@ export function FloatingMessageWidget() {
     if (!deleteConvId || !deleteMessageId || !user?.id) return;
     setIsDeletingMessage(true);
     try {
+      const list = messagesMap[deleteConvId] || [];
+      const msg = list.find((m) => m.id === deleteMessageId);
+      const paths = (msg?.attachments ?? []).map((a) => a.path).filter(Boolean);
+      if (paths.length > 0) {
+        await supabase.storage.from("message-attachments").remove(paths);
+        // Proceed to delete message row even if storage returned errors
+      }
       const { error } = await supabase
         .from("messages")
         .delete()
@@ -787,6 +831,7 @@ export function FloatingMessageWidget() {
                         isRead={!!m.read_at}
                         attachments={m.attachments}
                         messageId={m.id}
+                        onReply={(id, content) => handleReplyToMessage(conv.id, id, content)}
                         onEdit={(id) => handleEditMessage(conv.id, id)}
                         onDelete={(id) => handleDeleteMessage(conv.id, id)}
                         onCopy={handleCopyMessage}
@@ -797,6 +842,13 @@ export function FloatingMessageWidget() {
               )}
             </ScrollArea>
             <div className="p-2 border-t border-border/50 bg-background shrink-0 rounded-b-2xl">
+              {replyingToMap[conv.id] && (
+                <div className="mb-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-2 py-1.5 text-xs">
+                  <span className="text-muted-foreground shrink-0">Replying to:</span>
+                  <span className="min-w-0 truncate flex-1">{replyingToMap[conv.id]!.content.split("\n")[0].slice(0, 50)}{replyingToMap[conv.id]!.content.length > 50 ? "…" : ""}</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setReplyingToMap((prev) => ({ ...prev, [conv.id]: null }))} title="Cancel reply"><X className="h-3 w-3" /></Button>
+                </div>
+              )}
               {attachmentUploadConvId === conv.id && attachmentUploadProgress != null && (
                 <div className="mb-2 space-y-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">

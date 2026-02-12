@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Check, CheckCheck, Paperclip, Download, MoreVertical, Pencil, Trash2, Copy } from "lucide-react";
+import { Check, CheckCheck, Paperclip, Download, MoreVertical, Pencil, Trash2, Copy, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,9 @@ interface MessageBubbleProps {
   senderName?: string;
   showAvatar?: boolean;
   attachments?: { name: string; path: string; type: string }[];
-  /** When set with isOwn, shows three-dot menu with Edit, Copy, Delete */
+  /** When set, shows three-dot menu with Reply (if onReply) and for own messages Edit, Copy, Delete */
   messageId?: string;
+  onReply?: (messageId: string, content: string) => void;
   onEdit?: (messageId: string) => void;
   onDelete?: (messageId: string) => void;
   onCopy?: (content: string) => void;
@@ -56,6 +57,7 @@ export function MessageBubble({
   showAvatar = false,
   attachments = [],
   messageId,
+  onReply,
   onEdit,
   onDelete,
   onCopy,
@@ -63,7 +65,7 @@ export function MessageBubble({
   const timeStr = format(new Date(timestamp), "h:mm a");
   const paths = attachments.map((a) => a.path);
   const signedUrls = useSignedUrls(paths);
-  const showActions = isOwn && messageId && (onEdit || onDelete || onCopy);
+  const showActions = messageId && (onReply || (isOwn && (onEdit || onDelete || onCopy)));
 
   return (
     <div className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}>
@@ -85,10 +87,10 @@ export function MessageBubble({
               : "bg-card border border-border/50 rounded-bl-md shadow-card"
           )}
         >
-          {/* Three-dot menu for own messages - padding-right above keeps content clear of this button */}
+          {/* Three-dot menu - Reply for any message; Edit/Copy/Delete for own */}
           {showActions && (
             <div className="absolute top-1.5 right-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -106,7 +108,18 @@ export function MessageBubble({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-popover">
-                  {onEdit && (
+                  {onReply && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReply(messageId!, content || "");
+                      }}
+                    >
+                      <Reply className="h-4 w-4 mr-2" />
+                      Reply
+                    </DropdownMenuItem>
+                  )}
+                  {isOwn && onEdit && (
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -117,7 +130,7 @@ export function MessageBubble({
                       Edit
                     </DropdownMenuItem>
                   )}
-                  {onCopy && (
+                  {isOwn && onCopy && (
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -128,7 +141,7 @@ export function MessageBubble({
                       Copy
                     </DropdownMenuItem>
                   )}
-                  {onDelete && (
+                  {isOwn && onDelete && (
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
                       onClick={(e) => {

@@ -150,9 +150,13 @@ export default function Messages() {
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
   const [attachmentUploadProgress, setAttachmentUploadProgress] = useState<number | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; content: string } | null>(null);
   const currentUserIdRef = useRef<string | undefined>(undefined);
   const selectedConversationRef = useRef<string | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
+  const setMessagesRef = useRef<(fn: (prev: Message[]) => Message[]) => void>(() => {});
+  const loadConversationsRef = useRef<() => void>(() => {});
+  const setSelectedConversationRef = useRef<((id: string | null) => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -575,7 +579,7 @@ export default function Messages() {
           { event: "INSERT", schema: "public", table: "messages" },
           (payload) => {
             if (!mounted) return;
-            const msg = payload.new as { id: string; conversation_id: string; sender_id: string; content?: string };
+            const msg = payload.new as Message & { conversation_id: string };
             if (msg.sender_id === currentUserIdRef.current) return;
             const selectedId = selectedConversationRef.current;
             const convs = conversationsRef.current;
@@ -592,7 +596,14 @@ export default function Messages() {
                 : "Client";
             };
             const partnerName = getPartnerName(conv);
-            if (msg.conversation_id !== selectedId) {
+            if (msg.conversation_id === selectedId) {
+              // Partner is viewing this conversation: show new message bubble immediately (real-time sync)
+              setMessagesRef.current((prev) => {
+                if (prev.some((m) => m.id === msg.id)) return prev;
+                return [...prev, msg];
+              });
+              loadConversationsRef.current();
+            } else {
               toast({
                 title: "New message",
                 description: `${partnerName}: ${(msg.content ?? "").slice(0, 80)}${(msg.content?.length ?? 0) > 80 ? "…" : ""}`,
@@ -609,7 +620,8 @@ export default function Messages() {
                   // ignore
                 }
               }
-              loadConversations();
+              loadConversationsRef.current();
+              setSelectedConversationRef.current?.(msg.conversation_id);
             }
           }
         )
@@ -784,6 +796,12 @@ export default function Messages() {
     }
   };
 
+  useEffect(() => {
+    setMessagesRef.current = setMessages;
+    loadConversationsRef.current = loadConversations;
+    setSelectedConversationRef.current = setSelectedConversation;
+  });
+
   const loadMessages = async (conversationId: string) => {
     try {
       const { data, error } = await supabase.rpc("get_conversation_messages" as any, {
@@ -886,12 +904,21 @@ export default function Messages() {
     };
   };
 
+  const handleReplyToMessage = (messageId: string, content: string) => {
+    setReplyingTo({ id: messageId, content: content.slice(0, 200) });
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
     try {
+      let contentToSend = newMessage.trim();
+      if (replyingTo?.content) {
+        const quoteLine = replyingTo.content.split("\n")[0].slice(0, 100);
+        contentToSend = `> ${quoteLine}${quoteLine.length >= 100 ? "…" : ""}\n\n${contentToSend}`;
+      }
       const validated = messageSchema.parse({
-        content: newMessage,
+        content: contentToSend,
       });
 
       if (!currentUser?.id) {
@@ -912,6 +939,7 @@ export default function Messages() {
 
       if (error) throw error;
       setNewMessage("");
+      setReplyingTo(null);
       await loadMessages(selectedConversation);
       refreshRecentConversations();
       if (messageId) {
@@ -985,6 +1013,12 @@ export default function Messages() {
     if (!deleteMessageId || !selectedConversation || !currentUser?.id) return;
     setIsDeletingMessage(true);
     try {
+      const msg = messages.find((m) => m.id === deleteMessageId);
+      const paths = (msg?.attachments ?? []).map((a) => a.path).filter(Boolean);
+      if (paths.length > 0) {
+        await supabase.storage.from("message-attachments").remove(paths);
+        // Proceed to delete message row even if storage returned errors (e.g. file already gone)
+      }
       const { error } = await supabase
         .from("messages")
         .delete()
@@ -1476,28 +1510,12 @@ export default function Messages() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              {partnerProfileUrl ? (
-                                <button
-                                  type="button"
-                                  className={cn(
-                                    "truncate shrink min-w-0 text-foreground text-left hover:underline",
-                                    hasUnread ? "font-semibold" : "font-medium"
-                                  )}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(partnerProfileUrl);
-                                  }}
-                                >
-                                  {partnerName}
-                                </button>
-                              ) : (
-                                <p className={cn(
-                                  "truncate shrink min-w-0 text-foreground",
-                                  hasUnread ? "font-semibold" : "font-medium"
-                                )}>
-                                  {partnerName}
-                                </p>
-                              )}
+                              <p className={cn(
+                                "truncate shrink min-w-0 text-foreground",
+                                hasUnread ? "font-semibold" : "font-medium"
+                              )}>
+                                {partnerName}
+                              </p>
                               <div className="flex items-center gap-0.5 shrink-0">
                                 <span className="text-xs text-muted-foreground">
                                   {format(new Date(conv.updated_at), "M/d/yy")}
@@ -1632,23 +1650,9 @@ export default function Messages() {
                                 </DropdownMenu>
                               </div>
                             </div>
-                            {projectUrl ? (
-                              <button
-                                type="button"
-                                className="text-xs text-muted-foreground truncate mt-0.5 min-w-0 hover:underline text-left"
-                                title={rawRoleOrTitle}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(projectUrl);
-                                }}
-                              >
-                                {roleOrTitle}
-                              </button>
-                            ) : (
-                              <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>
-                                {roleOrTitle}
-                              </p>
-                            )}
+                            <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>
+                              {roleOrTitle}
+                            </p>
                             {lastSnippet && (
                               <p className={cn(
                                 "text-xs truncate mt-0.5 min-w-0",
@@ -1710,6 +1714,7 @@ export default function Messages() {
                                   isRead={!!msg.read_at}
                                   attachments={msg.attachments}
                                   messageId={msg.id}
+                                  onReply={handleReplyToMessage}
                                   onEdit={handleEditMessage}
                                   onDelete={handleDeleteMessage}
                                   onCopy={handleCopyMessage}
@@ -1734,6 +1739,13 @@ export default function Messages() {
 
                 {/* Message input - fixed at bottom, never inside scroll, never scrolled */}
                 <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
+                  {replyingTo && (
+                    <div className="mb-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-sm">
+                      <span className="text-muted-foreground shrink-0">Replying to:</span>
+                      <span className="min-w-0 truncate flex-1 text-foreground">{replyingTo.content.split("\n")[0].slice(0, 60)}{replyingTo.content.length > 60 ? "…" : ""}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setReplyingTo(null)} title="Cancel reply"><X className="h-4 w-4" /></Button>
+                    </div>
+                  )}
                   {attachmentUploadProgress != null && (
                     <div className="mb-2 space-y-1">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -1865,25 +1877,9 @@ export default function Messages() {
                             </div>
                             <div className="flex-1 min-w-0 overflow-hidden">
                               <div className="flex items-center justify-between gap-2 min-w-0">
-                                {partnerProfileUrl ? (
-                                  <button
-                                    type="button"
-                                    className={cn(
-                                      "truncate min-w-0 text-foreground flex-1 text-left hover:underline",
-                                      hasUnread ? "font-semibold" : "font-medium"
-                                    )}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(partnerProfileUrl);
-                                    }}
-                                  >
-                                    {partnerName}
-                                  </button>
-                                ) : (
-                                  <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")}>
-                                    {partnerName}
-                                  </p>
-                                )}
+                                <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")}>
+                                  {partnerName}
+                                </p>
                                 <div className="flex items-center gap-0.5 shrink-0">
                                   <span className="text-xs text-muted-foreground">{format(new Date(conv.updated_at), "M/d/yy")}</span>
                                   {hasUnread && <span className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0" title={`${unreadCount} unread`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
@@ -1904,21 +1900,7 @@ export default function Messages() {
                                   </DropdownMenu>
                                 </div>
                               </div>
-                              {projectUrl ? (
-                                <button
-                                  type="button"
-                                  className="text-xs text-muted-foreground truncate mt-0.5 min-w-0 hover:underline text-left"
-                                  title={rawRoleOrTitle}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(projectUrl);
-                                  }}
-                                >
-                                  {roleOrTitle}
-                                </button>
-                              ) : (
-                                <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>{roleOrTitle}</p>
-                              )}
+                              <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>{roleOrTitle}</p>
                               {lastSnippet && <p className={cn("text-xs truncate mt-0.5 min-w-0", hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90")} title={lastSnippet}>{lastSnippet.length > 40 ? `${lastSnippet.slice(0, 40)}…` : lastSnippet}</p>}
                             </div>
                           </div>
@@ -1959,7 +1941,7 @@ export default function Messages() {
                           {messages.length === 0 ? <EmptyConversation variant="no-messages" partnerName={partnerName} /> : messagesByDate.map(([dateKey, dayMessages]) => (
                             <div key={dateKey}>
                               <DateSeparator date={dateKey} />
-                              <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} attachments={msg.attachments} messageId={msg.id} onEdit={handleEditMessage} onDelete={handleDeleteMessage} onCopy={handleCopyMessage} />)}</div>
+                              <div className="space-y-3">{dayMessages.map((msg) => <MessageBubble key={msg.id} content={msg.content} timestamp={msg.created_at} isOwn={msg.sender_id === currentUser?.id} isRead={!!msg.read_at} attachments={msg.attachments} messageId={msg.id} onReply={handleReplyToMessage} onEdit={handleEditMessage} onDelete={handleDeleteMessage} onCopy={handleCopyMessage} />)}</div>
                             </div>
                           ))}
                           {partnerTypingUntil != null && (
@@ -1975,6 +1957,13 @@ export default function Messages() {
                       </ScrollArea>
                     </div>
                     <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
+                      {replyingTo && (
+                        <div className="mb-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-sm">
+                          <span className="text-muted-foreground shrink-0">Replying to:</span>
+                          <span className="min-w-0 truncate flex-1 text-foreground">{replyingTo.content.split("\n")[0].slice(0, 60)}{replyingTo.content.length > 60 ? "…" : ""}</span>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setReplyingTo(null)} title="Cancel reply"><X className="h-4 w-4" /></Button>
+                        </div>
+                      )}
                       {attachmentUploadProgress != null && (
                         <div className="mb-2 space-y-1">
                           <div className="flex items-center justify-between text-xs text-muted-foreground">

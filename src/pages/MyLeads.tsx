@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, Calendar, DollarSign, Mail, AlertCircle, Lock, Zap } from "lucide-react";
+import { Loader2, MapPin, Calendar, DollarSign, Mail, AlertCircle, Lock, Zap, UserPlus, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import SEOHead from "@/components/SEOHead";
@@ -15,6 +16,7 @@ import { formatDistanceToNow } from "date-fns";
 
 export default function MyLeads() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
@@ -59,11 +61,11 @@ export default function MyLeads() {
     if (!user) return;
 
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from("digger_profiles")
         .select("id, business_name, profile_name, monthly_lead_count")
         .eq("user_id", user.id)
-        .eq("registration_status", "complete")
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -71,10 +73,15 @@ export default function MyLeads() {
       if (data && data.length > 0) {
         setProfiles(data);
         setSelectedProfile(data[0].id);
+      } else {
+        setProfiles([]);
+        setSelectedProfile(null);
       }
     } catch (error: any) {
       console.error("Error loading profiles:", error);
       toast.error("Failed to load profiles");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -108,7 +115,7 @@ export default function MyLeads() {
             business_name,
             profile_name
           ),
-          lead_exclusivity_queue!inner (
+          lead_exclusivity_queue (
             id,
             status,
             exclusivity_starts_at,
@@ -161,6 +168,43 @@ export default function MyLeads() {
             </p>
           </div>
 
+          {/* No digger profile yet — CTA to create one */}
+          {profiles.length === 0 && !loading && (
+            <Card className="p-10 text-center max-w-lg mx-auto">
+              <div className="flex justify-center mb-4">
+                <div className="rounded-full bg-primary/10 p-4">
+                  <UserPlus className="h-10 w-10 text-primary" />
+                </div>
+              </div>
+              <h2 className="text-xl font-semibold mb-2">Create your first Digger profile</h2>
+              <p className="text-muted-foreground mb-6">
+                You need a Digger profile to receive and manage leads. Create one to start bidding on gigs and buying leads.
+              </p>
+              <Button
+                size="lg"
+                onClick={() => navigate("/create-digger-profile")}
+                className="gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                Create Digger profile
+              </Button>
+              <p className="text-sm text-muted-foreground mt-4">
+                Already have a profile? Complete registration in your dashboard.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2"
+                onClick={() => navigate("/role-dashboard")}
+              >
+                Go to Dashboard
+              </Button>
+            </Card>
+          )}
+
+          {/* Content when user has at least one profile */}
+          {profiles.length > 0 && (
+            <>
           {/* Profile Selector */}
           {profiles.length > 1 && (
             <Card className="p-4 mb-6">
@@ -182,7 +226,7 @@ export default function MyLeads() {
           )}
 
           {/* Lead Credit Balance */}
-          {selectedProfile && profiles.length > 0 && (
+          {selectedProfile && (
             <Card className="p-6 mb-6 bg-primary/5 border-primary/20">
               <div className="flex items-center justify-between">
                 <div>
@@ -208,14 +252,22 @@ export default function MyLeads() {
           ) : leads.length === 0 ? (
             <Card className="p-12 text-center">
               <p className="text-muted-foreground mb-4">
-                Find your next gig. Browse open gigs or buy leads when you're ready.
+                This page shows <strong>purchased or awarded leads</strong>, not bids. When you buy a lead or get awarded one, it will appear here.
               </p>
               <p className="text-sm text-muted-foreground mb-6">
-                Leads will automatically appear here when new gigs match your profile keywords.
+                To see your bids (e.g. proposals you’ve submitted), go to My Bids. To find gigs and buy leads, browse available gigs.
               </p>
-              <Button asChild>
-                <Link to="/browse-gigs">Browse Available Gigs</Link>
-              </Button>
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button asChild variant="default" className="gap-2">
+                  <Link to="/my-bids">
+                    <FileText className="h-4 w-4" />
+                    View My Bids
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/browse-gigs">Browse Available Gigs</Link>
+                </Button>
+              </div>
             </Card>
           ) : (
             <div className="grid gap-6">
@@ -421,6 +473,8 @@ export default function MyLeads() {
                 );
               })}
             </div>
+          )}
+            </>
           )}
         </main>
       </div>
