@@ -80,11 +80,12 @@ export function ChatHeader({
           {partnerProfileUrl ? (
             <button
               type="button"
-              className="font-semibold text-foreground truncate text-sm sm:text-base block hover:underline text-left pointer-events-auto"
+              className="font-semibold text-foreground truncate text-sm sm:text-base block text-left w-fit hover:underline focus:underline focus-visible:outline-none"
               onClick={(e) => {
                 e.stopPropagation();
                 onPartnerClick?.();
               }}
+              title="View profile"
             >
               {partnerName}
             </button>
@@ -100,11 +101,12 @@ export function ChatHeader({
             {projectUrl && projectTitle ? (
               <button
                 type="button"
-                className="truncate hover:underline text-left pointer-events-auto"
+                className="truncate hover:underline text-left w-fit max-w-full focus:underline focus-visible:outline-none"
                 onClick={(e) => {
                   e.stopPropagation();
                   onProjectClick?.();
                 }}
+                title="View project"
               >
                 {projectTitle}
               </button>

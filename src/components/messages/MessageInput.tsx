@@ -16,6 +16,8 @@ interface MessageInputProps {
   placeholder?: string;
   maxLength?: number;
   className?: string;
+  /** Optional ref for the textarea so parent can focus it (e.g. after sending). */
+  inputRef?: React.Ref<HTMLTextAreaElement | null>;
 }
 
 export function MessageInput({
@@ -27,12 +29,23 @@ export function MessageInput({
   placeholder = "Type a message...",
   maxLength = 5000,
   className,
+  inputRef: inputRefProp,
 }: MessageInputProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRefMerged = useCallback(
+    (node: HTMLTextAreaElement | null) => {
+      (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = node;
+      if (inputRefProp) {
+        if (typeof inputRefProp === "function") inputRefProp(node);
+        else (inputRefProp as React.MutableRefObject<HTMLTextAreaElement | null>).current = node;
+      }
+    },
+    [inputRefProp]
+  );
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const list = Array.isArray(files) ? files : Array.from(files);
@@ -204,7 +217,7 @@ export function MessageInput({
 
         {/* Textarea */}
         <Textarea
-          ref={textareaRef}
+          ref={textareaRefMerged}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}

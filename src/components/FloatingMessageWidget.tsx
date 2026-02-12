@@ -80,11 +80,15 @@ export function FloatingMessageWidget() {
   const { conversations, loading: convLoading } = useRecentConversations(user ?? null);
   const unreadCount = useUnreadMessagesCount();
 
+  const getWidgetStorageKey = (suffix: string) => (user?.id ? `messages_widget_${suffix}_${user.id}` : null);
+
   const [isOpen, setIsOpen] = useState(false);
   const [soundMuted, setSoundMuted] = useState(() => isNotificationMuted());
   const [listSearch, setListSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"chats" | "requests">("chats");
   const [openChats, setOpenChats] = useState<RecentConversation[]>([]);
+  const restoredOpenRef = useRef(false);
+  const storedOpenChatIdsRef = useRef<string[] | null>(null);
   const [collapsedChats, setCollapsedChats] = useState<Record<string, boolean>>({});
   const [archivedChats, setArchivedChats] = useState<Record<string, boolean>>({});
   const [mutedChats, setMutedChats] = useState<Record<string, boolean>>({});
@@ -106,7 +110,7 @@ export function FloatingMessageWidget() {
 
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
-  const inputRefsMap = useRef<Record<string, HTMLInputElement | null>>({});
+  const inputRefsMap = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const scrollAreaRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
   const pendingAutoScrollRef = useRef<Record<string, boolean>>({});
   const conversationsRef = useRef<RecentConversation[]>([]);
@@ -116,6 +120,26 @@ export function FloatingMessageWidget() {
 
   const hideOnMessagesPage = pathname === MESSAGES_PAGE;
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
+
+  // Restore widget open state and pending conversation ids from sessionStorage (survives refresh)
+  useEffect(() => {
+    if (!user?.id || hideOnMessagesPage) return;
+    const openKey = getWidgetStorageKey("open");
+    const convKey = getWidgetStorageKey("conversations");
+    if (openKey) {
+      try {
+        const raw = sessionStorage.getItem(openKey);
+        if (raw === "true") setIsOpen(true);
+      } catch (_) {}
+    }
+    if (convKey) {
+      try {
+        const raw = sessionStorage.getItem(convKey);
+        const ids = raw ? (JSON.parse(raw) as string[]) : [];
+        if (Array.isArray(ids) && ids.length > 0) storedOpenChatIdsRef.current = ids;
+      } catch (_) {}
+    }
+  }, [user?.id, hideOnMessagesPage]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -261,6 +285,35 @@ export function FloatingMessageWidget() {
   conversationsRef.current = conversations;
   openChatRef.current = openChat;
 
+  // Restore open chats from sessionStorage once conversations have loaded
+  useEffect(() => {
+    if (hideOnMessagesPage || restoredOpenRef.current || conversations.length === 0) return;
+    const ids = storedOpenChatIdsRef.current;
+    if (!ids?.length) return;
+    const toOpen = ids
+      .map((id) => conversations.find((c) => c.id === id))
+      .filter((c): c is RecentConversation => c != null);
+    if (toOpen.length === 0) {
+      storedOpenChatIdsRef.current = null;
+      return;
+    }
+    restoredOpenRef.current = true;
+    storedOpenChatIdsRef.current = null;
+    toOpen.forEach((conv) => openChatRef.current(conv, false));
+    setIsOpen(true);
+  }, [conversations, hideOnMessagesPage]);
+
+  // Persist widget open state and open conversation ids so refresh keeps them
+  useEffect(() => {
+    const openKey = getWidgetStorageKey("open");
+    const convKey = getWidgetStorageKey("conversations");
+    if (!openKey || !convKey || hideOnMessagesPage) return;
+    try {
+      sessionStorage.setItem(openKey, String(isOpen));
+      sessionStorage.setItem(convKey, JSON.stringify(openChats.map((c) => c.id)));
+    } catch (_) {}
+  }, [isOpen, openChats, user?.id, hideOnMessagesPage]);
+
   const closeChat = useCallback((convId: string) => {
     setOpenChats((prev) => prev.filter((c) => c.id !== convId));
     setCollapsedChats((prev) => {
@@ -368,6 +421,20 @@ export function FloatingMessageWidget() {
     });
   }, [openChats, messagesMap, collapsedChats, scrollToEnd]);
 
+  // Keep bubble chat history scrolled to latest when messages load or update
+  useEffect(() => {
+    if (openChats.length === 0) return;
+    const scrollToLatest = () => {
+      openChats.forEach((c) => {
+        if (collapsedChats[c.id]) return;
+        scrollToEnd(c.id);
+      });
+    };
+    requestAnimationFrame(scrollToLatest);
+    const t = setTimeout(scrollToLatest, 150);
+    return () => clearTimeout(t);
+  }, [openChats, messagesMap, collapsedChats, scrollToEnd]);
+
   const handleReplyToMessage = useCallback((convId: string, messageId: string, content: string) => {
     setReplyingToMap((prev) => ({ ...prev, [convId]: { id: messageId, content: content.slice(0, 200) } }));
   }, []);
@@ -433,9 +500,9 @@ export function FloatingMessageWidget() {
         setInputMap((prev) => ({ ...prev, [conv.id]: trimmed }));
       } finally {
         setSendingMap((prev) => ({ ...prev, [conv.id]: false }));
-        requestAnimationFrame(() => {
-          inputRefsMap.current[conv.id]?.focus();
-        });
+        const focusInput = () => inputRefsMap.current[conv.id]?.focus();
+        requestAnimationFrame(focusInput);
+        setTimeout(focusInput, 100);
       }
     },
     [user?.id, inputMap, replyingToMap]
@@ -519,6 +586,9 @@ export function FloatingMessageWidget() {
         setSendingMap((prev) => ({ ...prev, [conv.id]: false }));
         setAttachmentUploadProgress(null);
         setAttachmentUploadConvId(null);
+        const focusInput = () => inputRefsMap.current[conv.id]?.focus();
+        requestAnimationFrame(focusInput);
+        setTimeout(focusInput, 100);
       }
     },
     [user?.id, loadMessages]
@@ -680,7 +750,7 @@ export function FloatingMessageWidget() {
                 {conv.partnerProfileUrl ? (
                   <button
                     type="button"
-                    className="font-semibold text-sm truncate hover:underline text-left block w-full"
+                    className="font-semibold text-sm truncate hover:underline text-left w-fit max-w-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(conv.partnerProfileUrl as string);
@@ -696,11 +766,12 @@ export function FloatingMessageWidget() {
                   {conv.gigId ? (
                     <button
                       type="button"
-                      className="text-left truncate block w-full hover:underline"
+                      className="text-left truncate w-fit max-w-full hover:underline focus:underline focus-visible:outline-none"
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/gig/${conv.gigId}`);
                       }}
+                      title="View project"
                     >
                       {(conv.partnerJobTitle?.trim() || "View project").length > 38
                         ? `${(conv.partnerJobTitle?.trim() || "View project").slice(0, 38)}…`
@@ -729,10 +800,9 @@ export function FloatingMessageWidget() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className={`h-8 w-8 ${openMenuChatId === conv.id ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : ""}`}
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
-                    onPointerEnter={() => setOpenMenuChatId(conv.id)}
                     title="Chat options"
                   >
                     <MoreHorizontal className="h-4 w-4" />
@@ -743,7 +813,6 @@ export function FloatingMessageWidget() {
                   className="w-52 p-2"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
-                  onPointerLeave={() => setOpenMenuChatId(null)}
                 >
                   <div className="flex items-center justify-between gap-3 px-2 py-1.5">
                     <span className="text-sm">Archive chat</span>
@@ -867,6 +936,9 @@ export function FloatingMessageWidget() {
                 placeholder="Type a message..."
                 maxLength={5000}
                 className="min-w-0"
+                inputRef={(el) => {
+                  inputRefsMap.current[conv.id] = el ?? null;
+                }}
               />
             </div>
           </div>
@@ -889,7 +961,7 @@ export function FloatingMessageWidget() {
               tabIndex={0}
               onClick={() => setIsOpen(false)}
               onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
-              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-border/50 bg-background/95 cursor-pointer rounded-t-2xl"
+              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-primary/20 bg-primary/10 cursor-pointer rounded-t-2xl"
               aria-label="Collapse messages"
             >
               <button
@@ -906,13 +978,13 @@ export function FloatingMessageWidget() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 relative"
+                  className="h-7 w-7 relative text-foreground hover:bg-primary/20"
                   onClick={toggleMute}
                   title={soundMuted ? "Unmute notifications" : "Mute notifications"}
                 >
                   {soundMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                 </Button>
-                <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-muted-foreground" aria-hidden />
+                <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-primary" aria-hidden />
               </div>
             </div>
             <div className="shrink-0 px-3 py-2 border-b border-border/40">

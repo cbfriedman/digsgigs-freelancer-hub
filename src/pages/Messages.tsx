@@ -158,6 +158,7 @@ export default function Messages() {
   const loadConversationsRef = useRef<() => void>(() => {});
   const setSelectedConversationRef = useRef<((id: string | null) => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const messagesChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingSendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -338,6 +339,7 @@ export default function Messages() {
 
   const [showHidden, setShowHidden] = useState(false);
   const [listFilter, setListFilter] = useState<"all" | "favorites">("all");
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
 
   const unhideConversation = (conversationId: string) => {
     const key = getStorageKey("hidden");
@@ -413,7 +415,8 @@ export default function Messages() {
       const bPin = pinnedIds.includes(b.id);
       if (aPin && !bPin) return -1;
       if (!aPin && bPin) return 1;
-      return 0;
+      // Keep latest first by updated_at (most recent activity at top)
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
 
   useEffect(() => {
@@ -533,6 +536,19 @@ export default function Messages() {
     if (q && q !== selectedConversation) setSelectedConversation(q);
   }, [searchParams]);
 
+  // Persist selected conversation to URL so refresh keeps the same chat open
+  useEffect(() => {
+    setSearchParams(
+      (p) => {
+        const next = new URLSearchParams(p);
+        if (selectedConversation) next.set("conversation", selectedConversation);
+        else next.delete("conversation");
+        return next;
+      },
+      { replace: true }
+    );
+  }, [selectedConversation]);
+
   // Select the most recently chatted conversation by default when opening the page (no URL param)
   useEffect(() => {
     if (
@@ -564,6 +580,17 @@ export default function Messages() {
       cleanup?.();
     };
   }, [selectedConversation]);
+
+  // Keep chat history scrolled to latest (bottom) when messages load or update
+  useEffect(() => {
+    if (!selectedConversation) return;
+    const scrollToLatest = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+    };
+    requestAnimationFrame(scrollToLatest);
+    const t = setTimeout(scrollToLatest, 100);
+    return () => clearTimeout(t);
+  }, [selectedConversation, messages]);
 
   // Subscribe to new messages in ANY conversation so we can alert when user is viewing another chat
   useEffect(() => {
@@ -597,11 +624,7 @@ export default function Messages() {
             };
             const partnerName = getPartnerName(conv);
             if (msg.conversation_id === selectedId) {
-              // Partner is viewing this conversation: show new message bubble immediately (real-time sync)
-              setMessagesRef.current((prev) => {
-                if (prev.some((m) => m.id === msg.id)) return prev;
-                return [...prev, msg];
-              });
+              // Selected conversation: per-conversation subscription already appends the message; only refresh list
               loadConversationsRef.current();
             } else {
               toast({
@@ -856,7 +879,10 @@ export default function Messages() {
         },
         (payload) => {
           const newMsg = payload.new as Message;
-          setMessages((prev) => [...prev, newMsg]);
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
         }
       )
       .on(
@@ -949,6 +975,12 @@ export default function Messages() {
           })
           .catch(() => {});
       }
+      const focusInput = () => {
+        messageInputRef.current?.focus();
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      };
+      requestAnimationFrame(focusInput);
+      setTimeout(focusInput, 100);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
@@ -1098,6 +1130,10 @@ export default function Messages() {
           })
           .catch(() => {});
       }
+      requestAnimationFrame(() => {
+        messageInputRef.current?.focus();
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      });
     } catch (error: any) {
       toast({
         title: "Error sending attachments",
@@ -1222,10 +1258,13 @@ export default function Messages() {
     setShowInfoPanel(false);
   };
 
-  // Group messages by date
+  // Group messages by date (oldest first so latest stay at bottom)
   const messagesByDate = (() => {
+    const sorted = [...messages].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
     const map = new Map<string, Message[]>();
-    messages.forEach((msg) => {
+    sorted.forEach((msg) => {
       const key = format(new Date(msg.created_at), "yyyy-MM-dd");
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(msg);
@@ -1274,8 +1313,8 @@ export default function Messages() {
         showFooter={false}
         maxWidth="full"
         padded={false}
-        wrapperClassName="h-[calc(100vh-var(--header-height))] flex flex-col"
-        className="flex flex-1 min-h-0 pt-[var(--header-height)]"
+        wrapperClassName="h-[calc(100vh-var(--header-height))] max-h-[calc(100vh-var(--header-height))] overflow-hidden flex flex-col min-h-0"
+        className="flex flex-1 min-h-0 overflow-hidden"
       >
         <div className="flex flex-1 items-center justify-center">
           <LoadingSpinner label="Loading conversations..." />
@@ -1289,8 +1328,8 @@ export default function Messages() {
       showFooter={false}
       maxWidth="full"
       padded={false}
-      wrapperClassName="h-[calc(100vh-var(--header-height))] overflow-hidden flex flex-col"
-      className="flex flex-col flex-1 min-h-0 pt-[var(--header-height)]"
+      wrapperClassName="h-[calc(100vh-var(--header-height))] max-h-[calc(100vh-var(--header-height))] overflow-hidden flex flex-col min-h-0"
+      className="flex flex-col flex-1 min-h-0 overflow-hidden"
     >
       <div className="flex flex-1 min-h-0 min-w-0 border-t border-border/30 overflow-hidden">
         {isMobile ? (
@@ -1417,12 +1456,12 @@ export default function Messages() {
                 >
                   Favorites
                 </Button>
-                <DropdownMenu>
+                <DropdownMenu open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="rounded-full h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                      className={`rounded-full h-8 w-8 p-0 ${moreFiltersOpen ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
                       title="More filters"
                     >
                       <MoreHorizontal className="h-4 w-4" />
@@ -1694,9 +1733,9 @@ export default function Messages() {
                   onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
                 />
 
-                {/* Messages only - this is the only part that scrolls; input stays fixed below */}
-                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                  <ScrollArea className="h-full min-h-0">
+                {/* Messages only - this is the only part that scrolls; input stays fixed in viewport below */}
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col min-w-0">
+                  <ScrollArea className="flex-1 min-h-0">
                     <div className="p-4 sm:p-6 space-y-1">
                       {messages.length === 0 ? (
                         <EmptyConversation variant="no-messages" partnerName={partnerName} />
@@ -1737,8 +1776,8 @@ export default function Messages() {
                   </ScrollArea>
                 </div>
 
-                {/* Message input - fixed at bottom, never inside scroll, never scrolled */}
-                <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
+                {/* Message input - fixed at bottom within viewport so users always see it */}
+                <div className="flex-none shrink-0 w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
                   {replyingTo && (
                     <div className="mb-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-sm">
                       <span className="text-muted-foreground shrink-0">Replying to:</span>
@@ -1762,6 +1801,7 @@ export default function Messages() {
                     onFileSelect={sendMessageWithAttachments}
                     placeholder="Type a message..."
                     maxLength={5000}
+                    inputRef={messageInputRef}
                   />
                 </div>
               </>
@@ -1822,9 +1862,9 @@ export default function Messages() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <Button variant={listFilter === "all" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "all" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("all")}>All</Button>
                     <Button variant={listFilter === "favorites" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "favorites" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("favorites")}>Favorites</Button>
-                    <DropdownMenu>
+                    <DropdownMenu open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="rounded-full h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="More filters"><MoreHorizontal className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="sm" className={`rounded-full h-8 w-8 p-0 ${moreFiltersOpen ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} title="More filters"><MoreHorizontal className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => setShowHidden((prev) => !prev)}>{showHidden ? "Hide hidden conversations" : "Show hidden conversations"}</DropdownMenuItem>
@@ -1935,8 +1975,8 @@ export default function Messages() {
                       onBack={handleBackToList}
                       onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
                     />
-                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                      <ScrollArea className="h-full min-h-0">
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col min-w-0">
+                      <ScrollArea className="flex-1 min-h-0">
                         <div className="p-4 sm:p-6 space-y-1">
                           {messages.length === 0 ? <EmptyConversation variant="no-messages" partnerName={partnerName} /> : messagesByDate.map(([dateKey, dayMessages]) => (
                             <div key={dateKey}>
@@ -1956,7 +1996,7 @@ export default function Messages() {
                         </div>
                       </ScrollArea>
                     </div>
-                    <div className="flex-none w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
+                    <div className="flex-none shrink-0 w-full min-h-[72px] border-t border-border/30 bg-card/50 p-3 sm:p-4">
                       {replyingTo && (
                         <div className="mb-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-sm">
                           <span className="text-muted-foreground shrink-0">Replying to:</span>
@@ -1973,7 +2013,7 @@ export default function Messages() {
                           <Progress value={attachmentUploadProgress} className="h-1.5" />
                         </div>
                       )}
-                      <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} onFileSelect={sendMessageWithAttachments} placeholder="Type a message..." maxLength={5000} />
+                      <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} onFileSelect={sendMessageWithAttachments} placeholder="Type a message..." maxLength={5000} inputRef={messageInputRef} />
                     </div>
                   </>
                 ) : (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { Check, CheckCheck, Paperclip, Download, MoreVertical, Pencil, Trash2, Copy, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -66,6 +66,8 @@ export function MessageBubble({
   const paths = attachments.map((a) => a.path);
   const signedUrls = useSignedUrls(paths);
   const showActions = messageId && (onReply || (isOwn && (onEdit || onDelete || onCopy)));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const openedByClickRef = useRef(false);
 
   return (
     <div className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}>
@@ -90,7 +92,15 @@ export function MessageBubble({
           {/* Three-dot menu - Reply for any message; Edit/Copy/Delete for own */}
           {showActions && (
             <div className="absolute top-1.5 right-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
-              <DropdownMenu modal={false}>
+              <DropdownMenu
+                modal={false}
+                open={menuOpen}
+                onOpenChange={(next) => {
+                  if (next && !openedByClickRef.current) return;
+                  setMenuOpen(next);
+                  openedByClickRef.current = false;
+                }}
+              >
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -101,7 +111,11 @@ export function MessageBubble({
                         ? "text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/20"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openedByClickRef.current = true;
+                      setMenuOpen(true);
+                    }}
                     title="Message options"
                   >
                     <MoreVertical className="h-4 w-4" />
