@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Info, Percent, CreditCard, AlertCircle, DollarSign, Eye, Plus, Trash2, Milestone } from "lucide-react";
+import { Loader2, Info, Percent, CreditCard, AlertCircle, DollarSign, Eye, Plus, Trash2, Milestone, Sparkles, Shield, Upload, X, CheckCircle2 } from "lucide-react";
 import { z } from "zod";
 import { AnonymizedDiggerCard } from "./AnonymizedDiggerCard";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 // Milestone interface
 interface MilestoneItem {
@@ -19,6 +38,22 @@ interface MilestoneItem {
   description: string;
   amount: string;
 }
+
+// Attachment (client-side only for now)
+interface AttachmentFile {
+  id: string;
+  file: File;
+  name: string;
+}
+
+const COVER_LETTER_MIN = 50;
+const COVER_LETTER_MAX = 5000;
+const TIMELINE_UNITS = [
+  { value: "days", label: "Days" },
+  { value: "weeks", label: "Weeks" },
+  { value: "months", label: "Months" },
+];
+const CURRENCIES = [{ value: "USD", label: "USD ($)" }];
 
 // SECURITY: Input validation schema
 const bidSchema = z.object({
@@ -81,6 +116,8 @@ interface DiggerProfile {
   city?: string;
   state?: string;
   offers_free_estimates?: boolean;
+  profile_image_url?: string | null;
+  business_name?: string;
 }
 
 interface BidSubmissionTemplateProps {
@@ -113,6 +150,14 @@ export const BidSubmissionTemplate = ({
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
   const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>([]);
   const [paymentTerms, setPaymentTerms] = useState("");
+  // UX: confirmation modal, timeline as number+unit, currency, attachments
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [timelineNumber, setTimelineNumber] = useState("");
+  const [timelineUnit, setTimelineUnit] = useState("weeks");
+  const [currency, setCurrency] = useState("USD");
+  const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [dragOver, setDragOver] = useState(false);
 
   // Fetch digger profile for preview
   useEffect(() => {
@@ -136,7 +181,9 @@ export const BidSubmissionTemplate = ({
             certifications,
             city,
             state,
-            offers_free_estimates
+            offers_free_estimates,
+            profile_image_url,
+            business_name
           `)
           .eq('id', diggerId)
           .single();
@@ -167,29 +214,21 @@ export const BidSubmissionTemplate = ({
     return Math.max(REFERRAL_FEE_MIN, fee); // 8% with $50 minimum, no cap
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!amountMin || !amountMax || !timeline || !proposal) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const timelineValue = timeline.trim() || (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "");
+    if (!amountMin || !amountMax || !timelineValue || !proposal) {
+      toast({ title: "Missing fields", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
-
     setLoading(true);
-
     try {
       const parsedMin = parseFloat(amountMin);
       const parsedMax = parseFloat(amountMax);
-      
-      // SECURITY: Validate inputs before submission
       const validated = bidSchema.parse({
         amountMin: parsedMin,
         amountMax: parsedMax,
-        timeline: timeline,
+        timeline: timelineValue,
         proposal: proposal,
       });
 
@@ -231,6 +270,7 @@ export const BidSubmissionTemplate = ({
         .single();
 
       if (error) throw error;
+      setConfirmOpen(false);
 
       // Send email notification
       try {
@@ -276,6 +316,7 @@ export const BidSubmissionTemplate = ({
         }
       }
 
+      setConfirmOpen(false);
       onSuccess();
     } catch (error: any) {
       console.error('Error submitting proposal:', error);
@@ -303,13 +344,42 @@ export const BidSubmissionTemplate = ({
   const estimatedFeeMin = calculateReferralFee(parsedMin);
   const estimatedFeeMax = calculateReferralFee(parsedMax);
 
+  // Build timeline string from number + unit for submission
+  const timelineDisplay = timeline.trim() || (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "");
+  const effectiveTimeline = timeline.trim() || (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : timeline);
+
+  // Real-time validation
+  const validation = useMemo(() => {
+    const err: Record<string, string> = {};
+    if (!amountMin || parsedMin <= 0) err.amountMin = "Enter a valid minimum amount";
+    if (!amountMax || parsedMax <= 0) err.amountMax = "Enter a valid maximum amount";
+    if (parsedMax < parsedMin) err.amountMax = "Max must be ≥ min";
+    if (proposal.length < COVER_LETTER_MIN) err.proposal = `Cover letter must be at least ${COVER_LETTER_MIN} characters`;
+    if (proposal.length > COVER_LETTER_MAX) err.proposal = `Maximum ${COVER_LETTER_MAX} characters`;
+    const hasTimeline = timeline.trim() || (timelineNumber && timelineUnit);
+    if (!hasTimeline) err.timeline = "Select delivery time";
+    return err;
+  }, [amountMin, amountMax, parsedMin, parsedMax, proposal.length, timeline, timelineNumber, timelineUnit]);
+
+  const isFormValid = Object.keys(validation).length === 0 && proposal.length >= COVER_LETTER_MIN && (timeline.trim() || (timelineNumber && timelineUnit));
+
+  const handleSubmitClick = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFieldErrors(validation);
+    if (!isFormValid) {
+      toast({ title: "Please complete required fields", variant: "destructive" });
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
   if (loadingProfile) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            <span className="ml-2 text-muted-foreground">Loading...</span>
+      <Card className="rounded-2xl border shadow-sm">
+        <CardContent className="py-12">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <span className="text-sm text-muted-foreground">Loading your profile...</span>
           </div>
         </CardContent>
       </Card>
@@ -317,16 +387,42 @@ export const BidSubmissionTemplate = ({
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <CardTitle>Submit Your Proposal</CardTitle>
-              <CardDescription>
-                Provide a cost range and proposal for this project
-              </CardDescription>
-            </div>
+    <>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="rounded-2xl shadow-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit your proposal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your proposal will be sent to the client. You can’t edit it after submission. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleSubmit()} disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit proposal"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="grid lg:grid-cols-[1fr_320px] gap-8">
+        {/* Main column: form */}
+        <Card className="rounded-2xl border shadow-sm overflow-hidden">
+          <CardHeader className="border-b bg-muted/30">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="text-xl">Submit your proposal</CardTitle>
+                <CardDescription>
+                  Complete the sections below. Required fields are marked.
+                </CardDescription>
+              </div>
             {pricingModel === "success_based" ? (
               <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                 <Percent className="w-3 h-3 mr-1" />
@@ -358,19 +454,74 @@ export const BidSubmissionTemplate = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Cost Range */}
-            <div className="space-y-3">
-              <Label className="text-base font-semibold flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-primary" />
-                Cost Proposal Range
-              </Label>
+          <form onSubmit={handleSubmitClick} className="space-y-8 p-6">
+            {/* A. Cover Letter */}
+            <section className="space-y-3" aria-labelledby="cover-letter-heading">
+              <h2 id="cover-letter-heading" className="text-lg font-semibold flex items-center gap-2">
+                Cover letter
+                <span className="text-destructive">*</span>
+              </h2>
               <p className="text-sm text-muted-foreground">
-                Provide a realistic price range for this project. Final price can be refined after discussion with the client.
+                Introduce yourself and explain your approach. Why are you a good fit for this project?
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="relative">
+                <Textarea
+                  id="proposal"
+                  aria-invalid={!!fieldErrors.proposal}
+                  aria-describedby={fieldErrors.proposal ? "proposal-error" : "proposal-counter"}
+                  placeholder="Describe your approach, relevant experience, and why you're the best fit. Be specific and professional..."
+                  value={proposal}
+                  onChange={(e) => { setProposal(e.target.value); setFieldErrors((prev) => ({ ...prev, proposal: "" })); }}
+                  rows={10}
+                  maxLength={COVER_LETTER_MAX}
+                  className={cn(
+                    "rounded-xl border-2 min-h-[200px] transition-colors focus-visible:ring-2 focus-visible:ring-primary",
+                    fieldErrors.proposal && "border-destructive"
+                  )}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <span id="proposal-counter" className="text-xs text-muted-foreground">
+                    {proposal.length}/{COVER_LETTER_MAX} characters
+                    {proposal.length >= COVER_LETTER_MIN && <CheckCircle2 className="inline-block w-3.5 h-3.5 text-green-600 ml-1" />}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary gap-1"
+                    onClick={() => toast({ title: "Improve writing", description: "AI assist coming soon." })}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Improve writing
+                  </Button>
+                </div>
+                {fieldErrors.proposal && (
+                  <p id="proposal-error" className="text-sm text-destructive mt-1">{fieldErrors.proposal}</p>
+                )}
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* B. Bid Details */}
+            <section className="space-y-4" aria-labelledby="bid-details-heading">
+              <h2 id="bid-details-heading" className="text-lg font-semibold">Bid details</h2>
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="amountMin" className="text-sm">Minimum ($)</Label>
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger id="currency" className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amountMin">Minimum amount <span className="text-destructive">*</span></Label>
                   <Input
                     id="amountMin"
                     type="number"
@@ -378,12 +529,13 @@ export const BidSubmissionTemplate = ({
                     min="0"
                     placeholder="1,000"
                     value={amountMin}
-                    onChange={(e) => setAmountMin(e.target.value)}
-                    required
+                    onChange={(e) => { setAmountMin(e.target.value); setFieldErrors((prev) => ({ ...prev, amountMin: "", amountMax: "" })); }}
+                    className={cn("rounded-xl", fieldErrors.amountMin && "border-destructive")}
                   />
+                  {fieldErrors.amountMin && <p className="text-sm text-destructive">{fieldErrors.amountMin}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amountMax" className="text-sm">Maximum ($)</Label>
+                  <Label htmlFor="amountMax">Maximum amount <span className="text-destructive">*</span></Label>
                   <Input
                     id="amountMax"
                     type="number"
@@ -391,68 +543,64 @@ export const BidSubmissionTemplate = ({
                     min="0"
                     placeholder="2,500"
                     value={amountMax}
-                    onChange={(e) => setAmountMax(e.target.value)}
-                    required
+                    onChange={(e) => { setAmountMax(e.target.value); setFieldErrors((prev) => ({ ...prev, amountMax: "" })); }}
+                    className={cn("rounded-xl", fieldErrors.amountMax && "border-destructive")}
                   />
+                  {fieldErrors.amountMax && <p className="text-sm text-destructive">{fieldErrors.amountMax}</p>}
                 </div>
               </div>
-              {pricingModel === "success_based" && parsedMin > 0 && parsedMax > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Referral fee if selected: ${estimatedFeeMin.toFixed(2)} – ${estimatedFeeMax.toFixed(2)}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="timeline">Estimated Timeline</Label>
-              <Input
-                id="timeline"
-                placeholder="e.g., 2-3 weeks, 1 month"
-                value={timeline}
-                onChange={(e) => setTimeline(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="proposal">Your Proposal (minimum 50 characters)</Label>
-              <Textarea
-                id="proposal"
-                placeholder="Describe your approach to this project, relevant experience, and why you're the best fit. Include any assumptions that might affect the final price..."
-                value={proposal}
-                onChange={(e) => setProposal(e.target.value)}
-                rows={8}
-                required
-                maxLength={5000}
-              />
-              <p className="text-xs text-muted-foreground">
-                {proposal.length}/5000 characters
-              </p>
-            </div>
-
-            {/* Milestones Section */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold flex items-center gap-2">
-                  <Milestone className="w-4 h-4 text-primary" />
-                  Payment Milestones (Optional)
-                </Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMilestones([...milestones, { id: crypto.randomUUID(), description: "", amount: "" }])}
-                  className="gap-1"
-                >
-                  <Plus className="w-3 h-3" />
-                  Add Milestone
-                </Button>
+              <div className="space-y-2">
+                <Label>Delivery time <span className="text-destructive">*</span></Label>
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="2"
+                    value={timelineNumber}
+                    onChange={(e) => { setTimelineNumber(e.target.value); setFieldErrors((prev) => ({ ...prev, timeline: "" })); }}
+                    className={cn("w-24 rounded-xl", fieldErrors.timeline && "border-destructive")}
+                  />
+                  <Select value={timelineUnit} onValueChange={setTimelineUnit}>
+                    <SelectTrigger className="w-32 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIMELINE_UNITS.map((u) => (
+                        <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground self-center">or</span>
+                  <Input
+                    placeholder="e.g. 2-3 weeks"
+                    value={timeline}
+                    onChange={(e) => setTimeline(e.target.value)}
+                    className="flex-1 min-w-[140px] rounded-xl"
+                  />
+                </div>
+                {fieldErrors.timeline && <p className="text-sm text-destructive">{fieldErrors.timeline}</p>}
               </div>
-              <p className="text-sm text-muted-foreground">
-                Break down your project into payment milestones. Clients appreciate knowing when payments are due.
-              </p>
+
+              {/* Optional: milestone breakdown */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                    <Milestone className="w-4 h-4" />
+                    Milestone breakdown (optional)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMilestones([...milestones, { id: crypto.randomUUID(), description: "", amount: "" }])}
+                    className="gap-1 rounded-lg"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add
+                  </Button>
+                </div>
               {milestones.map((milestone, index) => (
-                <div key={milestone.id} className="flex gap-3 items-start p-3 bg-muted/50 rounded-lg">
+                <div key={milestone.id} className="flex gap-3 items-start p-3 bg-muted/30 rounded-xl border border-transparent">
                   <div className="flex-1 space-y-2">
                     <Input
                       placeholder={`Milestone ${index + 1} description (e.g., "Design completion")`}
@@ -492,13 +640,69 @@ export const BidSubmissionTemplate = ({
                   Total milestones: ${milestones.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0).toLocaleString()}
                 </div>
               )}
-            </div>
+              </div>
+            </section>
 
-            {/* Accepted Payment Methods */}
-            <div className="space-y-3">
+            <Separator />
+
+            {/* C. Attachments */}
+            <section className="space-y-3" aria-labelledby="attachments-heading">
+              <h2 id="attachments-heading" className="text-lg font-semibold">Attachments (optional)</h2>
+              <div
+                className={cn(
+                  "rounded-2xl border-2 border-dashed p-8 text-center transition-colors",
+                  dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25 bg-muted/20 hover:bg-muted/30"
+                )}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const files = Array.from(e.dataTransfer.files);
+                  files.forEach((file) => {
+                    setAttachments((prev) => [...prev, { id: crypto.randomUUID(), file, name: file.name }]);
+                  });
+                }}
+              >
+                <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground mb-1">Drag and drop files here, or click to browse</p>
+                <p className="text-xs text-muted-foreground">PDF, images, docs. Max 10MB per file.</p>
+                <Input
+                  type="file"
+                  className="hidden"
+                  id="file-upload"
+                  multiple
+                  onChange={(e) => {
+                    const files = e.target.files ? Array.from(e.target.files) : [];
+                    files.forEach((file) => setAttachments((prev) => [...prev, { id: crypto.randomUUID(), file, name: file.name }]));
+                    e.target.value = "";
+                  }}
+                />
+                <Label htmlFor="file-upload" className="cursor-pointer text-primary text-sm font-medium hover:underline mt-2 inline-block">
+                  Choose files
+                </Label>
+              </div>
+              {attachments.length > 0 && (
+                <ul className="space-y-2">
+                  {attachments.map((a) => (
+                    <li key={a.id} className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
+                      <span className="truncate">{a.name}</span>
+                      <Button type="button" variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <Separator />
+
+            {/* Payment methods & terms (compact) */}
+            <section className="space-y-4">
               <Label className="text-base font-semibold flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-primary" />
-                Accepted Payment Methods
+                Accepted payment methods
               </Label>
               <p className="text-sm text-muted-foreground">
                 Select the payment methods you accept for this project.
@@ -527,7 +731,7 @@ export const BidSubmissionTemplate = ({
                   </label>
                 ))}
               </div>
-            </div>
+            </section>
 
             {/* Payment Terms */}
             <div className="space-y-2">
@@ -629,14 +833,19 @@ export const BidSubmissionTemplate = ({
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading} size="lg">
+            <Button
+              type="submit"
+              className="w-full rounded-xl h-12 font-semibold shadow-sm"
+              disabled={!isFormValid || loading}
+              size="lg"
+            >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting Proposal...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
+                  Submitting...
                 </>
               ) : (
-                'Submit Proposal'
+                "Submit proposal"
               )}
             </Button>
 
@@ -647,7 +856,80 @@ export const BidSubmissionTemplate = ({
             )}
           </form>
         </CardContent>
-      </Card>
-    </div>
+        </Card>
+
+        {/* Sidebar: freelancer details + summary + trust */}
+        <aside className="space-y-6 lg:sticky lg:top-4 lg:self-start">
+          {/* D. Freelancer profile preview */}
+          <Card className="rounded-2xl border shadow-sm overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">Your profile</CardTitle>
+              <CardDescription>This is what the client will see with your proposal.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {diggerProfile && (
+                <>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-14 w-14 rounded-xl border-2 border-muted">
+                      <AvatarImage src={diggerProfile.profile_image_url || undefined} alt="" />
+                      <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-semibold">
+                        {(diggerProfile.business_name || "D").slice(0, 1)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{diggerProfile.business_name || "Digger"}</p>
+                      <p className="text-sm text-muted-foreground">{diggerProfile.profession || "Professional"}</p>
+                      {typeof diggerProfile.average_rating === "number" && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <span className="font-medium text-foreground">{diggerProfile.average_rating.toFixed(1)}</span>
+                          <span>· {diggerProfile.total_ratings ?? 0} reviews</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {typeof diggerProfile.completion_rate === "number" && (
+                      <div className="rounded-lg bg-muted/50 px-3 py-2">
+                        <p className="text-xs text-muted-foreground">Completion</p>
+                        <p className="font-semibold">{diggerProfile.completion_rate}%</p>
+                      </div>
+                    )}
+                    {referenceCount > 0 && (
+                      <div className="rounded-lg bg-muted/50 px-3 py-2">
+                        <p className="text-xs text-muted-foreground">References</p>
+                        <p className="font-semibold">{referenceCount}</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Pricing breakdown & trust */}
+          <Card className="rounded-2xl border bg-muted/20">
+            <CardContent className="pt-6 space-y-4">
+              {parsedMin > 0 && parsedMax > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Your bid range</p>
+                  <p className="text-xl font-bold text-primary">
+                    ${parsedMin.toLocaleString()} – ${parsedMax.toLocaleString()}
+                  </p>
+                  {pricingModel === "success_based" && (
+                    <p className="text-xs text-muted-foreground">
+                      If awarded: 8% referral fee (min ${REFERRAL_FEE_MIN})
+                    </p>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+                <Shield className="w-4 h-4 shrink-0 text-primary/70" />
+                <span>Your proposal is secure and encrypted.</span>
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
+    </>
   );
 };
