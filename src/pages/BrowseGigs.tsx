@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info, Map, List, Filter, HandHeart } from "lucide-react";
+import { ArrowLeft, Search, DollarSign, Calendar, Tag, Users, ShoppingCart, Info, Map, List, Filter, HandHeart, MapPin } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useCart } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -21,6 +21,7 @@ import { SavedSearchesList } from "@/components/SavedSearchesList";
 import SEOHead from "@/components/SEOHead";
 import { generateBreadcrumbSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { formatSelectionDisplay, getFlagForCountryName, getCodeForCountryName } from "@/config/regionOptions";
 
 /** Names used when posting gigs (PostGig) – show these first in filters so they match project categories. */
 const PROJECT_CATEGORY_NAMES = [
@@ -66,7 +67,8 @@ function expandCategoryIds(selectedIds: string[], allCategories: Category[]): st
 
 interface Gig {
   id: string;
-  consumer_id: string;
+  consumer_id: string | null;
+  client_name: string | null;
   title: string;
   description: string;
   budget_min: number | null;
@@ -75,10 +77,17 @@ interface Gig {
   status: string;
   purchase_count: number;
   created_at: string;
+  location?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
+  preferred_regions?: string[] | null;
+  skills_required?: string[] | null;
+  poster_country?: string | null;
   categories: {
     name: string;
+  } | null;
+  profiles: {
+    full_name: string | null;
   } | null;
 }
 
@@ -123,7 +132,19 @@ const BrowseGigs = () => {
     sortBy: 'newest',
   });
   const [showEscrowGigs, setShowEscrowGigs] = useState(true);
+  const [expandedDescriptionIds, setExpandedDescriptionIds] = useState<Set<string>>(new Set());
   const { addToCart, removeFromCart, isInCart, cartCount } = useCart();
+
+  const toggleDescription = (gigId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setExpandedDescriptionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(gigId)) next.delete(gigId);
+      else next.add(gigId);
+      return next;
+    });
+  };
 
   useEffect(() => {
     loadDiggerData();
@@ -232,7 +253,9 @@ const BrowseGigs = () => {
       .from("gigs")
       .select(`
         *,
-        categories (name)
+        poster_country,
+        categories (name),
+        profiles!gigs_consumer_id_fkey (full_name)
       `)
       .eq("status", "open")
       .order("bumped_at", { ascending: false, nullsFirst: false })
@@ -394,7 +417,7 @@ const BrowseGigs = () => {
         
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Browse Gigs</h1>
-          <p className="text-muted-foreground">Find projects that match your skills</p>
+          <p className="text-muted-foreground text-lg">Find projects that match your skills. See budget, location &amp; skills at a glance — bid free or buy the lead to unlock contact.</p>
           {(diggerProfile as any)?.lead_limit_enabled && (
             <div className="mt-4">
               <Badge variant={limitReached ? "destructive" : "secondary"} className="text-sm">
@@ -539,7 +562,7 @@ const BrowseGigs = () => {
                             title: gig.title,
                             budget_min: gig.budget_min,
                             budget_max: gig.budget_max,
-                            location: "",
+                            location: gig.location || "",
                             description: gig.description,
                           });
                           toast.success("Added to cart");
@@ -576,34 +599,89 @@ const BrowseGigs = () => {
                       <h3 className="text-xl font-semibold mb-2 hover:text-primary transition-colors">
                         {gig.title}
                       </h3>
-                      <p className="text-muted-foreground mb-4 line-clamp-2">
-                        {gig.description}
-                      </p>
-                      <div className="flex flex-wrap gap-4 text-sm">
+                      <div className="mb-4" onClick={(e) => e.stopPropagation()}>
+                        <p className={`text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap ${expandedDescriptionIds.has(gig.id) ? "" : "line-clamp-3"}`}>
+                          {gig.description}
+                        </p>
+                        {gig.description.length > 120 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto py-1 px-0 mt-1 text-primary hover:text-primary font-medium text-xs"
+                            onClick={(e) => toggleDescription(gig.id, e)}
+                          >
+                            {expandedDescriptionIds.has(gig.id) ? "Show less" : "Read more..."}
+                          </Button>
+                        )}
+                      </div>
+                      {/* At-a-glance: category, budget, location, preferred regions, deadline, skills — easy to scan */}
+                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground rounded-lg bg-muted/40 px-3 py-2 border border-transparent">
                         {gig.categories && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Tag className="h-4 w-4" />
+                          <div className="flex items-center gap-1">
+                            <Tag className="h-4 w-4 shrink-0" />
                             <span>{gig.categories.name}</span>
                           </div>
                         )}
-                        {canSeeBudget(gig.id) ? (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <DollarSign className="h-4 w-4" />
-                            <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4 shrink-0" />
+                          <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4 shrink-0" />
+                          <span>{gig.location || "Remote"}</span>
+                        </div>
+                        {gig.preferred_regions && gig.preferred_regions.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4 shrink-0 opacity-70" />
+                            <span className="text-xs">Pref: {formatSelectionDisplay(gig.preferred_regions)}</span>
                           </div>
-                        ) : diggerProfile ? (
-                          <div className="flex items-center gap-1 text-muted-foreground italic">
-                            <DollarSign className="h-4 w-4" />
-                            <span className="text-xs">Submit bid to view</span>
-                          </div>
-                        ) : null}
+                        )}
                         {gig.deadline && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4 shrink-0" />
                             <span>Due {new Date(gig.deadline).toLocaleDateString()}</span>
                           </div>
                         )}
+                        {(gig.poster_country ?? (gig as Record<string, unknown>).poster_country) && (
+                          <div className="flex items-center gap-1.5" title={String(gig.poster_country ?? (gig as Record<string, unknown>).poster_country ?? "").trim()}>
+                            {(() => {
+                              const country = String(gig.poster_country ?? (gig as Record<string, unknown>).poster_country ?? "").trim();
+                              const code = country ? getCodeForCountryName(country) : "";
+                              const flagEmoji = country ? getFlagForCountryName(country) : "";
+                              return (
+                                <>
+                                  {code ? (
+                                    <img
+                                      src={`https://flagcdn.com/w20/${code.toLowerCase()}.png`}
+                                      alt=""
+                                      className="h-4 w-5 object-cover rounded-sm shrink-0"
+                                      width={20}
+                                      height={15}
+                                    />
+                                  ) : flagEmoji ? (
+                                    <span className="text-base leading-none" aria-hidden>{flagEmoji}</span>
+                                  ) : null}
+                                  <span className="uppercase font-medium">{code || country}</span>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
                       </div>
+                      {gig.skills_required && gig.skills_required.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {gig.skills_required.slice(0, 5).map((skill, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs font-normal">
+                              {skill}
+                            </Badge>
+                          ))}
+                          {gig.skills_required.length > 5 && (
+                            <Badge variant="outline" className="text-xs font-normal">
+                              +{gig.skills_required.length - 5}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="lg:text-right space-y-2">
                       {diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min ? (
@@ -643,33 +721,88 @@ const BrowseGigs = () => {
                       <div className="text-sm text-muted-foreground">
                         Posted {formatDistanceToNow(new Date(gig.created_at))} ago
                       </div>
-                      {/* Quick Bid Button for Diggers */}
-                      {diggerProfile && gig.status === 'open' && !userBids.has(gig.id) && (
-                        <Button
-                          className="w-full mt-3"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            console.log('[BrowseGigs] Navigating to bid form for gig:', gig.id);
-                            navigate(`/gig/${gig.id}#bid`);
-                          }}
-                        >
-                          <HandHeart className="h-4 w-4 mr-2" />
-                          Bid Now
-                        </Button>
-                      )}
-                      {diggerProfile && userBids.has(gig.id) && (
-                        <Button
-                          variant="outline"
-                          className="w-full mt-3"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            navigate(`/gig/${gig.id}`);
-                          }}
-                        >
-                          View Your Bid
-                        </Button>
+                      {/* Digger actions: Bid Now + Buy lead side by side */}
+                      {diggerProfile && gig.status === 'open' && (
+                        <div className="flex flex-col gap-2 mt-3">
+                          {!userBids.has(gig.id) ? (
+                            <div className="flex gap-2 flex-wrap">
+                              <Button
+                                className="flex-1 min-w-[120px]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  navigate(`/gig/${gig.id}#bid`);
+                                }}
+                              >
+                                <HandHeart className="h-4 w-4 mr-2 shrink-0" />
+                                Bid Now
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="flex-1 min-w-[120px]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  if (!inCart) {
+                                    addToCart({
+                                      id: gig.id,
+                                      title: gig.title,
+                                      budget_min: gig.budget_min,
+                                      budget_max: gig.budget_max,
+                                      location: gig.location || "",
+                                      description: gig.description,
+                                    });
+                                    toast.success("Added to cart — checkout when ready");
+                                  }
+                                  setCartOpen(true);
+                                }}
+                              >
+                                <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
+                                Buy lead
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 flex-wrap">
+                              <Button
+                                variant="outline"
+                                className="flex-1 min-w-[120px]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  navigate(`/gig/${gig.id}`);
+                                }}
+                              >
+                                View Your Bid
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="flex-1 min-w-[120px]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  if (!inCart) {
+                                    addToCart({
+                                      id: gig.id,
+                                      title: gig.title,
+                                      budget_min: gig.budget_min,
+                                      budget_max: gig.budget_max,
+                                      location: gig.location || "",
+                                      description: gig.description,
+                                    });
+                                    toast.success("Added to cart — checkout when ready");
+                                  }
+                                  setCartOpen(true);
+                                }}
+                              >
+                                <ShoppingCart className="h-4 w-4 mr-2 shrink-0" />
+                                Buy lead
+                              </Button>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Bid free to compete · Buy lead to unlock contact & reach out
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>

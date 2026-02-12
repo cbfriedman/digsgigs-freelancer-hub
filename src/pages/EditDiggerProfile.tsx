@@ -120,11 +120,12 @@ const EditDiggerProfile = () => {
     return getRegionsForCountry(location);
   }, [location]);
 
-  // Parse keywords from input
-  const keywords = keywordsInput
+  // Skills & specialties (single source for matching and SEO; stored in skills, keywords kept for backward compat)
+  const skillsFromInput = keywordsInput
     .split(/[,;]/)
     .map(k => k.trim())
     .filter(k => k.length > 0);
+  const keywords = skillsFromInput;
 
   // Merge saved profile with current form state so completion widget updates live; use draft when creating new profile
   const displayProfileForCompletion = useMemo(() => {
@@ -143,7 +144,7 @@ const EditDiggerProfile = () => {
       is_bonded: base.is_bonded ?? null,
       is_licensed: base.is_licensed ?? null,
       keywords: base.keywords || null,
-      skills: base.skills || null,
+      skills: base.skills || base.keywords || null,
       portfolio_url: base.portfolio_url || null,
     };
   }, [profileData, bio, photoUrl, workPhotos, hourlyRateMin, hourlyRateMax, certifications, pricingModel]);
@@ -330,13 +331,13 @@ const EditDiggerProfile = () => {
               // Clear from sessionStorage after using
               sessionStorage.removeItem('selectedKeywords');
             } else {
-              setKeywordsInput(profile.keywords?.join(", ") || "");
+              setKeywordsInput((profile.skills || profile.keywords || [])?.join(", ") || "");
             }
           } catch {
-            setKeywordsInput(profile.keywords?.join(", ") || "");
+            setKeywordsInput((profile.skills || profile.keywords || [])?.join(", ") || "");
           }
         } else {
-          setKeywordsInput(profile.keywords?.join(", ") || "");
+          setKeywordsInput((profile.skills || profile.keywords || [])?.join(", ") || "");
         }
         
         setHourlyRateMin(profile.hourly_rate_min);
@@ -474,7 +475,8 @@ const EditDiggerProfile = () => {
           location: businessLocation,
           phone,
           bio: bio || null,
-          keywords: keywords.length > 0 ? keywords : null,
+          skills: skillsFromInput.length > 0 ? skillsFromInput : null,
+          keywords: skillsFromInput.length > 0 ? skillsFromInput : null,
           pricing_model: pricingModel,
           expected_lead_volume: expectedLeadVolume,
           expected_lead_period: expectedLeadPeriod,
@@ -573,16 +575,14 @@ const EditDiggerProfile = () => {
     }
   };
 
-  // Highlight keywords in real-time
+  // Highlight skills/specialties in bio in real-time
   const highlightKeywords = (text: string): { text: string; isKeyword: boolean }[] => {
     const parts: { text: string; isKeyword: boolean }[] = [];
-    
-    if (keywords.length === 0) {
+    if (skillsFromInput.length === 0) {
       return [{ text, isKeyword: false }];
     }
-    
     let currentIndex = 0;
-    const sortedKeywords = [...keywords].sort((a, b) => b.length - a.length);
+    const sortedKeywords = [...skillsFromInput].sort((a, b) => b.length - a.length);
     
     while (currentIndex < text.length) {
       let foundKeyword = false;
@@ -618,7 +618,7 @@ const EditDiggerProfile = () => {
         ? `${keywordsInput.trim()}, ${keyword}`
         : keyword;
       setKeywordsInput(newKeywordsInput);
-      toast.success(`Added "${keyword}" to keywords`);
+      toast.success(`Added "${keyword}" to skills & specialties`);
       
       // Track keyword usage for analytics
       try {
@@ -804,10 +804,10 @@ const EditDiggerProfile = () => {
                 maxSelections={10}
               />
               
-              {/* Selected Keywords - shown right after professions */}
+              {/* Skills & specialties - shown right after professions */}
               {keywords.length > 0 && (
                 <div className="space-y-2 mt-4">
-                  <Label className="text-sm font-medium text-muted-foreground">Selected Keywords ({keywords.length})</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">Skills & specialties ({keywords.length})</Label>
                   <div className="flex flex-wrap gap-2">
                     {keywords.map((keyword, index) => (
                       <Badge key={index} variant="secondary" className="flex items-center gap-1 px-2 py-1">
@@ -1073,7 +1073,7 @@ const EditDiggerProfile = () => {
                       <span className="font-semibold text-sm">AI-Powered Bio Generator</span>
                     </div>
                     <p className="text-xs text-muted-foreground mb-3">
-                      Let AI generate a professional bio based on your profession and keywords
+                      Let AI generate a professional bio based on your profession and skills
                     </p>
                     <BioGenerator 
                       profession={getProfessionNames().join(', ')}
@@ -1196,38 +1196,31 @@ const EditDiggerProfile = () => {
                     />
                   </div>
 
-                  <div className="space-y-3" id="keywords">
+                  <div className="space-y-3" id="skills-specialties">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-blue-500/10">
-                          <Tag className="h-4 w-4 text-blue-600" />
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <Tag className="h-4 w-4 text-primary" />
                         </div>
-                        <Label htmlFor="keywords" className="text-base font-semibold">Keywords / Specialties</Label>
+                        <Label htmlFor="skills-specialties" className="text-base font-semibold">Skills & specialties</Label>
                       </div>
                       <Badge variant="default" className="bg-primary text-primary-foreground px-3 py-1">
-                        {keywords.length} Selected
+                        {skillsFromInput.length} added
                       </Badge>
                     </div>
-                    
-                    <div className="p-4 rounded-xl border-2 border-blue-500/20 bg-blue-500/5 space-y-2">
-                      <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        ⚠️ Important: Lead Matching Criteria
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        <strong>You will only receive leads that contain your selected specialties.</strong> Select all relevant keywords to maximize opportunities.
-                      </p>
-                    </div>
-                    
+                    <p className="text-sm text-muted-foreground">
+                      List skills and specialties (comma-separated). Used for <strong>lead matching</strong>, <strong>gig matching</strong>, and <strong>SEO</strong> so clients find you.
+                    </p>
                     <Textarea
-                      id="keywords"
+                      id="skills-specialties"
                       value={keywordsInput}
                       onChange={(e) => setKeywordsInput(e.target.value)}
-                      placeholder="Enter keywords separated by commas (e.g., residential plumbing, emergency repairs)"
+                      placeholder="e.g. residential plumbing, emergency repairs, React, logo design, SEO"
                       rows={3}
-                      className="border-border/50"
+                      className="border-border/50 rounded-xl"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Add relevant keywords to improve matching with gigs
+                      Add all relevant terms to get matched to the right gigs and appear in search.
                     </p>
                   </div>
 

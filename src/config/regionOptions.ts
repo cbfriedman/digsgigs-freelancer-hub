@@ -219,6 +219,37 @@ export const getCountryName = (code: string): string | null => {
   return null;
 };
 
+/** All countries flattened for poster-country dropdown (name for display/store). */
+export const ALL_COUNTRY_OPTIONS: { code: string; name: string; flag: string }[] = REGION_OPTIONS.flatMap((r) =>
+  r.countries.map((c) => ({ code: c.code, name: c.name, flag: c.flag }))
+).sort((a, b) => a.name.localeCompare(b.name));
+
+/** Normalize for lookup: trim and lowercase. */
+function normalizeCountryKey(s: string): string {
+  return s.trim().toLowerCase();
+}
+
+/** Find country by name or by 2-letter code (case-insensitive, trimmed). */
+function findCountryByNameOrCode(value: string): { code: string; name: string; flag: string } | undefined {
+  if (!value || !value.trim()) return undefined;
+  const key = normalizeCountryKey(value);
+  return ALL_COUNTRY_OPTIONS.find(
+    (x) => normalizeCountryKey(x.name) === key || normalizeCountryKey(x.code) === key
+  );
+}
+
+/** Flag emoji for a country name or code (for poster country display). Returns empty string if not found. */
+export const getFlagForCountryName = (countryName: string): string => {
+  const c = findCountryByNameOrCode(countryName);
+  return c?.flag ?? "";
+};
+
+/** Two-letter country code for a country name (e.g. "United States" -> "US"). Returns empty string if not found. */
+export const getCodeForCountryName = (countryName: string): string => {
+  const c = findCountryByNameOrCode(countryName);
+  return c?.code ?? "";
+};
+
 /**
  * Format selected values for display (handles both region codes and country codes)
  */

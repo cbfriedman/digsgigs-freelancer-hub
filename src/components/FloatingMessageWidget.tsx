@@ -961,7 +961,7 @@ export function FloatingMessageWidget() {
               tabIndex={0}
               onClick={() => setIsOpen(false)}
               onKeyDown={(e) => e.key === "Enter" && setIsOpen(false)}
-              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-primary/20 bg-primary/10 cursor-pointer rounded-t-2xl"
+              className="flex items-center justify-between gap-3 px-4 py-2.5 shrink-0 border-b border-primary/30 bg-primary text-primary-foreground cursor-pointer rounded-t-2xl"
               aria-label="Collapse messages"
             >
               <button
@@ -970,7 +970,7 @@ export function FloatingMessageWidget() {
                   e.stopPropagation();
                   navigate(MESSAGES_PAGE);
                 }}
-                className="font-semibold text-sm text-foreground hover:underline text-left"
+                className="font-semibold text-sm text-primary-foreground hover:underline text-left"
               >
                 Messages
               </button>
@@ -978,13 +978,13 @@ export function FloatingMessageWidget() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 relative text-foreground hover:bg-primary/20"
+                  className="h-7 w-7 relative text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
                   onClick={toggleMute}
                   title={soundMuted ? "Unmute notifications" : "Mute notifications"}
                 >
                   {soundMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                 </Button>
-                <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-primary" aria-hidden />
+                <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-primary-foreground" aria-hidden />
               </div>
             </div>
             <div className="shrink-0 px-3 py-2 border-b border-border/40">
@@ -1098,7 +1098,7 @@ export function FloatingMessageWidget() {
             onKeyDown={(e) => e.key === "Enter" && setIsOpen(true)}
             className={cn(
               "flex items-center justify-between gap-3 px-4 py-2.5 w-full cursor-pointer shrink-0",
-              "rounded-2xl border border-border/60 bg-card shadow-xl hover:shadow-2xl transition-shadow"
+              "rounded-2xl border border-primary/30 bg-primary text-primary-foreground shadow-xl hover:shadow-2xl transition-shadow"
             )}
             aria-label="Open messages"
           >
@@ -1108,7 +1108,7 @@ export function FloatingMessageWidget() {
                 e.stopPropagation();
                 navigate(MESSAGES_PAGE);
               }}
-              className="font-semibold text-sm text-foreground hover:underline text-left"
+              className="font-semibold text-sm text-primary-foreground hover:underline text-left"
             >
               Messages
             </button>
@@ -1116,13 +1116,13 @@ export function FloatingMessageWidget() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 relative"
+                className="h-7 w-7 relative text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
                 onClick={toggleMute}
                 title={soundMuted ? "Unmute notifications" : "Mute notifications"}
               >
                 {soundMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
               </Button>
-              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+              <ChevronUp className="h-4 w-4 text-primary-foreground shrink-0" />
             </div>
           </div>
         )}

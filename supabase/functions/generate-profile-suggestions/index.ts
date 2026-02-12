@@ -11,7 +11,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { companyName, profession, keywords, type } = await req.json();
+    const { companyName, profession, keywords, skills, type } = await req.json();
+    const skillsOrKeywords = (skills?.length ? skills : keywords) || [];
     
     if (!companyName || !type) {
       return new Response(
@@ -28,12 +29,12 @@ Deno.serve(async (req) => {
     let prompt = '';
     if (type === 'title') {
       prompt = `Generate 3 professional and catchy profile titles for a ${profession || 'professional'} business. 
-      ${keywords?.length ? `They specialize in: ${keywords.join(', ')}` : ''}
+      ${skillsOrKeywords.length ? `They specialize in: ${skillsOrKeywords.join(', ')}` : ''}
       IMPORTANT: Do NOT include the business name "${companyName}" in the suggestions. Just create standalone catchy titles.
       Keep titles under 60 characters, memorable, and professional. Return only the 3 titles, one per line.`;
     } else if (type === 'tagline') {
       prompt = `Generate 3 compelling taglines for a ${profession || 'professional'} business. 
-      ${keywords?.length ? `They specialize in: ${keywords.join(', ')}` : ''}
+      ${skillsOrKeywords.length ? `They specialize in: ${skillsOrKeywords.join(', ')}` : ''}
       IMPORTANT: Do NOT include the business name "${companyName}" in the suggestions. Just create standalone taglines.
       Keep taglines under 100 characters, impactful, and customer-focused. Return only the 3 taglines, one per line.`;
     }

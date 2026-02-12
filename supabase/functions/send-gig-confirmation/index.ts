@@ -33,7 +33,8 @@ interface GigConfirmationRequest {
   gigDescription: string;
   location: string;
   estimatedBudget?: number;
-  keywords: string[];
+  keywords?: string[];
+  skills_required?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -52,8 +53,10 @@ const handler = async (req: Request): Promise<Response> => {
       gigDescription,
       location,
       estimatedBudget,
-      keywords,
+      keywords = [],
+      skills_required = [],
     }: GigConfirmationRequest = await req.json();
+    const skillsOrKeywords = (keywords?.length ? keywords : skills_required) || [];
 
     const siteUrl = Deno.env.get("SITE_URL") || "https://www.digsandgigs.net";
     // Use /confirm-gig so one click from email confirms (app sends Authorization header).
@@ -202,11 +205,11 @@ const handler = async (req: Request): Promise<Response> => {
                   <p style="margin: 10px 0 0 0;">${gigDescription}</p>
                 </div>
                 
-                ${keywords.length > 0 ? `
+                ${skillsOrKeywords.length > 0 ? `
                   <div class="detail-row">
-                    <span class="detail-label">Categories:</span>
+                    <span class="detail-label">Skills needed:</span>
                     <div class="keywords">
-                      ${keywords.map(k => `<span class="keyword-badge">${k}</span>`).join('')}
+                      ${skillsOrKeywords.map(k => `<span class="keyword-badge">${k}</span>`).join('')}
                     </div>
                   </div>
                 ` : ''}

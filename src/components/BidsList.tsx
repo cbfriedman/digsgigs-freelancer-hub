@@ -53,11 +53,14 @@ interface BidsListProps {
   gigTitle: string;
   isOwner: boolean;
   isFixedPrice?: boolean;
+  /** When viewer is a digger (not owner), pass their digger profile id so only their bid(s) are shown. */
+  currentDiggerId?: string | null;
 }
 
-export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: BidsListProps) => {
+export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, currentDiggerId }: BidsListProps) => {
   const { toast } = useToast();
   const [bids, setBids] = useState<Bid[]>([]);
+  const displayedBids = isOwner ? bids : (currentDiggerId ? bids.filter((b) => (b as any).digger_id === currentDiggerId) : bids);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [escrowDialogOpen, setEscrowDialogOpen] = useState(false);
@@ -225,28 +228,30 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
     );
   }
 
-  if (bids.length === 0) {
+  if (displayedBids.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          No bids yet. Diggers will appear here when they bid.
+          {!isOwner && currentDiggerId
+            ? "You haven't placed a bid on this gig yet."
+            : "No bids yet. Diggers will appear here when they bid."}
         </CardContent>
       </Card>
     );
   }
 
-  // Stats for gigger (owner)
-  const totalBids = bids.length;
+  // Stats: for owner show all bids; for digger show only their bid(s)
+  const totalBids = displayedBids.length;
   const avgPrice =
     totalBids > 0
-      ? bids.reduce((sum, b) => {
+      ? displayedBids.reduce((sum, b) => {
           if (b.amount_min != null && b.amount_max != null) return sum + (b.amount_min + b.amount_max) / 2;
           return sum + (b.amount_min ?? b.amount_max ?? b.amount);
         }, 0) / totalBids
       : 0;
-  const lowestBid = bids[0];
+  const lowestBid = displayedBids[0];
   const lowestAmount = lowestBid ? (lowestBid.amount_min ?? lowestBid.amount) : 0;
-  const highestBid = bids[bids.length - 1];
+  const highestBid = displayedBids[displayedBids.length - 1];
   const highestAmount = highestBid ? (highestBid.amount_max ?? highestBid.amount) : 0;
 
   return (
@@ -286,7 +291,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
       </div>
 
       {isOwner
-        ? bids.map((bid) => (
+        ? displayedBids.map((bid) => (
             <DiggerProposalCard
               key={bid.id}
               bid={bid}
@@ -302,7 +307,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false }: Bid
               acceptingId={accepting}
             />
           ))
-        : bids.map((bid, index) => (
+        : displayedBids.map((bid, index) => (
             <AnonymizedBidCard
               key={bid.id}
               bid={bid}

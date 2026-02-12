@@ -9,7 +9,7 @@ import { AIDescriptionTextarea } from "@/components/AIDescriptionTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe, UserCircle } from "lucide-react";
+import { ArrowRight, Loader2, CheckCircle2, Lightbulb, DollarSign, Clock, User, Mail, Phone, Sparkles, Shield, Zap, MessageSquare, Globe, UserCircle, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,8 +17,9 @@ import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
-import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping } from "@/config/giggerProblems";
-import { formatSelectionDisplay } from "@/config/regionOptions";
+import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping, isCustomProblem } from "@/config/giggerProblems";
+import { formatSelectionDisplay, ALL_COUNTRY_OPTIONS } from "@/config/regionOptions";
+import { SUGGESTED_SKILLS, normalizeSkillInput, isSkillDuplicate } from "@/config/suggestedSkillsForGigs";
 import PageLayout from "@/components/layout/PageLayout";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
@@ -45,6 +46,10 @@ const PostGig = () => {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [posterCountry, setPosterCountry] = useState("");
+  const [customProjectLabel, setCustomProjectLabel] = useState("");
+  const [skillsRequired, setSkillsRequired] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
 
   // High-risk warning state
   const [showWarningDialog, setShowWarningDialog] = useState(false);
@@ -136,6 +141,25 @@ const PostGig = () => {
   const handleProblemChange = (value: string) => {
     setSelectedProblemId(value);
     setClarifyingAnswers([]);
+    if (!isCustomProblem(value)) setCustomProjectLabel("");
+  };
+
+  const addSkill = (skill: string) => {
+    const normalized = normalizeSkillInput(skill);
+    if (!normalized || isSkillDuplicate(normalized, skillsRequired)) return;
+    setSkillsRequired((prev) => [...prev, normalized].sort((a, b) => a.localeCompare(b)));
+  };
+
+  const removeSkill = (index: number) => {
+    setSkillsRequired((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSkillInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addSkill(skillInput);
+      setSkillInput("");
+    }
   };
 
   const handleClarifyingToggle = (value: string, checked: boolean) => {
@@ -200,14 +224,17 @@ const PostGig = () => {
         .map(answer => problem?.clarifyingOptions.find(o => o.value === answer)?.label)
         .filter(Boolean)
         .join(', ');
-      const title = `${problem?.label || 'Project'}${clarifyingLabels ? ` - ${clarifyingLabels}` : ''}`.trim();
+      const customLabel = (customProjectLabel || '').trim();
+      const title = isCustomProblem(finalProblemId)
+        ? (customLabel || problem?.label || 'Custom project')
+        : `${problem?.label || 'Project'}${clarifyingLabels ? ` - ${clarifyingLabels}` : ''}`.trim();
 
       // Use edge function so the gig is stored (bypasses RLS) and we get the row back for anon or any user
       const response = await invokeEdgeFunction<{ data: { id: string; [key: string]: unknown } }>(supabase, "post-gig", {
         body: {
           title,
           description: finalDescription.trim(),
-          requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingLabels || 'Not specified'}\nCategory: ${category?.name || "Not specified"}`,
+          requirements: `Problem: ${problem?.label}\nDetails: ${clarifyingLabels || (customLabel || 'Not specified')}\n${customLabel ? `Custom label: ${customLabel}\n` : ''}Category: ${category?.name || "Not specified"}`,
           budget_min: finalBudgetMin,
           budget_max: finalBudgetMax,
           timeline: TIMELINE_OPTIONS.find(t => t.value === finalTimeline)?.label || finalTimeline,
@@ -215,8 +242,10 @@ const PostGig = () => {
           client_name: finalClientName.trim(),
           consumer_email: finalClientEmail.trim(),
           consumer_phone: finalClientPhone.trim() || null,
+          poster_country: posterCountry.trim() || null,
           category_id: categoryId,
           preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
+          skills_required: skillsRequired.length > 0 ? skillsRequired : null,
           consumer_id: consumerId,
         },
       });
@@ -426,7 +455,9 @@ const PostGig = () => {
                     <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">Step 2 of 4</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Select all that apply so Diggers can find your gig.
+                    {isCustomProblem(selectedProblemId)
+                      ? "Choose how you want to describe your project so Diggers can customize their ideas to match."
+                      : "Select all that apply so Diggers can find your gig."}
                   </p>
                   <div className="grid gap-3 mt-4">
                     {selectedProblem.clarifyingOptions.map((option) => {
@@ -453,6 +484,23 @@ const PostGig = () => {
                       );
                     })}
                   </div>
+                  {isCustomProblem(selectedProblemId) && (
+                    <div className="mt-4 space-y-2">
+                      <Label htmlFor="custom-project-label" className="text-sm font-medium text-muted-foreground">
+                        Custom project type or label (optional)
+                      </Label>
+                      <Input
+                        id="custom-project-label"
+                        placeholder="e.g. Custom mobile app, One-off consulting, Hybrid design + dev"
+                        value={customProjectLabel}
+                        onChange={(e) => setCustomProjectLabel(e.target.value)}
+                        className="rounded-xl border-border/50"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        This is shown to Diggers so they can tailor their proposals to your idea.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -477,6 +525,57 @@ const PostGig = () => {
                     .filter(Boolean)
                     .join(', ')}
                   required
+                />
+              </div>
+
+              {/* Skills required (optional) - helps Diggers tailor proposals */}
+              <div className="space-y-3 p-6 rounded-xl bg-muted/20 border border-border/50">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Skills required <span className="text-muted-foreground font-normal text-sm">(optional)</span>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Add skills or expertise you’d like. Diggers use this to match and tailor their proposals.
+                </p>
+                {skillsRequired.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {skillsRequired.map((skill, index) => (
+                      <Badge
+                        key={`${skill}-${index}`}
+                        variant="secondary"
+                        className="pl-2.5 pr-1.5 py-1.5 text-sm font-medium rounded-lg"
+                      >
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(index)}
+                          className="ml-1.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                          aria-label={`Remove ${skill}`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {SUGGESTED_SKILLS.filter((s) => !skillsRequired.some((x) => x.toLowerCase() === s.toLowerCase())).map((skill) => (
+                    <button
+                      type="button"
+                      key={skill}
+                      onClick={() => addSkill(skill)}
+                      className="inline-flex items-center rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/5 transition-colors"
+                    >
+                      + {skill}
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Type a skill and press Enter to add"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={handleSkillInputKeyDown}
+                  className="rounded-xl border-border/50 max-w-md"
                 />
               </div>
 
@@ -636,6 +735,26 @@ const PostGig = () => {
                       onChange={(e) => setClientPhone(e.target.value)}
                       className="h-12 rounded-xl border-border/50 text-base"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="posterCountry" className="text-sm font-medium flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      Your business country <span className="text-muted-foreground text-xs">(optional)</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Helps Diggers see where you're based. Shown on your listing.
+                    </p>
+                    <Select value={posterCountry || "none"} onValueChange={(v) => setPosterCountry(v === "none" ? "" : v)}>
+                      <SelectTrigger id="posterCountry" className="h-12 rounded-xl border-border/50 text-base">
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Don't show</SelectItem>
+                        {ALL_COUNTRY_OPTIONS.map((c) => (
+                          <SelectItem key={c.code} value={c.name}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

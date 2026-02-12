@@ -127,7 +127,7 @@ serve(async (req) => {
     // Get digger profile
     const { data: profile, error: profileError } = await supabaseClient
       .from('digger_profiles')
-      .select('id, profession, keywords, industry_type, user_id, phone')
+      .select('id, profession, keywords, skills, industry_type, user_id, phone')
       .eq('id', digger_profile_id)
       .single();
 

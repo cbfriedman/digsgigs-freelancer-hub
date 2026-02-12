@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy } from "lucide-react";
+import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
 import { BidsList } from "@/components/BidsList";
@@ -16,6 +16,7 @@ import { generateJobPostingSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
 
 interface Gig {
   id: string;
@@ -33,8 +34,10 @@ interface Gig {
   category_id?: string | null;
   requirements?: string | null;
   preferred_regions?: string[] | null;
+  skills_required?: string[] | null;
   consumer_email?: string | null;
   consumer_phone?: string | null;
+  poster_country?: string | null;
   categories: {
     name: string;
     description: string | null;
@@ -222,6 +225,7 @@ const GigDetail = () => {
       consumer_id: gig.consumer_id,
       requirements: gig.requirements ?? null,
       preferred_regions: gig.preferred_regions ?? null,
+      poster_country: gig.poster_country ?? null,
       status: "open",
       consumer_email: gig.consumer_email ?? null,
       client_name: gig.client_name ?? null,
@@ -331,7 +335,7 @@ const GigDetail = () => {
       <SEOHead
         title={`${gig.title} - Service Project in ${gig.location}`}
         description={`${gig.description.substring(0, 150)}... Budget: ${budgetText}. Posted ${formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}. Find qualified professionals on digsandgigs.`}
-        keywords={`${gig.title}, ${gig.location}, service project, hire contractor, ${gig.categories?.name || 'services'}`}
+        keywords={`${gig.title}, ${gig.location}, service project, hire contractor, ${gig.categories?.name || 'services'}${gig.skills_required?.length ? `, ${gig.skills_required.join(', ')}` : ''}`}
         structuredData={generateJobPostingSchema({
           title: gig.title,
           description: gig.description,
@@ -398,10 +402,68 @@ const GigDetail = () => {
                 )}
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* At-a-glance: same key info as browse card so diggers see everything quickly */}
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground rounded-xl bg-muted/40 px-4 py-3 border border-transparent">
+                  {gig.categories && (
+                    <div className="flex items-center gap-1.5">
+                      <Tag className="h-4 w-4 shrink-0 text-primary" />
+                      <span>{gig.categories.name}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <DollarSign className="h-4 w-4 shrink-0 text-primary" />
+                    <span>{formatBudget(gig.budget_min, gig.budget_max)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-4 w-4 shrink-0 text-primary" />
+                    <span>{gig.location || "Remote"}</span>
+                  </div>
+                  {gig.preferred_regions && gig.preferred_regions.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-4 w-4 shrink-0 text-primary opacity-80" />
+                      <span className="text-xs">Pref: {formatSelectionDisplay(gig.preferred_regions)}</span>
+                    </div>
+                  )}
+                  {gig.deadline && (
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4 shrink-0 text-primary" />
+                      <span>Due {new Date(gig.deadline).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  {gig.poster_country && (
+                    <div className="flex items-center gap-1.5" title={gig.poster_country}>
+                      {getCodeForCountryName(gig.poster_country) ? (
+                        <img
+                          src={`https://flagcdn.com/w20/${getCodeForCountryName(gig.poster_country).toLowerCase()}.png`}
+                          alt=""
+                          className="h-4 w-5 object-cover rounded-sm shrink-0"
+                          width={20}
+                          height={15}
+                        />
+                      ) : null}
+                      <span className="uppercase font-medium text-foreground">{getCodeForCountryName(gig.poster_country) || gig.poster_country}</span>
+                    </div>
+                  )}
+                </div>
+                {gig.skills_required && gig.skills_required.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {gig.skills_required.map((skill, i) => (
+                      <Badge key={i} variant="secondary" className="rounded-lg px-2.5 py-0.5 font-normal text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Description</h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{gig.description}</p>
+                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{gig.description}</p>
                 </div>
+
+                {gig.skills_required && gig.skills_required.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Diggers with these skills can tailor their proposals to your project.
+                  </p>
+                )}
 
                 <Separator />
 
@@ -452,25 +514,25 @@ const GigDetail = () => {
                     </div>
                   )}
 
-                  {gig.location && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-semibold">Work location</div>
+                      <div className="text-muted-foreground">{gig.location || "Remote"}</div>
+                    </div>
+                  </div>
+
+                  {gig.preferred_regions && gig.preferred_regions.length > 0 && (
                     <div className="flex items-start gap-3">
-                      <User className="w-5 h-5 text-primary mt-0.5" />
+                      <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-semibold">Location</div>
-                        <div className="text-muted-foreground">{gig.location}</div>
+                        <div className="font-semibold">Preferred freelancer locations</div>
+                        <div className="text-muted-foreground">{formatSelectionDisplay(gig.preferred_regions)}</div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <Separator />
-
-                <div>
-                  <div className="font-semibold mb-2">Posted by</div>
-                  <div className="text-muted-foreground">
-                    {gig.profiles?.full_name || gig.client_name || 'Anonymous'}
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -537,43 +599,7 @@ const GigDetail = () => {
               </Card>
             )}
 
-            {/* Free Estimate Diggers - shown to consumers and diggers */}
-            <FreeEstimateDiggers 
-              gigId={id!} 
-              categories={gig.categories?.name ? [gig.categories.name] : undefined}
-            />
-
-            {/* Bids Section: owner manages bids; digger sees their bids (hidden in gigger mode for non-owners) */}
-            {(isOwner || showDiggerContent) && (
-              <BidsList 
-                gigId={id!} 
-                gigTitle={gig.title} 
-                isOwner={isOwner}
-                isFixedPrice={!!(gig.budget_min && gig.budget_max)}
-              />
-            )}
-          </div>
-
-          <div className="space-y-6">
-            {/* Referral fee info for Diggers (hidden in gigger mode) */}
-            {showDiggerContent && (
-              <Card className="bg-primary/5 border-primary/20">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Award className="w-5 h-5 text-primary" />
-                    <CardTitle className="text-lg">Bid or buy leads — no membership</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    When you&apos;re awarded the gig, we charge an <strong>8% referral fee</strong> (from the Gigger&apos;s deposit). 
-                    You can also buy leads upfront. No subscription required.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Bid Form (only in digger mode) */}
+            {/* Submit proposal — below project details so diggers review first, then bid */}
             {showDiggerContent && diggerId && gig.status === 'open' && !existingBid && (
               <div id="bid">
                 <BidSubmissionTemplate
@@ -589,11 +615,10 @@ const GigDetail = () => {
                 />
               </div>
             )}
-
             {existingBid && showDiggerContent && (
-              <Card>
+              <Card id="bid">
                 <CardHeader>
-                  <CardTitle>Your Bid</CardTitle>
+                  <CardTitle>Your bid</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
@@ -614,19 +639,13 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
-
-            {/* Gigger mode, not owner: show post-a-gig CTA instead of bid prompts */}
             {activeRole === 'gigger' && !isOwner && currentUser && gig.status === 'open' && (
               <Card id="bid">
                 <CardContent className="pt-6 space-y-4">
                   <p className="text-center text-muted-foreground">
-                    You&apos;re viewing as a <strong>Gigger</strong>. Post your own gig to receive bids from Diggers.
+                    You’re viewing as a <strong>Gigger</strong>. Post your own gig to receive bids from Diggers.
                   </p>
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => navigate('/post-gig')}
-                  >
+                  <Button className="w-full" variant="outline" onClick={() => navigate('/post-gig')}>
                     Post a gig
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
@@ -635,13 +654,11 @@ const GigDetail = () => {
                 </CardContent>
               </Card>
             )}
-
-            {/* Only Diggers can bid (hidden when in gigger mode) */}
             {currentUser && (!isDigger || !diggerId) && !isOwner && gig.status === 'open' && !userRoles?.includes('digger') && activeRole !== 'gigger' && (
               <Card id="bid">
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground">
-                    Only <strong>Diggers</strong> can bid on gigs. You&apos;re in Gigger mode—switch to Digger to bid, or post your own gigs as a Gigger.
+                    Only <strong>Diggers</strong> can bid on gigs. Switch to Digger to bid, or post your own gigs as a Gigger.
                   </p>
                 </CardContent>
               </Card>
@@ -652,32 +669,97 @@ const GigDetail = () => {
                   <p className="text-center text-muted-foreground">
                     To place a bid you need an active <strong>Digger</strong> profile.
                   </p>
-                  <p className="text-sm text-center text-muted-foreground">
-                    Complete your Digger profile in the dashboard, then return here to submit your bid.
-                  </p>
-                  <Button
-                    className="w-full"
-                    onClick={() => navigate('/role-dashboard')}
-                  >
+                  <Button className="w-full" onClick={() => navigate('/role-dashboard')}>
                     Go to Dashboard
                   </Button>
                 </CardContent>
               </Card>
             )}
-
-            {/* Not logged in — prompt to sign in (digger CTA) */}
             {!currentUser && !isOwner && gig.status === 'open' && (
               <Card id="bid">
                 <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground mb-4">
-                    Want to bid on this gig?
-                  </p>
-                  <Button
-                    className="w-full"
-                    onClick={() => navigate('/register')}
-                  >
-                    Sign In as Digger
+                  <p className="text-center text-muted-foreground mb-4">Want to bid on this gig?</p>
+                  <Button className="w-full" onClick={() => navigate('/register')}>
+                    Sign in as Digger
                   </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Free Estimate Diggers - shown to consumers and diggers */}
+            <FreeEstimateDiggers 
+              gigId={id!} 
+              categories={gig.categories?.name ? [gig.categories.name] : undefined}
+            />
+
+            {/* Bids Section: owner manages bids; digger sees only their own bid(s) */}
+            {(isOwner || showDiggerContent) && (
+              <BidsList 
+                gigId={id!} 
+                gigTitle={gig.title} 
+                isOwner={isOwner}
+                isFixedPrice={!!(gig.budget_min && gig.budget_max)}
+                currentDiggerId={diggerId}
+              />
+            )}
+          </div>
+
+          {/* Right sidebar: client info — quick review for diggers */}
+          <div className="space-y-6 lg:min-w-[280px]">
+            <Card className="border-muted/50 bg-muted/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  About the client
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {gig.poster_country ? (
+                  <div className="flex items-center gap-3">
+                    {getCodeForCountryName(gig.poster_country) ? (
+                      <img
+                        src={`https://flagcdn.com/w40/${getCodeForCountryName(gig.poster_country).toLowerCase()}.png`}
+                        alt=""
+                        className="h-8 w-10 object-cover rounded shrink-0"
+                        width={40}
+                        height={32}
+                      />
+                    ) : null}
+                    <div>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Client location</div>
+                      <div className="font-medium">
+                        {getCodeForCountryName(gig.poster_country) ? `${getCodeForCountryName(gig.poster_country)} · ${gig.poster_country}` : gig.poster_country}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Client location not specified.</p>
+                )}
+                <div>
+                  <div className="text-xs text-muted-foreground uppercase tracking-wide">Posted</div>
+                  <div className="text-sm font-medium">{formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}</div>
+                </div>
+                {!isOwner && gig.status === 'open' && (
+                  <p className="text-xs text-muted-foreground border-t pt-3">
+                    Submit a proposal below or buy the lead to unlock contact and reach out directly.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {showDiggerContent && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-primary" />
+                    <CardTitle className="text-lg">Bid or buy — no membership</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    When you’re awarded the gig, we charge an <strong>8% referral fee</strong> (from the client’s deposit). 
+                    You can also buy the lead upfront to unlock contact. No subscription required.
+                  </p>
                 </CardContent>
               </Card>
             )}

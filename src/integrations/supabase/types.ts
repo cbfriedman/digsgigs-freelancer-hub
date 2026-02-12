@@ -2011,6 +2011,7 @@ export type Database = {
           purchase_count: number | null
           requirements: string | null
           sic_codes: string[] | null
+          skills_required: string[] | null
           status: string | null
           telemarketer_id: string | null
           timeline: string | null
@@ -2056,6 +2057,7 @@ export type Database = {
           purchase_count?: number | null
           requirements?: string | null
           sic_codes?: string[] | null
+          skills_required?: string[] | null
           status?: string | null
           telemarketer_id?: string | null
           timeline?: string | null
@@ -2101,6 +2103,7 @@ export type Database = {
           purchase_count?: number | null
           requirements?: string | null
           sic_codes?: string[] | null
+          skills_required?: string[] | null
           status?: string | null
           telemarketer_id?: string | null
           timeline?: string | null

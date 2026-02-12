@@ -63,7 +63,7 @@ serve(async (req) => {
       // Update profile with purchased lead quantities
       const { data: profile, error: profileError } = await supabaseClient
         .from('digger_profiles')
-        .select('keywords, monthly_lead_count')
+        .select('keywords, skills, monthly_lead_count')
         .eq('id', profileId)
         .single();
 
@@ -76,14 +76,16 @@ serve(async (req) => {
       const totalLeads = professions.reduce((sum: number, p: any) => sum + p.quantity, 0);
       const newLeadCount = (profile.monthly_lead_count || 0) + totalLeads;
 
-      // Update keywords array with purchased professions
-      const currentKeywords = profile.keywords || [];
-      const newKeywords = [...new Set([...currentKeywords, ...professions.map((p: any) => p.keyword)])];
+      // Merge purchased profession terms into both skills and keywords (skills = source of truth; keywords for backward compat)
+      const purchasedTerms = professions.map((p: any) => p.keyword);
+      const currentSkills = profile.skills || profile.keywords || [];
+      const newSkills = [...new Set([...currentSkills, ...purchasedTerms])];
 
       const { error: updateError } = await supabaseClient
         .from('digger_profiles')
         .update({
-          keywords: newKeywords,
+          skills: newSkills,
+          keywords: newSkills,
           monthly_lead_count: newLeadCount,
           registration_status: 'complete',
         })
@@ -94,7 +96,7 @@ serve(async (req) => {
         throw updateError;
       }
 
-      logStep("Profile updated", { newLeadCount, keywordCount: newKeywords.length });
+      logStep("Profile updated", { newLeadCount, skillsCount: newSkills.length });
 
       // Create notification for the user
       const { error: notifError } = await supabaseClient

@@ -824,7 +824,7 @@ const DiggerDetail = () => {
       <SEOHead
         title={`${digger.business_name} - ${displayProfession} in ${digger.location}`}
         description={`${digger.bio || `Professional ${displayProfession} services in ${digger.location}`}. ${digger.average_rating ? `Rated ${digger.average_rating}/5 stars` : 'Available for hire'}. ${digger.hourly_rate ? `Starting at $${digger.hourly_rate}/hour` : 'Contact for pricing'}.`}
-        keywords={`${displayProfession}, ${digger.location}, contractor, service professional, ${digger.skills?.join(', ') || ''}`}
+        keywords={`${displayProfession}, ${digger.location}, contractor, service professional, ${(digger.skills || digger.keywords || []).join(', ')}`}
         ogType="profile"
         ogImage={effectiveAvatarUrl}
         structuredData={generateLocalBusinessSchema({
@@ -987,21 +987,16 @@ const DiggerDetail = () => {
                   </Card>
                 )}
 
-                {/* Keywords */}
-                {((digger.keywords?.length ?? 0) > 0 || (digger.skills?.length ?? 0) > 0) && (
+                {/* Skills & specialties (unified from skills with keywords fallback) */}
+                {((digger.skills || digger.keywords)?.length ?? 0) > 0 && (
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Keywords & skills</CardTitle>
+                      <CardTitle className="text-lg">Skills & specialties</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
-                        {(digger.keywords || []).map((kw, idx) => (
-                          <Badge key={`kw-${idx}`} variant="default" className="px-3 py-1">
-                            {kw}
-                          </Badge>
-                        ))}
-                        {(digger.skills || []).map((skill, idx) => (
-                          <Badge key={`skill-${idx}`} variant="secondary" className="px-3 py-1">
+                        {(digger.skills || digger.keywords || []).map((skill, idx) => (
+                          <Badge key={idx} variant="secondary" className="px-3 py-1">
                             {skill}
                           </Badge>
                         ))}
@@ -1398,14 +1393,14 @@ const DiggerDetail = () => {
                       </CardContent>
                     </Card>
                   )}
-                  {(digger.skills?.length ?? 0) > 0 && (
+                  {((digger.skills || digger.keywords)?.length ?? 0) > 0 && (
                     <Card>
                       <CardHeader className="py-3 px-4">
-                        <CardTitle className="text-sm font-medium">Skills</CardTitle>
+                        <CardTitle className="text-sm font-medium">Skills & specialties</CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 px-4 pb-4">
                         <div className="flex flex-wrap gap-1.5 text-xs">
-                          {(digger.skills || []).map((skill, idx) => (
+                          {(digger.skills || digger.keywords || []).map((skill, idx) => (
                             <Badge key={idx} variant="outline" className="font-normal text-xs">{skill}</Badge>
                           ))}
                         </div>

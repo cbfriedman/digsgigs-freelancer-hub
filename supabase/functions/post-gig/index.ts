@@ -17,8 +17,10 @@ interface PostGigPayload {
   client_name: string;
   consumer_email: string;
   consumer_phone?: string | null;
+  poster_country?: string | null;
   category_id?: string | null;
   preferred_regions?: string[] | null;
+  skills_required?: string[] | null;
 }
 
 serve(async (req) => {
@@ -52,8 +54,10 @@ serve(async (req) => {
       client_name,
       consumer_email,
       consumer_phone = null,
+      poster_country = null,
       category_id = null,
       preferred_regions = null,
+      skills_required = null,
     } = body;
 
     if (!title?.trim() || !description?.trim()) {
@@ -112,12 +116,14 @@ serve(async (req) => {
         client_name: (client_name ?? "").trim(),
         consumer_email: (consumer_email ?? "").trim(),
         consumer_phone: consumer_phone?.trim() || null,
+        poster_country: (poster_country && typeof poster_country === "string" && poster_country.trim()) ? poster_country.trim() : null,
         category_id: category_id || null,
         status: "open",
         confirmation_status: "confirmed",
         is_confirmed_lead: true,
         confirmed_at: new Date().toISOString(),
         preferred_regions: Array.isArray(preferred_regions) && preferred_regions.length > 0 ? preferred_regions : null,
+        skills_required: Array.isArray(skills_required) && skills_required.length > 0 ? skills_required.filter((s): s is string => typeof s === "string" && s.trim().length > 0).map(s => s.trim()) : null,
       })
       .select()
       .single();

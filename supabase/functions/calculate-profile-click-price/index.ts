@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabaseClient
       .from('digger_profiles')
-      .select('profession, keywords, industry_type')
+      .select('profession, keywords, skills, industry_type')
       .eq('id', digger_profile_id)
       .single();
 

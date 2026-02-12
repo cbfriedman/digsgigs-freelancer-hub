@@ -121,6 +121,17 @@ export const PROBLEM_OPTIONS: ProblemOption[] = [
       { label: 'Not sure yet', value: 'unsure' },
     ],
   },
+  {
+    id: 'custom',
+    label: 'Something else / Customize my idea',
+    internalCategoryId: CATEGORY_IDS.CONTENT_MEDIA,
+    internalSubcategorySlug: 'general',
+    clarifyingQuestion: 'How would you like to describe it?',
+    clarifyingOptions: [
+      { label: "I'll describe in the project details below", value: 'describe-below' },
+      { label: "I'll add a custom label in the next step", value: 'custom-label' },
+    ],
+  },
 ];
 
 export const TIMELINE_OPTIONS = [
@@ -144,3 +155,6 @@ export const getInternalMapping = (problemId: string): { categoryId: string; sub
     subcategorySlug: problem.internalSubcategorySlug,
   };
 };
+
+/** Whether the problem is "custom" so we can show the custom label field. */
+export const isCustomProblem = (problemId: string): boolean => problemId === 'custom';
