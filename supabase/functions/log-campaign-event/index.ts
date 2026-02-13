@@ -76,6 +76,37 @@ serve(async (req) => {
                        req.headers.get("x-real-ip") || 
                        "unknown";
 
+    // Resolve country from IP (for nationality/flag display). Skip for localhost and private IPs.
+    let country_code: string | null = null;
+    let country_name: string | null = null;
+    const isPrivate = /^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.|::1$)/.test(ip_address) || ip_address === "unknown";
+    if (!isPrivate && ip_address) {
+      try {
+        const geoRes = await fetch(`http://ip-api.com/json/${encodeURIComponent(ip_address)}?fields=country,countryCode`, { signal: AbortSignal.timeout(3000) });
+        if (geoRes.ok) {
+          const geo = await geoRes.json();
+          if (geo?.countryCode) country_code = geo.countryCode;
+          if (geo?.country) country_name = geo.country;
+        }
+      } catch (_) {
+        // Non-critical; leave country null
+      }
+    }
+
+    // Skip recording if this IP is blocked by admin
+    const { data: blocked } = await supabase
+      .from("admin_blocked_ips")
+      .select("id")
+      .eq("ip_address", ip_address)
+      .maybeSingle();
+    if (blocked) {
+      console.log("Skipping campaign event from blocked IP:", ip_address);
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "IP blocked" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Insert campaign conversion record using service role (bypasses RLS)
     const { data, error } = await supabase
       .from("campaign_conversions")
@@ -93,6 +124,8 @@ serve(async (req) => {
         device_type: device_type || null,
         browser: browser || null,
         ip_address,
+        country_code: country_code || null,
+        country_name: country_name || null,
       })
       .select()
       .single();

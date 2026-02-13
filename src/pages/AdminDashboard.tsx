@@ -35,6 +35,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
@@ -532,6 +533,7 @@ const AdminDashboard = () => {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
+          <SidebarRail />
         </Sidebar>
         <SidebarInset>
           <div className="flex flex-col h-full">
