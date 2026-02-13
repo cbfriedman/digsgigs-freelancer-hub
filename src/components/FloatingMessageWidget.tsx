@@ -1226,7 +1226,7 @@ export function FloatingMessageWidget() {
                 <ul className="py-2 min-w-0 max-w-full overflow-hidden">
                   {filteredConvs.map((c) => {
                     const snippet = (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
-                    const display = snippet.length > 45 ? snippet.slice(0, 45) + "…" : snippet;
+                    const display = snippet;
                     const isOpenChat = openChats.some((o) => o.id === c.id);
                     return (
                       <li key={c.id} className="min-w-0 max-w-full overflow-hidden list-none">
@@ -1243,7 +1243,9 @@ export function FloatingMessageWidget() {
                           </Avatar>
                           <div className="min-w-0 flex-1 overflow-hidden basis-0">
                             <div className="flex items-center justify-between gap-2 min-w-0">
-                              <span className="font-medium text-sm truncate min-w-0">{c.partnerDisplayName}</span>
+                              <span className="font-medium text-sm truncate min-w-0" title={c.partnerDisplayName}>
+                                {c.partnerDisplayName}
+                              </span>
                               <div className="flex items-center gap-2 shrink-0">
                                 {c.unreadCount > 0 && (
                                   <span

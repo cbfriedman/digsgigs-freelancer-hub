@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, 
   MoreHorizontal, ExternalLink, Briefcase, FileCheck, Hourglass, 
-  ChevronDown, X, Star, Pin, Trash2, EyeOff, BellOff, Ban 
+  ChevronDown, X, Pin, Trash2, EyeOff, BellOff, Ban 
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
@@ -1614,7 +1614,6 @@ export default function Messages() {
                       const lastSnippet = conv?.last_message_content
                         ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content
                         : null;
-                      const isStarred = starredIds.includes(conv.id);
                       const isPinned = pinnedIds.includes(conv.id);
                       const unreadCount = conv.unread_count ?? 0;
                       const hasUnread = unreadCount > 0;
@@ -1650,66 +1649,41 @@ export default function Messages() {
                               title={getPartnerIsOnline(conv) ? "Online" : "Offline"}
                             />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0 w-0">
+                            <div className="flex items-center justify-between gap-2 min-w-0">
                               <p className={cn(
-                                "truncate shrink min-w-0 text-foreground",
+                                "truncate min-w-0 flex-1 text-foreground",
                                 hasUnread ? "font-semibold" : "font-medium"
-                              )}>
+                              )} title={partnerName}>
                                 {partnerName}
                               </p>
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                <span className="text-xs text-muted-foreground">
-                                  {format(new Date(conv.updated_at), "M/d/yy")}
-                                </span>
-                                {hasUnread && (
-                                  <span
-                                    className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0"
-                                    title={`${unreadCount} unread`}
-                                  >
-                                    {unreadCount > 99 ? "99+" : unreadCount}
+                              <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                <div className="flex items-center gap-0.5">
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(conv.updated_at), "M/d/yy")}
                                   </span>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleStarred(conv.id);
-                                  }}
-                                  title={isStarred ? "Remove from favorites" : "Add to favorites"}
-                                >
-                                  <Star
-                                    className={`h-4 w-4 ${isStarred ? "fill-amber-400 text-amber-500" : ""}`}
-                                  />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className={`h-7 w-7 transition-opacity ${isPinned ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    togglePinned(conv.id);
-                                  }}
-                                  title={isPinned ? "Unpin" : "Pin to top"}
-                                >
-                                  <Pin
-                                    className={`h-4 w-4 ${isPinned ? "fill-muted-foreground text-muted-foreground" : ""}`}
-                                  />
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => e.stopPropagation()}
-                                  title="More options"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
+                                  {hasUnread && (
+                                    <span
+                                      className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0"
+                                      title={`${unreadCount} unread`}
+                                    >
+                                      {unreadCount > 99 ? "99+" : unreadCount}
+                                    </span>
+                                  )}
+                                </div>
+                                <div>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title="More options"
+                                      >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                   <DropdownMenuItem
                                     onClick={(e) => {
@@ -1789,7 +1763,8 @@ export default function Messages() {
                                     Delete
                                   </DropdownMenuItem>
                                   </DropdownMenuContent>
-                                </DropdownMenu>
+                                  </DropdownMenu>
+                                </div>
                               </div>
                             </div>
                             <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>
@@ -1797,10 +1772,10 @@ export default function Messages() {
                             </p>
                             {lastSnippet && (
                               <p className={cn(
-                                "text-xs truncate mt-0.5 min-w-0",
+                                "text-xs truncate mt-0.5 min-w-0 block",
                                 hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90"
                               )} title={lastSnippet}>
-                                {lastSnippet.length > 40 ? `${lastSnippet.slice(0, 40)}…` : lastSnippet}
+                                {lastSnippet}
                               </p>
                             )}
                           </div>
@@ -2006,7 +1981,6 @@ export default function Messages() {
                         const roleOrTitle = rawRoleOrTitle.length > 35 ? `${rawRoleOrTitle.slice(0, 35)}…` : rawRoleOrTitle;
                         const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
                         const lastSnippet = conv?.last_message_content ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content : null;
-                        const isStarred = starredIds.includes(conv.id);
                         const isPinned = pinnedIds.includes(conv.id);
                         const unreadCount = conv.unread_count ?? 0;
                         const hasUnread = unreadCount > 0;
@@ -2019,19 +1993,20 @@ export default function Messages() {
                               </Avatar>
                               <span className={cn("absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background", getPartnerIsOnline(conv) ? "bg-success" : "bg-muted-foreground/50")} title={getPartnerIsOnline(conv) ? "Online" : "Offline"} />
                             </div>
-                            <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className="flex-1 min-w-0 w-0 overflow-hidden">
                               <div className="flex items-center justify-between gap-2 min-w-0">
-                                <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")}>
+                                <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")} title={partnerName}>
                                   {partnerName}
                                 </p>
-                                <div className="flex items-center gap-0.5 shrink-0">
-                                  <span className="text-xs text-muted-foreground">{format(new Date(conv.updated_at), "M/d/yy")}</span>
-                                  {hasUnread && <span className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0" title={`${unreadCount} unread`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); toggleStarred(conv.id); }} title={isStarred ? "Remove from favorites" : "Add to favorites"}><Star className={`h-4 w-4 ${isStarred ? "fill-amber-400 text-amber-500" : ""}`} /></Button>
-                                  <Button variant="ghost" size="icon" className={`h-7 w-7 transition-opacity ${isPinned ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} onClick={(e) => { e.stopPropagation(); togglePinned(conv.id); }} title={isPinned ? "Unpin" : "Pin to top"}><Pin className={`h-4 w-4 ${isPinned ? "fill-muted-foreground text-muted-foreground" : ""}`} /></Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()} title="More options"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                  <div className="flex items-center gap-0.5">
+                                    <span className="text-xs text-muted-foreground">{format(new Date(conv.updated_at), "M/d/yy")}</span>
+                                    {hasUnread && <span className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0" title={`${unreadCount} unread`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
+                                  </div>
+                                  <div>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()} title="More options"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${window.location.origin}/messages?conversation=${conv.id}`, "_blank"); }}><ExternalLink className="h-4 w-4 mr-2" />Open in new window</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkAsUnread(conv.id); }}><EyeOff className="h-4 w-4 mr-2" />Mark as unread</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePinned(conv.id); }}><Pin className="h-4 w-4 mr-2" />{isPinned ? "Unpin" : "Pin"}</DropdownMenuItem>
@@ -2039,13 +2014,14 @@ export default function Messages() {
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleBlock(conv); }}><Ban className="h-4 w-4 mr-2" />{conv.is_blocked ? "Unblock" : "Block"}</DropdownMenuItem>
                                       {hiddenIds.includes(conv.id) ? <DropdownMenuItem onClick={(e) => { e.stopPropagation(); unhideConversation(conv.id); }}><EyeOff className="h-4 w-4 mr-2" />Unhide</DropdownMenuItem> : <DropdownMenuItem onClick={(e) => { e.stopPropagation(); hideConversation(conv.id); }}><EyeOff className="h-4 w-4 mr-2" />Hide</DropdownMenuItem>}
                                       <DropdownMenuSeparator />
-                                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConversationId(conv.id); }}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConversationId(conv.id); }}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
                                 </div>
                               </div>
                               <p className="text-xs text-muted-foreground truncate mt-0.5 min-w-0" title={rawRoleOrTitle}>{roleOrTitle}</p>
-                              {lastSnippet && <p className={cn("text-xs truncate mt-0.5 min-w-0", hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90")} title={lastSnippet}>{lastSnippet.length > 40 ? `${lastSnippet.slice(0, 40)}…` : lastSnippet}</p>}
+                              {lastSnippet && <p className={cn("text-xs truncate mt-0.5 min-w-0 block", hasUnread ? "font-semibold text-foreground/90" : "text-muted-foreground/90")} title={lastSnippet}>{lastSnippet}</p>}
                             </div>
                           </div>
                         );
