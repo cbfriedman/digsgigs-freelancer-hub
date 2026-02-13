@@ -18,6 +18,8 @@ interface MessageInputProps {
   className?: string;
   /** Optional ref for the textarea so parent can focus it (e.g. after sending). */
   inputRef?: React.Ref<HTMLTextAreaElement | null>;
+  /** Called when the message input receives focus (e.g. to mark conversation as read). */
+  onInputFocus?: () => void;
 }
 
 export function MessageInput({
@@ -30,6 +32,7 @@ export function MessageInput({
   maxLength = 5000,
   className,
   inputRef: inputRefProp,
+  onInputFocus,
 }: MessageInputProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -221,6 +224,7 @@ export function MessageInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={onInputFocus}
           placeholder={placeholder}
           maxLength={maxLength}
           disabled={disabled}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, supabaseAnonKey } from "@/integrations/supabase/client";
 import { uploadFileWithProgress } from "@/lib/uploadWithProgress";
@@ -21,6 +21,7 @@ import { useProxyEmail } from "@/hooks/useProxyEmail";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import { useUserPresence } from "@/hooks/useUserPresence";
+import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
 import {
   Dialog,
   DialogContent,
@@ -563,6 +564,8 @@ export default function Messages() {
   useEffect(() => {
     if (!selectedConversation) return;
     const convId = selectedConversation;
+    // Clear messages immediately so we never show the previous conversation's history
+    setMessages([]);
     loadMessages(convId);
     loadPartnerProxyEmail(convId);
     let cleanup: (() => void) | undefined;
@@ -627,6 +630,7 @@ export default function Messages() {
               // Selected conversation: per-conversation subscription already appends the message; only refresh list
               loadConversationsRef.current();
             } else {
+              // Other conversation: show toast and refresh list; do not auto-switch (user can click to open)
               toast({
                 title: "New message",
                 description: `${partnerName}: ${(msg.content ?? "").slice(0, 80)}${(msg.content?.length ?? 0) > 80 ? "…" : ""}`,
@@ -644,7 +648,6 @@ export default function Messages() {
                 }
               }
               loadConversationsRef.current();
-              setSelectedConversationRef.current?.(msg.conversation_id);
             }
           }
         )
@@ -656,6 +659,25 @@ export default function Messages() {
       supabase.removeChannel(channel);
     };
   }, [currentUser?.id, toast]);
+
+  // Sync with floating widget / bubble: when widget sends or receives, update our state if that conv is selected
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { conversationId, message } = (e as CustomEvent<MessagesSyncDetail>).detail ?? {};
+      if (!conversationId) return;
+      if (message && selectedConversationRef.current === conversationId) {
+        setMessagesRef.current((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message as Message].sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
+      }
+      loadConversationsRef.current();
+    };
+    window.addEventListener(MESSAGES_SYNC_EVENT, handler);
+    return () => window.removeEventListener(MESSAGES_SYNC_EVENT, handler);
+  }, []);
 
   // No scroll-on-messages effect here: we scroll only on conversation switch and after send (auto) to avoid vibration
 
@@ -829,7 +851,17 @@ export default function Messages() {
       });
 
       if (error) throw error;
-      setMessages((data as unknown as Message[]) || []);
+      const fromServer = (data as unknown as Message[]) || [];
+      // Merge with any messages already in state (e.g. from realtime that arrived before this fetch completed)
+      setMessages((prev) => {
+        if (selectedConversationRef.current !== conversationId) return prev;
+        const serverIds = new Set(fromServer.map((m) => m.id));
+        const fromRealtime = prev.filter((m) => !serverIds.has(m.id));
+        const merged = [...fromServer, ...fromRealtime].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        return merged;
+      });
 
       if (currentUser?.id) {
         await supabase.rpc("mark_conversation_messages_read" as any, {
@@ -876,10 +908,15 @@ export default function Messages() {
         },
         (payload) => {
           const newMsg = payload.new as Message;
+          // Only update if this conversation is still selected (avoid race when switching)
+          if (selectedConversationRef.current !== conversationId) return;
           setMessages((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
+            return [...prev, newMsg].sort(
+              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
           });
+          dispatchMessagesSync({ conversationId, message: newMsg });
         }
       )
       .on(
@@ -892,6 +929,7 @@ export default function Messages() {
         },
         (payload) => {
           const updated = payload.new as Message;
+          if (selectedConversationRef.current !== conversationId) return;
           setMessages((prev) =>
             prev.map((m) => (m.id === updated.id ? { ...m, read_at: updated.read_at } : m))
           );
@@ -931,6 +969,26 @@ export default function Messages() {
     setReplyingTo({ id: messageId, content: content.slice(0, 200) });
   };
 
+  /** Mark partner messages as read when user focuses the message input (cursor in input = reading). */
+  const handleMessageInputFocus = useCallback(async () => {
+    if (!selectedConversation || !currentUser?.id) return;
+    try {
+      await supabase.rpc("mark_conversation_messages_read" as any, {
+        _conversation_id: selectedConversation,
+      });
+      loadConversations();
+      // Optimistically set read_at on partner messages so UI (and partner's double check) stays correct
+      const now = new Date().toISOString();
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.sender_id !== currentUser.id && !m.read_at ? { ...m, read_at: now } : m
+        )
+      );
+    } catch {
+      // non-blocking
+    }
+  }, [selectedConversation, currentUser?.id]);
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
@@ -965,17 +1023,16 @@ export default function Messages() {
       setReplyingTo(null);
       // Optimistic append: avoid full refetch so partner bubbles don't re-render
       if (messageId && currentUser?.id) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: messageId,
-            content: validated.content,
-            sender_id: currentUser.id,
-            created_at: new Date().toISOString(),
-            read_at: null,
-            attachments: [],
-          } as Message,
-        ]);
+        const sentMessage: Message = {
+          id: messageId,
+          content: validated.content,
+          sender_id: currentUser.id,
+          created_at: new Date().toISOString(),
+          read_at: null,
+          attachments: [],
+        };
+        setMessages((prev) => [...prev, sentMessage]);
+        dispatchMessagesSync({ conversationId: selectedConversation, message: sentMessage });
       } else {
         await loadMessages(selectedConversation);
       }
@@ -1131,17 +1188,16 @@ export default function Messages() {
       if (error) throw error;
       setNewMessage("");
       if (messageId && currentUser?.id) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: messageId,
-            content: content.trim(),
-            sender_id: currentUser.id,
-            created_at: new Date().toISOString(),
-            read_at: null,
-            attachments,
-          } as Message,
-        ]);
+        const sentMessage: Message = {
+          id: messageId,
+          content: content.trim(),
+          sender_id: currentUser.id,
+          created_at: new Date().toISOString(),
+          read_at: null,
+          attachments,
+        };
+        setMessages((prev) => [...prev, sentMessage]);
+        dispatchMessagesSync({ conversationId: selectedConversation, message: sentMessage });
       } else {
         await loadMessages(selectedConversation);
       }
@@ -1824,6 +1880,7 @@ export default function Messages() {
                     placeholder="Type a message..."
                     maxLength={5000}
                     inputRef={messageInputRef}
+                    onInputFocus={handleMessageInputFocus}
                   />
                 </div>
               </>
@@ -2035,7 +2092,7 @@ export default function Messages() {
                           <Progress value={attachmentUploadProgress} className="h-1.5" />
                         </div>
                       )}
-                      <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} onFileSelect={sendMessageWithAttachments} placeholder="Type a message..." maxLength={5000} inputRef={messageInputRef} />
+                      <MessageInput value={newMessage} onChange={setNewMessage} onSend={sendMessage} onFileSelect={sendMessageWithAttachments} placeholder="Type a message..." maxLength={5000} inputRef={messageInputRef} onInputFocus={handleMessageInputFocus} />
                     </div>
                   </>
                 ) : (

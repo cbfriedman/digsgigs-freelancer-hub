@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { isNotificationMuted, setNotificationMuted } from "@/lib/notificationSound";
+import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
 import { MessageInput, MessageBubble } from "@/components/messages";
 
 const messageSchema = z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long");
@@ -115,8 +116,10 @@ export function FloatingMessageWidget() {
   const pendingAutoScrollRef = useRef<Record<string, boolean>>({});
   const conversationsRef = useRef<RecentConversation[]>([]);
   const openChatRef = useRef<(conv: RecentConversation, bringToFront?: boolean) => void>(() => {});
+  const openChatIdsRef = useRef<Set<string>>(new Set());
   const userIdRef = useRef<string | null>(null);
   userIdRef.current = user?.id ?? null;
+  openChatIdsRef.current = new Set(openChats.map((c) => c.id));
 
   const hideOnMessagesPage = pathname === MESSAGES_PAGE;
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
@@ -242,6 +245,7 @@ export function FloatingMessageWidget() {
             if (list.some((m) => m.id === incoming.id)) return prev;
             return { ...prev, [convId]: [...list, incoming] };
           });
+          dispatchMessagesSync({ conversationId: convId, message: incoming });
         }
       )
       .subscribe();
@@ -348,6 +352,31 @@ export function FloatingMessageWidget() {
     };
   }, []);
 
+  // Sync with main Messages page: when main page sends or receives, update our bubble messages if that conv is open
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { conversationId, message } = (e as CustomEvent<MessagesSyncDetail>).detail ?? {};
+      if (!conversationId) return;
+      if (message && openChatIdsRef.current.has(conversationId)) {
+        setMessagesMap((prev) => {
+          const list = prev[conversationId] || [];
+          if (list.some((m) => m.id === message.id)) return prev;
+          return {
+            ...prev,
+            [conversationId]: [...list, message as Message].sort(
+              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            ),
+          };
+        });
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("recent-conversations-refresh"));
+      }
+    };
+    window.addEventListener(MESSAGES_SYNC_EVENT, handler);
+    return () => window.removeEventListener(MESSAGES_SYNC_EVENT, handler);
+  }, []);
+
   useEffect(() => {
     if (!user?.id || hideOnMessagesPage) return;
     const channel = supabase
@@ -370,6 +399,7 @@ export function FloatingMessageWidget() {
               if (list.some((m) => m.id === msg.id)) return prev;
               return { ...prev, [convId]: [...list, msg] };
             });
+            dispatchMessagesSync({ conversationId: convId, message: msg });
           };
           const tryOpenChat = (conv: RecentConversation) => {
             addMessageToConv(conv.id);
@@ -479,12 +509,20 @@ export function FloatingMessageWidget() {
           if (typeof window !== "undefined") {
             window.dispatchEvent(new Event("recent-conversations-refresh"));
           }
+          const finalMessage: Message = {
+            id: String(messageId),
+            content: trimmed,
+            sender_id: user.id,
+            created_at: new Date().toISOString(),
+            read_at: null,
+          };
           setMessagesMap((prev) => ({
             ...prev,
             [conv.id]: (prev[conv.id] || []).map((m) =>
-              m.id === tempId ? { ...m, id: String(messageId), created_at: new Date().toISOString() } : m
+              m.id === tempId ? { ...finalMessage } : m
             ),
           }));
+          dispatchMessagesSync({ conversationId: conv.id, message: finalMessage });
           supabase.functions
             .invoke("enqueue-message-notification", {
               body: { conversation_id: conv.id, message_id: messageId },
@@ -562,12 +600,21 @@ export function FloatingMessageWidget() {
           if (typeof window !== "undefined") {
             window.dispatchEvent(new Event("recent-conversations-refresh"));
           }
+          const finalMessage: Message = {
+            id: String(messageId),
+            content: content.trim() || "(attachment)",
+            sender_id: user.id,
+            created_at: new Date().toISOString(),
+            read_at: null,
+            attachments,
+          };
           setMessagesMap((prev) => ({
             ...prev,
             [conv.id]: (prev[conv.id] || []).map((m) =>
-              m.id === tempId ? { ...m, id: String(messageId), created_at: new Date().toISOString(), attachments } : m
+              m.id === tempId ? { ...finalMessage } : m
             ),
           }));
+          dispatchMessagesSync({ conversationId: conv.id, message: finalMessage });
           supabase.functions
             .invoke("enqueue-message-notification", {
               body: { conversation_id: conv.id, message_id: messageId },
