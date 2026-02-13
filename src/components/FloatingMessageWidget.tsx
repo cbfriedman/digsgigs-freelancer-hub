@@ -110,6 +110,22 @@ export function FloatingMessageWidget() {
   const [attachmentUploadConvId, setAttachmentUploadConvId] = useState<string | null>(null);
   const [replyingToMap, setReplyingToMap] = useState<Record<string, { id: string; content: string } | null>>({});
 
+  useEffect(() => {
+    const shouldKeepScrollUnlocked = !!editingMessageId || !!deleteMessageId;
+    if (!shouldKeepScrollUnlocked || typeof document === "undefined") return;
+    const unlockScroll = () => {
+      document.body.style.overflow = "auto";
+      document.body.style.paddingRight = "0px";
+      document.documentElement.style.overflow = "auto";
+    };
+    unlockScroll();
+    const timeoutId = window.setTimeout(unlockScroll, 0);
+    return () => {
+      window.clearTimeout(timeoutId);
+      unlockScroll();
+    };
+  }, [editingMessageId, deleteMessageId]);
+
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
   const inputRefsMap = useRef<Record<string, HTMLTextAreaElement | null>>({});
@@ -1289,7 +1305,7 @@ export function FloatingMessageWidget() {
 
       {/* Edit message dialog */}
       <Dialog open={!!editingMessageId} onOpenChange={(open) => !open && (setEditingMessageId(null), setEditingConvId(null))}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md data-[state=closed]:animate-none data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[50%]">
           <DialogHeader>
             <DialogTitle>Edit message</DialogTitle>
             <DialogDescription>Change the message text and save.</DialogDescription>
@@ -1312,7 +1328,7 @@ export function FloatingMessageWidget() {
 
       {/* Delete message confirmation */}
       <AlertDialog open={!!deleteMessageId} onOpenChange={(open) => !open && (setDeleteMessageId(null), setDeleteConvId(null))}>
-        <AlertDialogContent>
+        <AlertDialogContent className="data-[state=closed]:animate-none data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[50%]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete message?</AlertDialogTitle>
             <AlertDialogDescription>This message will be permanently removed. This cannot be undone.</AlertDialogDescription>

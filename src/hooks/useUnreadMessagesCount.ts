@@ -8,7 +8,6 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
  */
 export function useUnreadMessagesCount() {
   const [count, setCount] = useState(0);
-
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -16,64 +15,17 @@ export function useUnreadMessagesCount() {
 
     const fetchCount = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user?.id || !mounted) return;
-
-        // Use type-safe approach with explicit any casting at start
-        const client = supabase as any;
-
-        // Get digger profile IDs
-        const { data: profilesData } = await client
-          .from("digger_profiles")
-          .select("id")
-          .eq("user_id", user.id);
-        const diggerIds = ((profilesData as { id: string }[]) || []).map((p) => p.id);
-
-        // Gather conversation IDs where user is participant
-        const conversationIds: string[] = [];
-
-        // As consumer
-        const { data: consumerData } = await client
-          .from("conversations")
-          .select("id")
-          .eq("consumer_id", user.id);
-        ((consumerData as { id: string }[]) || []).forEach((c) => conversationIds.push(c.id));
-
-        // As digger
-        if (diggerIds.length > 0) {
-          const { data: diggerData } = await client
-            .from("conversations")
-            .select("id")
-            .in("digger_id", diggerIds);
-          ((diggerData as { id: string }[]) || []).forEach((c) => conversationIds.push(c.id));
-        }
-
-        // As admin
-        const { data: adminData } = await client
-          .from("conversations")
-          .select("id")
-          .eq("admin_id", user.id);
-        ((adminData as { id: string }[]) || []).forEach((c) => conversationIds.push(c.id));
-
-        // Dedupe
-        const uniqueIds = [...new Set(conversationIds)];
-        if (uniqueIds.length === 0) {
-          if (mounted) setCount(0);
-          return;
-        }
-
-        // Count unread messages
-        const { count: unreadCount, error } = await client
-          .from("messages")
-          .select("id", { count: "exact", head: true })
-          .in("conversation_id", uniqueIds)
-          .is("read_at", null)
-          .neq("sender_id", user.id);
-
+        const { data, error } = await supabase.rpc("get_my_conversations" as never);
         if (error) throw error;
-        if (mounted) setCount((unreadCount as number) ?? 0);
+        const conversations =
+          (data as Array<{
+            unread_count?: number | null;
+          }> | null) ?? [];
+        const unreadTotal = conversations.reduce((sum, c) => {
+          const next = typeof c.unread_count === "number" ? c.unread_count : Number(c.unread_count) || 0;
+          return sum + Math.max(0, next);
+        }, 0);
+        if (mounted) setCount(unreadTotal);
       } catch (e) {
         if (mounted) setCount(0);
       }
@@ -96,12 +48,21 @@ export function useUnreadMessagesCount() {
         )
         .subscribe();
       channelRef.current = ch;
-      return ch;
     };
     setup();
 
+    const onRefresh = () => {
+      fetchCount();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("recent-conversations-refresh", onRefresh);
+    }
+
     return () => {
       mounted = false;
+      if (typeof window !== "undefined") {
+        window.removeEventListener("recent-conversations-refresh", onRefresh);
+      }
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;

@@ -289,6 +289,22 @@ export default function Messages() {
   const [deleteConversationId, setDeleteConversationId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  useEffect(() => {
+    const shouldKeepScrollUnlocked = !!editingMessageId || !!deleteMessageId || !!deleteConversationId;
+    if (!shouldKeepScrollUnlocked || typeof document === "undefined") return;
+    const unlockScroll = () => {
+      document.body.style.overflow = "auto";
+      document.body.style.paddingRight = "0px";
+      document.documentElement.style.overflow = "auto";
+    };
+    unlockScroll();
+    const timeoutId = window.setTimeout(unlockScroll, 0);
+    return () => {
+      window.clearTimeout(timeoutId);
+      unlockScroll();
+    };
+  }, [editingMessageId, deleteMessageId, deleteConversationId]);
+
   const confirmDeleteConversation = async () => {
     if (!deleteConversationId) return;
     setIsDeleting(true);
@@ -2258,7 +2274,10 @@ export default function Messages() {
 
       {/* Edit message dialog */}
       <Dialog open={!!editingMessageId} onOpenChange={(open) => !open && setEditingMessageId(null)}>
-        <DialogContent className="sm:max-w-md" onClick={(e) => e.stopPropagation()}>
+        <DialogContent
+          className="sm:max-w-md data-[state=closed]:animate-none data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[50%]"
+          onClick={(e) => e.stopPropagation()}
+        >
           <DialogHeader>
             <DialogTitle>Edit message</DialogTitle>
             <DialogDescription>Change the message text and save.</DialogDescription>
@@ -2281,7 +2300,10 @@ export default function Messages() {
 
       {/* Delete message confirmation */}
       <AlertDialog open={!!deleteMessageId} onOpenChange={(open) => !open && setDeleteMessageId(null)}>
-        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+        <AlertDialogContent
+          className="data-[state=closed]:animate-none data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[50%]"
+          onClick={(e) => e.stopPropagation()}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Delete message?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -2305,7 +2327,10 @@ export default function Messages() {
       </AlertDialog>
 
       <AlertDialog open={!!deleteConversationId} onOpenChange={(open) => !open && setDeleteConversationId(null)}>
-        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+        <AlertDialogContent
+          className="data-[state=closed]:animate-none data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[50%]"
+          onClick={(e) => e.stopPropagation()}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Delete chat?</AlertDialogTitle>
             <AlertDialogDescription>
