@@ -373,7 +373,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen bg-background flex flex-col w-full">
         <div className="flex flex-1 w-full">
           <Sidebar variant="inset" collapsible="icon" className="!bg-[hsl(240_5%_94%)] dark:!bg-[hsl(240_10%_15%)] border-r-2 border-sidebar-border shadow-xl">

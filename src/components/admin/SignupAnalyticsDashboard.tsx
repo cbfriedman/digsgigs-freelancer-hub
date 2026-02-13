@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Users, TrendingUp, Smartphone, Monitor, Globe, Facebook, Search, Mail, Eye, Target, ChevronLeft, ChevronRight, ShieldOff, Trash2 } from "lucide-react";
+import { RefreshCw, Users, TrendingUp, Smartphone, Monitor, Globe, Facebook, Search, Mail, Eye, Target, ChevronLeft, ChevronRight, ShieldOff, Trash2, Image } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
@@ -52,6 +52,20 @@ function countryCodeToFlag(cc: string): string {
   return [...cc.toUpperCase()]
     .map((c) => String.fromCodePoint(0x1f1e6 - 65 + c.charCodeAt(0)))
     .join("");
+}
+
+/** Human-friendly label for UTM source (Facebook, Instagram, Google, etc.) */
+function sourceDisplayName(source: string | null): string {
+  if (!source) return "Direct";
+  const s = source.toLowerCase();
+  if (s === "facebook" || s === "fb" || s === "meta") return "Facebook";
+  if (s === "instagram" || s === "ig") return "Instagram";
+  if (s === "google" || s === "google / cpc") return "Google";
+  if (s === "email" || s === "newsletter") return "Email";
+  if (s === "twitter" || s === "x") return "X (Twitter)";
+  if (s === "linkedin") return "LinkedIn";
+  if (s === "referral" || s === "referrer") return "Referral";
+  return source.charAt(0).toUpperCase() + source.slice(1).toLowerCase();
 }
 
 interface SignupStats {
@@ -554,15 +568,17 @@ export const SignupAnalyticsDashboard = () => {
   const getSourceIcon = (source: string) => {
     const s = source.toLowerCase();
     if (s === "facebook" || s === "meta" || s === "fb") return <Facebook className="h-4 w-4" />;
-    if (s === "google") return <Search className="h-4 w-4" />;
-    if (s === "email") return <Mail className="h-4 w-4" />;
+    if (s === "instagram" || s === "ig") return <Image className="h-4 w-4" />;
+    if (s === "google" || s === "google / cpc") return <Search className="h-4 w-4" />;
+    if (s === "email" || s === "newsletter") return <Mail className="h-4 w-4" />;
     return <Globe className="h-4 w-4" />;
   };
 
   const getSourceBadgeVariant = (source: string): "default" | "secondary" | "outline" | "destructive" => {
     const s = source.toLowerCase();
     if (s === "facebook" || s === "meta" || s === "fb") return "default";
-    if (s === "google") return "secondary";
+    if (s === "instagram" || s === "ig") return "secondary";
+    if (s === "google" || s === "google / cpc") return "secondary";
     return "outline";
   };
 
@@ -580,7 +596,9 @@ export const SignupAnalyticsDashboard = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Signup Analytics</h2>
-          <p className="text-muted-foreground">Track signups from your ad campaigns</p>
+          <p className="text-muted-foreground">
+            See where each user came from when they signed up: Facebook, Instagram, Google, referral, email, or direct. Use the table and &quot;By Source&quot; card below.
+          </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleTestTracking} variant="secondary" size="sm">
@@ -721,7 +739,7 @@ export const SignupAnalyticsDashboard = () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {getSourceIcon(source)}
-                            <span className="text-sm capitalize">{source}</span>
+                            <span className="text-sm">{sourceDisplayName(source)}</span>
                           </div>
                           <Badge variant={getSourceBadgeVariant(source)}>{count}</Badge>
                         </div>
@@ -1024,7 +1042,7 @@ export const SignupAnalyticsDashboard = () => {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {signup.utm_source && getSourceIcon(signup.utm_source)}
-                          <span className="capitalize text-sm">{signup.utm_source || "Direct"}</span>
+                          <span className="text-sm">{sourceDisplayName(signup.utm_source)}</span>
                         </div>
                       </TableCell>
                       <TableCell className="max-w-[100px] truncate text-sm" title={signup.utm_medium || ""}>
@@ -1224,16 +1242,15 @@ export const SignupAnalyticsDashboard = () => {
           <div className="flex items-start gap-4">
             <TrendingUp className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
             <div className="space-y-2">
-              <h3 className="font-semibold">About Campaign Funnel Tracking</h3>
+              <h3 className="font-semibold">Where did users come from?</h3>
               <p className="text-sm text-muted-foreground">
-                This dashboard shows the complete funnel from your ad campaigns: landing page views, signup page views, and actual signups.
-                All events are tracked with UTM parameters, capturing source, campaign, device, and landing page data.
+                Use the <strong>Source</strong> column in the table above and the <strong>By Source (Signups)</strong> card to see each signup’s origin: Facebook, Instagram, Google, email, referral, or Direct. The <strong>Referrer</strong> column shows the previous site URL when available.
               </p>
               <p className="text-sm text-muted-foreground">
-                <strong>Conversion Rate:</strong> Calculated as (Signups ÷ Landing Page Views) × 100. This helps you understand how effective your ads are at converting visitors.
+                Add UTM parameters to your links so we can attribute signups: <code className="text-xs bg-muted px-1 rounded">?utm_source=facebook&amp;utm_medium=social</code> or <code className="text-xs bg-muted px-1 rounded">?utm_source=instagram</code>, <code className="text-xs bg-muted px-1 rounded">?utm_source=google</code>, etc.
               </p>
               <p className="text-sm text-muted-foreground">
-                <strong>Tip:</strong> Make sure your Facebook and Google ads include UTM parameters (utm_source, utm_medium, utm_campaign) to see attribution data here.
+                <strong>Conversion Rate:</strong> (Signups ÷ Landing Page Views) × 100. <strong>Tip:</strong> Use the same utm_source in your Facebook, Instagram, and Google ad URLs to see which channel drives the most signups.
               </p>
             </div>
           </div>

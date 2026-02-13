@@ -367,7 +367,6 @@ export const BidSubmissionTemplate = ({
           </AlertDialogContent>
         </AlertDialog>
       )}
-
       <div dir="ltr" className="w-full min-w-0 max-w-full">
         <Card className="rounded-2xl border shadow-sm overflow-hidden min-w-0">
           <CardHeader className="border-b bg-muted/30 px-4 py-4 sm:px-6 sm:py-5">

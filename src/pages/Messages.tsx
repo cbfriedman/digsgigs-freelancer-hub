@@ -657,10 +657,7 @@ export default function Messages() {
     };
   }, [currentUser?.id, toast]);
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // No scroll-on-messages effect here: we scroll only on conversation switch and after send (auto) to avoid vibration
 
   // Debounced broadcast "typing" when user types
   useEffect(() => {
@@ -966,7 +963,23 @@ export default function Messages() {
       if (error) throw error;
       setNewMessage("");
       setReplyingTo(null);
-      await loadMessages(selectedConversation);
+      // Optimistic append: avoid full refetch so partner bubbles don't re-render
+      if (messageId && currentUser?.id) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: messageId,
+            content: validated.content,
+            sender_id: currentUser.id,
+            created_at: new Date().toISOString(),
+            read_at: null,
+            attachments: [],
+          } as Message,
+        ]);
+      } else {
+        await loadMessages(selectedConversation);
+      }
+      loadConversations();
       refreshRecentConversations();
       if (messageId) {
         supabase.functions
@@ -975,12 +988,8 @@ export default function Messages() {
           })
           .catch(() => {});
       }
-      const focusInput = () => {
-        messageInputRef.current?.focus();
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-      };
-      requestAnimationFrame(focusInput);
-      setTimeout(focusInput, 100);
+      messageInputRef.current?.focus();
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({
@@ -1121,7 +1130,22 @@ export default function Messages() {
       });
       if (error) throw error;
       setNewMessage("");
-      await loadMessages(selectedConversation);
+      if (messageId && currentUser?.id) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: messageId,
+            content: content.trim(),
+            sender_id: currentUser.id,
+            created_at: new Date().toISOString(),
+            read_at: null,
+            attachments,
+          } as Message,
+        ]);
+      } else {
+        await loadMessages(selectedConversation);
+      }
+      loadConversations();
       refreshRecentConversations();
       if (messageId) {
         supabase.functions
@@ -1130,10 +1154,8 @@ export default function Messages() {
           })
           .catch(() => {});
       }
-      requestAnimationFrame(() => {
-        messageInputRef.current?.focus();
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-      });
+      messageInputRef.current?.focus();
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
     } catch (error: any) {
       toast({
         title: "Error sending attachments",
