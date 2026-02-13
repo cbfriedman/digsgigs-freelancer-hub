@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,6 +20,8 @@ interface MessageInputProps {
   inputRef?: React.Ref<HTMLTextAreaElement | null>;
   /** Called when the message input receives focus (e.g. to mark conversation as read). */
   onInputFocus?: () => void;
+  /** Max auto-grow height for textarea in pixels. */
+  maxAutoHeight?: number;
 }
 
 export function MessageInput({
@@ -33,6 +35,7 @@ export function MessageInput({
   className,
   inputRef: inputRefProp,
   onInputFocus,
+  maxAutoHeight = 200,
 }: MessageInputProps) {
   const handleInputInteract = useCallback(() => {
     onInputFocus?.();
@@ -131,6 +134,16 @@ export function MessageInput({
   };
 
   const isDisabled = disabled || (!value.trim() && selectedFiles.length === 0);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    // Auto-grow textarea by content until maxAutoHeight.
+    textarea.style.height = "auto";
+    const nextHeight = Math.min(textarea.scrollHeight, maxAutoHeight);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxAutoHeight ? "auto" : "hidden";
+  }, [value, maxAutoHeight]);
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -234,7 +247,7 @@ export function MessageInput({
           placeholder={placeholder}
           maxLength={maxLength}
           disabled={disabled}
-          className="flex-1 min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 py-2.5 px-0 text-sm placeholder:text-muted-foreground/70"
+          className="flex-1 min-h-[44px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 py-2.5 px-0 text-sm placeholder:text-muted-foreground/70 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           rows={1}
         />
 

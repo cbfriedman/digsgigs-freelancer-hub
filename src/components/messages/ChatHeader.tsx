@@ -13,6 +13,7 @@ interface ChatHeaderProps {
   onPartnerClick?: () => void;
   onProjectClick?: () => void;
   isOnline?: boolean;
+  presenceStatus?: "online" | "away" | "offline";
   partnerAvatarUrl?: string | null;
   showBackButton?: boolean;
   onBack?: () => void;
@@ -29,6 +30,7 @@ export function ChatHeader({
   onPartnerClick,
   onProjectClick,
   isOnline = false,
+  presenceStatus,
   partnerAvatarUrl,
   showBackButton = false,
   onBack,
@@ -36,6 +38,14 @@ export function ChatHeader({
   className,
 }: ChatHeaderProps) {
   const initial = partnerName[0]?.toUpperCase() || "?";
+  const resolvedStatus = presenceStatus ?? (isOnline ? "online" : "offline");
+  const presenceDotClass =
+    resolvedStatus === "online"
+      ? "bg-success"
+      : resolvedStatus === "away"
+        ? "bg-amber-400"
+        : "bg-muted-foreground/50";
+  const presenceLabel = resolvedStatus === "online" ? "Online" : resolvedStatus === "away" ? "Away" : "Offline";
 
   return (
     <div className={cn(
@@ -69,9 +79,9 @@ export function ChatHeader({
           <span
             className={cn(
               "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
-              isOnline ? "bg-success" : "bg-muted-foreground/50"
+              presenceDotClass
             )}
-            title={isOnline ? "Online" : "Offline"}
+            title={presenceLabel}
           />
         </div>
 
@@ -95,9 +105,6 @@ export function ChatHeader({
             </h2>
           )}
           <p className="text-xs text-muted-foreground truncate mt-0.5 flex items-center gap-1">
-            {isOnline && (
-              <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
-            )}
             {projectUrl && projectTitle ? (
               <button
                 type="button"
@@ -111,7 +118,7 @@ export function ChatHeader({
                 {projectTitle}
               </button>
             ) : (
-              <span>{isOnline ? "Active now" : subtitle}</span>
+              <span>{resolvedStatus === "online" ? "Active now" : resolvedStatus === "away" ? "Away" : subtitle}</span>
             )}
           </p>
         </div>
@@ -130,7 +137,7 @@ export function ChatHeader({
                 <Phone className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Voice call</TooltipContent>
+            <TooltipContent side="bottom">Voice call</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -143,7 +150,7 @@ export function ChatHeader({
                 <Video className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Video call</TooltipContent>
+            <TooltipContent side="bottom">Video call</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -156,7 +163,7 @@ export function ChatHeader({
                 <Calendar className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Schedule meeting</TooltipContent>
+            <TooltipContent side="bottom">Schedule meeting</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -170,7 +177,7 @@ export function ChatHeader({
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>More options</TooltipContent>
+            <TooltipContent side="bottom">More options</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

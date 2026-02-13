@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   MessageSquare, Mail, Copy, Check, CheckCheck, Users, UserPlus, Search, 
   MoreHorizontal, ExternalLink, Briefcase, FileCheck, Hourglass, 
-  ChevronDown, X, Pin, Trash2, EyeOff, BellOff, Ban 
+  ChevronDown, X, Pin, Star, Trash2, EyeOff, BellOff, Ban, UploadCloud
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useToast } from "@/hooks/use-toast";
@@ -19,8 +19,9 @@ import { format } from "date-fns";
 import { z } from "zod";
 import { useProxyEmail } from "@/hooks/useProxyEmail";
 import { useAuth } from "@/contexts/AuthContext";
-import { useDiggerPresence } from "@/hooks/useDiggerPresence";
-import { useUserPresence } from "@/hooks/useUserPresence";
+import { useDiggerPresence, getDiggerPresenceStatus, type DiggerPresenceStatus } from "@/hooks/useDiggerPresence";
+import { useUserPresence, getUserPresenceStatus, type PresenceStatus } from "@/hooks/useUserPresence";
+import { usePresenceAwayMs } from "@/hooks/usePresenceSettings";
 import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
 import {
   Dialog,
@@ -145,7 +146,9 @@ export default function Messages() {
   const [userSearchLoading, setUserSearchLoading] = useState(false);
   const [startingChatUserId, setStartingChatUserId] = useState<string | null>(null);
   const [listSearch, setListSearch] = useState("");
-  const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [showInfoPanel, setShowInfoPanel] = useState(
+    () => (typeof window !== "undefined" ? window.innerWidth >= 1280 : false)
+  );
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageContent, setEditingMessageContent] = useState("");
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
@@ -164,10 +167,13 @@ export default function Messages() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingSendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [partnerTypingUntil, setPartnerTypingUntil] = useState<number | null>(null);
+  const [isDragOverChat, setIsDragOverChat] = useState(false);
+  const dragDepthRef = useRef(0);
 
   const isAdmin = userRoles.includes("admin");
-  const { onlineDiggers } = useDiggerPresence();
-  const { onlineUserIds } = useUserPresence();
+  useDiggerPresence();
+  useUserPresence();
+  const awayAfterMs = usePresenceAwayMs();
 
   const refreshRecentConversations = () => {
     if (typeof window !== "undefined") {
@@ -355,7 +361,7 @@ export default function Messages() {
   };
 
   const [showHidden, setShowHidden] = useState(false);
-  const [listFilter, setListFilter] = useState<"all" | "favorites">("all");
+  const [listFilter, setListFilter] = useState<"all" | "favorites" | "unread">("all");
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
 
   const unhideConversation = (conversationId: string) => {
@@ -426,7 +432,13 @@ export default function Messages() {
     : conversations
   )
     .filter((c) => showHidden || !hiddenIds.includes(c.id))
-    .filter((c) => listFilter === "all" || starredIds.includes(c.id))
+    .filter((c) =>
+      listFilter === "all"
+        ? true
+        : listFilter === "favorites"
+          ? starredIds.includes(c.id)
+          : (c.unread_count ?? 0) > 0
+    )
     .sort((a, b) => {
       const aPin = pinnedIds.includes(a.id);
       const bPin = pinnedIds.includes(b.id);
@@ -1248,6 +1260,49 @@ export default function Messages() {
     }
   };
 
+  const handleChatDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!selectedConversation) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current += 1;
+    setIsDragOverChat(true);
+  }, [selectedConversation]);
+
+  const handleChatDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!selectedConversation) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+    setIsDragOverChat(true);
+  }, [selectedConversation]);
+
+  const handleChatDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!selectedConversation) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDragOverChat(false);
+  }, [selectedConversation]);
+
+  const handleChatDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!selectedConversation) return;
+    if (!e.dataTransfer.files?.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = 0;
+    setIsDragOverChat(false);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    void sendMessageWithAttachments(droppedFiles, newMessage);
+  }, [selectedConversation, sendMessageWithAttachments, newMessage]);
+
+  useEffect(() => {
+    dragDepthRef.current = 0;
+    setIsDragOverChat(false);
+  }, [selectedConversation]);
+
   const getConversationPartner = (conv: Conversation | undefined) => {
     if (!conv) return "Unknown";
     if (conv.admin_id) {
@@ -1395,20 +1450,51 @@ export default function Messages() {
   const projectTitle = selectedConv?.gigs?.title || null;
   const projectUrl = selectedConv?.gig_id ? `/gig/${selectedConv.gig_id}` : null;
 
-  /** Partner is online: use user presence for support chat or consumer; digger presence for digger. Real-time via useUserPresence / useDiggerPresence. */
-  const getPartnerIsOnline = (conv: Conversation | undefined) => {
-    if (!conv || !currentUser?.id) return false;
-    if (conv.admin_id) {
-      const partnerUserId = currentUser.id === conv.admin_id ? conv.consumer_id : conv.admin_id;
-      return partnerUserId != null && onlineUserIds.has(String(partnerUserId));
+  /** Partner status from realtime presence. */
+  const getPartnerPresenceStatus = (conv: Conversation | undefined): PresenceStatus => {
+    if (!conv || !currentUser?.id) return "offline";
+    const partnerUserId =
+      conv.partner_user_id ??
+      (conv.admin_id
+        ? (currentUser.id === conv.admin_id ? conv.consumer_id : conv.admin_id)
+        : (currentUser.id === conv.consumer_id ? null : conv.consumer_id));
+
+    const userStatus = getUserPresenceStatus(
+      partnerUserId ? String(partnerUserId) : null,
+      awayAfterMs
+    );
+
+    // For consumer -> digger chats, also fallback to digger presence (profile id channel).
+    if (currentUser.id === conv.consumer_id) {
+      const diggerStatus: DiggerPresenceStatus = getDiggerPresenceStatus(
+        conv.digger_id ? String(conv.digger_id) : null,
+        awayAfterMs
+      );
+      if (userStatus === "online" || diggerStatus === "online") return "online";
+      if (userStatus === "away" || diggerStatus === "away") return "away";
+      return "offline";
     }
-    if (currentUser.id === conv.consumer_id)
-      return !!(conv.digger_id && onlineDiggers.has(String(conv.digger_id)));
-    return conv.consumer_id != null && onlineUserIds.has(String(conv.consumer_id));
+
+    return userStatus;
   };
 
-  /** Current user appears online when viewing Messages (they are tracked by PresenceTracker in App). */
-  const iAmOnline = true;
+  // Backward-compatible alias for any stale call sites during hot reload.
+  const getPartnerIsOnline = (conv: Conversation | undefined) =>
+    getPartnerPresenceStatus(conv) === "online";
+
+  const getPresenceDotClass = (status: PresenceStatus) =>
+    status === "online"
+      ? "bg-success"
+      : status === "away"
+        ? "bg-amber-400"
+        : "bg-muted-foreground/50";
+
+  const getPresenceLabel = (status: PresenceStatus) =>
+    status === "online" ? "Online" : status === "away" ? "Away" : "Offline";
+
+  const iAmStatus: PresenceStatus = currentUser?.id
+    ? getUserPresenceStatus(currentUser.id, awayAfterMs)
+    : "offline";
 
   if (loading) {
     return (
@@ -1559,6 +1645,18 @@ export default function Messages() {
                 >
                   Favorites
                 </Button>
+                <Button
+                  variant={listFilter === "unread" ? "secondary" : "ghost"}
+                  size="sm"
+                  className={`rounded-full h-8 px-3 text-sm font-medium ${
+                    listFilter === "unread"
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                  onClick={() => setListFilter("unread")}
+                >
+                  Unread
+                </Button>
                 <DropdownMenu open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -1615,6 +1713,10 @@ export default function Messages() {
                         ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content
                         : null;
                       const isPinned = pinnedIds.includes(conv.id);
+                      const isStarred = starredIds.includes(conv.id);
+                      const isMuted = !!conv.muted;
+                      const isBlocked = !!conv.is_blocked;
+                      const isHidden = hiddenIds.includes(conv.id);
                       const unreadCount = conv.unread_count ?? 0;
                       const hasUnread = unreadCount > 0;
                       return (
@@ -1625,7 +1727,7 @@ export default function Messages() {
                           onClick={() => setSelectedConversation(conv.id)}
                           onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)}
                           className={cn(
-                            "group w-full flex items-start gap-3 p-3 text-left transition-colors cursor-pointer rounded-xl",
+                            "group w-full flex items-center gap-3 p-3 pr-4 text-left transition-colors cursor-pointer rounded-xl",
                             "hover:bg-muted/60",
                             selectedConversation === conv.id
                               ? "bg-muted shadow-sm ring-1 ring-border/50"
@@ -1633,20 +1735,20 @@ export default function Messages() {
                           )}
                         >
                           <div className="relative shrink-0">
-                            <Avatar className="h-11 w-11 ring-1 ring-border/50">
+                            <Avatar className="h-16 w-16 ring-1 ring-border/50">
                               {conv.partner_avatar_url && (
                                 <AvatarImage src={conv.partner_avatar_url} alt="" className="object-cover" />
                               )}
-                              <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                              <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold leading-none">
                                 {partnerName[0].toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <span
                               className={cn(
-                                "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
-                                getPartnerIsOnline(conv) ? "bg-success" : "bg-muted-foreground/50"
+                                "absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background",
+                                getPresenceDotClass(getPartnerPresenceStatus(conv))
                               )}
-                              title={getPartnerIsOnline(conv) ? "Online" : "Offline"}
+                              title={getPresenceLabel(getPartnerPresenceStatus(conv))}
                             />
                           </div>
                           <div className="flex-1 min-w-0 w-0">
@@ -1662,6 +1764,14 @@ export default function Messages() {
                                   <span className="text-xs text-muted-foreground">
                                     {format(new Date(conv.updated_at), "M/d/yy")}
                                   </span>
+                                  <div className="flex items-center gap-1 text-muted-foreground ml-1">
+                                    {isStarred && <Star className="h-3.5 w-3.5" title="Favorite" />}
+                                    {isPinned && <Pin className="h-3.5 w-3.5" title="Pinned" />}
+                                    {isMuted && <BellOff className="h-3.5 w-3.5" title="Muted" />}
+                                    {isBlocked && <Ban className="h-3.5 w-3.5" title="Blocked" />}
+                                    {isHidden && <EyeOff className="h-3.5 w-3.5" title="Hidden" />}
+                                    {hasUnread && <Mail className="h-3.5 w-3.5" title="Unread" />}
+                                  </div>
                                   {hasUnread && (
                                     <span
                                       className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0"
@@ -1702,6 +1812,15 @@ export default function Messages() {
                                   >
                                     <EyeOff className="h-4 w-4 mr-2" />
                                     Mark as unread
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleStarred(conv.id);
+                                    }}
+                                  >
+                                    <Star className="h-4 w-4 mr-2" />
+                                    {isStarred ? "Unfavorite" : "Favorite"}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={(e) => {
@@ -1804,7 +1923,8 @@ export default function Messages() {
                   onProjectClick={() => {
                     if (projectUrl) navigate(projectUrl);
                   }}
-                  isOnline={getPartnerIsOnline(selectedConv)}
+                  isOnline={getPartnerPresenceStatus(selectedConv) === "online"}
+                  presenceStatus={getPartnerPresenceStatus(selectedConv)}
                   partnerAvatarUrl={selectedConv?.partner_avatar_url}
                   showBackButton={isMobile}
                   onBack={handleBackToList}
@@ -1812,7 +1932,22 @@ export default function Messages() {
                 />
 
                 {/* Messages only - this is the only part that scrolls; input stays fixed in viewport below */}
-                <div className="flex-1 min-h-0 overflow-hidden flex flex-col min-w-0">
+                <div
+                  className="relative flex-1 min-h-0 overflow-hidden flex flex-col min-w-0"
+                  onDragEnter={handleChatDragEnter}
+                  onDragOver={handleChatDragOver}
+                  onDragLeave={handleChatDragLeave}
+                  onDrop={handleChatDrop}
+                >
+                  {isDragOverChat && (
+                    <div className="absolute inset-3 z-20 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/10 backdrop-blur-[1px] pointer-events-none flex items-center justify-center">
+                      <div className="rounded-xl border border-primary/30 bg-background/90 px-5 py-4 text-center shadow-xl">
+                        <UploadCloud className="h-7 w-7 mx-auto text-primary mb-2" />
+                        <p className="text-sm font-semibold text-foreground">Drop files to attach</p>
+                        <p className="text-xs text-muted-foreground mt-1">They will be uploaded and sent in this chat</p>
+                      </div>
+                    </div>
+                  )}
                   <ScrollArea className="flex-1 min-h-0">
                     <div className="p-4 sm:p-6 space-y-1">
                       {messages.length === 0 ? (
@@ -1941,6 +2076,7 @@ export default function Messages() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <Button variant={listFilter === "all" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "all" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("all")}>All</Button>
                     <Button variant={listFilter === "favorites" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "favorites" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("favorites")}>Favorites</Button>
+                    <Button variant={listFilter === "unread" ? "secondary" : "ghost"} size="sm" className={`rounded-full h-8 px-3 text-sm font-medium ${listFilter === "unread" ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`} onClick={() => setListFilter("unread")}>Unread</Button>
                     <DropdownMenu open={moreFiltersOpen} onOpenChange={setMoreFiltersOpen}>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className={`rounded-full h-8 w-8 p-0 ${moreFiltersOpen ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} title="More filters"><MoreHorizontal className="h-4 w-4" /></Button>
@@ -1982,18 +2118,22 @@ export default function Messages() {
                         const lastFromMe = conv?.last_message_sender_id === currentUser?.id;
                         const lastSnippet = conv?.last_message_content ? (lastFromMe ? "You: " : `${partnerName}: `) + conv.last_message_content : null;
                         const isPinned = pinnedIds.includes(conv.id);
+                        const isStarred = starredIds.includes(conv.id);
+                      const isMuted = !!conv.muted;
+                      const isBlocked = !!conv.is_blocked;
+                      const isHidden = hiddenIds.includes(conv.id);
                         const unreadCount = conv.unread_count ?? 0;
                         const hasUnread = unreadCount > 0;
                         return (
-                          <div key={conv.id} role="button" tabIndex={0} onClick={() => setSelectedConversation(conv.id)} onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)} className={cn("group w-full flex items-start gap-3 p-3 text-left transition-colors cursor-pointer rounded-xl", "hover:bg-muted/60", selectedConversation === conv.id ? "bg-muted shadow-sm ring-1 ring-border/50" : "bg-transparent")}>
+                          <div key={conv.id} role="button" tabIndex={0} onClick={() => setSelectedConversation(conv.id)} onKeyDown={(e) => e.key === "Enter" && setSelectedConversation(conv.id)} className={cn("group w-full flex items-center gap-3 p-3 pr-4 text-left transition-colors cursor-pointer rounded-xl", "hover:bg-muted/60", selectedConversation === conv.id ? "bg-muted shadow-sm ring-1 ring-border/50" : "bg-transparent")}>
                             <div className="relative shrink-0">
-                              <Avatar className="h-11 w-11 ring-1 ring-border/50">
+                              <Avatar className="h-16 w-16 ring-1 ring-border/50">
                                 {conv.partner_avatar_url && <AvatarImage src={conv.partner_avatar_url} alt="" className="object-cover" />}
-                                <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">{partnerName[0].toUpperCase()}</AvatarFallback>
+                                <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold leading-none">{partnerName[0].toUpperCase()}</AvatarFallback>
                               </Avatar>
-                              <span className={cn("absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background", getPartnerIsOnline(conv) ? "bg-success" : "bg-muted-foreground/50")} title={getPartnerIsOnline(conv) ? "Online" : "Offline"} />
+                              <span className={cn("absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background", getPresenceDotClass(getPartnerPresenceStatus(conv)))} title={getPresenceLabel(getPartnerPresenceStatus(conv))} />
                             </div>
-                            <div className="flex-1 min-w-0 w-0 overflow-hidden">
+                            <div className="flex-1 min-w-0 w-0">
                               <div className="flex items-center justify-between gap-2 min-w-0">
                                 <p className={cn("truncate min-w-0 text-foreground flex-1", hasUnread ? "font-semibold" : "font-medium")} title={partnerName}>
                                   {partnerName}
@@ -2001,6 +2141,14 @@ export default function Messages() {
                                 <div className="flex flex-col items-end gap-0.5 shrink-0">
                                   <div className="flex items-center gap-0.5">
                                     <span className="text-xs text-muted-foreground">{format(new Date(conv.updated_at), "M/d/yy")}</span>
+                                    <div className="flex items-center gap-1 text-muted-foreground ml-1">
+                                      {isStarred && <Star className="h-3.5 w-3.5" title="Favorite" />}
+                                      {isPinned && <Pin className="h-3.5 w-3.5" title="Pinned" />}
+                                      {isMuted && <BellOff className="h-3.5 w-3.5" title="Muted" />}
+                                      {isBlocked && <Ban className="h-3.5 w-3.5" title="Blocked" />}
+                                      {isHidden && <EyeOff className="h-3.5 w-3.5" title="Hidden" />}
+                                      {hasUnread && <Mail className="h-3.5 w-3.5" title="Unread" />}
+                                    </div>
                                     {hasUnread && <span className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0" title={`${unreadCount} unread`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
                                   </div>
                                   <div>
@@ -2009,6 +2157,7 @@ export default function Messages() {
                                       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`${window.location.origin}/messages?conversation=${conv.id}`, "_blank"); }}><ExternalLink className="h-4 w-4 mr-2" />Open in new window</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkAsUnread(conv.id); }}><EyeOff className="h-4 w-4 mr-2" />Mark as unread</DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleStarred(conv.id); }}><Star className="h-4 w-4 mr-2" />{isStarred ? "Unfavorite" : "Favorite"}</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePinned(conv.id); }}><Pin className="h-4 w-4 mr-2" />{isPinned ? "Unpin" : "Pin"}</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleToggleMute(conv.id); }}><BellOff className="h-4 w-4 mr-2" />{conv.muted ? "Unmute" : "Mute"}</DropdownMenuItem>
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleBlock(conv); }}><Ban className="h-4 w-4 mr-2" />{conv.is_blocked ? "Unblock" : "Block"}</DropdownMenuItem>
@@ -2049,13 +2198,29 @@ export default function Messages() {
                       onProjectClick={() => {
                         if (projectUrl) navigate(projectUrl);
                       }}
-                      isOnline={getPartnerIsOnline(selectedConv)}
+                      isOnline={getPartnerPresenceStatus(selectedConv) === "online"}
+                      presenceStatus={getPartnerPresenceStatus(selectedConv)}
                       partnerAvatarUrl={selectedConv?.partner_avatar_url}
                       showBackButton={isMobile}
                       onBack={handleBackToList}
                       onMoreClick={() => setShowInfoPanel(!showInfoPanel)}
                     />
-                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col min-w-0">
+                    <div
+                      className="relative flex-1 min-h-0 overflow-hidden flex flex-col min-w-0"
+                      onDragEnter={handleChatDragEnter}
+                      onDragOver={handleChatDragOver}
+                      onDragLeave={handleChatDragLeave}
+                      onDrop={handleChatDrop}
+                    >
+                      {isDragOverChat && (
+                        <div className="absolute inset-3 z-20 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/10 backdrop-blur-[1px] pointer-events-none flex items-center justify-center">
+                          <div className="rounded-xl border border-primary/30 bg-background/90 px-5 py-4 text-center shadow-xl">
+                            <UploadCloud className="h-7 w-7 mx-auto text-primary mb-2" />
+                            <p className="text-sm font-semibold text-foreground">Drop files to attach</p>
+                            <p className="text-xs text-muted-foreground mt-1">They will be uploaded and sent in this chat</p>
+                          </div>
+                        </div>
+                      )}
                       <ScrollArea className="flex-1 min-h-0">
                         <div className="p-4 sm:p-6 space-y-1">
                           {messages.length === 0 ? <EmptyConversation variant="no-messages" partnerName={partnerName} /> : messagesByDate.map(([dateKey, dayMessages]) => (
@@ -2107,7 +2272,7 @@ export default function Messages() {
         {/* Right: Contact / Activity panel */}
         {selectedConversation && !isMobile && (
           <div className={`
-            ${showInfoPanel ? 'flex' : 'hidden xl:flex'} 
+            ${showInfoPanel ? 'flex' : 'hidden'} 
             w-72 xl:w-80 shrink-0 flex-col border-l border-border/30 bg-card overflow-hidden
           `}>
             <div className="p-4 space-y-5 flex-1 overflow-hidden min-h-0 flex flex-col">
@@ -2141,19 +2306,19 @@ export default function Messages() {
                 </Button>
               </div>
 
-              {/* Online status: You + Partner (real-time green/grey) */}
+              {/* Online status: You + Partner (real-time green/yellow/grey) */}
               <div className="space-y-2">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Online status</h4>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/30">
-                    <span className={cn("h-2.5 w-2.5 rounded-full border-2 border-background shrink-0", iAmOnline ? "bg-success" : "bg-muted-foreground/50")} title={iAmOnline ? "Online" : "Offline"} />
+                    <span className={cn("h-2.5 w-2.5 rounded-full border-2 border-background shrink-0", getPresenceDotClass(iAmStatus))} title={getPresenceLabel(iAmStatus)} />
                     <span className="text-sm font-medium text-foreground">You</span>
-                    <span className="text-xs text-muted-foreground ml-auto">{iAmOnline ? "Online" : "Offline"}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{getPresenceLabel(iAmStatus)}</span>
                   </div>
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/30">
-                    <span className={cn("h-2.5 w-2.5 rounded-full border-2 border-background shrink-0", getPartnerIsOnline(selectedConv) ? "bg-success" : "bg-muted-foreground/50")} title={getPartnerIsOnline(selectedConv) ? "Online" : "Offline"} />
+                    <span className={cn("h-2.5 w-2.5 rounded-full border-2 border-background shrink-0", getPresenceDotClass(getPartnerPresenceStatus(selectedConv)))} title={getPresenceLabel(getPartnerPresenceStatus(selectedConv))} />
                     <span className="text-sm font-medium text-foreground">{partnerName}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">{getPartnerIsOnline(selectedConv) ? "Online" : "Offline"}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{getPresenceLabel(getPartnerPresenceStatus(selectedConv))}</span>
                   </div>
                 </div>
               </div>

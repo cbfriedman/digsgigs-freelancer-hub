@@ -97,6 +97,20 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
   const [openNavMenu, setOpenNavMenu] = useState<string | null>(null);
   const [openUserMenu, setOpenUserMenu] = useState(false);
+  const [recentBids, setRecentBids] = useState<Array<{
+    id: string;
+    created_at: string;
+    status: string;
+    gig_id: string | null;
+    gig_title: string;
+  }>>([]);
+  const [recentBidsLoading, setRecentBidsLoading] = useState(false);
+  const isDiggerMode = activeRole === "digger";
+  const isGiggerMode = activeRole === "gigger";
+  const hasProjectShortcut = userRoles.includes("gigger") || userRoles.includes("digger");
+  const projectMenuPath = isDiggerMode ? "/my-bids" : "/my-gigs";
+  const projectMenuTitle = isDiggerMode ? "My Bids" : "My Projects";
+  const projectEmptyLabel = isDiggerMode ? "No bids yet" : "No projects yet";
 
   // Fetch user profile photo and display name (header avatar synced with profile photo)
   useEffect(() => {
@@ -138,6 +152,70 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!user?.id || !userRoles.includes("digger")) {
+      setRecentBids([]);
+      setRecentBidsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const loadRecentBids = async () => {
+      setRecentBidsLoading(true);
+      try {
+        const { data: diggerProfile } = await supabase
+          .from("digger_profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (!diggerProfile?.id) {
+          if (!cancelled) setRecentBids([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("bids")
+          .select(`
+            id,
+            created_at,
+            status,
+            gig_id,
+            gigs!gig_id (
+              title
+            )
+          `)
+          .eq("digger_id", diggerProfile.id)
+          .order("created_at", { ascending: false })
+          .limit(8);
+
+        if (error) throw error;
+        const mapped = ((data as Array<{
+          id: string;
+          created_at: string;
+          status: string;
+          gig_id: string | null;
+          gigs?: { title?: string | null } | null;
+        }> | null) ?? []).map((b) => ({
+          id: b.id,
+          created_at: b.created_at,
+          status: b.status,
+          gig_id: b.gig_id,
+          gig_title: b.gigs?.title?.trim() || "Project",
+        }));
+        if (!cancelled) setRecentBids(mapped);
+      } catch {
+        if (!cancelled) setRecentBids([]);
+      } finally {
+        if (!cancelled) setRecentBidsLoading(false);
+      }
+    };
+
+    loadRecentBids();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, userRoles]);
 
   const navLinkClass = "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-3 py-2 rounded-md hover:bg-accent/50";
   const navLinkActiveClass = "text-foreground bg-accent/50";
@@ -532,31 +610,62 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </ScrollArea>
                     </HoverCardContent>
                   </HoverCard>
-                  {/* Project folders (My Gigs) — only for giggers; hover shows recent */}
-                  {userRoles.includes('gigger') && (
+                  {/* Project/Bids shortcut - role aware; hover shows recent (gigger) */}
+                  {hasProjectShortcut && (
                   <HoverCard openDelay={300} closeDelay={150}>
                     <HoverCardTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => navigate("/my-gigs")}
-                        title="My projects"
+                        onClick={() => navigate(projectMenuPath)}
+                        title={projectMenuTitle}
                       >
                         <FolderOpen className="h-4 w-4" />
                       </Button>
                     </HoverCardTrigger>
                     <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-                        <span className="font-semibold text-sm truncate min-w-0">My Projects</span>
-                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
+                        <span className="font-semibold text-sm truncate min-w-0">{projectMenuTitle}</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                       </div>
                       <ScrollArea className="h-[320px] w-full min-w-0 max-w-full overflow-hidden">
                           <div className="w-full min-w-0 max-w-full overflow-hidden pr-5">
-                            {recentGigsLoading ? (
+                            {isDiggerMode ? (
+                              recentBidsLoading ? (
+                                <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
+                              ) : recentBids.length === 0 ? (
+                                <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
+                              ) : (
+                                <ul className="py-1 w-full min-w-0 list-none">
+                                  {recentBids.map((b) => {
+                                    const timeLabel = format(new Date(b.created_at), "MMM d, yyyy");
+                                    return (
+                                      <li key={b.id} className="w-full min-w-0 overflow-hidden border-b-0">
+                                        <button
+                                          type="button"
+                                          className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors overflow-hidden box-border"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            if (b.gig_id) navigate(`/gig/${b.gig_id}`);
+                                            else navigate("/my-bids");
+                                          }}
+                                        >
+                                          <div className="w-full min-w-0 flex items-center justify-between gap-2">
+                                            <span className="font-medium text-sm truncate min-w-0 flex-1" title={b.gig_title}>{b.gig_title}</span>
+                                            <Badge variant={b.status === "accepted" ? "default" : b.status === "rejected" ? "destructive" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{b.status}</Badge>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )
+                            ) : recentGigsLoading ? (
                               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                             ) : recentGigs.length === 0 ? (
-                              <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No projects yet</div>
+                              <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
                             ) : (
                               <ul className="py-1 w-full min-w-0 list-none">
                                 {recentGigs.map((g) => {
@@ -569,7 +678,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                       <button
                                         type="button"
                                         className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors overflow-hidden box-border"
-                                        onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}
+                                        onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }}
                                       >
                                         <div className="w-full min-w-0 flex items-center justify-between gap-2">
                                           <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
@@ -674,20 +783,24 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </div>
               )}
 
-              {/* Cart */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-9 w-9"
-                onClick={() => setCartOpen(true)}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </span>
-                )}
-              </Button>
+              {!isGiggerMode && (
+                <>
+                  {/* Cart */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-9 w-9"
+                    onClick={() => setCartOpen(true)}
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+                        {cartCount > 9 ? '9+' : cartCount}
+                      </span>
+                    )}
+                  </Button>
+                </>
+              )}
 
 
               {showBackButton && (
@@ -839,31 +952,62 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </HoverCardContent>
                 </HoverCard>
               )}
-              {/* Project folders - Mobile (only for giggers); tap/hover shows recent */}
-              {user && userRoles.includes('gigger') && (
+              {/* Project/Bids shortcut - Mobile (role aware); tap/hover shows recent */}
+              {user && hasProjectShortcut && (
                 <HoverCard openDelay={200} closeDelay={150}>
                   <HoverCardTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-9 w-9 text-muted-foreground hover:text-foreground"
-                      onClick={() => navigate("/my-gigs")}
-                      title="My projects"
+                      onClick={() => navigate(projectMenuPath)}
+                      title={projectMenuTitle}
                     >
                       <FolderOpen className="h-4 w-4" />
                     </Button>
                   </HoverCardTrigger>
                   <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-                        <span className="font-semibold text-sm truncate min-w-0">My Projects</span>
-                        <button type="button" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
+                        <span className="font-semibold text-sm truncate min-w-0">{projectMenuTitle}</span>
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }} className="text-primary hover:underline text-xs font-medium shrink-0 ml-2">View All</button>
                       </div>
                       <ScrollArea className="h-[320px] w-full min-w-0 max-w-full overflow-hidden">
                         <div className="w-full min-w-0 max-w-full overflow-hidden pr-5">
-                          {recentGigsLoading ? (
+                          {isDiggerMode ? (
+                            recentBidsLoading ? (
+                              <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
+                            ) : recentBids.length === 0 ? (
+                              <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
+                            ) : (
+                              <ul className="py-1 w-full min-w-0 list-none">
+                                {recentBids.map((b) => {
+                                  const timeLabel = format(new Date(b.created_at), "MMM d, yyyy");
+                                  return (
+                                    <li key={b.id} className="w-full min-w-0 overflow-hidden">
+                                      <button
+                                        type="button"
+                                        className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          if (b.gig_id) navigate(`/gig/${b.gig_id}`);
+                                          else navigate("/my-bids");
+                                        }}
+                                      >
+                                        <div className="w-full min-w-0 flex items-center justify-between gap-2">
+                                          <span className="font-medium text-sm truncate min-w-0 flex-1" title={b.gig_title}>{b.gig_title}</span>
+                                          <Badge variant={b.status === "accepted" ? "default" : b.status === "rejected" ? "destructive" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{b.status}</Badge>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )
+                          ) : recentGigsLoading ? (
                             <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
                           ) : recentGigs.length === 0 ? (
-                            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">No projects yet</div>
+                            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
                           ) : (
                             <ul className="py-1 w-full min-w-0 list-none">
                               {recentGigs.map((g) => {
@@ -872,7 +1016,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                 const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                 return (
                                   <li key={g.id} className="w-full min-w-0 overflow-hidden">
-                                    <button type="button" className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border" onClick={(e) => { e.preventDefault(); navigate("/my-gigs"); }}>
+                                    <button type="button" className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }}>
                                       <div className="w-full min-w-0 flex items-center justify-between gap-2">
                                         <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
                                         <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
@@ -889,20 +1033,24 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </HoverCardContent>
                 </HoverCard>
               )}
-              {/* Cart - Mobile */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-9 w-9"
-                onClick={() => setCartOpen(true)}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Button>
+              {!isGiggerMode && (
+                <>
+                  {/* Cart - Mobile */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-9 w-9"
+                    onClick={() => setCartOpen(true)}
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </Button>
+                </>
+              )}
 
               {/* Mobile Menu */}
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

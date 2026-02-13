@@ -5,6 +5,8 @@ import { uploadFileWithProgress } from "@/lib/uploadWithProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRecentConversations, type RecentConversation } from "@/hooks/useRecentConversations";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
+import { useUserPresence, getUserPresenceStatus, type PresenceStatus } from "@/hooks/useUserPresence";
+import { usePresenceAwayMs } from "@/hooks/usePresenceSettings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +28,7 @@ import {
   Pencil,
   Trash2,
   Copy,
+  UploadCloud,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -82,6 +85,8 @@ export function FloatingMessageWidget() {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const { conversations, loading: convLoading } = useRecentConversations(user ?? null);
+  const { onlineUserIds } = useUserPresence();
+  const awayAfterMs = usePresenceAwayMs();
   const unreadCount = useUnreadMessagesCount();
 
   const getWidgetStorageKey = (suffix: string) => (user?.id ? `messages_widget_${suffix}_${user.id}` : null);
@@ -96,6 +101,7 @@ export function FloatingMessageWidget() {
   const [collapsedChats, setCollapsedChats] = useState<Record<string, boolean>>({});
   const [mutedChats, setMutedChats] = useState<Record<string, boolean>>({});
   const [blockedChats, setBlockedChats] = useState<Record<string, boolean>>({});
+  const [unreadOverrides, setUnreadOverrides] = useState<Record<string, number>>({});
   const [openMenuChatId, setOpenMenuChatId] = useState<string | null>(null);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
   const [inputMap, setInputMap] = useState<Record<string, string>>({});
@@ -112,6 +118,8 @@ export function FloatingMessageWidget() {
   const [attachmentUploadProgress, setAttachmentUploadProgress] = useState<number | null>(null);
   const [attachmentUploadConvId, setAttachmentUploadConvId] = useState<string | null>(null);
   const [replyingToMap, setReplyingToMap] = useState<Record<string, { id: string; content: string } | null>>({});
+  const [floatingInputMaxHeight, setFloatingInputMaxHeight] = useState(220);
+  const [dragOverConvMap, setDragOverConvMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const shouldKeepScrollUnlocked = !!editingMessageId || !!deleteMessageId || !!deleteChatId;
@@ -129,6 +137,17 @@ export function FloatingMessageWidget() {
     };
   }, [editingMessageId, deleteMessageId, deleteChatId]);
 
+  useEffect(() => {
+    const computeMaxHeight = () => {
+      if (typeof window === "undefined") return;
+      const panelHeight = Math.min(440, Math.max(260, window.innerHeight - 160));
+      setFloatingInputMaxHeight(Math.max(120, Math.floor(panelHeight / 2)));
+    };
+    computeMaxHeight();
+    window.addEventListener("resize", computeMaxHeight);
+    return () => window.removeEventListener("resize", computeMaxHeight);
+  }, []);
+
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
   const inputRefsMap = useRef<Record<string, HTMLTextAreaElement | null>>({});
@@ -136,6 +155,7 @@ export function FloatingMessageWidget() {
   const pendingAutoScrollRef = useRef<Record<string, boolean>>({});
   const typingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
   const typingSendTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
+  const dragDepthRef = useRef<Record<string, number>>({});
   const conversationsRef = useRef<RecentConversation[]>([]);
   const messagesMapRef = useRef<Record<string, Message[]>>({});
   const openChatRef = useRef<(
@@ -203,6 +223,20 @@ export function FloatingMessageWidget() {
       .slice(0, 2)
       .toUpperCase();
   };
+
+  const getPartnerPresenceStatus = useCallback(
+    (conv: RecentConversation | undefined) => {
+      return getUserPresenceStatus(conv?.partnerUserId ? String(conv.partnerUserId) : null, awayAfterMs);
+    },
+    [onlineUserIds, awayAfterMs]
+  );
+
+  const getPresenceDotClass = (status: PresenceStatus) =>
+    status === "online"
+      ? "bg-success"
+      : status === "away"
+        ? "bg-amber-400"
+        : "bg-muted-foreground/50";
 
   const scrollToEnd = useCallback((convId: string) => {
     const scrollArea = scrollAreaRefsMap.current[convId];
@@ -418,6 +452,13 @@ export function FloatingMessageWidget() {
       delete next[convId];
       return next;
     });
+    setDragOverConvMap((prev) => {
+      if (!prev[convId]) return prev;
+      const next = { ...prev };
+      delete next[convId];
+      return next;
+    });
+    delete dragDepthRef.current[convId];
   }, []);
 
   useEffect(() => {
@@ -532,6 +573,47 @@ export function FloatingMessageWidget() {
     });
   }, [openChats, messagesMap, collapsedChats, scrollToEnd]);
 
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    setOpenChats((prev) => {
+      let changed = false;
+      const next = prev.map((c) => {
+        const latest = conversations.find((x) => x.id === c.id);
+        if (!latest) return c;
+        const same =
+          latest.updatedAt === c.updatedAt &&
+          latest.unreadCount === c.unreadCount &&
+          latest.muted === c.muted &&
+          latest.isBlocked === c.isBlocked &&
+          latest.partnerDisplayName === c.partnerDisplayName &&
+          latest.partnerAvatarUrl === c.partnerAvatarUrl &&
+          latest.partnerJobTitle === c.partnerJobTitle &&
+          latest.partnerProfileUrl === c.partnerProfileUrl &&
+          latest.partnerUserId === c.partnerUserId;
+        if (same) return c;
+        changed = true;
+        return latest;
+      });
+      return changed ? next : prev;
+    });
+  }, [conversations]);
+
+  useEffect(() => {
+    if (Object.keys(unreadOverrides).length === 0) return;
+    setUnreadOverrides((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const convId of Object.keys(prev)) {
+        const conv = conversations.find((c) => c.id === convId);
+        if (!conv || conv.unreadCount === prev[convId]) {
+          delete next[convId];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [conversations, unreadOverrides]);
+
   // Keep bubble chat history scrolled to latest when messages load or update
   useEffect(() => {
     if (openChats.length === 0) return;
@@ -583,6 +665,12 @@ export function FloatingMessageWidget() {
             m.sender_id !== user.id && !m.read_at ? { ...m, read_at: now } : m
           ),
         }));
+        setUnreadOverrides((prev) => {
+          if (typeof prev[convId] === "undefined") return prev;
+          const next = { ...prev };
+          delete next[convId];
+          return next;
+        });
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("recent-conversations-refresh"));
         }
@@ -765,6 +853,49 @@ export function FloatingMessageWidget() {
     [user?.id, loadMessages]
   );
 
+  const isFileDrag = (e: React.DragEvent) =>
+    Array.from(e.dataTransfer?.types || []).includes("Files");
+
+  const handleConvDragEnter = useCallback((convId: string, e: React.DragEvent<HTMLDivElement>) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current[convId] = (dragDepthRef.current[convId] || 0) + 1;
+    setDragOverConvMap((prev) => ({ ...prev, [convId]: true }));
+  }, []);
+
+  const handleConvDragOver = useCallback((convId: string, e: React.DragEvent<HTMLDivElement>) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+    if (!dragOverConvMap[convId]) {
+      setDragOverConvMap((prev) => ({ ...prev, [convId]: true }));
+    }
+  }, [dragOverConvMap]);
+
+  const handleConvDragLeave = useCallback((convId: string, e: React.DragEvent<HTMLDivElement>) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const depth = Math.max(0, (dragDepthRef.current[convId] || 0) - 1);
+    dragDepthRef.current[convId] = depth;
+    if (depth === 0) {
+      setDragOverConvMap((prev) => ({ ...prev, [convId]: false }));
+    }
+  }, []);
+
+  const handleConvDrop = useCallback((conv: RecentConversation, e: React.DragEvent<HTMLDivElement>) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current[conv.id] = 0;
+    setDragOverConvMap((prev) => ({ ...prev, [conv.id]: false }));
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length === 0) return;
+    void handleSendWithAttachments(conv, files, inputMap[conv.id] ?? "");
+  }, [handleSendWithAttachments, inputMap]);
+
   const openFullMessages = (conv?: RecentConversation) => {
     setIsOpen(false);
     navigate(conv ? `/messages?conversation=${conv.id}` : "/messages");
@@ -943,7 +1074,12 @@ export function FloatingMessageWidget() {
     }
   };
 
-  const handleMarkAsUnread = async (convId: string) => {
+  const handleMarkAsUnread = async (conv: RecentConversation) => {
+    const convId = conv.id;
+    const previousUnread = unreadOverrides[convId];
+    const currentUnread = previousUnread ?? conv.unreadCount;
+    const nextUnread = Math.max(1, currentUnread);
+    setUnreadOverrides((prev) => ({ ...prev, [convId]: nextUnread }));
     try {
       await supabase.rpc("mark_conversation_messages_unread" as any, {
         _conversation_id: convId,
@@ -953,6 +1089,12 @@ export function FloatingMessageWidget() {
       }
       toast.success("Marked as unread");
     } catch (e: any) {
+      setUnreadOverrides((prev) => {
+        const next = { ...prev };
+        if (typeof previousUnread === "number") next[convId] = previousUnread;
+        else delete next[convId];
+        return next;
+      });
       toast.error(e?.message ?? "Failed to mark as unread");
     }
   };
@@ -970,6 +1112,12 @@ export function FloatingMessageWidget() {
             "animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
           )}
         >
+          {(() => {
+            const isMuted = mutedChats[conv.id] ?? !!conv.muted;
+            const isBlocked = blockedChats[conv.id] ?? !!conv.isBlocked;
+            const unreadTotal = unreadOverrides[conv.id] ?? conv.unreadCount;
+            return (
+              <>
           {/* Floating message box header: avatar, name, description, three-dot, expand, close */}
           <div
             role="button"
@@ -1003,12 +1151,44 @@ export function FloatingMessageWidget() {
             aria-label={collapsedChats[conv.id] ? "Expand chat" : "Collapse chat"}
           >
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/40">
-                <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" />
-                <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                  {conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative h-9 w-9 shrink-0">
+                <Avatar className="h-9 w-9 ring-1 ring-border/40">
+                  <AvatarImage src={conv.partnerAvatarUrl || undefined} alt="" />
+                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                    {conv.partnerDisplayName[0]?.toUpperCase() ?? "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -top-1 -right-1 flex items-center gap-1">
+                  {isBlocked && (
+                    <span className="h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center" title="Blocked">
+                      <Ban className="h-2.5 w-2.5" />
+                    </span>
+                  )}
+                  {isMuted && (
+                    <span className="h-4 w-4 rounded-full bg-muted text-muted-foreground border border-border/60 flex items-center justify-center" title="Muted">
+                      <BellOff className="h-2.5 w-2.5" />
+                    </span>
+                  )}
+                  {unreadTotal > 0 && (
+                    <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center" title="Unread">
+                      <EyeOff className="h-2.5 w-2.5" />
+                    </span>
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background",
+                    getPresenceDotClass(getPartnerPresenceStatus(conv))
+                  )}
+                  title={
+                    getPartnerPresenceStatus(conv) === "online"
+                      ? "Online"
+                      : getPartnerPresenceStatus(conv) === "away"
+                        ? "Away"
+                        : "Offline"
+                  }
+                />
+              </div>
               <div className="min-w-0 flex-1">
                 {conv.partnerProfileUrl ? (
                   <button
@@ -1080,7 +1260,7 @@ export function FloatingMessageWidget() {
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleMarkAsUnread(conv.id);
+                      handleMarkAsUnread(conv);
                     }}
                   >
                     <EyeOff className="h-4 w-4 mr-2" />
@@ -1092,10 +1272,10 @@ export function FloatingMessageWidget() {
                       handleMuteToggle(conv);
                     }}
                   >
-                    {(mutedChats[conv.id] ?? !!conv.muted)
+                    {isMuted
                       ? <Bell className="h-4 w-4 mr-2" />
                       : <BellOff className="h-4 w-4 mr-2" />}
-                    {(mutedChats[conv.id] ?? !!conv.muted) ? "Unmute" : "Mute"}
+                    {isMuted ? "Unmute" : "Mute"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={(e) => {
@@ -1104,7 +1284,7 @@ export function FloatingMessageWidget() {
                     }}
                   >
                     <Ban className="h-4 w-4 mr-2" />
-                    {(blockedChats[conv.id] ?? !!conv.isBlocked) ? "Unblock" : "Block"}
+                    {isBlocked ? "Unblock" : "Block"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -1147,10 +1327,22 @@ export function FloatingMessageWidget() {
           </div>
           <div
             className={cn(
-              "flex-1 min-h-0 flex flex-col transition-opacity duration-200 rounded-b-2xl overflow-hidden",
+              "relative flex-1 min-h-0 flex flex-col transition-opacity duration-200 rounded-b-2xl overflow-hidden",
               collapsedChats[conv.id] ? "opacity-0 pointer-events-none" : "opacity-100"
             )}
+            onDragEnter={(e) => handleConvDragEnter(conv.id, e)}
+            onDragOver={(e) => handleConvDragOver(conv.id, e)}
+            onDragLeave={(e) => handleConvDragLeave(conv.id, e)}
+            onDrop={(e) => handleConvDrop(conv, e)}
           >
+            {dragOverConvMap[conv.id] && (
+              <div className="absolute inset-3 z-20 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/10 backdrop-blur-[1px] pointer-events-none flex items-center justify-center">
+                <div className="rounded-xl border border-primary/30 bg-background/90 px-4 py-3 text-center shadow-xl">
+                  <UploadCloud className="h-6 w-6 mx-auto text-primary mb-1.5" />
+                  <p className="text-xs font-semibold text-foreground">Drop files to attach</p>
+                </div>
+              </div>
+            )}
             <ScrollArea
               ref={(el) => (scrollAreaRefsMap.current[conv.id] = el)}
               className="flex-1 min-h-0 px-3 border-border/30"
@@ -1217,6 +1409,7 @@ export function FloatingMessageWidget() {
                 disabled={sendingMap[conv.id]}
                 placeholder="Type a message..."
                 maxLength={5000}
+                maxAutoHeight={floatingInputMaxHeight}
                 onInputFocus={() => handleMessageInputFocus(conv.id)}
                 className="min-w-0"
                 inputRef={(el) => {
@@ -1225,6 +1418,9 @@ export function FloatingMessageWidget() {
               />
             </div>
           </div>
+              </>
+            );
+          })()}
         </div>
       ))}
 
@@ -1267,7 +1463,16 @@ export function FloatingMessageWidget() {
                 >
                   {soundMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                 </Button>
-                <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-primary-foreground" aria-hidden />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
+                  onClick={() => setIsOpen(false)}
+                  title="Collapse messages"
+                  aria-label="Collapse messages"
+                >
+                  <ChevronUp className="h-4 w-4 rotate-180 shrink-0 text-primary-foreground" aria-hidden />
+                </Button>
               </div>
             </div>
             <div className="shrink-0 px-3 py-2 border-b border-border/40">
@@ -1336,6 +1541,9 @@ export function FloatingMessageWidget() {
                     const snippet = (c.lastMessageFromMe ? "You: " : "") + (c.lastMessageContent || "No messages");
                     const display = snippet;
                     const isOpenChat = openChats.some((o) => o.id === c.id);
+                    const isMuted = mutedChats[c.id] ?? !!c.muted;
+                    const isBlocked = blockedChats[c.id] ?? !!c.isBlocked;
+                    const unreadTotal = unreadOverrides[c.id] ?? c.unreadCount;
                     return (
                       <li key={c.id} className="min-w-0 max-w-full overflow-hidden list-none">
                         <button
@@ -1343,24 +1551,61 @@ export function FloatingMessageWidget() {
                           className="w-full max-w-full min-w-0 flex items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors text-left overflow-hidden"
                           onClick={() => openChat(c)}
                         >
-                          <Avatar className="h-10 w-10 shrink-0 ring-1 ring-border/50 flex-shrink-0">
-                            <AvatarImage src={c.partnerAvatarUrl || undefined} alt="" />
-                            <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                              {c.partnerDisplayName[0]?.toUpperCase() ?? "?"}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div className="relative h-10 w-10 shrink-0 flex-shrink-0">
+                            <Avatar className="h-10 w-10 ring-1 ring-border/50">
+                              <AvatarImage src={c.partnerAvatarUrl || undefined} alt="" />
+                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                                {c.partnerDisplayName[0]?.toUpperCase() ?? "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -top-1 -right-1 flex items-center gap-1">
+                              {isBlocked && (
+                                <span className="h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center" title="Blocked">
+                                  <Ban className="h-2.5 w-2.5" />
+                                </span>
+                              )}
+                              {isMuted && (
+                                <span className="h-4 w-4 rounded-full bg-muted text-muted-foreground border border-border/60 flex items-center justify-center" title="Muted">
+                                  <BellOff className="h-2.5 w-2.5" />
+                                </span>
+                              )}
+                              {unreadTotal > 0 && (
+                                <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center" title="Unread">
+                                  <EyeOff className="h-2.5 w-2.5" />
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              className={cn(
+                                "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background",
+                                getPresenceDotClass(getPartnerPresenceStatus(c))
+                              )}
+                              title={
+                                getPartnerPresenceStatus(c) === "online"
+                                  ? "Online"
+                                  : getPartnerPresenceStatus(c) === "away"
+                                    ? "Away"
+                                    : "Offline"
+                              }
+                            />
+                          </div>
                           <div className="min-w-0 flex-1 overflow-hidden basis-0">
                             <div className="flex items-center justify-between gap-2 min-w-0">
                               <span className="font-medium text-sm truncate min-w-0" title={c.partnerDisplayName}>
                                 {c.partnerDisplayName}
                               </span>
                               <div className="flex items-center gap-2 shrink-0">
-                                {c.unreadCount > 0 && (
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  {isBlocked && <Ban className="h-3.5 w-3.5" title="Blocked" />}
+                                  {isMuted && <BellOff className="h-3.5 w-3.5" title="Muted" />}
+                                  {unreadTotal > 0 && <EyeOff className="h-3.5 w-3.5" title="Unread" />}
+                                </div>
+                                {unreadTotal > 0 && (
                                   <span
                                     className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center"
-                                    title={`${c.unreadCount} unread`}
+                                    title={`${unreadTotal} unread`}
                                   >
-                                    {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                                    {unreadTotal > 99 ? "99+" : unreadTotal}
                                   </span>
                                 )}
                                 <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums min-w-[2.5rem] text-right">
@@ -1414,7 +1659,16 @@ export function FloatingMessageWidget() {
               >
                 {soundMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
               </Button>
-              <ChevronUp className="h-4 w-4 text-primary-foreground shrink-0" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
+                onClick={() => setIsOpen(true)}
+                title="Open messages"
+                aria-label="Open messages"
+              >
+                <ChevronUp className="h-4 w-4 text-primary-foreground shrink-0" />
+              </Button>
             </div>
           </div>
         )}

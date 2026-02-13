@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Bell, Save, Lightbulb, Users, AlertTriangle, MessageSquare, Shield, Mail } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Bell, Save, Lightbulb, Users, AlertTriangle, MessageSquare, Shield, Mail, Clock3 } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
@@ -35,6 +36,7 @@ const AdminNotificationPreferences = () => {
     digest_enabled: false,
     digest_frequency: "daily",
   });
+  const [awayAfterMinutes, setAwayAfterMinutes] = useState<number>(3);
 
   useEffect(() => {
     checkAdminAndLoadPreferences();
@@ -82,11 +84,18 @@ const AdminNotificationPreferences = () => {
 
   const loadPreferences = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("email_preferences")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const [{ data, error }, { data: presenceSettings }] = await Promise.all([
+        supabase
+          .from("email_preferences")
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle(),
+        supabase
+          .from("platform_settings")
+          .select("value")
+          .eq("key", "presence_settings")
+          .maybeSingle(),
+      ]);
 
       if (error && error.code !== "PGRST116") throw error;
 
@@ -113,6 +122,11 @@ const AdminNotificationPreferences = () => {
           console.error("Error creating preferences:", insertError);
         }
       }
+      const raw = (presenceSettings?.value as { away_after_minutes?: unknown } | null)?.away_after_minutes;
+      const numeric = Number(raw);
+      if (Number.isFinite(numeric) && numeric >= 2 && numeric <= 4) {
+        setAwayAfterMinutes(Math.round(numeric));
+      }
     } catch (error) {
       console.error("Error loading preferences:", error);
       toast.error("Failed to load notification preferences");
@@ -131,6 +145,21 @@ const AdminNotificationPreferences = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
+
+      const clampedAwayMinutes = Math.min(4, Math.max(2, Math.round(awayAfterMinutes || 3)));
+      const { error: presenceError } = await supabase
+        .from("platform_settings")
+        .upsert(
+          {
+            key: "presence_settings",
+            description: "Presence status thresholds for online/away/offline.",
+            value: { away_after_minutes: clampedAwayMinutes },
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+      if (presenceError) throw presenceError;
+      setAwayAfterMinutes(clampedAwayMinutes);
 
       toast.success("Notification preferences saved successfully");
     } catch (error) {
@@ -407,6 +436,35 @@ const AdminNotificationPreferences = () => {
                   )}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Clock3 className="h-5 w-5 text-primary" />
+                <CardTitle>Presence / Away Timing</CardTitle>
+              </div>
+              <CardDescription>
+                Configure when online users should change to away (yellow) after inactivity.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Label htmlFor="away_after_minutes">Away after (minutes)</Label>
+              <Input
+                id="away_after_minutes"
+                type="number"
+                min={2}
+                max={4}
+                step={1}
+                value={awayAfterMinutes}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  if (!Number.isFinite(next)) return;
+                  setAwayAfterMinutes(next);
+                }}
+              />
+              <p className="text-sm text-muted-foreground">Allowed range: 2 to 4 minutes.</p>
             </CardContent>
           </Card>
 
