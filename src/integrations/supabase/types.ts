@@ -1972,6 +1972,69 @@ export type Database = {
           },
         ]
       }
+      gig_digger_email_deliveries: {
+        Row: {
+          id: string
+          gig_id: string
+          digger_id: string
+          sent_at: string
+          sent_by: string
+        }
+        Insert: {
+          id?: string
+          gig_id: string
+          digger_id: string
+          sent_at?: string
+          sent_by?: string
+        }
+        Update: {
+          id?: string
+          gig_id?: string
+          digger_id?: string
+          sent_at?: string
+          sent_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_digger_email_deliveries_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gig_digger_email_deliveries_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gig_email_delivery_settings: {
+        Row: {
+          id: string
+          mode: string
+          selected_digger_ids: string[]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          mode?: string
+          selected_digger_ids?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          mode?: string
+          selected_digger_ids?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       gigs: {
         Row: {
           ai_matched_codes: boolean | null

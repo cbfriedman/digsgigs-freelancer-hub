@@ -20,8 +20,6 @@ import {
 import { ArrowLeft, Shield, UserCog, Users, RefreshCw, MoreVertical, UserX, Trash2, UserCheck, Search } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
 import {
   Select,
   SelectContent,
@@ -696,7 +694,6 @@ const AdminUserManagement = () => {
           </CardContent>
         </Card>
       </div>
-      <Footer />
 
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>

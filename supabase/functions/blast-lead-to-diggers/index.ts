@@ -248,6 +248,13 @@ serve(async (req) => {
 
         emailsSent++;
         console.log(`[blast-lead-to-diggers] Email sent to ${email}`);
+        // Record delivery for admin dashboard visibility
+        await supabase.from("gig_digger_email_deliveries").upsert(
+          { gig_id: leadId, digger_id: digger.id, sent_at: new Date().toISOString(), sent_by: "auto" },
+          { onConflict: "gig_id,digger_id" }
+        ).then(({ error: recErr }) => {
+          if (recErr) console.warn(`[blast-lead-to-diggers] Record delivery failed for ${digger.id}:`, recErr);
+        });
       } catch (emailError: any) {
         console.error(`[blast-lead-to-diggers] Failed to send to ${email}:`, emailError);
         errors.push(`${email}: ${emailError.message}`);

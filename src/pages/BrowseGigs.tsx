@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -153,6 +154,48 @@ const BrowseGigs = () => {
   useEffect(() => {
     loadData();
   }, [selectedCategory, budgetFilter, diggerProfile, advancedFilters]);
+
+  // Real-time: when a new open gig is posted, add it to the list without refresh
+  const gigsChannelRef = useRef<RealtimeChannel | null>(null);
+  useEffect(() => {
+    const channel = supabase
+      .channel("browse-gigs:new-gigs")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "gigs" },
+        async (payload) => {
+          const row = payload.new as { id: string; status: string };
+          if (row?.status !== "open") return;
+          try {
+            const { data: newGig, error } = await supabase
+              .from("gigs")
+              .select(
+                `
+                *,
+                poster_country,
+                categories (name),
+                profiles!gigs_consumer_id_fkey (full_name)
+              `
+              )
+              .eq("id", row.id)
+              .single();
+            if (error || !newGig) return;
+            setGigs((prev) => {
+              if (prev.some((g) => g.id === newGig.id)) return prev;
+              return [newGig as Gig, ...prev];
+            });
+          } catch {
+            // ignore
+          }
+        }
+      )
+      .subscribe();
+    gigsChannelRef.current = channel;
+    return () => {
+      supabase.removeChannel(channel);
+      gigsChannelRef.current = null;
+    };
+  }, []);
 
   // Debug: Log digger profile and bids for troubleshooting
   useEffect(() => {
@@ -357,11 +400,9 @@ const BrowseGigs = () => {
     return gigAge > 24 * 60 * 60 * 1000; // >24 hours
   };
 
-  const canSeeBudget = (gigId: string) => {
-    // Non-diggers can always see budget
-    if (!diggerProfile) return true;
-    // Diggers can see budget if they've bid or purchased the lead
-    return userBids.has(gigId) || userLeadPurchases.has(gigId);
+  const canSeeBudget = () => {
+    // Everyone (including diggers) can see budget so diggers can tailor proposals and bid within range
+    return true;
   };
 
   const newGigs = filteredGigs.filter(gig => !isOldGig(gig.created_at));

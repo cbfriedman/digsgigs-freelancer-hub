@@ -34,25 +34,30 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
         </script>
       </Helmet>
       
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+      <nav aria-label="Breadcrumb" className="mb-6 min-w-0">
+        <ol className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap min-w-0">
           {allItems.map((item, index) => {
             const isLast = index === allItems.length - 1;
             const isHome = index === 0;
 
             return (
-              <li key={item.href} className="flex items-center gap-2">
+              <li key={`${item.href}-${index}`} className="flex items-center gap-2 min-w-0 last:min-w-0 last:overflow-hidden">
                 {index > 0 && (
-                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden="true" />
                 )}
                 {isLast ? (
-                  <span className="font-medium text-foreground" aria-current="page">
+                  <span
+                    className="font-medium text-foreground truncate max-w-[140px] sm:max-w-[280px]"
+                    aria-current="page"
+                    title={item.label}
+                  >
                     {item.label}
                   </span>
                 ) : (
                   <Link
                     to={item.href}
-                    className="hover:text-foreground transition-colors flex items-center gap-1"
+                    className="hover:text-foreground transition-colors flex items-center gap-1 shrink-0"
+                    title={item.label}
                   >
                     {isHome && <Home className="h-4 w-4" />}
                     {item.label}

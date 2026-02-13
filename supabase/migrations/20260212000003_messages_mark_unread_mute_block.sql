@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.conversation_mutes (
 
 ALTER TABLE public.conversation_mutes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own mutes" ON public.conversation_mutes;
 CREATE POLICY "Users manage own mutes"
   ON public.conversation_mutes FOR ALL
   TO authenticated
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS public.user_blocks (
 
 ALTER TABLE public.user_blocks ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own blocks" ON public.user_blocks;
 CREATE POLICY "Users manage own blocks"
   ON public.user_blocks FOR ALL
   TO authenticated

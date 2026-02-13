@@ -12,6 +12,9 @@ import {
   MapPin,
   CheckCircle2,
   Loader2,
+  FileText,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
@@ -180,21 +183,34 @@ export function DiggerProposalCard({
           <p className="font-medium text-foreground">{gigTitle}</p>
         </div>
 
-        {/* Bid description */}
+        {/* Cover letter with View more / View less */}
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5">Bid</p>
+          <div className="flex items-center gap-2 mb-1.5">
+            <FileText className="w-3.5 h-3.5 text-primary" />
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cover letter</p>
+          </div>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
             {displayProposal}
-            {truncated && !showFullProposal && (
-              <button
-                type="button"
-                onClick={() => setShowFullProposal(true)}
-                className="ml-1 text-primary hover:underline font-medium"
-              >
-                more
-              </button>
-            )}
           </p>
+          {truncated && (
+            <button
+              type="button"
+              onClick={() => setShowFullProposal(!showFullProposal)}
+              className="mt-2 inline-flex items-center gap-1 text-primary hover:underline font-medium text-sm"
+            >
+              {showFullProposal ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  View less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  View more
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Status & actions */}

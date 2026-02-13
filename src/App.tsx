@@ -17,6 +17,7 @@ import { FloatingMessageWidget } from "./components/FloatingMessageWidget";
 import { Navigation } from "./components/Navigation";
 import { GlobalAnalytics } from "./components/GlobalAnalytics";
 import { GlobalMessageSound } from "./components/GlobalMessageSound";
+import { NewGigAlertListener } from "./components/NewGigAlertListener";
 // Auth page removed - using Register for all authentication
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
@@ -127,6 +128,7 @@ const RootLayout = () => {
   const location = useLocation();
   const pathname = location.pathname;
   const { activeRole } = useAuth();
+  const isAdminRoute = pathname.startsWith("/admin");
   const isBlogPost = /^\/blog\/[^/]+$/.test(pathname);
   const isBlogIndex = pathname === "/blog";
   const showBackButton = isBlogPost || isBlogIndex;
@@ -135,15 +137,22 @@ const RootLayout = () => {
   const roleMode = activeRole === "digger" || activeRole === "gigger" ? activeRole : "";
   return (
     <div {...(roleMode ? { "data-role-mode": roleMode } : {})} className="contents">
-      <Navigation
-        showBackButton={showBackButton}
-        backTo={backTo}
-        backLabel={backLabel}
-      />
+      <NewGigAlertListener />
+      {!isAdminRoute && (
+        <Navigation
+          showBackButton={showBackButton}
+          backTo={backTo}
+          backLabel={backLabel}
+        />
+      )}
       <PageViewTracker />
       <Outlet />
-      <FloatingChatButton />
-      <FloatingMessageWidget />
+      {!isAdminRoute && (
+        <>
+          <FloatingChatButton />
+          <FloatingMessageWidget />
+        </>
+      )}
     </div>
   );
 };

@@ -72,6 +72,7 @@ export const useNotifications = () => {
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
+          window.dispatchEvent(new CustomEvent('app:new-notification', { detail: newNotification }));
         }
       )
       .on(

@@ -101,13 +101,17 @@ export const useTrackDiggerPresence = () => {
       config: { presence: { key: user.id } },
     });
     let diggerProfileId: string | null = null;
+    let isSubscribed = false;
 
     const trackPresence = () => {
-      if (diggerProfileId) {
+      if (!isSubscribed || !diggerProfileId) return;
+      try {
         channel.track({
           digger_id: diggerProfileId,
           online_at: new Date().toISOString(),
         });
+      } catch {
+        // only track after channel is SUBSCRIBED
       }
     };
 
@@ -147,12 +151,13 @@ export const useTrackDiggerPresence = () => {
             // RPC missing or failed: still track presence so online status works
           }
           diggerProfileId = diggerProfile.id;
-          channel.subscribe(async (status) => {
+          channel.subscribe((status) => {
             if (status === 'SUBSCRIBED' && diggerProfileId) {
-              await channel.track({
+              isSubscribed = true;
+              channel.track({
                 digger_id: diggerProfileId,
                 online_at: new Date().toISOString(),
-              });
+              }).catch(() => {});
               if (heartbeatRef.current) clearInterval(heartbeatRef.current);
               heartbeatRef.current = setInterval(trackPresence, 20_000);
             }
@@ -166,7 +171,7 @@ export const useTrackDiggerPresence = () => {
     setupPresence();
 
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && diggerProfileId) {
+      if (document.visibilityState === 'visible') {
         trackPresence();
       }
     };
@@ -178,7 +183,8 @@ export const useTrackDiggerPresence = () => {
         clearInterval(heartbeatRef.current);
         heartbeatRef.current = null;
       }
-      void channel.untrack();
+      // Avoid untrack() - it can throw "push presence before joining" if the
+      // server hasn't finished processing our join. removeChannel() cleans up.
       supabase.removeChannel(channel);
     };
   }, [user]);

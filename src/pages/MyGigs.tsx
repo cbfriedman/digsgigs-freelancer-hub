@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText, RefreshCw, Copy } from "lucide-react";
+import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Navigation } from "@/components/Navigation";
 import {
@@ -66,6 +66,8 @@ const MyGigs = () => {
   const [bumpingId, setBumpingId] = useState<string | null>(null);
   const [repostingId, setRepostingId] = useState<string | null>(null);
   const [repostConfirmGig, setRepostConfirmGig] = useState<Gig | null>(null);
+  const [removeConfirmGig, setRemoveConfirmGig] = useState<Gig | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadGigs();
@@ -209,13 +211,26 @@ const MyGigs = () => {
       return;
     }
 
-    toast.success("Reposted! Your new listing is live and diggers will be notified.");
+    toast.success("Reposted! Your new listing is live.");
+    supabase.functions.invoke("send-gig-email-by-settings", { body: { gigId: newGig.id } }).catch(() => {});
     loadGigs();
-
-    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: newGig.id, proOnly: true } }).catch(() => {});
-    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: newGig.id, proOnly: false } }).catch(() => {});
-
     navigate(`/gig/${newGig.id}`);
+  };
+
+  const handleRemoveGig = async (gig: Gig) => {
+    setRemovingId(gig.id);
+    const { error } = await supabase
+      .from("gigs")
+      .update({ status: "cancelled" } as any)
+      .eq("id", gig.id);
+    setRemovingId(null);
+    setRemoveConfirmGig(null);
+    if (error) {
+      toast.error("Failed to remove gig");
+      return;
+    }
+    toast.success("Gig removed.");
+    loadGigs();
   };
 
   const viewIssues = async (gig: Gig) => {
@@ -376,7 +391,7 @@ const MyGigs = () => {
                     </div>
                   </div>
 
-                  {/* Action row: View, Bump, Repost, Issues */}
+                  {/* Action row: View, Edit, Bump, Repost, Issues, Remove */}
                   <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-2 flex-wrap">
                     <Button
                       onClick={() => navigate(`/gig/${gig.id}`)}
@@ -384,6 +399,15 @@ const MyGigs = () => {
                     >
                       <FileText className="mr-2 h-4 w-4" />
                       {bidStatsByGigId[gig.id]?.count ? "View bids" : "View gig"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(`/gig/${gig.id}/edit`)}
+                      className="min-w-0"
+                      title="Edit gig details"
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
                     </Button>
                     {gig.status === "open" && (
                       <Button
@@ -423,6 +447,20 @@ const MyGigs = () => {
                       <AlertCircle className="mr-2 h-4 w-4" />
                       View Issues
                     </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setRemoveConfirmGig(gig)}
+                      disabled={!!removingId}
+                      className="min-w-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title="Remove this gig (close and hide from diggers)"
+                    >
+                      {removingId === gig.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-4 w-4" />
+                      )}
+                      Remove
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -442,6 +480,26 @@ const MyGigs = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleRepostConfirm}>Repost</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!removeConfirmGig} onOpenChange={(open) => !open && setRemoveConfirmGig(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this gig?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This gig will be closed and no longer visible to diggers. You can still see it in your list with status &quot;cancelled&quot;. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => removeConfirmGig && handleRemoveGig(removeConfirmGig)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

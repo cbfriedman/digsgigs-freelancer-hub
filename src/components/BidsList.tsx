@@ -290,8 +290,10 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, curre
         )}
       </div>
 
-      {isOwner
-        ? displayedBids.map((bid) => (
+      {/* Bid cards: only show for gig owner (Gigger); in Digger mode show header + stats only */}
+      {isOwner && (
+        <>
+          {displayedBids.map((bid) => (
             <DiggerProposalCard
               key={bid.id}
               bid={bid}
@@ -306,29 +308,9 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, curre
               onCompleteWork={loadBids}
               acceptingId={accepting}
             />
-          ))
-        : displayedBids.map((bid, index) => (
-            <AnonymizedBidCard
-              key={bid.id}
-              bid={bid}
-              bidderNumber={index + 1}
-              diggerProfile={bid.digger_profiles}
-              referenceCount={bid.reference_count}
-              isLowestBid={index === 0}
-              isOwner={false}
-              acceptingId={accepting}
-            >
-              {bid.status === "accepted" && !isFixedPrice && bid.awarded && (
-                <CompleteWorkDialog
-                  bidId={bid.id}
-                  bidAmount={bid.amount}
-                  diggerId={bid.digger_profiles.id}
-                  gigTitle={gigTitle}
-                  onComplete={loadBids}
-                />
-              )}
-            </AnonymizedBidCard>
           ))}
+        </>
+      )}
 
       {selectedBid && (
         <EscrowContractDialog

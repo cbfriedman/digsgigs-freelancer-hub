@@ -136,6 +136,10 @@ serve(async (req) => {
       );
     }
 
+    // Notify diggers in-app and via email (same as other gig-creation paths)
+    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: gig.id, proOnly: true } }).catch((e) => console.error("[post-gig] Pro blast error:", e));
+    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: gig.id, proOnly: false } }).catch((e) => console.error("[post-gig] Non-Pro blast error:", e));
+
     return new Response(
       JSON.stringify({ data: gig }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

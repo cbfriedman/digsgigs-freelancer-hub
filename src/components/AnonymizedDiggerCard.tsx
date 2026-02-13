@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { 
   Star, 
@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 
 interface AnonymizedDiggerCardProps {
-  // Anonymized identifier - just a number like "Bidder #1"
+  /** Shown when displayName is not provided */
   bidderNumber: number;
-  // Profile data (no identifying info like name, handle, photo)
+  /** When provided, shown instead of "Bidder #N" and avatar uses profileImageUrl */
+  displayName?: string | null;
+  profileImageUrl?: string | null;
   profession?: string;
   yearsExperience?: number;
   averageRating?: number;
@@ -33,10 +35,14 @@ interface AnonymizedDiggerCardProps {
   city?: string;
   state?: string;
   offersFreeBEstimates?: boolean;
+  /** When true, hide the "Identity revealed after..." footer (e.g. when showing real identity) */
+  showRealIdentity?: boolean;
 }
 
 export const AnonymizedDiggerCard = ({
   bidderNumber,
+  displayName,
+  profileImageUrl,
   profession,
   yearsExperience,
   averageRating,
@@ -53,22 +59,30 @@ export const AnonymizedDiggerCard = ({
   city,
   state,
   offersFreeBEstimates,
+  showRealIdentity = false,
 }: AnonymizedDiggerCardProps) => {
+  const nameToShow = (displayName && displayName.trim()) || `Bidder #${bidderNumber}`;
+  const useRealIdentity = showRealIdentity || (displayName && displayName.trim().length > 0);
+
   return (
     <Card className="border-l-4 border-l-primary/30">
       <CardHeader className="pb-3">
         <div className="flex items-start gap-4">
-          {/* Anonymous Avatar */}
           <Avatar className="h-14 w-14 border-2 border-primary/20">
+            {profileImageUrl ? (
+              <AvatarImage src={profileImageUrl} alt={nameToShow} className="object-cover" />
+            ) : null}
             <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">
-              #{bidderNumber}
+              {useRealIdentity && nameToShow !== `Bidder #${bidderNumber}` 
+                ? nameToShow.slice(0, 2).toUpperCase() 
+                : `#${bidderNumber}`}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-lg font-semibold text-foreground">
-                Bidder #{bidderNumber}
+                {nameToShow}
               </h4>
               {isVerified && (
                 <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
@@ -222,10 +236,12 @@ export const AnonymizedDiggerCard = ({
           </div>
         )}
         
-        {/* Privacy Notice */}
-        <div className="text-xs text-muted-foreground italic pt-2 border-t">
-          Identity revealed after lead purchase or award acceptance
-        </div>
+        {/* Privacy Notice - only when showing anonymous placeholder */}
+        {!useRealIdentity && (
+          <div className="text-xs text-muted-foreground italic pt-2 border-t">
+            Identity revealed after lead purchase or award acceptance
+          </div>
+        )}
       </CardContent>
     </Card>
   );

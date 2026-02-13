@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,9 +8,14 @@ import {
   CreditCard, 
   Clock,
   DollarSign,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { AnonymizedDiggerCard } from "./AnonymizedDiggerCard";
+
+const PROPOSAL_PREVIEW_LENGTH = 280;
 
 interface AnonymizedBidCardProps {
   bid: {
@@ -27,6 +33,9 @@ interface AnonymizedBidCardProps {
   bidderNumber: number;
   diggerProfile: {
     id: string;
+    handle?: string | null;
+    business_name?: string | null;
+    profile_image_url?: string | null;
     profession?: string;
     years_experience?: number;
     average_rating?: number;
@@ -66,10 +75,17 @@ export const AnonymizedBidCard = ({
   acceptingId,
   children,
 }: AnonymizedBidCardProps) => {
+  const [showFullProposal, setShowFullProposal] = useState(false);
   const hasRange = bid.amount_min && bid.amount_max;
   const displayMin = bid.amount_min || bid.amount;
   const displayMax = bid.amount_max || bid.amount;
-  
+  const displayName = (diggerProfile.business_name && diggerProfile.business_name.trim()) || (diggerProfile.handle ? `@${diggerProfile.handle}` : null) || undefined;
+  const profileImageUrl = diggerProfile.profile_image_url ?? undefined;
+  const proposalTruncated = bid.proposal.length > PROPOSAL_PREVIEW_LENGTH;
+  const displayProposal = showFullProposal || !proposalTruncated
+    ? bid.proposal
+    : bid.proposal.slice(0, PROPOSAL_PREVIEW_LENGTH) + "...";
+
   return (
     <Card className={isLowestBid ? "border-primary border-2 shadow-lg" : ""}>
       <CardHeader className="pb-3">
@@ -114,9 +130,12 @@ export const AnonymizedBidCard = ({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Anonymized Digger Profile */}
+        {/* Digger profile: real name & photo when available */}
         <AnonymizedDiggerCard
           bidderNumber={bidderNumber}
+          displayName={displayName}
+          profileImageUrl={profileImageUrl}
+          showRealIdentity={!!displayName}
           profession={diggerProfile.profession}
           yearsExperience={diggerProfile.years_experience}
           averageRating={diggerProfile.average_rating}
@@ -137,15 +156,34 @@ export const AnonymizedBidCard = ({
         
         <Separator />
         
-        {/* Proposal */}
+        {/* Cover letter / Proposal with View more */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <MessageSquare className="w-4 h-4 text-primary" />
-            <h4 className="font-semibold">Proposal</h4>
+            <FileText className="w-4 h-4 text-primary" />
+            <h4 className="font-semibold uppercase tracking-wide text-muted-foreground text-xs">Cover letter</h4>
           </div>
           <p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">
-            {bid.proposal}
+            {displayProposal}
           </p>
+          {proposalTruncated && (
+            <button
+              type="button"
+              onClick={() => setShowFullProposal(!showFullProposal)}
+              className="mt-2 inline-flex items-center gap-1 text-primary hover:underline font-medium text-sm"
+            >
+              {showFullProposal ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  View less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  View more
+                </>
+              )}
+            </button>
+          )}
         </div>
         
         <Separator />

@@ -21,6 +21,7 @@ import { MessageViolationsDashboard } from "@/components/admin/MessageViolations
 import SupportInboxTab from "@/components/admin/SupportInboxTab";
 import MessageNotificationSettingsTab from "@/components/admin/MessageNotificationSettingsTab";
 import ManageGigsTab from "@/components/admin/ManageGigsTab";
+import GigEmailDeliveryTab from "@/components/admin/GigEmailDeliveryTab";
 import {
   Sidebar,
   SidebarContent,
@@ -35,7 +36,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Footer } from "@/components/Footer";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 interface ReminderStats {
@@ -367,6 +367,7 @@ const AdminDashboard = () => {
     { id: "cpc-data", label: "CPC Data", icon: Database },
     { id: "giveaway", label: "Giveaway Report", icon: Crown },
     { id: "manage-gigs", label: "Manage gigs", icon: Briefcase },
+    { id: "gig-email-delivery", label: "Gig email delivery", icon: Mail },
     { id: "test-results", label: "QA Test Results", icon: ClipboardCheck },
   ];
 
@@ -455,7 +456,7 @@ const AdminDashboard = () => {
               <SidebarGroupLabel>Data & Reports</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {menuItems.slice(7, 11).map((item) => {
+                  {menuItems.slice(7, 12).map((item) => {
                     const Icon = item.icon;
                     return (
                       <SidebarMenuItem key={item.id}>
@@ -594,6 +595,10 @@ const AdminDashboard = () => {
 
                 {activeTab === "manage-gigs" && (
                   <ManageGigsTab />
+                )}
+
+                {activeTab === "gig-email-delivery" && (
+                  <GigEmailDeliveryTab />
                 )}
 
                 {activeTab === "reminders" && (
@@ -936,7 +941,6 @@ const AdminDashboard = () => {
           </div>
         </SidebarInset>
         </div>
-        <Footer />
       </div>
     </SidebarProvider>
   );

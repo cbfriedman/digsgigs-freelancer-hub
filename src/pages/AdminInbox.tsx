@@ -15,8 +15,6 @@ import {
 import { ArrowLeft, Inbox, Mail, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
 import type { ContactStatus } from "@/components/admin/SupportInboxTab";
 
 interface ContactSubmission {
@@ -171,7 +169,6 @@ const AdminInbox = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navigation />
       <div className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <Button
           variant="ghost"
@@ -318,7 +315,6 @@ const AdminInbox = () => {
           </CardContent>
         </Card>
       </div>
-      <Footer />
     </div>
   );
 };

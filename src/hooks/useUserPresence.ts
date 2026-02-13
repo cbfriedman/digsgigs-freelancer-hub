@@ -91,12 +91,18 @@ export function useTrackUserPresence() {
     const channel = supabase.channel(USER_PRESENCE_CHANNEL, {
       config: { presence: { key: user.id } },
     });
+    let isSubscribed = false;
 
     const trackPresence = () => {
-      channel.track({
-        user_id: user.id,
-        online_at: new Date().toISOString(),
-      });
+      if (!isSubscribed) return;
+      try {
+        channel.track({
+          user_id: user.id,
+          online_at: new Date().toISOString(),
+        });
+      } catch {
+        // only track after channel is SUBSCRIBED
+      }
     };
 
     let heartbeat: ReturnType<typeof setInterval> | null = null;
@@ -108,7 +114,12 @@ export function useTrackUserPresence() {
       }
       channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await trackPresence();
+          isSubscribed = true;
+          try {
+            await trackPresence();
+          } catch (e) {
+            console.warn('User presence track after subscribe:', e);
+          }
           if (heartbeat) clearInterval(heartbeat);
           heartbeat = setInterval(trackPresence, 20_000);
         }
