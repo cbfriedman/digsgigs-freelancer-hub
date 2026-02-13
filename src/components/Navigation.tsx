@@ -1116,6 +1116,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         >
                           <MessageCircle className="h-4 w-4" />
                           <span className="font-medium">Messages</span>
+                          {unreadMessagesCount > 0 && (
+                            <span
+                              className="ml-auto h-5 min-w-[1.25rem] px-1 rounded-md bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center shrink-0"
+                              title={`${unreadMessagesCount} unread messages`}
+                            >
+                              {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                            </span>
+                          )}
                         </button>
                       )}
                       {user && (
