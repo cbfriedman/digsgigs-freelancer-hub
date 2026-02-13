@@ -57,7 +57,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { isNotificationMuted, setNotificationMuted } from "@/lib/notificationSound";
 import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
-import { MessageInput, MessageBubble } from "@/components/messages";
+import { MessageInput, MessageBubble, TypingIndicator } from "@/components/messages";
 
 const messageSchema = z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long");
 
@@ -67,6 +67,7 @@ interface Message {
   sender_id: string;
   created_at: string;
   read_at: string | null;
+  conversation_id?: string;
   attachments?: { name: string; path: string; type: string }[];
 }
 
@@ -114,12 +115,21 @@ export function FloatingMessageWidget() {
   const inputRefsMap = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const scrollAreaRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
   const pendingAutoScrollRef = useRef<Record<string, boolean>>({});
+  const typingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
+  const typingSendTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout> | null>>({});
   const conversationsRef = useRef<RecentConversation[]>([]);
-  const openChatRef = useRef<(conv: RecentConversation, bringToFront?: boolean) => void>(() => {});
+  const messagesMapRef = useRef<Record<string, Message[]>>({});
+  const openChatRef = useRef<(
+    conv: RecentConversation,
+    bringToFront?: boolean,
+    showLoaderOnInit?: boolean
+  ) => void>(() => {});
   const openChatIdsRef = useRef<Set<string>>(new Set());
   const userIdRef = useRef<string | null>(null);
   userIdRef.current = user?.id ?? null;
+  messagesMapRef.current = messagesMap;
   openChatIdsRef.current = new Set(openChats.map((c) => c.id));
+  const [partnerTypingMap, setPartnerTypingMap] = useState<Record<string, boolean>>({});
 
   const hideOnMessagesPage = pathname === MESSAGES_PAGE;
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
@@ -193,9 +203,11 @@ export function FloatingMessageWidget() {
   }, []);
 
   const loadMessages = useCallback(
-    async (convId: string) => {
+    async (convId: string, showLoader = true) => {
       if (!user?.id) return;
-      setLoadingMap((prev) => ({ ...prev, [convId]: true }));
+      if (showLoader) {
+        setLoadingMap((prev) => ({ ...prev, [convId]: true }));
+      }
       try {
         const { data, error } = await supabase.rpc("get_conversation_messages" as any, {
           _conversation_id: convId,
@@ -217,10 +229,22 @@ export function FloatingMessageWidget() {
         await supabase.rpc("mark_conversation_messages_read" as any, {
           _conversation_id: convId,
         });
+        const now = new Date().toISOString();
+        setMessagesMap((prev) => ({
+          ...prev,
+          [convId]: (prev[convId] || []).map((m) =>
+            m.sender_id !== user.id && !m.read_at ? { ...m, read_at: now } : m
+          ),
+        }));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("recent-conversations-refresh"));
+        }
       } catch (e: any) {
         toast.error(e?.message || "Failed to load messages");
       } finally {
-        setLoadingMap((prev) => ({ ...prev, [convId]: false }));
+        if (showLoader) {
+          setLoadingMap((prev) => ({ ...prev, [convId]: false }));
+        }
       }
     },
     [user?.id, scrollToEnd]
@@ -228,6 +252,7 @@ export function FloatingMessageWidget() {
 
   const subscribeToMessages = useCallback((convId: string) => {
     if (channelsRef.current[convId]) return;
+    const uid = userIdRef.current;
     const channel = supabase
       .channel(`messages:${convId}`)
       .on(
@@ -248,12 +273,45 @@ export function FloatingMessageWidget() {
           dispatchMessagesSync({ conversationId: convId, message: incoming });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${convId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Message;
+          setMessagesMap((prev) => ({
+            ...prev,
+            [convId]: (prev[convId] || []).map((m) =>
+              m.id === updated.id ? { ...m, read_at: updated.read_at } : m
+            ),
+          }));
+        }
+      )
+      .on(
+        "broadcast",
+        { event: "typing" },
+        (payload) => {
+          const typingUserId = (payload.payload as { user_id?: string })?.user_id;
+          if (!typingUserId || typingUserId === uid) return;
+          setPartnerTypingMap((prev) => ({ ...prev, [convId]: true }));
+          const existingTimeout = typingTimeoutsRef.current[convId];
+          if (existingTimeout) clearTimeout(existingTimeout);
+          typingTimeoutsRef.current[convId] = setTimeout(() => {
+            setPartnerTypingMap((prev) => ({ ...prev, [convId]: false }));
+            typingTimeoutsRef.current[convId] = null;
+          }, 3000);
+        }
+      )
       .subscribe();
     channelsRef.current[convId] = channel;
   }, []);
 
   const openChat = useCallback(
-    (conv: RecentConversation, bringToFront = false) => {
+    (conv: RecentConversation, bringToFront = false, showLoaderOnInit = true) => {
       let wasAlreadyOpen = false;
       setOpenChats((prev) => {
         const idx = prev.findIndex((c) => c.id === conv.id);
@@ -269,7 +327,8 @@ export function FloatingMessageWidget() {
       pendingAutoScrollRef.current[conv.id] = true;
       if (!wasAlreadyOpen) {
         subscribeToMessages(conv.id);
-        loadMessages(conv.id);
+        const hasBufferedMessages = (messagesMapRef.current[conv.id] || []).length > 0;
+        loadMessages(conv.id, showLoaderOnInit && !hasBufferedMessages);
       }
       setCollapsedChats((prev) => ({ ...prev, [conv.id]: false }));
       requestAnimationFrame(() => {
@@ -331,6 +390,18 @@ export function FloatingMessageWidget() {
       supabase.removeChannel(ch);
       delete channelsRef.current[convId];
     }
+    const typingTimeout = typingTimeoutsRef.current[convId];
+    if (typingTimeout) clearTimeout(typingTimeout);
+    delete typingTimeoutsRef.current[convId];
+    const typingSendTimeout = typingSendTimeoutsRef.current[convId];
+    if (typingSendTimeout) clearTimeout(typingSendTimeout);
+    delete typingSendTimeoutsRef.current[convId];
+    setPartnerTypingMap((prev) => {
+      if (!prev[convId]) return prev;
+      const next = { ...prev };
+      delete next[convId];
+      return next;
+    });
     setMessagesMap((prev) => {
       const next = { ...prev };
       delete next[convId];
@@ -349,6 +420,10 @@ export function FloatingMessageWidget() {
         if (ch) supabase.removeChannel(ch);
       });
       channelsRef.current = {};
+      Object.values(typingTimeoutsRef.current).forEach((t) => t && clearTimeout(t));
+      Object.values(typingSendTimeoutsRef.current).forEach((t) => t && clearTimeout(t));
+      typingTimeoutsRef.current = {};
+      typingSendTimeoutsRef.current = {};
     };
   }, []);
 
@@ -403,7 +478,7 @@ export function FloatingMessageWidget() {
           };
           const tryOpenChat = (conv: RecentConversation) => {
             addMessageToConv(conv.id);
-            openChatRef.current(conv, true);
+            openChatRef.current(conv, true, false);
           };
           let conv = conversationsRef.current.find((c) => c.id === msg.conversation_id);
           if (conv) {
@@ -468,6 +543,49 @@ export function FloatingMessageWidget() {
   const handleReplyToMessage = useCallback((convId: string, messageId: string, content: string) => {
     setReplyingToMap((prev) => ({ ...prev, [convId]: { id: messageId, content: content.slice(0, 200) } }));
   }, []);
+
+  const handleMessageInputChange = useCallback((convId: string, value: string) => {
+    setInputMap((prev) => ({ ...prev, [convId]: value }));
+    if (!value.trim()) return;
+    const existingTimeout = typingSendTimeoutsRef.current[convId];
+    if (existingTimeout) clearTimeout(existingTimeout);
+    typingSendTimeoutsRef.current[convId] = setTimeout(() => {
+      const channel = channelsRef.current[convId];
+      const uid = userIdRef.current;
+      if (channel && uid) {
+        channel.send({
+          type: "broadcast",
+          event: "typing",
+          payload: { user_id: uid },
+        });
+      }
+      typingSendTimeoutsRef.current[convId] = null;
+    }, 300);
+  }, []);
+
+  const handleMessageInputFocus = useCallback(
+    async (convId: string) => {
+      if (!user?.id) return;
+      try {
+        await supabase.rpc("mark_conversation_messages_read" as any, {
+          _conversation_id: convId,
+        });
+        const now = new Date().toISOString();
+        setMessagesMap((prev) => ({
+          ...prev,
+          [convId]: (prev[convId] || []).map((m) =>
+            m.sender_id !== user.id && !m.read_at ? { ...m, read_at: now } : m
+          ),
+        }));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("recent-conversations-refresh"));
+        }
+      } catch {
+        // non-blocking
+      }
+    },
+    [user?.id]
+  );
 
   const handleSend = useCallback(
     async (conv: RecentConversation) => {
@@ -926,7 +1044,7 @@ export function FloatingMessageWidget() {
               ref={(el) => (scrollAreaRefsMap.current[conv.id] = el)}
               className="flex-1 min-h-0 px-3 border-border/30"
             >
-              {loadingMap[conv.id] ? (
+              {loadingMap[conv.id] && !(messagesMap[conv.id]?.length) ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
@@ -953,6 +1071,12 @@ export function FloatingMessageWidget() {
                         onCopy={handleCopyMessage}
                       />
                     ))}
+                  {partnerTypingMap[conv.id] && (
+                    <TypingIndicator
+                      partnerName={conv.partnerDisplayName}
+                      partnerAvatarUrl={conv.partnerAvatarUrl}
+                    />
+                  )}
                   <div ref={(el) => (endRefsMap.current[conv.id] = el)} />
                 </div>
               )}
@@ -976,12 +1100,13 @@ export function FloatingMessageWidget() {
               )}
               <MessageInput
                 value={inputMap[conv.id] ?? ""}
-                onChange={(v) => setInputMap((prev) => ({ ...prev, [conv.id]: v }))}
+                onChange={(v) => handleMessageInputChange(conv.id, v)}
                 onSend={() => handleSend(conv)}
                 onFileSelect={(files, content) => handleSendWithAttachments(conv, files, content)}
                 disabled={sendingMap[conv.id]}
                 placeholder="Type a message..."
                 maxLength={5000}
+                onInputFocus={() => handleMessageInputFocus(conv.id)}
                 className="min-w-0"
                 inputRef={(el) => {
                   inputRefsMap.current[conv.id] = el ?? null;
