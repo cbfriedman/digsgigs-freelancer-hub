@@ -863,12 +863,6 @@ export default function Messages() {
         return merged;
       });
 
-      if (currentUser?.id) {
-        await supabase.rpc("mark_conversation_messages_read" as any, {
-          _conversation_id: conversationId,
-        });
-        loadConversations(); // refresh list so unread badge and bold state update
-      }
     } catch (error: any) {
       toast({
         title: "Error loading messages",

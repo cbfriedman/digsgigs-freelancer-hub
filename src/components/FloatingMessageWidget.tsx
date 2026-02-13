@@ -226,19 +226,6 @@ export function FloatingMessageWidget() {
         requestAnimationFrame(() => {
           scrollToEnd(convId);
         });
-        await supabase.rpc("mark_conversation_messages_read" as any, {
-          _conversation_id: convId,
-        });
-        const now = new Date().toISOString();
-        setMessagesMap((prev) => ({
-          ...prev,
-          [convId]: (prev[convId] || []).map((m) =>
-            m.sender_id !== user.id && !m.read_at ? { ...m, read_at: now } : m
-          ),
-        }));
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("recent-conversations-refresh"));
-        }
       } catch (e: any) {
         toast.error(e?.message || "Failed to load messages");
       } finally {

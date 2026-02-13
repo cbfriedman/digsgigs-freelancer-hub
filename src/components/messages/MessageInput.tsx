@@ -34,6 +34,10 @@ export function MessageInput({
   inputRef: inputRefProp,
   onInputFocus,
 }: MessageInputProps) {
+  const handleInputInteract = useCallback(() => {
+    onInputFocus?.();
+  }, [onInputFocus]);
+
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -224,7 +228,9 @@ export function MessageInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={onInputFocus}
+          onFocus={handleInputInteract}
+          onClick={handleInputInteract}
+          onTouchStart={handleInputInteract}
           placeholder={placeholder}
           maxLength={maxLength}
           disabled={disabled}
