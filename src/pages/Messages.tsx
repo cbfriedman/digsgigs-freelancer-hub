@@ -600,6 +600,20 @@ export default function Messages() {
     };
   }, [selectedConversation]);
 
+  // Fallback for read receipts: if there are own unread messages (single-check),
+  // poll briefly so double-check updates even when UPDATE realtime events are delayed/missed.
+  useEffect(() => {
+    if (!selectedConversation || !currentUser?.id) return;
+    const hasPendingOwnReadReceipt = messages.some(
+      (m) => m.sender_id === currentUser.id && !m.read_at
+    );
+    if (!hasPendingOwnReadReceipt) return;
+    const intervalId = window.setInterval(() => {
+      loadMessages(selectedConversation);
+    }, 2000);
+    return () => window.clearInterval(intervalId);
+  }, [selectedConversation, currentUser?.id, messages]);
+
   // Keep chat history scrolled to latest (bottom) when messages load or update
   useEffect(() => {
     if (!selectedConversation) return;
@@ -987,6 +1001,7 @@ export default function Messages() {
         _conversation_id: selectedConversation,
       });
       loadConversations();
+      refreshRecentConversations();
       // Optimistically set read_at on partner messages so UI (and partner's double check) stays correct
       const now = new Date().toISOString();
       setMessages((prev) =>
