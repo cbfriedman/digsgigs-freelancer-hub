@@ -13,6 +13,9 @@ export interface RecentConversation {
   lastMessageFromMe: boolean;
   updatedAt: string;
   unreadCount: number;
+  muted: boolean;
+  isBlocked: boolean;
+  partnerUserId: string | null;
 }
 
 
@@ -68,6 +71,9 @@ export function useRecentConversations(currentUser: User | null) {
           last_message_content?: string | null;
           last_message_sender_id?: string | null;
           unread_count?: number;
+          muted?: boolean | null;
+          is_blocked?: boolean | null;
+          partner_user_id?: string | null;
         }>) || [];
 
         const list: RecentConversation[] = [...raw]
@@ -139,6 +145,9 @@ export function useRecentConversations(currentUser: User | null) {
             lastMessageFromMe,
             updatedAt: c.updated_at,
             unreadCount: typeof c.unread_count === "number" ? c.unread_count : Number(c.unread_count) || 0,
+            muted: c.muted ?? false,
+            isBlocked: c.is_blocked ?? false,
+            partnerUserId: c.partner_user_id ?? partnerUserId ?? null,
           };
         });
 

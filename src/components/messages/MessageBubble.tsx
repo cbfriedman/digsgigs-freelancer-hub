@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
-import { Check, CheckCheck, Paperclip, Download, MoreVertical, Pencil, Trash2, Copy, Reply } from "lucide-react";
+import { Check, CheckCheck, Paperclip, Download, MoreVertical, Copy, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,7 @@ export function MessageBubble({
   const timeStr = format(new Date(timestamp), "h:mm a");
   const paths = attachments.map((a) => a.path);
   const signedUrls = useSignedUrls(paths);
-  const showActions = messageId && (onReply || (isOwn && (onEdit || onDelete || onCopy)));
+  const showActions = messageId && (onReply || (isOwn && onCopy));
   const [menuOpen, setMenuOpen] = useState(false);
   const openedByClickRef = useRef(false);
 
@@ -86,7 +86,7 @@ export function MessageBubble({
             showActions && "pr-10",
             isOwn
               ? "bg-primary text-primary-foreground rounded-br-md ml-auto"
-              : "bg-card border border-border/50 rounded-bl-md shadow-card"
+              : "bg-muted text-foreground border border-border/40 rounded-bl-md shadow-card"
           )}
         >
           {/* Three-dot menu - Reply for any message; Edit/Copy/Delete for own */}
@@ -133,17 +133,6 @@ export function MessageBubble({
                       Reply
                     </DropdownMenuItem>
                   )}
-                  {isOwn && onEdit && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(messageId!);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                  )}
                   {isOwn && onCopy && (
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -153,18 +142,6 @@ export function MessageBubble({
                     >
                       <Copy className="h-4 w-4 mr-2" />
                       Copy
-                    </DropdownMenuItem>
-                  )}
-                  {isOwn && onDelete && (
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(messageId!);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { MessageCircle } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AIChatbot from "@/components/AIChatbot";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,8 +12,8 @@ export function FloatingChatButton() {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const showButton = AI_CHAT_PAGES.includes(pathname);
-  // Flush left, bottom - fully matched to left side to align with AI panel.
-  const positionClass = "bottom-5 left-4 md:bottom-6 md:left-4";
+  // Dock to the left edge as a half-circle style launcher.
+  const positionClass = "left-0 bottom-5 md:bottom-6";
 
   if (!showButton) return null;
 
@@ -23,17 +23,23 @@ export function FloatingChatButton() {
         <Button
           onClick={() => setChatOpen(true)}
           className={`fixed ${positionClass} z-[98]
-          h-12 w-12 p-0 rounded-full
-          sm:h-11 sm:w-auto sm:min-w-[140px] sm:px-4 sm:gap-2.5
-          md:min-w-[152px] md:px-5
+          group h-9 w-9 p-0 rounded-l-none rounded-r-full
+          sm:h-10 sm:w-10 sm:hover:w-[122px] sm:justify-start sm:pl-3
           bg-primary hover:bg-primary/90 text-primary-foreground
-          shadow-md hover:shadow-lg border-0
+          shadow-md hover:shadow-xl border-0
           font-medium text-sm
-          transition-shadow duration-200`}
+          transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+          hover:translate-x-2 hover:scale-[1.03]`}
         aria-label="Open AI assistant"
       >
-        <MessageCircle className="h-5 w-5 shrink-0 sm:h-[18px] sm:w-[18px]" />
-        <span className="hidden sm:inline">Ask AI</span>
+        <Sparkles className="h-4 w-4 shrink-0 sm:h-[17px] sm:w-[17px]" />
+        <span
+          className="hidden sm:inline-block overflow-hidden whitespace-nowrap max-w-0 opacity-0 -translate-x-1 ml-0
+          group-hover:max-w-[72px] group-hover:opacity-100 group-hover:translate-x-0 group-hover:ml-2
+          transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        >
+          Ask AI
+        </span>
       </Button>
       )}
 

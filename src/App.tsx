@@ -572,7 +572,7 @@ const router = createBrowserRouter(
 const App = () => {
   return (
     <AppErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="digsgigs-theme">
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="digsgigs-theme">
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <CartProvider>

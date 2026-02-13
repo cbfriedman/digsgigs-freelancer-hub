@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
 import {
   MessageCircle,
   Send,
@@ -21,6 +20,8 @@ import {
   X,
   Bell,
   BellOff,
+  EyeOff,
+  Ban,
   Search,
   Pencil,
   Trash2,
@@ -30,6 +31,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -92,7 +94,6 @@ export function FloatingMessageWidget() {
   const restoredOpenRef = useRef(false);
   const storedOpenChatIdsRef = useRef<string[] | null>(null);
   const [collapsedChats, setCollapsedChats] = useState<Record<string, boolean>>({});
-  const [archivedChats, setArchivedChats] = useState<Record<string, boolean>>({});
   const [mutedChats, setMutedChats] = useState<Record<string, boolean>>({});
   const [blockedChats, setBlockedChats] = useState<Record<string, boolean>>({});
   const [openMenuChatId, setOpenMenuChatId] = useState<string | null>(null);
@@ -105,13 +106,15 @@ export function FloatingMessageWidget() {
   const [editingMessageContent, setEditingMessageContent] = useState("");
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
   const [deleteConvId, setDeleteConvId] = useState<string | null>(null);
+  const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
   const [isDeletingMessage, setIsDeletingMessage] = useState(false);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [attachmentUploadProgress, setAttachmentUploadProgress] = useState<number | null>(null);
   const [attachmentUploadConvId, setAttachmentUploadConvId] = useState<string | null>(null);
   const [replyingToMap, setReplyingToMap] = useState<Record<string, { id: string; content: string } | null>>({});
 
   useEffect(() => {
-    const shouldKeepScrollUnlocked = !!editingMessageId || !!deleteMessageId;
+    const shouldKeepScrollUnlocked = !!editingMessageId || !!deleteMessageId || !!deleteChatId;
     if (!shouldKeepScrollUnlocked || typeof document === "undefined") return;
     const unlockScroll = () => {
       document.body.style.overflow = "auto";
@@ -124,7 +127,7 @@ export function FloatingMessageWidget() {
       window.clearTimeout(timeoutId);
       unlockScroll();
     };
-  }, [editingMessageId, deleteMessageId]);
+  }, [editingMessageId, deleteMessageId, deleteChatId]);
 
   const channelsRef = useRef<Record<string, ReturnType<typeof supabase.channel>>>({});
   const endRefsMap = useRef<Record<string, HTMLDivElement | null>>({});
@@ -843,6 +846,28 @@ export function FloatingMessageWidget() {
     }
   };
 
+  const confirmDeleteChat = async () => {
+    if (!deleteChatId) return;
+    setIsDeletingChat(true);
+    try {
+      const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", deleteChatId);
+      if (error) throw error;
+      closeChat(deleteChatId);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("recent-conversations-refresh"));
+      }
+      toast.success("Chat deleted");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not delete chat");
+    } finally {
+      setIsDeletingChat(false);
+      setDeleteChatId(null);
+    }
+  };
+
   const handleCopyMessage = (content: string) => {
     if (!content) return;
     navigator.clipboard.writeText(content).then(
@@ -861,6 +886,76 @@ export function FloatingMessageWidget() {
           (c.lastMessageContent?.toLowerCase().includes(listSearch.toLowerCase()) ?? false)
       )
     : conversations;
+
+  const handleMuteToggle = async (conv: RecentConversation) => {
+    const currentMuted = mutedChats[conv.id] ?? !!conv.muted;
+    const nextMuted = !currentMuted;
+    setMutedChats((prev) => ({ ...prev, [conv.id]: nextMuted }));
+    try {
+      const { data, error } = await supabase.rpc("toggle_conversation_mute" as any, {
+        _conversation_id: conv.id,
+      });
+      if (error) throw error;
+      setMutedChats((prev) => ({ ...prev, [conv.id]: data === true }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("recent-conversations-refresh"));
+      }
+      toast.success(data === true ? "Conversation muted" : "Conversation unmuted");
+    } catch (e: any) {
+      setMutedChats((prev) => {
+        const next = { ...prev };
+        delete next[conv.id];
+        return next;
+      });
+      toast.error(e?.message ?? "Failed to update mute");
+    }
+  };
+
+  const handleBlockToggle = async (conv: RecentConversation) => {
+    const currentBlocked = blockedChats[conv.id] ?? !!conv.isBlocked;
+    const nextBlocked = !currentBlocked;
+    setBlockedChats((prev) => ({ ...prev, [conv.id]: nextBlocked }));
+    try {
+      if (nextBlocked) {
+        const { error } = await supabase.rpc("block_conversation_partner" as any, {
+          _conversation_id: conv.id,
+        });
+        if (error) throw error;
+        toast.success("User blocked");
+      } else {
+        if (!conv.partnerUserId) throw new Error("Unable to identify partner user");
+        const { error } = await supabase.rpc("unblock_user" as any, {
+          _blocked_user_id: conv.partnerUserId,
+        });
+        if (error) throw error;
+        toast.success("User unblocked");
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("recent-conversations-refresh"));
+      }
+    } catch (e: any) {
+      setBlockedChats((prev) => {
+        const next = { ...prev };
+        delete next[conv.id];
+        return next;
+      });
+      toast.error(e?.message ?? "Failed to update block");
+    }
+  };
+
+  const handleMarkAsUnread = async (convId: string) => {
+    try {
+      await supabase.rpc("mark_conversation_messages_unread" as any, {
+        _conversation_id: convId,
+      });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("recent-conversations-refresh"));
+      }
+      toast.success("Marked as unread");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to mark as unread");
+    }
+  };
 
   return (
     <div className="fixed bottom-0 right-0 z-[100] p-4 md:p-5 flex flex-row items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
@@ -904,7 +999,7 @@ export function FloatingMessageWidget() {
                 return { ...prev, [conv.id]: next };
               });
             }}
-            className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border/50 bg-background/95 shrink-0 cursor-pointer rounded-t-2xl"
+            className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border/40 bg-muted shrink-0 cursor-pointer rounded-t-2xl"
             aria-label={collapsedChats[conv.id] ? "Expand chat" : "Collapse chat"}
           >
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -978,37 +1073,50 @@ export function FloatingMessageWidget() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-52 p-2"
+                  className="w-52 p-1.5"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-between gap-3 px-2 py-1.5">
-                    <span className="text-sm">Archive chat</span>
-                    <Switch
-                      checked={!!archivedChats[conv.id]}
-                      onCheckedChange={(checked) =>
-                        setArchivedChats((prev) => ({ ...prev, [conv.id]: checked }))
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3 px-2 py-1.5">
-                    <span className="text-sm">Mute notifications</span>
-                    <Switch
-                      checked={!!mutedChats[conv.id]}
-                      onCheckedChange={(checked) =>
-                        setMutedChats((prev) => ({ ...prev, [conv.id]: checked }))
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3 px-2 py-1.5">
-                    <span className="text-sm">Block user</span>
-                    <Switch
-                      checked={!!blockedChats[conv.id]}
-                      onCheckedChange={(checked) =>
-                        setBlockedChats((prev) => ({ ...prev, [conv.id]: checked }))
-                      }
-                    />
-                  </div>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkAsUnread(conv.id);
+                    }}
+                  >
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Mark as unread
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMuteToggle(conv);
+                    }}
+                  >
+                    {(mutedChats[conv.id] ?? !!conv.muted)
+                      ? <Bell className="h-4 w-4 mr-2" />
+                      : <BellOff className="h-4 w-4 mr-2" />}
+                    {(mutedChats[conv.id] ?? !!conv.muted) ? "Unmute" : "Mute"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBlockToggle(conv);
+                    }}
+                  >
+                    <Ban className="h-4 w-4 mr-2" />
+                    {(blockedChats[conv.id] ?? !!conv.isBlocked) ? "Unblock" : "Block"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteChatId(conv.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete chat
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button
@@ -1120,7 +1228,7 @@ export function FloatingMessageWidget() {
         </div>
       ))}
 
-      <div className={cn("flex flex-col items-end", listPanelWidth)}>
+      <div className={cn("hidden md:flex flex-col items-end", listPanelWidth)}>
         <div
           className={cn(
             "flex flex-col overflow-hidden w-full border border-border/60 bg-card shadow-xl rounded-2xl",
@@ -1350,6 +1458,26 @@ export function FloatingMessageWidget() {
               onClick={(e) => { e.preventDefault(); confirmDeleteMessage(); }}
             >
               {isDeletingMessage ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete chat confirmation */}
+      <AlertDialog open={!!deleteChatId} onOpenChange={(open) => !open && setDeleteChatId(null)}>
+        <AlertDialogContent className="data-[state=closed]:animate-none data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-100 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[50%]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete chat?</AlertDialogTitle>
+            <AlertDialogDescription>This chat and all messages will be permanently removed. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingChat}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingChat}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => { e.preventDefault(); confirmDeleteChat(); }}
+            >
+              {isDeletingChat ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
