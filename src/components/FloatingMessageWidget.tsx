@@ -1244,17 +1244,24 @@ export function FloatingMessageWidget() {
                           <div className="min-w-0 flex-1 overflow-hidden basis-0">
                             <div className="flex items-center justify-between gap-2 min-w-0">
                               <span className="font-medium text-sm truncate min-w-0">{c.partnerDisplayName}</span>
-                              <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap tabular-nums min-w-[2.5rem] text-right">
-                                {format(new Date(c.updatedAt), "HH:mm")}
-                              </span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {c.unreadCount > 0 && (
+                                  <span
+                                    className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center"
+                                    title={`${c.unreadCount} unread`}
+                                  >
+                                    {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                                  </span>
+                                )}
+                                <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums min-w-[2.5rem] text-right">
+                                  {format(new Date(c.updatedAt), "HH:mm")}
+                                </span>
+                              </div>
                             </div>
                             <p className="text-xs text-muted-foreground truncate min-w-0" title={c.lastMessageContent || undefined}>
                               {display}
                             </p>
                           </div>
-                          {c.unreadCount > 0 && !isOpenChat && (
-                            <span className="h-2.5 min-w-[10px] rounded-full bg-primary shrink-0 flex-shrink-0" />
-                          )}
                         </button>
                       </li>
                     );

@@ -412,6 +412,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         ) : (
                           <ul className="py-1">
                             {recentConversations.map((conv) => {
+                              const unreadCount = conv.unreadCount ?? 0;
                               const snippet = conv.lastMessageContent
                                 ? (conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent.length > 80 ? conv.lastMessageContent.slice(0, 80) + "…" : conv.lastMessageContent)
                                 : "No messages yet";
@@ -446,7 +447,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                             <p className="break-words">{conv.partnerDisplayName}</p>
                                           </TooltipContent>
                                         </Tooltip>
-                                        <span className="text-xs text-muted-foreground shrink-0 min-w-[4rem] text-right">{timeLabel}</span>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          {unreadCount > 0 && (
+                                            <span
+                                              className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center"
+                                              title={`${unreadCount} unread`}
+                                            >
+                                              {unreadCount > 99 ? "99+" : unreadCount}
+                                            </span>
+                                          )}
+                                          <span className="text-xs text-muted-foreground min-w-[4rem] text-right">{timeLabel}</span>
+                                        </div>
                                       </div>
                                       <Tooltip delayDuration={400}>
                                         <TooltipTrigger asChild>
@@ -719,6 +730,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       ) : (
                         <ul className="py-1">
                           {recentConversations.map((conv) => {
+                            const unreadCount = conv.unreadCount ?? 0;
                             const snippet = conv.lastMessageContent ? (conv.lastMessageFromMe ? "You: " : "") + (conv.lastMessageContent.length > 80 ? conv.lastMessageContent.slice(0, 80) + "…" : conv.lastMessageContent) : "No messages yet";
                             const d = new Date(conv.updatedAt);
                             const isToday = (x: Date) => { const t = new Date(); return x.getDate() === t.getDate() && x.getMonth() === t.getMonth() && x.getFullYear() === t.getFullYear(); };
@@ -740,7 +752,17 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                           <p className="break-words">{conv.partnerDisplayName}</p>
                                         </TooltipContent>
                                       </Tooltip>
-                                      <span className="text-xs text-muted-foreground shrink-0 min-w-[4rem] text-right">{timeLabel}</span>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        {unreadCount > 0 && (
+                                          <span
+                                            className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center"
+                                            title={`${unreadCount} unread`}
+                                          >
+                                            {unreadCount > 99 ? "99+" : unreadCount}
+                                          </span>
+                                        )}
+                                        <span className="text-xs text-muted-foreground min-w-[4rem] text-right">{timeLabel}</span>
+                                      </div>
                                     </div>
                                     <Tooltip delayDuration={400}>
                                       <TooltipTrigger asChild>
