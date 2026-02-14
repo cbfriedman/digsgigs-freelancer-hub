@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { getLeadCostFromCPC, getIndustryCategory, calculateBulkDiscount, INDUSTRY_PRICING, getLeadCostForIndustry } from "@/config/pricing";
 import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
 import SEOHead from "@/components/SEOHead";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 interface LeadSelection {
   id: string;
@@ -236,7 +237,15 @@ export default function Checkout() {
     
     if (updated.length === 0) {
       toast.info("All items removed. Redirecting...");
-      setTimeout(() => navigate(profileId ? `/digger/${profileId}` : '/pricing'), 1500);
+      setTimeout(
+        () =>
+          navigate(
+            profileId
+              ? (getCanonicalDiggerProfilePath({ diggerId: profileId }) || `/digger/${profileId}`)
+              : "/pricing"
+          ),
+        1500
+      );
     }
   }, [selections, updateSelectionsAndRecalculate, navigate, profileId]);
 
@@ -807,7 +816,7 @@ export default function Checkout() {
               variant="outline"
               onClick={() => {
                 const backUrl = profileId 
-                  ? `/digger/${profileId}`
+                  ? (getCanonicalDiggerProfilePath({ diggerId: profileId }) || `/digger/${profileId}`)
                   : '/pricing';
                 navigate(backUrl);
               }}

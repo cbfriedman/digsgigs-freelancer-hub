@@ -21,11 +21,10 @@ import { NewGigAlertListener } from "./components/NewGigAlertListener";
 import DiggerRegistration from "./pages/DiggerRegistration";
 import DiggerRegistrationDemo from "./pages/DiggerRegistrationDemo";
 import GigRegistrationDemo from "./pages/GigRegistrationDemo";
-import EditDiggerProfile from "./pages/EditDiggerProfile";
 import PostGig from "./pages/PostGig";
 import BrowseDiggers from "./pages/BrowseDiggers";
 import BrowseGigs from "./pages/BrowseGigs";
-import DiggerDetail from "./pages/DiggerDetail";
+import LegacyDiggerRedirect from "./pages/LegacyDiggerRedirect";
 import GigDetail from "./pages/GigDetail";
 import MyLeads from "./pages/MyLeads";
 import MyBids from "./pages/MyBids";
@@ -44,8 +43,7 @@ import LeadLimits from "./pages/LeadLimits";
 import DiggerGuide from "./pages/DiggerGuide";
 import SavedSearches from "./pages/SavedSearches";
 import Messages from "./pages/Messages";
-import ProfileCompletion from "./pages/ProfileCompletion";
-import PublicProfile from "./pages/PublicProfile";
+import ProfileByHandle from "./pages/ProfileByHandle";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminNotificationPreferences from "./pages/AdminNotificationPreferences";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -64,7 +62,7 @@ import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
 import PreDemoRegistration from "./pages/PreDemoRegistration";
-import MyProfiles from "./pages/MyProfiles";
+import ProfileWorkspaceRedirect from "./pages/ProfileWorkspaceRedirect";
 import ProfileDashboard from "./pages/ProfileDashboard";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -111,7 +109,6 @@ import Subscribe from "./pages/Subscribe";
 import ImportSubscribers from "./pages/admin/ImportSubscribers";
 import BecomeADigger from "./pages/BecomeADigger";
 import HireAPro from "./pages/HireAPro";
-import CreateDiggerProfile from "./pages/CreateDiggerProfile";
 
 const queryClient = new QueryClient();
 
@@ -233,27 +230,19 @@ const router = createBrowserRouter(
       },
       {
         path: "/my-profiles",
-        element: <ProtectedRoute><MyProfiles /></ProtectedRoute>,
+        element: <ProtectedRoute><ProfileWorkspaceRedirect /></ProtectedRoute>,
       },
       {
         path: "/my-profiles/:profileId/dashboard",
         element: <ProtectedRoute><ProfileDashboard /></ProtectedRoute>,
       },
       {
-        path: "/edit-digger-profile/:id",
-        element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
+        path: "/profile/:handle",
+        element: <ProfileByHandle />,
       },
       {
-        path: "/edit-digger-profile",
-        element: <ProtectedRoute><EditDiggerProfile /></ProtectedRoute>,
-      },
-      {
-        path: "/profile-completion",
-        element: <ProtectedRoute><ProfileCompletion /></ProtectedRoute>,
-      },
-      {
-        path: "/profile/:id",
-        element: <ProtectedRoute><PublicProfile /></ProtectedRoute>,
+        path: "/profile/:handle/:role",
+        element: <ProfileByHandle />,
       },
       {
         path: "/post-gig",
@@ -293,7 +282,7 @@ const router = createBrowserRouter(
       },
       {
         path: "/digger/:id",
-        element: <ProtectedRoute><DiggerDetail /></ProtectedRoute>,
+        element: <ProtectedRoute><LegacyDiggerRedirect /></ProtectedRoute>,
       },
       {
         path: "/gig-confirmed",
@@ -338,10 +327,6 @@ const router = createBrowserRouter(
       {
         path: "/pricing",
         element: <Pricing />,
-      },
-      {
-        path: "/create-digger-profile",
-        element: <ProtectedRoute><CreateDiggerProfile /></ProtectedRoute>,
       },
       {
         path: "/keyword-summary",

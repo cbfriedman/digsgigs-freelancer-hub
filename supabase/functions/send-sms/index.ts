@@ -105,8 +105,8 @@ serve(async (req) => {
 
       // Add default links based on variables needed
       const defaultVariables: Record<string, string> = {
-        ProfileLink: `${BASE_URL}/edit-digger-profile`,
-        CategoriesLink: `${BASE_URL}/edit-digger-profile#categories`,
+        ProfileLink: `${BASE_URL}/my-profiles?mode=create`,
+        CategoriesLink: `${BASE_URL}/my-profiles?mode=create`,
         LeadLink: `${BASE_URL}/browse-gigs`,
         LeadFeedLink: `${BASE_URL}/browse-gigs`,
         BillingLink: `${BASE_URL}/subscription`,

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO_CITIES } from "@/config/seoCities";
 import { INDUSTRY_SPECIALTIES } from "@/utils/industrySpecialties";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 const Sitemap = () => {
   const [, setSitemapGenerated] = useState(false);
@@ -44,7 +45,7 @@ const Sitemap = () => {
         // Fetch digger profiles
         const { data: diggers } = await supabase
           .from('digger_profiles')
-          .select('id, updated_at')
+          .select('id, handle, updated_at')
           .order('updated_at', { ascending: false })
           .limit(1000);
 
@@ -117,8 +118,12 @@ const Sitemap = () => {
 
         // Add digger profiles
         diggers?.forEach(digger => {
+          const diggerPath = getCanonicalDiggerProfilePath({
+            handle: digger.handle,
+            diggerId: digger.id,
+          }) || `/digger/${digger.id}`;
           xml += '  <url>\n';
-          xml += `    <loc>${baseUrl}/digger/${digger.id}</loc>\n`;
+          xml += `    <loc>${baseUrl}${diggerPath}</loc>\n`;
           xml += `    <lastmod>${new Date(digger.updated_at).toISOString()}</lastmod>\n`;
           xml += '    <changefreq>weekly</changefreq>\n';
           xml += '    <priority>0.6</priority>\n';

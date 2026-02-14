@@ -22,6 +22,7 @@ import {
   Crown
 } from "lucide-react";
 import { toast } from "sonner";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 interface ProfileData {
   id: string;
@@ -283,7 +284,7 @@ export default function ProfileDashboard() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t">
-              <Button onClick={() => navigate(`/edit-digger-profile?profileId=${profileId}`)} variant="outline" className="gap-2">
+              <Button onClick={() => navigate(`/my-profiles?mode=edit&profileId=${profileId}`)} variant="outline" className="gap-2">
                 <Edit className="h-4 w-4" />
                 Edit Profile
               </Button>
@@ -291,7 +292,13 @@ export default function ProfileDashboard() {
                 <Key className="h-4 w-4" />
                 Manage Keywords
               </Button>
-              <Button onClick={() => navigate(`/digger/${profileId}`)} variant="outline" className="gap-2">
+              <Button
+                onClick={() =>
+                  navigate(getCanonicalDiggerProfilePath({ diggerId: profileId || null }) || `/digger/${profileId}`)
+                }
+                variant="outline"
+                className="gap-2"
+              >
                 <Eye className="h-4 w-4" />
                 View Public Profile
               </Button>

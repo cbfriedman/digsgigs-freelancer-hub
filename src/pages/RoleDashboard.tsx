@@ -281,7 +281,7 @@ export default function RoleDashboard() {
     try {
       if (userRoles.includes('digger')) {
         await switchRole('digger');
-        navigate('/edit-digger-profile');
+        navigate('/my-profiles?mode=create');
         return;
       }
 
@@ -340,7 +340,7 @@ export default function RoleDashboard() {
       await refreshRoles();
       await switchRole('digger');
       toast({ title: "Success", description: "Digger role added! Complete your profile." });
-      navigate('/edit-digger-profile');
+      navigate('/my-profiles?mode=create');
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
@@ -618,7 +618,7 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('digger');
-                          navigate('/create-digger-profile');
+                          navigate('/my-profiles?mode=create');
                         }}
                       >
                         <Plus className="h-4 w-4 mr-1" />
@@ -803,7 +803,7 @@ export default function RoleDashboard() {
           </DialogHeader>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             {userRoles.includes('digger') ? (
-              <Button onClick={() => { setShowWelcomeModal(false); navigate('/edit-digger-profile'); }} className="w-full sm:w-auto">
+              <Button onClick={() => { setShowWelcomeModal(false); navigate('/my-profiles?mode=create'); }} className="w-full sm:w-auto">
                 Complete My Profile
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

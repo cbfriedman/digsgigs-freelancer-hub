@@ -15,6 +15,7 @@ import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
 import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
 import { SafeProfessionSelector } from "./SafeProfessionSelector";
 import { useProfessions } from "@/hooks/useProfessions";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 // Helper function to look up CPC and calculate lead cost for a keyword
 const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: number | null } => {
@@ -787,7 +788,10 @@ export const CategoryBrowserWithDescription = () => {
                       toast.success(`Profile updated with ${selected.length} keywords and ${selectedProfessionIds.length} profession${selectedProfessionIds.length !== 1 ? 's' : ''}!`);
 
                       // Navigate back to the profile detail page
-                      navigate(`/digger/${existingProfileId}`, { replace: true });
+                      navigate(
+                        getCanonicalDiggerProfilePath({ diggerId: existingProfileId }) || `/digger/${existingProfileId}`,
+                        { replace: true }
+                      );
                     } else {
                       // CREATE new profile
                       // 1. Check if user has digger role, if not, assign it
@@ -908,7 +912,7 @@ export const CategoryBrowserWithDescription = () => {
                       toast.success(`Profile "${profileName.trim()}" created! Complete your profile to attract more clients.`);
 
                       // Navigate to Edit profile page so diggers can complete their profile
-                      navigate(`/edit-digger-profile?profileId=${newProfile.id}`, { replace: true });
+                      navigate(`/my-profiles?mode=edit&profileId=${newProfile.id}`, { replace: true });
                     }
                   } catch (error: any) {
                     console.error("Error saving Digger profile:", error);

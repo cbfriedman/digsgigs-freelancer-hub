@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Plus, X, Award } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,27 +13,34 @@ export const CertificationsInput = ({
   certifications, 
   onCertificationsChange 
 }: CertificationsInputProps) => {
-  const [newCertification, setNewCertification] = useState("");
+  const [certName, setCertName] = useState("");
+  const [issuer, setIssuer] = useState("");
+  const [year, setYear] = useState("");
 
   const handleAddCertification = () => {
-    const trimmed = newCertification.trim();
+    const trimmed = certName.trim();
     if (!trimmed) {
-      toast.error("Please enter a certification name");
+      toast.error("Enter certification name");
       return;
     }
-    if (certifications.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+
+    const issuerPart = issuer.trim() ? ` - ${issuer.trim()}` : "";
+    const yearPart = year.trim() ? ` (${year.trim()})` : "";
+    const nextCertification = `${trimmed}${issuerPart}${yearPart}`;
+
+    if (certifications.some(c => c.toLowerCase() === nextCertification.toLowerCase())) {
       toast.error("This certification is already added");
       return;
     }
-    onCertificationsChange([...certifications, trimmed]);
-    setNewCertification("");
-    toast.success("Certification added");
+    onCertificationsChange([...certifications, nextCertification]);
+    setCertName("");
+    setIssuer("");
+    setYear("");
   };
 
   const handleRemoveCertification = (index: number) => {
     const newCerts = certifications.filter((_, i) => i !== index);
     onCertificationsChange(newCerts);
-    toast.success("Certification removed");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -46,49 +52,66 @@ export const CertificationsInput = ({
 
   return (
     <div className="space-y-4">
-      {/* Add Certification Input */}
-      <div className="flex gap-2">
+      <p className="text-sm text-muted-foreground">
+        Add verifiable certifications. Include issuer and year when possible.
+      </p>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
         <Input
-          value={newCertification}
-          onChange={(e) => setNewCertification(e.target.value)}
+          value={certName}
+          onChange={(e) => setCertName(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="e.g., AWS Certified Developer, PMP, CISSP..."
-          className="flex-1"
+          placeholder="Certification name (required)"
+          className="sm:col-span-5"
         />
-        <Button 
-          type="button" 
+        <Input
+          value={issuer}
+          onChange={(e) => setIssuer(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Issuer (optional)"
+          className="sm:col-span-3"
+        />
+        <Input
+          value={year}
+          onChange={(e) => setYear(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
+          onKeyDown={handleKeyDown}
+          placeholder="Year"
+          className="sm:col-span-2 min-w-0"
+        />
+        <Button
+          type="button"
           onClick={handleAddCertification}
           variant="outline"
-          size="icon"
+          className="w-full whitespace-nowrap sm:col-span-2"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="mr-2 h-4 w-4" />
+          Add
         </Button>
       </div>
 
-      {/* Current Certifications */}
       {certifications.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-2">
           {certifications.map((cert, index) => (
-            <Badge 
-              key={index} 
-              variant="secondary" 
-              className="flex items-center gap-1 px-3 py-1.5"
-            >
-              <Award className="h-3 w-3" />
-              <span>{cert}</span>
-              <button
+            <div key={index} className="flex items-center justify-between rounded-md border border-border/70 px-3 py-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Award className="h-4 w-4 text-muted-foreground" />
+                <span>{cert}</span>
+              </div>
+              <Button
                 type="button"
                 onClick={() => handleRemoveCertification(index)}
-                className="ml-1 hover:text-destructive"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
               >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           ))}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          No certifications added yet. Add your professional certifications to increase credibility.
+          No certifications added yet.
         </p>
       )}
     </div>

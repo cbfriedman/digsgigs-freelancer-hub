@@ -23,6 +23,7 @@ import { useDiggerPresence, getDiggerPresenceStatus, type DiggerPresenceStatus }
 import { useUserPresence, getUserPresenceStatus, type PresenceStatus } from "@/hooks/useUserPresence";
 import { usePresenceAwayMs } from "@/hooks/usePresenceSettings";
 import { dispatchMessagesSync, MESSAGES_SYNC_EVENT, type MessagesSyncDetail } from "@/lib/messagesSync";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import {
   Dialog,
   DialogContent,
@@ -1441,9 +1442,10 @@ export default function Messages() {
       return null;
     }
     if (currentUser.id === selectedConv.consumer_id) {
-      const handle = selectedConv.digger_profiles?.handle?.replace(/^@/, "").trim().toLowerCase();
-      if (handle) return `/digger/${handle}`;
-      return selectedConv.digger_id ? `/digger/${selectedConv.digger_id}` : null;
+      return getCanonicalDiggerProfilePath({
+        handle: selectedConv.digger_profiles?.handle,
+        diggerId: selectedConv.digger_id,
+      });
     }
     return selectedConv.consumer_id ? `/profile/${selectedConv.consumer_id}` : null;
   })();
@@ -1699,9 +1701,10 @@ export default function Messages() {
                           return null;
                         }
                         if (currentUser.id === conv.consumer_id) {
-                          const handle = conv.digger_profiles?.handle?.replace(/^@/, "").trim().toLowerCase();
-                          if (handle) return `/digger/${handle}`;
-                          return conv.digger_id ? `/digger/${conv.digger_id}` : null;
+                          return getCanonicalDiggerProfilePath({
+                            handle: conv.digger_profiles?.handle,
+                            diggerId: conv.digger_id,
+                          });
                         }
                         return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
                       })();
@@ -2106,9 +2109,10 @@ export default function Messages() {
                             return null;
                           }
                           if (currentUser.id === conv.consumer_id) {
-                            const handle = conv.digger_profiles?.handle?.replace(/^@/, "").trim().toLowerCase();
-                            if (handle) return `/digger/${handle}`;
-                            return conv.digger_id ? `/digger/${conv.digger_id}` : null;
+                            return getCanonicalDiggerProfilePath({
+                              handle: conv.digger_profiles?.handle,
+                              diggerId: conv.digger_id,
+                            });
                           }
                           return conv.consumer_id ? `/profile/${conv.consumer_id}` : null;
                         })();

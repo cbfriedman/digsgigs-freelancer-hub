@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Crown, Pencil, Upload, Trash2, ImagePlus } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -27,7 +26,13 @@ import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BioGenerator } from "@/components/BioGenerator";
 import { Textarea } from "@/components/ui/textarea";
-import { ProfileHeader, ProfileAbout, WorkSamplesGallery, QuickContactCard, ReferencesSection } from "@/components/digger-profile";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ProfileHeader, ProfileAbout, QuickContactCard, ReferencesSection } from "@/components/digger-profile";
+import { getCanonicalDiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
+import { DiggerInlineProfileEditor } from "@/components/DiggerInlineProfileEditor";
+import { ALL_COUNTRY_OPTIONS, getFlagForCountryName } from "@/config/regionOptions";
+import { useProfessions } from "@/hooks/useProfessions";
 
 interface Reference {
   id: string;
@@ -68,6 +73,7 @@ interface Digger {
   portfolio_urls?: string[] | null;
   work_photos: string[] | null;
   skills: string[] | null;
+  certifications?: string[] | null;
   keywords?: string[] | null;
   completion_rate: number | null;
   response_time_hours: number | null;
@@ -84,6 +90,11 @@ interface Digger {
   subscription_tier: string | null;
   offers_free_estimates: boolean | null;
   country: string | null;
+  website_url?: string | null;
+  service_countries?: string[] | null;
+  monthly_salary?: number | null;
+  social_links?: any;
+  state?: string | null;
   verified?: boolean | null;
   stripe_connect_onboarded?: boolean | null;
   stripe_connect_charges_enabled?: boolean | null;
@@ -118,9 +129,9 @@ const formatDisplayName = (fullName: string | null | undefined, handle: string |
   return parts.join(' ') || '';
 };
 
-/** Profile URL: /digger/username or /digger/uuid */
+/** Canonical profile URL: /profile/:handle/digger with legacy fallback */
 const getDiggerProfileUrl = (d: { id: string; handle?: string | null }) =>
-  (d.handle && d.handle.trim()) ? `/digger/${d.handle.replace(/^@/, '').toLowerCase()}` : `/digger/${d.id}`;
+  getCanonicalDiggerProfilePath({ handle: d.handle, diggerId: d.id }) || `/digger/${d.id}`;
 
 const formatCurrency = (value: number | null | undefined): string => {
   if (value == null || Number.isNaN(value)) return "$0";
@@ -157,17 +168,83 @@ const DiggerDetail = () => {
   
   // People also viewed (related diggers)
   const [relatedDiggers, setRelatedDiggers] = useState<{ id: string; handle: string | null; business_name: string; profession: string | null; profile_image_url: string | null; custom_occupation_title: string | null }[]>([]);
-  const [activeTab, setActiveTab] = useState("general");
   const [profilePhotoDialogOpen, setProfilePhotoDialogOpen] = useState(false);
   const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
   const profilePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const [coverPhotoDialogOpen, setCoverPhotoDialogOpen] = useState(false);
   const [coverPhotoUploading, setCoverPhotoUploading] = useState(false);
   const coverPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const hasHandledManageQueryRef = useRef(false);
+  const [profileManagerOpen, setProfileManagerOpen] = useState(false);
+  const [editorModal, setEditorModal] = useState<{
+    open: boolean;
+    mode: "create" | "edit";
+    profileId: string | null;
+  }>({
+    open: false,
+    mode: "edit",
+    profileId: null,
+  });
+  const [ownerProfiles, setOwnerProfiles] = useState<
+    { id: string; handle: string | null; profile_name: string | null; business_name: string; is_primary: boolean }[]
+  >([]);
+  const { professions } = useProfessions();
+  const [sectionEditor, setSectionEditor] = useState<{
+    open: boolean;
+    section: "about" | "skills" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews" | null;
+  }>({ open: false, section: null });
+  const [aboutDraft, setAboutDraft] = useState("");
+  const [availabilityDraft, setAvailabilityDraft] = useState<string>("");
+  const [locationDraft, setLocationDraft] = useState("");
+  const [serviceLocationDraft, setServiceLocationDraft] = useState<string[]>([]);
+  const [websiteDraft, setWebsiteDraft] = useState("");
+  const [salaryDraft, setSalaryDraft] = useState<string>("");
+  const [socialLinksDraft, setSocialLinksDraft] = useState<Record<string, string>>({});
+  const [selectedSkillsDraft, setSelectedSkillsDraft] = useState<string[]>([]);
+  const [workPhotosDraft, setWorkPhotosDraft] = useState("");
+  const [portfolioDraft, setPortfolioDraft] = useState("");
+  const [isSectionSaving, setIsSectionSaving] = useState(false);
 
   useEffect(() => {
     loadData();
   }, [slug]);
+
+  const loadOwnerProfiles = useCallback(async () => {
+    if (!currentUser || !isOwnProfile) return;
+    const { data } = await supabase
+      .from("digger_profiles")
+      .select("id, handle, profile_name, business_name, is_primary")
+      .eq("user_id", currentUser.id)
+      .order("is_primary", { ascending: false })
+      .order("created_at", { ascending: true });
+    setOwnerProfiles((data as any[]) || []);
+  }, [currentUser, isOwnProfile]);
+
+  useEffect(() => {
+    if (!isOwnProfile) return;
+    void loadOwnerProfiles();
+  }, [isOwnProfile, loadOwnerProfiles]);
+
+  useEffect(() => {
+    if (!isOwnProfile || hasHandledManageQueryRef.current) return;
+    const manage = searchParams.get("manage") === "1";
+    if (!manage) return;
+    const mode = searchParams.get("mode");
+    const profileIdParam = searchParams.get("profileId");
+    setProfileManagerOpen(true);
+    if (mode === "create") {
+      setEditorModal({ open: true, mode: "create", profileId: null });
+    } else if (mode === "edit") {
+      setEditorModal({ open: true, mode: "edit", profileId: profileIdParam || digger?.id || null });
+    }
+    hasHandledManageQueryRef.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete("manage");
+    next.delete("mode");
+    next.delete("profileId");
+    const query = next.toString();
+    navigate(`${window.location.pathname}${query ? `?${query}` : ""}`, { replace: true });
+  }, [digger?.id, isOwnProfile, navigate, searchParams]);
 
   // Fetch related diggers for "People also viewed" when viewing another's profile
   useEffect(() => {
@@ -245,9 +322,11 @@ const DiggerDetail = () => {
     }
     setIsOwnProfile(session?.user?.id === diggerData.user_id);
 
-    // Replace URL with username-based when profile has handle (primary profile)
+    // Replace URL with canonical handle-based hybrid profile URL.
     if (diggerData.handle) {
-      const cleanUrl = `/digger/${diggerData.handle.replace(/^@/, '').trim().toLowerCase()}`;
+      const cleanUrl =
+        getCanonicalDiggerProfilePath({ handle: normalizeHandle(diggerData.handle), diggerId: diggerData.id }) ||
+        window.location.pathname;
       if (window.location.pathname !== cleanUrl) {
         window.history.replaceState(null, '', cleanUrl);
       }
@@ -325,6 +404,179 @@ const DiggerDetail = () => {
   const handleShare = () => {
     const url = `${window.location.origin}${getDiggerProfileUrl(digger!)}`;
     navigator.clipboard.writeText(url).then(() => toast.success("Profile link copied to clipboard")).catch(() => toast.error("Could not copy link"));
+  };
+
+  const openEditModal = (profileId?: string) => {
+    setEditorModal({
+      open: true,
+      mode: "edit",
+      profileId: profileId || digger?.id || null,
+    });
+  };
+
+  const openCreateModal = () => {
+    setEditorModal({
+      open: true,
+      mode: "create",
+      profileId: null,
+    });
+  };
+
+  const openSectionModal = (section: "about" | "skills" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews") => {
+    if (!digger) return;
+    if (section === "about") setAboutDraft(digger.bio || "");
+    if (section === "availability") setAvailabilityDraft(digger.availability || "");
+    if (section === "location") setLocationDraft(digger.country || "");
+    if (section === "service_location") setServiceLocationDraft((digger.service_countries?.length ?? 0) > 0 ? digger.service_countries! : (digger.country ? [digger.country] : []));
+    if (section === "website") setWebsiteDraft(digger.website_url || "");
+    if (section === "salary") setSalaryDraft(digger.monthly_salary != null ? String(digger.monthly_salary) : digger.hourly_rate != null ? String(digger.hourly_rate) : "");
+    if (section === "social") setSocialLinksDraft((digger.social_links || {}) as Record<string, string>);
+    if (section === "skills") {
+      setSelectedSkillsDraft(removeBlockedSkills(digger.skills || digger.keywords || []));
+    }
+    if (section === "work") setWorkPhotosDraft((digger.work_photos || []).join("\n"));
+    if (section === "portfolio") setPortfolioDraft(digger.portfolio_url || "");
+    setSectionEditor({ open: true, section });
+  };
+
+  const getAvailabilityLabel = (value: string | null) => {
+    if (!value) return "Not specified";
+    const labels: Record<string, string> = { immediate: "Immediate", this_week: "This week", this_month: "This month" };
+    return labels[value] || value;
+  };
+
+  const removeBlockedSkills = (skills: string[]): string[] =>
+    skills.filter((skill) => skill.trim().toLowerCase() !== "reactsf");
+
+  const professionNameSet = useMemo(() => new Set(professions.map((p) => p.name)), [professions]);
+
+  const normalizeSkills = (skills: string[]): string[] => {
+    const deduped = Array.from(new Set(removeBlockedSkills(skills.map((s) => s.trim()).filter(Boolean))));
+    if (professionNameSet.size === 0) return deduped;
+    // Keep only real database skills when taxonomy is available.
+    return deduped.filter((skill) => professionNameSet.has(skill));
+  };
+
+  const socialPlatforms: { key: string; label: string; placeholder: string }[] = [
+    { key: "linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/in/your-name" },
+    { key: "twitter", label: "X / Twitter", placeholder: "https://x.com/your-handle" },
+    { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/your-handle" },
+    { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/your-page" },
+    { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@your-channel" },
+    { key: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@your-handle" },
+  ];
+
+  const sanitizeSocialLinks = (links: Record<string, string>) => {
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(links || {})) {
+      const trimmed = (value || "").trim();
+      if (trimmed) out[key] = trimmed;
+    }
+    return out;
+  };
+
+  const parseLineList = (value: string): string[] =>
+    value
+      .split("\n")
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+  const handleSaveSection = async () => {
+    if (!digger || !sectionEditor.section) return;
+    setIsSectionSaving(true);
+    try {
+      if (sectionEditor.section === "about") {
+        await supabase.from("digger_profiles").update({ bio: aboutDraft || null }).eq("id", digger.id);
+      } else if (sectionEditor.section === "skills") {
+        const nextSkills = normalizeSkills(selectedSkillsDraft);
+        await supabase
+          .from("digger_profiles")
+          .update({ skills: nextSkills.length ? nextSkills : null, keywords: nextSkills.length ? nextSkills : null })
+          .eq("id", digger.id);
+      } else if (sectionEditor.section === "work") {
+        const nextPhotos = parseLineList(workPhotosDraft);
+        await supabase.from("digger_profiles").update({ work_photos: nextPhotos.length ? nextPhotos : null }).eq("id", digger.id);
+      } else if (sectionEditor.section === "portfolio") {
+        await supabase.from("digger_profiles").update({ portfolio_url: portfolioDraft.trim() || null }).eq("id", digger.id);
+      } else if (sectionEditor.section === "availability") {
+        const val = availabilityDraft.trim() || null;
+        await supabase.from("digger_profiles").update({ availability: val }).eq("id", digger.id);
+      } else if (sectionEditor.section === "location") {
+        await supabase.from("digger_profiles").update({ country: locationDraft.trim() || null }).eq("id", digger.id);
+      } else if (sectionEditor.section === "service_location") {
+        await supabase.from("digger_profiles").update({ service_countries: serviceLocationDraft.length ? serviceLocationDraft : null }).eq("id", digger.id);
+      } else if (sectionEditor.section === "website") {
+        await supabase.from("digger_profiles").update({ website_url: websiteDraft.trim() || null }).eq("id", digger.id);
+      } else if (sectionEditor.section === "salary") {
+        const num = salaryDraft.trim() ? parseFloat(salaryDraft) : null;
+        await supabase.from("digger_profiles").update({ monthly_salary: num != null && !isNaN(num) ? num : null }).eq("id", digger.id);
+      } else if (sectionEditor.section === "social") {
+        const nextLinks = sanitizeSocialLinks(socialLinksDraft);
+        await supabase.from("digger_profiles").update({ social_links: Object.keys(nextLinks).length ? nextLinks : null }).eq("id", digger.id);
+      }
+
+      if (["about", "skills", "work", "portfolio", "availability", "location", "service_location", "website", "salary", "social"].includes(sectionEditor.section)) {
+        toast.success("Section updated");
+        await loadData();
+      }
+      setSectionEditor({ open: false, section: null });
+    } catch {
+      toast.error("Failed to update section");
+    } finally {
+      setIsSectionSaving(false);
+    }
+  };
+
+  const handleSetPrimaryProfile = async (profileId: string) => {
+    if (!currentUser) return;
+    try {
+      const { data: allProfiles } = await supabase
+        .from("digger_profiles")
+        .select("handle, business_name")
+        .eq("user_id", currentUser.id);
+      const username =
+        allProfiles?.find((p: any) => p.handle || p.business_name)?.handle ||
+        allProfiles?.find((p: any) => p.business_name)?.business_name ||
+        null;
+
+      await supabase.from("digger_profiles").update({ is_primary: false, handle: null } as any).eq("user_id", currentUser.id);
+      await supabase.from("digger_profiles").update({ is_primary: true, handle: username } as any).eq("id", profileId);
+      toast.success("Primary profile updated");
+      await loadOwnerProfiles();
+      await loadData();
+    } catch {
+      toast.error("Failed to set primary profile");
+    }
+  };
+
+  const handleDeleteProfile = async (profileId: string) => {
+    if (!currentUser) return;
+    const confirmed = window.confirm("Delete this profile permanently?");
+    if (!confirmed) return;
+    try {
+      await supabase.from("digger_profiles").delete().eq("id", profileId).eq("user_id", currentUser.id);
+      toast.success("Profile deleted");
+      await loadOwnerProfiles();
+      if (digger?.id === profileId) {
+        const { data: fallback } = await supabase
+          .from("digger_profiles")
+          .select("id, handle")
+          .eq("user_id", currentUser.id)
+          .order("is_primary", { ascending: false })
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (fallback?.id) {
+          navigate(getCanonicalDiggerProfilePath({ handle: (fallback as any).handle, diggerId: fallback.id }) || `/digger/${fallback.id}`);
+        } else {
+          navigate("/role-dashboard");
+        }
+      } else {
+        await loadData();
+      }
+    } catch {
+      toast.error("Failed to delete profile");
+    }
   };
 
   const handleProfilePhotoReplace = () => {
@@ -618,6 +870,26 @@ const DiggerDetail = () => {
     return [digger?.city, digger?.location].filter(Boolean).join(", ") || "";
   };
 
+  const countryToFlag: Record<string, string> = {
+    US: "🇺🇸", "United States": "🇺🇸", CA: "🇨🇦", Canada: "🇨🇦", GB: "🇬🇧", UK: "🇬🇧", "United Kingdom": "🇬🇧",
+    AU: "🇦🇺", Australia: "🇦🇺", DE: "🇩🇪", Germany: "🇩🇪", FR: "🇫🇷", France: "🇫🇷", ES: "🇪🇸", Spain: "🇪🇸",
+    IT: "🇮🇹", Italy: "🇮🇹", MX: "🇲🇽", Mexico: "🇲🇽", BR: "🇧🇷", Brazil: "🇧🇷", IN: "🇮🇳", India: "🇮🇳",
+    CN: "🇨🇳", China: "🇨🇳", JP: "🇯🇵", Japan: "🇯🇵", KR: "🇰🇷", "South Korea": "🇰🇷", NL: "🇳🇱", Netherlands: "🇳🇱",
+    SE: "🇸🇪", Sweden: "🇸🇪", NO: "🇳🇴", Norway: "🇳🇴", DK: "🇩🇰", Denmark: "🇩🇰", FI: "🇫🇮", Finland: "🇫🇮",
+    PL: "🇵🇱", Poland: "🇵🇱", IE: "🇮🇪", Ireland: "🇮🇪", CH: "🇨🇭", Switzerland: "🇨🇭", AT: "🇦🇹", Austria: "🇦🇹",
+    BE: "🇧🇪", Belgium: "🇧🇪", PT: "🇵🇹", Portugal: "🇵🇹", GR: "🇬🇷", Greece: "🇬🇷", NZ: "🇳🇿", "New Zealand": "🇳🇿",
+  };
+  const getServiceLocationDisplayWithFlags = (): string => {
+    const raw = getServiceLocationDisplay();
+    if (!raw) return "";
+    let out = raw;
+    for (const [name, flag] of Object.entries(countryToFlag)) {
+      const re = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "gi");
+      out = out.replace(re, flag);
+    }
+    return out;
+  };
+
   const getCountryFlag = (countryName: string): string => {
     const flags: { [key: string]: string } = {
       "US": "🇺🇸", "United States": "🇺🇸",
@@ -752,6 +1024,7 @@ const DiggerDetail = () => {
     || digger.profiles?.avatar_url
     || (isOwnProfile ? (currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture) : null)
     || undefined;
+  const profileTitle = `${digger.profile_name || "Main Profile"}${digger.handle ? `@${String(digger.handle).replace(/^@/, "")}` : ""}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -848,7 +1121,7 @@ const DiggerDetail = () => {
         })}
       />
 
-      <div className="w-full px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12">
+      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12">
         <div className="sticky top-14 sm:top-16 z-10 bg-background py-2 sm:py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-4 sm:-mt-6 md:-mt-8 lg:-mt-12 mb-3 sm:mb-4">
           <Breadcrumb 
             items={[
@@ -858,22 +1131,21 @@ const DiggerDetail = () => {
           />
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 sm:gap-8 lg:gap-10">
           {/* Main content - Himalayas-style left column */}
-          <div className="lg:col-span-2 space-y-6 order-2 lg:order-1 min-w-0">
+          <div className="lg:col-span-7 space-y-6 order-2 lg:order-1 min-w-0">
             {(!isOwnProfile || viewAsClient) ? (
               <>
-                {/* Hero: cover + avatar on left (reference layout) */}
-                <Card className="overflow-hidden border-0 shadow-lg">
+                {/* Hero: clean Himalayas-style header */}
+                <Card className="overflow-hidden border border-border/70 rounded-xl bg-card">
                   <div className="relative">
                     <div 
-                      className="h-40 sm:h-52 md:h-60 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted"
+                      className="h-40 sm:h-48 md:h-56 w-full bg-gradient-to-r from-slate-200 via-violet-300 to-orange-300 dark:from-slate-800 dark:via-violet-800/70 dark:to-orange-800/70"
                       style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
                     />
-                    {/* Avatar on left, overlapping cover */}
-                    <div className="absolute left-4 sm:left-6 -bottom-12 sm:-bottom-14">
+                    <div className="absolute left-4 sm:left-6 -bottom-10 sm:-bottom-12">
                       <div className="relative">
-                        <Avatar className="h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 border-4 border-background shadow-xl">
+                        <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow">
                           <AvatarImage src={effectiveAvatarUrl} alt={digger.business_name} />
                           <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">
                             {(digger.business_name || digger.profile_name || "?").slice(0, 2).toUpperCase()}
@@ -884,13 +1156,17 @@ const DiggerDetail = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Profile header: name left, share/edit top right */}
-                  <CardContent className="pt-16 sm:pt-20 pb-4 px-4 sm:px-6">
+                  <CardContent className="pt-12 sm:pt-14 pb-6 px-4 sm:px-6 bg-muted/20">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                          {!hasViewAccess ? (digger.business_name || digger.profile_name || "").split(" ").map(w => w.charAt(0) + ".").join("") + "." : (formatDisplayName(digger.profiles?.full_name, digger.handle || digger.business_name) || digger.business_name || digger.profile_name || "Professional")}
-                        </h1>
+                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{profileTitle}</h1>
+                        <p className="mt-1 text-sm sm:text-base font-medium text-muted-foreground">
+                          {displayProfession || digger.custom_occupation_title || "Professional"}
+                          {(digger.handle || digger.business_name) ? (
+                            <span className="ml-2">@{String(digger.handle || digger.business_name).replace(/^@/, "")}</span>
+                          ) : null}
+                        </p>
+                        {digger.tagline && <p className="mt-2 text-sm sm:text-base text-foreground/90">{digger.tagline}</p>}
                         {(getServiceLocationDisplay() || digger.created_at) && (
                           <div className="flex flex-wrap items-center gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
                             {getServiceLocationDisplay() && (
@@ -906,34 +1182,19 @@ const DiggerDetail = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <div className="flex items-center gap-2.5 rounded-full border-2 border-primary/60 bg-primary/5 px-3 py-1.5">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-background">
-                            <Crown className="h-5 w-5 text-primary" />
-                          </div>
-                          <span className="text-base font-bold text-foreground">
-                            {digger.completion_rate ?? 0}% Job Success
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                        {isOwnProfile && viewAsClient && (
+                          <Button variant="outline" size="sm" onClick={() => openEditModal(digger.id)}>
+                            <Pencil className="h-4 w-4 mr-1.5" />
+                            Edit
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile">
                           <Share2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                    {/* Tabs */}
-                    <div className="flex flex-wrap gap-1 mt-4 border-b border-border">
-                      <button type="button" onClick={() => setActiveTab("general")} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === "general" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-                        General
-                      </button>
-                      {(digger.digger_categories || []).slice(0, 3).map((dc, idx) => (
-                        <button key={idx} type="button" onClick={() => setActiveTab(`cat-${idx}`)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === `cat-${idx}` ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-                          {dc.categories?.name || ""}
-                        </button>
-                      ))}
-                    </div>
                     {/* Metrics row */}
-                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4">
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-sm">
                       <div className="flex items-center gap-1.5">
                         <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
                         <span className="font-semibold">{digger.average_rating?.toFixed(1) || "New"}</span>
@@ -954,11 +1215,6 @@ const DiggerDetail = () => {
                     </div>
                     {/* Professional title + hourly rate */}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <p className="text-lg sm:text-xl font-bold flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
-                        {getDisplayProfession()}
-                        <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
-                      </p>
                       {formatHourlyRate() && (
                         <span className="text-sm sm:text-base font-semibold text-muted-foreground">
                           {formatHourlyRate()}
@@ -972,9 +1228,8 @@ const DiggerDetail = () => {
                   </CardContent>
                 </Card>
 
-                {/* Bio */}
                 {digger.bio && (
-                  <Card>
+                  <Card className="rounded-xl border-border/70">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <FileText className="h-5 w-5 text-primary" />
@@ -987,45 +1242,53 @@ const DiggerDetail = () => {
                   </Card>
                 )}
 
-                {/* Skills & specialties (unified from skills with keywords fallback) */}
-                {((digger.skills || digger.keywords)?.length ?? 0) > 0 && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Skills & specialties</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {(digger.skills || digger.keywords || []).map((skill, idx) => (
-                          <Badge key={idx} variant="secondary" className="px-3 py-1">
-                            {skill}
-                          </Badge>
+                <Card className="rounded-xl border-border/70">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Experience</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="text-sm text-muted-foreground">
+                      {digger.years_experience != null
+                        ? `${digger.years_experience}+ years of professional experience`
+                        : "Professional experience details not added yet."}
+                    </div>
+                    {references.length > 0 && (
+                      <div className="space-y-2">
+                        {references.slice(0, 3).map((ref) => (
+                          <div key={ref.id} className="rounded-md border p-3">
+                            <p className="font-medium text-sm">{ref.reference_name}</p>
+                            {ref.project_description && (
+                              <p className="text-xs text-muted-foreground mt-1">{ref.project_description}</p>
+                            )}
+                          </div>
                         ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
+                    )}
+                  </CardContent>
+                </Card>
 
-                {/* Specialty / professions */}
-                {(digger.digger_categories?.length ?? 0) > 0 && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Specialty</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {(digger.digger_categories || []).map((dc, idx) => (
-                          <Badge key={`cat-${idx}`} variant="outline" className="px-3 py-1">
-                            {dc.categories?.name || ""}
-                          </Badge>
+                <Card className="rounded-xl border-border/70">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Education</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(digger.certifications?.length || 0) > 0 ? (
+                      <ul className="space-y-2">
+                        {(digger.certifications || []).slice(0, 6).map((cert, idx) => (
+                          <li key={`${cert}-${idx}`} className="text-sm text-muted-foreground">
+                            {cert}
+                          </li>
                         ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No education or certification details added yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* Portfolio */}
                 {(digger.portfolio_url || (digger.portfolio_urls && digger.portfolio_urls.length > 0)) && (
-                  <Card>
+                  <Card className="rounded-xl border-border/70">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Globe className="h-5 w-5 text-primary" />
@@ -1047,8 +1310,6 @@ const DiggerDetail = () => {
                   </Card>
                 )}
 
-                <WorkSamplesGallery photos={digger.work_photos || []} businessName={digger.business_name} />
-
                 {/* Work history / references */}
                 <ReferencesSection references={references} />
 
@@ -1067,25 +1328,15 @@ const DiggerDetail = () => {
             ) : (
               /* Owner View - Same reference layout with management actions */
               <>
-              <Card className="overflow-hidden border-0 shadow-lg">
+              <section className="overflow-hidden border-b border-border bg-card">
                 <div className="relative">
                   <div 
-                    className="h-40 sm:h-52 md:h-60 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted"
+                    className="h-40 sm:h-48 md:h-56 w-full bg-gradient-to-r from-slate-200 via-violet-300 to-orange-300 dark:from-slate-800 dark:via-violet-800/70 dark:to-orange-800/70"
                     style={digger.cover_photo_url ? { backgroundImage: `url(${digger.cover_photo_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
                   />
-                  {/* Cover action buttons */}
-                  <div className="absolute top-3 right-3 flex flex-wrap gap-2">
-                    <Button variant="secondary" size="sm" className="bg-background/90 hover:bg-background shadow" onClick={() => setCoverPhotoDialogOpen(true)}>
-                      Upload cover photo
-                    </Button>
-                    <Button variant="secondary" size="sm" className="bg-background/90 hover:bg-background shadow" asChild>
-                      <a href={`${getDiggerProfileUrl(digger)}?as=client`} target="_blank" rel="noopener noreferrer">View as Gigger</a>
-                    </Button>
-                  </div>
-                  {/* Avatar on left with edit + online status */}
-                  <div className="absolute left-4 sm:left-6 -bottom-12 sm:-bottom-14">
+                  <div className="absolute left-4 sm:left-6 -bottom-10 sm:-bottom-12">
                     <div className="relative">
-                      <Avatar className="h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32 border-4 border-background shadow-xl">
+                      <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow">
                         <AvatarImage src={effectiveAvatarUrl} />
                         <AvatarFallback className="bg-primary/20 text-primary text-3xl font-bold">
                           {getInitials(digger.handle || digger.business_name)}
@@ -1099,12 +1350,17 @@ const DiggerDetail = () => {
                     </div>
                   </div>
                 </div>
-                <CardContent className="pt-16 sm:pt-20 pb-4 px-4 sm:px-6">
+                <CardContent className="pt-12 sm:pt-14 pb-6 px-4 sm:px-6 bg-muted/20">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h1 className="text-2xl sm:text-3xl font-bold">
-                        {formatDisplayName(digger.profiles?.full_name, digger.handle || digger.business_name) || digger.business_name || digger.profile_name || "Professional"}
-                      </h1>
+                      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{profileTitle}</h1>
+                      <p className="mt-1 text-sm sm:text-base font-medium text-muted-foreground">
+                        {displayProfession || digger.custom_occupation_title || "Professional"}
+                        {(digger.handle || digger.business_name) ? (
+                          <span className="ml-2">@{String(digger.handle || digger.business_name).replace(/^@/, "")}</span>
+                        ) : null}
+                      </p>
+                      {digger.tagline && <p className="mt-2 text-sm sm:text-base text-foreground/90">{digger.tagline}</p>}
                       {(getServiceLocationDisplay() || digger.created_at) && (
                         <div className="flex flex-wrap items-center gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
                           {getServiceLocationDisplay() && (
@@ -1120,40 +1376,17 @@ const DiggerDetail = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <div className="flex items-center gap-2.5 rounded-full border-2 border-primary/60 bg-primary/5 px-3 py-1.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-background">
-                          <Crown className="h-5 w-5 text-primary" />
-                        </div>
-                        <span className="text-base font-bold text-foreground">
-                          {digger.completion_rate ?? 0}% Job Success
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                      <Button variant="outline" size="sm" onClick={() => openEditModal(digger.id)} className="text-muted-foreground">
+                        <Pencil className="h-4 w-4 mr-1.5" />
+                        Edit
+                      </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleShare} title="Share profile">
                         <Share2 className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/edit-digger-profile?profileId=${digger.id}`)} className="text-muted-foreground">
-                        Edit profile
-                      </Button>
                     </div>
                   </div>
-                  {/* Tabs */}
-                  <div className="flex flex-wrap gap-1 mt-4 border-b border-border">
-                    <button type="button" onClick={() => setActiveTab("general")} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === "general" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-                      General
-                    </button>
-                    {(digger.digger_categories || []).slice(0, 3).map((dc, idx) => (
-                      <button key={idx} type="button" onClick={() => setActiveTab(`cat-${idx}`)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === `cat-${idx}` ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-                        {dc.categories?.name || ""}
-                      </button>
-                    ))}
-                    <button type="button" onClick={() => navigate(`/edit-digger-profile?profileId=${digger.id}`)} className="px-4 py-2 text-sm font-medium border-b-2 -mb-px border-transparent text-muted-foreground hover:text-foreground flex items-center gap-1">
-                      Add profile <span className="text-primary">+</span>
-                    </button>
-                  </div>
                   {/* Metrics row */}
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4">
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-sm">
                     <div className="flex items-center gap-1.5">
                       <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
                       <span className="font-semibold">{digger.average_rating?.toFixed(1) || "New"}</span>
@@ -1173,11 +1406,6 @@ const DiggerDetail = () => {
                     )}
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <p className="text-lg sm:text-xl font-bold flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
-                      {getDisplayProfession()}
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400 shrink-0" />
-                    </p>
                     {formatHourlyRate() && (
                       <span className="text-sm sm:text-base font-semibold text-muted-foreground">
                         {formatHourlyRate()}
@@ -1188,96 +1416,66 @@ const DiggerDetail = () => {
                     {references.length > 0 && <span>• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>}
                   </div>
                 </CardContent>
-              </Card>
+              </section>
 
-              <Card>
-              <CardContent className="p-4 sm:p-6 lg:p-8">
-                {/* Bio Section - Show for all, with edit option for owners */}
-                <Separator className="my-6" />
-                <div>
-                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <section className="py-6 border-b border-border">
+                <div className="pb-2 flex flex-row items-center justify-between">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    About My Services
+                    About
                   </h2>
+                  <Button variant="ghost" size="icon" onClick={() => openSectionModal("about")} title="Edit About">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div>
                   {digger.bio ? (
                     <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{digger.bio}</p>
-                  ) : isOwnProfile ? (
+                  ) : (
                     <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
                       <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
                       <p className="text-muted-foreground mb-4">Add a professional bio to help Giggers learn about your services</p>
-                      <Button onClick={() => navigate(`/edit-digger-profile?profileId=${digger.id}`)}>
+                      <Button onClick={() => openSectionModal("about")}>
                         <Sparkles className="h-4 w-4 mr-2" />
                         Add Bio with AI Assistance
                       </Button>
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground italic">No bio provided yet.</p>
                   )}
                 </div>
+              </section>
 
-
-                {(digger.digger_categories?.length ?? 0) > 0 && (
-                  <>
-                    <Separator className="my-6" />
-                    <div>
-                      <h2 className="text-lg font-semibold mb-3">Skills & Expertise</h2>
-                      <div className="flex flex-wrap gap-2">
-                        {(digger.digger_categories || []).map((dc, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-sm px-3 py-1">
-                            {dc.categories?.name || ''}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {digger.work_photos && digger.work_photos.length > 0 && (
-                  <>
-                    <Separator className="my-6" />
-                    <div>
-                      <h2 className="text-lg font-semibold mb-3">Work Samples</h2>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                        {digger.work_photos.map((photo, idx) => (
-                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
-                            <OptimizedImage
-                              src={photo}
-                              alt={`Work sample ${idx + 1} by ${digger.business_name}`}
-                              width={300}
-                              height={300}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {digger.portfolio_url && (
-                  <>
-                    <Separator className="my-6" />
-                    <div>
-                      <h2 className="text-lg font-semibold mb-3">Portfolio</h2>
-                      <a 
-                        href={digger.portfolio_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-primary hover:underline"
-                      >
-                        <Globe className="h-4 w-4" />
-                        View Portfolio
-                      </a>
-                    </div>
-                  </>
-                )}
-
-                {/* References Section */}
-                <Separator className="my-6" />
+              <section className="py-6 border-b border-border">
+                <div className="pb-2 flex flex-row items-center justify-between">
+                  <h2 className="text-lg font-semibold">Portfolio</h2>
+                  <Button variant="ghost" size="icon" onClick={() => openSectionModal("portfolio")} title="Edit Portfolio">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div>
-                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    📋 Prior Job References
-                  </h2>
+                  {digger.portfolio_url ? (
+                    <a
+                      href={digger.portfolio_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <Globe className="h-4 w-4" />
+                      View Portfolio
+                    </a>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No portfolio link added yet.</p>
+                  )}
+                </div>
+              </section>
+
+              <section className="py-6 border-b border-border">
+                <div className="pb-2 flex flex-row items-center justify-between">
+                  <h2 className="text-lg font-semibold">Prior Job References</h2>
+                  <Button variant="ghost" size="icon" onClick={() => openSectionModal("references")} title="Edit References">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div>
                   {references.length > 0 ? (
                     <div className="space-y-3">
                       {references.map((ref) => (
@@ -1298,53 +1496,327 @@ const DiggerDetail = () => {
                         </div>
                       ))}
                     </div>
-                  ) : isOwnProfile ? (
+                  ) : (
                     <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
                       <p className="text-muted-foreground mb-4">Add references from past Giggers to build trust</p>
                       <p className="text-sm text-muted-foreground">Reference management coming soon</p>
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground italic">No references provided yet.</p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </section>
 
             {/* Reviews for Owner */}
-            <Card>
-              <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="text-lg sm:text-xl">Reviews & Ratings</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+            <section className="py-6">
+              <div className="pb-3 flex flex-row items-center justify-between">
+                <h2 className="text-lg sm:text-xl font-semibold">Reviews & Ratings</h2>
+                <Button variant="ghost" size="icon" onClick={() => openSectionModal("reviews")} title="About Reviews">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </div>
+              <div>
                 <RatingsList 
                   diggerId={digger.id} 
                   isDigger={true}
                   diggerName={digger.business_name}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </section>
           </>
             )}
           </div>
 
-          {/* Sidebar - order first on mobile so actions are visible without scrolling */}
-          <div className="lg:col-span-1 order-1 lg:order-2 min-w-0">
+          {/* Sidebar - 30% width on desktop */}
+          <div className="lg:col-span-3 order-1 lg:order-2 min-w-0 w-full">
             <div className="space-y-4 sm:space-y-6 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">
-              {/* Verification status (always visible in sidebar) */}
-              <Card>
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-sm font-medium">Verifications</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0 px-4 pb-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {verificationItems.map((item) => (
-                      <div key={item.label} className="flex items-center gap-2">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
-                          <item.icon className={`h-4 w-4 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
+              <Card className="w-full">
+                  <CardHeader className="py-3 px-4 sm:px-5">
+                    <CardTitle className="text-sm font-medium">Verifications</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 px-4 pb-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      {verificationItems.map((item) => (
+                        <div key={item.label} className="flex items-center gap-2">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${item.isActive ? "bg-green-500/10" : "bg-muted"}`}>
+                            <item.icon className={`h-4 w-4 ${item.isActive ? "text-green-600" : "text-muted-foreground"}`} />
+                          </div>
+                          <span className={`text-xs font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
                         </div>
-                        <span className={`text-xs font-medium ${item.isActive ? "text-green-600" : "text-muted-foreground"}`}>{item.label}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              <Card className="rounded-xl border-border/70 w-full">
+                <CardHeader className="py-3 px-4 sm:px-5">
+                  <CardTitle className="text-sm font-medium">Profile Details</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 px-4 sm:px-5 pb-4 space-y-4">
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Availability</p>
+                      {isOwnProfile && (
+                        <button type="button" onClick={() => openSectionModal("availability")} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm text-left ${isOwnProfile ? "hover:border-primary/50 hover:bg-muted/50 cursor-pointer" : "cursor-default"}`}
+                      onClick={() => isOwnProfile && openSectionModal("availability")}
+                    >
+                      <span className={`h-2 w-2 rounded-full shrink-0 ${isOnline ? "bg-green-500" : "bg-gray-400"}`} />
+                      {isOnline ? "Open to opportunities" : getAvailabilityLabel(digger.availability)}
+                    </button>
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Location</p>
+                      {isOwnProfile && (digger.country || getServiceLocationDisplay()) && (
+                        <button type="button" onClick={() => openSectionModal("location")} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {(digger.country || getServiceLocationDisplay()) ? (
+                      <button
+                        type="button"
+                        className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm text-left ${isOwnProfile ? "hover:border-primary/50 hover:bg-muted/50 cursor-pointer" : "cursor-default"}`}
+                        onClick={() => isOwnProfile && openSectionModal("location")}
+                      >
+                        <span className="text-base">{getFlagForCountryName(digger.country || getServiceLocationCountry() || "") || getCountryFlag(digger.country || getServiceLocationCountry() || "")}</span>
+                        {digger.country || getServiceLocationDisplay() || "Not specified"}
+                      </button>
+                    ) : (
+                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("location")}>
+                        <Plus className="h-4 w-4 shrink-0" /> Add location
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Service location</p>
+                      {isOwnProfile && ((digger.service_countries?.length ?? 0) > 0 || (digger.country && (!digger.service_countries || digger.service_countries.length === 0))) && (
+                        <button type="button" onClick={() => openSectionModal("service_location")} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {((digger.service_countries?.length ?? 0) > 0 || (digger.country && (!digger.service_countries || digger.service_countries.length === 0))) ? (
+                      <button
+                        type="button"
+                        className={`flex flex-wrap gap-1.5 ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
+                        onClick={() => isOwnProfile && openSectionModal("service_location")}
+                      >
+                        {((digger.service_countries?.length ?? 0) > 0 ? digger.service_countries! : [digger.country!]).map((c, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
+                            <span className="text-base">{getFlagForCountryName(c)}</span>
+                            {c}
+                          </span>
+                        ))}
+                      </button>
+                    ) : (
+                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("service_location")}>
+                        <Plus className="h-4 w-4 shrink-0" /> Add service location
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Website</p>
+                      {isOwnProfile && digger.website_url && (
+                        <button type="button" onClick={() => openSectionModal("website")} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {digger.website_url ? (
+                      isOwnProfile ? (
+                        <button
+                          type="button"
+                          className="flex items-center gap-1.5 text-sm text-primary hover:underline text-left"
+                          onClick={() => openSectionModal("website")}
+                        >
+                          <Globe className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{digger.website_url}</span>
+                        </button>
+                      ) : (
+                        <a href={digger.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-primary hover:underline">
+                          <Globe className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{digger.website_url}</span>
+                        </a>
+                      )
+                    ) : (
+                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("website")}>
+                        <Plus className="h-4 w-4 shrink-0" /> Add website
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Portfolio</p>
+                      {isOwnProfile && digger.portfolio_url && (
+                        <button type="button" onClick={() => openSectionModal("portfolio")} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {digger.portfolio_url ? (
+                      isOwnProfile ? (
+                        <button
+                          type="button"
+                          className="flex items-center gap-1.5 text-sm text-primary hover:underline text-left"
+                          onClick={() => openSectionModal("portfolio")}
+                        >
+                          <span className="truncate">{digger.portfolio_url}</span>
+                        </button>
+                      ) : (
+                        <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
+                          {digger.portfolio_url}
+                        </a>
+                      )
+                    ) : (
+                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("portfolio")}>
+                        <Plus className="h-4 w-4 shrink-0" /> Add portfolio
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Monthly salary</p>
+                      {isOwnProfile && (digger.monthly_salary != null || formatHourlyRate()) && (
+                        <button type="button" onClick={() => openSectionModal("salary")} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {(digger.monthly_salary != null || formatHourlyRate()) ? (
+                      isOwnProfile ? (
+                        <button
+                          type="button"
+                          className="flex items-center gap-1.5 text-sm hover:text-foreground cursor-pointer"
+                          onClick={() => openSectionModal("salary")}
+                        >
+                          {digger.monthly_salary != null ? `$${Number(digger.monthly_salary).toLocaleString()}/mo` : formatHourlyRate()}
+                        </button>
+                      ) : (
+                        <span className="text-sm">
+                          {digger.monthly_salary != null ? `$${Number(digger.monthly_salary).toLocaleString()}/mo` : formatHourlyRate()}
+                        </span>
+                      )
+                    ) : (
+                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("salary")}>
+                        <Plus className="h-4 w-4 shrink-0" /> Add monthly salary
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Profession</p>
+                      {isOwnProfile && (digger.digger_categories?.length ?? 0) > 0 && (
+                        <button type="button" onClick={() => openEditModal(digger.id)} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {(digger.digger_categories?.length ?? 0) > 0 ? (
+                      <button
+                        type="button"
+                        className={`flex flex-wrap gap-1.5 text-left ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
+                        onClick={() => isOwnProfile && openEditModal(digger.id)}
+                      >
+                        {(digger.digger_categories || []).map((dc, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
+                            <span className="h-2 w-2 rounded-full shrink-0 bg-violet-500" />
+                            {dc.categories?.name || ""}
+                          </span>
+                        ))}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                        onClick={() => isOwnProfile && openEditModal(digger.id)}
+                      >
+                        <Plus className="h-4 w-4 shrink-0" />
+                        Add profession
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Skills</p>
+                      {isOwnProfile && normalizeSkills(digger.skills || digger.keywords || []).length > 0 && (
+                        <button type="button" onClick={() => openSectionModal("skills")} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {normalizeSkills(digger.skills || digger.keywords || []).length > 0 ? (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          className={`flex flex-wrap gap-1.5 text-left ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
+                          onClick={() => isOwnProfile && openSectionModal("skills")}
+                        >
+                          {normalizeSkills(digger.skills || digger.keywords || []).map((skill, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
+                              {skill}
+                            </span>
+                          ))}
+                        </button>
                       </div>
-                    ))}
+                    ) : (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                        onClick={() => isOwnProfile && openSectionModal("skills")}
+                      >
+                        <Plus className="h-4 w-4 shrink-0" />
+                        Add skills
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-muted-foreground">Social media</p>
+                      {isOwnProfile && digger.social_links && Object.keys(digger.social_links).length > 0 && (
+                        <button type="button" onClick={() => openSectionModal("social")} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    {digger.social_links && Object.keys(digger.social_links).length > 0 ? (
+                      <div className="flex flex-col gap-1.5">
+                        {Object.entries(digger.social_links)
+                          .filter(([, url]) => Boolean(String(url).trim()))
+                          .map(([platform, url]) => {
+                            const href = String(url).trim();
+                            const label = socialPlatforms.find((p) => p.key === platform)?.label || platform;
+                            return (
+                              <a
+                                key={platform}
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm text-primary hover:underline w-fit max-w-full"
+                                title={href}
+                              >
+                                <span className="font-medium">{label}:</span>
+                                <span className="truncate max-w-[220px]">{href}</span>
+                              </a>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                        onClick={() => isOwnProfile && openSectionModal("social")}
+                      >
+                        <Plus className="h-4 w-4 shrink-0" />
+                        Add social links
+                      </button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1358,12 +1830,18 @@ const DiggerDetail = () => {
                           {isOnline ? "Open to opportunities" : "Currently offline"}
                         </span>
                       </div>
-                      {getServiceLocationDisplay() && (
+                      {(digger.country || getServiceLocationDisplay()) && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <MapPin className="h-4 w-4 shrink-0" />
-                          <span className="text-lg">{getCountryFlag(getServiceLocationCountry() || "")}</span>
-                          <span>{getServiceLocationDisplay()}</span>
+                          <span className="text-lg">{getFlagForCountryName(digger.country || "") || getCountryFlag(getServiceLocationCountry() || "")}</span>
+                          <span>{digger.country || getServiceLocationDisplay()}</span>
                         </div>
+                      )}
+                      {digger.website_url && (
+                        <a href={digger.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
+                          <Globe className="h-4 w-4 shrink-0" />
+                          Website
+                        </a>
                       )}
                       {digger.portfolio_url && (
                         <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
@@ -1371,37 +1849,44 @@ const DiggerDetail = () => {
                           Portfolio
                         </a>
                       )}
-                      {formatHourlyRate() && (
+                      {(digger.monthly_salary != null || formatHourlyRate()) && (
                         <div className="flex items-center gap-2 text-sm">
                           <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className="font-medium">{formatHourlyRate()}</span>
+                          <span className="font-medium">
+                            {digger.monthly_salary != null ? `$${Number(digger.monthly_salary).toLocaleString()}/mo` : formatHourlyRate()}
+                          </span>
                         </div>
                       )}
                     </CardContent>
                   </Card>
                   {(digger.digger_categories?.length ?? 0) > 0 && (
-                    <Card>
+                    <Card className="rounded-xl border-border/70">
                       <CardHeader className="py-3 px-4">
-                        <CardTitle className="text-sm font-medium">Job categories</CardTitle>
+                        <CardTitle className="text-sm font-medium">Profession</CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 px-4 pb-4">
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-1.5">
                           {(digger.digger_categories || []).map((dc, idx) => (
-                            <li key={idx}>{dc.categories?.name || ""}</li>
+                            <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
+                              <span className="h-2 w-2 rounded-full shrink-0 bg-violet-500" />
+                              {dc.categories?.name || ""}
+                            </span>
                           ))}
-                        </ul>
+                        </div>
                       </CardContent>
                     </Card>
                   )}
-                  {((digger.skills || digger.keywords)?.length ?? 0) > 0 && (
-                    <Card>
+                  {normalizeSkills(digger.skills || digger.keywords || []).length > 0 && (
+                    <Card className="rounded-xl border-border/70">
                       <CardHeader className="py-3 px-4">
-                        <CardTitle className="text-sm font-medium">Skills & specialties</CardTitle>
+                        <CardTitle className="text-sm font-medium">Skills</CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 px-4 pb-4">
-                        <div className="flex flex-wrap gap-1.5 text-xs">
-                          {(digger.skills || digger.keywords || []).map((skill, idx) => (
-                            <Badge key={idx} variant="outline" className="font-normal text-xs">{skill}</Badge>
+                        <div className="flex flex-wrap gap-1.5">
+                          {normalizeSkills(digger.skills || digger.keywords || []).map((skill, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
+                              {skill}
+                            </span>
                           ))}
                         </div>
                       </CardContent>
@@ -1488,6 +1973,327 @@ const DiggerDetail = () => {
         </div>
       </div>
       <Footer />
+      <Dialog open={profileManagerOpen} onOpenChange={setProfileManagerOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manage Profiles</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {ownerProfiles.map((profile) => (
+              <div key={profile.id} className="flex items-center justify-between rounded-lg border p-3 gap-3">
+                <div>
+                  <p className="font-medium">{profile.profile_name || profile.business_name || "Unnamed Profile"}</p>
+                  <p className="text-xs text-muted-foreground">{profile.is_primary ? "Primary profile" : "Secondary profile"}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigate(
+                        getCanonicalDiggerProfilePath({
+                          handle: profile.handle,
+                          diggerId: profile.id,
+                        }) || `/digger/${profile.id}`
+                      );
+                      setProfileManagerOpen(false);
+                    }}
+                  >
+                    Open
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => openEditModal(profile.id)}>
+                    Edit
+                  </Button>
+                  {!profile.is_primary && (
+                    <Button size="sm" variant="outline" onClick={() => void handleSetPrimaryProfile(profile.id)}>
+                      Set Primary
+                    </Button>
+                  )}
+                  {!profile.is_primary && (
+                    <Button size="sm" variant="outline" onClick={() => void handleDeleteProfile(profile.id)}>
+                      Delete
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className="pt-2 flex justify-end">
+              <Button onClick={openCreateModal}>Create New Profile</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={sectionEditor.open}
+        onOpenChange={(open) => setSectionEditor((prev) => (open ? prev : { open: false, section: null }))}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {sectionEditor.section === "about" && "Edit About"}
+              {sectionEditor.section === "skills" && "Edit Skills"}
+              {sectionEditor.section === "work" && "Edit Work Samples"}
+              {sectionEditor.section === "portfolio" && "Edit Portfolio"}
+              {sectionEditor.section === "availability" && "Edit Availability"}
+              {sectionEditor.section === "location" && "Edit Location"}
+              {sectionEditor.section === "service_location" && "Edit Service Location"}
+              {sectionEditor.section === "website" && "Edit Website"}
+              {sectionEditor.section === "salary" && "Edit Monthly Salary"}
+              {sectionEditor.section === "social" && "Edit Social Links"}
+              {sectionEditor.section === "references" && "References"}
+              {sectionEditor.section === "reviews" && "Reviews"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {sectionEditor.section === "about" && (
+              <>
+                <Textarea
+                  value={aboutDraft}
+                  onChange={(e) => setAboutDraft(e.target.value)}
+                  rows={8}
+                  placeholder="Describe your services and expertise..."
+                />
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "skills" && (
+              <>
+                <p className="text-sm text-muted-foreground">Select skills from the database. These help clients find you.</p>
+                <div className="max-h-[280px] overflow-y-auto space-y-2 border rounded-md p-3">
+                  {professions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Loading professions...</p>
+                  ) : (
+                    professions.map((p) => {
+                      const checked = selectedSkillsDraft.includes(p.name);
+                      return (
+                        <label key={p.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedSkillsDraft((prev) =>
+                                checked ? prev.filter((x) => x !== p.name) : [...prev, p.name]
+                              );
+                            }}
+                            className="rounded"
+                          />
+                          <span>{p.name}</span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "work" && (
+              <>
+                <Textarea
+                  value={workPhotosDraft}
+                  onChange={(e) => setWorkPhotosDraft(e.target.value)}
+                  rows={7}
+                  placeholder={"https://...image1.jpg\nhttps://...image2.jpg"}
+                />
+                <p className="text-xs text-muted-foreground">Add one image URL per line.</p>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "portfolio" && (
+              <>
+                <Input
+                  value={portfolioDraft}
+                  onChange={(e) => setPortfolioDraft(e.target.value)}
+                  placeholder="https://your-portfolio.com"
+                />
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "availability" && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Tell clients when you can start new projects. This helps them find pros who match their timeline.
+                </p>
+                <Select value={availabilityDraft || "none"} onValueChange={(v) => setAvailabilityDraft(v === "none" ? "" : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select availability" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[250]">
+                    <SelectItem value="none">Not specified</SelectItem>
+                    <SelectItem value="immediate">Immediate — Ready to start right away</SelectItem>
+                    <SelectItem value="this_week">This week — Available within a few days</SelectItem>
+                    <SelectItem value="this_month">This month — Available within the next few weeks</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "location" && (
+              <>
+                <p className="text-sm text-muted-foreground">Your base location (country where you are located).</p>
+                <Select value={locationDraft || "none"} onValueChange={(v) => setLocationDraft(v === "none" ? "" : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[250] max-h-[300px]">
+                    <SelectItem value="none">Not specified</SelectItem>
+                    {ALL_COUNTRY_OPTIONS.map((c) => (
+                      <SelectItem key={c.code} value={c.name}>
+                        {c.flag} {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "service_location" && (
+              <>
+                <p className="text-sm text-muted-foreground">Countries where you offer services. Clients can filter by these.</p>
+                <div className="max-h-[260px] overflow-y-auto space-y-2 border rounded-md p-3">
+                  {ALL_COUNTRY_OPTIONS.map((c) => {
+                    const checked = serviceLocationDraft.includes(c.name);
+                    return (
+                      <label key={c.code} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => setServiceLocationDraft((prev) => (checked ? prev.filter((x) => x !== c.name) : [...prev, c.name]))}
+                          className="rounded"
+                        />
+                        <span className="text-base">{c.flag}</span>
+                        <span>{c.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "website" && (
+              <>
+                <p className="text-sm text-muted-foreground">Your business or personal website URL.</p>
+                <Input
+                  type="url"
+                  value={websiteDraft}
+                  onChange={(e) => setWebsiteDraft(e.target.value)}
+                  placeholder="https://yourwebsite.com"
+                />
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "salary" && (
+              <>
+                <p className="text-sm text-muted-foreground">Your expected monthly salary (in USD or your local currency).</p>
+                <Input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={salaryDraft}
+                  onChange={(e) => setSalaryDraft(e.target.value)}
+                  placeholder="e.g. 5000"
+                />
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "social" && (
+              <>
+                <p className="text-sm text-muted-foreground">Add your social profiles so clients can learn more about your work.</p>
+                <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+                  {socialPlatforms.map((platform) => (
+                    <div key={platform.key} className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground">{platform.label}</p>
+                      <Input
+                        type="url"
+                        value={socialLinksDraft[platform.key] || ""}
+                        onChange={(e) =>
+                          setSocialLinksDraft((prev) => ({
+                            ...prev,
+                            [platform.key]: e.target.value,
+                          }))
+                        }
+                        placeholder={platform.placeholder}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "references" && (
+              <p className="text-sm text-muted-foreground">
+                Reference editing will be available in this section soon. For now, contact support to update references.
+              </p>
+            )}
+            {sectionEditor.section === "reviews" && (
+              <p className="text-sm text-muted-foreground">
+                Reviews are provided by clients and cannot be edited directly.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={editorModal.open}
+        onOpenChange={(open) => setEditorModal((prev) => ({ ...prev, open }))}
+      >
+        <DialogContent className="w-[95vw] max-w-[1200px] h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>{editorModal.mode === "create" ? "Create Profile" : "Edit Profile"}</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6">
+            <DiggerInlineProfileEditor
+              mode={editorModal.mode}
+              profileId={editorModal.profileId}
+              onSaved={async () => {
+                setEditorModal((prev) => ({ ...prev, open: false }));
+                await loadData();
+                await loadOwnerProfiles();
+              }}
+              onCancel={() => setEditorModal((prev) => ({ ...prev, open: false }))}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -53,7 +53,7 @@ test.describe('Digger Registration & Profile Flow', () => {
   });
 
   test('should add multiple professions to profile', async ({ page }) => {
-    await page.goto('/edit-digger-profile');
+    await page.goto('/my-profiles?mode=create');
     
     // Add first profession
     await page.click('text=Add Profession');
@@ -76,7 +76,7 @@ test.describe('Digger Registration & Profile Flow', () => {
   });
 
   test('should upload profile photo', async ({ page }) => {
-    await page.goto('/edit-digger-profile');
+    await page.goto('/my-profiles?mode=create');
     
     // Upload file
     const fileInput = page.locator('input[type="file"]');
@@ -92,7 +92,7 @@ test.describe('Digger Registration & Profile Flow', () => {
   });
 
   test('should set pricing model and rates', async ({ page }) => {
-    await page.goto('/edit-digger-profile');
+    await page.goto('/my-profiles?mode=create');
     
     // Set pricing model
     await page.selectOption('select[name="pricingModel"]', 'hourly');
@@ -111,7 +111,7 @@ test.describe('Digger Registration & Profile Flow', () => {
   });
 
   test('should add certifications and licenses', async ({ page }) => {
-    await page.goto('/edit-digger-profile');
+    await page.goto('/my-profiles?mode=create');
     
     // Mark as licensed
     await page.check('input[name="isLicensed"]');

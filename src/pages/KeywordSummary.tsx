@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GOOGLE_CPC_KEYWORDS, getIndustryForKeyword } from "@/config/googleCpcKeywords";
 import { findMatchingIndustry } from "@/config/pricing";
 import { supabase } from "@/integrations/supabase/client";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import {
   Dialog,
   DialogContent,
@@ -579,7 +580,13 @@ export default function KeywordSummary() {
           <div className="mb-8">
             <Button
               variant="ghost"
-              onClick={() => navigate(profileId ? `/digger/${profileId}` : '/pricing')}
+              onClick={() =>
+                navigate(
+                  profileId
+                    ? (getCanonicalDiggerProfilePath({ diggerId: profileId }) || `/digger/${profileId}`)
+                    : "/pricing"
+                )
+              }
               className="mb-4"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -845,7 +852,13 @@ export default function KeywordSummary() {
           <div className="flex justify-start">
             <Button
               variant="outline"
-              onClick={() => navigate(profileId ? `/digger/${profileId}` : '/pricing')}
+              onClick={() =>
+                navigate(
+                  profileId
+                    ? (getCanonicalDiggerProfilePath({ diggerId: profileId }) || `/digger/${profileId}`)
+                    : "/pricing"
+                )
+              }
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               {profileId ? 'Back to Profile' : 'Back to Keyword Selection'}

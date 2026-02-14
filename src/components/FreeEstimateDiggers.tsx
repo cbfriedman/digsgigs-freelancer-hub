@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Loader2, Star, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 interface FreeEstimateDigger {
   id: string;
@@ -172,7 +173,7 @@ export const FreeEstimateDiggers = ({ gigId, categories }: FreeEstimateDiggersPr
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 
                       className="font-semibold hover:text-primary cursor-pointer"
-                      onClick={() => navigate(`/digger/${digger.id}`)}
+                      onClick={() => navigate(getCanonicalDiggerProfilePath({ handle: digger.handle, diggerId: digger.id }) || `/digger/${digger.id}`)}
                     >
                       {digger.handle}
                     </h4>

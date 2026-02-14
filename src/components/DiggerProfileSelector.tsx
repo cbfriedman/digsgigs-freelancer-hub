@@ -18,9 +18,11 @@ import { Label } from "@/components/ui/label";
 import { Plus, ChevronDown, User, Edit, Star, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 interface DiggerProfile {
   id: string;
+  handle: string | null;
   profile_name: string | null;
   business_name: string;
   is_primary: boolean;
@@ -97,7 +99,7 @@ export const DiggerProfileSelector = () => {
 
       const { data, error } = await supabase
         .from("digger_profiles")
-        .select("id, profile_name, business_name, is_primary")
+        .select("id, handle, profile_name, business_name, is_primary")
         .eq("user_id", user.id)
         .order("is_primary", { ascending: false })
         .order("created_at", { ascending: true });
@@ -187,11 +189,11 @@ export const DiggerProfileSelector = () => {
     // Store the profile name in sessionStorage for the category browser to use
     sessionStorage.setItem('newProfileName', newProfileName.trim());
     setCreateProfileDialog(false);
-    navigate("/create-digger-profile");
+    navigate("/my-profiles?mode=create");
   };
 
   const handleEditProfile = (profileId: string) => {
-    navigate(`/edit-digger-profile?profileId=${profileId}`);
+    navigate(`/my-profiles?mode=edit&profileId=${profileId}`);
   };
 
   const handleViewProfile = (profileId: string) => {
@@ -200,7 +202,12 @@ export const DiggerProfileSelector = () => {
     if (selectedProfile) {
       setCurrentProfile(selectedProfile);
     }
-    navigate(`/digger/${profileId}`);
+    navigate(
+      getCanonicalDiggerProfilePath({
+        handle: selectedProfile?.handle || null,
+        diggerId: profileId,
+      }) || `/digger/${profileId}`
+    );
   };
 
   if (loading || profiles.length === 0) {

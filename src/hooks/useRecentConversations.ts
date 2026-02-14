@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 export interface RecentConversation {
   id: string;
@@ -127,8 +128,10 @@ export function useRecentConversations(currentUser: User | null) {
           }
           if (partnerUserId && partnerUserId !== uid) {
             if (partnerIsDigger) {
-              const handle = c.digger_handle?.replace(/^@/, "").trim().toLowerCase();
-              partnerProfileUrl = handle ? `/digger/${handle}` : `/digger/${partnerUserId}`;
+              partnerProfileUrl = getCanonicalDiggerProfilePath({
+                handle: c.digger_handle,
+                diggerId: partnerUserId,
+              });
             } else {
               partnerProfileUrl = `/profile/${partnerUserId}`;
             }

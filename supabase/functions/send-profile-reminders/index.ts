@@ -243,7 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p>It only takes a few minutes to complete your profile and start getting more opportunities!</p>
                   
                   <div style="text-align: center;">
-                    <a href="https://digsandgigs.net/profile-completion" class="button">
+                    <a href="https://digsandgigs.net/my-profiles?mode=create" class="button">
                       Complete My Profile Now
                     </a>
                   </div>

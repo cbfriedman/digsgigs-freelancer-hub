@@ -182,7 +182,7 @@ export default function MyLeads() {
               </p>
               <Button
                 size="lg"
-                onClick={() => navigate("/create-digger-profile")}
+                onClick={() => navigate("/my-profiles?mode=create")}
                 className="gap-2"
               >
                 <UserPlus className="h-4 w-4" />

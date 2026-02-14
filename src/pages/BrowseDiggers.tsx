@@ -18,6 +18,7 @@ import { generateBreadcrumbSchema } from "@/components/StructuredData";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import { DirectoryDiggerCard } from "@/components/DirectoryDiggerCard";
+import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 
 interface Category {
   id: string;
@@ -624,12 +625,12 @@ const BrowseDiggers = () => {
               <TabsContent value="map">
                 <MapView 
                   items={filteredDiggers.map(d => ({
-                    id: d.id,
+                    id: getCanonicalDiggerProfilePath({ handle: d.handle, diggerId: d.id }) || `/digger/${d.id}`,
                     title: `@${d.handle || "anonymous"} - ${d.profession || "Professional"}`,
                     location_lat: d.location_lat,
                     location_lng: d.location_lng,
                   }))}
-                  onMarkerClick={(id) => navigate(`/digger/${id}`)}
+                  onMarkerClick={(path) => navigate(path)}
                 />
               </TabsContent>
             </Tabs>

@@ -1411,7 +1411,11 @@ export type Database = {
           response_time_hours: number | null
           service_radius_center: string | null
           service_radius_miles: number | null
+          service_countries: string[] | null
           service_zip_codes: string[] | null
+          social_links: Json | null
+          website_url: string | null
+          monthly_salary: number | null
           sic_code: string[] | null
           skills: string[] | null
           state: string | null
@@ -1494,7 +1498,11 @@ export type Database = {
           response_time_hours?: number | null
           service_radius_center?: string | null
           service_radius_miles?: number | null
+          service_countries?: string[] | null
           service_zip_codes?: string[] | null
+          social_links?: Json | null
+          website_url?: string | null
+          monthly_salary?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
           state?: string | null
@@ -1577,7 +1585,11 @@ export type Database = {
           response_time_hours?: number | null
           service_radius_center?: string | null
           service_radius_miles?: number | null
+          service_countries?: string[] | null
           service_zip_codes?: string[] | null
+          social_links?: Json | null
+          website_url?: string | null
+          monthly_salary?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
           state?: string | null

@@ -271,7 +271,7 @@ const PricingStrategy = () => {
         <div className="mt-12 text-center">
           <Button 
             size="lg"
-            onClick={() => navigate("/edit-digger-profile")}
+            onClick={() => navigate("/my-profiles?mode=create")}
             className="shadow-lg"
           >
             Update Your Hourly Rate
