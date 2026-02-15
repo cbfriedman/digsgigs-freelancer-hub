@@ -23,6 +23,7 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useGoogleAdsConversion } from "@/hooks/useGoogleAdsConversion";
 import { useRedditPixel } from "@/hooks/useRedditPixel";
 import { PasswordRequirements, GoogleSignInButton, AuthLogo } from "@/components/auth";
+import { getHandleForFirstProfile } from "@/lib/generateHandle";
 import { PageLayout } from "@/components/layout";
 
 // SECURITY: Input validation schemas - phone is now optional
@@ -104,6 +105,15 @@ const Register = () => {
   // Check if user just completed registration (bypass role check temporarily)
   const justRegistered = new URLSearchParams(window.location.search).get('registered') === 'true';
   
+  // Redirect legacy "create first profile" flow to dedicated page
+  useEffect(() => {
+    if (!user || authLoading) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('complete') === 'true' && params.get('type') === 'digger') {
+      navigate('/create-first-profile', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
+
   // Immediate redirect for users with roles - don't wait for other checks
   // This ensures users with roles (like admin) can access the platform immediately
   // BUT: Skip redirect if user is completing registration (has no roles) OR just registered
@@ -1025,9 +1035,20 @@ const Register = () => {
           
           console.log("Creating digger profile with user_id:", verifiedUserId, "auth.uid():", authUser?.id);
           
+          // Generate unique handle from real name (e.g. jackson_chen)
+          const { data: existingHandles } = await supabase
+            .from('digger_profiles')
+            .select('handle')
+            .not('handle', 'is', null);
+          const handle = getHandleForFirstProfile(
+            fullName,
+            (existingHandles || []).map((r) => r.handle).filter(Boolean) as string[]
+          );
+          
           // Prepare digger profile data with proper defaults and required fields
           const diggerProfileData: any = {
             user_id: verifiedUserId, // References profiles(id) - must match auth.uid() for RLS
+            handle, // Auto-generated from real name (e.g. jackson_chen), unique identity
             business_name: roleFormData.digger.companyName || 'Not specified',
             profile_name: roleFormData.digger.companyName || 'My Profile', // Set profile name for display
             phone: phone || 'Not provided',

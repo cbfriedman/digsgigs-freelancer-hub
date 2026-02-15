@@ -17,6 +17,7 @@ import {
 import { Helmet } from "react-helmet-async";
 import { PRICE_LOCK_PERIOD_MONTHS, PRICE_LOCK_CLICK_THRESHOLD } from "@/config/subscriptionTiers";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
 
 export default function SubscriptionSuccess() {
   const navigate = useNavigate();
@@ -181,7 +182,7 @@ export default function SubscriptionSuccess() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={() => navigate('/my-profiles')} className="gap-2">
+              <Button size="lg" onClick={() => goToProfileWorkspace(navigate)} className="gap-2">
                 View My Profiles
                 <ArrowRight className="h-4 w-4" />
               </Button>

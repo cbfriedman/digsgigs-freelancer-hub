@@ -8,6 +8,7 @@ import { Loader2, MapPin, Calendar, DollarSign, Mail, AlertCircle, Lock, Zap, Us
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { goToCreateProfile } from "@/lib/profileWorkspaceRoute";
 import SEOHead from "@/components/SEOHead";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
 // LeadExclusivityExtension removed - exclusivity feature deprecated
@@ -182,7 +183,7 @@ export default function MyLeads() {
               </p>
               <Button
                 size="lg"
-                onClick={() => navigate("/my-profiles?mode=create")}
+                onClick={() => goToCreateProfile(navigate)}
                 className="gap-2"
               >
                 <UserPlus className="h-4 w-4" />

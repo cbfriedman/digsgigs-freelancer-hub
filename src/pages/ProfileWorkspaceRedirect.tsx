@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ export default function ProfileWorkspaceRedirect() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const [message, setMessage] = useState("Opening your profile workspace...");
 
   useEffect(() => {
     const redirect = async () => {
@@ -40,7 +41,8 @@ export default function ProfileWorkspaceRedirect() {
       const profile = profiles?.[0];
 
       if (!profile) {
-        navigate("/digger-registration", { replace: true });
+        setMessage("Taking you to create your first Digger profile...");
+        navigate("/create-first-profile", { replace: true });
         return;
       }
 
@@ -69,7 +71,7 @@ export default function ProfileWorkspaceRedirect() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center space-y-3">
         <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
-        <p className="text-sm text-muted-foreground">Opening your profile workspace...</p>
+        <p className="text-sm text-muted-foreground">{message}</p>
       </div>
     </div>
   );

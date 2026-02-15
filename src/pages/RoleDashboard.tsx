@@ -17,11 +17,16 @@ import {
   Users,
   User,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  MessageCircle,
+  ShieldCheck,
+  MailCheck,
+  Settings
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { goToCreateProfile, goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
 import {
   Dialog,
   DialogContent,
@@ -281,7 +286,7 @@ export default function RoleDashboard() {
     try {
       if (userRoles.includes('digger')) {
         await switchRole('digger');
-        navigate('/my-profiles?mode=create');
+        goToCreateProfile(navigate);
         return;
       }
 
@@ -340,7 +345,7 @@ export default function RoleDashboard() {
       await refreshRoles();
       await switchRole('digger');
       toast({ title: "Success", description: "Digger role added! Complete your profile." });
-      navigate('/my-profiles?mode=create');
+      goToCreateProfile(navigate);
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
@@ -456,6 +461,64 @@ export default function RoleDashboard() {
   
   const showRoleCheckMessage = isCheckingRoles && userRoles.length === 0;
   const hasRoles = userRoles.length > 0;
+  const isEmailVerified = Boolean(user?.email_confirmed_at);
+  const diggerProfilesCount = stats.digger?.profilesCount ?? 0;
+  const diggerLeadsCount = stats.digger?.leadsCount ?? 0;
+  const giggerGigsCount = stats.gigger?.gigsCount ?? 0;
+
+  const nextAction = (() => {
+    if (!hasRoles) {
+      return {
+        title: "Complete your setup",
+        description: "Add your first role to start posting gigs or receiving leads.",
+        ctaLabel: "Complete Setup",
+        onClick: () => navigate("/register?complete=true"),
+      };
+    }
+
+    if (userRoles.includes("digger") && diggerProfilesCount === 0) {
+      return {
+        title: "Create your first Digger profile",
+        description: "A complete profile helps Giggers find and trust your services.",
+        ctaLabel: "Create Digger Profile",
+        onClick: () => {
+          void handleSwitchRole("digger");
+          goToCreateProfile(navigate);
+        },
+      };
+    }
+
+    if (userRoles.includes("gigger") && giggerGigsCount === 0) {
+      return {
+        title: "Post your first gig",
+        description: "Describe your project and start receiving bids from qualified Diggers.",
+        ctaLabel: "Post New Gig",
+        onClick: () => {
+          void handleSwitchRole("gigger");
+          navigate("/post-gig");
+        },
+      };
+    }
+
+    if (userRoles.includes("digger") && diggerLeadsCount === 0) {
+      return {
+        title: "Get your first lead",
+        description: "Browse gigs and unlock leads to start conversations with potential clients.",
+        ctaLabel: "Browse Gigs",
+        onClick: () => {
+          void handleSwitchRole("digger");
+          navigate("/browse-gigs");
+        },
+      };
+    }
+
+    return {
+      title: "Stay active and responsive",
+      description: "Reply quickly in Messages and keep your profile updated to improve win rates.",
+      ctaLabel: "Open Messages",
+      onClick: () => navigate("/messages"),
+    };
+  })();
 
   return (
     <PageLayout maxWidth="wide">
@@ -525,6 +588,26 @@ export default function RoleDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Next Best Action */}
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-background to-accent/5 animate-fade-in-up stagger-1">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+              <div className="p-2.5 rounded-lg bg-primary/10 w-fit">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Next best action</p>
+                <h2 className="text-lg font-semibold text-foreground">{nextAction.title}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{nextAction.description}</p>
+              </div>
+              <Button onClick={nextAction.onClick} className="shrink-0">
+                {nextAction.ctaLabel}
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Role Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -608,7 +691,7 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('digger');
-                          navigate('/my-profiles');
+                          goToProfileWorkspace(navigate);
                         }}
                       >
                         My Profiles
@@ -618,7 +701,7 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('digger');
-                          navigate('/my-profiles?mode=create');
+                          goToCreateProfile(navigate);
                         }}
                       >
                         <Plus className="h-4 w-4 mr-1" />
@@ -723,7 +806,7 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('gigger');
-                          navigate('/my-profiles');
+                          goToProfileWorkspace(navigate);
                         }}
                       >
                         <User className="h-4 w-4 mr-1" />
@@ -776,6 +859,70 @@ export default function RoleDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Account Health & Trust */}
+        <Card className="animate-fade-in-up stagger-5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Account Health & Trust
+            </CardTitle>
+            <CardDescription>
+              Keep your account complete and communication active for better results.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-lg border bg-card p-4">
+                <p className="text-sm font-medium text-foreground mb-1">Email verification</p>
+                <div className="flex items-center gap-2">
+                  {isEmailVerified ? (
+                    <>
+                      <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-0">Verified</Badge>
+                      <span className="text-xs text-muted-foreground">Your account is ready for secure communication.</span>
+                    </>
+                  ) : (
+                    <>
+                      <Badge variant="secondary">Action needed</Badge>
+                      <span className="text-xs text-muted-foreground">Verify email to improve trust and deliverability.</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-lg border bg-card p-4">
+                <p className="text-sm font-medium text-foreground mb-1">Role readiness</p>
+                <p className="text-xs text-muted-foreground">
+                  {hasRoles
+                    ? `You have ${userRoles.length} active ${userRoles.length === 1 ? "role" : "roles"}.`
+                    : "No active roles yet. Add one role to unlock core workflows."}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {userRoles.length > 0 ? (
+                    userRoles.map((role) => (
+                      <Badge key={role} variant="outline" className="capitalize">{role}</Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline">No roles</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" onClick={() => navigate("/account")}>
+                <Settings className="h-4 w-4 mr-2" />
+                Account settings
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/messages")}>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Messages
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/contact")}>
+                <MailCheck className="h-4 w-4 mr-2" />
+                Contact support
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Welcome modal after registration */}
@@ -803,7 +950,7 @@ export default function RoleDashboard() {
           </DialogHeader>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             {userRoles.includes('digger') ? (
-              <Button onClick={() => { setShowWelcomeModal(false); navigate('/my-profiles?mode=create'); }} className="w-full sm:w-auto">
+              <Button onClick={() => { setShowWelcomeModal(false); goToCreateProfile(navigate); }} className="w-full sm:w-auto">
                 Complete My Profile
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

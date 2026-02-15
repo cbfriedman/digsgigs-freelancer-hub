@@ -32,6 +32,7 @@ import { useRecentGigs } from "@/hooks/useRecentGigs";
 import { usePlatformCounts } from "@/hooks/usePlatformCounts";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -447,9 +448,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   <Button
                     size="sm"
                     onClick={() => navigate("/register")}
-                    className="bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 text-accent-foreground shadow-sm hover:shadow-md transition-all duration-200"
+                    className="bg-gradient-accent text-accent-foreground font-semibold rounded-lg shadow-accent hover:shadow-accent-lg hover-glow-accent transition-all duration-200 border-0"
                   >
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5 shrink-0" aria-hidden />
                     Sign Up
                   </Button>
                 </div>
@@ -728,7 +729,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
                       </div>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate('/my-profiles')} className="cursor-pointer">
+                      <DropdownMenuItem onClick={() => goToProfileWorkspace(navigate)} className="cursor-pointer">
                         <User className="h-4 w-4 mr-2" />
                         View Profile
                       </DropdownMenuItem>
@@ -1406,13 +1407,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                             Sign In
                           </Button>
                           <Button
-                            className="w-full bg-gradient-to-r from-accent to-accent/80"
+                            className="w-full bg-gradient-accent text-accent-foreground font-semibold rounded-lg shadow-accent hover-glow-accent transition-all duration-200 border-0"
                             onClick={() => {
                               setMobileMenuOpen(false);
                               navigate("/register");
                             }}
                           >
-                            <Sparkles className="h-4 w-4 mr-2" />
+                            <Sparkles className="h-4 w-4 mr-2 shrink-0" aria-hidden />
                             Sign Up
                           </Button>
                         </>

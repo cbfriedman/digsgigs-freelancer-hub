@@ -97,6 +97,7 @@ import AdvertiserPortal from "./pages/AdvertiserPortal";
 import BusinessPlan from "./pages/BusinessPlan";
 import ColdEmailDocs from "./pages/ColdEmailDocs";
 import FoundingDigger from "./pages/FoundingDigger";
+import FirstProfileCreate from "./pages/FirstProfileCreate";
 import About from "./pages/About";
 import ApplyDigger from "./pages/ApplyDigger";
 import FBDiggerLanding from "./pages/FBDiggerLanding";
@@ -231,6 +232,10 @@ const router = createBrowserRouter(
       {
         path: "/my-profiles",
         element: <ProtectedRoute><ProfileWorkspaceRedirect /></ProtectedRoute>,
+      },
+      {
+        path: "/create-first-profile",
+        element: <ProtectedRoute><FirstProfileCreate /></ProtectedRoute>,
       },
       {
         path: "/my-profiles/:profileId/dashboard",

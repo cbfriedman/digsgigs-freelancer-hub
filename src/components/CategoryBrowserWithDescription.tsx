@@ -16,6 +16,8 @@ import { GOOGLE_CPC_KEYWORDS } from "@/config/googleCpcKeywords";
 import { SafeProfessionSelector } from "./SafeProfessionSelector";
 import { useProfessions } from "@/hooks/useProfessions";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
+import { goToEditProfile } from "@/lib/profileWorkspaceRoute";
+import { getHandleForAdditionalProfile } from "@/lib/generateHandle";
 
 // Helper function to look up CPC and calculate lead cost for a keyword
 const getKeywordPricing = (keyword: string): { cpc: number | null; leadCost: number | null } => {
@@ -537,7 +539,7 @@ export const CategoryBrowserWithDescription = () => {
               </p>
             </div>
 
-            {/* Location Preferences Section */}
+            {/* Location Preferences Section - Same business location for all profiles (user verification) */}
             <Card className="p-3 sm:p-4 border-2 border-primary/20 bg-primary/5 mt-4 overflow-x-hidden">
               <div className="space-y-4">
                 <div>
@@ -546,7 +548,9 @@ export const CategoryBrowserWithDescription = () => {
                     Service Area Preferences
                   </Label>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Define where you want to receive gig notifications
+                    {isCreatingAdditionalProfile
+                      ? "Inherited from your first profile (same business location for verification)"
+                      : "Define where you want to receive gig notifications"}
                   </p>
                 </div>
 
@@ -559,7 +563,8 @@ export const CategoryBrowserWithDescription = () => {
                   <select
                     id="country_browser"
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    onChange={(e) => !isCreatingAdditionalProfile && setCountry(e.target.value)}
+                    disabled={isCreatingAdditionalProfile}
                     className={`flex h-12 sm:h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background touch-manipulation ${!country ? 'border-destructive/50' : 'border-input'}`}
                   >
                     <option value="">Select a country...</option>
@@ -587,7 +592,8 @@ export const CategoryBrowserWithDescription = () => {
                     <select
                       id="state_browser"
                       value={selectedState}
-                      onChange={(e) => setSelectedState(e.target.value)}
+                      onChange={(e) => !isCreatingAdditionalProfile && setSelectedState(e.target.value)}
+                      disabled={isCreatingAdditionalProfile}
                       className={`flex h-12 sm:h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-background touch-manipulation ${!selectedState ? 'border-destructive/50' : 'border-input'}`}
                     >
                       <option value="">Select a {getRegionLabel(country).toLowerCase()}...</option>
@@ -605,7 +611,8 @@ export const CategoryBrowserWithDescription = () => {
                     <Input
                       id="city_browser"
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      onChange={(e) => !isCreatingAdditionalProfile && setCity(e.target.value)}
+                      disabled={isCreatingAdditionalProfile}
                       placeholder="e.g., Los Angeles"
                       className="bg-background min-h-[44px] sm:min-h-0 text-base sm:text-sm"
                     />
@@ -843,27 +850,37 @@ export const CategoryBrowserWithDescription = () => {
                         ? serviceZipCodes.split(/[,;]/).map(z => z.trim()).filter(z => z.length > 0)
                         : null;
 
-                      // Inherit username and location from existing profile when creating additional profiles
-                      const { data: existingProfile } = await supabase
+                      // Inherit handle base and location from first profile (user verification - same business location)
+                      const { data: existingProfiles } = await supabase
                         .from('digger_profiles')
                         .select('handle, business_name, company_name, country, location, state')
                         .eq('user_id', user.id)
-                        .limit(1)
-                        .maybeSingle();
-                      const inheritedUsername = existingProfile?.handle || existingProfile?.business_name || '';
-                      const countryToUse = country || existingProfile?.country || null;
-                      const stateToUse = selectedState || existingProfile?.state || null;
-                      const locationString = (city.trim() || selectedState || country)
-                        ? [city.trim(), selectedState, country].filter(Boolean).join(', ')
-                        : (existingProfile?.location || 'Not specified');
+                        .order('created_at', { ascending: true });
+                      const firstProfile = existingProfiles?.[0];
+                      const firstProfileHandle = firstProfile?.handle || firstProfile?.business_name || '';
+                      const countryToUse = firstProfile?.country || country || null;
+                      const stateToUse = firstProfile?.state || selectedState || null;
+                      const locationString = firstProfile?.location
+                        || (city.trim() || selectedState || country)
+                          ? [city.trim(), selectedState, country].filter(Boolean).join(', ')
+                          : 'Not specified';
+
+                      const { data: allHandles } = await supabase
+                        .from('digger_profiles')
+                        .select('handle')
+                        .not('handle', 'is', null);
+                      const handle = getHandleForAdditionalProfile(
+                        firstProfileHandle,
+                        (allHandles || []).map((r) => r.handle).filter(Boolean) as string[]
+                      );
 
                       const { data: newProfile, error: createError } = await supabase
                         .from('digger_profiles')
                         .insert({
                           user_id: user.id,
-                          business_name: inheritedUsername,
-                          company_name: inheritedUsername || null,
-                          handle: null,
+                          business_name: firstProfile?.business_name || firstProfileHandle || '',
+                          company_name: firstProfile?.company_name || firstProfileHandle || null,
+                          handle,
                           profile_name: profileName.trim(),
                           keywords: selected,
                           location: locationString,
@@ -912,7 +929,7 @@ export const CategoryBrowserWithDescription = () => {
                       toast.success(`Profile "${profileName.trim()}" created! Complete your profile to attract more clients.`);
 
                       // Navigate to Edit profile page so diggers can complete their profile
-                      navigate(`/my-profiles?mode=edit&profileId=${newProfile.id}`, { replace: true });
+                      goToEditProfile(navigate, newProfile.id, { replace: true });
                     }
                   } catch (error: any) {
                     console.error("Error saving Digger profile:", error);

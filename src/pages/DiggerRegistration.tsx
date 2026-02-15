@@ -82,7 +82,7 @@ const DiggerRegistration = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate("/register?complete=true&type=digger", { replace: true });
+    navigate("/create-first-profile", { replace: true });
   }, [navigate]);
 
   return (

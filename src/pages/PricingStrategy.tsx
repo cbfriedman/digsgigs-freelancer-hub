@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { goToCreateProfile } from "@/lib/profileWorkspaceRoute";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -271,7 +272,7 @@ const PricingStrategy = () => {
         <div className="mt-12 text-center">
           <Button 
             size="lg"
-            onClick={() => navigate("/my-profiles?mode=create")}
+            onClick={() => goToCreateProfile(navigate)}
             className="shadow-lg"
           >
             Update Your Hourly Rate

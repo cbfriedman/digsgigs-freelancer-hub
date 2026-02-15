@@ -19,6 +19,7 @@ import { Plus, ChevronDown, User, Edit, Star, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
+import { goToCreateProfile, goToEditProfile, goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
 
 interface DiggerProfile {
   id: string;
@@ -189,11 +190,11 @@ export const DiggerProfileSelector = () => {
     // Store the profile name in sessionStorage for the category browser to use
     sessionStorage.setItem('newProfileName', newProfileName.trim());
     setCreateProfileDialog(false);
-    navigate("/my-profiles?mode=create");
+    goToCreateProfile(navigate);
   };
 
   const handleEditProfile = (profileId: string) => {
-    navigate(`/my-profiles?mode=edit&profileId=${profileId}`);
+    goToEditProfile(navigate, profileId);
   };
 
   const handleViewProfile = (profileId: string) => {
@@ -270,7 +271,7 @@ export const DiggerProfileSelector = () => {
         <DropdownMenuSeparator />
         
         <DropdownMenuItem
-          onClick={() => navigate("/my-profiles")}
+          onClick={() => goToProfileWorkspace(navigate)}
           className="cursor-pointer"
         >
           <Settings className="h-4 w-4 mr-2" />

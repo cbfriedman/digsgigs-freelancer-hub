@@ -100,7 +100,7 @@ export default function ProDiggerSignup() {
         email: email.toLowerCase().trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/register?type=digger&upgrade=pro&complete=true`,
+          emailRedirectTo: `${window.location.origin}/my-profiles`,
           data: {
             full_name: fullName.trim(),
             phone: phone.trim(),
@@ -138,7 +138,7 @@ export default function ProDiggerSignup() {
         navigate("/register?mode=signin");
       } else {
         toast.success("Account created! Let's complete your profile.");
-        navigate("/register?type=digger&upgrade=pro&complete=true");
+        navigate("/my-profiles");
       }
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -201,7 +201,7 @@ export default function ProDiggerSignup() {
               {/* Google Sign-In */}
               <GoogleSignInButton 
                 label="Sign up with Google"
-                redirectTo={`${window.location.origin}/register?type=digger&upgrade=pro&complete=true`}
+                redirectTo={`${window.location.origin}/my-profiles`}
                 disabled={isLoading}
               />
 

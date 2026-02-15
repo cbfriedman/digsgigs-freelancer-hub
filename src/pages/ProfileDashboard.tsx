@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
+import { goToEditProfile, goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
 
 interface ProfileData {
   id: string;
@@ -118,7 +119,7 @@ export default function ProfileDashboard() {
       if (profileResult.error) throw profileResult.error;
       if (!profileResult.data) {
         toast.error("Profile not found");
-        navigate("/my-profiles");
+        goToProfileWorkspace(navigate);
         return;
       }
 
@@ -230,7 +231,7 @@ export default function ProfileDashboard() {
         {/* Back Button */}
         <Button 
           variant="ghost" 
-          onClick={() => navigate("/my-profiles")} 
+          onClick={() => goToProfileWorkspace(navigate)} 
           className="mb-6 gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -284,7 +285,11 @@ export default function ProfileDashboard() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t">
-              <Button onClick={() => navigate(`/my-profiles?mode=edit&profileId=${profileId}`)} variant="outline" className="gap-2">
+              <Button
+                onClick={() => profileId && goToEditProfile(navigate, profileId)}
+                variant="outline"
+                className="gap-2"
+              >
                 <Edit className="h-4 w-4" />
                 Edit Profile
               </Button>

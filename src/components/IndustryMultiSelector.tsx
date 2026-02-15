@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { INDUSTRY_PRICING, INDUSTRY_GROUPS, getLeadCostForIndustry, IndustryCategory, ValueIndicator } from "@/config/pricing";
 import { LeadPricingChart } from "@/components/LeadPricingChart";
 import { lookupCPC, findSimilarKeywords } from "@/utils/cpcLookup";
+import { getProfileWorkspacePath } from "@/lib/profileWorkspaceRoute";
 
 interface IndustryLeadQuantities {
   [industry: string]: {
@@ -660,7 +661,7 @@ export const IndustryMultiSelector = ({ selectedIndustries, onIndustriesChange, 
                       if (onManageProfilesClick) {
                         onManageProfilesClick();
                       } else {
-                        window.location.href = '/my-profiles';
+                        window.location.href = getProfileWorkspacePath();
                       }
                     }}
                   >

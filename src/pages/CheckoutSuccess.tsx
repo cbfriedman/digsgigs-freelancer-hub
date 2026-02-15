@@ -7,6 +7,7 @@ import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { supabase } from "@/integrations/supabase/client";
+import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
 
 export default function CheckoutSuccess() {
   const navigate = useNavigate();
@@ -164,7 +165,7 @@ export default function CheckoutSuccess() {
               </Button>
               
               <Button
-                onClick={() => navigate("/my-profiles")}
+                onClick={() => goToProfileWorkspace(navigate)}
                 variant="outline"
                 size="lg"
               >
