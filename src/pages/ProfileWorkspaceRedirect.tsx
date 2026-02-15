@@ -41,6 +41,14 @@ export default function ProfileWorkspaceRedirect() {
       const profile = profiles?.[0];
 
       if (!profile) {
+        // User must select Digger role before creating profile
+        const { data: roles } = await (supabase.rpc as any)("get_user_app_roles_safe", { _user_id: user.id }).catch(() => ({ data: [] }));
+        const hasDiggerRole = Array.isArray(roles) && roles.some((r: { app_role: string }) => r.app_role === "digger");
+        if (!hasDiggerRole) {
+          setMessage("Select your role first...");
+          navigate("/register?complete=true", { replace: true });
+          return;
+        }
         setMessage("Taking you to create your first Digger profile...");
         navigate("/create-first-profile", { replace: true });
         return;

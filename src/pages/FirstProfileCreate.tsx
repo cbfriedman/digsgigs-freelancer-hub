@@ -48,51 +48,37 @@ export default function FirstProfileCreate() {
     }
   }, [user, navigate]);
 
+  // Require digger role before profile creation - redirect to role selection
+  useEffect(() => {
+    if (!user) return;
+    const check = async () => {
+      try {
+        const { data: roles } = await (supabase.rpc as any)("get_user_app_roles_safe", { _user_id: user.id });
+        const hasDigger = Array.isArray(roles) && roles.some((r: { app_role: string }) => r.app_role === "digger");
+        if (!hasDigger) {
+          navigate("/register?complete=true", { replace: true });
+        }
+      } catch {
+        navigate("/register?complete=true", { replace: true });
+      }
+    };
+    void check();
+  }, [user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !canSubmit) return;
 
     setIsSubmitting(true);
     try {
-      // 1. Ensure digger role exists
-      let hasDiggerRole = false;
-      try {
-        const { data: hasRole } = await supabase.rpc("has_app_role", {
-          _user_id: user.id,
-          _role: "digger",
-        });
-        hasDiggerRole = hasRole === true;
-      } catch {
-        // Fallback: try get_user_app_roles_safe
-        try {
-          const { data: roles } = await (supabase.rpc as any)("get_user_app_roles_safe", {
-            _user_id: user.id,
-          });
-          hasDiggerRole = Array.isArray(roles) && roles.some((r: any) => r.app_role === "digger");
-        } catch {
-          hasDiggerRole = false;
-        }
-      }
-
+      // 1. Require digger role - user must have selected it during registration
+      const { data: roles } = await (supabase.rpc as any)("get_user_app_roles_safe", { _user_id: user.id });
+      const hasDiggerRole = Array.isArray(roles) && roles.some((r: any) => r.app_role === "digger");
       if (!hasDiggerRole) {
-        try {
-          const { error } = await (supabase.rpc as any)("insert_user_app_role", {
-            p_user_id: user.id,
-            p_app_role: "digger",
-          });
-          if (error) {
-            const { error: directError } = await supabase.from("user_app_roles").insert({
-              user_id: user.id,
-              app_role: "digger",
-            });
-            if (directError) throw directError;
-          }
-        } catch (err: any) {
-          console.error("Error creating digger role:", err);
-          toast.error("Could not register as Digger. Please try again.");
-          setIsSubmitting(false);
-          return;
-        }
+        toast.error("Please select the Digger role first to create a profile.");
+        navigate("/register?complete=true", { replace: true });
+        setIsSubmitting(false);
+        return;
       }
 
       // 2. Build location string (digger service location)
