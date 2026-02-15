@@ -181,7 +181,7 @@ export default function FirstProfileCreate() {
                   id="profile-title"
                   value={profileTitle}
                   onChange={(e) => setProfileTitle(e.target.value)}
-                  placeholder="e.g., Plumbing Services, Tax Consulting, Web Design"
+                  placeholder="e.g., Full Stack Development, Mobile App Development, DevOps Consulting"
                   minLength={2}
                   maxLength={100}
                   required

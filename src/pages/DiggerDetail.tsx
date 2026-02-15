@@ -1265,8 +1265,10 @@ const DiggerDetail = () => {
     || DEFAULT_AVATAR;
   const displayName = formatRealName(digger.profiles?.full_name) || digger.profile_name || "Main Profile";
   const handleDisplay = digger.handle ? `@${String(digger.handle).replace(/^@/, "")}` : "";
-  /** Professional title only (custom_occupation_title, categories, profession) - not profile_name */
+  /** Profile title from first profile creation (profile_name/business_name), then custom title, categories, profession */
   const profileTitleSub =
+    (digger.profile_name && digger.profile_name !== "Not specified" ? digger.profile_name : null) ||
+    (digger.business_name && digger.business_name !== "Not specified" ? digger.business_name : null) ||
     digger.custom_occupation_title ||
     digger.digger_categories?.[0]?.categories?.name ||
     digger.profession ||

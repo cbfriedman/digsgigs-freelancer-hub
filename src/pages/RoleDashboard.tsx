@@ -17,7 +17,6 @@ import {
   Users,
   User,
   CheckCircle2,
-  AlertCircle,
   MessageCircle,
   ShieldCheck,
   MailCheck,
@@ -284,24 +283,18 @@ export default function RoleDashboard() {
     if (!user) return;
 
     try {
-      if (userRoles.includes('digger')) {
-        await switchRole('digger');
-        goToCreateProfile(navigate);
-        return;
-      }
-
-      let hasDiggerRole = false;
-      try {
-        const { data: hasRole, error: hasRoleError } = await supabase
-          .rpc('has_app_role', { _user_id: user.id, _role: 'digger' });
-        if (!hasRoleError && hasRole === true) hasDiggerRole = true;
-        else if (hasRoleError && userRoles.includes('digger')) hasDiggerRole = true;
-      } catch {
-        if (userRoles.includes('digger')) hasDiggerRole = true;
+      // 1. Ensure Digger role is selected (add if missing)
+      let hasDiggerRole = userRoles.includes('digger');
+      if (!hasDiggerRole) {
+        try {
+          const { data: hasRole } = await supabase.rpc('has_app_role', { _user_id: user.id, _role: 'digger' });
+          hasDiggerRole = hasRole === true;
+        } catch {
+          hasDiggerRole = false;
+        }
       }
 
       if (!hasDiggerRole) {
-        let roleError = null;
         const { error: directInsertError } = await supabase
           .from('user_app_roles')
           .insert({ user_id: user.id, app_role: 'digger', is_active: true });
@@ -310,16 +303,20 @@ export default function RoleDashboard() {
             p_user_id: user.id,
             p_app_role: 'digger',
           });
-          if (rpcError) roleError = rpcError;
+          if (rpcError) {
+            toast({ title: "Error", description: "Failed to add Digger role.", variant: "destructive" });
+            return;
+          }
         } else if (directInsertError) {
-          roleError = directInsertError;
-        }
-        if (roleError) {
           toast({ title: "Error", description: "Failed to add Digger role.", variant: "destructive" });
           return;
         }
+        await refreshRoles();
       }
 
+      await switchRole('digger');
+
+      // 2. Redirect to complete your profile: first profile (title + location) or create additional
       const { data: existingProfiles } = await supabase
         .from('digger_profiles')
         .select('id')
@@ -327,25 +324,10 @@ export default function RoleDashboard() {
         .limit(1);
 
       if (!existingProfiles || existingProfiles.length === 0) {
-        const { error: createError } = await supabase
-          .from('digger_profiles')
-          .insert({
-            user_id: user.id,
-            business_name: '',
-            location: 'Not specified',
-            phone: (user as any).phone || 'Not specified',
-            is_primary: true,
-          });
-        if (createError) {
-          toast({ title: "Error", description: "Failed to create profile.", variant: "destructive" });
-          return;
-        }
+        navigate('/create-first-profile');
+      } else {
+        goToCreateProfile(navigate);
       }
-
-      await refreshRoles();
-      await switchRole('digger');
-      toast({ title: "Success", description: "Digger role added! Complete your profile." });
-      goToCreateProfile(navigate);
     } catch (err) {
       console.error(err);
       toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
@@ -459,7 +441,6 @@ export default function RoleDashboard() {
     );
   }
   
-  const showRoleCheckMessage = isCheckingRoles && userRoles.length === 0;
   const hasRoles = userRoles.length > 0;
   const isEmailVerified = Boolean(user?.email_confirmed_at);
   const diggerProfilesCount = stats.digger?.profilesCount ?? 0;
@@ -483,7 +464,7 @@ export default function RoleDashboard() {
         ctaLabel: "Create Digger Profile",
         onClick: () => {
           void handleSwitchRole("digger");
-          goToCreateProfile(navigate);
+          navigate("/create-first-profile");
         },
       };
     }
@@ -551,43 +532,6 @@ export default function RoleDashboard() {
             )}
           </div>
         </header>
-
-        {/* No Roles Message */}
-        {user && userRoles.length === 0 && !isCheckingRoles && (
-          <Card className="border-info/30 bg-info/5 animate-fade-in-up stagger-1">
-            <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6">
-              <div className="p-3 rounded-full bg-info/10">
-                <AlertCircle className="h-6 w-6 text-info" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground mb-1">Get started with your first role</h3>
-                <p className="text-sm text-muted-foreground">
-                  Choose a role below to unlock the full platform experience. You can have both roles at the same time!
-                </p>
-              </div>
-              <Button 
-                variant="outline"
-                onClick={() => navigate('/register?complete=true')}
-                className="shrink-0"
-              >
-                Complete Setup
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-        
-        {/* Loading Roles Message */}
-        {showRoleCheckMessage && (
-          <Card className="border-warning/30 bg-warning/5 animate-fade-in">
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-warning border-t-transparent"></div>
-              <p className="text-sm text-warning-foreground">
-                Loading your roles... Please wait.
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Next Best Action */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-background to-accent/5 animate-fade-in-up stagger-1">
@@ -691,7 +635,11 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('digger');
-                          goToProfileWorkspace(navigate);
+                          if (diggerProfilesCount === 0) {
+                            navigate('/create-first-profile');
+                          } else {
+                            goToProfileWorkspace(navigate);
+                          }
                         }}
                       >
                         My Profiles
@@ -701,7 +649,11 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('digger');
-                          goToCreateProfile(navigate);
+                          if (diggerProfilesCount === 0) {
+                            navigate('/create-first-profile');
+                          } else {
+                            goToCreateProfile(navigate);
+                          }
                         }}
                       >
                         <Plus className="h-4 w-4 mr-1" />
@@ -950,7 +902,7 @@ export default function RoleDashboard() {
           </DialogHeader>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             {userRoles.includes('digger') ? (
-              <Button onClick={() => { setShowWelcomeModal(false); goToCreateProfile(navigate); }} className="w-full sm:w-auto">
+              <Button onClick={() => { setShowWelcomeModal(false); diggerProfilesCount === 0 ? navigate('/create-first-profile') : goToCreateProfile(navigate); }} className="w-full sm:w-auto">
                 Complete My Profile
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
