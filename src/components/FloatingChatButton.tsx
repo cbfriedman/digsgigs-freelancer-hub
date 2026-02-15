@@ -28,7 +28,7 @@ export function FloatingChatButton() {
           bg-primary hover:bg-primary/90 text-primary-foreground
           shadow-md hover:shadow-xl border-0
           font-medium text-sm
-          transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+          transition-all duration-300 ease-smooth-out
           hover:translate-x-2 hover:scale-[1.03]`}
         aria-label="Open AI assistant"
       >
@@ -36,7 +36,7 @@ export function FloatingChatButton() {
         <span
           className="hidden sm:inline-block overflow-hidden whitespace-nowrap max-w-0 opacity-0 -translate-x-1 ml-0
           group-hover:max-w-[72px] group-hover:opacity-100 group-hover:translate-x-0 group-hover:ml-2
-          transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          transition-all duration-300 ease-smooth-out"
         >
           Ask AI
         </span>

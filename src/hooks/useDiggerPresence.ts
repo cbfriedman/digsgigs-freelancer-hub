@@ -154,6 +154,7 @@ export const useTrackDiggerPresence = () => {
           .from("digger_profiles")
           .select("id")
           .eq("user_id", user.id)
+          .order("is_primary", { ascending: false })
           .limit(1)
           .maybeSingle();
 

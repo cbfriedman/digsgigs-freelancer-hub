@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Camera, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -23,7 +23,7 @@ import { ProfileClickPricingCard } from "@/components/ProfileClickPricingCard";
 import { useProfileCallTracking } from "@/hooks/useProfileCallTracking";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BioGenerator } from "@/components/BioGenerator";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -31,8 +31,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProfileHeader, ProfileAbout, QuickContactCard, ReferencesSection } from "@/components/digger-profile";
 import { getCanonicalDiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
 import { DiggerInlineProfileEditor } from "@/components/DiggerInlineProfileEditor";
-import { ALL_COUNTRY_OPTIONS, getFlagForCountryName } from "@/config/regionOptions";
+import { ALL_COUNTRY_OPTIONS, REGION_OPTIONS, getFlagForCountryName, getCodeForCountryName } from "@/config/regionOptions";
 import { useProfessions } from "@/hooks/useProfessions";
+import { SEO_CITIES } from "@/config/seoCities";
+import { getRegionsForCountry } from "@/config/locationData";
 
 interface Reference {
   id: string;
@@ -114,14 +116,20 @@ interface Digger {
 
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
+/** Format real name as "Hongqiang C." (first name + last initial) */
+const formatRealName = (fullName: string | null | undefined): string => {
+  if (!fullName?.trim()) return "";
+  const names = fullName.trim().split(/\s+/);
+  const first = names[0];
+  const lastInitial = names.length > 1 ? names[names.length - 1].charAt(0) + "." : "";
+  return `${first} ${lastInitial}`.trim();
+};
+
 /** Format: "Hongqiang C. @jackson325" or just "@jackson325" if no real name */
 const formatDisplayName = (fullName: string | null | undefined, handle: string | null | undefined): string => {
   const parts: string[] = [];
   if (fullName && fullName.trim()) {
-    const names = fullName.trim().split(/\s+/);
-    const first = names[0];
-    const lastInitial = names.length > 1 ? names[names.length - 1].charAt(0) + '.' : '';
-    parts.push(`${first} ${lastInitial}`.trim());
+    parts.push(formatRealName(fullName));
   }
   if (handle && handle.trim()) {
     parts.push(`@${handle.replace(/^@/, '')}`);
@@ -136,6 +144,50 @@ const getDiggerProfileUrl = (d: { id: string; handle?: string | null }) =>
 const formatCurrency = (value: number | null | undefined): string => {
   if (value == null || Number.isNaN(value)) return "$0";
   return `$${Math.round(value).toLocaleString()}`;
+};
+
+/** Compact earnings display: $1k, $1.2k for values >= 1000 */
+const formatEarningsCompact = (value: number | null | undefined): string => {
+  if (value == null || Number.isNaN(value)) return "$0";
+  if (value >= 1000) {
+    const k = value / 1000;
+    return k >= 10 ? `$${Math.round(k)}k` : k % 1 === 0 ? `$${k}k` : `$${k.toFixed(1)}k`;
+  }
+  return `$${Math.round(value)}`;
+};
+
+/** Get local time for country (optional, for header display) */
+const getLocalTimeForCountry = (countryName: string | null | undefined): string | null => {
+  const key = countryName?.trim();
+  if (!key) return null;
+  const countryToTz: Record<string, string> = {
+    "United States": "America/New_York", US: "America/New_York",
+    "Canada": "America/Toronto", CA: "America/Toronto",
+    "United Kingdom": "Europe/London", UK: "Europe/London", GB: "Europe/London",
+    "Australia": "Australia/Sydney", AU: "Australia/Sydney",
+    "Germany": "Europe/Berlin", DE: "Europe/Berlin",
+    "France": "Europe/Paris", FR: "Europe/Paris",
+    "Spain": "Europe/Madrid", ES: "Europe/Madrid",
+    "Italy": "Europe/Rome", IT: "Europe/Rome",
+    "Netherlands": "Europe/Amsterdam", NL: "Europe/Amsterdam",
+    "India": "Asia/Kolkata", IN: "Asia/Kolkata",
+    "Japan": "Asia/Tokyo", JP: "Asia/Tokyo",
+    "Brazil": "America/Sao_Paulo", BR: "America/Sao_Paulo",
+    "Mexico": "America/Mexico_City", MX: "America/Mexico_City",
+    "Philippines": "Asia/Manila", PH: "Asia/Manila",
+    "Poland": "Europe/Warsaw", PL: "Europe/Warsaw",
+    "Portugal": "Europe/Lisbon", PT: "Europe/Lisbon",
+    "Ireland": "Europe/Dublin", IE: "Europe/Dublin",
+    "Sweden": "Europe/Stockholm", SE: "Europe/Stockholm",
+    "New Zealand": "Pacific/Auckland", NZ: "Pacific/Auckland",
+  };
+  const tz = countryToTz[key] ?? Object.entries(countryToTz).find(([k]) => k.toLowerCase() === key.toLowerCase())?.[1];
+  if (!tz) return null;
+  try {
+    return new Date().toLocaleTimeString("en-US", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: true });
+  } catch {
+    return null;
+  }
 };
 
 const formatJoinDate = (createdAt: string | null | undefined): string => {
@@ -167,13 +219,18 @@ const DiggerDetail = () => {
   const { trackEvent: trackFBEvent, isConfigured: fbConfigured } = useFacebookPixel();
   
   // People also viewed (related diggers)
-  const [relatedDiggers, setRelatedDiggers] = useState<{ id: string; handle: string | null; business_name: string; profession: string | null; profile_image_url: string | null; custom_occupation_title: string | null }[]>([]);
+  const [relatedDiggers, setRelatedDiggers] = useState<{ id: string; user_id: string; handle: string | null; business_name: string; profile_name: string | null; profession: string | null; profile_image_url: string | null; custom_occupation_title: string | null; profiles?: { full_name: string | null } | null; digger_categories?: { categories?: { name: string } }[] }[]>([]);
   const [profilePhotoDialogOpen, setProfilePhotoDialogOpen] = useState(false);
   const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
   const profilePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const [coverPhotoDialogOpen, setCoverPhotoDialogOpen] = useState(false);
   const [coverPhotoUploading, setCoverPhotoUploading] = useState(false);
   const coverPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const [profileHeaderEditOpen, setProfileHeaderEditOpen] = useState(false);
+  const [profileNameDraft, setProfileNameDraft] = useState("");
+  const [profileTitleDraft, setProfileTitleDraft] = useState("");
+  const [hourlyRateMinDraft, setHourlyRateMinDraft] = useState("");
+  const [hourlyRateMaxDraft, setHourlyRateMaxDraft] = useState("");
   const hasHandledManageQueryRef = useRef(false);
   const [profileManagerOpen, setProfileManagerOpen] = useState(false);
   const [editorModal, setEditorModal] = useState<{
@@ -188,18 +245,25 @@ const DiggerDetail = () => {
   const [ownerProfiles, setOwnerProfiles] = useState<
     { id: string; handle: string | null; profile_name: string | null; business_name: string; is_primary: boolean }[]
   >([]);
-  const { professions } = useProfessions();
+  const { professions, categoriesWithProfessions } = useProfessions();
   const [sectionEditor, setSectionEditor] = useState<{
     open: boolean;
-    section: "about" | "skills" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews" | null;
+    section: "about" | "skills" | "profession" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews" | null;
   }>({ open: false, section: null });
   const [aboutDraft, setAboutDraft] = useState("");
   const [availabilityDraft, setAvailabilityDraft] = useState<string>("");
   const [locationDraft, setLocationDraft] = useState("");
+  const [locationStateDraft, setLocationStateDraft] = useState("");
+  const [locationCityDraft, setLocationCityDraft] = useState("");
   const [serviceLocationDraft, setServiceLocationDraft] = useState<string[]>([]);
+  const [locationSearchDraft, setLocationSearchDraft] = useState("");
+  const [locationStateSearchDraft, setLocationStateSearchDraft] = useState("");
+  const [serviceLocationSearchDraft, setServiceLocationSearchDraft] = useState("");
   const [websiteDraft, setWebsiteDraft] = useState("");
   const [salaryDraft, setSalaryDraft] = useState<string>("");
   const [socialLinksDraft, setSocialLinksDraft] = useState<Record<string, string>>({});
+  const [selectedProfessionsDraft, setSelectedProfessionsDraft] = useState<string[]>([]);
+  const [additionalProfessionDraft, setAdditionalProfessionDraft] = useState("");
   const [selectedSkillsDraft, setSelectedSkillsDraft] = useState<string[]>([]);
   const [workPhotosDraft, setWorkPhotosDraft] = useState("");
   const [portfolioDraft, setPortfolioDraft] = useState("");
@@ -246,21 +310,27 @@ const DiggerDetail = () => {
     navigate(`${window.location.pathname}${query ? `?${query}` : ""}`, { replace: true });
   }, [digger?.id, isOwnProfile, navigate, searchParams]);
 
-  // Fetch related diggers for "People also viewed" when viewing another's profile
+  // Fetch related diggers for "People also viewed" (one profile per user)
   useEffect(() => {
-    if (!slug || !digger || isOwnProfile) return;
+    if (!slug || !digger) return;
     const loadRelated = async () => {
-      const profession = digger.profession || '';
-      const categoryIds = (digger.digger_categories || []).map((dc: { categories?: { name: string } }) => dc.categories?.name).filter(Boolean);
       const { data } = await supabase
         .from("digger_profiles")
-        .select("id, handle, business_name, profession, profile_image_url, custom_occupation_title")
+        .select("id, user_id, handle, business_name, profile_name, profession, profile_image_url, custom_occupation_title, profiles:profiles!digger_profiles_user_id_fkey(full_name), digger_categories(categories(name))")
         .neq("id", digger.id)
-        .limit(8);
-      if (data?.length) setRelatedDiggers(data);
+        .limit(24);
+      if (!data?.length) return;
+      const seen = new Set<string>();
+      const unique = data.filter((d: { user_id: string }) => {
+        if (d.user_id === digger.user_id) return false;
+        if (seen.has(d.user_id)) return false;
+        seen.add(d.user_id);
+        return true;
+      });
+      setRelatedDiggers(unique.slice(0, 8));
     };
     loadRelated();
-  }, [slug, digger, isOwnProfile]);
+  }, [slug, digger]);
 
   const loadData = async () => {
     if (!slug) return;
@@ -268,31 +338,7 @@ const DiggerDetail = () => {
     const { data: { session } } = await supabase.auth.getSession();
     setCurrentUser(session?.user || null);
 
-    // Check if user is a digger trying to view another digger's profile
-    if (session?.user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("user_type")
-        .eq("id", session.user.id)
-        .single();
-      
-      // If user is a digger, check if they're viewing their own profile
-      if (profile?.user_type === "digger") {
-        const fetchBySlug = isUuid(slug)
-          ? supabase.from("digger_profiles").select("user_id").eq("id", slug)
-          : supabase.from("digger_profiles").select("user_id").eq("handle", slug.toLowerCase());
-        const { data: diggerProfile } = await fetchBySlug.maybeSingle();
-        
-        // Block if digger is trying to view another digger's profile
-        if (diggerProfile && diggerProfile.user_id !== session.user.id) {
-          toast.error("Diggers cannot view other Diggers' profiles. The marketplace is currently closed and curated.");
-          navigate("/");
-          return;
-        }
-      }
-    }
-
-    // Fetch digger by UUID or username (handle)
+    // Fetch digger by UUID or username (handle) — anyone with the profile link can view
     const fetchQuery = isUuid(slug)
       ? supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url), digger_categories (categories (name, description))`).eq("id", slug)
       : supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url), digger_categories (categories (name, description))`).eq("handle", slug.toLowerCase());
@@ -414,6 +460,51 @@ const DiggerDetail = () => {
     });
   };
 
+  const openProfileHeaderEditModal = () => {
+    if (!digger) return;
+    setProfileNameDraft(digger.profile_name || "Main Profile");
+    setProfileTitleDraft(digger.custom_occupation_title || digger.digger_categories?.[0]?.categories?.name || digger.profession || "");
+    setHourlyRateMinDraft(digger.hourly_rate_min != null ? String(digger.hourly_rate_min) : digger.hourly_rate != null ? String(digger.hourly_rate) : "");
+    setHourlyRateMaxDraft(digger.hourly_rate_max != null ? String(digger.hourly_rate_max) : "");
+    setProfileHeaderEditOpen(true);
+  };
+
+  const saveProfileHeaderEdit = async () => {
+    if (!digger) return;
+    try {
+      const minVal = hourlyRateMinDraft.trim() ? parseFloat(hourlyRateMinDraft) : null;
+      const maxVal = hourlyRateMaxDraft.trim() ? parseFloat(hourlyRateMaxDraft) : null;
+      const hourlyMin = minVal != null && !isNaN(minVal) ? minVal : null;
+      const hourlyMax = maxVal != null && !isNaN(maxVal) ? maxVal : null;
+      const hourlyRate = hourlyMin ?? hourlyMax;
+      const updates: Record<string, unknown> = {
+        custom_occupation_title: profileTitleDraft.trim() || null,
+        profile_name: profileNameDraft.trim() || null,
+        hourly_rate_min: hourlyMin,
+        hourly_rate_max: hourlyMax,
+        hourly_rate: hourlyRate,
+      };
+      const { error } = await supabase.from("digger_profiles").update(updates).eq("id", digger.id);
+      if (error) throw error;
+      setDigger((d) =>
+        d
+          ? {
+              ...d,
+              custom_occupation_title: profileTitleDraft.trim() || null,
+              profile_name: profileNameDraft.trim() || null,
+              hourly_rate_min: hourlyMin,
+              hourly_rate_max: hourlyMax,
+              hourly_rate: hourlyRate,
+            }
+          : null
+      );
+      setProfileHeaderEditOpen(false);
+      toast.success("Profile updated");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update profile");
+    }
+  };
+
   const openCreateModal = () => {
     setEditorModal({
       open: true,
@@ -422,15 +513,37 @@ const DiggerDetail = () => {
     });
   };
 
-  const openSectionModal = (section: "about" | "skills" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews") => {
+  const openSectionModal = (section: "about" | "skills" | "profession" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews") => {
     if (!digger) return;
     if (section === "about") setAboutDraft(digger.bio || "");
     if (section === "availability") setAvailabilityDraft(digger.availability || "");
-    if (section === "location") setLocationDraft(digger.country || "");
-    if (section === "service_location") setServiceLocationDraft((digger.service_countries?.length ?? 0) > 0 ? digger.service_countries! : (digger.country ? [digger.country] : []));
+    if (section === "location") {
+      setLocationDraft(digger.country || "");
+      setLocationStateDraft((digger.state || "").split(",")[0]?.trim() || "");
+      setLocationCityDraft(digger.city || "");
+      setLocationSearchDraft("");
+      setLocationStateSearchDraft("");
+    }
+    if (section === "service_location") {
+      setServiceLocationDraft((digger.service_countries?.length ?? 0) > 0 ? digger.service_countries! : (digger.country ? [digger.country] : []));
+      setServiceLocationSearchDraft("");
+    }
     if (section === "website") setWebsiteDraft(digger.website_url || "");
     if (section === "salary") setSalaryDraft(digger.monthly_salary != null ? String(digger.monthly_salary) : digger.hourly_rate != null ? String(digger.hourly_rate) : "");
     if (section === "social") setSocialLinksDraft((digger.social_links || {}) as Record<string, string>);
+    if (section === "profession") {
+      const fromText = (digger.profession || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const fromLegacy = (digger.digger_categories || [])
+        .map((dc) => dc.categories?.name || "")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const normalized = Array.from(new Set([...(fromText.length ? fromText : fromLegacy)]));
+      setSelectedProfessionsDraft(normalized);
+      setAdditionalProfessionDraft("");
+    }
     if (section === "skills") {
       setSelectedSkillsDraft(removeBlockedSkills(digger.skills || digger.keywords || []));
     }
@@ -455,6 +568,89 @@ const DiggerDetail = () => {
     if (professionNameSet.size === 0) return deduped;
     // Keep only real database skills when taxonomy is available.
     return deduped.filter((skill) => professionNameSet.has(skill));
+  };
+
+  const dbProfessionGroups = useMemo(
+    () =>
+      (categoriesWithProfessions || [])
+        .map((group) => ({
+          category: group.name,
+          items: (group.professions || []).map((p) => p.name).filter(Boolean),
+        }))
+        .filter((group) => group.items.length > 0),
+    [categoriesWithProfessions]
+  );
+
+  const dbProfessionNameSet = useMemo(
+    () => new Set(dbProfessionGroups.flatMap((group) => group.items)),
+    [dbProfessionGroups]
+  );
+
+  const filteredLocationOptions = useMemo(() => {
+    const q = locationSearchDraft.trim().toLowerCase();
+    if (!q) return ALL_COUNTRY_OPTIONS;
+    return ALL_COUNTRY_OPTIONS.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+    );
+  }, [locationSearchDraft]);
+
+  const locationStateOptions = useMemo(
+    () => (locationDraft ? getRegionsForCountry(locationDraft) : []),
+    [locationDraft]
+  );
+
+  const filteredLocationStateOptions = useMemo(() => {
+    const q = locationStateSearchDraft.trim().toLowerCase();
+    if (!q) return locationStateOptions;
+    return locationStateOptions.filter((s) => s.toLowerCase().includes(q));
+  }, [locationStateOptions, locationStateSearchDraft]);
+
+  const filteredCitySuggestions = useMemo(() => {
+    if (locationDraft !== "United States" || !locationStateDraft) return [];
+    const q = locationCityDraft.trim().toLowerCase();
+    const usStateNameToCode: Record<string, string> = {
+      Alabama: "AL", Alaska: "AK", Arizona: "AZ", Arkansas: "AR", California: "CA", Colorado: "CO", Connecticut: "CT", Delaware: "DE",
+      Florida: "FL", Georgia: "GA", Hawaii: "HI", Idaho: "ID", Illinois: "IL", Indiana: "IN", Iowa: "IA", Kansas: "KS", Kentucky: "KY",
+      Louisiana: "LA", Maine: "ME", Maryland: "MD", Massachusetts: "MA", Michigan: "MI", Minnesota: "MN", Mississippi: "MS", Missouri: "MO",
+      Montana: "MT", Nebraska: "NE", Nevada: "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY",
+      "North Carolina": "NC", "North Dakota": "ND", Ohio: "OH", Oklahoma: "OK", Oregon: "OR", Pennsylvania: "PA", "Rhode Island": "RI",
+      "South Carolina": "SC", "South Dakota": "SD", Tennessee: "TN", Texas: "TX", Utah: "UT", Vermont: "VT", Virginia: "VA",
+      Washington: "WA", "West Virginia": "WV", Wisconsin: "WI", Wyoming: "WY", "Washington D.C.": "DC",
+    };
+    const targetCode = usStateNameToCode[locationStateDraft] || locationStateDraft;
+    const cities = SEO_CITIES.filter((c) => c.state === targetCode).map((c) => c.city);
+    const unique = Array.from(new Set(cities));
+    if (!q) return unique.slice(0, 20);
+    return unique.filter((city) => city.toLowerCase().includes(q)).slice(0, 20);
+  }, [locationDraft, locationStateDraft, locationCityDraft]);
+
+  const filteredServiceLocationGroups = useMemo(() => {
+    const q = serviceLocationSearchDraft.trim().toLowerCase();
+    return REGION_OPTIONS.map((region) => ({
+      ...region,
+      countries: region.countries.filter((c) =>
+        !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+      ),
+    })).filter((region) => region.countries.length > 0);
+  }, [serviceLocationSearchDraft]);
+
+  const getDisplayedProfessions = (): string[] => {
+    const fromText = (digger?.profession || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const dedupedText = Array.from(new Set(fromText));
+    if (dedupedText.length > 0) return dedupedText;
+    const fromLegacy = (digger?.digger_categories || [])
+      .map((dc) => dc.categories?.name || "")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return Array.from(new Set(fromLegacy));
+  };
+
+  const getBaseLocationDisplay = (): string => {
+    const combined = [digger?.city, digger?.state, digger?.country].filter(Boolean).join(", ");
+    return combined || getServiceLocationDisplay() || "";
   };
 
   const socialPlatforms: { key: string; label: string; placeholder: string }[] = [
@@ -493,6 +689,39 @@ const DiggerDetail = () => {
           .from("digger_profiles")
           .update({ skills: nextSkills.length ? nextSkills : null, keywords: nextSkills.length ? nextSkills : null })
           .eq("id", digger.id);
+      } else if (sectionEditor.section === "profession") {
+        const nextProfessions = Array.from(
+          new Set(
+            selectedProfessionsDraft
+              .map((s) => s.trim())
+              .filter(Boolean)
+          )
+        );
+        await supabase
+          .from("digger_profiles")
+          .update({ profession: nextProfessions.length ? nextProfessions.join(", ") : null })
+          .eq("id", digger.id);
+
+        // Keep structured profession assignments in sync for DB-driven experiences.
+        const selectedDbNames = nextProfessions.filter((name) => dbProfessionNameSet.has(name));
+        const { data: selectedProfessionRows } = await supabase
+          .from("professions")
+          .select("id, name")
+          .in("name", selectedDbNames);
+
+        await supabase
+          .from("digger_profession_assignments")
+          .delete()
+          .eq("digger_profile_id", digger.id);
+
+        if ((selectedProfessionRows || []).length > 0) {
+          const rows = (selectedProfessionRows || []).map((row, index) => ({
+            digger_profile_id: digger.id,
+            profession_id: row.id,
+            is_primary: index === 0,
+          }));
+          await supabase.from("digger_profession_assignments").insert(rows);
+        }
       } else if (sectionEditor.section === "work") {
         const nextPhotos = parseLineList(workPhotosDraft);
         await supabase.from("digger_profiles").update({ work_photos: nextPhotos.length ? nextPhotos : null }).eq("id", digger.id);
@@ -502,7 +731,16 @@ const DiggerDetail = () => {
         const val = availabilityDraft.trim() || null;
         await supabase.from("digger_profiles").update({ availability: val }).eq("id", digger.id);
       } else if (sectionEditor.section === "location") {
-        await supabase.from("digger_profiles").update({ country: locationDraft.trim() || null }).eq("id", digger.id);
+        if (locationStateOptions.length > 0 && locationStateDraft && !locationStateOptions.includes(locationStateDraft)) {
+          toast.error("Please select a valid state/region from the list.");
+          setIsSectionSaving(false);
+          return;
+        }
+        const cityVal = locationCityDraft.trim() || null;
+        const stateVal = locationStateDraft.trim() || null;
+        const countryVal = locationDraft.trim() || null;
+        const locationText = [cityVal, stateVal, countryVal].filter(Boolean).join(", ") || "Not specified";
+        await supabase.from("digger_profiles").update({ country: countryVal, city: cityVal, state: stateVal, location: locationText }).eq("id", digger.id);
       } else if (sectionEditor.section === "service_location") {
         await supabase.from("digger_profiles").update({ service_countries: serviceLocationDraft.length ? serviceLocationDraft : null }).eq("id", digger.id);
       } else if (sectionEditor.section === "website") {
@@ -515,7 +753,7 @@ const DiggerDetail = () => {
         await supabase.from("digger_profiles").update({ social_links: Object.keys(nextLinks).length ? nextLinks : null }).eq("id", digger.id);
       }
 
-      if (["about", "skills", "work", "portfolio", "availability", "location", "service_location", "website", "salary", "social"].includes(sectionEditor.section)) {
+      if (["about", "skills", "profession", "work", "portfolio", "availability", "location", "service_location", "website", "salary", "social"].includes(sectionEditor.section)) {
         toast.success("Section updated");
         await loadData();
       }
@@ -1019,12 +1257,82 @@ const DiggerDetail = () => {
     { label: "Payment", isActive: !!(digger.stripe_connect_onboarded || digger.stripe_connect_charges_enabled), icon: CreditCard },
   ];
 
-  // Effective avatar: profile photo first, then profiles.avatar_url, then auth metadata for own profile
+  // Effective avatar: profile photo first, then profiles.avatar_url, then auth metadata for own profile; fallback to default image
+  const DEFAULT_AVATAR = "/default-avatar.svg";
   const effectiveAvatarUrl = digger.profile_image_url
     || digger.profiles?.avatar_url
     || (isOwnProfile ? (currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture) : null)
-    || undefined;
-  const profileTitle = `${digger.profile_name || "Main Profile"}${digger.handle ? `@${String(digger.handle).replace(/^@/, "")}` : ""}`;
+    || DEFAULT_AVATAR;
+  const displayName = formatRealName(digger.profiles?.full_name) || digger.profile_name || "Main Profile";
+  const handleDisplay = digger.handle ? `@${String(digger.handle).replace(/^@/, "")}` : "";
+  /** Professional title only (custom_occupation_title, categories, profession) - not profile_name */
+  const profileTitleSub =
+    digger.custom_occupation_title ||
+    digger.digger_categories?.[0]?.categories?.name ||
+    digger.profession ||
+    "Professional";
+  const locationCountry = getServiceLocationCountry() || digger.country || "";
+  const localTimeStr = getLocalTimeForCountry(locationCountry);
+  /** Get country code for location (e.g. "ES", "MX") - for flag image and display */
+  const getLocationCountryCode = (): string => {
+    const c = locationCountry || (getBaseLocationDisplay().split(",").map((p) => p.trim()).filter(Boolean).pop() ?? "") || "";
+    const code = getCodeForCountryName(c);
+    if (code) return code;
+    const firstWord = getBaseLocationDisplay().trim().split(/\s+/)[0] || "";
+    if (firstWord && (firstWord.length === 2 || firstWord.length === 3)) {
+      const fromFirst = getCodeForCountryName(firstWord);
+      if (fromFirst) return fromFirst;
+    }
+    return "";
+  };
+
+  /** Job success: completion_rate (0–100). Uncompletion = 100 - completion_rate. Color by tier. */
+  const getJobSuccessColor = (rate: number) => {
+    if (rate >= 90) return "bg-emerald-500";
+    if (rate >= 70) return "bg-amber-500";
+    return "bg-rose-500";
+  };
+  const completionRate = digger.completion_rate != null ? Math.min(100, Math.max(0, Number(digger.completion_rate))) : null;
+  const JobSuccessDisplay = () => (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5">
+        <CheckCircle2 className={`h-5 w-5 shrink-0 ${completionRate == null ? "text-muted-foreground" : completionRate >= 90 ? "text-emerald-600" : completionRate >= 70 ? "text-amber-600" : "text-rose-600"}`} />
+        <span className="font-semibold text-foreground tabular-nums">
+          {completionRate != null ? `${completionRate}%` : "—"}
+        </span>
+      </div>
+      {completionRate != null ? (
+        <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden" title={`${completionRate}% jobs completed`}>
+          <div
+            className={`h-full rounded-full transition-all ${getJobSuccessColor(completionRate)}`}
+            style={{ width: `${completionRate}%` }}
+          />
+        </div>
+      ) : (
+        <p className="text-[10px] text-muted-foreground">No data yet</p>
+      )}
+    </div>
+  );
+
+  /** 5-star display: blank outline stars for new freelancers, filled for rated */
+  const StarRatingDisplay = () => {
+    const rating = digger.average_rating ?? 0;
+    const total = digger.total_ratings ?? 0;
+    const isNew = total === 0;
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Star
+            key={i}
+            className={`h-5 w-5 shrink-0 ${isNew ? "text-muted-foreground/50" : i <= Math.floor(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"}`}
+          />
+        ))}
+        <span className="ml-1.5 font-semibold text-foreground tabular-nums">
+          {isNew ? "New" : rating.toFixed(1)}
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -1094,6 +1402,98 @@ const DiggerDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <Dialog open={profileHeaderEditOpen} onOpenChange={setProfileHeaderEditOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit profile</DialogTitle>
+            <DialogDescription>Update your profile name, title, hourly rate, photo, and cover.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-6 py-2">
+            <div className="space-y-2">
+              <label htmlFor="profile-name-edit" className="text-sm font-medium">Profile name</label>
+              <Input
+                id="profile-name-edit"
+                value={profileNameDraft}
+                onChange={(e) => setProfileNameDraft(e.target.value)}
+                placeholder="e.g. Main Profile"
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="profile-title-edit" className="text-sm font-medium">Profile title</label>
+              <Input
+                id="profile-title-edit"
+                value={profileTitleDraft}
+                onChange={(e) => setProfileTitleDraft(e.target.value)}
+                placeholder="e.g. Senior Full Stack Engineer"
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Hourly rate ($/hr)</label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={hourlyRateMinDraft}
+                  onChange={(e) => setHourlyRateMinDraft(e.target.value)}
+                  placeholder="Min"
+                  className="w-full"
+                />
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={hourlyRateMaxDraft}
+                  onChange={(e) => setHourlyRateMaxDraft(e.target.value)}
+                  placeholder="Max (optional)"
+                  className="w-full"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Leave empty for &quot;Contact for pricing&quot;</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Profile photo</label>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={effectiveAvatarUrl} />
+                  <AvatarFallback className="bg-primary/20 text-primary text-xl">
+                    {getInitials(digger.handle || digger.business_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col gap-1">
+                  <Button variant="outline" size="sm" onClick={handleProfilePhotoReplace} disabled={profilePhotoUploading}>
+                    <Upload className="h-4 w-4 mr-1.5" />
+                    {profilePhotoUploading ? "Uploading…" : "Change photo"}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleProfilePhotoRemove}>
+                    <Trash2 className="h-4 w-4 mr-1.5" />
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cover photo</label>
+              <div className="flex flex-col gap-2">
+                <Button variant="outline" size="sm" onClick={handleCoverPhotoReplace} disabled={coverPhotoUploading}>
+                  <ImagePlus className="h-4 w-4 mr-1.5" />
+                  {coverPhotoUploading ? "Uploading…" : "Change cover"}
+                </Button>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive justify-start" onClick={handleCoverPhotoRemove}>
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  Remove cover
+                </Button>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setProfileHeaderEditOpen(false)}>Cancel</Button>
+              <Button onClick={saveProfileHeaderEdit}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <SEOHead
         title={`${digger.business_name} - ${displayProfession} in ${digger.location}`}
         description={`${digger.bio || `Professional ${displayProfession} services in ${digger.location}`}. ${digger.average_rating ? `Rated ${digger.average_rating}/5 stars` : 'Available for hire'}. ${digger.hourly_rate ? `Starting at $${digger.hourly_rate}/hour` : 'Contact for pricing'}.`}
@@ -1157,33 +1557,56 @@ const DiggerDetail = () => {
                     </div>
                   </div>
                   <CardContent className="pt-12 sm:pt-14 pb-6 px-4 sm:px-6 bg-muted/20">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{profileTitle}</h1>
-                        <p className="mt-1 text-sm sm:text-base font-medium text-muted-foreground">
-                          {displayProfession || digger.custom_occupation_title || "Professional"}
-                          {(digger.handle || digger.business_name) ? (
-                            <span className="ml-2">@{String(digger.handle || digger.business_name).replace(/^@/, "")}</span>
-                          ) : null}
-                        </p>
-                        {digger.tagline && <p className="mt-2 text-sm sm:text-base text-foreground/90">{digger.tagline}</p>}
-                        {(getServiceLocationDisplay() || digger.created_at) && (
-                          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
-                            {getServiceLocationDisplay() && (
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-base">{getCountryFlag(getServiceLocationCountry() || "")}</span>
-                                {getServiceLocationDisplay()}
-                              </span>
-                            )}
-                            {digger.created_at && (
-                              <span>Joined on {formatJoinDate(digger.created_at)}</span>
-                            )}
-                          </div>
-                        )}
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-baseline gap-2">
+                          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{displayName}</h1>
+                          {handleDisplay && (
+                            <span className="text-lg sm:text-xl font-semibold text-primary">{handleDisplay}</span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-4">
+                          <p className="text-base sm:text-lg font-medium text-foreground/90 min-w-0">{profileTitleSub}</p>
+                          <span className="text-base font-semibold text-muted-foreground shrink-0">
+                            {formatHourlyRate() || "Contact for pricing"}
+                          </span>
+                        </div>
+                        {digger.tagline && <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">{digger.tagline}</p>}
+                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                          {getBaseLocationDisplay() && (
+                            <span className="flex items-center gap-2">
+                              {getLocationCountryCode() ? (
+                                <>
+                                  <img
+                                    src={`https://flagcdn.com/w20/${getLocationCountryCode().toLowerCase()}.png`}
+                                    alt=""
+                                    className="h-4 w-5 object-cover rounded-sm shrink-0"
+                                    width={20}
+                                    height={15}
+                                  />
+                                  <span className="uppercase font-medium text-foreground text-sm">{getLocationCountryCode()}</span>
+                                </>
+                              ) : null}
+                              <span>{getBaseLocationDisplay()}</span>
+                            </span>
+                          )}
+                          {localTimeStr && (
+                            <span className="flex items-center gap-1">
+                              <span className="text-muted-foreground/70">•</span>
+                              <span>{localTimeStr} local</span>
+                            </span>
+                          )}
+                          {digger.created_at && (
+                            <span className="flex items-center gap-1">
+                              <span className="text-muted-foreground/70">•</span>
+                              <span>Joined {formatJoinDate(digger.created_at)}</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isOwnProfile && viewAsClient && (
-                          <Button variant="outline" size="sm" onClick={() => openEditModal(digger.id)}>
+                          <Button variant="outline" size="sm" onClick={openProfileHeaderEditModal}>
                             <Pencil className="h-4 w-4 mr-1.5" />
                             Edit
                           </Button>
@@ -1193,37 +1616,34 @@ const DiggerDetail = () => {
                         </Button>
                       </div>
                     </div>
-                    {/* Metrics row */}
-                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-sm">
-                      <div className="flex items-center gap-1.5">
-                        <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-                        <span className="font-semibold">{digger.average_rating?.toFixed(1) || "New"}</span>
+                    <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rating</span>
+                        <StarRatingDisplay />
                       </div>
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <MessageSquare className="h-5 w-5 text-orange-500" />
-                        <span>{digger.total_ratings || 0}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <DollarSign className="h-5 w-5 text-green-600" />
-                        <span>{formatCurrency(totalEarnings)}</span>
-                      </div>
-                      {digger.completion_rate != null && (
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <span className="font-medium">{digger.completion_rate}%</span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reviews</span>
+                        <div className="flex items-center gap-1.5">
+                          <MessageSquare className="h-5 w-5 text-orange-500" />
+                          <span className="font-semibold text-foreground tabular-nums">{digger.total_ratings ?? 0}</span>
                         </div>
-                      )}
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Earnings</span>
+                        <div className="flex items-center gap-1.5">
+                          <DollarSign className="h-5 w-5 text-green-600" />
+                          <span className="font-semibold text-foreground tabular-nums">{formatEarningsCompact(totalEarnings)}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Job Success</span>
+                        <JobSuccessDisplay />
+                      </div>
                     </div>
-                    {/* Professional title + hourly rate */}
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {formatHourlyRate() && (
-                        <span className="text-sm sm:text-base font-semibold text-muted-foreground">
-                          {formatHourlyRate()}
-                        </span>
+                    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      {references.length > 0 && (
+                        <span className="text-sm text-muted-foreground">• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>
                       )}
-                    </div>
-                    {/* Recommendations */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-muted-foreground text-sm">
-                      {references.length > 0 && <span>• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>}
                     </div>
                   </CardContent>
                 </Card>
@@ -1342,41 +1762,61 @@ const DiggerDetail = () => {
                           {getInitials(digger.handle || digger.business_name)}
                         </AvatarFallback>
                       </Avatar>
-                      <Button size="sm" variant="secondary" className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full p-0 shadow-md border-2 border-background" onClick={() => setProfilePhotoDialogOpen(true)} title="Edit profile photo">
-                        <Camera className="h-4 w-4" />
-                      </Button>
                       {/* Online = green, Offline = grey (from useDiggerPresence / Realtime) */}
                       <div className={`absolute top-2 left-2 w-4 h-4 rounded-full border-2 border-background ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online" : "Offline"} />
                     </div>
                   </div>
                 </div>
                 <CardContent className="pt-12 sm:pt-14 pb-6 px-4 sm:px-6 bg-muted/20">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{profileTitle}</h1>
-                      <p className="mt-1 text-sm sm:text-base font-medium text-muted-foreground">
-                        {displayProfession || digger.custom_occupation_title || "Professional"}
-                        {(digger.handle || digger.business_name) ? (
-                          <span className="ml-2">@{String(digger.handle || digger.business_name).replace(/^@/, "")}</span>
-                        ) : null}
-                      </p>
-                      {digger.tagline && <p className="mt-2 text-sm sm:text-base text-foreground/90">{digger.tagline}</p>}
-                      {(getServiceLocationDisplay() || digger.created_at) && (
-                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
-                          {getServiceLocationDisplay() && (
-                            <span className="flex items-center gap-1.5">
-                              <span className="text-base">{getCountryFlag(getServiceLocationCountry() || "")}</span>
-                              {getServiceLocationDisplay()}
-                            </span>
-                          )}
-                          {digger.created_at && (
-                            <span>Joined on {formatJoinDate(digger.created_at)}</span>
-                          )}
-                        </div>
-                      )}
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{displayName}</h1>
+                        {handleDisplay && (
+                          <span className="text-lg sm:text-xl font-semibold text-primary">{handleDisplay}</span>
+                        )}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-4">
+                        <p className="text-base sm:text-lg font-medium text-foreground/90 min-w-0">{profileTitleSub}</p>
+                        <span className="text-base font-semibold text-muted-foreground shrink-0">
+                          {formatHourlyRate() || "Contact for pricing"}
+                        </span>
+                      </div>
+                      {digger.tagline && <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">{digger.tagline}</p>}
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        {getBaseLocationDisplay() && (
+                          <span className="flex items-center gap-2">
+                            {getLocationCountryCode() ? (
+                              <>
+                                <img
+                                  src={`https://flagcdn.com/w20/${getLocationCountryCode().toLowerCase()}.png`}
+                                  alt=""
+                                  className="h-4 w-5 object-cover rounded-sm shrink-0"
+                                  width={20}
+                                  height={15}
+                                />
+                                <span className="uppercase font-medium text-foreground text-sm">{getLocationCountryCode()}</span>
+                              </>
+                            ) : null}
+                            <span>{getBaseLocationDisplay()}</span>
+                          </span>
+                        )}
+                        {localTimeStr && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-muted-foreground/70">•</span>
+                            <span>{localTimeStr} local</span>
+                          </span>
+                        )}
+                        {digger.created_at && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-muted-foreground/70">•</span>
+                            <span>Joined {formatJoinDate(digger.created_at)}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Button variant="outline" size="sm" onClick={() => openEditModal(digger.id)} className="text-muted-foreground">
+                      <Button variant="outline" size="sm" onClick={openProfileHeaderEditModal} className="text-muted-foreground">
                         <Pencil className="h-4 w-4 mr-1.5" />
                         Edit
                       </Button>
@@ -1385,35 +1825,34 @@ const DiggerDetail = () => {
                       </Button>
                     </div>
                   </div>
-                  {/* Metrics row */}
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-sm">
-                    <div className="flex items-center gap-1.5">
-                      <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-                      <span className="font-semibold">{digger.average_rating?.toFixed(1) || "New"}</span>
+                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Rating</span>
+                      <StarRatingDisplay />
                     </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <MessageSquare className="h-5 w-5 text-orange-500" />
-                      <span>{digger.total_ratings || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <DollarSign className="h-5 w-5 text-green-600" />
-                      <span>{formatCurrency(totalEarnings)}</span>
-                    </div>
-                    {digger.completion_rate != null && (
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <span className="font-medium">{digger.completion_rate}%</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reviews</span>
+                      <div className="flex items-center gap-1.5">
+                        <MessageSquare className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-foreground tabular-nums">{digger.total_ratings ?? 0}</span>
                       </div>
-                    )}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Earnings</span>
+                      <div className="flex items-center gap-1.5">
+                        <DollarSign className="h-5 w-5 text-green-600" />
+                        <span className="font-semibold text-foreground tabular-nums">{formatEarningsCompact(totalEarnings)}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Job Success</span>
+                      <JobSuccessDisplay />
+                    </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {formatHourlyRate() && (
-                      <span className="text-sm sm:text-base font-semibold text-muted-foreground">
-                        {formatHourlyRate()}
-                      </span>
+                  <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+                    {references.length > 0 && (
+                      <span className="text-sm text-muted-foreground">• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>
                     )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-muted-foreground text-sm">
-                    {references.length > 0 && <span>• {references.length} Recommendation{references.length !== 1 ? "s" : ""}</span>}
                   </div>
                 </CardContent>
               </section>
@@ -1570,21 +2009,26 @@ const DiggerDetail = () => {
                   </div>
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Location</p>
-                      {isOwnProfile && (digger.country || getServiceLocationDisplay()) && (
+                      <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                        {(digger.country || getServiceLocationCountry()) && (
+                          <span className="text-base">{getFlagForCountryName(digger.country || getServiceLocationCountry() || "") || getCountryFlag(digger.country || getServiceLocationCountry() || "")}</span>
+                        )}
+                        Location
+                      </p>
+                      {isOwnProfile && getBaseLocationDisplay() && (
                         <button type="button" onClick={() => openSectionModal("location")} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3 w-3" />
                         </button>
                       )}
                     </div>
-                    {(digger.country || getServiceLocationDisplay()) ? (
+                    {getBaseLocationDisplay() ? (
                       <button
                         type="button"
                         className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm text-left ${isOwnProfile ? "hover:border-primary/50 hover:bg-muted/50 cursor-pointer" : "cursor-default"}`}
                         onClick={() => isOwnProfile && openSectionModal("location")}
                       >
                         <span className="text-base">{getFlagForCountryName(digger.country || getServiceLocationCountry() || "") || getCountryFlag(digger.country || getServiceLocationCountry() || "")}</span>
-                        {digger.country || getServiceLocationDisplay() || "Not specified"}
+                        {getBaseLocationDisplay() || "Not specified"}
                       </button>
                     ) : (
                       <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("location")}>
@@ -1630,21 +2074,10 @@ const DiggerDetail = () => {
                       )}
                     </div>
                     {digger.website_url ? (
-                      isOwnProfile ? (
-                        <button
-                          type="button"
-                          className="flex items-center gap-1.5 text-sm text-primary hover:underline text-left"
-                          onClick={() => openSectionModal("website")}
-                        >
-                          <Globe className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{digger.website_url}</span>
-                        </button>
-                      ) : (
-                        <a href={digger.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-primary hover:underline">
-                          <Globe className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{digger.website_url}</span>
-                        </a>
-                      )
+                      <a href={digger.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-primary hover:underline">
+                        <Globe className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{digger.website_url}</span>
+                      </a>
                     ) : (
                       <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("website")}>
                         <Plus className="h-4 w-4 shrink-0" /> Add website
@@ -1661,19 +2094,9 @@ const DiggerDetail = () => {
                       )}
                     </div>
                     {digger.portfolio_url ? (
-                      isOwnProfile ? (
-                        <button
-                          type="button"
-                          className="flex items-center gap-1.5 text-sm text-primary hover:underline text-left"
-                          onClick={() => openSectionModal("portfolio")}
-                        >
-                          <span className="truncate">{digger.portfolio_url}</span>
-                        </button>
-                      ) : (
-                        <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
-                          {digger.portfolio_url}
-                        </a>
-                      )
+                      <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
+                        {digger.portfolio_url}
+                      </a>
                     ) : (
                       <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("portfolio")}>
                         <Plus className="h-4 w-4 shrink-0" /> Add portfolio
@@ -1712,22 +2135,22 @@ const DiggerDetail = () => {
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
                       <p className="text-xs font-semibold text-muted-foreground">Profession</p>
-                      {isOwnProfile && (digger.digger_categories?.length ?? 0) > 0 && (
-                        <button type="button" onClick={() => openEditModal(digger.id)} className="text-muted-foreground hover:text-foreground">
+                      {isOwnProfile && getDisplayedProfessions().length > 0 && (
+                        <button type="button" onClick={() => openSectionModal("profession")} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3 w-3" />
                         </button>
                       )}
                     </div>
-                    {(digger.digger_categories?.length ?? 0) > 0 ? (
+                    {getDisplayedProfessions().length > 0 ? (
                       <button
                         type="button"
                         className={`flex flex-wrap gap-1.5 text-left ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
-                        onClick={() => isOwnProfile && openEditModal(digger.id)}
+                        onClick={() => isOwnProfile && openSectionModal("profession")}
                       >
-                        {(digger.digger_categories || []).map((dc, idx) => (
+                        {getDisplayedProfessions().map((name, idx) => (
                           <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
                             <span className="h-2 w-2 rounded-full shrink-0 bg-violet-500" />
-                            {dc.categories?.name || ""}
+                            {name}
                           </span>
                         ))}
                       </button>
@@ -1735,7 +2158,7 @@ const DiggerDetail = () => {
                       <button
                         type="button"
                         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() => isOwnProfile && openEditModal(digger.id)}
+                        onClick={() => isOwnProfile && openSectionModal("profession")}
                       >
                         <Plus className="h-4 w-4 shrink-0" />
                         Add profession
@@ -1793,17 +2216,21 @@ const DiggerDetail = () => {
                             const href = String(url).trim();
                             const label = socialPlatforms.find((p) => p.key === platform)?.label || platform;
                             return (
-                              <a
+                              <div
                                 key={platform}
-                                href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm text-primary hover:underline w-fit max-w-full"
-                                title={href}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm w-fit max-w-full"
                               >
-                                <span className="font-medium">{label}:</span>
-                                <span className="truncate max-w-[220px]">{href}</span>
-                              </a>
+                                <span className="font-medium text-foreground">{label}:</span>
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="truncate max-w-[220px] text-primary hover:underline"
+                                  title={href}
+                                >
+                                  {href}
+                                </a>
+                              </div>
                             );
                           })}
                       </div>
@@ -1820,6 +2247,44 @@ const DiggerDetail = () => {
                   </div>
                 </CardContent>
               </Card>
+              {relatedDiggers.length > 0 && (
+                <Card>
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-sm font-medium">People also viewed</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 px-4 pb-4">
+                    <ul className="space-y-3">
+                      {relatedDiggers.slice(0, 6).map((d) => {
+                        const displayName = formatRealName(d.profiles?.full_name) || d.profile_name || d.business_name;
+                        const profileTitle = d.custom_occupation_title || d.digger_categories?.[0]?.categories?.name || d.profession || null;
+                        return (
+                          <li key={d.id}>
+                            <div className="flex items-center gap-3 w-full text-left rounded-lg p-2 -mx-2 cursor-default">
+                              <Avatar className="h-9 w-9 shrink-0 opacity-60 blur-md saturate-0 ring-2 ring-primary/70 dark:ring-primary/60 border-2 border-primary/50 dark:border-primary/40 box-border">
+                                <AvatarImage src={d.profile_image_url || DEFAULT_AVATAR} />
+                                <AvatarFallback className="text-base bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                  🐸
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-sm truncate">{displayName}</p>
+                                {profileTitle ? (
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {profileTitle}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => navigate("/browse-diggers")}>
+                      View all talent
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
               {(!isOwnProfile || viewAsClient) && (
                 <>
                   <Card>
@@ -1830,11 +2295,11 @@ const DiggerDetail = () => {
                           {isOnline ? "Open to opportunities" : "Currently offline"}
                         </span>
                       </div>
-                      {(digger.country || getServiceLocationDisplay()) && (
+                      {getBaseLocationDisplay() && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <MapPin className="h-4 w-4 shrink-0" />
                           <span className="text-lg">{getFlagForCountryName(digger.country || "") || getCountryFlag(getServiceLocationCountry() || "")}</span>
-                          <span>{digger.country || getServiceLocationDisplay()}</span>
+                          <span>{getBaseLocationDisplay()}</span>
                         </div>
                       )}
                       {digger.website_url && (
@@ -1919,42 +2384,6 @@ const DiggerDetail = () => {
                       }}
                     />
                   )}
-                  {relatedDiggers.length > 0 && (
-                    <Card>
-                      <CardHeader className="py-3 px-4">
-                        <CardTitle className="text-sm font-medium">People also viewed</CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0 px-4 pb-4">
-                        <ul className="space-y-3">
-                          {relatedDiggers.slice(0, 6).map((d) => (
-                            <li key={d.id}>
-                              <button
-                                type="button"
-                                onClick={() => navigate(getDiggerProfileUrl(d))}
-                                className="flex items-center gap-3 w-full text-left rounded-lg p-2 -mx-2 hover:bg-accent/50 transition-colors"
-                              >
-                                <Avatar className="h-9 w-9 shrink-0">
-                                  <AvatarImage src={d.profile_image_url || undefined} />
-                                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                    {(d.business_name || "?").slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-medium text-sm truncate">{d.business_name}</p>
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {d.custom_occupation_title || d.profession || "Professional"}
-                                  </p>
-                                </div>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                        <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => navigate("/browse-diggers")}>
-                          View all talent
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
                 </>
               )}
 
@@ -2032,6 +2461,7 @@ const DiggerDetail = () => {
             <DialogTitle>
               {sectionEditor.section === "about" && "Edit About"}
               {sectionEditor.section === "skills" && "Edit Skills"}
+              {sectionEditor.section === "profession" && "Edit Profession"}
               {sectionEditor.section === "work" && "Edit Work Samples"}
               {sectionEditor.section === "portfolio" && "Edit Portfolio"}
               {sectionEditor.section === "availability" && "Edit Availability"}
@@ -2085,6 +2515,85 @@ const DiggerDetail = () => {
                         </label>
                       );
                     })
+                  )}
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
+                    {isSectionSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
+            {sectionEditor.section === "profession" && (
+              <>
+                <p className="text-sm text-muted-foreground">Select the profession items you want to showcase on your profile.</p>
+                <div className="max-h-[360px] overflow-y-auto space-y-3 border rounded-md p-3">
+                  {dbProfessionGroups.map((group) => (
+                    <details key={group.category} className="rounded border border-border/70 bg-background/30">
+                      <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground">
+                        {group.category}
+                      </summary>
+                      <div className="px-2 pb-2 space-y-1.5">
+                        {group.items.map((name) => {
+                          const checked = selectedProfessionsDraft.includes(name);
+                          return (
+                            <label key={name} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() =>
+                                  setSelectedProfessionsDraft((prev) =>
+                                    checked ? prev.filter((x) => x !== name) : [...prev, name]
+                                  )
+                                }
+                                className="rounded"
+                              />
+                              <span>{name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Add additional profession</p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={additionalProfessionDraft}
+                      onChange={(e) => setAdditionalProfessionDraft(e.target.value)}
+                      placeholder="Type a custom profession"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const next = additionalProfessionDraft.trim();
+                        if (!next) return;
+                        setSelectedProfessionsDraft((prev) => (prev.includes(next) ? prev : [...prev, next]));
+                        setAdditionalProfessionDraft("");
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {selectedProfessionsDraft.filter((name) => !dbProfessionNameSet.has(name)).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedProfessionsDraft
+                        .filter((name) => !dbProfessionNameSet.has(name))
+                        .map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs"
+                            onClick={() => setSelectedProfessionsDraft((prev) => prev.filter((x) => x !== name))}
+                            title="Remove custom profession"
+                          >
+                            {name}
+                            <span className="text-muted-foreground">x</span>
+                          </button>
+                        ))}
+                    </div>
                   )}
                 </div>
                 <div className="flex justify-end">
@@ -2149,20 +2658,87 @@ const DiggerDetail = () => {
             )}
             {sectionEditor.section === "location" && (
               <>
-                <p className="text-sm text-muted-foreground">Your base location (country where you are located).</p>
-                <Select value={locationDraft || "none"} onValueChange={(v) => setLocationDraft(v === "none" ? "" : v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[250] max-h-[300px]">
-                    <SelectItem value="none">Not specified</SelectItem>
-                    {ALL_COUNTRY_OPTIONS.map((c) => (
-                      <SelectItem key={c.code} value={c.name}>
-                        {c.flag} {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <p className="text-sm text-muted-foreground">Search and select your base country and city.</p>
+                <Input
+                  value={locationSearchDraft}
+                  onChange={(e) => setLocationSearchDraft(e.target.value)}
+                  placeholder="Search by country or code (e.g. United, US)"
+                />
+                <div className="max-h-[300px] overflow-y-auto space-y-1.5 border rounded-md p-2">
+                  <button
+                    type="button"
+                    className={`w-full text-left rounded px-2 py-1.5 text-sm ${!locationDraft ? "bg-muted" : "hover:bg-muted/50"}`}
+                    onClick={() => setLocationDraft("")}
+                  >
+                    🌍 Not specified
+                  </button>
+                  {filteredLocationOptions.map((c) => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      className={`w-full flex items-center gap-2 rounded px-2 py-1.5 text-sm text-left ${locationDraft === c.name ? "bg-muted" : "hover:bg-muted/50"}`}
+                      onClick={() => {
+                        const changed = locationDraft !== c.name;
+                        setLocationDraft(c.name);
+                        if (changed) {
+                          setLocationStateDraft("");
+                          setLocationCityDraft("");
+                        }
+                      }}
+                    >
+                      <span className="text-base">{c.flag}</span>
+                      <span>{c.name}</span>
+                    </button>
+                  ))}
+                  {filteredLocationOptions.length === 0 && (
+                    <p className="text-sm text-muted-foreground px-2 py-1.5">No countries found.</p>
+                  )}
+                </div>
+                {locationDraft && locationStateOptions.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">State / Region</p>
+                    <Input
+                      value={locationStateSearchDraft}
+                      onChange={(e) => setLocationStateSearchDraft(e.target.value)}
+                      placeholder="Search state/region"
+                    />
+                    <div className="max-h-[180px] overflow-y-auto space-y-1.5 border rounded-md p-2">
+                      {filteredLocationStateOptions.map((stateName) => (
+                        <button
+                          key={stateName}
+                          type="button"
+                          className={`w-full text-left rounded px-2 py-1.5 text-sm ${locationStateDraft === stateName ? "bg-muted" : "hover:bg-muted/50"}`}
+                          onClick={() => {
+                            setLocationStateDraft(stateName);
+                            setLocationCityDraft("");
+                          }}
+                        >
+                          {stateName}
+                        </button>
+                      ))}
+                      {filteredLocationStateOptions.length === 0 && (
+                        <p className="text-sm text-muted-foreground px-2 py-1.5">No matching state/region.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">City</p>
+                  <Input
+                    value={locationCityDraft}
+                    onChange={(e) => setLocationCityDraft(e.target.value)}
+                    placeholder={locationDraft === "United States" && !locationStateDraft ? "Select state first" : "Search or type your city"}
+                    disabled={locationDraft === "United States" && !locationStateDraft}
+                    list="location-city-suggestions"
+                  />
+                  {filteredCitySuggestions.length > 0 && (
+                    <datalist id="location-city-suggestions">
+                      {filteredCitySuggestions.map((city) => (
+                        <option key={city} value={city} />
+                      ))}
+                    </datalist>
+                  )}
+                </div>
                 <div className="flex justify-end">
                   <Button onClick={handleSaveSection} disabled={isSectionSaving}>
                     {isSectionSaving ? "Saving..." : "Save"}
@@ -2172,23 +2748,40 @@ const DiggerDetail = () => {
             )}
             {sectionEditor.section === "service_location" && (
               <>
-                <p className="text-sm text-muted-foreground">Countries where you offer services. Clients can filter by these.</p>
-                <div className="max-h-[260px] overflow-y-auto space-y-2 border rounded-md p-3">
-                  {ALL_COUNTRY_OPTIONS.map((c) => {
-                    const checked = serviceLocationDraft.includes(c.name);
-                    return (
-                      <label key={c.code} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => setServiceLocationDraft((prev) => (checked ? prev.filter((x) => x !== c.name) : [...prev, c.name]))}
-                          className="rounded"
-                        />
-                        <span className="text-base">{c.flag}</span>
-                        <span>{c.name}</span>
-                      </label>
-                    );
-                  })}
+                <p className="text-sm text-muted-foreground">Search and select countries where you offer services.</p>
+                <Input
+                  value={serviceLocationSearchDraft}
+                  onChange={(e) => setServiceLocationSearchDraft(e.target.value)}
+                  placeholder="Search service countries (e.g. Canada, CA)"
+                />
+                <div className="max-h-[300px] overflow-y-auto space-y-3 border rounded-md p-3">
+                  {filteredServiceLocationGroups.map((region) => (
+                    <details key={region.value} className="rounded border border-border/70 bg-background/30">
+                      <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground">
+                        {region.label} ({region.countries.length})
+                      </summary>
+                      <div className="px-2 pb-2 space-y-1.5">
+                        {region.countries.map((c) => {
+                          const checked = serviceLocationDraft.includes(c.name);
+                          return (
+                            <label key={c.code} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => setServiceLocationDraft((prev) => (checked ? prev.filter((x) => x !== c.name) : [...prev, c.name]))}
+                                className="rounded"
+                              />
+                              <span className="text-base">{c.flag}</span>
+                              <span>{c.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </details>
+                  ))}
+                  {filteredServiceLocationGroups.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No matching countries found.</p>
+                  )}
                 </div>
                 <div className="flex justify-end">
                   <Button onClick={handleSaveSection} disabled={isSectionSaving}>

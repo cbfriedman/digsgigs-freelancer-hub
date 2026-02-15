@@ -282,7 +282,7 @@ const router = createBrowserRouter(
       },
       {
         path: "/digger/:id",
-        element: <ProtectedRoute><LegacyDiggerRedirect /></ProtectedRoute>,
+        element: <LegacyDiggerRedirect />,
       },
       {
         path: "/gig-confirmed",

@@ -175,7 +175,8 @@ export default function ProfileByHandle() {
 
   const canonicalHandle = resolved?.canonical_handle || handle;
   const displayName = profile?.full_name || resolved?.full_name || "User";
-  const avatar = digger?.profile_image_url || profile?.avatar_url || resolved?.avatar_url || null;
+  const DEFAULT_AVATAR = "/default-avatar.svg";
+  const avatar = digger?.profile_image_url || profile?.avatar_url || resolved?.avatar_url || DEFAULT_AVATAR;
   const initials = displayName
     .split(/\s+/)
     .map((p) => p[0])
@@ -190,7 +191,7 @@ export default function ProfileByHandle() {
   };
   const openGigCount = recentGigs.filter((g) => g.status === "open").length;
   const closedGigCount = recentGigs.filter((g) => g.status && g.status !== "open").length;
-  const canShowDiggerRole = isOwner ? resolved?.has_digger : !!(resolved?.has_digger && digger?.is_public);
+  const canShowDiggerRole = isOwner ? resolved?.has_digger : !!(resolved?.has_digger && (digger?.is_public || safeRole === "digger"));
   const canShowGiggerRole = isOwner ? resolved?.has_gigger : !!(resolved?.has_gigger && profile?.gigger_public);
 
   useEffect(() => {
@@ -241,7 +242,7 @@ export default function ProfileByHandle() {
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 ring-1 ring-border/50">
-              <AvatarImage src={avatar || undefined} alt={displayName} />
+              <AvatarImage src={avatar} alt={displayName} />
               <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">{initials}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
@@ -266,7 +267,7 @@ export default function ProfileByHandle() {
         )}
       </div>
 
-      {!canShowDiggerRole && !canShowGiggerRole && !isOwner && (
+      {!canShowDiggerRole && !canShowGiggerRole && !isOwner && !(safeRole === "digger" && resolved?.has_digger) && (
         <Card>
           <CardHeader>
             <CardTitle>Profile not publicly available</CardTitle>

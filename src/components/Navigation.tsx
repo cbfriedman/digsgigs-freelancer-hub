@@ -79,6 +79,8 @@ const roleConfig: Record<UserAppRole, { label: string; emoji: string; color: str
   admin: { label: 'Admin', emoji: '👑', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100' },
 };
 
+const DEFAULT_AVATAR = "/default-avatar.svg";
+
 export function Navigation({ showBackButton = false, backTo = "/", backLabel = "Back to Home" }: NavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -706,7 +708,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         onPointerEnter={() => setOpenUserMenu(true)}
                       >
                         <Avatar className="h-7 w-7">
-                          <AvatarImage src={userPhotoUrl || undefined} alt="Profile" />
+                          <AvatarImage src={userPhotoUrl || DEFAULT_AVATAR} alt="Profile" />
                           <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-xs font-medium">
                             {getUserInitials()}
                           </AvatarFallback>
@@ -1073,7 +1075,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       <div className="p-4 bg-muted/30 border-b border-border/50">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={userPhotoUrl || undefined} alt="Profile" />
+                            <AvatarImage src={userPhotoUrl || DEFAULT_AVATAR} alt="Profile" />
                             <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-sm font-medium">
                               {getUserInitials()}
                             </AvatarFallback>
