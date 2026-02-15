@@ -2099,10 +2099,13 @@ const Register = () => {
                   </div>
                 )}
 
-                {/* Google Sign Up Button */}
+                {/* Google Sign Up Button - same flow as traditional: land on Register to complete role selection */}
                 {!isFromGigPosting && (
                   <div className="space-y-4 mb-6">
-                    <GoogleSignInButton />
+                    <GoogleSignInButton
+                      label="Sign up with Google"
+                      redirectTo={`${window.location.origin}/register?complete=true`}
+                    />
                     
                     {/* Divider */}
                     <div className="relative">
