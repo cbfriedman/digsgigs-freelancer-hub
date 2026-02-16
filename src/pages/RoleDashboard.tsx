@@ -761,7 +761,9 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('gigger');
-                          goToProfileWorkspace(navigate);
+                          if (user?.id) {
+                            navigate(`/gigger/${user.id}`);
+                          }
                         }}
                       >
                         <User className="h-4 w-4 mr-1" />
