@@ -133,7 +133,7 @@ serve(async (req) => {
 </body>
 </html>`;
 
-    let recipients: { id: string; email: string; full_name: string | null; business_name: string }[] = [];
+    const recipients: { id: string; email: string; full_name: string | null; business_name: string }[] = [];
 
     if (settings.mode === "selected" && Array.isArray(settings.selected_digger_ids) && settings.selected_digger_ids.length > 0) {
       const { data: diggers, error: dErr } = await supabase

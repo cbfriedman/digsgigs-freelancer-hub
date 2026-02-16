@@ -42,7 +42,7 @@ export const useFacebookPixel = () => {
         
         const n = (win.fbq = function (...args: unknown[]) {
           if (n.callMethod) {
-            n.callMethod.apply(n, args);
+            (n.callMethod as (...a: unknown[]) => void).call(n, ...args);
           } else {
             n.queue.push(args);
           }

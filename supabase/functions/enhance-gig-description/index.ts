@@ -121,7 +121,9 @@ Guidelines:
         else if (response.status === 429) userMessage = "AI service is busy. Please try again in a moment.";
         else if (response.status === 402) userMessage = "AI credits required. Please try again later.";
         else if (msg) userMessage = msg;
-      } catch (_) {}
+      } catch {
+        // Ignore JSON parse errors, use errorText
+      }
       return new Response(
         JSON.stringify({ error: userMessage }),
         { status: 502, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }

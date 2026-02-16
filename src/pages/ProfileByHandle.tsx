@@ -376,6 +376,14 @@ export default function ProfileByHandle() {
                   ))
                 )}
               </div>
+              <Button
+                variant="outline"
+                className="mt-4 w-full sm:w-auto"
+                onClick={() => navigate(`/gigger/${resolved.user_id}`)}
+              >
+                Open Full Gigger Profile
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             </CardContent>
           </Card>
         )}

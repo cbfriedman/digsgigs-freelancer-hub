@@ -44,6 +44,7 @@ import DiggerGuide from "./pages/DiggerGuide";
 import SavedSearches from "./pages/SavedSearches";
 import Messages from "./pages/Messages";
 import ProfileByHandle from "./pages/ProfileByHandle";
+import GiggerDetail from "./pages/GiggerDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminNotificationPreferences from "./pages/AdminNotificationPreferences";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -63,6 +64,7 @@ import NotFound from "./pages/NotFound";
 import EscrowDashboard from "./pages/EscrowDashboard";
 import PreDemoRegistration from "./pages/PreDemoRegistration";
 import ProfileWorkspaceRedirect from "./pages/ProfileWorkspaceRedirect";
+import MyProfileRedirect from "./pages/MyProfileRedirect";
 import ProfileDashboard from "./pages/ProfileDashboard";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -230,6 +232,10 @@ const router = createBrowserRouter(
         element: <ProtectedRoute><BrowseGigs /></ProtectedRoute>,
       },
       {
+        path: "/my-profile",
+        element: <ProtectedRoute><MyProfileRedirect /></ProtectedRoute>,
+      },
+      {
         path: "/my-profiles",
         element: <ProtectedRoute><ProfileWorkspaceRedirect /></ProtectedRoute>,
       },
@@ -248,6 +254,10 @@ const router = createBrowserRouter(
       {
         path: "/profile/:handle/:role",
         element: <ProfileByHandle />,
+      },
+      {
+        path: "/gigger/:userId",
+        element: <GiggerDetail />,
       },
       {
         path: "/post-gig",

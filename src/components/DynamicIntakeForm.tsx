@@ -288,7 +288,7 @@ export const DynamicIntakeForm = ({
           </RadioGroup>
         );
 
-      case 'multi-select':
+      case 'multi-select': {
         const selectedValues = responses[question.id] || [];
         return (
           <div className="mt-2 space-y-2">
@@ -311,6 +311,7 @@ export const DynamicIntakeForm = ({
             ))}
           </div>
         );
+      }
 
       default:
         return null;

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,170 +37,17 @@ import { ALL_COUNTRY_OPTIONS, REGION_OPTIONS, getFlagForCountryName, getCodeForC
 import { useProfessions } from "@/hooks/useProfessions";
 import { SEO_CITIES } from "@/config/seoCities";
 import { getRegionsForCountry } from "@/config/locationData";
-
-interface Reference {
-  id: string;
-  reference_name: string;
-  reference_email: string;
-  reference_phone: string | null;
-  project_description: string | null;
-  is_verified: boolean;
-}
-
-interface ReferenceRequest {
-  id: string;
-  status: string;
-}
-
-interface Digger {
-  id: string;
-  user_id: string;
-  handle: string | null;
-  business_name: string;
-  profession: string;
-  profile_name?: string | null;
-  tagline: string | null;
-  availability: string | null;
-  bio: string | null;
-  location: string;
-  city?: string | null;
-  phone: string;
-  hourly_rate: number | null;
-  hourly_rate_min: number | null;
-  hourly_rate_max: number | null;
-  years_experience: number | null;
-  average_rating: number;
-  total_ratings: number;
-  profile_image_url: string | null;
-  cover_photo_url?: string | null;
-  portfolio_url: string | null;
-  portfolio_urls?: string[] | null;
-  work_photos: string[] | null;
-  skills: string[] | null;
-  certifications?: string[] | null;
-  keywords?: string[] | null;
-  completion_rate: number | null;
-  response_time_hours: number | null;
-  is_insured: boolean;
-  is_bonded: boolean;
-  is_licensed: string;
-  sic_code: string[] | null;
-  naics_code: string[] | null;
-  custom_occupation_title: string | null;
-  primary_profession_index: number | null;
-  location_lat: number | null;
-  location_lng: number | null;
-  pricing_model: string | null;
-  subscription_tier: string | null;
-  offers_free_estimates: boolean | null;
-  country: string | null;
-  website_url?: string | null;
-  service_countries?: string[] | null;
-  monthly_salary?: number | null;
-  social_links?: any;
-  state?: string | null;
-  verified?: boolean | null;
-  stripe_connect_onboarded?: boolean | null;
-  stripe_connect_charges_enabled?: boolean | null;
-  profiles: {
-    full_name: string | null;
-    email: string;
-    avatar_url?: string | null;
-  };
-  created_at?: string | null;
-  digger_categories: {
-    categories: {
-      name: string;
-      description: string | null;
-    };
-  }[];
-}
-
-const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-
-/** Format real name as "Hongqiang C." (first name + last initial) */
-const formatRealName = (fullName: string | null | undefined): string => {
-  if (!fullName?.trim()) return "";
-  const names = fullName.trim().split(/\s+/);
-  const first = names[0];
-  const lastInitial = names.length > 1 ? names[names.length - 1].charAt(0) + "." : "";
-  return `${first} ${lastInitial}`.trim();
-};
-
-/** Format: "Hongqiang C. @jackson325" or just "@jackson325" if no real name */
-const formatDisplayName = (fullName: string | null | undefined, handle: string | null | undefined): string => {
-  const parts: string[] = [];
-  if (fullName && fullName.trim()) {
-    parts.push(formatRealName(fullName));
-  }
-  if (handle && handle.trim()) {
-    parts.push(`@${handle.replace(/^@/, '')}`);
-  }
-  return parts.join(' ') || '';
-};
-
-/** Canonical profile URL: /profile/:handle/digger with legacy fallback */
-const getDiggerProfileUrl = (d: { id: string; handle?: string | null }) =>
-  getCanonicalDiggerProfilePath({ handle: d.handle, diggerId: d.id }) || `/digger/${d.id}`;
-
-const formatCurrency = (value: number | null | undefined): string => {
-  if (value == null || Number.isNaN(value)) return "$0";
-  return `$${Math.round(value).toLocaleString()}`;
-};
-
-/** Compact earnings display: $1k, $1.2k for values >= 1000 */
-const formatEarningsCompact = (value: number | null | undefined): string => {
-  if (value == null || Number.isNaN(value)) return "$0";
-  if (value >= 1000) {
-    const k = value / 1000;
-    return k >= 10 ? `$${Math.round(k)}k` : k % 1 === 0 ? `$${k}k` : `$${k.toFixed(1)}k`;
-  }
-  return `$${Math.round(value)}`;
-};
-
-/** Get local time for country (optional, for header display) */
-const getLocalTimeForCountry = (countryName: string | null | undefined): string | null => {
-  const key = countryName?.trim();
-  if (!key) return null;
-  const countryToTz: Record<string, string> = {
-    "United States": "America/New_York", US: "America/New_York",
-    "Canada": "America/Toronto", CA: "America/Toronto",
-    "United Kingdom": "Europe/London", UK: "Europe/London", GB: "Europe/London",
-    "Australia": "Australia/Sydney", AU: "Australia/Sydney",
-    "Germany": "Europe/Berlin", DE: "Europe/Berlin",
-    "France": "Europe/Paris", FR: "Europe/Paris",
-    "Spain": "Europe/Madrid", ES: "Europe/Madrid",
-    "Italy": "Europe/Rome", IT: "Europe/Rome",
-    "Netherlands": "Europe/Amsterdam", NL: "Europe/Amsterdam",
-    "India": "Asia/Kolkata", IN: "Asia/Kolkata",
-    "Japan": "Asia/Tokyo", JP: "Asia/Tokyo",
-    "Brazil": "America/Sao_Paulo", BR: "America/Sao_Paulo",
-    "Mexico": "America/Mexico_City", MX: "America/Mexico_City",
-    "Philippines": "Asia/Manila", PH: "Asia/Manila",
-    "Poland": "Europe/Warsaw", PL: "Europe/Warsaw",
-    "Portugal": "Europe/Lisbon", PT: "Europe/Lisbon",
-    "Ireland": "Europe/Dublin", IE: "Europe/Dublin",
-    "Sweden": "Europe/Stockholm", SE: "Europe/Stockholm",
-    "New Zealand": "Pacific/Auckland", NZ: "Pacific/Auckland",
-  };
-  const tz = countryToTz[key] ?? Object.entries(countryToTz).find(([k]) => k.toLowerCase() === key.toLowerCase())?.[1];
-  if (!tz) return null;
-  try {
-    return new Date().toLocaleTimeString("en-US", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: true });
-  } catch {
-    return null;
-  }
-};
-
-const formatJoinDate = (createdAt: string | null | undefined): string => {
-  if (!createdAt) return "";
-  try {
-    const d = new Date(createdAt);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return "";
-  }
-};
+import type { Digger, Reference, ReferenceRequest } from "./DiggerDetail/types";
+import {
+  isUuid,
+  formatRealName,
+  formatDisplayName,
+  getDiggerProfileUrl,
+  formatCurrency,
+  formatEarningsCompact,
+  getLocalTimeForCountry,
+  formatJoinDate,
+} from "./DiggerDetail/utils";
 
 const DiggerDetail = () => {
   const navigate = useNavigate();
@@ -209,7 +58,7 @@ const DiggerDetail = () => {
   const [references, setReferences] = useState<Reference[]>([]);
   const [referenceRequests, setReferenceRequests] = useState<Record<string, ReferenceRequest>>({});
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [hasViewAccess, setHasViewAccess] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
@@ -281,7 +130,7 @@ const DiggerDetail = () => {
       .eq("user_id", currentUser.id)
       .order("is_primary", { ascending: false })
       .order("created_at", { ascending: true });
-    setOwnerProfiles((data as any[]) || []);
+    setOwnerProfiles((data as { id: string; handle: string | null; profile_name: string | null; business_name: string; is_primary: boolean }[]) || []);
   }, [currentUser, isOwnProfile]);
 
   useEffect(() => {
@@ -340,8 +189,8 @@ const DiggerDetail = () => {
 
     // Fetch digger by UUID or username (handle) — anyone with the profile link can view
     const fetchQuery = isUuid(slug)
-      ? supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url), digger_categories (categories (name, description))`).eq("id", slug)
-      : supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url), digger_categories (categories (name, description))`).eq("handle", slug.toLowerCase());
+      ? supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description))`).eq("id", slug)
+      : supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description))`).eq("handle", slug.toLowerCase());
     const { data: diggerData, error: diggerError } = await fetchQuery.single();
 
     if (diggerError || !diggerData) {
@@ -351,7 +200,7 @@ const DiggerDetail = () => {
     }
 
     const profileId = diggerData.id;
-    setDigger(diggerData);
+    setDigger(diggerData as unknown as Digger);
     // Load total earnings for this digger (completed transactions only)
     try {
       const { data: earningsRows } = await supabase
@@ -385,7 +234,7 @@ const DiggerDetail = () => {
           body: { digger_profile_id: profileId }
         });
       } catch (error) {
-        console.error('Failed to record click:', error);
+        logger.error('Failed to record click:', error);
       }
     }
 
@@ -400,12 +249,12 @@ const DiggerDetail = () => {
           .maybeSingle(); // Use maybeSingle() instead of single() to handle cases where no record exists
         
         if (profileViewError && profileViewError.code !== 'PGRST116') {
-          console.error('Error checking profile view access:', profileViewError);
+          logger.error('Error checking profile view access:', profileViewError);
         }
         setHasViewAccess(!!profileView);
       } catch (error) {
         // Silently fail - view access check shouldn't block page load
-        console.error('Failed to check profile view access:', error);
+        logger.error('Failed to check profile view access:', error);
         setHasViewAccess(false);
       }
     }
@@ -438,7 +287,7 @@ const DiggerDetail = () => {
       
       if (requestsData) {
         const requestsMap: Record<string, ReferenceRequest> = {};
-        requestsData.forEach((req: any) => {
+        requestsData.forEach((req: { reference_id: string; id: string; status: string }) => {
           requestsMap[req.reference_id] = { id: req.id, status: req.status };
         });
         setReferenceRequests(requestsMap);
@@ -500,8 +349,8 @@ const DiggerDetail = () => {
       );
       setProfileHeaderEditOpen(false);
       toast.success("Profile updated");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update profile");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update profile");
     }
   };
 
@@ -777,8 +626,8 @@ const DiggerDetail = () => {
         allProfiles?.find((p: any) => p.business_name)?.business_name ||
         null;
 
-      await supabase.from("digger_profiles").update({ is_primary: false, handle: null } as any).eq("user_id", currentUser.id);
-      await supabase.from("digger_profiles").update({ is_primary: true, handle: username } as any).eq("id", profileId);
+      await supabase.from("digger_profiles").update({ is_primary: false, handle: null }).eq("user_id", currentUser.id);
+      await supabase.from("digger_profiles").update({ is_primary: true, handle: username }).eq("id", profileId);
       toast.success("Primary profile updated");
       await loadOwnerProfiles();
       await loadData();
@@ -805,7 +654,7 @@ const DiggerDetail = () => {
           .limit(1)
           .maybeSingle();
         if (fallback?.id) {
-          navigate(getCanonicalDiggerProfilePath({ handle: (fallback as any).handle, diggerId: fallback.id }) || `/digger/${fallback.id}`);
+          navigate(getCanonicalDiggerProfilePath({ handle: (fallback as { handle?: string | null; id: string }).handle, diggerId: fallback.id }) || `/digger/${fallback.id}`);
         } else {
           navigate("/role-dashboard");
         }
@@ -829,7 +678,7 @@ const DiggerDetail = () => {
     const { error: diggerErr } = await supabase.from("digger_profiles").update({ profile_image_url: photo }).eq("user_id", userId);
     if (diggerErr) throw diggerErr;
     const { error: profileErr } = await supabase.from("profiles").update({ avatar_url: photo }).eq("id", userId);
-    if (profileErr) console.warn("Failed to sync profiles.avatar_url:", profileErr);
+    if (profileErr) logger.warn("Failed to sync profiles.avatar_url:", profileErr);
     if (currentUser?.id === userId) {
       try {
         const existingMetadata = currentUser.user_metadata || {};
@@ -837,7 +686,7 @@ const DiggerDetail = () => {
         const { data: { session } } = await supabase.auth.refreshSession();
         if (session?.user) setCurrentUser(session.user);
       } catch (e) {
-        console.warn("Failed to sync auth user_metadata:", e);
+        logger.warn("Failed to sync auth user_metadata:", e);
       }
     }
   };
@@ -856,8 +705,8 @@ const DiggerDetail = () => {
       setDigger((d) => (d ? { ...d, profile_image_url: publicUrl, profiles: { ...d.profiles, avatar_url: publicUrl } } : null));
       setProfilePhotoDialogOpen(false);
       toast.success("Profile photo updated");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to upload photo");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload photo");
     } finally {
       setProfilePhotoUploading(false);
       e.target.value = "";
@@ -871,7 +720,7 @@ const DiggerDetail = () => {
       setDigger((d) => (d ? { ...d, profile_image_url: null, profiles: { ...d.profiles, avatar_url: null } } : null));
       setProfilePhotoDialogOpen(false);
       toast.success("Profile photo removed");
-    } catch (err: any) {
+    } catch {
       toast.error("Failed to remove photo");
     }
   };
@@ -890,13 +739,13 @@ const DiggerDetail = () => {
       const { error: uploadError } = await supabase.storage.from("profile-photos").upload(fileName, file, { cacheControl: "3600", upsert: false });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from("profile-photos").getPublicUrl(fileName);
-      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: publicUrl } as any).eq("id", digger.id);
+      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: publicUrl } as Record<string, unknown>).eq("id", digger.id);
       if (error) throw error;
       setDigger((d) => (d ? { ...d, cover_photo_url: publicUrl } : null));
       setCoverPhotoDialogOpen(false);
       toast.success("Cover photo updated");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to upload cover photo");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload cover photo");
     } finally {
       setCoverPhotoUploading(false);
       e.target.value = "";
@@ -906,12 +755,12 @@ const DiggerDetail = () => {
   const handleCoverPhotoRemove = async () => {
     if (!digger) return;
     try {
-      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: null } as any).eq("id", digger.id);
+      const { error } = await supabase.from("digger_profiles").update({ cover_photo_url: null } as Record<string, unknown>).eq("id", digger.id);
       if (error) throw error;
       setDigger((d) => (d ? { ...d, cover_photo_url: null } : null));
       setCoverPhotoDialogOpen(false);
       toast.success("Cover photo removed");
-    } catch (err: any) {
+    } catch {
       toast.error("Failed to remove cover photo");
     }
   };
@@ -958,8 +807,8 @@ const DiggerDetail = () => {
       } else {
         throw new Error("Failed to create conversation");
       }
-    } catch (error: any) {
-      toast.error("Error starting conversation: " + error.message);
+    } catch (error: unknown) {
+      toast.error("Error starting conversation: " + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -987,8 +836,9 @@ const DiggerDetail = () => {
       
       // Reload data to update request status
       loadData();
-    } catch (error: any) {
-      if (error.code === '23505') {
+    } catch (error: unknown) {
+      const err = error as { code?: string };
+      if (err?.code === '23505') {
         toast.error("You've already requested this reference contact");
       } else {
         toast.error("Failed to send request");
@@ -1067,7 +917,7 @@ const DiggerDetail = () => {
               });
             }
           } catch (error) {
-            console.warn('Facebook Pixel: Error tracking ContactRevealed event', error);
+            logger.warn('Facebook Pixel: Error tracking ContactRevealed event', error);
           }
         }
         
@@ -1078,11 +928,9 @@ const DiggerDetail = () => {
         window.open(data.url, '_blank');
         toast.info(`Total charge: $${data.totalCharge} ($${data.viewFee} view fee + $${data.leadCost} lead cost)`);
       }
-    } catch (error: any) {
-      if (import.meta.env.DEV) {
-        console.error("Error unlocking contact:", error);
-      }
-      const msg = error?.message ?? "";
+    } catch (error: unknown) {
+      logger.error("Error unlocking contact:", error);
+      const msg = error instanceof Error ? error.message : (error && typeof error === 'object' && 'message' in error ? String((error as { message?: unknown }).message) : "");
       if (msg.includes("must post") || msg.includes("not related")) {
         toast.error(msg || "You can only view diggers related to your posted gigs.");
         if (msg.includes("must post")) {
@@ -1250,21 +1098,25 @@ const DiggerDetail = () => {
 
   const displayProfession = getDisplayProfession();
   const occupationBadge = getOccupationBadge();
+  // User-level verification (same as Gigger profile when user has both roles)
+  const p = digger.profiles as { id_verified?: boolean | null; phone_verified?: boolean | null; email_verified?: boolean | null; payment_verified?: boolean | null } | undefined;
   const verificationItems = [
-    { label: "ID verified", isActive: !!digger.verified, icon: User },
-    { label: "Phone", isActive: !!digger.phone && digger.phone !== "Not specified", icon: Phone },
-    { label: "Email", isActive: !!digger.profiles?.email, icon: Mail },
-    { label: "Payment", isActive: !!(digger.stripe_connect_onboarded || digger.stripe_connect_charges_enabled), icon: CreditCard },
+    { label: "ID verified", isActive: p?.id_verified != null ? !!p.id_verified : !!digger.verified, icon: User },
+    { label: "Phone", isActive: p?.phone_verified != null ? !!p.phone_verified : (!!digger.phone && digger.phone !== "Not specified"), icon: Phone },
+    { label: "Email", isActive: p?.email_verified != null ? !!p.email_verified : !!digger.profiles?.email, icon: Mail },
+    { label: "Payment", isActive: p?.payment_verified != null ? !!p.payment_verified : !!(digger.stripe_connect_onboarded || digger.stripe_connect_charges_enabled), icon: CreditCard },
   ];
 
-  // Effective avatar: profile photo first, then profiles.avatar_url, then auth metadata for own profile; fallback to default image
+  // Effective avatar: user-level (profiles.avatar_url) first so same as Gigger profile, then digger profile_image_url
   const DEFAULT_AVATAR = "/default-avatar.svg";
-  const effectiveAvatarUrl = digger.profile_image_url
-    || digger.profiles?.avatar_url
+  const effectiveAvatarUrl = digger.profiles?.avatar_url
+    || digger.profile_image_url
     || (isOwnProfile ? (currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture) : null)
     || DEFAULT_AVATAR;
   const displayName = formatRealName(digger.profiles?.full_name) || digger.profile_name || "Main Profile";
-  const handleDisplay = digger.handle ? `@${String(digger.handle).replace(/^@/, "")}` : "";
+  // Username (handle): user-level profiles.handle first so synced with Gigger, then digger handle
+  const profilesHandle = (digger.profiles as { handle?: string | null } | undefined)?.handle;
+  const handleDisplay = (profilesHandle ? `@${String(profilesHandle).replace(/^@/, "")}` : "") || (digger.handle ? `@${String(digger.handle).replace(/^@/, "")}` : "");
   /** Profile title from first profile creation (profile_name/business_name), then custom title, categories, profession */
   const profileTitleSub =
     (digger.profile_name && digger.profile_name !== "Not specified" ? digger.profile_name : null) ||
@@ -1273,9 +1125,27 @@ const DiggerDetail = () => {
     digger.digger_categories?.[0]?.categories?.name ||
     digger.profession ||
     "Professional";
-  const locationCountry = getServiceLocationCountry() || digger.country || "";
-  const localTimeStr = getLocalTimeForCountry(locationCountry);
-  /** Get country code for location (e.g. "ES", "MX") - for flag image and display */
+  // User-level location and time (same as Gigger profile when user has both roles)
+  const profilesCountry = (digger.profiles as any)?.country ?? null;
+  const profilesTimezone = (digger.profiles as any)?.timezone ?? null;
+  const locationCountry = profilesCountry || getServiceLocationCountry() || digger.country || "";
+  const localTimeStr = (() => {
+    if (profilesTimezone?.trim()) {
+      try {
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone: profilesTimezone.trim(),
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZoneName: "short",
+        }).format(new Date());
+      } catch {
+        return getLocalTimeForCountry(locationCountry);
+      }
+    }
+    return getLocalTimeForCountry(locationCountry);
+  })();
+  /** Get country code for location (e.g. "ES", "MX") - for flag image and display; prefer user-level profiles.country */
   const getLocationCountryCode = (): string => {
     const c = locationCountry || (getBaseLocationDisplay().split(",").map((p) => p.trim()).filter(Boolean).pop() ?? "") || "";
     const code = getCodeForCountryName(c);
@@ -1287,6 +1157,8 @@ const DiggerDetail = () => {
     }
     return "";
   };
+  // Location: prefer full location (state, country) from digger so synced with Gigger, then profiles country
+  const displayLocationText = getBaseLocationDisplay() || (profilesCountry ? (getLocationCountryCode() ? `${getCodeForCountryName(profilesCountry) || getLocationCountryCode()} · ${profilesCountry}` : profilesCountry) : "");
 
   /** Job success: completion_rate (0–100). Uncompletion = 100 - completion_rate. Color by tier. */
   const getJobSuccessColor = (rate: number) => {
@@ -1575,7 +1447,7 @@ const DiggerDetail = () => {
                         </div>
                         {digger.tagline && <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">{digger.tagline}</p>}
                         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                          {getBaseLocationDisplay() && (
+                          {(displayLocationText || getBaseLocationDisplay()) && (
                             <span className="flex items-center gap-2">
                               {getLocationCountryCode() ? (
                                 <>
@@ -1589,7 +1461,7 @@ const DiggerDetail = () => {
                                   <span className="uppercase font-medium text-foreground text-sm">{getLocationCountryCode()}</span>
                                 </>
                               ) : null}
-                              <span>{getBaseLocationDisplay()}</span>
+                              <span>{displayLocationText || getBaseLocationDisplay()}</span>
                             </span>
                           )}
                           {localTimeStr && (
@@ -1786,7 +1658,7 @@ const DiggerDetail = () => {
                       </div>
                       {digger.tagline && <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">{digger.tagline}</p>}
                       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                        {getBaseLocationDisplay() && (
+                        {(displayLocationText || getBaseLocationDisplay()) && (
                           <span className="flex items-center gap-2">
                             {getLocationCountryCode() ? (
                               <>
@@ -1800,7 +1672,7 @@ const DiggerDetail = () => {
                                 <span className="uppercase font-medium text-foreground text-sm">{getLocationCountryCode()}</span>
                               </>
                             ) : null}
-                            <span>{getBaseLocationDisplay()}</span>
+                            <span>{displayLocationText || getBaseLocationDisplay()}</span>
                           </span>
                         )}
                         {localTimeStr && (

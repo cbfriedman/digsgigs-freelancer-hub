@@ -137,7 +137,7 @@ serve(async (req) => {
 </body>
 </html>`;
 
-    let recipients: { id: string; user_id: string; business_name: string; email: string; full_name: string | null }[] = [];
+    const recipients: { id: string; user_id: string; business_name: string; email: string; full_name: string | null }[] = [];
 
     if (diggerIds && diggerIds.length > 0) {
       const { data: diggers, error: diggersErr } = await supabase

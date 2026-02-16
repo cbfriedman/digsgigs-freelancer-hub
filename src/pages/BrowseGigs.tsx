@@ -247,7 +247,7 @@ const BrowseGigs = () => {
         // Count leads purchased in current period
         if ((profile as any).lead_limit_enabled && (profile as any).lead_limit) {
           const now = new Date();
-          let startDate = new Date();
+          const startDate = new Date();
 
           if ((profile as any).lead_limit_period === 'daily') {
             startDate.setHours(0, 0, 0, 0);

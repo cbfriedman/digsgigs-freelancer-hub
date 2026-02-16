@@ -302,7 +302,7 @@ const AdminUserManagement = () => {
   // Filter, sort, and paginate users
   const { filteredUsers, totalFiltered, totalPages, paginatedUsers, startIndex } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let list = users.filter((u) => {
+    const list = users.filter((u) => {
       const matchSearch =
         !q ||
         (u.full_name ?? "").toLowerCase().includes(q) ||

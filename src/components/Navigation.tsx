@@ -135,7 +135,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
         const profilesAvatar = profileResult.data?.avatar_url;
         const diggerPhoto = diggerResult.data?.profile_image_url;
         const toUrl = (v: unknown) => (v && typeof v === 'string' && v.trim().length > 0 ? v.trim() : null);
-        const syncedPhoto = toUrl(authPhoto) || toUrl(profilesAvatar) || toUrl(diggerPhoto) || null;
+        // Prefer profiles.avatar_url when we have profile data so header stays in sync with Gigger/Digger profile (including "no photo")
+        const fromProfiles = profileResult.data != null ? (toUrl(profilesAvatar) ?? null) : undefined;
+        const syncedPhoto = fromProfiles !== undefined ? fromProfiles : (toUrl(authPhoto) || toUrl(diggerPhoto) || null);
         setUserPhotoUrl(syncedPhoto);
         if (profileResult.data?.full_name) {
           setUserDisplayName(profileResult.data.full_name);
@@ -729,10 +731,32 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
                       </div>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => goToProfileWorkspace(navigate)} className="cursor-pointer">
-                        <User className="h-4 w-4 mr-2" />
-                        View Profile
-                      </DropdownMenuItem>
+                      {userRoles.includes("digger") && userRoles.includes("gigger") ? (
+                        <>
+                          <DropdownMenuItem
+                            onClick={() => navigate("/my-profile?view=digger")}
+                            className="cursor-pointer"
+                          >
+                            <span className="mr-2">🔧</span>
+                            View Digger profile
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => navigate("/my-profile?view=gigger")}
+                            className="cursor-pointer"
+                          >
+                            <span className="mr-2">📋</span>
+                            View Gigger profile
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => navigate("/my-profile")}
+                          className="cursor-pointer"
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          View Profile
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => navigate('/account')} className="cursor-pointer">
                         <Settings className="h-4 w-4 mr-2" />
                         Account
@@ -750,7 +774,14 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                           {userRoles.map((role) => (
                             <DropdownMenuItem
                               key={role}
-                              onClick={() => switchRole(role)}
+                              onClick={async () => {
+                                await switchRole(role);
+                                if (role === "gigger" && user?.id && (/^\/digger\//.test(location.pathname) || /^\/profile\/[^/]+\/digger/.test(location.pathname))) {
+                                  navigate(`/gigger/${user.id}`);
+                                } else if (role === "digger" && /^\/gigger\//.test(location.pathname)) {
+                                  navigate("/my-profile");
+                                }
+                              }}
                               className={cn(
                                 "cursor-pointer transition-colors",
                                 activeRole === role && "bg-accent/50"
@@ -1278,6 +1309,33 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                         </button>
                       )}
 
+                      {user && (userRoles.includes("digger") && userRoles.includes("gigger") ? (
+                        <>
+                          <button
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/50"
+                            onClick={() => { navigate("/my-profile?view=digger"); setMobileMenuOpen(false); }}
+                          >
+                            <span>🔧</span>
+                            <span className="font-medium">View Digger profile</span>
+                          </button>
+                          <button
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/50"
+                            onClick={() => { navigate("/my-profile?view=gigger"); setMobileMenuOpen(false); }}
+                          >
+                            <span>📋</span>
+                            <span className="font-medium">View Gigger profile</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/50"
+                          onClick={() => { navigate("/my-profile"); setMobileMenuOpen(false); }}
+                        >
+                          <User className="h-4 w-4" />
+                          <span className="font-medium">View Profile</span>
+                        </button>
+                      ))}
+
                       {user && (
                         <button
                           className={cn(
@@ -1373,8 +1431,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                   ? "bg-primary/10 text-primary" 
                                   : "hover:bg-muted/50"
                               )}
-                              onClick={() => {
-                                switchRole(role);
+                              onClick={async () => {
+                                await switchRole(role);
+                                if (role === "gigger" && user?.id && (/^\/digger\//.test(location.pathname) || /^\/profile\/[^/]+\/digger/.test(location.pathname))) {
+                                  navigate(`/gigger/${user.id}`);
+                                } else if (role === "digger" && /^\/gigger\//.test(location.pathname)) {
+                                  navigate("/my-profile");
+                                }
                                 setMobileMenuOpen(false);
                               }}
                             >

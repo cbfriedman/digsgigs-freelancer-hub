@@ -42,7 +42,7 @@ serve(async (req: Request): Promise<Response> => {
       .limit(1)
       .single();
 
-    const throttleMinutes = Math.max(0, Number(settings?.throttle_minutes) ?? 30);
+    const throttleMinutes = Math.max(0, settings?.throttle_minutes != null ? Number(settings.throttle_minutes) : 30);
     const throttleSince = new Date(Date.now() - throttleMinutes * 60 * 1000).toISOString();
 
     const { data: queueItems, error: queueError } = await supabase

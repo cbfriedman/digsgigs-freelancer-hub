@@ -390,6 +390,9 @@ const Register = () => {
               if (insertError) {
                 console.error('Error creating gigger role:', insertError);
                 // Continue anyway - user can still post gig
+              } else {
+                const { ensureGiggerProfile } = await import('@/lib/ensureGiggerProfile');
+                await ensureGiggerProfile(user.id);
               }
             } catch (rpcException) {
               console.warn('RPC function not available:', rpcException);
@@ -1012,6 +1015,11 @@ const Register = () => {
         }
         setLoading(false);
         return;
+      }
+
+      if (selectedRoles.has('gigger')) {
+        const { ensureGiggerProfile } = await import('@/lib/ensureGiggerProfile');
+        await ensureGiggerProfile(verifiedUserId);
       }
 
       // Create role-specific profiles

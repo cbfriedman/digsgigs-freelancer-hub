@@ -115,6 +115,9 @@ const GigConfirmed = () => {
       
       if (roleError) {
         console.error("Error creating Gigger role:", roleError);
+      } else {
+        const { ensureGiggerProfile } = await import('@/lib/ensureGiggerProfile');
+        await ensureGiggerProfile(authData.user.id);
       }
       
       // Link existing guest gigs to the new account

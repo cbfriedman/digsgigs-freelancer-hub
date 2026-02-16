@@ -30,8 +30,9 @@ export default function MessageNotificationSettingsTab() {
 
       if (error) throw error;
       if (data) {
-        setThrottleMinutes(Number((data as any).throttle_minutes) ?? 30);
-        setDelayMinutes(Number((data as any).delay_minutes) ?? 0);
+        const row = data as { throttle_minutes?: number; delay_minutes?: number };
+        setThrottleMinutes(row.throttle_minutes != null ? Number(row.throttle_minutes) : 30);
+        setDelayMinutes(row.delay_minutes != null ? Number(row.delay_minutes) : 0);
       }
     } catch (e) {
       console.error("Error loading message notification settings:", e);

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { invokeEdgeFunction } from '@/lib/invokeEdgeFunction';
 import { toast } from 'sonner';
 
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Fetch user roles from user_app_roles table
   const fetchUserRoles = async (userId: string): Promise<void> => {
     try {
-      console.log('Fetching roles for user:', userId);
+      logger.log('Fetching roles for user:', userId);
       
       // Try using the safe function first (if available)
       // Fallback to direct query if function doesn't exist
@@ -74,20 +75,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } else {
           // RPC function might not exist (migrations not applied)
           // Don't fallback to direct query - it will cause 500 errors due to RLS recursion
-          console.warn('RPC function get_user_app_roles_safe not available. Please apply database migrations.');
+          logger.warn('RPC function get_user_app_roles_safe not available. Please apply database migrations.');
           data = null;
           error = functionError || new Error('RPC function not available - migrations may not be applied');
         }
       } catch (rpcError) {
         // Function doesn't exist - don't try direct query (causes 500 errors)
-        console.warn('RPC function get_user_app_roles_safe failed. Migrations may not be applied:', rpcError);
+        logger.warn('RPC function get_user_app_roles_safe failed. Migrations may not be applied:', rpcError);
         data = null;
         error = rpcError as any;
       }
 
       if (error) {
-        console.error('Error fetching user roles:', error);
-        console.error('Error details:', {
+        logger.error('Error fetching user roles:', error);
+        logger.error('Error details:', {
           code: error.code,
           message: error.message,
           details: error.details,
@@ -97,9 +98,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // If RPC function doesn't exist, show helpful message
         if (error.message?.includes('RPC function not available') || 
             error.message?.includes('function') && error.message?.includes('does not exist')) {
-          console.error('⚠️ CRITICAL: Database migrations not applied!');
-          console.error('Please apply migrations: 20251230000004 and 20251230000005');
-          console.error('See: FIX_500_ERROR_USER_APP_ROLES.md for instructions');
+          logger.error('⚠️ CRITICAL: Database migrations not applied!');
+          logger.error('Please apply migrations: 20251230000004 and 20251230000005');
+          logger.error('See: FIX_500_ERROR_USER_APP_ROLES.md for instructions');
         }
         
         // Don't clear existing roles on error - keep what we have
@@ -109,7 +110,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       const roles = (data || []).map(r => r.app_role as UserAppRole);
-      console.log('Fetched roles:', roles);
+      logger.log('Fetched roles:', roles);
       setUserRoles(roles);
       setRolesFetched(true);
 
@@ -123,10 +124,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           await checkSubscription();
         }
       } else {
-        console.warn('No active roles found for user:', userId);
+        logger.warn('No active roles found for user:', userId);
       }
     } catch (error) {
-      console.error('Exception fetching user roles:', error);
+      logger.error('Exception fetching user roles:', error);
       // Don't clear existing roles on error - keep what we have
       // This prevents blocking users if there's a temporary error
     }
@@ -159,14 +160,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Handle 500 errors gracefully - still switch role even if update fails
       if (error) {
-        console.error('Error updating last_used_at:', error);
+        logger.error('Error updating last_used_at:', error);
         // If it's a 500 error, still allow role switch (update is non-critical)
         if (error.code === '500' || error.message?.includes('500') || error.message?.includes('Internal Server Error')) {
-          console.warn('500 error updating last_used_at - proceeding with role switch anyway');
+          logger.warn('500 error updating last_used_at - proceeding with role switch anyway');
           // Continue with role switch even if update fails
         } else {
           // For other errors, still try to switch role but log the error
-          console.warn('Error updating last_used_at, but proceeding with role switch:', error);
+          logger.warn('Error updating last_used_at, but proceeding with role switch:', error);
         }
       }
 
@@ -181,10 +182,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Role switch is silent - UI already shows active role, no need for overlay notification
       // Only log errors for debugging
       if (error && !(error.code === '500' || error.message?.includes('500'))) {
-        console.warn('Role switch completed but update had issues:', error);
+        logger.warn('Role switch completed but update had issues:', error);
       }
     } catch (error) {
-      console.error('Exception switching role:', error);
+      logger.error('Exception switching role:', error);
       // Even on exception, try to set the role locally
       setActiveRole(role);
       // Silent switch - no toast notification
@@ -237,7 +238,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         indexedDB.deleteDatabase('supabase');
         indexedDB.deleteDatabase('supabase-auth');
       } catch (e) {
-        console.warn('Could not clear IndexedDB:', e);
+        logger.warn('Could not clear IndexedDB:', e);
       }
 
       toast.success('Signed out successfully');
@@ -247,7 +248,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         window.location.replace('/');
       }, 100);
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out:', error);
       toast.error('Error signing out');
       
       // Force clear everything on error
@@ -264,7 +265,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {  // CRITICAL: Remove async to prevent deadlock
-        console.log('Auth state changed:', event, session);
+        logger.log('Auth state changed:', event, session);
 
         // Ignore SIGNED_OUT events to prevent re-authentication
         if (event === 'SIGNED_OUT') {
@@ -287,7 +288,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             try {
               // Handle password recovery before other flows
               if (event === 'PASSWORD_RECOVERY') {
-                console.log('Password recovery mode activated');
+                logger.log('Password recovery mode activated');
                 return;
               }
 
@@ -295,7 +296,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               try {
                 await fetchUserRoles(session.user.id);
               } catch (error) {
-                console.error('Error fetching user roles:', error);
+                logger.error('Error fetching user roles:', error);
               }
 
               // Handle email confirmation callback
@@ -322,7 +323,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 }
 
                 if (rolesError) {
-                  console.error('Error checking roles:', rolesError);
+                  logger.error('Error checking roles:', rolesError);
                   // On error, default to dashboard (users signing in likely have roles)
                   toast.success('Welcome back! Successfully signed in.');
                   window.location.href = '/role-dashboard';
@@ -340,7 +341,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 }
               }
             } catch (error) {
-              console.error('Error in auth state handler:', error);
+              logger.error('Error in auth state handler:', error);
             }
           }, 0);
         } else {
@@ -354,7 +355,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // Safety timeout to ensure loading always completes
     const loadingTimeout = setTimeout(() => {
-      console.warn('Auth loading timeout - forcing loading to false');
+      logger.warn('Auth loading timeout - forcing loading to false');
       setLoading(false);
     }, 5000);
 
@@ -372,7 +373,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         clearTimeout(loadingTimeout);
       })
       .catch((error) => {
-        console.error('Error getting session:', error);
+        logger.error('Error getting session:', error);
         setLoading(false);
         clearTimeout(loadingTimeout);
       });

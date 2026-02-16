@@ -128,7 +128,7 @@ serve(async (req: Request): Promise<Response> => {
       .limit(1)
       .single();
 
-    const delayMinutes = Math.max(0, Number(settings?.delay_minutes) ?? 0);
+    const delayMinutes = Math.max(0, settings?.delay_minutes != null ? Number(settings.delay_minutes) : 0);
     const sendAfter = new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
 
     await supabase.from("message_notification_queue").insert({

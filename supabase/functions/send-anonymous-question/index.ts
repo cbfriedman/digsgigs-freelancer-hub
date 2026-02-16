@@ -127,7 +127,7 @@ serve(async (req) => {
     }
 
     // Get or create conversation
-    let { data: conversation, error: convError } = await supabase
+    const { data: conversation, error: convError } = await supabase
       .from('pre_award_conversations')
       .select('id')
       .eq('gig_id', gigId)

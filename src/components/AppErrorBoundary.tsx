@@ -19,7 +19,7 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: unknown, info: unknown) {
     // Keep this log — it helps debug blank-screen crashes.
-    // eslint-disable-next-line no-console
+     
     console.error("App crashed:", error, info);
   }
 

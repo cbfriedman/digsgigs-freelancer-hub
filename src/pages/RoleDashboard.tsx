@@ -405,6 +405,9 @@ export default function RoleDashboard() {
           return;
         }
         
+        const { ensureGiggerProfile } = await import('@/lib/ensureGiggerProfile');
+        await ensureGiggerProfile(user.id);
+        
         await switchRole('gigger');
         toast({
           title: "Success",
@@ -902,7 +905,7 @@ export default function RoleDashboard() {
           </DialogHeader>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             {userRoles.includes('digger') ? (
-              <Button onClick={() => { setShowWelcomeModal(false); diggerProfilesCount === 0 ? navigate('/create-first-profile') : goToCreateProfile(navigate); }} className="w-full sm:w-auto">
+              <Button onClick={() => { setShowWelcomeModal(false); if (diggerProfilesCount === 0) navigate('/create-first-profile'); else goToCreateProfile(navigate); }} className="w-full sm:w-auto">
                 Complete My Profile
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

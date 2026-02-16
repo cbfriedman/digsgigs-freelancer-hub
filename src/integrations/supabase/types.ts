@@ -3962,37 +3962,90 @@ export type Database = {
         Row: {
           about_me: string | null
           avatar_url: string | null
+          country: string | null
+          cover_photo_url: string | null
           created_at: string
           email: string | null
+          email_verified: boolean | null
           full_name: string | null
           id: string
+          id_verified: boolean | null
+          payment_verified: boolean | null
           phone: string | null
+          phone_verified: boolean | null
+          social_verified: boolean | null
+          timezone: string | null
           updated_at: string
           user_type: string | null
         }
         Insert: {
           about_me?: string | null
           avatar_url?: string | null
+          country?: string | null
+          cover_photo_url?: string | null
           created_at?: string
           email?: string | null
+          email_verified?: boolean | null
           full_name?: string | null
           id: string
+          id_verified?: boolean | null
+          payment_verified?: boolean | null
           phone?: string | null
+          phone_verified?: boolean | null
+          social_verified?: boolean | null
+          timezone?: string | null
           updated_at?: string
           user_type?: string | null
         }
         Update: {
           about_me?: string | null
           avatar_url?: string | null
+          country?: string | null
+          cover_photo_url?: string | null
           created_at?: string
           email?: string | null
+          email_verified?: boolean | null
           full_name?: string | null
           id?: string
+          id_verified?: boolean | null
+          payment_verified?: boolean | null
           phone?: string | null
+          phone_verified?: boolean | null
+          social_verified?: boolean | null
+          timezone?: string | null
           updated_at?: string
           user_type?: string | null
         }
         Relationships: []
+      }
+      gigger_profiles: {
+        Row: {
+          user_id: string
+          show_to_diggers: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          show_to_diggers?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          show_to_diggers?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gigger_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       proxy_emails: {
         Row: {

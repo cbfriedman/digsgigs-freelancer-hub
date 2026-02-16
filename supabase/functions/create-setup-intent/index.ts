@@ -43,7 +43,7 @@ serve(async (req) => {
     });
 
     // Get or create Stripe customer
-    let customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string;
     
     if (customers.data.length === 0) {

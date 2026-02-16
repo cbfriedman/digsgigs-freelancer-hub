@@ -182,14 +182,18 @@ export function FloatingMessageWidget() {
       try {
         const raw = sessionStorage.getItem(openKey);
         if (raw === "true") setIsOpen(true);
-      } catch (_) {}
+      } catch {
+        // sessionStorage may be unavailable (e.g. private browsing)
+      }
     }
     if (convKey) {
       try {
         const raw = sessionStorage.getItem(convKey);
         const ids = raw ? (JSON.parse(raw) as string[]) : [];
         if (Array.isArray(ids) && ids.length > 0) storedOpenChatIdsRef.current = ids;
-      } catch (_) {}
+      } catch {
+        // sessionStorage may be unavailable (e.g. private browsing)
+      }
     }
   }, [user?.id, hideOnMessagesPage]);
 
@@ -414,7 +418,9 @@ export function FloatingMessageWidget() {
     try {
       sessionStorage.setItem(openKey, String(isOpen));
       sessionStorage.setItem(convKey, JSON.stringify(openChats.map((c) => c.id)));
-    } catch (_) {}
+    } catch {
+      // sessionStorage may be unavailable (e.g. private browsing)
+    }
   }, [isOpen, openChats, user?.id, hideOnMessagesPage]);
 
   const closeChat = useCallback((convId: string) => {

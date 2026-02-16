@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil } from "lucide-react";
+import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
 import { BidsList } from "@/components/BidsList";
@@ -44,7 +44,23 @@ interface Gig {
   } | null;
   profiles: {
     full_name: string | null;
+    avatar_url: string | null;
+    country: string | null;
+    timezone: string | null;
+    email_verified: boolean | null;
+    phone_verified: boolean | null;
+    payment_verified: boolean | null;
+    id_verified: boolean | null;
+    social_verified: boolean | null;
   } | null;
+}
+
+/** Gigger project counts (for "About the client" card) */
+interface ClientGigStats {
+  open: number;
+  active: number;
+  completed: number;
+  total: number;
 }
 
 const GigDetail = () => {
@@ -211,7 +227,7 @@ const GigDetail = () => {
       .select(`
         *,
         categories (name, description),
-        profiles!gigs_consumer_id_fkey (full_name)
+        profiles!gigs_consumer_id_fkey (full_name, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, social_verified)
       `)
       .eq("id", id)
       .single();
@@ -227,6 +243,24 @@ const GigDetail = () => {
 
     setGig(gigData);
     setIsOwner(session?.user?.id === gigData.consumer_id);
+
+    // Fetch client (Gigger) project counts for "About the client" card
+    if (gigData.consumer_id) {
+      const { data: gigs } = await supabase
+        .from("gigs")
+        .select("id, status, awarded_at")
+        .eq("consumer_id", gigData.consumer_id);
+      const list = gigs ?? [];
+      const open = list.filter((g: { status: string }) => g.status === "open").length;
+      const active = list.filter((g: { status: string; awarded_at?: string | null }) =>
+        g.status === "in_progress" || (g.awarded_at != null && g.status !== "completed")
+      ).length;
+      const completed = list.filter((g: { status: string }) => g.status === "completed").length;
+      setClientGigStats({ open, active, completed, total: list.length });
+    } else {
+      setClientGigStats(null);
+    }
+
     setLoading(false);
 
     // Track ViewContent event for Facebook Pixel
@@ -248,12 +282,30 @@ const GigDetail = () => {
     return `$${min?.toLocaleString()} - $${max?.toLocaleString()}`;
   };
 
+  /** Format current time in client's timezone for "About the client" card */
+  const formatClientLocalTime = (timezone: string | null): string => {
+    if (!timezone || !timezone.trim()) return "";
+    try {
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone.trim(),
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZoneName: "short",
+      });
+      return formatter.format(new Date());
+    } catch {
+      return "";
+    }
+  };
+
   const [bumping, setBumping] = useState(false);
   const [reposting, setReposting] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [expandSuccessCoverLetter, setExpandSuccessCoverLetter] = useState(false);
   const [hasClientSentMessage, setHasClientSentMessage] = useState(false);
   const [editingProposal, setEditingProposal] = useState(false);
+  const [clientGigStats, setClientGigStats] = useState<ClientGigStats | null>(null);
   const PROPOSAL_PREVIEW_LEN = 280;
 
   const handleBump = async () => {
@@ -866,26 +918,104 @@ const GigDetail = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {gig.poster_country ? (
+                  {/* Photo + name (user-level, same for Digger/Gigger) */}
+                  {(gig.profiles?.avatar_url || gig.profiles?.full_name || gig.client_name) && (
                     <div className="flex items-center gap-3">
-                      {getCodeForCountryName(gig.poster_country) ? (
+                      {gig.profiles?.avatar_url ? (
                         <img
-                          src={`https://flagcdn.com/w40/${getCodeForCountryName(gig.poster_country).toLowerCase()}.png`}
+                          src={gig.profiles.avatar_url}
                           alt=""
-                          className="h-8 w-10 object-cover rounded shrink-0"
-                          width={40}
-                          height={32}
+                          className="h-12 w-12 rounded-full object-cover shrink-0"
+                          width={48}
+                          height={48}
                         />
-                      ) : null}
-                      <div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Client location</div>
-                        <div className="font-medium">
-                          {getCodeForCountryName(gig.poster_country) ? `${getCodeForCountryName(gig.poster_country)} · ${gig.poster_country}` : gig.poster_country}
+                      ) : (
+                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <User className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Client</div>
+                        <div className="font-medium truncate">
+                          {gig.profiles?.full_name?.trim() || gig.client_name?.trim() || "Client"}
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Client location not specified.</p>
+                  )}
+                  {/* Nationality (user-level; fallback to gig poster_country) */}
+                  {(() => {
+                    const country = gig.profiles?.country ?? gig.poster_country ?? null;
+                    if (!country) return <p className="text-sm text-muted-foreground">Client location not specified.</p>;
+                    const code = getCodeForCountryName(country);
+                    return (
+                      <div className="flex items-center gap-3">
+                        {code ? (
+                          <img
+                            src={`https://flagcdn.com/w40/${code.toLowerCase()}.png`}
+                            alt=""
+                            className="h-8 w-10 object-cover rounded shrink-0"
+                            width={40}
+                            height={32}
+                          />
+                        ) : null}
+                        <div>
+                          <div className="text-xs text-muted-foreground uppercase tracking-wide">Nationality</div>
+                          <div className="font-medium">{code ? `${code} · ${country}` : country}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {/* Local time (user-level timezone) */}
+                  {formatClientLocalTime(gig.profiles?.timezone ?? null) && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Local time</div>
+                        <div className="text-sm font-medium">{formatClientLocalTime(gig.profiles?.timezone ?? null)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Verification badges (user-level) */}
+                  {(gig.profiles?.email_verified || gig.profiles?.phone_verified || gig.profiles?.payment_verified || gig.profiles?.id_verified || gig.profiles?.social_verified) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {gig.profiles?.email_verified && (
+                        <Badge variant="secondary" className="text-xs gap-0.5">
+                          <Mail className="h-3 w-3" /> Email
+                        </Badge>
+                      )}
+                      {gig.profiles?.phone_verified && (
+                        <Badge variant="secondary" className="text-xs gap-0.5">
+                          <Phone className="h-3 w-3" /> Phone
+                        </Badge>
+                      )}
+                      {gig.profiles?.payment_verified && (
+                        <Badge variant="secondary" className="text-xs gap-0.5">
+                          <CreditCard className="h-3 w-3" /> Payment
+                        </Badge>
+                      )}
+                      {gig.profiles?.id_verified && (
+                        <Badge variant="secondary" className="text-xs gap-0.5">
+                          <IdCard className="h-3 w-3" /> ID
+                        </Badge>
+                      )}
+                      {gig.profiles?.social_verified && (
+                        <Badge variant="secondary" className="text-xs gap-0.5">
+                          <Share2 className="h-3 w-3" /> Social
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                  {/* Project stats (Gigger) */}
+                  {clientGigStats && clientGigStats.total >= 0 && (
+                    <div className="rounded-md border bg-muted/30 p-2.5 space-y-1">
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide">Projects</div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                        <span>Open: <strong>{clientGigStats.open}</strong></span>
+                        <span>Active: <strong>{clientGigStats.active}</strong></span>
+                        <span>Completed: <strong>{clientGigStats.completed}</strong></span>
+                        <span>Total: <strong>{clientGigStats.total}</strong></span>
+                      </div>
+                    </div>
                   )}
                   <div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wide">Posted</div>

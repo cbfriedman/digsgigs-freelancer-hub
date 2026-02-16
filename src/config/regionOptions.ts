@@ -230,7 +230,7 @@ function normalizeCountryKey(s: string): string {
 }
 
 /** Find country by name or by 2-letter code (case-insensitive, trimmed). */
-function findCountryByNameOrCode(value: string): { code: string; name: string; flag: string } | undefined {
+export function findCountryByNameOrCode(value: string): { code: string; name: string; flag: string } | undefined {
   if (!value || !value.trim()) return undefined;
   const key = normalizeCountryKey(value);
   return ALL_COUNTRY_OPTIONS.find(
