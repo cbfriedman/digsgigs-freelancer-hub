@@ -63,7 +63,9 @@ export default function ProfileWorkspaceRedirect() {
         const next = new URLSearchParams();
         next.set("manage", "1");
         if (mode === "create") {
-          next.set("mode", "create");
+          // Single-profile model: treat "create" as "edit existing" once a profile exists.
+          next.set("mode", "edit");
+          next.set("profileId", profile.id);
         } else if (mode === "edit" || targetProfileId) {
           next.set("mode", "edit");
           next.set("profileId", targetProfileId || profile.id);

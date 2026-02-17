@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, User, Briefcase, ArrowRight, MapPin, Star, Clock3 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
-import { getCanonicalDiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
+import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
 
 type RoleView = "overview" | "digger" | "gigger";
 
@@ -379,7 +379,7 @@ export default function ProfileByHandle() {
               <Button
                 variant="outline"
                 className="mt-4 w-full sm:w-auto"
-                onClick={() => navigate(`/gigger/${resolved.user_id}`)}
+                onClick={() => navigate(getCanonicalGiggerProfilePath(resolved.user_id))}
               >
                 Open Full Gigger Profile
                 <ArrowRight className="h-4 w-4 ml-2" />

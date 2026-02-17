@@ -68,7 +68,7 @@ const AdminUserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [actionType, setActionType] = useState<"add" | "remove" | "suspend" | "unsuspend" | "delete">("add");
+  const [actionType, setActionType] = useState<"add" | "remove" | "suspend" | "unsuspend" | "delete_profile" | "delete">("add");
   // Filters & sort
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("date_desc");
@@ -256,7 +256,7 @@ const AdminUserManagement = () => {
     if (!selectedUser) return;
     try {
       const data = await invokeEdgeFunction<{ error?: string }>(supabase, "admin-manage-user", {
-        body: { action: "delete", userId: selectedUser },
+        body: { action: "delete", userId: selectedUser, confirmFullUserDeletion: true },
       });
       if (data?.error) throw new Error(data.error);
       toast.success("User deleted successfully");
@@ -270,11 +270,30 @@ const AdminUserManagement = () => {
     }
   };
 
+  const handleDeleteProfile = async () => {
+    if (!selectedUser) return;
+    try {
+      const data = await invokeEdgeFunction<{ error?: string }>(supabase, "admin-manage-user", {
+        body: { action: "delete_profile", userId: selectedUser },
+      });
+      if (data?.error) throw new Error(data.error);
+      toast.success("Profile deleted successfully");
+      await loadUsers();
+    } catch (err) {
+      console.error("Error deleting profile:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to delete profile");
+    } finally {
+      setShowConfirmDialog(false);
+      setSelectedUser(null);
+    }
+  };
+
   const confirmAction = () => {
     if (actionType === "add") handleAddRole();
     else if (actionType === "remove") handleRemoveRole();
     else if (actionType === "suspend") handleSuspendUser();
     else if (actionType === "unsuspend") handleUnsuspendUser();
+    else if (actionType === "delete_profile") handleDeleteProfile();
     else if (actionType === "delete") handleDeleteUser();
   };
 
@@ -606,6 +625,17 @@ const AdminUserManagement = () => {
                                 className="text-destructive focus:text-destructive"
                                 onClick={() => {
                                   setSelectedUser(user.id);
+                                  setActionType("delete_profile");
+                                  setShowConfirmDialog(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => {
+                                  setSelectedUser(user.id);
                                   setActionType("delete");
                                   setShowConfirmDialog(true);
                                 }}
@@ -704,6 +734,7 @@ const AdminUserManagement = () => {
               {actionType === "remove" && "Remove Role"}
               {actionType === "suspend" && "Suspend User"}
               {actionType === "unsuspend" && "Unsuspend User"}
+              {actionType === "delete_profile" && "Delete Profile"}
               {actionType === "delete" && "Delete User"}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -711,6 +742,7 @@ const AdminUserManagement = () => {
               {actionType === "remove" && `Are you sure you want to remove the "${selectedRole}" role from this user?`}
               {actionType === "suspend" && "The user will be blocked from signing in until unsuspended. Continue?"}
               {actionType === "unsuspend" && "The user will be able to sign in again. Continue?"}
+              {actionType === "delete_profile" && "This will remove digger/gigger profile records and related role assignments, but keep the login account. This action cannot be undone. Continue?"}
               {actionType === "delete" && "This will permanently delete the user account. This action cannot be undone. Continue?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -725,9 +757,9 @@ const AdminUserManagement = () => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmAction}
-              className={actionType === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+              className={actionType === "delete" || actionType === "delete_profile" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
             >
-              {actionType === "delete" ? "Delete" : "Confirm"}
+              {actionType === "delete" || actionType === "delete_profile" ? "Delete" : "Confirm"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

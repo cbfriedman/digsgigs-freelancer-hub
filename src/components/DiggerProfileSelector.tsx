@@ -178,11 +178,20 @@ export const DiggerProfileSelector = () => {
   }, [location.pathname, profiles, getProfileIdFromUrl]);
 
   const handleCreateProfile = () => {
+    if (profiles.length >= 1) {
+      toast.error("You can only have one Digger profile.");
+      return;
+    }
     setNewProfileName('');
     setCreateProfileDialog(true);
   };
 
   const handleConfirmCreateProfile = () => {
+    if (profiles.length >= 1) {
+      toast.error("You can only have one Digger profile.");
+      setCreateProfileDialog(false);
+      return;
+    }
     if (!newProfileName.trim()) {
       toast.error("Please enter a profile name");
       return;
@@ -281,9 +290,10 @@ export const DiggerProfileSelector = () => {
         <DropdownMenuItem
           onClick={handleCreateProfile}
           className="cursor-pointer text-primary"
+          disabled={profiles.length >= 1}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Create New Profile
+          {profiles.length >= 1 ? "Only one profile allowed" : "Create New Profile"}
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />

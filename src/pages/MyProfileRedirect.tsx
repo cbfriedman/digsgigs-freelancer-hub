@@ -3,13 +3,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
+import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath } from "@/lib/profileUrls";
 import { Loader2 } from "lucide-react";
 
 /**
  * Redirects to the current user's profile detail page.
  * - ?view=gigger → /gigger/:userId (Gigger profile)
- * - ?view=digger → /digger/:id (Digger profile)
- * - No query: use active role (Gigger → /gigger/:userId, Digger → /digger/:id)
+ * - ?view=digger → /profile/:handle/digger or /digger/:id (Digger profile, canonical when handle exists)
+ * - No query: use active role (Gigger → /gigger/:userId, Digger → canonical digger URL)
  * - No profile yet → /my-profiles (workspace)
  */
 export default function MyProfileRedirect() {
@@ -29,34 +30,35 @@ export default function MyProfileRedirect() {
     const go = async () => {
       // Explicit view: owner can open either profile
       if (view === "gigger") {
-        navigate(`/gigger/${user.id}`, { replace: true });
+        navigate(getCanonicalGiggerProfilePath(user.id), { replace: true });
         return;
       }
       if (view === "digger" && userRoles.includes("digger")) {
         const { data, error } = await supabase
           .from("digger_profiles")
-          .select("id")
+          .select("id, handle")
           .eq("user_id", user.id)
           .order("is_primary", { ascending: false })
           .order("created_at", { ascending: true })
           .limit(1)
           .maybeSingle();
         if (!error && data?.id) {
-          navigate(`/digger/${data.id}`, { replace: true });
+          const path = getCanonicalDiggerProfilePath({ handle: data.handle, diggerId: data.id });
+          navigate(path ?? `/digger/${data.id}`, { replace: true });
           return;
         }
       }
 
       // No view or invalid view: use active role
       if (activeRole === "gigger") {
-        navigate(`/gigger/${user.id}`, { replace: true });
+        navigate(getCanonicalGiggerProfilePath(user.id), { replace: true });
         return;
       }
 
       if (activeRole === "digger" && userRoles.includes("digger")) {
         const { data, error } = await supabase
           .from("digger_profiles")
-          .select("id")
+          .select("id, handle")
           .eq("user_id", user.id)
           .order("is_primary", { ascending: false })
           .order("created_at", { ascending: true })
@@ -64,7 +66,8 @@ export default function MyProfileRedirect() {
           .maybeSingle();
 
         if (!error && data?.id) {
-          navigate(`/digger/${data.id}`, { replace: true });
+          const path = getCanonicalDiggerProfilePath({ handle: data.handle, diggerId: data.id });
+          navigate(path ?? `/digger/${data.id}`, { replace: true });
           return;
         }
       }

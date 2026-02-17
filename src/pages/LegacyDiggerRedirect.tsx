@@ -16,13 +16,13 @@ export default function LegacyDiggerRedirect() {
   useEffect(() => {
     let cancelled = false;
 
-    const redirect = () => {
+    const run = async () => {
       setReadyToRenderLegacy(false);
 
       // Legacy handle route: /digger/:handle -> canonical /profile/:handle/digger
       if (!isUuid(id)) {
         const canonicalByHandle = getCanonicalDiggerProfilePath({ handle: normalizeHandle(id) });
-        if (canonicalByHandle && canonicalByHandle !== `${location.pathname}`) {
+        if (canonicalByHandle && canonicalByHandle !== location.pathname) {
           navigate(`${canonicalByHandle}${location.search}${location.hash}`, { replace: true });
           return;
         }
@@ -30,11 +30,13 @@ export default function LegacyDiggerRedirect() {
         return;
       }
 
-      // UUID route keeps the full legacy digger detail page.
+      // UUID: render DiggerDetail directly (full profile page).
+      // Do not redirect to /profile/:handle/digger — that route shows a summary card.
+      // Users clicking "Open Full Digger Profile" expect to see the full profile here.
       if (!cancelled) setReadyToRenderLegacy(true);
     };
 
-    redirect();
+    run();
     return () => {
       cancelled = true;
     };

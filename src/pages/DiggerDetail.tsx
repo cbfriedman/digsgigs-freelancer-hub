@@ -146,7 +146,8 @@ const DiggerDetail = () => {
     const profileIdParam = searchParams.get("profileId");
     setProfileManagerOpen(true);
     if (mode === "create") {
-      setEditorModal({ open: true, mode: "create", profileId: null });
+      // Single-profile model: opening create in manage mode edits the existing profile.
+      setEditorModal({ open: true, mode: "edit", profileId: digger?.id || null });
     } else if (mode === "edit") {
       setEditorModal({ open: true, mode: "edit", profileId: profileIdParam || digger?.id || null });
     }
@@ -352,14 +353,6 @@ const DiggerDetail = () => {
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to update profile");
     }
-  };
-
-  const openCreateModal = () => {
-    setEditorModal({
-      open: true,
-      mode: "create",
-      profileId: null,
-    });
   };
 
   const openSectionModal = (section: "about" | "skills" | "profession" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews") => {
@@ -589,7 +582,16 @@ const DiggerDetail = () => {
         const stateVal = locationStateDraft.trim() || null;
         const countryVal = locationDraft.trim() || null;
         const locationText = [cityVal, stateVal, countryVal].filter(Boolean).join(", ") || "Not specified";
-        await supabase.from("digger_profiles").update({ country: countryVal, city: cityVal, state: stateVal, location: locationText }).eq("id", digger.id);
+        // Keep base location shared across all profiles for this digger user.
+        await supabase
+          .from("digger_profiles")
+          .update({ country: countryVal, city: cityVal, state: stateVal, location: locationText })
+          .eq("user_id", digger.user_id);
+        // Also sync shared identity location used by Gigger + header.
+        await supabase
+          .from("profiles")
+          .update({ country: countryVal, city: cityVal, state: stateVal })
+          .eq("id", digger.user_id);
       } else if (sectionEditor.section === "service_location") {
         await supabase.from("digger_profiles").update({ service_countries: serviceLocationDraft.length ? serviceLocationDraft : null }).eq("id", digger.id);
       } else if (sectionEditor.section === "website") {
@@ -611,58 +613,6 @@ const DiggerDetail = () => {
       toast.error("Failed to update section");
     } finally {
       setIsSectionSaving(false);
-    }
-  };
-
-  const handleSetPrimaryProfile = async (profileId: string) => {
-    if (!currentUser) return;
-    try {
-      const { data: allProfiles } = await supabase
-        .from("digger_profiles")
-        .select("handle, business_name")
-        .eq("user_id", currentUser.id);
-      const username =
-        allProfiles?.find((p: any) => p.handle || p.business_name)?.handle ||
-        allProfiles?.find((p: any) => p.business_name)?.business_name ||
-        null;
-
-      await supabase.from("digger_profiles").update({ is_primary: false, handle: null }).eq("user_id", currentUser.id);
-      await supabase.from("digger_profiles").update({ is_primary: true, handle: username }).eq("id", profileId);
-      toast.success("Primary profile updated");
-      await loadOwnerProfiles();
-      await loadData();
-    } catch {
-      toast.error("Failed to set primary profile");
-    }
-  };
-
-  const handleDeleteProfile = async (profileId: string) => {
-    if (!currentUser) return;
-    const confirmed = window.confirm("Delete this profile permanently?");
-    if (!confirmed) return;
-    try {
-      await supabase.from("digger_profiles").delete().eq("id", profileId).eq("user_id", currentUser.id);
-      toast.success("Profile deleted");
-      await loadOwnerProfiles();
-      if (digger?.id === profileId) {
-        const { data: fallback } = await supabase
-          .from("digger_profiles")
-          .select("id, handle")
-          .eq("user_id", currentUser.id)
-          .order("is_primary", { ascending: false })
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-        if (fallback?.id) {
-          navigate(getCanonicalDiggerProfilePath({ handle: (fallback as { handle?: string | null; id: string }).handle, diggerId: fallback.id }) || `/digger/${fallback.id}`);
-        } else {
-          navigate("/role-dashboard");
-        }
-      } else {
-        await loadData();
-      }
-    } catch {
-      toast.error("Failed to delete profile");
     }
   };
 
@@ -2307,22 +2257,9 @@ const DiggerDetail = () => {
                   <Button size="sm" variant="outline" onClick={() => openEditModal(profile.id)}>
                     Edit
                   </Button>
-                  {!profile.is_primary && (
-                    <Button size="sm" variant="outline" onClick={() => void handleSetPrimaryProfile(profile.id)}>
-                      Set Primary
-                    </Button>
-                  )}
-                  {!profile.is_primary && (
-                    <Button size="sm" variant="outline" onClick={() => void handleDeleteProfile(profile.id)}>
-                      Delete
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}
-            <div className="pt-2 flex justify-end">
-              <Button onClick={openCreateModal}>Create New Profile</Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>

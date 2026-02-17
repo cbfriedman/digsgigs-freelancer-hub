@@ -25,7 +25,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
-import { goToCreateProfile, goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
+import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
+import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath } from "@/lib/profileUrls";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,8 @@ interface RoleStats {
     leadsCount: number;
     profilesCount: number;
     activeLeadsCount: number;
+    primaryProfileId?: string | null;
+    primaryProfileHandle?: string | null;
   };
   gigger?: {
     gigsCount: number;
@@ -68,14 +71,19 @@ export default function RoleDashboard() {
     hasFetchedStatsRef.current = true;
     
     try {
-      // Fetch Digger stats
+      // Fetch Digger stats (single-profile model)
       if (userRoles.includes('digger')) {
         let profilesCount = 0;
+        let primaryDiggerProfileId: string | null = null;
+        let primaryDiggerProfileHandle: string | null = null;
         try {
-          const { count, error: profilesError } = await supabase
+          const { data: diggerProfiles, error: profilesError } = await supabase
             .from('digger_profiles')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id);
+            .select('id, handle')
+            .eq('user_id', user.id)
+            .order('is_primary', { ascending: false })
+            .order('created_at', { ascending: true })
+            .limit(1);
 
           if (profilesError) {
             if (profilesError.code === 'PGRST116' || profilesError.message?.includes('406') || profilesError.message?.includes('Not Acceptable')) {
@@ -84,7 +92,10 @@ export default function RoleDashboard() {
               console.error('Error fetching digger profiles count:', profilesError);
             }
           } else {
-            profilesCount = count || 0;
+            const primary = diggerProfiles?.[0];
+            primaryDiggerProfileId = primary?.id ?? null;
+            primaryDiggerProfileHandle = primary?.handle ?? null;
+            profilesCount = primaryDiggerProfileId ? 1 : 0;
           }
         } catch (err) {
           console.warn('Error fetching digger profiles count:', err);
@@ -93,41 +104,25 @@ export default function RoleDashboard() {
         let leadsCount = 0;
         let activeLeadsCount = 0;
         
-        if (profilesCount > 0) {
+        if (primaryDiggerProfileId) {
           try {
-            const { data: diggerProfiles, error: profileError } = await supabase
-              .from('digger_profiles')
-              .select('id')
-              .eq('user_id', user.id)
-              .limit(1);
+            const { count: leadsCountResult, error: leadsError } = await supabase
+              .from('lead_purchases')
+              .select('id', { count: 'exact', head: true })
+              .eq('digger_id', primaryDiggerProfileId);
 
-            if (profileError) {
-              if (profileError.code === 'PGRST116' || profileError.message?.includes('406') || profileError.message?.includes('Not Acceptable')) {
-                console.warn('Could not fetch digger profile for lead counts:', profileError);
-              } else {
-                console.error('Error fetching digger profile for lead counts:', profileError);
-              }
-            } else if (diggerProfiles && diggerProfiles.length > 0) {
-              const diggerProfileId = diggerProfiles[0].id;
+            if (!leadsError) {
+              leadsCount = leadsCountResult || 0;
+            }
 
-              const { count: leadsCountResult, error: leadsError } = await supabase
-                .from('lead_purchases')
-                .select('id', { count: 'exact', head: true })
-                .eq('digger_id', diggerProfileId);
+            const { count: activeLeadsCountResult, error: activeLeadsError } = await supabase
+              .from('lead_purchases')
+              .select('id', { count: 'exact', head: true })
+              .eq('digger_id', primaryDiggerProfileId)
+              .eq('status', 'active');
 
-              if (!leadsError) {
-                leadsCount = leadsCountResult || 0;
-              }
-
-              const { count: activeLeadsCountResult, error: activeLeadsError } = await supabase
-                .from('lead_purchases')
-                .select('id', { count: 'exact', head: true })
-                .eq('digger_id', diggerProfileId)
-                .eq('status', 'active');
-
-              if (!activeLeadsError) {
-                activeLeadsCount = activeLeadsCountResult || 0;
-              }
+            if (!activeLeadsError) {
+              activeLeadsCount = activeLeadsCountResult || 0;
             }
           } catch (err) {
             console.warn('Error fetching lead counts:', err);
@@ -140,6 +135,8 @@ export default function RoleDashboard() {
             profilesCount,
             leadsCount,
             activeLeadsCount,
+            primaryProfileId: primaryDiggerProfileId,
+            primaryProfileHandle: primaryDiggerProfileHandle,
           }
         }));
       }
@@ -316,7 +313,7 @@ export default function RoleDashboard() {
 
       await switchRole('digger');
 
-      // 2. Redirect to complete your profile: first profile (title + location) or create additional
+      // 2. Redirect to complete your single profile
       const { data: existingProfiles } = await supabase
         .from('digger_profiles')
         .select('id')
@@ -326,7 +323,7 @@ export default function RoleDashboard() {
       if (!existingProfiles || existingProfiles.length === 0) {
         navigate('/create-first-profile');
       } else {
-        goToCreateProfile(navigate);
+        goToProfileWorkspace(navigate);
       }
     } catch (err) {
       console.error(err);
@@ -447,6 +444,7 @@ export default function RoleDashboard() {
   const hasRoles = userRoles.length > 0;
   const isEmailVerified = Boolean(user?.email_confirmed_at);
   const diggerProfilesCount = stats.digger?.profilesCount ?? 0;
+  const hasDiggerProfile = diggerProfilesCount > 0;
   const diggerLeadsCount = stats.digger?.leadsCount ?? 0;
   const giggerGigsCount = stats.gigger?.gigsCount ?? 0;
 
@@ -460,11 +458,11 @@ export default function RoleDashboard() {
       };
     }
 
-    if (userRoles.includes("digger") && diggerProfilesCount === 0) {
+    if (userRoles.includes("digger") && !hasDiggerProfile) {
       return {
-        title: "Create your first Digger profile",
+        title: "Set up your Digger profile",
         description: "A complete profile helps Giggers find and trust your services.",
-        ctaLabel: "Create Digger Profile",
+        ctaLabel: "Set Up Profile",
         onClick: () => {
           void handleSwitchRole("digger");
           navigate("/create-first-profile");
@@ -592,7 +590,7 @@ export default function RoleDashboard() {
                       </>
                     )}
                   </div>
-                  <CardDescription className="mt-1">Find gigs, bid or buy leads, get awarded</CardDescription>
+                  <CardDescription className="mt-1">Build one strong profile, unlock leads, and win more gigs</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -603,8 +601,8 @@ export default function RoleDashboard() {
                   {/* Stats Grid */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="p-4 rounded-xl bg-muted/50 text-center">
-                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats.digger?.profilesCount ?? 0}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Profiles</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{hasDiggerProfile ? 1 : 0}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Profile</p>
                     </div>
                     <div className="p-4 rounded-xl bg-muted/50 text-center">
                       <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats.digger?.leadsCount ?? 0}</p>
@@ -638,29 +636,28 @@ export default function RoleDashboard() {
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('digger');
-                          if (diggerProfilesCount === 0) {
+                          if (!hasDiggerProfile) {
                             navigate('/create-first-profile');
                           } else {
-                            goToProfileWorkspace(navigate);
+                            const path = getCanonicalDiggerProfilePath({
+                              handle: stats.digger?.primaryProfileHandle ?? null,
+                              diggerId: stats.digger?.primaryProfileId ?? null,
+                            });
+                            navigate(path ?? '/my-profiles');
                           }
                         }}
                       >
-                        My Profiles
+                        {hasDiggerProfile ? "My Profile" : "Set Up Profile"}
                       </Button>
                       <Button 
                         variant="outline"
                         className="w-full"
                         onClick={() => {
                           handleSwitchRole('digger');
-                          if (diggerProfilesCount === 0) {
-                            navigate('/create-first-profile');
-                          } else {
-                            goToCreateProfile(navigate);
-                          }
+                          navigate('/browse-gigs');
                         }}
                       >
-                        <Plus className="h-4 w-4 mr-1" />
-                        New Profile
+                        Browse Gigs
                       </Button>
                     </div>
                   </div>
@@ -762,7 +759,7 @@ export default function RoleDashboard() {
                         onClick={() => {
                           handleSwitchRole('gigger');
                           if (user?.id) {
-                            navigate(`/gigger/${user.id}`);
+                            navigate(getCanonicalGiggerProfilePath(user.id));
                           }
                         }}
                       >
@@ -907,7 +904,7 @@ export default function RoleDashboard() {
           </DialogHeader>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             {userRoles.includes('digger') ? (
-              <Button onClick={() => { setShowWelcomeModal(false); if (diggerProfilesCount === 0) navigate('/create-first-profile'); else goToCreateProfile(navigate); }} className="w-full sm:w-auto">
+              <Button onClick={() => { setShowWelcomeModal(false); if (diggerProfilesCount === 0) navigate('/create-first-profile'); else goToProfileWorkspace(navigate); }} className="w-full sm:w-auto">
                 Complete My Profile
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

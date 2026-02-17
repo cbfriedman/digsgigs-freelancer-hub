@@ -33,6 +33,7 @@ import { usePlatformCounts } from "@/hooks/usePlatformCounts";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
+import { getCanonicalGiggerProfilePath } from "@/lib/profileUrls";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -777,7 +778,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               onClick={async () => {
                                 await switchRole(role);
                                 if (role === "gigger" && user?.id && (/^\/digger\//.test(location.pathname) || /^\/profile\/[^/]+\/digger/.test(location.pathname))) {
-                                  navigate(`/gigger/${user.id}`);
+                                  navigate(getCanonicalGiggerProfilePath(user.id));
                                 } else if (role === "digger" && /^\/gigger\//.test(location.pathname)) {
                                   navigate("/my-profile");
                                 }
@@ -1434,7 +1435,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               onClick={async () => {
                                 await switchRole(role);
                                 if (role === "gigger" && user?.id && (/^\/digger\//.test(location.pathname) || /^\/profile\/[^/]+\/digger/.test(location.pathname))) {
-                                  navigate(`/gigger/${user.id}`);
+                                  navigate(getCanonicalGiggerProfilePath(user.id));
                                 } else if (role === "digger" && /^\/gigger\//.test(location.pathname)) {
                                   navigate("/my-profile");
                                 }

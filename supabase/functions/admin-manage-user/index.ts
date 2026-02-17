@@ -50,7 +50,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, userId } = body;
+    const { action, userId, confirmFullUserDeletion } = body;
 
     if (!userId) {
       return new Response(
@@ -114,6 +114,13 @@ serve(async (req) => {
       }
 
       case "delete": {
+        if (confirmFullUserDeletion !== true) {
+          return new Response(
+            JSON.stringify({ error: "Full user deletion requires explicit confirmation" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
         if (error) {
@@ -130,9 +137,70 @@ serve(async (req) => {
         );
       }
 
+      case "delete_profile": {
+        // Keep auth account and core profile row intact; only remove role-specific profile records.
+        const { error: diggerDeleteError } = await supabaseAdmin
+          .from("digger_profiles")
+          .delete()
+          .eq("user_id", userId);
+
+        if (diggerDeleteError) {
+          console.error("Delete digger_profiles error:", diggerDeleteError);
+          return new Response(
+            JSON.stringify({ error: diggerDeleteError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { error: giggerDeleteError } = await supabaseAdmin
+          .from("gigger_profiles")
+          .delete()
+          .eq("user_id", userId);
+
+        if (giggerDeleteError) {
+          console.error("Delete gigger_profiles error:", giggerDeleteError);
+          return new Response(
+            JSON.stringify({ error: giggerDeleteError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { error: roleDeleteError } = await supabaseAdmin
+          .from("user_app_roles")
+          .delete()
+          .eq("user_id", userId)
+          .in("app_role", ["digger", "gigger"]);
+
+        if (roleDeleteError) {
+          console.error("Delete user_app_roles error:", roleDeleteError);
+          return new Response(
+            JSON.stringify({ error: roleDeleteError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const { error: profileUpdateError } = await supabaseAdmin
+          .from("profiles")
+          .update({ user_type: "consumer" })
+          .eq("id", userId);
+
+        if (profileUpdateError) {
+          console.error("Update profile user_type error:", profileUpdateError);
+          return new Response(
+            JSON.stringify({ error: profileUpdateError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: "Role-specific profile data deleted successfully" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       default:
         return new Response(
-          JSON.stringify({ error: "Invalid action. Use 'suspend', 'unsuspend', or 'delete'" }),
+          JSON.stringify({ error: "Invalid action. Use 'suspend', 'unsuspend', 'delete_profile', or 'delete'" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }

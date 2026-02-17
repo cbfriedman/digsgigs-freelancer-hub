@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
 import { goToEditProfile } from "@/lib/profileWorkspaceRoute";
 import { getHandleForFirstProfile } from "@/lib/generateHandle";
+import { ensureProfileFromAuth } from "@/lib/ensureProfileFromAuth";
 import { PageLayout } from "@/components/layout/PageLayout";
 
 const COUNTRY_OPTIONS = [
@@ -81,11 +82,43 @@ export default function FirstProfileCreate() {
         return;
       }
 
-      // 2. Build location string (digger service location)
-      const locationParts = [selectedState, country].filter(Boolean);
-      const locationString = locationParts.length > 0 ? locationParts.join(", ") : country || "Not specified";
+      // 2. Ensure profiles row exists (digger_profiles.user_id references profiles.id)
+      const { error: profileError } = await ensureProfileFromAuth(user);
+      if (profileError) {
+        console.error("Failed to ensure profile:", profileError);
+        toast.error("Account setup incomplete. Please refresh and try again.");
+        setIsSubmitting(false);
+        return;
+      }
 
-      // 3. Get user full_name and phone from profiles
+      // 3. Build location string (digger service location)
+      const { data: existingProfiles, error: existingProfilesError } = await supabase
+        .from("digger_profiles")
+        .select("id, country, state, city, location")
+        .eq("user_id", user.id)
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: true });
+
+      if (existingProfilesError) {
+        toast.error("Failed to validate existing profiles. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const existingCount = existingProfiles?.length ?? 0;
+      if (existingCount >= 1) {
+        toast.error("You can only have one Digger profile.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const countryVal = country || null;
+      const stateVal = selectedState || null;
+      const cityVal = null;
+      const locationParts = [cityVal, stateVal, countryVal].filter(Boolean);
+      const locationString = locationParts.length > 0 ? locationParts.join(", ") : "Not specified";
+
+      // 4. Get user full_name and phone from profiles
       let userPhone = "Not specified";
       let fullName: string | null = null;
       try {
@@ -103,7 +136,7 @@ export default function FirstProfileCreate() {
         fullName = user.user_metadata.full_name;
       }
 
-      // 4. Generate unique handle from real name (e.g. jackson_chen)
+      // 5. Generate unique handle from real name (e.g. jackson_chen)
       const { data: existingHandles } = await supabase
         .from("digger_profiles")
         .select("handle")
@@ -113,7 +146,7 @@ export default function FirstProfileCreate() {
         (existingHandles || []).map((r) => r.handle).filter(Boolean) as string[]
       );
 
-      // 5. Create minimal digger profile (handle auto-generated from real name)
+      // 6. Create minimal digger profile (handle auto-generated from real name)
       const { data: newProfile, error: createError } = await supabase
         .from("digger_profiles")
         .insert({
@@ -123,8 +156,9 @@ export default function FirstProfileCreate() {
           profile_name: profileTitle.trim(),
           profession: "General Services",
           location: locationString,
-          country: country || null,
-          state: selectedState || null,
+          country: countryVal,
+          state: stateVal,
+          city: cityVal,
           phone: userPhone,
           keywords: [],
           registration_status: "incomplete",
