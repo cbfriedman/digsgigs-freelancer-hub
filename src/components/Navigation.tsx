@@ -739,7 +739,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       </div>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => navigate(userHandle ? `/profile/${userHandle}` : "/my-profiles")}
+                        onClick={() => {
+                          if (userHandle) navigate(`/profile/${userHandle}`);
+                          else if (user?.id && userRoles.includes("gigger")) navigate(getCanonicalGiggerProfilePath(user.id));
+                          else navigate("/my-profiles");
+                        }}
                         className="cursor-pointer"
                       >
                         <User className="h-4 w-4 mr-2" />
@@ -1300,7 +1304,12 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       {user && (
                         <button
                           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-muted/50"
-                          onClick={() => { navigate(userHandle ? `/profile/${userHandle}` : "/my-profiles"); setMobileMenuOpen(false); }}
+                          onClick={() => {
+                            if (userHandle) navigate(`/profile/${userHandle}`);
+                            else if (user?.id && userRoles.includes("gigger")) navigate(getCanonicalGiggerProfilePath(user.id));
+                            else navigate("/my-profiles");
+                            setMobileMenuOpen(false);
+                          }}
                         >
                           <User className="h-4 w-4" />
                           <span className="font-medium">View profile</span>

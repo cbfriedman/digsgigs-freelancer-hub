@@ -598,12 +598,8 @@ export default function RoleDashboard() {
             <CardContent className="space-y-5">
               {userRoles.includes('digger') ? (
                 <>
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl bg-muted/50 text-center">
-                      <p className="text-2xl sm:text-3xl font-bold text-foreground">{hasDiggerProfile ? 1 : 0}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Profile</p>
-                    </div>
+                  {/* Stats Grid - Total Leads & Active only (one profile per Digger, so no Profile count) */}
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 rounded-xl bg-muted/50 text-center">
                       <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats.digger?.leadsCount ?? 0}</p>
                       <p className="text-xs text-muted-foreground mt-1">Total Leads</p>

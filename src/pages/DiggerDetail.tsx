@@ -33,6 +33,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProfileHeader, ProfileAbout, QuickContactCard, ReferencesSection } from "@/components/digger-profile";
 import { getCanonicalDiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
 import { DiggerInlineProfileEditor } from "@/components/DiggerInlineProfileEditor";
+import { PortfolioEditor } from "@/components/portfolio/PortfolioEditor";
+import { PortfolioDisplay } from "@/components/portfolio/PortfolioDisplay";
+import type { DiggerPortfolioItem, DiggerPortfolioItemDraft } from "@/types/portfolio";
 import { ALL_COUNTRY_OPTIONS, REGION_OPTIONS, getFlagForCountryName, getCodeForCountryName } from "@/config/regionOptions";
 import { useProfessions } from "@/hooks/useProfessions";
 import { SEO_CITIES } from "@/config/seoCities";
@@ -116,6 +119,7 @@ const DiggerDetail = () => {
   const [selectedSkillsDraft, setSelectedSkillsDraft] = useState<string[]>([]);
   const [workPhotosDraft, setWorkPhotosDraft] = useState("");
   const [portfolioDraft, setPortfolioDraft] = useState("");
+  const [portfolioItems, setPortfolioItems] = useState<DiggerPortfolioItem[]>([]);
   const [isSectionSaving, setIsSectionSaving] = useState(false);
 
   useEffect(() => {
@@ -266,6 +270,14 @@ const DiggerDetail = () => {
       .eq("digger_id", profileId);
 
     setReferences(referencesData || []);
+
+    const { data: portfolioData } = await supabase
+      .from("digger_portfolio_items")
+      .select("*")
+      .eq("digger_profile_id", profileId)
+      .order("sort_order", { ascending: true });
+    setPortfolioItems((portfolioData as DiggerPortfolioItem[]) || []);
+
     setLoading(false);
 
     // Track ViewContent event for Facebook Pixel
@@ -614,6 +626,50 @@ const DiggerDetail = () => {
     } finally {
       setIsSectionSaving(false);
     }
+  };
+
+  const handleSavePortfolio = async (drafts: DiggerPortfolioItemDraft[]) => {
+    if (!digger) return;
+    const savedIds: string[] = [];
+    for (let i = 0; i < drafts.length; i++) {
+      const d = drafts[i];
+      const payload = {
+        title: d.title,
+        description: d.description || null,
+        project_url: d.project_url || null,
+        skills: d.skills || [],
+        category: d.category || null,
+        media: d.media || [],
+        sort_order: i,
+      };
+      if (d.id && !String(d.id).startsWith("draft-")) {
+        const { error } = await supabase.from("digger_portfolio_items").update(payload).eq("id", d.id).eq("digger_profile_id", digger.id);
+        if (error) throw error;
+        savedIds.push(d.id);
+      } else {
+        const { data, error } = await supabase
+          .from("digger_portfolio_items")
+          .insert({ digger_profile_id: digger.id, ...payload })
+          .select("id")
+          .single();
+        if (error) throw error;
+        if (data?.id) savedIds.push(data.id);
+      }
+    }
+    const { data: existing } = await supabase.from("digger_portfolio_items").select("id").eq("digger_profile_id", digger.id);
+    const toDelete = (existing || []).filter((r) => !savedIds.includes(r.id)).map((r) => r.id);
+    if (toDelete.length > 0) {
+      await supabase.from("digger_portfolio_items").delete().in("id", toDelete);
+    }
+    const { data: updated } = await supabase
+      .from("digger_portfolio_items")
+      .select("*")
+      .eq("digger_profile_id", digger.id)
+      .order("sort_order", { ascending: true });
+    setPortfolioItems((updated as DiggerPortfolioItem[]) || []);
+    setSectionEditor({ open: false, section: null });
+    toast.success("Portfolio saved");
+    await loadData();
   };
 
   const handleProfilePhotoReplace = () => {
@@ -1531,7 +1587,7 @@ const DiggerDetail = () => {
                 </Card>
 
                 {/* Portfolio */}
-                {(digger.portfolio_url || (digger.portfolio_urls && digger.portfolio_urls.length > 0)) && (
+                {(portfolioItems.length > 0 || digger.portfolio_url || (digger.portfolio_urls && digger.portfolio_urls.length > 0)) && (
                   <Card className="rounded-xl border-border/70">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -1540,16 +1596,22 @@ const DiggerDetail = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {digger.portfolio_url && (
-                        <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline font-medium">
-                          View portfolio →
-                        </a>
+                      {portfolioItems.length > 0 ? (
+                        <PortfolioDisplay items={portfolioItems} legacyPortfolioUrl={digger.portfolio_url} />
+                      ) : (
+                        <>
+                          {digger.portfolio_url && (
+                            <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline font-medium">
+                              View portfolio →
+                            </a>
+                          )}
+                          {(digger.portfolio_urls || []).map((url, idx) => (
+                            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block text-primary hover:underline text-sm mt-1">
+                              {url}
+                            </a>
+                          ))}
+                        </>
                       )}
-                      {(digger.portfolio_urls || []).map((url, idx) => (
-                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block text-primary hover:underline text-sm mt-1">
-                          {url}
-                        </a>
-                      ))}
                     </CardContent>
                   </Card>
                 )}
@@ -1707,26 +1769,35 @@ const DiggerDetail = () => {
                 </div>
               </section>
 
-              <section className="py-6 border-b border-border">
+              <section id="portfolio-section" className="py-6 border-b border-border">
                 <div className="pb-2 flex flex-row items-center justify-between">
                   <h2 className="text-lg font-semibold">Portfolio</h2>
-                  <Button variant="ghost" size="icon" onClick={() => openSectionModal("portfolio")} title="Edit Portfolio">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  {isOwnProfile && (
+                    <Button variant="ghost" size="icon" onClick={() => openSectionModal("portfolio")} title="Edit Portfolio">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 <div>
-                  {digger.portfolio_url ? (
-                    <a
-                      href={digger.portfolio_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-primary hover:underline"
-                    >
-                      <Globe className="h-4 w-4" />
-                      View Portfolio
-                    </a>
+                  {portfolioItems.length > 0 || digger.portfolio_url ? (
+                    <PortfolioDisplay
+                      items={portfolioItems}
+                      legacyPortfolioUrl={digger.portfolio_url}
+                    />
                   ) : (
-                    <p className="text-sm text-muted-foreground">No portfolio link added yet.</p>
+                    <div className="text-sm text-muted-foreground">
+                      {isOwnProfile ? (
+                        <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
+                          <p className="mb-3">Add work samples so Giggers can see your experience.</p>
+                          <Button onClick={() => openSectionModal("portfolio")}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add portfolio
+                          </Button>
+                        </div>
+                      ) : (
+                        <p>No portfolio added yet.</p>
+                      )}
+                    </div>
                   )}
                 </div>
               </section>
@@ -1911,13 +1982,17 @@ const DiggerDetail = () => {
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
                       <p className="text-xs font-semibold text-muted-foreground">Portfolio</p>
-                      {isOwnProfile && digger.portfolio_url && (
+                      {isOwnProfile && (portfolioItems.length > 0 || digger.portfolio_url) && (
                         <button type="button" onClick={() => openSectionModal("portfolio")} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3 w-3" />
                         </button>
                       )}
                     </div>
-                    {digger.portfolio_url ? (
+                    {portfolioItems.length > 0 ? (
+                      <button type="button" className="text-sm text-primary hover:underline text-left" onClick={() => document.getElementById("portfolio-section")?.scrollIntoView({ behavior: "smooth" })}>
+                        {portfolioItems.length} project{portfolioItems.length !== 1 ? "s" : ""}
+                      </button>
+                    ) : digger.portfolio_url ? (
                       <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
                         {digger.portfolio_url}
                       </a>
@@ -2132,11 +2207,18 @@ const DiggerDetail = () => {
                           Website
                         </a>
                       )}
-                      {digger.portfolio_url && (
-                        <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                          <Globe className="h-4 w-4 shrink-0" />
-                          Portfolio
-                        </a>
+                      {(portfolioItems.length > 0 || digger.portfolio_url) && (
+                        portfolioItems.length > 0 ? (
+                          <button type="button" onClick={() => document.getElementById("portfolio-section")?.scrollIntoView({ behavior: "smooth" })} className="flex items-center gap-2 text-sm text-primary hover:underline">
+                            <Globe className="h-4 w-4 shrink-0" />
+                            Portfolio
+                          </button>
+                        ) : (
+                          <a href={digger.portfolio_url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
+                            <Globe className="h-4 w-4 shrink-0" />
+                            Portfolio
+                          </a>
+                        )
                       )}
                       {(digger.monthly_salary != null || formatHourlyRate()) && (
                         <div className="flex items-center gap-2 text-sm">
@@ -2267,10 +2349,10 @@ const DiggerDetail = () => {
         open={sectionEditor.open}
         onOpenChange={(open) => setSectionEditor((prev) => (open ? prev : { open: false, section: null }))}
       >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-2">
             <DialogTitle>
-              {sectionEditor.section === "about" && "Edit About"}
+              {sectionEditor.section === "about" && (digger?.bio ? "Edit About" : "Add your bio")}
               {sectionEditor.section === "skills" && "Edit Skills"}
               {sectionEditor.section === "profession" && "Edit Profession"}
               {sectionEditor.section === "work" && "Edit Work Samples"}
@@ -2285,15 +2367,31 @@ const DiggerDetail = () => {
               {sectionEditor.section === "reviews" && "Reviews"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            {sectionEditor.section === "about" && (
+          <div className="overflow-y-auto flex-1 min-h-0 px-6 pb-6 space-y-4">
+            {sectionEditor.section === "about" && digger && (
               <>
-                <Textarea
-                  value={aboutDraft}
-                  onChange={(e) => setAboutDraft(e.target.value)}
-                  rows={8}
-                  placeholder="Describe your services and expertise..."
+                <p className="text-sm text-muted-foreground">
+                  Help Giggers get to know you. Use AI to draft a bio from your profession and experience, or write your own below—you can edit anytime.
+                </p>
+                <BioGenerator
+                  profession={digger.profession || digger.business_name || "General Services"}
+                  currentBio={aboutDraft}
+                  onBioGenerated={(bio) => {
+                    setAboutDraft(bio);
+                    toast.success("Bio added below—edit if you like, then Save.");
+                  }}
+                  defaultExpanded
                 />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Your bio</label>
+                  <Textarea
+                    value={aboutDraft}
+                    onChange={(e) => setAboutDraft(e.target.value)}
+                    rows={8}
+                    placeholder="Describe your services and experience so Giggers can see why you’re the right fit for their gig."
+                    className="resize-none"
+                  />
+                </div>
                 <div className="flex justify-end">
                   <Button onClick={handleSaveSection} disabled={isSectionSaving}>
                     {isSectionSaving ? "Saving..." : "Save"}
@@ -2430,19 +2528,13 @@ const DiggerDetail = () => {
                 </div>
               </>
             )}
-            {sectionEditor.section === "portfolio" && (
-              <>
-                <Input
-                  value={portfolioDraft}
-                  onChange={(e) => setPortfolioDraft(e.target.value)}
-                  placeholder="https://your-portfolio.com"
-                />
-                <div className="flex justify-end">
-                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
-                    {isSectionSaving ? "Saving..." : "Save"}
-                  </Button>
-                </div>
-              </>
+            {sectionEditor.section === "portfolio" && digger && (
+              <PortfolioEditor
+                diggerProfileId={digger.id}
+                items={portfolioItems}
+                onSave={handleSavePortfolio}
+                onCancel={() => setSectionEditor({ open: false, section: null })}
+              />
             )}
             {sectionEditor.section === "availability" && (
               <>

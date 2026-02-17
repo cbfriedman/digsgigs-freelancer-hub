@@ -14,16 +14,18 @@ interface BioGeneratorProps {
   profession: string;
   currentBio?: string;
   onBioGenerated: (bio: string) => void;
+  /** When true, show the AI form immediately (e.g. when opened from "Add Bio with AI Assistance") */
+  defaultExpanded?: boolean;
 }
 
-export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGeneratorProps) => {
+export const BioGenerator = ({ profession, currentBio, onBioGenerated, defaultExpanded = false }: BioGeneratorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBio, setGeneratedBio] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
   const [skills, setSkills] = useState("");
   const [specialties, setSpecialties] = useState("");
   const [tone, setTone] = useState("professional");
-  const [showGenerator, setShowGenerator] = useState(false);
+  const [showGenerator, setShowGenerator] = useState(defaultExpanded);
 
   const generateBio = async () => {
     if (!profession) {
@@ -95,7 +97,7 @@ export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGene
           AI Bio Generator
         </CardTitle>
         <CardDescription>
-          Let AI help you write a compelling service description that attracts clients
+          Let AI help you write a bio that helps Giggers choose you for their gigs
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -104,7 +106,7 @@ export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGene
           <Input
             id="years-experience"
             type="number"
-            placeholder="e.g., 10"
+            placeholder="e.g., 5"
             value={yearsExperience}
             onChange={(e) => setYearsExperience(e.target.value)}
             min="0"
@@ -116,7 +118,7 @@ export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGene
           <Label htmlFor="skills">Key Skills (optional, comma-separated)</Label>
           <Input
             id="skills"
-            placeholder="e.g., residential remodeling, project management"
+            placeholder="e.g., React, copywriting, SEO, project management"
             value={skills}
             onChange={(e) => setSkills(e.target.value)}
           />
@@ -126,7 +128,7 @@ export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGene
           <Label htmlFor="specialties">Specialties (optional)</Label>
           <Input
             id="specialties"
-            placeholder="e.g., historic home restoration, eco-friendly building"
+            placeholder="e.g., web apps, content strategy, brand identity"
             value={specialties}
             onChange={(e) => setSpecialties(e.target.value)}
           />
@@ -138,7 +140,7 @@ export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGene
             <SelectTrigger id="tone">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[220]" position="popper">
               <SelectItem value="professional">Professional & Trustworthy</SelectItem>
               <SelectItem value="friendly">Friendly & Approachable</SelectItem>
               <SelectItem value="confident">Confident & Authoritative</SelectItem>
@@ -172,7 +174,7 @@ export const BioGenerator = ({ profession, currentBio, onBioGenerated }: BioGene
               value={generatedBio}
               onChange={(e) => setGeneratedBio(e.target.value)}
               className="min-h-[120px] resize-none"
-              placeholder="Your generated bio will appear here..."
+              placeholder="Edit your bio here, then click Use This Bio to add it below."
             />
             <div className="flex gap-2">
               <Button

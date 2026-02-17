@@ -15,7 +15,6 @@ import SEOHead from "@/components/SEOHead";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import DiggerRoleForm from "@/components/registration/DiggerRoleForm";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useUTMTracking } from "@/hooks/useUTMTracking";
@@ -80,6 +79,10 @@ interface RoleFormData {
     businessInfo?: any;
   };
   gigger?: {
+    profileTitle?: string;
+    country?: string | null;
+    state?: string | null;
+    location?: string;
     preferences?: any;
   };
 }
@@ -226,6 +229,7 @@ const Register = () => {
   // Step 3+: Role-specific forms data
   const [roleFormData, setRoleFormData] = useState<RoleFormData>({});
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
+  const [existingDiggerLocation, setExistingDiggerLocation] = useState<{ country: string; state?: string | null } | null>(null);
 
   // Freelancer flow: opt-in for helpful emails (job leads, tips)
   const [diggerEmailOptIn, setDiggerEmailOptIn] = useState(true);
@@ -467,6 +471,36 @@ const Register = () => {
   // Steps: 1=Basic Info, 2=OTP Verification, 3=Role Selection, 4+=Role Forms
   const totalSteps = 3 + profileSetupRoles.length; // Basic Info + OTP + Role Selection + Role Forms
   const progressPercentage = (step / totalSteps) * 100;
+
+  // Fetch digger location when showing Gigger form (one user = one location, lock if Digger has location)
+  useEffect(() => {
+    const role = profileSetupRoles[currentRoleIndex];
+    if (!user?.id || step <= 3 || role !== 'gigger') {
+      setExistingDiggerLocation(null);
+      return;
+    }
+    const fetchDiggerLocation = async () => {
+      try {
+        const { data } = await supabase
+          .from('digger_profiles')
+          .select('country, state')
+          .eq('user_id', user.id)
+          .not('country', 'is', null)
+          .order('is_primary', { ascending: false })
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (data?.country) {
+          setExistingDiggerLocation({ country: data.country, state: data.state ?? null });
+        } else {
+          setExistingDiggerLocation(null);
+        }
+      } catch {
+        setExistingDiggerLocation(null);
+      }
+    };
+    void fetchDiggerLocation();
+  }, [user?.id, step, profileSetupRoles, currentRoleIndex]);
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -791,28 +825,138 @@ const Register = () => {
       return;
     }
 
-    // Skip role-specific forms - go directly to registration completion and dashboard
+    // If Digger or Gigger selected, persist roles and redirect to /create-first-profile page
+    if (profileSetupRoles.length > 0) {
+      setLoading(true);
+      try {
+        let verifiedUserId = userId;
+        let currentUser = null;
+
+        try {
+          const { data: authUser, error: authError } = await supabase.auth.getUser();
+          if (!authError && authUser?.user) {
+            currentUser = authUser;
+            verifiedUserId = authUser.user.id;
+            if (authUser.user.id !== userId) {
+              setUserId(authUser.user.id);
+              verifiedUserId = authUser.user.id;
+            }
+          }
+        } catch {
+          /* not authenticated yet */
+        }
+
+        if (!currentUser) {
+          if (!email || !password) {
+            toast.error("Session expired. Please sign in again.");
+            setLoading(false);
+            setStep(1);
+            return;
+          }
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInError) {
+            toast.error("Unable to authenticate. Please try signing in again.");
+            setLoading(false);
+            setStep(1);
+            return;
+          }
+          if (!signInData.user) {
+            toast.error("Authentication failed. Please try again.");
+            setLoading(false);
+            return;
+          }
+          verifiedUserId = signInData.user.id;
+          setUserId(verifiedUserId);
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", verifiedUserId)
+          .single();
+        if (profileError || !profile) {
+          toast.error("Account setup incomplete. The profile was not created. Please contact support.");
+          setLoading(false);
+          setStep(1);
+          return;
+        }
+
+        let rolesError: any = null;
+        try {
+          for (const role of roleArray) {
+            const { error: rpcError } = await (supabase.rpc as any)("insert_user_app_role", {
+              p_user_id: verifiedUserId,
+              p_app_role: role,
+            });
+            if (rpcError) {
+              if (rpcError.code === "23503" || rpcError.message?.includes("foreign key constraint")) {
+                toast.error("Account setup incomplete. Please complete account creation first.");
+                setStep(1);
+              } else if (rpcError.code === "42883" || rpcError.message?.includes("does not exist") || rpcError.message?.includes("function")) {
+                rolesError = rpcError;
+                break;
+              } else {
+                rolesError = rpcError;
+                break;
+              }
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (rpcException) {
+          rolesError = rpcException as any;
+        }
+
+        if (rolesError && (rolesError.code === "42883" || rolesError.message?.includes("does not exist") || rolesError.message?.includes("function"))) {
+          const roleInserts = roleArray.map((role) => ({
+            user_id: verifiedUserId,
+            app_role: role,
+            is_active: true,
+          }));
+          const { error: directInsertError } = await supabase.from("user_app_roles").insert(roleInserts);
+          if (directInsertError) {
+            toast.error(directInsertError.code === "23503" ? "Account setup incomplete. Please complete account creation first." : "Roles setup failed. Please contact support.");
+            setLoading(false);
+            setStep(1);
+            return;
+          }
+        } else if (rolesError) {
+          toast.error(rolesError.code === "23503" ? "Account setup incomplete. Please complete account creation first." : "Roles setup failed. Please contact support.");
+          setLoading(false);
+          return;
+        }
+
+        navigate("/create-first-profile", { state: { fromRegistration: true, setupRoles: profileSetupRoles }, replace: true });
+      } catch (err) {
+        console.error("Role persist and redirect error:", err);
+        toast.error("Something went wrong. Please try again.");
+        setLoading(false);
+      }
+      return;
+    }
+
     completeRegistration();
   };
 
   const handleRoleFormComplete = (role: UserAppRole, data: any) => {
-    // Save role-specific form data
-    setRoleFormData(prev => ({
-      ...prev,
-      [role]: data,
-    }));
+    const mergedRoleFormData = { ...roleFormData, [role]: data };
+    setRoleFormData(mergedRoleFormData);
 
     // Move to next role form or complete registration
     if (currentRoleIndex < roleArray.length - 1) {
       setCurrentRoleIndex(currentRoleIndex + 1);
       setStep(step + 1);
     } else {
-      // All forms completed, proceed to account creation
-      completeRegistration();
+      // All forms completed, proceed to account creation with latest form data
+      completeRegistration(mergedRoleFormData);
     }
   };
 
-  const completeRegistration = async () => {
+  const completeRegistration = async (overrideRoleFormData?: RoleFormData) => {
+    const effectiveRoleFormData = overrideRoleFormData ?? roleFormData;
     if (!userId) {
       toast.error("Session expired. Please start over.");
       setStep(1);
@@ -1020,10 +1164,20 @@ const Register = () => {
       if (selectedRoles.has('gigger')) {
         const { ensureGiggerProfile } = await import('@/lib/ensureGiggerProfile');
         await ensureGiggerProfile(verifiedUserId);
+        // Save Gigger profile data (profile_title, country, state) to profiles
+        if (effectiveRoleFormData.gigger) {
+          const updates: Record<string, unknown> = {};
+          if (effectiveRoleFormData.gigger.profileTitle) updates.profile_title = effectiveRoleFormData.gigger.profileTitle;
+          if (effectiveRoleFormData.gigger.country) updates.country = effectiveRoleFormData.gigger.country;
+          if (effectiveRoleFormData.gigger.state != null) updates.state = effectiveRoleFormData.gigger.state;
+          if (Object.keys(updates).length > 0) {
+            await (supabase.from('profiles') as any).update(updates).eq('id', verifiedUserId);
+          }
+        }
       }
 
       // Create role-specific profiles
-      if (selectedRoles.has('digger') && roleFormData.digger) {
+      if (selectedRoles.has('digger') && effectiveRoleFormData.digger) {
         try {
           // CRITICAL: digger_profiles.user_id references profiles(id), not auth.users(id)
           // Profile was already verified above - if we reach here, it exists
@@ -1053,27 +1207,37 @@ const Register = () => {
             (existingHandles || []).map((r) => r.handle).filter(Boolean) as string[]
           );
           
+          // Use Gigger's location if user also selected Gigger (one user = one location)
+          const giggerLoc = effectiveRoleFormData.gigger;
+          const locCountry = giggerLoc?.country ?? null;
+          const locState = giggerLoc?.state ?? null;
+          const locParts = [locState, locCountry].filter(Boolean);
+          const locationString = locParts.length > 0 ? locParts.join(", ") : "Not specified";
+
           // Prepare digger profile data with proper defaults and required fields
           const diggerProfileData: any = {
             user_id: verifiedUserId, // References profiles(id) - must match auth.uid() for RLS
             handle, // Auto-generated from real name (e.g. jackson_chen), unique identity
-            business_name: roleFormData.digger.companyName || 'Not specified',
-            profile_name: roleFormData.digger.companyName || 'My Profile', // Set profile name for display
+            business_name: effectiveRoleFormData.digger.companyName || 'Not specified',
+            profile_name: effectiveRoleFormData.digger.companyName || 'My Profile', // Set profile name for display
             phone: phone || 'Not provided',
-            location: 'Not specified', // Required field (NOT NULL), can't be empty string
-            registration_status: roleFormData.digger.selectedIndustries && roleFormData.digger.selectedIndustries.length > 0 ? 'complete' : 'incomplete',
+            location: locationString,
+            country: locCountry,
+            state: locState,
+            city: null,
+            registration_status: effectiveRoleFormData.digger.selectedIndustries && effectiveRoleFormData.digger.selectedIndustries.length > 0 ? 'complete' : 'incomplete',
             subscription_tier: 'free',
             subscription_status: 'inactive',
-            allow_gigger_contact: roleFormData.digger.allowGiggerContact || false, // Save the opt-in preference
-            keywords: roleFormData.digger.selectedIndustries || [], // Save selected industries as keywords
+            allow_gigger_contact: effectiveRoleFormData.digger.allowGiggerContact || false, // Save the opt-in preference
+            keywords: effectiveRoleFormData.digger.selectedIndustries || [], // Save selected industries as keywords
             is_primary: true, // Mark as primary profile (first profile created)
           };
 
           // Add profession if available (nullable field, but good to have)
           // Note: profession was made nullable in later migrations, but it's good practice to set it
-          if (roleFormData.digger.selectedIndustries && roleFormData.digger.selectedIndustries.length > 0) {
+          if (effectiveRoleFormData.digger.selectedIndustries && effectiveRoleFormData.digger.selectedIndustries.length > 0) {
             // Extract profession from selectedIndustries - handle "Category: Subcategory" format
-            const firstIndustry = roleFormData.digger.selectedIndustries[0];
+            const firstIndustry = effectiveRoleFormData.digger.selectedIndustries[0];
             if (firstIndustry.includes(':')) {
               // If format is "Category: Subcategory", extract just the category part
               diggerProfileData.profession = firstIndustry.split(':')[0].trim();
@@ -1100,7 +1264,7 @@ const Register = () => {
           // If user already has a profile, UPDATE it instead of inserting
           if (existingProfiles && existingProfiles.length > 0) {
             console.log("Profile already exists, updating instead of creating new one");
-            
+            const { data: existingDigger } = await supabase.from('digger_profiles').select('handle').eq('user_id', verifiedUserId).single();
             const { data: updatedProfile, error: updateError } = await supabase
               .from('digger_profiles')
               .update({
@@ -1122,6 +1286,9 @@ const Register = () => {
                 duration: 8000
               });
             } else {
+              if (existingDigger?.handle) {
+                await (supabase.from('profiles') as any).update({ handle: existingDigger.handle }).eq('id', verifiedUserId);
+              }
               console.log("Digger profile updated successfully:", updatedProfile?.id);
               // Treat update as success - continue with registration
             }
@@ -1182,7 +1349,8 @@ const Register = () => {
                 // Continue with registration - don't block user, but they'll need to create profile manually
               }
             } else if (diggerProfile && diggerProfile.id) {
-              // Successfully created digger profile
+              // Successfully created digger profile - sync handle to profiles for /profile/:handle
+              await (supabase.from('profiles') as any).update({ handle: diggerProfileData.handle }).eq('id', verifiedUserId);
               console.log("Digger profile created successfully:", diggerProfile.id);
               console.log("Profile data saved:", {
                 id: diggerProfile.id,
@@ -1385,7 +1553,7 @@ const Register = () => {
           
           // If digger profile was created, redirect to My Profiles to show it
           // Check if profile was created by looking for digger role and profile data
-          if (selectedRoles.has('digger') && roleFormData.digger) {
+          if (selectedRoles.has('digger') && effectiveRoleFormData.digger) {
             // Wait a bit longer to ensure profile is fully committed and RLS policies are ready
             // Also wait for any pending database operations
             setTimeout(() => {
@@ -1398,7 +1566,7 @@ const Register = () => {
         } catch (error) {
           console.error('Error during redirect preparation:', error);
           // Fallback: redirect anyway - dashboard will handle role refresh
-          if (selectedRoles.has('digger') && roleFormData.digger) {
+          if (selectedRoles.has('digger') && effectiveRoleFormData.digger) {
             window.location.href = '/my-profiles?registered=true';
           } else {
             window.location.href = '/role-dashboard?registered=true';
@@ -2490,63 +2658,7 @@ const Register = () => {
               </div>
             )}
 
-            {/* Step 4+: Role-specific Forms */}
-            {!isPasswordResetMode && step > 3 && currentRole && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 p-3 bg-accent rounded-lg">
-                  <Badge>
-                    {currentRoleIndex + 1} of {profileSetupRoles.length}
-                  </Badge>
-                  <span className="text-sm font-medium">
-                    Setting up your {currentRole} profile
-                  </span>
-                </div>
-
-                {/* Skip to dropdown when multiple roles selected */}
-                {profileSetupRoles.length > 1 && (
-                  <div className="flex items-center gap-3 p-3 border rounded-lg bg-background">
-                    <Label className="text-sm font-medium whitespace-nowrap">Skip to:</Label>
-                    <Select
-                      value={currentRole}
-                      onValueChange={(value) => {
-                        const roleIndex = profileSetupRoles.indexOf(value as UserAppRole);
-                        if (roleIndex !== -1) {
-                          setCurrentRoleIndex(roleIndex);
-                          setStep(4 + roleIndex);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {profileSetupRoles.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role === 'digger' ? '🔧 Digger Profile' : '📋 Gigger Profile'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {currentRole === 'digger' && (
-                  <DiggerRoleForm
-                    onComplete={(data) => handleRoleFormComplete('digger', data)}
-                    onBack={() => {
-                      if (currentRoleIndex === 0) {
-                        setStep(3); // Back to role selection
-                      } else {
-                        setCurrentRoleIndex(currentRoleIndex - 1);
-                        setStep(step - 1);
-                      }
-                    }}
-                  />
-                )}
-
-                {/* Telemarketer role removed */}
-              </div>
-            )}
+            {/* Step 4+ profile setup is done on /create-first-profile page */}
           </CardContent>
         </Card>
         </div>
