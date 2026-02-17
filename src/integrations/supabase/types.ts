@@ -1411,11 +1411,7 @@ export type Database = {
           response_time_hours: number | null
           service_radius_center: string | null
           service_radius_miles: number | null
-          service_countries: string[] | null
           service_zip_codes: string[] | null
-          social_links: Json | null
-          website_url: string | null
-          monthly_salary: number | null
           sic_code: string[] | null
           skills: string[] | null
           state: string | null
@@ -1498,11 +1494,7 @@ export type Database = {
           response_time_hours?: number | null
           service_radius_center?: string | null
           service_radius_miles?: number | null
-          service_countries?: string[] | null
           service_zip_codes?: string[] | null
-          social_links?: Json | null
-          website_url?: string | null
-          monthly_salary?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
           state?: string | null
@@ -1585,11 +1577,7 @@ export type Database = {
           response_time_hours?: number | null
           service_radius_center?: string | null
           service_radius_miles?: number | null
-          service_countries?: string[] | null
           service_zip_codes?: string[] | null
-          social_links?: Json | null
-          website_url?: string | null
-          monthly_salary?: number | null
           sic_code?: string[] | null
           skills?: string[] | null
           state?: string | null
@@ -1984,69 +1972,6 @@ export type Database = {
           },
         ]
       }
-      gig_digger_email_deliveries: {
-        Row: {
-          id: string
-          gig_id: string
-          digger_id: string
-          sent_at: string
-          sent_by: string
-        }
-        Insert: {
-          id?: string
-          gig_id: string
-          digger_id: string
-          sent_at?: string
-          sent_by?: string
-        }
-        Update: {
-          id?: string
-          gig_id?: string
-          digger_id?: string
-          sent_at?: string
-          sent_by?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gig_digger_email_deliveries_gig_id_fkey"
-            columns: ["gig_id"]
-            isOneToOne: false
-            referencedRelation: "gigs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gig_digger_email_deliveries_digger_id_fkey"
-            columns: ["digger_id"]
-            isOneToOne: false
-            referencedRelation: "digger_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gig_email_delivery_settings: {
-        Row: {
-          id: string
-          mode: string
-          selected_digger_ids: string[]
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          id?: string
-          mode?: string
-          selected_digger_ids?: string[]
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          id?: string
-          mode?: string
-          selected_digger_ids?: string[]
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       gigs: {
         Row: {
           ai_matched_codes: boolean | null
@@ -2086,7 +2011,6 @@ export type Database = {
           purchase_count: number | null
           requirements: string | null
           sic_codes: string[] | null
-          skills_required: string[] | null
           status: string | null
           telemarketer_id: string | null
           timeline: string | null
@@ -2132,7 +2056,6 @@ export type Database = {
           purchase_count?: number | null
           requirements?: string | null
           sic_codes?: string[] | null
-          skills_required?: string[] | null
           status?: string | null
           telemarketer_id?: string | null
           timeline?: string | null
@@ -2178,7 +2101,6 @@ export type Database = {
           purchase_count?: number | null
           requirements?: string | null
           sic_codes?: string[] | null
-          skills_required?: string[] | null
           status?: string | null
           telemarketer_id?: string | null
           timeline?: string | null
@@ -3962,90 +3884,37 @@ export type Database = {
         Row: {
           about_me: string | null
           avatar_url: string | null
-          country: string | null
-          cover_photo_url: string | null
           created_at: string
           email: string | null
-          email_verified: boolean | null
           full_name: string | null
           id: string
-          id_verified: boolean | null
-          payment_verified: boolean | null
           phone: string | null
-          phone_verified: boolean | null
-          social_verified: boolean | null
-          timezone: string | null
           updated_at: string
           user_type: string | null
         }
         Insert: {
           about_me?: string | null
           avatar_url?: string | null
-          country?: string | null
-          cover_photo_url?: string | null
           created_at?: string
           email?: string | null
-          email_verified?: boolean | null
           full_name?: string | null
           id: string
-          id_verified?: boolean | null
-          payment_verified?: boolean | null
           phone?: string | null
-          phone_verified?: boolean | null
-          social_verified?: boolean | null
-          timezone?: string | null
           updated_at?: string
           user_type?: string | null
         }
         Update: {
           about_me?: string | null
           avatar_url?: string | null
-          country?: string | null
-          cover_photo_url?: string | null
           created_at?: string
           email?: string | null
-          email_verified?: boolean | null
           full_name?: string | null
           id?: string
-          id_verified?: boolean | null
-          payment_verified?: boolean | null
           phone?: string | null
-          phone_verified?: boolean | null
-          social_verified?: boolean | null
-          timezone?: string | null
           updated_at?: string
           user_type?: string | null
         }
         Relationships: []
-      }
-      gigger_profiles: {
-        Row: {
-          user_id: string
-          show_to_diggers: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          user_id: string
-          show_to_diggers?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          user_id?: string
-          show_to_diggers?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gigger_profiles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
       }
       proxy_emails: {
         Row: {
