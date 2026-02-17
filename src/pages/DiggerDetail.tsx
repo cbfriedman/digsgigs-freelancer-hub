@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus, Link2, Copy } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -121,6 +121,17 @@ const DiggerDetail = () => {
   const [portfolioDraft, setPortfolioDraft] = useState("");
   const [portfolioItems, setPortfolioItems] = useState<DiggerPortfolioItem[]>([]);
   const [isSectionSaving, setIsSectionSaving] = useState(false);
+  const [refForm, setRefForm] = useState<{
+    mode: "add" | "edit" | null;
+    id?: string;
+    reference_name: string;
+    reference_email: string;
+    reference_phone: string;
+    project_description: string;
+  }>({ mode: null, reference_name: "", reference_email: "", reference_phone: "", project_description: "" });
+  const [refFormSaving, setRefFormSaving] = useState(false);
+  const [verificationLink, setVerificationLink] = useState<{ url: string; name: string } | null>(null);
+  const [verificationLinkLoading, setVerificationLinkLoading] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -264,12 +275,14 @@ const DiggerDetail = () => {
       }
     }
 
+    const isProfileOwner = session?.user?.id === diggerData.user_id;
+    const referencesTable = isProfileOwner ? "references" : "references_public";
     const { data: referencesData } = await supabase
-      .from("references")
+      .from(referencesTable)
       .select("*")
       .eq("digger_id", profileId);
 
-    setReferences(referencesData || []);
+    setReferences((referencesData || []) as Reference[]);
 
     const { data: portfolioData } = await supabase
       .from("digger_portfolio_items")
@@ -403,6 +416,7 @@ const DiggerDetail = () => {
     }
     if (section === "work") setWorkPhotosDraft((digger.work_photos || []).join("\n"));
     if (section === "portfolio") setPortfolioDraft(digger.portfolio_url || "");
+    if (section === "references") setRefForm({ mode: null, reference_name: "", reference_email: "", reference_phone: "", project_description: "" });
     setSectionEditor({ open: true, section });
   };
 
@@ -670,6 +684,82 @@ const DiggerDetail = () => {
     setSectionEditor({ open: false, section: null });
     toast.success("Portfolio saved");
     await loadData();
+  };
+
+  const refetchReferences = useCallback(async () => {
+    if (!digger) return;
+    const { data } = await supabase.from("references").select("*").eq("digger_id", digger.id);
+    setReferences(data || []);
+  }, [digger?.id]);
+
+  const saveReference = async () => {
+    if (!digger || refForm.mode === null) return;
+    const name = refForm.reference_name.trim();
+    const email = refForm.reference_email.trim();
+    if (!name || !email) {
+      toast.error("Name and email are required.");
+      return;
+    }
+    setRefFormSaving(true);
+    try {
+      const payload = {
+        reference_name: name,
+        reference_email: email,
+        reference_phone: refForm.reference_phone.trim() || null,
+        project_description: refForm.project_description.trim() || null,
+      };
+      if (refForm.mode === "edit" && refForm.id) {
+        const { error } = await supabase.from("references").update(payload).eq("id", refForm.id).eq("digger_id", digger.id);
+        if (error) throw error;
+        toast.success("Reference updated.");
+      } else {
+        const { error } = await supabase.from("references").insert({ digger_id: digger.id, ...payload });
+        if (error) throw error;
+        toast.success("Reference added.");
+      }
+      await refetchReferences();
+      setRefForm({ mode: null, reference_name: "", reference_email: "", reference_phone: "", project_description: "" });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to save reference.");
+    } finally {
+      setRefFormSaving(false);
+    }
+  };
+
+  const deleteReference = async (id: string) => {
+    if (!digger || !window.confirm("Remove this reference?")) return;
+    try {
+      const { error } = await supabase.from("references").delete().eq("id", id).eq("digger_id", digger.id);
+      if (error) throw error;
+      toast.success("Reference removed.");
+      await refetchReferences();
+      if (refForm.mode === "edit" && refForm.id === id) {
+        setRefForm({ mode: null, reference_name: "", reference_email: "", reference_phone: "", project_description: "" });
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove reference.");
+    }
+  };
+
+  const getVerificationLink = async (referenceId: string, referenceName: string) => {
+    if (!digger) return;
+    setVerificationLinkLoading(referenceId);
+    try {
+      const { data, error } = await supabase
+        .from("reference_verification_tokens")
+        .insert({ reference_id: referenceId })
+        .select("token")
+        .single();
+      if (error) throw error;
+      const origin = window.location.origin;
+      const url = `${origin}/verify-reference?token=${data.token}`;
+      setVerificationLink({ url, name: referenceName });
+      toast.success("Link created. Send it to your reference to verify.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to create link.");
+    } finally {
+      setVerificationLinkLoading(null);
+    }
   };
 
   const handleProfilePhotoReplace = () => {
@@ -1553,12 +1643,12 @@ const DiggerDetail = () => {
                         : "Professional experience details not added yet."}
                     </div>
                     {references.length > 0 && (
-                      <div className="space-y-2">
+                      <div className="space-y-2 min-w-0 overflow-hidden">
                         {references.slice(0, 3).map((ref) => (
-                          <div key={ref.id} className="rounded-md border p-3">
-                            <p className="font-medium text-sm">{ref.reference_name}</p>
+                          <div key={ref.id} className="rounded-md border p-3 overflow-hidden min-w-0">
+                            <p className="font-medium text-sm truncate">{ref.reference_name}</p>
                             {ref.project_description && (
-                              <p className="text-xs text-muted-foreground mt-1">{ref.project_description}</p>
+                              <p className="text-xs text-muted-foreground mt-1 break-all">{ref.project_description}</p>
                             )}
                           </div>
                         ))}
@@ -1802,7 +1892,7 @@ const DiggerDetail = () => {
                 </div>
               </section>
 
-              <section className="py-6 border-b border-border">
+              <section className="py-6 border-b border-border" id="references-section">
                 <div className="pb-2 flex flex-row items-center justify-between">
                   <h2 className="text-lg font-semibold">Prior Job References</h2>
                   <Button variant="ghost" size="icon" onClick={() => openSectionModal("references")} title="Edit References">
@@ -1811,29 +1901,36 @@ const DiggerDetail = () => {
                 </div>
                 <div>
                   {references.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4 min-w-0 overflow-hidden">
                       {references.map((ref) => (
-                        <div key={ref.id} className="p-4 rounded-lg border bg-card">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-medium">{ref.reference_name}</p>
+                        <div key={ref.id} className="p-4 rounded-lg border bg-accent/20 hover:bg-accent/30 transition-colors overflow-hidden min-w-0">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                <span className="font-semibold text-foreground truncate">{ref.reference_name}</span>
+                                {ref.is_verified ? (
+                                  <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs shrink-0">
+                                    <CheckCircle2 className="h-3 w-3 mr-0.5" />
+                                    Verified
+                                  </Badge>
+                                ) : null}
+                              </div>
                               {ref.project_description && (
-                                <p className="text-sm text-muted-foreground mt-1">{ref.project_description}</p>
+                                <p className="text-sm text-muted-foreground mt-1 leading-relaxed break-all">{ref.project_description}</p>
                               )}
                             </div>
-                            {ref.is_verified && (
-                              <Badge variant="secondary" className="bg-green-500/10 text-green-600">
-                                ✓ Verified
-                              </Badge>
-                            )}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="bg-muted/30 border-2 border-dashed border-muted rounded-lg p-6 text-center">
-                      <p className="text-muted-foreground mb-4">Add references from past Giggers to build trust</p>
-                      <p className="text-sm text-muted-foreground">Reference management coming soon</p>
+                      <p className="text-muted-foreground mb-2">Add references from past Giggers to build trust</p>
+                      <p className="text-sm text-muted-foreground mb-4">References help clients feel confident in your experience.</p>
+                      <Button variant="outline" onClick={() => openSectionModal("references")}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add your first reference
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -2755,10 +2852,175 @@ const DiggerDetail = () => {
                 </div>
               </>
             )}
-            {sectionEditor.section === "references" && (
-              <p className="text-sm text-muted-foreground">
-                Reference editing will be available in this section soon. For now, contact support to update references.
-              </p>
+            {sectionEditor.section === "references" && digger && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Add references from past Giggers or clients to build trust. Only name and project description are shown on your profile; contact details stay private. Send a verification link so references can confirm they worked with you.
+                </p>
+                <div className="space-y-3 min-w-0 overflow-hidden">
+                  {references.map((ref) => (
+                    <div key={ref.id} className="flex items-start justify-between gap-2 p-4 rounded-lg border bg-accent/20 hover:bg-accent/30 transition-colors overflow-hidden min-w-0">
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <p className="font-semibold text-foreground truncate">{ref.reference_name}</p>
+                          {ref.is_verified ? (
+                            <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs">
+                              <CheckCircle2 className="h-3 w-3 mr-0.5" />
+                              Verified
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground text-xs">Unverified</Badge>
+                          )}
+                        </div>
+                        {ref.project_description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2 break-all">{ref.project_description}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0 flex-wrap justify-end">
+                        {!ref.is_verified && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1"
+                            disabled={verificationLinkLoading === ref.id}
+                            onClick={() => getVerificationLink(ref.id, ref.reference_name)}
+                            title="Get link to send to this reference"
+                          >
+                            {verificationLinkLoading === ref.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Link2 className="h-4 w-4" />
+                            )}
+                            Get link
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setRefForm({
+                              mode: "edit",
+                              id: ref.id,
+                              reference_name: ref.reference_name,
+                              reference_email: ref.reference_email ?? "",
+                              reference_phone: ref.reference_phone || "",
+                              project_description: ref.project_description || "",
+                            })
+                          }
+                          aria-label="Edit reference"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => deleteReference(ref.id)}
+                          aria-label="Remove reference"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {refForm.mode && (
+                  <Card className="border-primary/30">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">{refForm.mode === "add" ? "Add reference" : "Edit reference"}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 pt-0">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Name *</label>
+                        <Input
+                          value={refForm.reference_name}
+                          onChange={(e) => setRefForm((f) => ({ ...f, reference_name: e.target.value }))}
+                          placeholder="Reference contact name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Email *</label>
+                        <Input
+                          type="email"
+                          value={refForm.reference_email}
+                          onChange={(e) => setRefForm((f) => ({ ...f, reference_email: e.target.value }))}
+                          placeholder="reference@example.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Phone (optional)</label>
+                        <Input
+                          value={refForm.reference_phone}
+                          onChange={(e) => setRefForm((f) => ({ ...f, reference_phone: e.target.value }))}
+                          placeholder="+1 234 567 8900"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Project / role description (optional)</label>
+                        <Textarea
+                          value={refForm.project_description}
+                          onChange={(e) => setRefForm((f) => ({ ...f, project_description: e.target.value }))}
+                          placeholder="Brief description of the project or how they worked with you"
+                          rows={3}
+                          className="resize-none"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={saveReference} disabled={refFormSaving}>
+                          {refFormSaving ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : refForm.mode === "add" ? (
+                            "Add reference"
+                          ) : (
+                            "Save changes"
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setRefForm({ mode: null, reference_name: "", reference_email: "", reference_phone: "", project_description: "" })}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {refForm.mode === null && (
+                  <Button variant="outline" className="w-full" onClick={() => setRefForm({ mode: "add", reference_name: "", reference_email: "", reference_phone: "", project_description: "" })}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add reference
+                  </Button>
+                )}
+                <Dialog open={!!verificationLink} onOpenChange={(open) => !open && setVerificationLink(null)}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Verification link</DialogTitle>
+                      <DialogDescription>
+                        Send this link to {verificationLink?.name}. When they open it, their reference will be marked as verified. The link expires in 7 days.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex gap-2">
+                      <Input readOnly value={verificationLink?.url || ""} className="font-mono text-xs" />
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={() => {
+                          if (verificationLink?.url) {
+                            navigator.clipboard.writeText(verificationLink.url);
+                            toast.success("Link copied to clipboard");
+                          }
+                        }}
+                        title="Copy link"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
             )}
             {sectionEditor.section === "reviews" && (
               <p className="text-sm text-muted-foreground">

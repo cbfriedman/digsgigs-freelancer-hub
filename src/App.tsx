@@ -86,6 +86,7 @@ import LogoGeneratorPage from "./pages/LogoGeneratorPage";
 import BrandAssets from "./pages/BrandAssets";
 import GetFreeQuote from "./pages/GetFreeQuote";
 import Unsubscribe from "./pages/Unsubscribe";
+import VerifyReference from "./pages/VerifyReference";
 import UnsubscribeCold from "./pages/UnsubscribeCold";
 import ServiceLocationPage from "./pages/ServiceLocationPage";
 import ServiceIndexPage from "./pages/ServiceIndexPage";
@@ -362,6 +363,10 @@ const router = createBrowserRouter(
       {
         path: "/contact",
         element: <Contact />,
+      },
+      {
+        path: "/verify-reference",
+        element: <VerifyReference />,
       },
       {
         path: "/blog",

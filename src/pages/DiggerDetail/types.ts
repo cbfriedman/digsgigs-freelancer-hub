@@ -1,8 +1,9 @@
 export interface Reference {
   id: string;
   reference_name: string;
-  reference_email: string;
-  reference_phone: string | null;
+  /** Present when loaded as owner (from `references`); omitted when from `references_public` */
+  reference_email?: string;
+  reference_phone?: string | null;
   project_description: string | null;
   is_verified: boolean;
 }
