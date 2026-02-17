@@ -6,6 +6,9 @@ export interface Reference {
   reference_phone?: string | null;
   project_description: string | null;
   is_verified: boolean;
+  /** platform=from completed gig, email=verified via email link, pending=not verified */
+  verification_tier?: "platform" | "email" | "pending";
+  gig_id?: string | null;
 }
 
 export interface ReferenceRequest {

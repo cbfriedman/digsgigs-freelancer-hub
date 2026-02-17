@@ -1,12 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, CheckCircle2, Quote } from "lucide-react";
+import { Users, CheckCircle2, Quote, ShieldCheck } from "lucide-react";
 
 interface Reference {
   id: string;
   reference_name: string;
   project_description: string | null;
   is_verified: boolean;
+  verification_tier?: "platform" | "email" | "pending";
 }
 
 interface ReferencesSectionProps {
@@ -18,7 +19,9 @@ interface ReferencesSectionProps {
 export const ReferencesSection = ({ references, className }: ReferencesSectionProps) => {
   if (!references || references.length === 0) return null;
 
-  const verifiedCount = references.filter((r) => r.is_verified).length;
+  const platformCount = references.filter((r) => r.verification_tier === "platform").length;
+  const emailVerifiedCount = references.filter((r) => r.verification_tier === "email" || (r.is_verified && r.verification_tier !== "platform")).length;
+  const verifiedCount = platformCount + emailVerifiedCount;
 
   return (
     <Card className={className}>
@@ -49,10 +52,16 @@ export const ReferencesSection = ({ references, className }: ReferencesSectionPr
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-2 flex-wrap mb-1 min-w-0">
                     <span className="font-semibold text-foreground truncate">{ref.reference_name}</span>
-                    {ref.is_verified && (
+                    {ref.verification_tier === "platform" && (
+                      <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">
+                        <ShieldCheck className="h-3 w-3 mr-0.5" />
+                        Verified on DigsandGigs
+                      </Badge>
+                    )}
+                    {(ref.verification_tier === "email" || (ref.is_verified && ref.verification_tier !== "platform")) && (
                       <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 dark:bg-green-900/30 dark:text-green-400 shrink-0">
                         <CheckCircle2 className="h-3 w-3 mr-0.5" />
-                        Verified
+                        Email verified
                       </Badge>
                     )}
                   </div>

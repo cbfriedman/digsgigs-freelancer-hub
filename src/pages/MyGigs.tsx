@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil } from "lucide-react";
+import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Navigation } from "@/components/Navigation";
 import {
@@ -20,6 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Gig {
   id: string;
@@ -68,6 +70,10 @@ const MyGigs = () => {
   const [repostConfirmGig, setRepostConfirmGig] = useState<Gig | null>(null);
   const [removeConfirmGig, setRemoveConfirmGig] = useState<Gig | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [leaveRefGig, setLeaveRefGig] = useState<Gig | null>(null);
+  const [leaveRefDescription, setLeaveRefDescription] = useState("");
+  const [leaveRefLoading, setLeaveRefLoading] = useState(false);
+  const [platformRefGigIds, setPlatformRefGigIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadGigs();
@@ -98,10 +104,28 @@ const MyGigs = () => {
       setGigs(data || []);
       if ((data || []).length > 0) {
         loadBidStats(data.map((g: Gig) => g.id));
+        loadPlatformRefGigIds(data as Gig[]);
       }
     }
 
     setLoading(false);
+  };
+
+  const loadPlatformRefGigIds = async (gigList: Gig[]) => {
+    const completedWithDigger = gigList.filter(
+      (g) => g.status === "completed" && (g as Gig & { awarded_digger_id?: string | null }).awarded_digger_id
+    );
+    if (completedWithDigger.length === 0) {
+      setPlatformRefGigIds(new Set());
+      return;
+    }
+    const { data: refs } = await supabase
+      .from("references")
+      .select("gig_id")
+      .in("gig_id", completedWithDigger.map((g) => g.id))
+      .eq("verification_tier", "platform");
+    const ids = new Set((refs || []).map((r: { gig_id: string }) => r.gig_id));
+    setPlatformRefGigIds(ids);
   };
 
   const loadBidStats = async (gigIds: string[]) => {
@@ -231,6 +255,50 @@ const MyGigs = () => {
     }
     toast.success("Gig removed.");
     loadGigs();
+  };
+
+  const handleSubmitPlatformReference = async () => {
+    if (!leaveRefGig) return;
+    const awardedDiggerId = (leaveRefGig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id;
+    if (!awardedDiggerId) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", session.user.id)
+      .single();
+
+    const referenceName = (profile?.full_name || session.user.email || "Client").trim() || "Client";
+    const referenceEmail = (profile?.email || session.user.email || "").trim();
+    if (!referenceEmail) {
+      toast.error("Please add an email to your profile to leave a reference.");
+      return;
+    }
+
+    setLeaveRefLoading(true);
+    try {
+      const { error } = await supabase.from("references").insert({
+        digger_id: awardedDiggerId,
+        gig_id: leaveRefGig.id,
+        reference_name: referenceName,
+        reference_email: referenceEmail,
+        project_description: leaveRefDescription.trim() || null,
+        verification_tier: "platform",
+        is_verified: true,
+      });
+      if (error) throw error;
+      toast.success("Reference added. It will show as \"Verified on DigsandGigs\" on the Digger's profile.");
+      setLeaveRefGig(null);
+      setLeaveRefDescription("");
+      setPlatformRefGigIds((prev) => new Set(prev).add(leaveRefGig.id));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to add reference.");
+    } finally {
+      setLeaveRefLoading(false);
+    }
   };
 
   const viewIssues = async (gig: Gig) => {
@@ -409,6 +477,22 @@ const MyGigs = () => {
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </Button>
+                    {gig.status === "completed" &&
+                      (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
+                      !platformRefGigIds.has(gig.id) && (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setLeaveRefGig(gig);
+                            setLeaveRefDescription("");
+                          }}
+                          className="min-w-0"
+                          title="Leave a reference for the Digger who completed this gig"
+                        >
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Leave reference
+                        </Button>
+                      )}
                     {gig.status === "open" && (
                       <Button
                         variant="outline"
@@ -503,6 +587,41 @@ const MyGigs = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!leaveRefGig} onOpenChange={(open) => !open && setLeaveRefGig(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Leave a reference</DialogTitle>
+            <DialogDescription>
+              Your reference will appear on the Digger&apos;s profile as &quot;Verified on DigsandGigs&quot; and helps other Giggers trust their experience. This comes from your completed gig on the platform.
+            </DialogDescription>
+          </DialogHeader>
+          {leaveRefGig && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm font-medium">Gig: {leaveRefGig.title}</p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Project description (optional)</label>
+                <Textarea
+                  value={leaveRefDescription}
+                  onChange={(e) => setLeaveRefDescription(e.target.value)}
+                  placeholder="Brief note about the project or your experience"
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLeaveRefGig(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitPlatformReference} disabled={leaveRefLoading}>
+              {leaveRefLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {leaveRefLoading ? "Adding..." : "Submit reference"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showIssuesDialog} onOpenChange={setShowIssuesDialog}>
         <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">

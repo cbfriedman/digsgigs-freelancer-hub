@@ -51,7 +51,7 @@ serve(async (req) => {
 
     const { error: updateError } = await supabase
       .from("references")
-      .update({ is_verified: true })
+      .update({ is_verified: true, verification_tier: "email" })
       .eq("id", row.reference_id);
 
     if (updateError) {

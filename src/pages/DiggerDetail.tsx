@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus, Link2, Copy } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -130,8 +130,7 @@ const DiggerDetail = () => {
     project_description: string;
   }>({ mode: null, reference_name: "", reference_email: "", reference_phone: "", project_description: "" });
   const [refFormSaving, setRefFormSaving] = useState(false);
-  const [verificationLink, setVerificationLink] = useState<{ url: string; name: string } | null>(null);
-  const [verificationLinkLoading, setVerificationLinkLoading] = useState<string | null>(null);
+  const [verificationRequestLoading, setVerificationRequestLoading] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -276,9 +275,8 @@ const DiggerDetail = () => {
     }
 
     const isProfileOwner = session?.user?.id === diggerData.user_id;
-    const referencesTable = isProfileOwner ? "references" : "references_public";
-    const { data: referencesData } = await supabase
-      .from(referencesTable)
+    const { data: referencesData } = await (supabase as any)
+      .from(isProfileOwner ? "references" : "references_public")
       .select("*")
       .eq("digger_id", profileId);
 
@@ -741,24 +739,19 @@ const DiggerDetail = () => {
     }
   };
 
-  const getVerificationLink = async (referenceId: string, referenceName: string) => {
+  const sendVerificationRequest = async (referenceId: string) => {
     if (!digger) return;
-    setVerificationLinkLoading(referenceId);
+    setVerificationRequestLoading(referenceId);
     try {
-      const { data, error } = await supabase
-        .from("reference_verification_tokens")
-        .insert({ reference_id: referenceId })
-        .select("token")
-        .single();
-      if (error) throw error;
-      const origin = window.location.origin;
-      const url = `${origin}/verify-reference?token=${data.token}`;
-      setVerificationLink({ url, name: referenceName });
-      toast.success("Link created. Send it to your reference to verify.");
+      await invokeEdgeFunction<{ success?: boolean }>(supabase, "send-reference-verification", {
+        body: { reference_id: referenceId },
+      });
+      toast.success("Verification email sent. Ask your reference to check their inbox.");
+      await refetchReferences();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to create link.");
+      toast.error(e instanceof Error ? e.message : "Failed to send verification email.");
     } finally {
-      setVerificationLinkLoading(null);
+      setVerificationRequestLoading(null);
     }
   };
 
@@ -1908,10 +1901,15 @@ const DiggerDetail = () => {
                             <div className="flex-1 min-w-0 overflow-hidden">
                               <div className="flex items-center gap-2 flex-wrap min-w-0">
                                 <span className="font-semibold text-foreground truncate">{ref.reference_name}</span>
-                                {ref.is_verified ? (
+                                {ref.verification_tier === "platform" ? (
+                                  <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 text-xs shrink-0">
+                                    <ShieldCheck className="h-3 w-3 mr-0.5" />
+                                    Verified on DigsandGigs
+                                  </Badge>
+                                ) : ref.verification_tier === "email" || ref.is_verified ? (
                                   <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs shrink-0">
                                     <CheckCircle2 className="h-3 w-3 mr-0.5" />
-                                    Verified
+                                    Email verified
                                   </Badge>
                                 ) : null}
                               </div>
@@ -2855,7 +2853,7 @@ const DiggerDetail = () => {
             {sectionEditor.section === "references" && digger && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Add references from past Giggers or clients to build trust. Only name and project description are shown on your profile; contact details stay private. Send a verification link so references can confirm they worked with you.
+                  Add references from past Giggers or clients to build trust. Use &quot;Send verification&quot; to email the reference—they click the link to verify. References from completed gigs on DigsandGigs show as &quot;Verified on DigsandGigs.&quot;
                 </p>
                 <div className="space-y-3 min-w-0 overflow-hidden">
                   {references.map((ref) => (
@@ -2863,13 +2861,18 @@ const DiggerDetail = () => {
                       <div className="min-w-0 flex-1 overflow-hidden">
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
                           <p className="font-semibold text-foreground truncate">{ref.reference_name}</p>
-                          {ref.is_verified ? (
+                          {ref.verification_tier === "platform" ? (
+                            <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 text-xs">
+                              <ShieldCheck className="h-3 w-3 mr-0.5" />
+                              Verified on DigsandGigs
+                            </Badge>
+                          ) : ref.verification_tier === "email" || ref.is_verified ? (
                             <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs">
                               <CheckCircle2 className="h-3 w-3 mr-0.5" />
-                              Verified
+                              Email verified
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-muted-foreground text-xs">Unverified</Badge>
+                            <Badge variant="outline" className="text-muted-foreground text-xs">Pending</Badge>
                           )}
                         </div>
                         {ref.project_description && (
@@ -2877,21 +2880,21 @@ const DiggerDetail = () => {
                         )}
                       </div>
                       <div className="flex gap-1 shrink-0 flex-wrap justify-end">
-                        {!ref.is_verified && (
+                        {ref.verification_tier !== "platform" && !ref.is_verified && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="gap-1"
-                            disabled={verificationLinkLoading === ref.id}
-                            onClick={() => getVerificationLink(ref.id, ref.reference_name)}
-                            title="Get link to send to this reference"
+                            disabled={verificationRequestLoading === ref.id || !ref.reference_email?.trim()}
+                            onClick={() => sendVerificationRequest(ref.id)}
+                            title={ref.reference_email ? "Send verification email to this reference" : "Add email first to send verification"}
                           >
-                            {verificationLinkLoading === ref.id ? (
+                            {verificationRequestLoading === ref.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <Link2 className="h-4 w-4" />
+                              <Mail className="h-4 w-4" />
                             )}
-                            Get link
+                            Send verification
                           </Button>
                         )}
                         <Button
@@ -2994,32 +2997,6 @@ const DiggerDetail = () => {
                     Add reference
                   </Button>
                 )}
-                <Dialog open={!!verificationLink} onOpenChange={(open) => !open && setVerificationLink(null)}>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Verification link</DialogTitle>
-                      <DialogDescription>
-                        Send this link to {verificationLink?.name}. When they open it, their reference will be marked as verified. The link expires in 7 days.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex gap-2">
-                      <Input readOnly value={verificationLink?.url || ""} className="font-mono text-xs" />
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        onClick={() => {
-                          if (verificationLink?.url) {
-                            navigator.clipboard.writeText(verificationLink.url);
-                            toast.success("Link copied to clipboard");
-                          }
-                        }}
-                        title="Copy link"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
               </>
             )}
             {sectionEditor.section === "reviews" && (
