@@ -18,7 +18,7 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping, isCustomProblem } from "@/config/giggerProblems";
-import { formatSelectionDisplay, ALL_COUNTRY_OPTIONS } from "@/config/regionOptions";
+import { formatSelectionDisplay } from "@/config/regionOptions";
 import { normalizeSkillInput, isSkillDuplicate } from "@/config/suggestedSkillsForGigs";
 import { useSkills } from "@/hooks/useSkills";
 import PageLayout from "@/components/layout/PageLayout";
@@ -742,26 +742,6 @@ const PostGig = () => {
                       onChange={(e) => setClientPhone(e.target.value)}
                       className="h-12 rounded-xl border-border/50 text-base"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="posterCountry" className="text-sm font-medium flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      Your business country <span className="text-muted-foreground text-xs">(optional)</span>
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Helps Diggers see where you're based. Shown on your listing.
-                    </p>
-                    <Select value={posterCountry || "none"} onValueChange={(v) => setPosterCountry(v === "none" ? "" : v)}>
-                      <SelectTrigger id="posterCountry" className="h-12 rounded-xl border-border/50 text-base">
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Don't show</SelectItem>
-                        {ALL_COUNTRY_OPTIONS.map((c) => (
-                          <SelectItem key={c.code} value={c.name}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
               </div>

@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
-import { computeProfileCompletion } from "@/lib/profileCompletion";
+import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath } from "@/lib/profileUrls";
 import {
   Dialog,
@@ -61,6 +61,8 @@ export default function RoleDashboard() {
   const { toast } = useToast();
   const [stats, setStats] = useState<RoleStats>({});
   const [diggerProfileForCompletion, setDiggerProfileForCompletion] = useState<Record<string, unknown> | null>(null);
+  const [diggerPortfolioCount, setDiggerPortfolioCount] = useState(0);
+  const [diggerExperienceCount, setDiggerExperienceCount] = useState(0);
   const [isCheckingRoles, setIsCheckingRoles] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const hasCheckedRolesRef = useRef(false);
@@ -83,7 +85,7 @@ export default function RoleDashboard() {
         try {
           const { data: diggerProfiles, error: profilesError } = await supabase
             .from('digger_profiles')
-            .select('id, handle, business_name, profession, bio, profile_image_url, work_photos, hourly_rate_min, hourly_rate_max, pricing_model, certifications, country, service_countries, digger_skills (skills (name))')
+            .select('id, handle, business_name, profession, bio, profile_image_url, work_photos, hourly_rate, hourly_rate_min, hourly_rate_max, pricing_model, certifications, country, service_countries, portfolio_url, portfolio_urls, website_url, social_links, digger_skills (skills (name)), digger_categories (categories (name))')
             .eq('user_id', user.id)
             .order('is_primary', { ascending: false })
             .order('created_at', { ascending: true })
@@ -91,6 +93,8 @@ export default function RoleDashboard() {
 
           if (profilesError) {
             setDiggerProfileForCompletion(null);
+            setDiggerPortfolioCount(0);
+            setDiggerExperienceCount(0);
             if (profilesError.code === 'PGRST116' || profilesError.message?.includes('406') || profilesError.message?.includes('Not Acceptable')) {
               console.warn('Could not fetch digger profiles count:', profilesError);
             } else {
@@ -102,6 +106,22 @@ export default function RoleDashboard() {
             primaryDiggerProfileHandle = primary?.handle ?? null;
             profilesCount = primaryDiggerProfileId ? 1 : 0;
             setDiggerProfileForCompletion(primary ? (primary as Record<string, unknown>) : null);
+            if (primaryDiggerProfileId) {
+              try {
+                const [portfolioRes, experienceRes] = await Promise.all([
+                  supabase.from('digger_portfolio_items').select('id', { count: 'exact', head: true }).eq('digger_profile_id', primaryDiggerProfileId),
+                  supabase.from('digger_experience').select('id', { count: 'exact', head: true }).eq('digger_profile_id', primaryDiggerProfileId),
+                ]);
+                setDiggerPortfolioCount(portfolioRes.count ?? 0);
+                setDiggerExperienceCount(experienceRes.count ?? 0);
+              } catch {
+                setDiggerPortfolioCount(0);
+                setDiggerExperienceCount(0);
+              }
+            } else {
+              setDiggerPortfolioCount(0);
+              setDiggerExperienceCount(0);
+            }
           }
         } catch (err) {
           setDiggerProfileForCompletion(null);
@@ -605,10 +625,15 @@ export default function RoleDashboard() {
             <CardContent className="space-y-5">
               {userRoles.includes('digger') ? (
                 <>
-                  {/* Profile completion - visible when Digger has a profile */}
+                  {/* Profile completion - visible when Digger has a profile (same 10 factors as profile detail page) */}
                   {hasDiggerProfile && diggerProfileForCompletion && (() => {
-                    const { score, nextSteps } = computeProfileCompletion(diggerProfileForCompletion as any);
-                    if (score >= 100) return null;
+                    const profileCompletion = computeDiggerProfileDetailCompletion({
+                      ...(diggerProfileForCompletion as Record<string, unknown>),
+                      portfolio_item_count: diggerPortfolioCount,
+                      experience_count: diggerExperienceCount,
+                    });
+                    const { score, items } = profileCompletion;
+                    const completedCount = items.filter((i) => i.completed).length;
                     return (
                       <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                         <div className="flex items-center justify-between gap-2">
@@ -619,11 +644,21 @@ export default function RoleDashboard() {
                           <Badge variant={score >= 80 ? "default" : "secondary"}>{score}%</Badge>
                         </div>
                         <Progress value={score} className="h-2" />
-                        {nextSteps.length > 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            Next: {nextSteps.map((s) => s.label).join(", ")}
-                          </p>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {completedCount}/10 complete
+                        </p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs">
+                          {items.map((item) => (
+                            <span key={item.id} className="flex items-center gap-1.5 shrink-0">
+                              {item.completed ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />
+                              ) : (
+                                <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/50" />
+                              )}
+                              <span className={item.completed ? "text-muted-foreground" : "text-foreground"}>{item.label}</span>
+                            </span>
+                          ))}
+                        </div>
                         <Button
                           size="sm"
                           variant="outline"
@@ -637,7 +672,7 @@ export default function RoleDashboard() {
                             navigate(path ? `${path}?manage=1` : '/my-profiles');
                           }}
                         >
-                          Complete profile
+                          {score >= 100 ? "View profile" : "Complete profile"}
                           <ArrowRight className="h-3.5 w-3.5 ml-2" />
                         </Button>
                       </div>

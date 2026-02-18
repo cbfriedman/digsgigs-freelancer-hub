@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, User, Briefcase, ArrowRight, MapPin, Star, Clock3 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
+import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 
 type RoleView = "overview" | "digger" | "gigger";
 
@@ -51,6 +52,13 @@ interface DiggerCardData {
   hourly_rate_max: number | null;
   hourly_rate: number | null;
   is_public?: boolean | null;
+  pricing_model?: string | null;
+  certifications?: string[] | null;
+  portfolio_url?: string | null;
+  portfolio_urls?: string[] | null;
+  website_url?: string | null;
+  social_links?: unknown;
+  digger_categories?: { categories?: { name?: string } | null }[] | null;
 }
 
 interface GiggerGigData {
@@ -75,6 +83,8 @@ export default function ProfileByHandle() {
   const [digger, setDigger] = useState<DiggerCardData | null>(null);
   const [recentGigs, setRecentGigs] = useState<GiggerGigData[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+  const [diggerPortfolioCount, setDiggerPortfolioCount] = useState(0);
+  const [diggerExperienceCount, setDiggerExperienceCount] = useState(0);
 
   const safeRole = useMemo<RoleView>(() => {
     if (role === "digger" || role === "gigger") return role;
@@ -141,7 +151,7 @@ export default function ProfileByHandle() {
           row.has_digger
             ? supabase
                 .from("digger_profiles")
-                .select("id, handle, business_name, profession, tagline, bio, location, availability, years_experience, skills, profile_image_url, average_rating, total_ratings, hourly_rate_min, hourly_rate_max, hourly_rate, is_public, digger_skills (skills (name))")
+                .select("id, handle, business_name, profession, tagline, bio, location, availability, years_experience, skills, profile_image_url, average_rating, total_ratings, hourly_rate_min, hourly_rate_max, hourly_rate, is_public, pricing_model, certifications, portfolio_url, portfolio_urls, website_url, social_links, digger_skills (skills (name)), digger_categories (categories (name))")
                 .eq("user_id", row.user_id)
                 .order("created_at", { ascending: true })
                 .limit(1)
@@ -158,11 +168,27 @@ export default function ProfileByHandle() {
         ]);
 
         if (!cancelled) {
-          setIsOwner(sessionData.session?.user?.id === row.user_id);
+          const owner = sessionData.session?.user?.id === row.user_id;
+          setIsOwner(owner);
           setResolved(row);
           setProfile((pData as PublicProfileData) || null);
-          setDigger((dData as DiggerCardData) || null);
+          const diggerData = dData as DiggerCardData | null;
+          setDigger(diggerData || null);
           setRecentGigs((gData as GiggerGigData[]) || []);
+          if (owner && diggerData?.id) {
+            Promise.all([
+              supabase.from("digger_portfolio_items").select("id", { count: "exact", head: true }).eq("digger_profile_id", diggerData.id),
+              supabase.from("digger_experience").select("id", { count: "exact", head: true }).eq("digger_profile_id", diggerData.id),
+            ]).then(([pRes, eRes]) => {
+              if (!cancelled) {
+                setDiggerPortfolioCount(pRes.count ?? 0);
+                setDiggerExperienceCount(eRes.count ?? 0);
+              }
+            }).catch(() => {});
+          } else {
+            setDiggerPortfolioCount(0);
+            setDiggerExperienceCount(0);
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -194,6 +220,16 @@ export default function ProfileByHandle() {
   const closedGigCount = recentGigs.filter((g) => g.status && g.status !== "open").length;
   const canShowDiggerRole = isOwner ? resolved?.has_digger : !!(resolved?.has_digger && (digger?.is_public || safeRole === "digger"));
   const canShowGiggerRole = isOwner ? resolved?.has_gigger : !!(resolved?.has_gigger && profile?.gigger_public);
+
+  const profileCompletion = useMemo(() => {
+    if (!isOwner || !digger) return null;
+    return computeDiggerProfileDetailCompletion({
+      ...digger,
+      profiles: profile ? { avatar_url: profile.avatar_url } : null,
+      portfolio_item_count: diggerPortfolioCount,
+      experience_count: diggerExperienceCount,
+    });
+  }, [isOwner, digger, profile?.avatar_url, diggerPortfolioCount, diggerExperienceCount]);
 
   useEffect(() => {
     if (!resolved || loading) return;
@@ -287,6 +323,12 @@ export default function ProfileByHandle() {
               <CardDescription>{digger.profession || "Professional services"}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
+              {isOwner && profileCompletion && (
+                <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm mb-2">
+                  <span className="font-medium text-muted-foreground">Profile completion</span>
+                  <span className="font-semibold tabular-nums text-foreground">{profileCompletion.score}%</span>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">{digger.tagline || digger.bio || "No digger bio yet."}</p>
               <div className="flex flex-wrap gap-2">
                 {digger.location && (

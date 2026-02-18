@@ -41,6 +41,8 @@ import { useProfessions } from "@/hooks/useProfessions";
 import { useSkillsByCategory } from "@/hooks/useSkills";
 import { SEO_CITIES } from "@/config/seoCities";
 import { getRegionsForCountry } from "@/config/locationData";
+import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
+import { Progress } from "@/components/ui/progress";
 import type { Digger, Reference, ReferenceRequest } from "./DiggerDetail/types";
 import {
   isUuid,
@@ -542,6 +544,49 @@ const DiggerDetail = () => {
     setSectionEditor({ open: true, section });
   };
 
+  const scrollToProfileSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleCompletionFactorClick = (itemId: string) => {
+    switch (itemId) {
+      case "profile-photo":
+        scrollToProfileSection("profile-header-section");
+        break;
+      case "hourly-rate":
+        // No dedicated section; rate is edited via header modal
+        openProfileHeaderEditModal();
+        break;
+      case "about":
+        scrollToProfileSection("about-section");
+        break;
+      case "portfolio":
+        scrollToProfileSection("portfolio-section");
+        break;
+      case "certifications":
+        scrollToProfileSection("certifications-section");
+        break;
+      case "experience":
+        scrollToProfileSection("experience-section");
+        break;
+      case "github":
+        // No section; GitHub is in sidebar, edit via modal
+        setGithubModalOpen(true);
+        break;
+      case "professions":
+        openSectionModal("profession");
+        break;
+      case "skills":
+        openSectionModal("skills");
+        break;
+      case "website":
+        openSectionModal("website");
+        break;
+      default:
+        break;
+    }
+  };
+
   const getAvailabilityLabel = (value: string | null) => {
     if (!value) return "Not specified";
     const labels: Record<string, string> = {
@@ -634,6 +679,31 @@ const DiggerDetail = () => {
       ),
     })).filter((region) => region.countries.length > 0);
   }, [serviceLocationSearchDraft]);
+
+  const profileDetailCompletion = useMemo(() => {
+    if (!digger) return { score: 0, items: [] };
+    return computeDiggerProfileDetailCompletion({
+      profile_image_url: digger.profile_image_url,
+      profiles: digger.profiles,
+      hourly_rate: digger.hourly_rate,
+      hourly_rate_min: digger.hourly_rate_min,
+      hourly_rate_max: digger.hourly_rate_max,
+      pricing_model: digger.pricing_model,
+      bio: digger.bio,
+      portfolio_url: digger.portfolio_url,
+      portfolio_urls: digger.portfolio_urls,
+      certifications: digger.certifications,
+      profession: digger.profession,
+      digger_categories: digger.digger_categories,
+      skills: digger.skills,
+      keywords: digger.keywords,
+      digger_skills: digger.digger_skills,
+      website_url: digger.website_url,
+      social_links: digger.social_links,
+      portfolio_item_count: portfolioItems.length,
+      experience_count: experiences.length,
+    });
+  }, [digger, portfolioItems.length, experiences.length]);
 
   const getDisplayedProfessions = (): string[] => {
     const fromText = (digger?.profession || "")
@@ -1712,7 +1782,7 @@ const DiggerDetail = () => {
             {(!isOwnProfile || viewAsClient) ? (
               <>
                 {/* Hero: clean Himalayas-style header */}
-                <Card className="overflow-hidden border border-border/70 rounded-xl bg-card">
+                <Card id="profile-header-section" className="overflow-hidden border border-border/70 rounded-xl bg-card">
                   <div className="relative">
                     <div 
                       className="h-40 sm:h-48 md:h-56 w-full bg-gradient-to-r from-slate-200 via-violet-300 to-orange-300 dark:from-slate-800 dark:via-violet-800/70 dark:to-orange-800/70"
@@ -1893,7 +1963,7 @@ const DiggerDetail = () => {
             ) : (
               /* Owner View - Same reference layout with management actions */
               <>
-              <section className="overflow-hidden border-b border-border bg-card">
+              <section id="profile-header-section" className="overflow-hidden border-b border-border bg-card">
                 <div className="relative">
                   <div 
                     className="h-40 sm:h-48 md:h-56 w-full bg-gradient-to-r from-slate-200 via-violet-300 to-orange-300 dark:from-slate-800 dark:via-violet-800/70 dark:to-orange-800/70"
@@ -2002,7 +2072,7 @@ const DiggerDetail = () => {
                 </CardContent>
               </section>
 
-              <section className="py-6 border-b border-border">
+              <section id="about-section" className="py-6 border-b border-border">
                 <div className="pb-2 flex flex-row items-center justify-between">
                   <h2 className="text-lg font-semibold flex items-center gap-2">
                     <FileText className="h-5 w-5" />
@@ -2220,6 +2290,40 @@ const DiggerDetail = () => {
                     </div>
                   </CardContent>
                 </Card>
+              {isOwnProfile && (
+                <Card className="w-full">
+                  <CardHeader className="py-3 px-4 sm:px-5">
+                    <CardTitle className="text-sm font-medium">Profile completion</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 px-4 pb-4">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-2xl font-semibold tabular-nums text-foreground">{profileDetailCompletion.score}%</span>
+                      <span className="text-xs text-muted-foreground">
+                        {profileDetailCompletion.items.filter((i) => i.completed).length}/10 complete
+                      </span>
+                    </div>
+                    <Progress value={profileDetailCompletion.score} className="h-2.5 mb-3" />
+                    <ul className="space-y-1.5 text-xs">
+                      {profileDetailCompletion.items.map((item) => (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleCompletionFactorClick(item.id)}
+                            className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted/50 transition-colors"
+                          >
+                            {item.completed ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />
+                            ) : (
+                              <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/50" />
+                            )}
+                            <span className={item.completed ? "text-muted-foreground" : "text-foreground"}>{item.label}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
               <Card className="rounded-xl border-border/70 w-full">
                 <CardHeader className="py-3 px-4 sm:px-5">
                   <CardTitle className="text-sm font-medium">Profile Details</CardTitle>
