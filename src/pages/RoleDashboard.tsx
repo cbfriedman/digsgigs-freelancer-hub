@@ -20,12 +20,14 @@ import {
   MessageCircle,
   ShieldCheck,
   MailCheck,
-  Settings
+  Settings,
+  Award
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
+import { computeProfileCompletion } from "@/lib/profileCompletion";
 import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath } from "@/lib/profileUrls";
 import {
   Dialog,
@@ -35,6 +37,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 
 interface RoleStats {
   digger?: {
@@ -57,6 +60,7 @@ export default function RoleDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [stats, setStats] = useState<RoleStats>({});
+  const [diggerProfileForCompletion, setDiggerProfileForCompletion] = useState<Record<string, unknown> | null>(null);
   const [isCheckingRoles, setIsCheckingRoles] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const hasCheckedRolesRef = useRef(false);
@@ -79,13 +83,14 @@ export default function RoleDashboard() {
         try {
           const { data: diggerProfiles, error: profilesError } = await supabase
             .from('digger_profiles')
-            .select('id, handle')
+            .select('id, handle, business_name, profession, bio, profile_image_url, work_photos, hourly_rate_min, hourly_rate_max, pricing_model, certifications, country, service_countries, digger_skills (skills (name))')
             .eq('user_id', user.id)
             .order('is_primary', { ascending: false })
             .order('created_at', { ascending: true })
             .limit(1);
 
           if (profilesError) {
+            setDiggerProfileForCompletion(null);
             if (profilesError.code === 'PGRST116' || profilesError.message?.includes('406') || profilesError.message?.includes('Not Acceptable')) {
               console.warn('Could not fetch digger profiles count:', profilesError);
             } else {
@@ -96,8 +101,10 @@ export default function RoleDashboard() {
             primaryDiggerProfileId = primary?.id ?? null;
             primaryDiggerProfileHandle = primary?.handle ?? null;
             profilesCount = primaryDiggerProfileId ? 1 : 0;
+            setDiggerProfileForCompletion(primary ? (primary as Record<string, unknown>) : null);
           }
         } catch (err) {
+          setDiggerProfileForCompletion(null);
           console.warn('Error fetching digger profiles count:', err);
         }
 
@@ -598,6 +605,44 @@ export default function RoleDashboard() {
             <CardContent className="space-y-5">
               {userRoles.includes('digger') ? (
                 <>
+                  {/* Profile completion - visible when Digger has a profile */}
+                  {hasDiggerProfile && diggerProfileForCompletion && (() => {
+                    const { score, nextSteps } = computeProfileCompletion(diggerProfileForCompletion as any);
+                    if (score >= 100) return null;
+                    return (
+                      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Award className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium">Profile completion</span>
+                          </div>
+                          <Badge variant={score >= 80 ? "default" : "secondary"}>{score}%</Badge>
+                        </div>
+                        <Progress value={score} className="h-2" />
+                        {nextSteps.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Next: {nextSteps.map((s) => s.label).join(", ")}
+                          </p>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            handleSwitchRole('digger');
+                            const path = getCanonicalDiggerProfilePath({
+                              handle: stats.digger?.primaryProfileHandle ?? null,
+                              diggerId: stats.digger?.primaryProfileId ?? null,
+                            });
+                            navigate(path ? `${path}?manage=1` : '/my-profiles');
+                          }}
+                        >
+                          Complete profile
+                          <ArrowRight className="h-3.5 w-3.5 ml-2" />
+                        </Button>
+                      </div>
+                    );
+                  })()}
                   {/* Stats Grid - Total Leads & Active only (one profile per Digger, so no Profile count) */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 rounded-xl bg-muted/50 text-center">

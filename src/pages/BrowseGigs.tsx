@@ -83,6 +83,7 @@ interface Gig {
   location_lng?: number | null;
   preferred_regions?: string[] | null;
   skills_required?: string[] | null;
+  gig_skills?: { skills: { name: string } | null }[] | null;
   poster_country?: string | null;
   categories: {
     name: string;
@@ -174,7 +175,8 @@ const BrowseGigs = () => {
                 *,
                 poster_country,
                 categories (name),
-                profiles!gigs_consumer_id_fkey (full_name)
+                profiles!gigs_consumer_id_fkey (full_name),
+                gig_skills (skills (name))
               `
               )
               .eq("id", row.id)
@@ -298,7 +300,8 @@ const BrowseGigs = () => {
         *,
         poster_country,
         categories (name),
-        profiles!gigs_consumer_id_fkey (full_name)
+        profiles!gigs_consumer_id_fkey (full_name),
+        gig_skills (skills (name))
       `)
       .eq("status", "open")
       .order("bumped_at", { ascending: false, nullsFirst: false })
@@ -709,20 +712,24 @@ const BrowseGigs = () => {
                           </div>
                         )}
                       </div>
-                      {gig.skills_required && gig.skills_required.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {gig.skills_required.slice(0, 5).map((skill, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs font-normal">
-                              {skill}
-                            </Badge>
-                          ))}
-                          {gig.skills_required.length > 5 && (
-                            <Badge variant="outline" className="text-xs font-normal">
-                              +{gig.skills_required.length - 5}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
+                      {(() => {
+                        const skillNames = (gig.gig_skills || []).map((gs) => gs.skills?.name).filter((n): n is string => Boolean(n));
+                        const names = skillNames.length > 0 ? skillNames : (gig.skills_required || []);
+                        return names.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {names.slice(0, 5).map((skill, i) => (
+                              <Badge key={i} variant="secondary" className="text-xs font-normal">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {names.length > 5 && (
+                              <Badge variant="outline" className="text-xs font-normal">
+                                +{names.length - 5}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                     <div className="lg:text-right space-y-2">
                       {diggerProfile?.hourly_rate || diggerProfile?.hourly_rate_min ? (

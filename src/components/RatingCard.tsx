@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Star, User } from "lucide-react";
+import { Star, User, BadgeCheck } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,7 @@ interface RatingCardProps {
     digger_response: string | null;
     responded_at: string | null;
     created_at: string;
+    gig_id?: string | null;
     profiles: {
       full_name: string | null;
     };
@@ -65,9 +67,9 @@ export const RatingCard = ({ rating, isDigger, onResponseSubmitted }: RatingCard
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
               <User className="h-5 w-5 text-muted-foreground" />
             </div>
-            <div>
+              <div>
               <p className="font-medium">{rating.profiles.full_name || "Anonymous"}</p>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
@@ -83,6 +85,12 @@ export const RatingCard = ({ rating, isDigger, onResponseSubmitted }: RatingCard
                 <span className="text-sm text-muted-foreground">
                   {formatDistanceToNow(new Date(rating.created_at), { addSuffix: true })}
                 </span>
+                {rating.gig_id && (
+                  <Badge variant="secondary" className="gap-1 text-xs font-normal">
+                    <BadgeCheck className="h-3 w-3" />
+                    From a completed project on DigsandGigs
+                  </Badge>
+                )}
               </div>
             </div>
           </div>

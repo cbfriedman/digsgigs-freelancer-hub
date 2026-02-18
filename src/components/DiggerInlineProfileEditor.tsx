@@ -156,7 +156,7 @@ export function DiggerInlineProfileEditor({
       try {
         const [{ data: userProfile }, { data: allProfiles }] = await Promise.all([
           supabase.from("profiles").select("handle, full_name, phone, avatar_url").eq("id", user.id).maybeSingle(),
-          supabase.from("digger_profiles").select("*").eq("user_id", user.id).order("created_at", { ascending: true }),
+          supabase.from("digger_profiles").select("*, digger_skills (skills (name))").eq("user_id", user.id).order("created_at", { ascending: true }),
         ]);
 
         let targetProfile: any = null;
@@ -234,7 +234,8 @@ export function DiggerInlineProfileEditor({
         );
         setPhone(targetProfile.phone || "");
         setBio(targetProfile.bio || "");
-        setSkillsInput(((targetProfile.skills || targetProfile.keywords || []) as string[]).join(", "));
+        const skillNames = (targetProfile.digger_skills || []).map((ds: { skills?: { name: string } | null }) => ds.skills?.name).filter(Boolean);
+        setSkillsInput((skillNames.length > 0 ? skillNames : (targetProfile.skills || targetProfile.keywords || [])).join(", "));
         setPricingModel(targetProfile.pricing_model || "commission");
         setHourlyRateMin(targetProfile.hourly_rate_min ?? null);
         setHourlyRateMax(targetProfile.hourly_rate_max ?? null);
@@ -315,6 +316,18 @@ export function DiggerInlineProfileEditor({
 
       const { error } = await supabase.from("digger_profiles").update(updatePayload).eq("id", effectiveProfileId);
       if (error) throw error;
+
+      if (effectiveProfileId && skills.length > 0) {
+        const { data: skillRows } = await supabase.from("skills").select("id").in("name", skills);
+        if (skillRows?.length) {
+          await supabase.from("digger_skills").delete().eq("digger_profile_id", effectiveProfileId);
+          await supabase.from("digger_skills").insert(
+            skillRows.map((r) => ({ digger_profile_id: effectiveProfileId, skill_id: r.id }))
+          );
+        }
+      } else if (effectiveProfileId && skills.length === 0) {
+        await supabase.from("digger_skills").delete().eq("digger_profile_id", effectiveProfileId);
+      }
 
       const { error: deleteAssignmentsError } = await supabase
         .from("digger_profession_assignments")

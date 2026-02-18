@@ -35,6 +35,7 @@ interface Gig {
   requirements?: string | null;
   preferred_regions?: string[] | null;
   skills_required?: string[] | null;
+  gig_skills?: { skills: { name: string } | null }[] | null;
   consumer_email?: string | null;
   consumer_phone?: string | null;
   poster_country?: string | null;
@@ -227,7 +228,8 @@ const GigDetail = () => {
       .select(`
         *,
         categories (name, description),
-        profiles!gigs_consumer_id_fkey (full_name, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, social_verified)
+        profiles!gigs_consumer_id_fkey (full_name, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, social_verified),
+        gig_skills (skills (name))
       `)
       .eq("id", id)
       .single();
@@ -273,6 +275,13 @@ const GigDetail = () => {
         currency: 'USD',
       });
     }
+  };
+
+  const getGigSkillNames = (g: Gig | null): string[] => {
+    if (!g) return [];
+    const fromJunction = (g.gig_skills || []).map((gs) => gs.skills?.name).filter((n): n is string => Boolean(n));
+    if (fromJunction.length > 0) return fromJunction;
+    return g.skills_required || [];
   };
 
   const formatBudget = (min: number | null, max: number | null): string => {
@@ -468,7 +477,7 @@ const GigDetail = () => {
       <SEOHead
         title={`${gig.title} - Service Project in ${gig.location}`}
         description={`${gig.description.substring(0, 150)}... Budget: ${budgetText}. Posted ${formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}. Find qualified professionals on digsandgigs.`}
-        keywords={`${gig.title}, ${gig.location}, service project, hire contractor, ${gig.categories?.name || 'services'}${gig.skills_required?.length ? `, ${gig.skills_required.join(', ')}` : ''}`}
+        keywords={`${gig.title}, ${gig.location}, service project, hire contractor, ${gig.categories?.name || 'services'}${getGigSkillNames(gig).length ? `, ${getGigSkillNames(gig).join(', ')}` : ''}`}
         structuredData={generateJobPostingSchema({
           title: gig.title,
           description: gig.description,
@@ -555,7 +564,7 @@ const GigDetail = () => {
                   <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{gig.description}</p>
                 </div>
 
-                {gig.skills_required && gig.skills_required.length > 0 && (
+                {getGigSkillNames(gig).length > 0 && (
                   <p className="text-sm text-muted-foreground">
                     Diggers with these skills can tailor their proposals to your project.
                   </p>
@@ -604,9 +613,9 @@ const GigDetail = () => {
                     </div>
                   )}
                 </div>
-                {gig.skills_required && gig.skills_required.length > 0 && (
+                {getGigSkillNames(gig).length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {gig.skills_required.map((skill, i) => (
+                    {getGigSkillNames(gig).map((skill, i) => (
                       <Badge key={i} variant="secondary" className="rounded-lg px-2.5 py-0.5 font-normal text-xs">
                         {skill}
                       </Badge>

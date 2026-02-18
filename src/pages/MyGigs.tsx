@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil, MessageSquare } from "lucide-react";
+import { DollarSign, Calendar, Tag, Users, AlertCircle, FileText, RefreshCw, Copy, Trash2, Loader2, Pencil, MessageSquare, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Navigation } from "@/components/Navigation";
 import {
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { RatingDialog } from "@/components/RatingDialog";
 
 interface Gig {
   id: string;
@@ -74,6 +75,8 @@ const MyGigs = () => {
   const [leaveRefDescription, setLeaveRefDescription] = useState("");
   const [leaveRefLoading, setLeaveRefLoading] = useState(false);
   const [platformRefGigIds, setPlatformRefGigIds] = useState<Set<string>>(new Set());
+  const [reviewedGigIds, setReviewedGigIds] = useState<Set<string>>(new Set());
+  const [leaveReviewGig, setLeaveReviewGig] = useState<Gig | null>(null);
 
   useEffect(() => {
     loadGigs();
@@ -105,6 +108,7 @@ const MyGigs = () => {
       if ((data || []).length > 0) {
         loadBidStats(data.map((g: Gig) => g.id));
         loadPlatformRefGigIds(data as Gig[]);
+        loadReviewedGigIds(data as Gig[]);
       }
     }
 
@@ -126,6 +130,28 @@ const MyGigs = () => {
       .eq("verification_tier", "platform");
     const ids = new Set((refs || []).map((r: { gig_id: string }) => r.gig_id));
     setPlatformRefGigIds(ids);
+  };
+
+  const loadReviewedGigIds = async (gigList: Gig[]) => {
+    const completedWithDigger = gigList.filter(
+      (g) => g.status === "completed" && (g as Gig & { awarded_digger_id?: string | null }).awarded_digger_id
+    );
+    if (completedWithDigger.length === 0) {
+      setReviewedGigIds(new Set());
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setReviewedGigIds(new Set());
+      return;
+    }
+    const { data: ratings } = await supabase
+      .from("ratings")
+      .select("gig_id")
+      .in("gig_id", completedWithDigger.map((g) => g.id))
+      .eq("consumer_id", user.id);
+    const ids = new Set((ratings || []).map((r: { gig_id: string } | null) => r?.gig_id).filter(Boolean) as string[]);
+    setReviewedGigIds(ids);
   };
 
   const loadBidStats = async (gigIds: string[]) => {
@@ -493,6 +519,19 @@ const MyGigs = () => {
                           Leave reference
                         </Button>
                       )}
+                    {gig.status === "completed" &&
+                      (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
+                      !reviewedGigIds.has(gig.id) && (
+                        <Button
+                          variant="outline"
+                          onClick={() => setLeaveReviewGig(gig)}
+                          className="min-w-0"
+                          title="Leave a review for the Digger who completed this gig"
+                        >
+                          <Star className="mr-2 h-4 w-4" />
+                          Leave review
+                        </Button>
+                      )}
                     {gig.status === "open" && (
                       <Button
                         variant="outline"
@@ -587,6 +626,22 @@ const MyGigs = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {leaveReviewGig && (
+        <RatingDialog
+          open={!!leaveReviewGig}
+          onOpenChange={(open) => {
+            if (!open) setLeaveReviewGig(null);
+          }}
+          diggerId={(leaveReviewGig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id!}
+          gigId={leaveReviewGig.id}
+          gigTitle={leaveReviewGig.title}
+          onSuccess={() => {
+            setReviewedGigIds((prev) => new Set(prev).add(leaveReviewGig.id));
+            setLeaveReviewGig(null);
+          }}
+        />
+      )}
 
       <Dialog open={!!leaveRefGig} onOpenChange={(open) => !open && setLeaveRefGig(null)}>
         <DialogContent className="sm:max-w-md">

@@ -25,7 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_references_verification_tier ON public.references
 
 -- Update references_public view to include verification_tier
 DROP VIEW IF EXISTS public.references_public;
-CREATE VIEW public.references_public AS
+CREATE VIEW public.references_public WITH (security_invoker = true) AS
 SELECT id, digger_id, reference_name, project_description, is_verified, verification_tier, gig_id, created_at
 FROM public.references;
 

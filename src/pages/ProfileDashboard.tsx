@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeadReturnDialog } from "@/components/LeadReturnDialog";
@@ -19,14 +20,18 @@ import {
   CheckCircle2, 
   AlertCircle,
   RefreshCw,
-  Crown
+  Crown,
+  Award,
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
+import { computeProfileCompletion } from "@/lib/profileCompletion";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
 import { goToEditProfile, goToProfileWorkspace } from "@/lib/profileWorkspaceRoute";
 
 interface ProfileData {
   id: string;
+  handle: string | null;
   profile_name: string | null;
   business_name: string;
   profession: string | null;
@@ -36,6 +41,14 @@ interface ProfileData {
   state: string | null;
   city: string | null;
   country: string | null;
+  bio?: string | null;
+  work_photos?: string[] | null;
+  hourly_rate_min?: number | null;
+  hourly_rate_max?: number | null;
+  pricing_model?: string | null;
+  certifications?: string[] | null;
+  service_countries?: string[] | null;
+  digger_skills?: { skills: { name: string } | null }[] | null;
 }
 
 interface LeadCredit {
@@ -91,7 +104,7 @@ export default function ProfileDashboard() {
       const [profileResult, creditsResult, purchasesResult] = await Promise.all([
         supabase
           .from("digger_profiles")
-          .select("id, profile_name, business_name, profession, profile_image_url, keywords, location, state, city, country")
+          .select("id, handle, profile_name, business_name, profession, profile_image_url, keywords, location, state, city, country, bio, work_photos, hourly_rate_min, hourly_rate_max, pricing_model, certifications, service_countries, digger_skills (skills (name))")
           .eq("id", profileId)
           .eq("user_id", user.id)
           .maybeSingle(),
@@ -282,6 +295,51 @@ export default function ProfileDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Profile Completion */}
+            {(() => {
+              const { score, nextSteps, essentialsCompleted, totalEssentials } = computeProfileCompletion(profile);
+              const isComplete = score >= 100;
+              return (
+                <div className="mt-6 pt-6 border-t">
+                  <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-semibold">Profile Completion</p>
+                          <p className="text-xs text-muted-foreground">
+                            {isComplete ? "Your profile is complete" : "Complete your profile to attract more clients"}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant={score >= 80 ? "default" : score >= 50 ? "secondary" : "outline"} className="text-base px-3 py-1">
+                        {score}%
+                      </Badge>
+                    </div>
+                    <Progress value={score} className="h-3" />
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-xs text-muted-foreground">
+                        Essentials: {essentialsCompleted}/{totalEssentials}
+                        {nextSteps.length > 0 && !isComplete && (
+                          <> · Next: {nextSteps[0].label}</>
+                        )}
+                      </p>
+                      {!isComplete && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => profileId && goToEditProfile(navigate, profileId)}
+                        >
+                          Complete profile
+                          <ArrowRight className="h-3.5 w-3.5 ml-2" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t">

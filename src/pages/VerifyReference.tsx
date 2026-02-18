@@ -5,7 +5,6 @@ import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 
 export default function VerifyReference() {
@@ -50,7 +49,6 @@ export default function VerifyReference() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navigation />
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader>

@@ -41,6 +41,8 @@ export interface DiggerProfile {
   portfolio_urls?: string[] | null;
   work_photos: string[] | null;
   skills: string[] | null;
+  /** From junction table when fetched with digger_skills(skills(name)) */
+  digger_skills?: { skills: { name: string } | null }[] | null;
   certifications?: string[] | null;
   keywords?: string[] | null;
   completion_rate: number | null;

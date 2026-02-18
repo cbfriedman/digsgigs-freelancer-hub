@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus } from "lucide-react";
+import { Star, DollarSign, Briefcase, Globe, Mail, MessageSquare, Loader2, CheckCircle2, AlertTriangle, Edit, Phone, Sparkles, FileText, Search, MapPin, ShieldCheck, CreditCard, Share2, User, FileCheck, Pencil, Upload, Trash2, ImagePlus, Plus, Code2 } from "lucide-react";
 import { RatingsList } from "@/components/RatingsList";
 import { RichSnippetPreview } from "@/components/RichSnippetPreview";
 import { Navigation } from "@/components/Navigation";
@@ -30,7 +30,7 @@ import { BioGenerator } from "@/components/BioGenerator";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ProfileHeader, ProfileAbout, QuickContactCard, ReferencesSection } from "@/components/digger-profile";
+import { ProfileHeader, ProfileAbout, QuickContactCard, ReferencesSection, CertificationsSection, CertificationEditorModal, ExperienceSection, ExperienceEditorModal, type DiggerCertification, type DiggerExperience } from "@/components/digger-profile";
 import { getCanonicalDiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
 import { DiggerInlineProfileEditor } from "@/components/DiggerInlineProfileEditor";
 import { PortfolioEditor } from "@/components/portfolio/PortfolioEditor";
@@ -38,6 +38,7 @@ import { PortfolioDisplay } from "@/components/portfolio/PortfolioDisplay";
 import type { DiggerPortfolioItem, DiggerPortfolioItemDraft } from "@/types/portfolio";
 import { ALL_COUNTRY_OPTIONS, REGION_OPTIONS, getFlagForCountryName, getCodeForCountryName } from "@/config/regionOptions";
 import { useProfessions } from "@/hooks/useProfessions";
+import { useSkillsByCategory } from "@/hooks/useSkills";
 import { SEO_CITIES } from "@/config/seoCities";
 import { getRegionsForCountry } from "@/config/locationData";
 import type { Digger, Reference, ReferenceRequest } from "./DiggerDetail/types";
@@ -52,6 +53,8 @@ import {
   formatJoinDate,
 } from "./DiggerDetail/utils";
 
+const GITHUB_CONNECT_STORAGE_KEY = "digsgigs_github_connect_digger_id";
+
 const DiggerDetail = () => {
   const navigate = useNavigate();
   const { id: slug } = useParams<{ id: string }>();
@@ -59,6 +62,12 @@ const DiggerDetail = () => {
   const viewAsClient = searchParams.get("as") === "client";
   const [digger, setDigger] = useState<Digger | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
+  const [certifications, setCertifications] = useState<DiggerCertification[]>([]);
+  const [certificationEditorOpen, setCertificationEditorOpen] = useState(false);
+  const [certificationEditId, setCertificationEditId] = useState<string | null>(null);
+  const [experiences, setExperiences] = useState<DiggerExperience[]>([]);
+  const [experienceEditorOpen, setExperienceEditorOpen] = useState(false);
+  const [experienceEditId, setExperienceEditId] = useState<string | null>(null);
   const [referenceRequests, setReferenceRequests] = useState<Record<string, ReferenceRequest>>({});
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
@@ -98,9 +107,10 @@ const DiggerDetail = () => {
     { id: string; handle: string | null; profile_name: string | null; business_name: string; is_primary: boolean }[]
   >([]);
   const { professions, categoriesWithProfessions } = useProfessions();
+  const { skillsByCategory, loading: skillsLoading } = useSkillsByCategory();
   const [sectionEditor, setSectionEditor] = useState<{
     open: boolean;
-    section: "about" | "skills" | "profession" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews" | null;
+    section: "about" | "skills" | "profession" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "social" | "references" | "reviews" | null;
   }>({ open: false, section: null });
   const [aboutDraft, setAboutDraft] = useState("");
   const [availabilityDraft, setAvailabilityDraft] = useState<string>("");
@@ -112,10 +122,10 @@ const DiggerDetail = () => {
   const [locationStateSearchDraft, setLocationStateSearchDraft] = useState("");
   const [serviceLocationSearchDraft, setServiceLocationSearchDraft] = useState("");
   const [websiteDraft, setWebsiteDraft] = useState("");
-  const [salaryDraft, setSalaryDraft] = useState<string>("");
   const [socialLinksDraft, setSocialLinksDraft] = useState<Record<string, string>>({});
   const [selectedProfessionsDraft, setSelectedProfessionsDraft] = useState<string[]>([]);
   const [additionalProfessionDraft, setAdditionalProfessionDraft] = useState("");
+  const [additionalSkillDraft, setAdditionalSkillDraft] = useState("");
   const [selectedSkillsDraft, setSelectedSkillsDraft] = useState<string[]>([]);
   const [workPhotosDraft, setWorkPhotosDraft] = useState("");
   const [portfolioDraft, setPortfolioDraft] = useState("");
@@ -131,6 +141,10 @@ const DiggerDetail = () => {
   }>({ mode: null, reference_name: "", reference_email: "", reference_phone: "", project_description: "" });
   const [refFormSaving, setRefFormSaving] = useState(false);
   const [verificationRequestLoading, setVerificationRequestLoading] = useState<string | null>(null);
+  const [githubModalOpen, setGithubModalOpen] = useState(false);
+  const [githubDraft, setGithubDraft] = useState("");
+  const [githubSaving, setGithubSaving] = useState(false);
+  const [githubLinking, setGithubLinking] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -204,8 +218,8 @@ const DiggerDetail = () => {
 
     // Fetch digger by UUID or username (handle) — anyone with the profile link can view
     const fetchQuery = isUuid(slug)
-      ? supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description))`).eq("id", slug)
-      : supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description))`).eq("handle", slug.toLowerCase());
+      ? supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description)), digger_skills (skills (name))`).eq("id", slug)
+      : supabase.from("digger_profiles").select(`*, profiles!digger_profiles_user_id_fkey (full_name, email, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, handle), digger_categories (categories (name, description)), digger_skills (skills (name))`).eq("handle", slug.toLowerCase());
     const { data: diggerData, error: diggerError } = await fetchQuery.single();
 
     if (diggerError || !diggerData) {
@@ -282,6 +296,20 @@ const DiggerDetail = () => {
 
     setReferences((referencesData || []) as Reference[]);
 
+    const { data: certsData } = await supabase
+      .from("digger_certifications")
+      .select("*")
+      .eq("digger_profile_id", profileId)
+      .order("sort_order", { ascending: true });
+    setCertifications((certsData || []) as DiggerCertification[]);
+
+    const { data: expData } = await supabase
+      .from("digger_experience")
+      .select("*")
+      .eq("digger_profile_id", profileId)
+      .order("sort_order", { ascending: true });
+    setExperiences((expData || []) as DiggerExperience[]);
+
     const { data: portfolioData } = await supabase
       .from("digger_portfolio_items")
       .select("*")
@@ -319,6 +347,38 @@ const DiggerDetail = () => {
     }
 
   };
+
+  useEffect(() => {
+    if (!currentUser || !digger || !isOwnProfile) return;
+    const pendingId = sessionStorage.getItem(GITHUB_CONNECT_STORAGE_KEY);
+    if (pendingId !== digger.id) return;
+    sessionStorage.removeItem(GITHUB_CONNECT_STORAGE_KEY);
+    (async () => {
+      try {
+        const { data: identitiesData } = await supabase.auth.getUserIdentities();
+        const identities = Array.isArray(identitiesData) ? identitiesData : (identitiesData as { identities?: { provider: string; identity_data?: Record<string, unknown> }[] } | null)?.identities ?? [];
+        const gh = identities.find((i: { provider: string }) => i.provider === "github");
+        const identityData = (gh as { identity_data?: { user_name?: string; login?: string } } | undefined)?.identity_data;
+        const username = identityData?.user_name ?? identityData?.login;
+        const profileUrl = username ? `https://github.com/${username}` : null;
+        if (!profileUrl) {
+          toast.error("GitHub account not found. Try connecting again.");
+          return;
+        }
+        const current = (digger.social_links && typeof digger.social_links === "object" ? { ...(digger.social_links as Record<string, string>) } : {}) as Record<string, string>;
+        current.github = profileUrl;
+        const nextLinks = Object.fromEntries(Object.entries(current).filter(([, v]) => Boolean(String(v).trim())));
+        await supabase.from("digger_profiles").update({ social_links: nextLinks }).eq("id", digger.id);
+        await loadData();
+        setGithubModalOpen(false);
+        toast.success("GitHub profile connected.");
+      } catch (e) {
+        logger.error("GitHub connect callback error:", e);
+        toast.error("Failed to connect GitHub. Try again.");
+      }
+    })();
+  // loadData is intentionally omitted from deps (stable enough; avoids re-running every render)
+  }, [currentUser?.id, digger?.id, isOwnProfile]);
 
   const handleShare = () => {
     const url = `${window.location.origin}${getDiggerProfileUrl(digger!)}`;
@@ -378,7 +438,7 @@ const DiggerDetail = () => {
     }
   };
 
-  const openSectionModal = (section: "about" | "skills" | "profession" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "salary" | "social" | "references" | "reviews") => {
+  const openSectionModal = (section: "about" | "skills" | "profession" | "work" | "portfolio" | "availability" | "location" | "service_location" | "website" | "social" | "references" | "reviews") => {
     if (!digger) return;
     if (section === "about") setAboutDraft(digger.bio || "");
     if (section === "availability") setAvailabilityDraft(digger.availability || "");
@@ -394,7 +454,6 @@ const DiggerDetail = () => {
       setServiceLocationSearchDraft("");
     }
     if (section === "website") setWebsiteDraft(digger.website_url || "");
-    if (section === "salary") setSalaryDraft(digger.monthly_salary != null ? String(digger.monthly_salary) : digger.hourly_rate != null ? String(digger.hourly_rate) : "");
     if (section === "social") setSocialLinksDraft((digger.social_links || {}) as Record<string, string>);
     if (section === "profession") {
       const fromText = (digger.profession || "")
@@ -410,7 +469,8 @@ const DiggerDetail = () => {
       setAdditionalProfessionDraft("");
     }
     if (section === "skills") {
-      setSelectedSkillsDraft(removeBlockedSkills(digger.skills || digger.keywords || []));
+      setSelectedSkillsDraft(getDiggerSkillNames(digger));
+      setAdditionalSkillDraft("");
     }
     if (section === "work") setWorkPhotosDraft((digger.work_photos || []).join("\n"));
     if (section === "portfolio") setPortfolioDraft(digger.portfolio_url || "");
@@ -427,14 +487,20 @@ const DiggerDetail = () => {
   const removeBlockedSkills = (skills: string[]): string[] =>
     skills.filter((skill) => skill.trim().toLowerCase() !== "reactsf");
 
-  const professionNameSet = useMemo(() => new Set(professions.map((p) => p.name)), [professions]);
+  /** Skill names from junction table + custom skills (legacy skills/keywords) */
+  const getDiggerSkillNames = useCallback((d: Digger | null): string[] => {
+    if (!d) return [];
+    const fromJunction = (d.digger_skills || [])
+      .map((ds) => ds.skills?.name)
+      .filter((n): n is string => Boolean(n));
+    const fromLegacy = removeBlockedSkills(d.skills || d.keywords || []);
+    return removeBlockedSkills(Array.from(new Set([...fromJunction, ...fromLegacy])));
+  }, []);
 
-  const normalizeSkills = (skills: string[]): string[] => {
-    const deduped = Array.from(new Set(removeBlockedSkills(skills.map((s) => s.trim()).filter(Boolean))));
-    if (professionNameSet.size === 0) return deduped;
-    // Keep only real database skills when taxonomy is available.
-    return deduped.filter((skill) => professionNameSet.has(skill));
-  };
+  const dbSkillNameSet = useMemo(
+    () => new Set(Object.values(skillsByCategory).flat().map((s) => s.name)),
+    [skillsByCategory]
+  );
 
   const dbProfessionGroups = useMemo(
     () =>
@@ -519,14 +585,107 @@ const DiggerDetail = () => {
     return combined || getServiceLocationDisplay() || "";
   };
 
-  const socialPlatforms: { key: string; label: string; placeholder: string }[] = [
-    { key: "linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/in/your-name" },
-    { key: "twitter", label: "X / Twitter", placeholder: "https://x.com/your-handle" },
-    { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/your-handle" },
-    { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/your-page" },
-    { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@your-channel" },
-    { key: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@your-handle" },
+  const socialPlatforms: { key: string; label: string; placeholder: string; domain: string }[] = [
+    { key: "github", label: "GitHub", placeholder: "https://github.com/your-username", domain: "github.com" },
+    { key: "linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/in/your-name", domain: "linkedin.com" },
+    { key: "twitter", label: "X / Twitter", placeholder: "https://x.com/your-handle", domain: "x.com" },
+    { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/your-handle", domain: "instagram.com" },
+    { key: "facebook", label: "Facebook", placeholder: "https://facebook.com/your-page", domain: "facebook.com" },
+    { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@your-channel", domain: "youtube.com" },
+    { key: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@your-handle", domain: "tiktok.com" },
   ];
+
+  /** Favicon URL for a given link (for social platform icon on the right) */
+  const getSocialFaviconUrl = (href: string): string => {
+    try {
+      const host = new URL(href).hostname;
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=48`;
+    } catch {
+      return "";
+    }
+  };
+
+  const githubUrl = (digger?.social_links && typeof digger.social_links === "object" && "github" in digger.social_links)
+    ? String((digger.social_links as Record<string, string>).github).trim()
+    : "";
+
+  /** Extract username from GitHub profile URL for avatar (e.g. https://github.com/foo -> foo) */
+  const githubUsername = (() => {
+    if (!githubUrl) return "";
+    try {
+      const u = new URL(githubUrl);
+      const path = u.pathname.replace(/^\/+|\/+$/g, "").split("/")[0];
+      return path || "";
+    } catch {
+      return "";
+    }
+  })();
+  const githubAvatarUrl = githubUsername ? `https://github.com/${githubUsername}.png` : "";
+
+  const openGithubModal = () => {
+    setGithubDraft(githubUrl);
+    setGithubModalOpen(true);
+  };
+
+  const handleConnectWithGitHub = async () => {
+    if (!digger) return;
+    setGithubLinking(true);
+    try {
+      sessionStorage.setItem(GITHUB_CONNECT_STORAGE_KEY, digger.id);
+      const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search || ""}`;
+      const { error } = await supabase.auth.linkIdentity({
+        provider: "github",
+        options: { redirectTo },
+      });
+      if (error) {
+        sessionStorage.removeItem(GITHUB_CONNECT_STORAGE_KEY);
+        const msg = error.message || "";
+        if (msg.toLowerCase().includes("manual linking") && msg.toLowerCase().includes("disabled")) {
+          toast("Use the option below to add your GitHub profile link manually.", {
+            description: "GitHub sign-in linking is not enabled for this site. Paste your profile URL and click Save link.",
+          });
+        } else {
+          toast.error(msg || "Could not start GitHub authorization.");
+        }
+      }
+    } catch (e) {
+      sessionStorage.removeItem(GITHUB_CONNECT_STORAGE_KEY);
+      logger.error("GitHub linkIdentity error:", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.toLowerCase().includes("manual linking") && msg.toLowerCase().includes("disabled")) {
+        toast("Use the option below to add your GitHub profile link manually.", {
+          description: "GitHub sign-in linking is not enabled for this site. Paste your profile URL and click Save link.",
+        });
+      } else {
+        toast.error("GitHub sign-in is not configured or failed. You can add your profile link manually below.");
+      }
+    } finally {
+      setGithubLinking(false);
+    }
+  };
+
+  const handleSaveGithub = async () => {
+    if (!digger) return;
+    setGithubSaving(true);
+    try {
+      const trimmed = githubDraft.trim();
+      const current = (digger.social_links && typeof digger.social_links === "object" ? { ...(digger.social_links as Record<string, string>) } : {}) as Record<string, string>;
+      if (trimmed) {
+        current.github = trimmed;
+      } else {
+        delete current.github;
+      }
+      const nextLinks = Object.fromEntries(Object.entries(current).filter(([, v]) => Boolean(String(v).trim())));
+      await supabase.from("digger_profiles").update({ social_links: Object.keys(nextLinks).length ? nextLinks : null }).eq("id", digger.id);
+      await loadData();
+      setGithubModalOpen(false);
+      toast.success(trimmed ? "GitHub profile connected." : "GitHub link removed.");
+    } catch {
+      toast.error("Failed to update GitHub link.");
+    } finally {
+      setGithubSaving(false);
+    }
+  };
 
   const sanitizeSocialLinks = (links: Record<string, string>) => {
     const out: Record<string, string> = {};
@@ -550,11 +709,31 @@ const DiggerDetail = () => {
       if (sectionEditor.section === "about") {
         await supabase.from("digger_profiles").update({ bio: aboutDraft || null }).eq("id", digger.id);
       } else if (sectionEditor.section === "skills") {
-        const nextSkills = normalizeSkills(selectedSkillsDraft);
+        const nextNames = Array.from(new Set(removeBlockedSkills(selectedSkillsDraft.map((s) => s.trim()).filter(Boolean))));
+        const dbNames = nextNames.filter((n) => dbSkillNameSet.has(n));
+        const customNames = nextNames.filter((n) => !dbSkillNameSet.has(n));
+        const { data: skillRows } = await supabase.from("skills").select("id").in("name", dbNames);
+        const skillIds = (skillRows || []).map((r) => r.id);
+        await supabase.from("digger_skills").delete().eq("digger_profile_id", digger.id);
+        if (skillIds.length > 0) {
+          await supabase.from("digger_skills").insert(
+            skillIds.map((skill_id) => ({ digger_profile_id: digger.id, skill_id }))
+          );
+        }
         await supabase
           .from("digger_profiles")
-          .update({ skills: nextSkills.length ? nextSkills : null, keywords: nextSkills.length ? nextSkills : null })
+          .update({ skills: customNames.length ? customNames : null, keywords: customNames.length ? customNames : null })
           .eq("id", digger.id);
+        setDigger((d) =>
+          d
+            ? {
+                ...d,
+                digger_skills: dbNames.map((name) => ({ skills: { name } })),
+                skills: customNames.length ? customNames : null,
+                keywords: customNames.length ? customNames : null,
+              }
+            : null
+        );
       } else if (sectionEditor.section === "profession") {
         const nextProfessions = Array.from(
           new Set(
@@ -620,15 +799,12 @@ const DiggerDetail = () => {
         await supabase.from("digger_profiles").update({ service_countries: serviceLocationDraft.length ? serviceLocationDraft : null }).eq("id", digger.id);
       } else if (sectionEditor.section === "website") {
         await supabase.from("digger_profiles").update({ website_url: websiteDraft.trim() || null }).eq("id", digger.id);
-      } else if (sectionEditor.section === "salary") {
-        const num = salaryDraft.trim() ? parseFloat(salaryDraft) : null;
-        await supabase.from("digger_profiles").update({ monthly_salary: num != null && !isNaN(num) ? num : null }).eq("id", digger.id);
       } else if (sectionEditor.section === "social") {
         const nextLinks = sanitizeSocialLinks(socialLinksDraft);
         await supabase.from("digger_profiles").update({ social_links: Object.keys(nextLinks).length ? nextLinks : null }).eq("id", digger.id);
       }
 
-      if (["about", "skills", "profession", "work", "portfolio", "availability", "location", "service_location", "website", "salary", "social"].includes(sectionEditor.section)) {
+      if (["about", "skills", "profession", "work", "portfolio", "availability", "location", "service_location", "website", "social"].includes(sectionEditor.section)) {
         toast.success("Section updated");
         await loadData();
       }
@@ -1625,50 +1801,6 @@ const DiggerDetail = () => {
                   </Card>
                 )}
 
-                <Card className="rounded-xl border-border/70">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Experience</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="text-sm text-muted-foreground">
-                      {digger.years_experience != null
-                        ? `${digger.years_experience}+ years of professional experience`
-                        : "Professional experience details not added yet."}
-                    </div>
-                    {references.length > 0 && (
-                      <div className="space-y-2 min-w-0 overflow-hidden">
-                        {references.slice(0, 3).map((ref) => (
-                          <div key={ref.id} className="rounded-md border p-3 overflow-hidden min-w-0">
-                            <p className="font-medium text-sm truncate">{ref.reference_name}</p>
-                            {ref.project_description && (
-                              <p className="text-xs text-muted-foreground mt-1 break-all">{ref.project_description}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-xl border-border/70">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Education</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {(digger.certifications?.length || 0) > 0 ? (
-                      <ul className="space-y-2">
-                        {(digger.certifications || []).slice(0, 6).map((cert, idx) => (
-                          <li key={`${cert}-${idx}`} className="text-sm text-muted-foreground">
-                            {cert}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No education or certification details added yet.</p>
-                    )}
-                  </CardContent>
-                </Card>
-
                 {/* Portfolio */}
                 {(portfolioItems.length > 0 || digger.portfolio_url || (digger.portfolio_urls && digger.portfolio_urls.length > 0)) && (
                   <Card className="rounded-xl border-border/70">
@@ -1701,6 +1833,14 @@ const DiggerDetail = () => {
 
                 {/* Work history / references */}
                 <ReferencesSection references={references} />
+
+                {/* Certifications (Gigger view - no edit) */}
+                {certifications.length > 0 && (
+                  <CertificationsSection certifications={certifications} isOwnProfile={false} />
+                )}
+                {experiences.length > 0 && (
+                  <ExperienceSection experiences={experiences} isOwnProfile={false} />
+                )}
 
                 <Card>
                   <CardHeader className="px-4 sm:px-6">
@@ -1936,11 +2076,8 @@ const DiggerDetail = () => {
 
             {/* Reviews for Owner */}
             <section className="py-6">
-              <div className="pb-3 flex flex-row items-center justify-between">
+              <div className="pb-3">
                 <h2 className="text-lg sm:text-xl font-semibold">Reviews & Ratings</h2>
-                <Button variant="ghost" size="icon" onClick={() => openSectionModal("reviews")} title="About Reviews">
-                  <Pencil className="h-4 w-4" />
-                </Button>
               </div>
               <div>
                 <RatingsList 
@@ -1950,6 +2087,79 @@ const DiggerDetail = () => {
                 />
               </div>
             </section>
+
+            {/* Certifications with evidence */}
+            <section className="py-6 border-t border-border" id="certifications-section">
+              <CertificationsSection
+                certifications={certifications}
+                isOwnProfile={isOwnProfile}
+                onEdit={() => {
+                  setCertificationEditId(null);
+                  setCertificationEditorOpen(true);
+                }}
+                onEditItem={(cert) => {
+                  setCertificationEditId(cert.id);
+                  setCertificationEditorOpen(true);
+                }}
+              />
+            </section>
+
+            {/* Experience */}
+            <section className="py-6 border-t border-border" id="experience-section">
+              <ExperienceSection
+                experiences={experiences}
+                isOwnProfile={isOwnProfile}
+                onEdit={() => {
+                  setExperienceEditId(null);
+                  setExperienceEditorOpen(true);
+                }}
+                onEditItem={(exp) => {
+                  setExperienceEditId(exp.id);
+                  setExperienceEditorOpen(true);
+                }}
+              />
+            </section>
+
+            {certificationEditorOpen && (
+              <CertificationEditorModal
+                open={certificationEditorOpen}
+                onOpenChange={(open) => {
+                  setCertificationEditorOpen(open);
+                  if (!open) setCertificationEditId(null);
+                }}
+                diggerProfileId={digger.id}
+                certifications={certifications}
+                scrollToCertificationId={certificationEditId}
+                onSaved={async () => {
+                  const { data } = await supabase
+                    .from("digger_certifications")
+                    .select("*")
+                    .eq("digger_profile_id", digger.id)
+                    .order("sort_order", { ascending: true });
+                  setCertifications((data || []) as DiggerCertification[]);
+                }}
+              />
+            )}
+            {experienceEditorOpen && (
+              <ExperienceEditorModal
+                open={experienceEditorOpen}
+                onOpenChange={(open) => {
+                  setExperienceEditorOpen(open);
+                  if (!open) setExperienceEditId(null);
+                }}
+                diggerProfileId={digger.id}
+                experiences={experiences}
+                scrollToExperienceId={experienceEditId}
+                onSaved={async () => {
+                  const { data } = await supabase
+                    .from("digger_experience")
+                    .select("*")
+                    .eq("digger_profile_id", digger.id)
+                    .order("sort_order", { ascending: true });
+                  setExperiences((data || []) as DiggerExperience[]);
+                }}
+              />
+            )}
           </>
             )}
           </div>
@@ -2005,26 +2215,11 @@ const DiggerDetail = () => {
                         )}
                         Location
                       </p>
-                      {isOwnProfile && getBaseLocationDisplay() && (
-                        <button type="button" onClick={() => openSectionModal("location")} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
                     </div>
-                    {getBaseLocationDisplay() ? (
-                      <button
-                        type="button"
-                        className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm text-left ${isOwnProfile ? "hover:border-primary/50 hover:bg-muted/50 cursor-pointer" : "cursor-default"}`}
-                        onClick={() => isOwnProfile && openSectionModal("location")}
-                      >
-                        <span className="text-base">{getFlagForCountryName(digger.country || getServiceLocationCountry() || "") || getCountryFlag(digger.country || getServiceLocationCountry() || "")}</span>
-                        {getBaseLocationDisplay() || "Not specified"}
-                      </button>
-                    ) : (
-                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("location")}>
-                        <Plus className="h-4 w-4 shrink-0" /> Add location
-                      </button>
-                    )}
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
+                      <span className="text-base">{getFlagForCountryName(digger.country || getServiceLocationCountry() || "") || getCountryFlag(digger.country || getServiceLocationCountry() || "")}</span>
+                      {getBaseLocationDisplay() || "Not specified"}
+                    </div>
                   </div>
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
@@ -2076,53 +2271,28 @@ const DiggerDetail = () => {
                   </div>
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Portfolio</p>
-                      {isOwnProfile && (portfolioItems.length > 0 || digger.portfolio_url) && (
-                        <button type="button" onClick={() => openSectionModal("portfolio")} className="text-muted-foreground hover:text-foreground">
+                      <p className="text-xs font-semibold text-muted-foreground">GitHub</p>
+                      {isOwnProfile && githubUrl && (
+                        <button type="button" onClick={openGithubModal} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3 w-3" />
                         </button>
                       )}
                     </div>
-                    {portfolioItems.length > 0 ? (
-                      <button type="button" className="text-sm text-primary hover:underline text-left" onClick={() => document.getElementById("portfolio-section")?.scrollIntoView({ behavior: "smooth" })}>
-                        {portfolioItems.length} project{portfolioItems.length !== 1 ? "s" : ""}
-                      </button>
-                    ) : digger.portfolio_url ? (
-                      <a href={digger.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate block">
-                        {digger.portfolio_url}
-                      </a>
+                    {githubUrl ? (
+                      <div className="flex items-center justify-between gap-3">
+                        <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="flex min-w-0 items-center gap-1.5 text-sm text-primary hover:underline truncate">
+                          <Code2 className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{githubUrl}</span>
+                        </a>
+                        {githubAvatarUrl ? (
+                          <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full ring-2 ring-border overflow-hidden bg-muted" title={`GitHub: ${githubUsername}`}>
+                            <img src={githubAvatarUrl} alt={`${githubUsername} on GitHub`} className="h-10 w-10 object-cover" />
+                          </a>
+                        ) : null}
+                      </div>
                     ) : (
-                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("portfolio")}>
-                        <Plus className="h-4 w-4 shrink-0" /> Add portfolio
-                      </button>
-                    )}
-                  </div>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground">Monthly salary</p>
-                      {isOwnProfile && (digger.monthly_salary != null || formatHourlyRate()) && (
-                        <button type="button" onClick={() => openSectionModal("salary")} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    {(digger.monthly_salary != null || formatHourlyRate()) ? (
-                      isOwnProfile ? (
-                        <button
-                          type="button"
-                          className="flex items-center gap-1.5 text-sm hover:text-foreground cursor-pointer"
-                          onClick={() => openSectionModal("salary")}
-                        >
-                          {digger.monthly_salary != null ? `$${Number(digger.monthly_salary).toLocaleString()}/mo` : formatHourlyRate()}
-                        </button>
-                      ) : (
-                        <span className="text-sm">
-                          {digger.monthly_salary != null ? `$${Number(digger.monthly_salary).toLocaleString()}/mo` : formatHourlyRate()}
-                        </span>
-                      )
-                    ) : (
-                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("salary")}>
-                        <Plus className="h-4 w-4 shrink-0" /> Add monthly salary
+                      <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openGithubModal()}>
+                        <Plus className="h-4 w-4 shrink-0" /> Connect GitHub
                       </button>
                     )}
                   </div>
@@ -2162,20 +2332,20 @@ const DiggerDetail = () => {
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
                       <p className="text-xs font-semibold text-muted-foreground">Skills</p>
-                      {isOwnProfile && normalizeSkills(digger.skills || digger.keywords || []).length > 0 && (
+                      {isOwnProfile && getDiggerSkillNames(digger).length > 0 && (
                         <button type="button" onClick={() => openSectionModal("skills")} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3 w-3" />
                         </button>
                       )}
                     </div>
-                    {normalizeSkills(digger.skills || digger.keywords || []).length > 0 ? (
+                    {getDiggerSkillNames(digger).length > 0 ? (
                       <div className="space-y-2">
                         <button
                           type="button"
                           className={`flex flex-wrap gap-1.5 text-left ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
                           onClick={() => isOwnProfile && openSectionModal("skills")}
                         >
-                          {normalizeSkills(digger.skills || digger.keywords || []).map((skill, idx) => (
+                          {getDiggerSkillNames(digger).map((skill, idx) => (
                             <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
                               {skill}
                             </span>
@@ -2196,34 +2366,39 @@ const DiggerDetail = () => {
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
                       <p className="text-xs font-semibold text-muted-foreground">Social media</p>
-                      {isOwnProfile && digger.social_links && Object.keys(digger.social_links).length > 0 && (
+                      {isOwnProfile && digger.social_links && Object.entries(digger.social_links).filter(([k, v]) => k !== "github" && Boolean(String(v).trim())).length > 0 && (
                         <button type="button" onClick={() => openSectionModal("social")} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="h-3 w-3" />
                         </button>
                       )}
                     </div>
-                    {digger.social_links && Object.keys(digger.social_links).length > 0 ? (
-                      <div className="flex flex-col gap-1.5">
-                        {Object.entries(digger.social_links)
-                          .filter(([, url]) => Boolean(String(url).trim()))
-                          .map(([platform, url]) => {
+                    {(() => {
+                      const socialExcludingGithub = digger.social_links && typeof digger.social_links === "object"
+                        ? Object.entries(digger.social_links).filter(([k, v]) => k !== "github" && Boolean(String(v).trim()))
+                        : [];
+                      return socialExcludingGithub.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        {socialExcludingGithub.map(([platform, url]) => {
                             const href = String(url).trim();
                             const label = socialPlatforms.find((p) => p.key === platform)?.label || platform;
+                            const faviconUrl = getSocialFaviconUrl(href);
                             return (
-                              <div
-                                key={platform}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm w-fit max-w-full"
-                              >
-                                <span className="font-medium text-foreground">{label}:</span>
+                              <div key={platform} className="flex items-center justify-between gap-3">
                                 <a
                                   href={href}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="truncate max-w-[220px] text-primary hover:underline"
+                                  className="min-w-0 flex items-center gap-1.5 text-sm text-primary hover:underline"
                                   title={href}
                                 >
-                                  {href}
+                                  <span className="font-medium text-foreground shrink-0">{label}:</span>
+                                  <span className="truncate">{href}</span>
                                 </a>
+                                {faviconUrl ? (
+                                  <a href={href} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full ring-2 ring-border overflow-hidden bg-muted" title={label}>
+                                    <img src={faviconUrl} alt="" className="h-10 w-10 object-cover" />
+                                  </a>
+                                ) : null}
                               </div>
                             );
                           })}
@@ -2237,7 +2412,8 @@ const DiggerDetail = () => {
                         <Plus className="h-4 w-4 shrink-0" />
                         Add social links
                       </button>
-                    )}
+                    );
+                    })()}
                   </div>
                 </CardContent>
               </Card>
@@ -2315,14 +2491,6 @@ const DiggerDetail = () => {
                           </a>
                         )
                       )}
-                      {(digger.monthly_salary != null || formatHourlyRate()) && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className="font-medium">
-                            {digger.monthly_salary != null ? `$${Number(digger.monthly_salary).toLocaleString()}/mo` : formatHourlyRate()}
-                          </span>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                   {(digger.digger_categories?.length ?? 0) > 0 && (
@@ -2342,14 +2510,14 @@ const DiggerDetail = () => {
                       </CardContent>
                     </Card>
                   )}
-                  {normalizeSkills(digger.skills || digger.keywords || []).length > 0 && (
+                  {getDiggerSkillNames(digger).length > 0 && (
                     <Card className="rounded-xl border-border/70">
                       <CardHeader className="py-3 px-4">
                         <CardTitle className="text-sm font-medium">Skills</CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 px-4 pb-4">
                         <div className="flex flex-wrap gap-1.5">
-                          {normalizeSkills(digger.skills || digger.keywords || []).map((skill, idx) => (
+                          {getDiggerSkillNames(digger).map((skill, idx) => (
                             <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
                               {skill}
                             </span>
@@ -2456,8 +2624,7 @@ const DiggerDetail = () => {
               {sectionEditor.section === "location" && "Edit Location"}
               {sectionEditor.section === "service_location" && "Edit Service Location"}
               {sectionEditor.section === "website" && "Edit Website"}
-              {sectionEditor.section === "salary" && "Edit Monthly Salary"}
-              {sectionEditor.section === "social" && "Edit Social Links"}
+              {sectionEditor.section === "social" && "Social profiles"}
               {sectionEditor.section === "references" && "References"}
               {sectionEditor.section === "reviews" && "Reviews"}
             </DialogTitle>
@@ -2496,29 +2663,80 @@ const DiggerDetail = () => {
             )}
             {sectionEditor.section === "skills" && (
               <>
-                <p className="text-sm text-muted-foreground">Select skills from the database. These help clients find you.</p>
-                <div className="max-h-[280px] overflow-y-auto space-y-2 border rounded-md p-3">
-                  {professions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Loading professions...</p>
+                <p className="text-sm text-muted-foreground">Select the skills you want to showcase on your profile.</p>
+                <div className="max-h-[360px] overflow-y-auto space-y-3 border rounded-md p-3">
+                  {skillsLoading ? (
+                    <p className="text-sm text-muted-foreground">Loading skills...</p>
                   ) : (
-                    professions.map((p) => {
-                      const checked = selectedSkillsDraft.includes(p.name);
-                      return (
-                        <label key={p.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => {
-                              setSelectedSkillsDraft((prev) =>
-                                checked ? prev.filter((x) => x !== p.name) : [...prev, p.name]
-                              );
-                            }}
-                            className="rounded"
-                          />
-                          <span>{p.name}</span>
-                        </label>
-                      );
-                    })
+                    Object.entries(skillsByCategory).map(([categoryName, categorySkills]) => (
+                      <details key={categoryName} className="rounded border border-border/70 bg-background/30">
+                        <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground">
+                          {categoryName}
+                        </summary>
+                        <div className="px-2 pb-2 space-y-1.5">
+                          {categorySkills.map((skill) => {
+                            const checked = selectedSkillsDraft.includes(skill.name);
+                            return (
+                              <label key={skill.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => {
+                                    setSelectedSkillsDraft((prev) =>
+                                      checked ? prev.filter((x) => x !== skill.name) : [...prev, skill.name]
+                                    );
+                                  }}
+                                  className="rounded"
+                                />
+                                <span>{skill.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    ))
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Add additional skill</p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={additionalSkillDraft}
+                      onChange={(e) => setAdditionalSkillDraft(e.target.value)}
+                      placeholder="Type a custom skill"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const next = additionalSkillDraft.trim();
+                        if (!next) return;
+                        const normalized = next;
+                        if (selectedSkillsDraft.some((s) => s.toLowerCase() === normalized.toLowerCase())) return;
+                        setSelectedSkillsDraft((prev) => [...prev, normalized]);
+                        setAdditionalSkillDraft("");
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {selectedSkillsDraft.filter((name) => !dbSkillNameSet.has(name)).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedSkillsDraft
+                        .filter((name) => !dbSkillNameSet.has(name))
+                        .map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs"
+                            onClick={() => setSelectedSkillsDraft((prev) => prev.filter((x) => x !== name))}
+                            title="Remove custom skill"
+                          >
+                            {name}
+                            <span className="text-muted-foreground">x</span>
+                          </button>
+                        ))}
+                    </div>
                   )}
                 </div>
                 <div className="flex justify-end">
@@ -2804,46 +3022,49 @@ const DiggerDetail = () => {
                 </div>
               </>
             )}
-            {sectionEditor.section === "salary" && (
-              <>
-                <p className="text-sm text-muted-foreground">Your expected monthly salary (in USD or your local currency).</p>
-                <Input
-                  type="number"
-                  min={0}
-                  step={100}
-                  value={salaryDraft}
-                  onChange={(e) => setSalaryDraft(e.target.value)}
-                  placeholder="e.g. 5000"
-                />
-                <div className="flex justify-end">
-                  <Button onClick={handleSaveSection} disabled={isSectionSaving}>
-                    {isSectionSaving ? "Saving..." : "Save"}
-                  </Button>
-                </div>
-              </>
-            )}
             {sectionEditor.section === "social" && (
               <>
-                <p className="text-sm text-muted-foreground">Add your social profiles so clients can learn more about your work.</p>
-                <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-                  {socialPlatforms.map((platform) => (
-                    <div key={platform.key} className="space-y-1">
-                      <p className="text-xs font-semibold text-muted-foreground">{platform.label}</p>
-                      <Input
-                        type="url"
-                        value={socialLinksDraft[platform.key] || ""}
-                        onChange={(e) =>
-                          setSocialLinksDraft((prev) => ({
-                            ...prev,
-                            [platform.key]: e.target.value,
-                          }))
-                        }
-                        placeholder={platform.placeholder}
-                      />
+                <p className="text-sm text-muted-foreground">
+                  Let Giggers find and connect with you. Add your profile links—they’ll appear on your Digger profile with the platform’s icon. Connect GitHub from the GitHub row on your profile.
+                </p>
+                <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                  {socialPlatforms.filter((p) => p.key !== "github").map((platform) => (
+                    <div
+                      key={platform.key}
+                      className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-background ring-2 ring-border overflow-hidden">
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(platform.domain)}&sz=32`}
+                          alt=""
+                          className="h-6 w-6 object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <label htmlFor={`social-${platform.key}`} className="text-sm font-medium text-foreground">
+                          {platform.label}
+                        </label>
+                        <Input
+                          id={`social-${platform.key}`}
+                          type="url"
+                          value={socialLinksDraft[platform.key] || ""}
+                          onChange={(e) =>
+                            setSocialLinksDraft((prev) => ({
+                              ...prev,
+                              [platform.key]: e.target.value,
+                            }))
+                          }
+                          placeholder={platform.placeholder}
+                          className="h-9 text-sm"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setSectionEditor({ open: false, section: null })}>
+                    Cancel
+                  </Button>
                   <Button onClick={handleSaveSection} disabled={isSectionSaving}>
                     {isSectionSaving ? "Saving..." : "Save"}
                   </Button>
@@ -3026,6 +3247,92 @@ const DiggerDetail = () => {
               }}
               onCancel={() => setEditorModal((prev) => ({ ...prev, open: false }))}
             />
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={githubModalOpen} onOpenChange={setGithubModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Code2 className="h-5 w-5" />
+              Connect GitHub
+            </DialogTitle>
+            <DialogDescription>
+              Sign in with GitHub so we can verify your profile and connect it to Digs and Gigs. Your profile will be shown on your Digger page.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Button
+              className="w-full h-11 bg-[#24292f] hover:bg-[#2d333b] text-white font-medium"
+              onClick={handleConnectWithGitHub}
+              disabled={githubLinking || githubSaving}
+            >
+              {githubLinking ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Redirecting to GitHub…
+                </>
+              ) : (
+                <>
+                  <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                  </svg>
+                  Connect with GitHub
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              You&apos;ll be asked to authorize Digs and Gigs on GitHub. We only use this to link your profile.
+            </p>
+            <details className="group rounded-md border border-border bg-muted/30">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                Why isn&apos;t sign-in working?
+              </summary>
+              <div className="px-3 pb-3 pt-0 text-xs text-muted-foreground space-y-2">
+                <p>
+                  &quot;Connect with GitHub&quot; needs your site admin to turn on two things in Supabase: the <strong>GitHub provider</strong> (with a GitHub OAuth app) and <strong>manual linking</strong>. Until then you may see &quot;Manual linking is disabled&quot; or &quot;GitHub sign-in linking is not enabled.&quot;
+                </p>
+                <p>
+                  <strong>You can still connect GitHub:</strong> use the option below to paste your GitHub profile URL (e.g. <code className="rounded bg-muted px-1">https://github.com/your-username</code>) and click Save link.
+                </p>
+                <p className="pt-1">
+                  Admins: see <code className="rounded bg-muted px-1">docs/GITHUB_CONNECT_SETUP.md</code> for setup steps.
+                </p>
+              </div>
+            </details>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase text-muted-foreground">
+                <span className="bg-background px-2">Or add link manually</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="github-url" className="text-sm font-medium">
+                GitHub profile URL
+              </label>
+              <Input
+                id="github-url"
+                type="url"
+                value={githubDraft}
+                onChange={(e) => setGithubDraft(e.target.value)}
+                placeholder="https://github.com/your-username"
+                className="font-mono text-sm"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setGithubModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => (githubDraft.trim() ? requestConfirmLink("github") : handleSaveGithub())}
+                  disabled={githubSaving}
+                >
+                  {githubSaving ? "Saving..." : "Save link"}
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

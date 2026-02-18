@@ -1,6 +1,6 @@
 -- Public view: expose only safe columns so profile visitors (Giggers) can see references
 -- Contact details (reference_email, reference_phone) stay private
-CREATE OR REPLACE VIEW public.references_public AS
+CREATE OR REPLACE VIEW public.references_public WITH (security_invoker = true) AS
 SELECT id, digger_id, reference_name, project_description, is_verified, created_at
 FROM public.references;
 

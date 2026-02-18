@@ -43,6 +43,7 @@ interface DiggerCardData {
   availability: string | null;
   years_experience: number | null;
   skills: string[] | null;
+  digger_skills?: { skills: { name: string } | null }[] | null;
   profile_image_url: string | null;
   average_rating: number | null;
   total_ratings: number | null;
@@ -140,7 +141,7 @@ export default function ProfileByHandle() {
           row.has_digger
             ? supabase
                 .from("digger_profiles")
-                .select("id, handle, business_name, profession, tagline, bio, location, availability, years_experience, skills, profile_image_url, average_rating, total_ratings, hourly_rate_min, hourly_rate_max, hourly_rate, is_public")
+                .select("id, handle, business_name, profession, tagline, bio, location, availability, years_experience, skills, profile_image_url, average_rating, total_ratings, hourly_rate_min, hourly_rate_max, hourly_rate, is_public, digger_skills (skills (name))")
                 .eq("user_id", row.user_id)
                 .order("created_at", { ascending: true })
                 .limit(1)
@@ -313,13 +314,17 @@ export default function ProfileByHandle() {
                     ? `Rate range: $${Math.round(digger.hourly_rate_min || 0)} - $${Math.round(digger.hourly_rate_max || 0)}`
                     : "Rate not specified"}
               </div>
-              {!!digger.skills?.length && (
+              {(() => {
+                const skillNames = (digger.digger_skills || []).map((ds: { skills?: { name: string } | null }) => ds.skills?.name).filter(Boolean);
+                const names = skillNames.length > 0 ? skillNames : (digger.skills || []);
+                return !!names.length ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {digger.skills.slice(0, 8).map((skill) => (
+                  {names.slice(0, 8).map((skill: string) => (
                     <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>
                   ))}
                 </div>
-              )}
+                ) : null;
+              })()}
               <Button
                 variant="outline"
                 className="mt-2"

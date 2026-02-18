@@ -19,7 +19,8 @@ import { HighRiskWarningDialog } from "@/components/HighRiskWarningDialog";
 import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/techCategories";
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping, isCustomProblem } from "@/config/giggerProblems";
 import { formatSelectionDisplay, ALL_COUNTRY_OPTIONS } from "@/config/regionOptions";
-import { SUGGESTED_SKILLS, normalizeSkillInput, isSkillDuplicate } from "@/config/suggestedSkillsForGigs";
+import { normalizeSkillInput, isSkillDuplicate } from "@/config/suggestedSkillsForGigs";
+import { useSkills } from "@/hooks/useSkills";
 import PageLayout from "@/components/layout/PageLayout";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
@@ -50,6 +51,7 @@ const PostGig = () => {
   const [customProjectLabel, setCustomProjectLabel] = useState("");
   const [skillsRequired, setSkillsRequired] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
+  const { skills: allSkills } = useSkills();
 
   // High-risk warning state
   const [showWarningDialog, setShowWarningDialog] = useState(false);
@@ -252,6 +254,16 @@ const PostGig = () => {
 
       const gigData = response?.data;
       if (!gigData?.id) throw new Error("Failed to create project");
+
+      // Sync skills to gig_skills junction table
+      if (skillsRequired.length > 0) {
+        const { data: skillRows } = await supabase.from("skills").select("id").in("name", skillsRequired);
+        if (skillRows?.length) {
+          await supabase.from("gig_skills").insert(
+            skillRows.map((r) => ({ gig_id: gigData.id, skill_id: r.id }))
+          );
+        }
+      }
 
       // Send management email with edit/cancel links (no confirmation required)
       supabase.functions.invoke("send-gig-management-email", {
@@ -554,14 +566,14 @@ const PostGig = () => {
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  {SUGGESTED_SKILLS.filter((s) => !skillsRequired.some((x) => x.toLowerCase() === s.toLowerCase())).map((skill) => (
+                  {allSkills.filter((s) => !skillsRequired.some((x) => x.toLowerCase() === s.name.toLowerCase())).slice(0, 24).map((skill) => (
                     <button
                       type="button"
-                      key={skill}
-                      onClick={() => addSkill(skill)}
+                      key={skill.id}
+                      onClick={() => addSkill(skill.name)}
                       className="inline-flex items-center rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/5 transition-colors"
                     >
-                      + {skill}
+                      + {skill.name}
                     </button>
                   ))}
                 </div>
