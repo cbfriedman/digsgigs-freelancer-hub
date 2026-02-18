@@ -1945,7 +1945,7 @@ const Register = () => {
                     ? "Post projects for free, review tailored proposals, and hire the best talent for your team."
                     : selectedRoles.has('digger')
                       ? "Get matched with jobs tailored to your skills, passions, and experience – all for free."
-                      : "Get matched with jobs tailored to your skills, passions, and experience and track your applications – all for free."
+                      : ""
                   : step === 3 ? "What would you like to do on DigsandGigs?" : `Set up your ${currentRole} profile`}
               </CardDescription>
             </CardHeader>

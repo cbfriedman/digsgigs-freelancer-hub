@@ -133,7 +133,6 @@ export default function GiggerDetail() {
   const [aboutDraft, setAboutDraft] = useState("");
   const [savingAbout, setSavingAbout] = useState(false);
   const [profileHeaderEditOpen, setProfileHeaderEditOpen] = useState(false);
-  const [profileTitleDraft, setProfileTitleDraft] = useState("");
   const [locationCountryDraft, setLocationCountryDraft] = useState("");
   const [locationStateDraft, setLocationStateDraft] = useState("");
   const [locationCityDraft, setLocationCityDraft] = useState("");
@@ -400,7 +399,6 @@ export default function GiggerDetail() {
   };
 
   const openProfileHeaderEdit = () => {
-    setProfileTitleDraft(profile?.profile_title?.trim() ?? "");
     const countryName = findCountryByNameOrCode(profile?.country ?? "")?.name ?? profile?.country?.trim() ?? "";
     setLocationCountryDraft(countryName);
     setLocationStateDraft(profile?.state?.trim() ?? "");
@@ -422,14 +420,15 @@ export default function GiggerDetail() {
       const countryVal = normalizedCountryName || locationCountryDraft.trim() || null;
       const stateVal = locationStateDraft.trim() || null;
       const cityVal = locationCityDraft.trim() || null;
-      const basePayload = {
-        profile_title: profileTitleDraft.trim() || null,
+      const updatePayload = {
         country: countryVal,
+        state: stateVal,
+        city: cityVal,
       };
 
       const { error: fullSaveError } = await supabase
         .from("profiles")
-        .update({ ...basePayload, state: stateVal, city: cityVal })
+        .update(updatePayload)
         .eq("id", userId);
 
       const isMissingStateCityColumn =
@@ -439,34 +438,17 @@ export default function GiggerDetail() {
 
       if (fullSaveError && !isMissingStateCityColumn) throw fullSaveError;
 
-      // Backward-compatible save if state/city columns aren't present yet.
       if (isMissingStateCityColumn) {
         const { error: fallbackError } = await supabase
           .from("profiles")
-          .update(basePayload)
+          .update({ country: countryVal })
           .eq("id", userId);
         if (fallbackError) throw fallbackError;
-        setProfile((p) =>
-          p
-            ? {
-                ...p,
-                profile_title: basePayload.profile_title,
-                country: countryVal,
-              }
-            : null
-        );
-        toast.info("Saved title and country. State/city will save after the latest migration is applied.");
+        setProfile((p) => (p ? { ...p, country: countryVal } : null));
+        toast.info("Saved country. State/city will save after the latest migration is applied.");
       } else {
         setProfile((p) =>
-          p
-            ? {
-                ...p,
-                profile_title: basePayload.profile_title,
-                country: countryVal,
-                state: stateVal,
-                city: cityVal,
-              }
-            : null
+          p ? { ...p, country: countryVal, state: stateVal, city: cityVal } : null
         );
       }
       setProfileHeaderEditOpen(false);
@@ -565,12 +547,8 @@ export default function GiggerDetail() {
       </Dialog>
       <Dialog open={profileHeaderEditOpen} onOpenChange={setProfileHeaderEditOpen}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>Edit profile</DialogTitle><DialogDescription>Update your profile title, location, photo, and cover.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>Edit profile</DialogTitle><DialogDescription>Update your location, photo, and cover.</DialogDescription></DialogHeader>
           <div className="flex flex-col gap-6 py-2">
-            <div className="space-y-2">
-              <label htmlFor="gigger-profile-title" className="text-sm font-medium">Profile title</label>
-              <Input id="gigger-profile-title" value={profileTitleDraft} onChange={(e) => setProfileTitleDraft(e.target.value)} placeholder="e.g. Client / Project owner" className="w-full" />
-            </div>
             <div className="space-y-2">
               <label htmlFor="gigger-location-country" className="text-sm font-medium">Country</label>
               <Select

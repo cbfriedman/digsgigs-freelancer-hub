@@ -111,7 +111,6 @@ const DiggerDetail = () => {
   const coverPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const [profileHeaderEditOpen, setProfileHeaderEditOpen] = useState(false);
   const [profileNameDraft, setProfileNameDraft] = useState("");
-  const [profileTitleDraft, setProfileTitleDraft] = useState("");
   const [hourlyRateMinDraft, setHourlyRateMinDraft] = useState("");
   const [hourlyRateMaxDraft, setHourlyRateMaxDraft] = useState("");
   const hasHandledManageQueryRef = useRef(false);
@@ -462,7 +461,6 @@ const DiggerDetail = () => {
   const openProfileHeaderEditModal = () => {
     if (!digger) return;
     setProfileNameDraft(digger.profile_name || "Main Profile");
-    setProfileTitleDraft(digger.custom_occupation_title || digger.digger_categories?.[0]?.categories?.name || digger.profession || "");
     setHourlyRateMinDraft(digger.hourly_rate_min != null ? String(digger.hourly_rate_min) : digger.hourly_rate != null ? String(digger.hourly_rate) : "");
     setHourlyRateMaxDraft(digger.hourly_rate_max != null ? String(digger.hourly_rate_max) : "");
     setProfileHeaderEditOpen(true);
@@ -477,7 +475,6 @@ const DiggerDetail = () => {
       const hourlyMax = maxVal != null && !isNaN(maxVal) ? maxVal : null;
       const hourlyRate = hourlyMin ?? hourlyMax;
       const updates: Record<string, unknown> = {
-        custom_occupation_title: profileTitleDraft.trim() || null,
         profile_name: profileNameDraft.trim() || null,
         hourly_rate_min: hourlyMin,
         hourly_rate_max: hourlyMax,
@@ -489,7 +486,6 @@ const DiggerDetail = () => {
         d
           ? {
               ...d,
-              custom_occupation_title: profileTitleDraft.trim() || null,
               profile_name: profileNameDraft.trim() || null,
               hourly_rate_min: hourlyMin,
               hourly_rate_max: hourlyMax,
@@ -1660,26 +1656,16 @@ const DiggerDetail = () => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit profile</DialogTitle>
-            <DialogDescription>Update your profile name, title, hourly rate, photo, and cover.</DialogDescription>
+            <DialogDescription>Update your professional headline, hourly rate, photo, and cover.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-6 py-2">
             <div className="space-y-2">
-              <label htmlFor="profile-name-edit" className="text-sm font-medium">Profile name</label>
+              <label htmlFor="profile-name-edit" className="text-sm font-medium">Professional headline</label>
               <Input
                 id="profile-name-edit"
                 value={profileNameDraft}
                 onChange={(e) => setProfileNameDraft(e.target.value)}
                 placeholder="e.g. Main Profile"
-                className="w-full"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="profile-title-edit" className="text-sm font-medium">Profile title</label>
-              <Input
-                id="profile-title-edit"
-                value={profileTitleDraft}
-                onChange={(e) => setProfileTitleDraft(e.target.value)}
-                placeholder="e.g. Senior Full Stack Engineer"
                 className="w-full"
               />
             </div>

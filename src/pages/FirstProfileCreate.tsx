@@ -8,28 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPin, Loader2, Briefcase } from "lucide-react";
 import { toast } from "sonner";
-import { getRegionsForCountry, getRegionLabel } from "@/config/locationData";
+import { LocationSelector, type LocationValue } from "@/components/LocationSelector";
+import { useRegionsByCountry } from "@/hooks/useLocations";
 import { goToEditProfile } from "@/lib/profileWorkspaceRoute";
 import { getHandleForFirstProfile } from "@/lib/generateHandle";
 import { ensureProfileFromAuth } from "@/lib/ensureProfileFromAuth";
 import { ensureGiggerProfile } from "@/lib/ensureGiggerProfile";
 import { PageLayout } from "@/components/layout/PageLayout";
 
-const COUNTRY_OPTIONS = [
-  { value: "", label: "Select a country..." },
-  { value: "United States", label: "🇺🇸 United States" },
-  { value: "Canada", label: "🇨🇦 Canada" },
-  { value: "United Kingdom", label: "🇬🇧 United Kingdom" },
-  { value: "Australia", label: "🇦🇺 Australia" },
-  { value: "Germany", label: "🇩🇪 Germany" },
-  { value: "France", label: "🇫🇷 France" },
-  { value: "Spain", label: "🇪🇸 Spain" },
-  { value: "Italy", label: "🇮🇹 Italy" },
-  { value: "Mexico", label: "🇲🇽 Mexico" },
-  { value: "Brazil", label: "🇧🇷 Brazil" },
-  { value: "India", label: "🇮🇳 India" },
-  { value: "Other", label: "🌍 Other" },
-];
 
 type SetupMode = "digger" | "gigger" | null;
 
@@ -62,8 +48,8 @@ const ROLE_CONFIG: Record<
     taglineClass: "text-primary",
     tagline: "Find work you love. Get matched with gigs and grow your business.",
     title: "Create Your Digger Profile",
-    description: "Start with a profile title and your service area. You can add professions, keywords, and more later.",
-    profileLabel: "Profile Title",
+    description: "Start with a professional headline and your service area. You can add professions, keywords, and more later.",
+    profileLabel: "Professional Headline",
     profilePlaceholder: "e.g., Full Stack Development, Mobile App Development, DevOps Consulting",
     profileHint: "A short name for this profile. Helps clients find you.",
     locationLabel: "Service Location",
@@ -101,23 +87,39 @@ export default function FirstProfileCreate() {
   const [hasDiggerProfile, setHasDiggerProfile] = useState(false);
   const [diggerCompleted, setDiggerCompleted] = useState(false);
 
+  const emptyLocation: LocationValue = {
+    countryId: null,
+    regionId: null,
+    cityId: null,
+    countryName: "",
+    regionName: "",
+    cityName: "",
+    countryCode: "",
+  };
+
   // Digger form state
   const [profileTitle, setProfileTitle] = useState("");
-  const [country, setCountry] = useState("");
-  const [selectedState, setSelectedState] = useState("");
+  const [locationValue, setLocationValue] = useState<LocationValue>(emptyLocation);
   const [locationLocked, setLocationLocked] = useState(false);
 
   // Gigger form state (separate so we don't overwrite when switching)
   const [giggerProfileTitle, setGiggerProfileTitle] = useState("");
-  const [giggerCountry, setGiggerCountry] = useState("");
-  const [giggerState, setGiggerState] = useState("");
+  const [giggerLocationValue, setGiggerLocationValue] = useState<LocationValue>(emptyLocation);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const regions = (setupMode === "digger" ? country : giggerCountry) ? getRegionsForCountry(setupMode === "digger" ? country : giggerCountry) : [];
-  const showStateField = (setupMode === "digger" ? country : giggerCountry) && (setupMode === "digger" ? country : giggerCountry) !== "Other" && regions.length > 0;
-  const diggerCanSubmit = profileTitle.trim().length >= 2 && country && (!showStateField || selectedState);
-  const giggerCanSubmit = giggerProfileTitle.trim().length >= 2 && giggerCountry && (!(giggerCountry && giggerCountry !== "Other" && getRegionsForCountry(giggerCountry).length > 0) || giggerState);
+  const { data: diggerRegions = [] } = useRegionsByCountry(locationValue.countryId, "");
+  const { data: giggerRegions = [] } = useRegionsByCountry(giggerLocationValue.countryId, "");
+  const diggerRegionRequired = diggerRegions.length > 0;
+  const giggerRegionRequired = giggerRegions.length > 0;
+  const diggerCanSubmit =
+    profileTitle.trim().length >= 2 &&
+    !!locationValue.countryName &&
+    (!diggerRegionRequired || !!locationValue.regionName);
+  const giggerCanSubmit =
+    giggerProfileTitle.trim().length >= 2 &&
+    !!giggerLocationValue.countryName &&
+    (!giggerRegionRequired || !!giggerLocationValue.regionName);
 
   useEffect(() => {
     if (!user) {
@@ -255,9 +257,10 @@ export default function FirstProfileCreate() {
         return;
       }
 
-      const countryVal = country || null;
-      const stateVal = selectedState || null;
-      const locationParts = [stateVal, countryVal].filter(Boolean);
+      const countryVal = locationValue.countryName || null;
+      const stateVal = locationValue.regionName || null;
+      const cityVal = locationValue.cityName || null;
+      const locationParts = [cityVal, stateVal, countryVal].filter(Boolean);
       const locationString = locationParts.length > 0 ? locationParts.join(", ") : "Not specified";
 
       let userPhone = "Not specified";
@@ -285,7 +288,10 @@ export default function FirstProfileCreate() {
           location: locationString,
           country: countryVal,
           state: stateVal,
-          city: null,
+          city: locationValue.cityName || null,
+          country_id: locationValue.countryId || null,
+          region_id: locationValue.regionId || null,
+          city_id: locationValue.cityId || null,
           phone: userPhone,
           keywords: [],
           registration_status: "incomplete",
@@ -330,8 +336,12 @@ export default function FirstProfileCreate() {
       await ensureGiggerProfile(user.id);
       const updates: Record<string, unknown> = {
         profile_title: giggerProfileTitle.trim(),
-        country: giggerCountry || null,
-        state: giggerState || null,
+        country: giggerLocationValue.countryName || null,
+        state: giggerLocationValue.regionName || null,
+        city: giggerLocationValue.cityName || null,
+        country_id: giggerLocationValue.countryId || null,
+        region_id: giggerLocationValue.regionId || null,
+        city_id: giggerLocationValue.cityId || null,
       };
       await (supabase.from("profiles") as any).update(updates).eq("id", user.id);
       toast.success("Profile set up. You can post gigs and hire professionals.");
@@ -358,12 +368,7 @@ export default function FirstProfileCreate() {
     );
   }
 
-  const giggerRegions = giggerCountry ? getRegionsForCountry(giggerCountry) : [];
-  const giggerShowState = giggerCountry && giggerCountry !== "Other" && giggerRegions.length > 0;
-
   const cfg = setupMode ? ROLE_CONFIG[setupMode] : null;
-  const selectClass =
-    "flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 mt-1 disabled:opacity-60 disabled:pointer-events-none";
 
   return (
     <PageLayout>
@@ -409,41 +414,12 @@ export default function FirstProfileCreate() {
                     <p className="text-xs text-muted-foreground mb-2">
                       {locationLocked ? cfg.locationLockedHint : cfg.locationHint}
                     </p>
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="country" className="text-sm">Country</Label>
-                        <select
-                          id="country"
-                          value={country}
-                          onChange={(e) => { setCountry(e.target.value); setSelectedState(""); }}
-                          required
-                          disabled={locationLocked}
-                          className={selectClass}
-                        >
-                          {COUNTRY_OPTIONS.map((opt) => (
-                            <option key={opt.value || "empty"} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      {showStateField && (
-                        <div>
-                          <Label htmlFor="state" className="text-sm">{getRegionLabel(country)} / Territory</Label>
-                          <select
-                            id="state"
-                            value={selectedState}
-                            onChange={(e) => setSelectedState(e.target.value)}
-                            required
-                            disabled={locationLocked}
-                            className={selectClass}
-                          >
-                            <option value="">Select...</option>
-                            {regions.map((r) => (
-                              <option key={r} value={r}>{r}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </div>
+                    <LocationSelector
+                      value={locationValue}
+                      onChange={setLocationValue}
+                      disabled={locationLocked}
+                      regionLabel="State / Territory"
+                    />
                   </div>
 
                   <div className="pt-2">
@@ -496,41 +472,12 @@ export default function FirstProfileCreate() {
                     <p className="text-xs text-muted-foreground mb-2">
                       {locationLocked ? cfg.locationLockedHint : cfg.locationHint}
                     </p>
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="gigger-country" className="text-sm">Country</Label>
-                        <select
-                          id="gigger-country"
-                          value={giggerCountry}
-                          onChange={(e) => { setGiggerCountry(e.target.value); setGiggerState(""); }}
-                          required
-                          disabled={locationLocked}
-                          className={selectClass}
-                        >
-                          {COUNTRY_OPTIONS.map((opt) => (
-                            <option key={opt.value || "empty"} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      {giggerShowState && (
-                        <div>
-                          <Label htmlFor="gigger-state" className="text-sm">{getRegionLabel(giggerCountry)} / Territory</Label>
-                          <select
-                            id="gigger-state"
-                            value={giggerState}
-                            onChange={(e) => setGiggerState(e.target.value)}
-                            required
-                            disabled={locationLocked}
-                            className={selectClass}
-                          >
-                            <option value="">Select...</option>
-                            {giggerRegions.map((r) => (
-                              <option key={r} value={r}>{r}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </div>
+                    <LocationSelector
+                      value={giggerLocationValue}
+                      onChange={setGiggerLocationValue}
+                      disabled={locationLocked}
+                      regionLabel="State / Territory"
+                    />
                   </div>
 
                   <div className="pt-2">

@@ -14,7 +14,6 @@ import {
   MessageCircle,
   BellRing,
   FolderOpen,
-  Sparkles,
   Settings,
   Briefcase,
   Rocket,
@@ -459,7 +458,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     onClick={() => navigate("/register")}
                     className="bg-gradient-accent text-accent-foreground font-semibold rounded-lg shadow-accent hover:shadow-accent-lg hover-glow-accent transition-all duration-200 border-0"
                   >
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5 shrink-0" aria-hidden />
                     Sign Up
                   </Button>
                 </div>
@@ -809,9 +807,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                 </div>
               )}
 
-              {!isGiggerMode && (
+              {user && Array.isArray(userRoles) && userRoles.includes('digger') && !isGiggerMode && (
                 <>
-                  {/* Cart */}
+                  {/* Cart - only for registered Diggers */}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1059,9 +1057,9 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                   </HoverCardContent>
                 </HoverCard>
               )}
-              {!isGiggerMode && (
+              {user && Array.isArray(userRoles) && userRoles.includes('digger') && !isGiggerMode && (
                 <>
-                  {/* Cart - Mobile */}
+                  {/* Cart - Mobile (only for registered Diggers) */}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1456,7 +1454,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                               navigate("/register");
                             }}
                           >
-                            <Sparkles className="h-4 w-4 mr-2 shrink-0" aria-hidden />
                             Sign Up
                           </Button>
                         </>
