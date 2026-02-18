@@ -16,6 +16,7 @@ import { generateJobPostingSchema } from "@/components/StructuredData";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
+import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 
 interface Gig {
   id: string;
@@ -87,6 +88,41 @@ const GigDetail = () => {
   useEffect(() => {
     loadData();
   }, [id, userRoles]);
+
+  // If user has digger role but diggerId never set (e.g. roles loaded after first run), load digger profile so they can bid
+  useEffect(() => {
+    if (!id || !gig || !currentUser || !userRoles?.includes("digger") || activeRole === "gigger" || diggerId != null) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || cancelled) return;
+      const { data: existingProfile } = await supabase
+        .from("digger_profiles" as any)
+        .select("id")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      const row = existingProfile as { id: string } | null;
+      if (cancelled || !row) return;
+      setIsDigger(true);
+      setDiggerId(row.id);
+      const { data: diggerDetail } = await supabase
+        .from("digger_profiles" as any)
+        .select("id, profile_image_url, hourly_rate, hourly_rate_min, hourly_rate_max, profiles!digger_profiles_user_id_fkey(avatar_url)")
+        .eq("id", row.id)
+        .single();
+      if (cancelled) return;
+      const raw = diggerDetail as { profiles?: { avatar_url?: string | null } | { avatar_url?: string | null }[] | null } | null;
+      const profilesNorm = raw?.profiles != null ? (Array.isArray(raw.profiles) ? raw.profiles[0] : raw.profiles) : null;
+      const completion = computeDiggerProfileDetailCompletion(raw ? { ...raw, profiles: profilesNorm } : null);
+      const profilePhotoDone = completion.items.find((i) => i.id === "profile-photo")?.completed ?? false;
+      const hourlyRateDone = completion.items.find((i) => i.id === "hourly-rate")?.completed ?? false;
+      if (!cancelled) setDiggerCanBid(profilePhotoDone && hourlyRateDone);
+      const { data: bid } = await supabase.from("bids" as any).select("*").eq("gig_id", id).eq("digger_id", row.id).maybeSingle();
+      if (!cancelled) setExistingBid(bid ?? null);
+      if (!cancelled) setCanSeeBudget(true);
+    })();
+    return () => { cancelled = true; };
+  }, [id, gig, currentUser, userRoles, activeRole, diggerId]);
 
   useEffect(() => {
     // Scroll to bid section (#bid) only after gig is loaded so the target (form or Sign In card) exists
@@ -218,18 +254,21 @@ const GigDetail = () => {
         if (diggerProfileRow) {
           setDiggerId(diggerProfileRow.id);
 
-          // At-rest minimum to bid: profile photo and hourly rate (then they can bid)
+          // At-rest minimum to bid: profile photo and hourly rate — use same completion logic as profile/dashboard so 20% = can bid
           const { data: diggerDetail } = await supabase
             .from("digger_profiles" as any)
             .select("id, profile_image_url, hourly_rate, hourly_rate_min, hourly_rate_max, profiles!digger_profiles_user_id_fkey(avatar_url)")
             .eq("id", diggerProfileRow.id)
             .single();
-          const dp = diggerDetail as { profile_image_url?: string | null; hourly_rate?: number | null; hourly_rate_min?: number | null; hourly_rate_max?: number | null; profiles?: { avatar_url?: string | null } | null } | null;
-          const hasPhoto = !!(dp?.profile_image_url?.trim()) || !!(dp?.profiles?.avatar_url?.trim());
-          const hasHourlyRate =
-            (dp?.hourly_rate != null && Number(dp.hourly_rate) > 0) ||
-            (dp?.hourly_rate_min != null && dp?.hourly_rate_max != null);
-          setDiggerCanBid(!!(hasPhoto && hasHourlyRate));
+          // Normalize profiles (join can return object or array) so completion logic matches profile page
+          const raw = diggerDetail as { profiles?: { avatar_url?: string | null } | { avatar_url?: string | null }[] | null } | null;
+          const profilesNorm = raw?.profiles != null
+            ? (Array.isArray(raw.profiles) ? raw.profiles[0] : raw.profiles)
+            : null;
+          const completion = computeDiggerProfileDetailCompletion(raw ? { ...raw, profiles: profilesNorm } : null);
+          const profilePhotoDone = completion.items.find((i) => i.id === "profile-photo")?.completed ?? false;
+          const hourlyRateDone = completion.items.find((i) => i.id === "hourly-rate")?.completed ?? false;
+          setDiggerCanBid(profilePhotoDone && hourlyRateDone);
 
           // Check for existing bid
           const { data: bid } = await supabase

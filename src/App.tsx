@@ -2,7 +2,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation, useRouteError, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { useTrackDiggerPresence } from "./hooks/useDiggerPresence";
@@ -157,6 +157,40 @@ const RootLayout = () => {
   );
 };
 
+function RegisterRouteError() {
+  const error = useRouteError();
+  const message = error instanceof Error ? error.message : String(error);
+  if (typeof console !== "undefined" && console.error) console.error("Register route error:", error);
+  return (
+    <main className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="max-w-md w-full rounded-xl border border-border bg-card p-6 shadow-sm">
+        <h1 className="text-xl font-semibold">Something went wrong</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          The sign-up page couldn’t load. Try reloading or go back home.
+        </p>
+        {message && (
+          <p className="mt-2 text-xs font-mono text-muted-foreground break-words">{message}</p>
+        )}
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Reload
+          </button>
+          <Link
+            to="/"
+            className="rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-accent"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 // Create router with all routes - forcing fresh registration
 const router = createBrowserRouter(
   [
@@ -174,7 +208,7 @@ const router = createBrowserRouter(
       {
         path: "/register",
         element: <Register />,
-        errorElement: <div>Register route error</div>,
+        errorElement: <RegisterRouteError />,
       },
       {
         path: "/pro-digger-signup",

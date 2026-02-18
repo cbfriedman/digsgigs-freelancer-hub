@@ -130,9 +130,17 @@ const Register = () => {
     }
   }, [authLoading, user, userRoles, isCompletingRegistration, justRegistered]);
   
-  // Get gig title from sessionStorage for display
-  const pendingGigData = isFromGigPosting ? JSON.parse(sessionStorage.getItem('pendingGigData') || '{}') : {};
-  const gigTitle = pendingGigData.title || 'Your Gig';
+  // Get gig title from sessionStorage for display (safe parse - invalid JSON must not crash the page)
+  const pendingGigData = (() => {
+    if (!isFromGigPosting) return {};
+    try {
+      const raw = sessionStorage.getItem('pendingGigData');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  })();
+  const gigTitle = pendingGigData?.title || 'Your Gig';
   
   const [isSignInMode, setIsSignInMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -456,21 +464,9 @@ const Register = () => {
     navigate,
   ]);
 
-
-  // Don't show loading spinner in password reset mode - show the form immediately
-  if (authLoading && !isPasswordResetMode) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
+  // Derived values and hooks MUST run before any conditional return (Rules of Hooks)
   const roleArray = Array.from(selectedRoles);
   const profileSetupRoles: UserAppRole[] = roleArray.filter((role): role is UserAppRole => role === 'digger' || role === 'gigger');
-  // Steps: 1=Basic Info, 2=OTP Verification, 3=Role Selection, 4+=Role Forms
-  const totalSteps = 3 + profileSetupRoles.length; // Basic Info + OTP + Role Selection + Role Forms
-  const progressPercentage = (step / totalSteps) * 100;
 
   // Fetch digger location when showing Gigger form (one user = one location, lock if Digger has location)
   useEffect(() => {
@@ -501,6 +497,19 @@ const Register = () => {
     };
     void fetchDiggerLocation();
   }, [user?.id, step, profileSetupRoles, currentRoleIndex]);
+
+  // Don't show loading spinner in password reset mode - show the form immediately
+  if (authLoading && !isPasswordResetMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Steps: 1=Basic Info, 2=OTP Verification, 3=Role Selection, 4+=Role Forms
+  const totalSteps = 3 + profileSetupRoles.length; // Basic Info + OTP + Role Selection + Role Forms
+  const progressPercentage = (step / totalSteps) * 100;
 
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2295,8 +2304,8 @@ const Register = () => {
                   </div>
                 )}
 
-                {/* Name Fields - First/Last when role preselected (like reference), else Full name */}
-                {!isFromGigPosting && (selectedRoles.has('gigger') || selectedRoles.has('digger') ? (
+                {/* Name Fields - First name and Last name */}
+                {!isFromGigPosting && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First name</Label>
@@ -2327,22 +2336,7 @@ const Register = () => {
                       />
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full name</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={fullName}
-                      autoComplete="name"
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      maxLength={100}
-                      className="h-11"
-                    />
-                  </div>
-                ))}
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="email">
