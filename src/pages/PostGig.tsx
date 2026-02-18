@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,9 @@ import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/t
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping, isCustomProblem } from "@/config/giggerProblems";
 import { formatSelectionDisplay } from "@/config/regionOptions";
 import { normalizeSkillInput, isSkillDuplicate } from "@/config/suggestedSkillsForGigs";
-import { useSkills } from "@/hooks/useSkills";
+import { useSkillsByCategory } from "@/hooks/useSkills";
 import PageLayout from "@/components/layout/PageLayout";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import PostGigProgressDots from "@/components/PostGigProgressDots";
 import { RegionCountrySelector } from "@/components/RegionCountrySelector";
 
@@ -31,6 +32,7 @@ const PostGig = () => {
   const { trackEvent, isConfigured } = useFacebookPixel();
   const { user, userRoles, activeRole, switchRole } = useAuth();
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   // Show friendly alert when user is in digger mode or doesn't have gigger role
   const showGiggerOnlyAlert = user && (activeRole === "digger" || !userRoles.includes("gigger"));
@@ -51,7 +53,17 @@ const PostGig = () => {
   const [customProjectLabel, setCustomProjectLabel] = useState("");
   const [skillsRequired, setSkillsRequired] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
-  const { skills: allSkills } = useSkills();
+  const [skillSearchQuery, setSkillSearchQuery] = useState("");
+  const { skillsByCategory, allSkills } = useSkillsByCategory();
+
+  // Set poster_country from gigger's profile so nationality shows on gig cards for diggers
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("country").eq("id", user.id).single();
+      if (data?.country?.trim()) setPosterCountry(data.country.trim());
+    })();
+  }, [user?.id]);
 
   // High-risk warning state
   const [showWarningDialog, setShowWarningDialog] = useState(false);
@@ -127,6 +139,7 @@ const PostGig = () => {
 
   const handleSubmitCheck = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current || loading) return;
     if (!validateForm()) return;
 
     const textToCheck = description;
@@ -177,6 +190,8 @@ const PostGig = () => {
   };
 
   const submitGig = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     try {
       const finalProblemId = selectedProblemId;
@@ -305,6 +320,7 @@ const PostGig = () => {
         toast.error(msg || "Failed to post project. Please try again.");
       }
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -535,14 +551,14 @@ const PostGig = () => {
                 />
               </div>
 
-              {/* Skills required (optional) - helps Diggers tailor proposals */}
+              {/* Skills required (optional) - select from database or add custom */}
               <div className="space-y-3 p-6 rounded-xl bg-muted/20 border border-border/50">
                 <Label className="text-base font-semibold flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
                   Skills required <span className="text-muted-foreground font-normal text-sm">(optional)</span>
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Add skills or expertise you’d like. Diggers use this to match and tailor their proposals.
+                  Select from the list or type a skill not listed and press Enter. Diggers use this to match and tailor their proposals.
                 </p>
                 {skillsRequired.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -565,25 +581,49 @@ const PostGig = () => {
                     ))}
                   </div>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  {allSkills.filter((s) => !skillsRequired.some((x) => x.toLowerCase() === s.name.toLowerCase())).slice(0, 24).map((skill) => (
-                    <button
-                      type="button"
-                      key={skill.id}
-                      onClick={() => addSkill(skill.name)}
-                      className="inline-flex items-center rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/5 transition-colors"
-                    >
-                      + {skill.name}
-                    </button>
-                  ))}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Select from database</p>
+                  <Input
+                    placeholder="Search skills..."
+                    value={skillSearchQuery}
+                    onChange={(e) => setSkillSearchQuery(e.target.value)}
+                    className="rounded-lg border-border/60 max-w-md"
+                  />
+                  <ScrollArea className="h-[140px] w-full rounded-lg border border-border/60 bg-background px-3 py-2">
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(skillsByCategory).map(([categoryName, skills]) => {
+                        const searchLower = skillSearchQuery.trim().toLowerCase();
+                        const filtered = skills
+                          .filter((s) => !skillsRequired.some((x) => x.toLowerCase() === s.name.toLowerCase()))
+                          .filter((s) => !searchLower || s.name.toLowerCase().includes(searchLower));
+                        return (
+                          <span key={categoryName} className="contents">
+                            {filtered.map((skill) => (
+                              <button
+                                type="button"
+                                key={skill.id}
+                                onClick={() => addSkill(skill.name)}
+                                className="inline-flex items-center rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/5 transition-colors"
+                              >
+                                + {skill.name}
+                              </button>
+                            ))}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
                 </div>
-                <Input
-                  placeholder="Type a skill and press Enter to add"
-                  value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
-                  onKeyDown={handleSkillInputKeyDown}
-                  className="rounded-xl border-border/50 max-w-md"
-                />
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Or add a skill not in the list</p>
+                  <Input
+                    placeholder="Type skill and press Enter"
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    onKeyDown={handleSkillInputKeyDown}
+                    className="rounded-xl border-border/50 max-w-md"
+                  />
+                </div>
               </div>
 
               {/* Step 4: Budget & Timeline */}

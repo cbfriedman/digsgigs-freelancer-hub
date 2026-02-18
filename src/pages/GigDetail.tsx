@@ -278,9 +278,10 @@ const GigDetail = () => {
 
   const getGigSkillNames = (g: Gig | null): string[] => {
     if (!g) return [];
+    // Prefer skills_required so both DB-selected and manually entered skills are shown
+    if (g.skills_required && g.skills_required.length > 0) return g.skills_required;
     const fromJunction = (g.gig_skills || []).map((gs) => gs.skills?.name).filter((n): n is string => Boolean(n));
-    if (fromJunction.length > 0) return fromJunction;
-    return g.skills_required || [];
+    return fromJunction;
   };
 
   const formatBudget = (min: number | null, max: number | null): string => {

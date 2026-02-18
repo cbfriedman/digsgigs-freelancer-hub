@@ -136,9 +136,8 @@ serve(async (req) => {
       );
     }
 
-    // Notify diggers in-app and via email (same as other gig-creation paths)
-    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: gig.id, proOnly: true } }).catch((e) => console.error("[post-gig] Pro blast error:", e));
-    supabase.functions.invoke("blast-lead-to-diggers", { body: { leadId: gig.id, proOnly: false } }).catch((e) => console.error("[post-gig] Non-Pro blast error:", e));
+    // Digger notification is handled by the client calling send-gig-email-by-settings once
+    // (avoids duplicate emails from both blast-lead-to-diggers and send-gig-email-by-settings).
 
     return new Response(
       JSON.stringify({ data: gig }),

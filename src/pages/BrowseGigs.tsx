@@ -705,8 +705,9 @@ const BrowseGigs = () => {
                         )}
                       </div>
                       {(() => {
-                        const skillNames = (gig.gig_skills || []).map((gs) => gs.skills?.name).filter((n): n is string => Boolean(n));
-                        const names = skillNames.length > 0 ? skillNames : (gig.skills_required || []);
+                        const names = (gig.skills_required && gig.skills_required.length > 0)
+                          ? gig.skills_required
+                          : (gig.gig_skills || []).map((gs) => gs.skills?.name).filter((n): n is string => Boolean(n));
                         return names.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {names.slice(0, 5).map((skill, i) => (

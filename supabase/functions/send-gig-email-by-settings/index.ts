@@ -133,12 +133,12 @@ serve(async (req) => {
 </body>
 </html>`;
 
-    const recipients: { id: string; email: string; full_name: string | null; business_name: string }[] = [];
+    const recipients: { id: string; user_id: string; email: string; full_name: string | null; business_name: string }[] = [];
 
     if (settings.mode === "selected" && Array.isArray(settings.selected_digger_ids) && settings.selected_digger_ids.length > 0) {
       const { data: diggers, error: dErr } = await supabase
         .from("digger_profiles")
-        .select("id, business_name, profiles!inner(email, full_name)")
+        .select("id, user_id, business_name, profiles!inner(email, full_name)")
         .in("id", settings.selected_digger_ids);
       if (!dErr && diggers) {
         for (const d of diggers) {
@@ -146,6 +146,7 @@ serve(async (req) => {
           if (profile?.email) {
             recipients.push({
               id: d.id,
+              user_id: d.user_id,
               email: profile.email,
               full_name: profile.full_name ?? null,
               business_name: d.business_name ?? "",
@@ -177,6 +178,7 @@ serve(async (req) => {
         if (profile?.email) {
           recipients.push({
             id: d.id,
+            user_id: d.user_id,
             email: profile.email,
             full_name: profile.full_name ?? null,
             business_name: d.business_name ?? "",
@@ -185,12 +187,37 @@ serve(async (req) => {
       }
     }
 
+    // Only send to diggers who have not already received an email for this gig (one email per digger per project)
+    const { data: existingDeliveries } = await supabase
+      .from("gig_digger_email_deliveries")
+      .select("digger_id")
+      .eq("gig_id", gigId);
+    const alreadySentDiggerIds = new Set((existingDeliveries || []).map((r: { digger_id: string }) => r.digger_id));
+    const recipientsToSend = recipients.filter((r) => !alreadySentDiggerIds.has(r.id));
+
+    const gigAppLink = `/gig/${gigId}`;
+    const titleSnippet = (gig.title || "").substring(0, 60) + ((gig.title?.length || 0) > 60 ? "…" : "");
+    for (const rec of recipientsToSend) {
+      try {
+        await supabase.rpc("create_notification", {
+          p_user_id: rec.user_id,
+          p_type: "new_gig",
+          p_title: "New project posted",
+          p_message: `A new project is live: "${titleSnippet}"`,
+          p_link: gigAppLink,
+          p_metadata: { gig_id: gigId },
+        });
+      } catch (notifErr: unknown) {
+        console.warn("[send-gig-email-by-settings] In-app notification failed for", rec.user_id, notifErr);
+      }
+    }
+
     const resend = new Resend(resendApiKey);
     const subject = (gig.title?.length || 0) > 45 ? `New lead: ${gig.title.substring(0, 45)}…` : `New lead: ${gig.title}`;
     let emailsSent = 0;
     const errors: string[] = [];
 
-    for (const rec of recipients) {
+    for (const rec of recipientsToSend) {
       const name = rec.full_name || rec.business_name || "there";
       const footerUnsubscribeUrl = `${baseUrl}/unsubscribe?email=${encodeURIComponent(rec.email)}&type=leads`;
       try {
@@ -215,7 +242,8 @@ serve(async (req) => {
         success: true,
         mode: settings.mode,
         emailsSent,
-        totalRecipients: recipients.length,
+        totalRecipients: recipientsToSend.length,
+        skippedAlreadySent: recipients.length - recipientsToSend.length,
         errors: errors.length ? errors : undefined,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

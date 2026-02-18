@@ -145,15 +145,23 @@ serve(async (req) => {
     // Filter diggers who want lead notifications (default to true if no preference)
     const eligibleDiggers = targetDiggers.filter(d => prefsMap.get(d.user_id) !== false);
 
-    console.log(`[blast-lead-to-diggers] Eligible ${blastType} diggers after filtering: ${eligibleDiggers.length}`);
+    // Only email diggers who have not already received an email for this gig (one email per digger per project)
+    const { data: existingDeliveries } = await supabase
+      .from("gig_digger_email_deliveries")
+      .select("digger_id")
+      .eq("gig_id", leadId);
+    const alreadySentDiggerIds = new Set((existingDeliveries || []).map((r: { digger_id: string }) => r.digger_id));
+    const diggersToEmail = eligibleDiggers.filter((d: { id: string }) => !alreadySentDiggerIds.has(d.id));
+
+    console.log(`[blast-lead-to-diggers] Eligible ${blastType} diggers after filtering: ${eligibleDiggers.length}, already sent: ${alreadySentDiggerIds.size}, will email: ${diggersToEmail.length}`);
 
     // Prepare email content
     const baseUrl = Deno.env.get("SITE_URL") || "https://digsandgigs.net";
     const unlockUrl = `${baseUrl}/lead/${leadId}/unlock`;
     const gigAppLink = `/gig/${leadId}`;
 
-    // Create in-app notifications for all eligible diggers (bell notification)
-    for (const digger of eligibleDiggers) {
+    // Create in-app notifications for diggers we will email (avoid duplicate notification if they already got email from send-gig-email-by-settings)
+    for (const digger of diggersToEmail) {
       try {
         await supabase.rpc("create_notification", {
           p_user_id: digger.user_id,
@@ -167,7 +175,7 @@ serve(async (req) => {
         console.warn(`[blast-lead-to-diggers] In-app notification failed for digger ${digger.user_id}:`, notifErr);
       }
     }
-    console.log(`[blast-lead-to-diggers] Created ${eligibleDiggers.length} in-app notifications for ${blastType} diggers`);
+    console.log(`[blast-lead-to-diggers] Created ${diggersToEmail.length} in-app notifications for ${blastType} diggers`);
 
     const shortDescription = lead.description?.substring(0, 200) + (lead.description?.length > 200 ? "..." : "") || "";
     const budgetRange = lead.budget_min && lead.budget_max 
@@ -222,8 +230,8 @@ serve(async (req) => {
     let emailsSent = 0;
     const errors: string[] = [];
 
-    // Send emails to each eligible digger
-    for (const digger of eligibleDiggers) {
+    // Send emails only to diggers who have not already received for this gig
+    for (const digger of diggersToEmail) {
       const profile = (digger as any).profiles;
       const email = profile?.email;
       const name = profile?.full_name || digger.business_name || "there";
@@ -270,7 +278,7 @@ serve(async (req) => {
         if (!email) continue;
 
         // Skip if we already sent to this email (might be both a digger and subscriber)
-        const alreadySent = eligibleDiggers.some((d: any) => d.profiles?.email?.toLowerCase() === email.toLowerCase());
+        const alreadySent = diggersToEmail.some((d: any) => d.profiles?.email?.toLowerCase() === email.toLowerCase());
         if (alreadySent) continue;
 
         try {
@@ -310,7 +318,7 @@ serve(async (req) => {
         success: true, 
         blastType,
         emailsSent,
-        totalDiggers: eligibleDiggers.length,
+        totalDiggers: diggersToEmail.length,
         totalSubscribers: subscribers.length,
         errors: errors.length > 0 ? errors : undefined
       }),

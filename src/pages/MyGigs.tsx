@@ -268,18 +268,21 @@ const MyGigs = () => {
   };
 
   const handleRemoveGig = async (gig: Gig) => {
+    const awardedDiggerId = (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id;
+    if (awardedDiggerId) {
+      toast.error("Cannot remove a project that has already been awarded to a Digger.");
+      setRemoveConfirmGig(null);
+      return;
+    }
     setRemovingId(gig.id);
-    const { error } = await supabase
-      .from("gigs")
-      .update({ status: "cancelled" } as any)
-      .eq("id", gig.id);
+    const { error } = await supabase.from("gigs").delete().eq("id", gig.id);
     setRemovingId(null);
     setRemoveConfirmGig(null);
     if (error) {
-      toast.error("Failed to remove gig");
+      toast.error("Failed to remove project.");
       return;
     }
-    toast.success("Gig removed.");
+    toast.success("Project removed permanently.");
     loadGigs();
   };
 
@@ -570,20 +573,22 @@ const MyGigs = () => {
                       <AlertCircle className="mr-2 h-4 w-4" />
                       View Issues
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setRemoveConfirmGig(gig)}
-                      disabled={!!removingId}
-                      className="min-w-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      title="Remove this gig (close and hide from diggers)"
-                    >
-                      {removingId === gig.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="mr-2 h-4 w-4" />
-                      )}
-                      Remove
-                    </Button>
+                    {!(gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setRemoveConfirmGig(gig)}
+                        disabled={!!removingId}
+                        className="min-w-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title="Permanently remove this project from the site (only when not awarded)"
+                      >
+                        {removingId === gig.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-2 h-4 w-4" />
+                        )}
+                        Remove
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -610,9 +615,9 @@ const MyGigs = () => {
       <AlertDialog open={!!removeConfirmGig} onOpenChange={(open) => !open && setRemoveConfirmGig(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this gig?</AlertDialogTitle>
+            <AlertDialogTitle>Remove this project permanently?</AlertDialogTitle>
             <AlertDialogDescription>
-              This gig will be closed and no longer visible to diggers. You can still see it in your list with status &quot;cancelled&quot;. This cannot be undone.
+              This project will be deleted completely from the database and will no longer appear anywhere. Bids and related data will be removed. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -621,7 +626,7 @@ const MyGigs = () => {
               onClick={() => removeConfirmGig && handleRemoveGig(removeConfirmGig)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Remove
+              Remove permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
