@@ -238,10 +238,20 @@ export function findCountryByNameOrCode(value: string): { code: string; name: st
   );
 }
 
-/** Flag emoji for a country name or code (for poster country display). Returns empty string if not found. */
+/** Convert any ISO 3166-1 alpha-2 country code to its Unicode flag emoji (e.g. "US" -> "🇺🇸"). */
+export function countryCodeToFlagEmoji(code: string): string {
+  if (!code || code.length !== 2) return "";
+  return [...code.toUpperCase()]
+    .map((c) => String.fromCodePoint(0x1f1e6 - 65 + c.charCodeAt(0)))
+    .join("");
+}
+
+/** Flag emoji for a country name or code. Uses region list first, then Unicode for any 2-letter code. */
 export const getFlagForCountryName = (countryName: string): string => {
   const c = findCountryByNameOrCode(countryName);
-  return c?.flag ?? "";
+  if (c?.flag) return c.flag;
+  const code = (countryName?.trim().length === 2 ? countryName.trim().toUpperCase() : "") || (c?.code ?? "");
+  return code ? countryCodeToFlagEmoji(code) : "";
 };
 
 /** Two-letter country code for a country name (e.g. "United States" -> "US"). Returns empty string if not found. */

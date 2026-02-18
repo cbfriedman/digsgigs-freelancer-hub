@@ -6,14 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, MinusCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {
   Table,
   TableBody,
   TableCell,
@@ -38,16 +30,6 @@ export default function CompareDetail() {
     "name": `DigsAndGigs vs ${competitor.name} Comparison`,
     "description": competitor.tagline,
     "url": `https://digsandgigs.com/compare/${slug}`
-  };
-
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://digsandgigs.com" },
-      { "@type": "ListItem", "position": 2, "name": "Compare", "item": "https://digsandgigs.com/compare" },
-      { "@type": "ListItem", "position": 3, "name": `vs ${competitor.name}`, "item": `https://digsandgigs.com/compare/${slug}` }
-    ]
   };
 
   const renderFeatureValue = (value: string | boolean, isAdvantage: boolean) => {
@@ -76,32 +58,10 @@ export default function CompareDetail() {
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://digsandgigs.com/compare/${slug}`} />
         <script type="application/ld+json">{JSON.stringify(comparisonSchema)}</script>
-        <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
       </Helmet>
 
       <div className="min-h-screen flex flex-col bg-background">
         <main className="flex-1">
-          {/* Breadcrumb */}
-          <div className="border-b bg-muted/30">
-            <div className="container mx-auto px-4 py-4">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/compare">Compare</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>vs {competitor.name}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </div>
-
           {/* Hero */}
           <section className="py-12 md:py-16 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
             <div className="container mx-auto px-4">

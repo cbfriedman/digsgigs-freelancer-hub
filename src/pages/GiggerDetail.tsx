@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
-import { Breadcrumb } from "@/components/Breadcrumb";
 import {
   User,
   Mail,
@@ -633,9 +632,6 @@ export default function GiggerDetail() {
       <SEOHead title={`${displayName} - Gigger Profile`} description={profile.about_me?.slice(0, 160) || `Client profile for ${displayName}.`} ogType="profile" ogImage={avatarUrl} />
 
       <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12">
-        <div className="sticky top-14 sm:top-16 z-10 bg-background py-2 sm:py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-4 sm:-mt-6 md:-mt-8 lg:-mt-12 mb-3 sm:mb-4">
-          <Breadcrumb items={[{ label: "Browse gigs", href: "/browse-gigs" }, { label: displayName, href: window.location.pathname }]} />
-        </div>
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 sm:gap-8 lg:gap-10">
           <div className="lg:col-span-7 space-y-6 order-2 lg:order-1 min-w-0">
             <Card className="overflow-hidden border border-border/70 rounded-xl bg-card">

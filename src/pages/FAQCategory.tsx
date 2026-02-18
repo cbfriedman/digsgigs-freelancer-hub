@@ -9,14 +9,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function FAQCategory() {
@@ -42,31 +34,6 @@ export default function FAQCategory() {
     }))
   };
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://digsandgigs.com"
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "FAQ",
-        "item": "https://digsandgigs.com/faq"
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "name": categoryData.name,
-        "item": `https://digsandgigs.com/faq/${category}`
-      }
-    ]
-  };
-
   return (
     <>
       <Helmet>
@@ -85,32 +52,10 @@ export default function FAQCategory() {
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`https://digsandgigs.com/faq/${category}`} />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
-        <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
       </Helmet>
 
       <div className="min-h-screen flex flex-col bg-background">
         <main className="flex-1">
-          {/* Breadcrumb */}
-          <div className="border-b bg-muted/30">
-            <div className="container mx-auto px-4 py-4">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/faq">FAQ</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{categoryData.name}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </div>
-
           {/* Hero */}
           <section className="py-12 md:py-16 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
             <div className="container mx-auto px-4">

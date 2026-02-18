@@ -198,19 +198,6 @@ export default function ServiceLocationPage() {
 
       
       <main className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav className="text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">
-          <ol className="flex items-center gap-2">
-            <li><Link to="/" className="hover:text-primary">Home</Link></li>
-            <li>/</li>
-            <li><Link to="/browse-diggers" className="hover:text-primary">Services</Link></li>
-            <li>/</li>
-            <li><Link to={`/services/${service}`} className="hover:text-primary">{serviceInfo.name}</Link></li>
-            <li>/</li>
-            <li className="text-foreground">{cityInfo.city}, {cityInfo.state}</li>
-          </ol>
-        </nav>
-
         {/* Hero Section */}
         <section className="mb-12">
           <div className="flex flex-col lg:flex-row gap-8 items-start">

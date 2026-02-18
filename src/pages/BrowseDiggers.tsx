@@ -14,8 +14,6 @@ import { SavedSearchesList } from "@/components/SavedSearchesList";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
-import { generateBreadcrumbSchema } from "@/components/StructuredData";
-import { Breadcrumb } from "@/components/Breadcrumb";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import { DirectoryDiggerCard } from "@/components/DirectoryDiggerCard";
 import { getCanonicalDiggerProfilePath } from "@/lib/profileUrls";
@@ -497,15 +495,9 @@ const BrowseDiggers = () => {
         title="Browse Service Professionals - Find Qualified Contractors"
         description="Find skilled service professionals and contractors for your project. Search by specialty, location, hourly rate, and reviews. Connect with verified plumbers, electricians, landscapers, handymen, and more."
         keywords="hire contractors, find professionals, service providers, skilled workers, local contractors, verified professionals, hire plumber, hire electrician"
-        structuredData={generateBreadcrumbSchema([
-          { name: "Home", url: "https://digsandgigs.com" },
-          { name: "Browse Diggers", url: "https://digsandgigs.com/browse-diggers" }
-        ])}
       />
 
       <div className="container mx-auto px-4 py-12">
-        <Breadcrumb items={[{ label: "Browse Diggers", href: "/browse-diggers" }]} />
-        
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Browse Talent</h1>
           <p className="text-muted-foreground">

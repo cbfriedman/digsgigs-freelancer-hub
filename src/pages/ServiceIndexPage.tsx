@@ -96,17 +96,6 @@ export default function ServiceIndexPage() {
       </Helmet>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav className="text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">
-          <ol className="flex items-center gap-2">
-            <li><Link to="/" className="hover:text-primary">Home</Link></li>
-            <li>/</li>
-            <li><Link to="/browse-diggers" className="hover:text-primary">Services</Link></li>
-            <li>/</li>
-            <li className="text-foreground">{serviceInfo.name}</li>
-          </ol>
-        </nav>
-
         {/* Hero Section */}
         <section className="mb-12">
           <Badge variant="secondary" className="mb-4">{serviceInfo.industry}</Badge>

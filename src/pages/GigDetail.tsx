@@ -13,7 +13,6 @@ import { BidsList } from "@/components/BidsList";
 import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
 import SEOHead from "@/components/SEOHead";
 import { generateJobPostingSchema } from "@/components/StructuredData";
-import { Breadcrumb } from "@/components/Breadcrumb";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
@@ -493,13 +492,6 @@ const GigDetail = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <Breadcrumb 
-          items={[
-            { label: "Browse Gigs", href: "/browse-gigs" },
-            { label: gig.title, href: `/gig/${gig.id}` }
-          ]} 
-        />
-        
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <Card>

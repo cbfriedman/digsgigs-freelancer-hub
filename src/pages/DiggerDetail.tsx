@@ -16,7 +16,6 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer"; 
 import SEOHead from "@/components/SEOHead";
 import { generateLocalBusinessSchema } from "@/components/StructuredData";
-import { Breadcrumb } from "@/components/Breadcrumb";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { DiggerPricingSelector } from "@/components/DiggerPricingSelector";
 import { HourlyUpchargeDisplay } from "@/components/HourlyUpchargeDisplay";
@@ -36,7 +35,8 @@ import { DiggerInlineProfileEditor } from "@/components/DiggerInlineProfileEdito
 import { PortfolioEditor } from "@/components/portfolio/PortfolioEditor";
 import { PortfolioDisplay } from "@/components/portfolio/PortfolioDisplay";
 import type { DiggerPortfolioItem, DiggerPortfolioItemDraft } from "@/types/portfolio";
-import { ALL_COUNTRY_OPTIONS, REGION_OPTIONS, getFlagForCountryName, getCodeForCountryName } from "@/config/regionOptions";
+import { CountryFlagIcon } from "@/components/CountryFlagIcon";
+import { ALL_COUNTRY_OPTIONS, REGION_OPTIONS, getCodeForCountryName } from "@/config/regionOptions";
 import { useProfessions } from "@/hooks/useProfessions";
 import { useSkillsByCategory } from "@/hooks/useSkills";
 import { SEO_CITIES } from "@/config/seoCities";
@@ -54,6 +54,26 @@ import {
 } from "./DiggerDetail/utils";
 
 const GITHUB_CONNECT_STORAGE_KEY = "digsgigs_github_connect_digger_id";
+const SOCIAL_CONNECT_STORAGE_KEY = "digsgigs_social_connect";
+
+/** Supabase provider keys that support linkIdentity for social profiles */
+const SOCIAL_OAUTH_PROVIDERS = ["linkedin", "facebook", "twitter"] as const;
+
+function getSocialProfileUrlFromIdentity(
+  provider: string,
+  data: Record<string, unknown> | undefined
+): string | null {
+  if (!data || typeof data !== "object") return null;
+  const link = [data.profile_url, data.url, data.link].find((v) => typeof v === "string" && v.startsWith("http"));
+  if (link) return link as string;
+  const username = (data.user_name ?? data.username ?? data.preferred_username) as string | undefined;
+  if (username && typeof username === "string") {
+    if (provider === "twitter") return `https://x.com/${username}`;
+    if (provider === "facebook") return `https://www.facebook.com/${username}`;
+    if (provider === "linkedin") return `https://www.linkedin.com/in/${username.replace(/\s+/g, "-").toLowerCase()}`;
+  }
+  return null;
+}
 
 const DiggerDetail = () => {
   const navigate = useNavigate();
@@ -145,6 +165,7 @@ const DiggerDetail = () => {
   const [githubDraft, setGithubDraft] = useState("");
   const [githubSaving, setGithubSaving] = useState(false);
   const [githubLinking, setGithubLinking] = useState(false);
+  const [socialLinkingPlatform, setSocialLinkingPlatform] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -380,6 +401,49 @@ const DiggerDetail = () => {
   // loadData is intentionally omitted from deps (stable enough; avoids re-running every render)
   }, [currentUser?.id, digger?.id, isOwnProfile]);
 
+  useEffect(() => {
+    if (!currentUser || !digger || !isOwnProfile) return;
+    const raw = sessionStorage.getItem(SOCIAL_CONNECT_STORAGE_KEY);
+    if (!raw) return;
+    let payload: { diggerId: string; platform: string };
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      sessionStorage.removeItem(SOCIAL_CONNECT_STORAGE_KEY);
+      return;
+    }
+    if (payload.diggerId !== digger.id || !SOCIAL_OAUTH_PROVIDERS.includes(payload.platform as typeof SOCIAL_OAUTH_PROVIDERS[number])) {
+      if (payload.diggerId === digger.id) sessionStorage.removeItem(SOCIAL_CONNECT_STORAGE_KEY);
+      return;
+    }
+    sessionStorage.removeItem(SOCIAL_CONNECT_STORAGE_KEY);
+    const platform = payload.platform;
+    (async () => {
+      try {
+        const { data: identitiesData } = await supabase.auth.getUserIdentities();
+        const identities = Array.isArray(identitiesData) ? identitiesData : (identitiesData as { identities?: { provider: string; identity_data?: Record<string, unknown> }[] } | null)?.identities ?? [];
+        const identity = identities.find((i: { provider: string }) => i.provider === platform);
+        const identityData = (identity as { identity_data?: Record<string, unknown> } | undefined)?.identity_data;
+        const profileUrl = getSocialProfileUrlFromIdentity(platform, identityData);
+        if (!profileUrl) {
+          toast.error(`${platform.charAt(0).toUpperCase() + platform.slice(1)} profile not found. Try connecting again or add the link manually.`);
+          return;
+        }
+        const current = (digger.social_links && typeof digger.social_links === "object" ? { ...(digger.social_links as Record<string, string>) } : {}) as Record<string, string>;
+        current[platform] = profileUrl;
+        const nextLinks = Object.fromEntries(Object.entries(current).filter(([, v]) => Boolean(String(v).trim())));
+        await supabase.from("digger_profiles").update({ social_links: nextLinks }).eq("id", digger.id);
+        await loadData();
+        setSectionEditor({ open: false, section: null });
+        const label = platform === "twitter" ? "X / Twitter" : platform.charAt(0).toUpperCase() + platform.slice(1);
+        toast.success(`${label} connected.`);
+      } catch (e) {
+        logger.error("Social connect callback error:", e);
+        toast.error("Failed to connect. Try adding the link manually.");
+      }
+    })();
+  }, [currentUser?.id, digger?.id, isOwnProfile]);
+
   const handleShare = () => {
     const url = `${window.location.origin}${getDiggerProfileUrl(digger!)}`;
     navigator.clipboard.writeText(url).then(() => toast.success("Profile link copied to clipboard")).catch(() => toast.error("Could not copy link"));
@@ -480,7 +544,12 @@ const DiggerDetail = () => {
 
   const getAvailabilityLabel = (value: string | null) => {
     if (!value) return "Not specified";
-    const labels: Record<string, string> = { immediate: "Immediate", this_week: "This week", this_month: "This month" };
+    const labels: Record<string, string> = {
+      immediate: "Immediate",
+      this_week: "This week",
+      this_month: "This month",
+      not_available: "Not available for new work",
+    };
     return labels[value] || value;
   };
 
@@ -684,6 +753,36 @@ const DiggerDetail = () => {
       toast.error("Failed to update GitHub link.");
     } finally {
       setGithubSaving(false);
+    }
+  };
+
+  const handleConnectWithSocial = async (platform: string) => {
+    if (!digger || !SOCIAL_OAUTH_PROVIDERS.includes(platform as typeof SOCIAL_OAUTH_PROVIDERS[number])) return;
+    setSocialLinkingPlatform(platform);
+    try {
+      sessionStorage.setItem(SOCIAL_CONNECT_STORAGE_KEY, JSON.stringify({ diggerId: digger.id, platform }));
+      const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search || ""}`;
+      const { error } = await supabase.auth.linkIdentity({
+        provider: platform,
+        options: { redirectTo },
+      });
+      if (error) {
+        sessionStorage.removeItem(SOCIAL_CONNECT_STORAGE_KEY);
+        const msg = error.message || "";
+        if (msg.toLowerCase().includes("manual linking") && msg.toLowerCase().includes("disabled")) {
+          toast("Add your profile link manually in the field below.", {
+            description: "Sign-in linking is not enabled for this site.",
+          });
+        } else {
+          toast.error(msg || "Could not start authorization.");
+        }
+      }
+    } catch (e) {
+      sessionStorage.removeItem(SOCIAL_CONNECT_STORAGE_KEY);
+      logger.error("Social linkIdentity error:", e);
+      toast.error("Sign-in is not configured or failed. Use the URL field below.");
+    } finally {
+      setSocialLinkingPlatform(null);
     }
   };
 
@@ -1241,60 +1340,6 @@ const DiggerDetail = () => {
     return out;
   };
 
-  const getCountryFlag = (countryName: string): string => {
-    const flags: { [key: string]: string } = {
-      "US": "🇺🇸", "United States": "🇺🇸",
-      "CA": "🇨🇦", "Canada": "🇨🇦",
-      "GB": "🇬🇧", "UK": "🇬🇧", "United Kingdom": "🇬🇧",
-      "AU": "🇦🇺", "Australia": "🇦🇺",
-      "DE": "🇩🇪", "Germany": "🇩🇪",
-      "FR": "🇫🇷", "France": "🇫🇷",
-      "ES": "🇪🇸", "Spain": "🇪🇸",
-      "IT": "🇮🇹", "Italy": "🇮🇹",
-      "MX": "🇲🇽", "Mexico": "🇲🇽",
-      "BR": "🇧🇷", "Brazil": "🇧🇷",
-      "IN": "🇮🇳", "India": "🇮🇳",
-      "CN": "🇨🇳", "China": "🇨🇳",
-      "JP": "🇯🇵", "Japan": "🇯🇵",
-      "KR": "🇰🇷", "South Korea": "🇰🇷",
-      "NL": "🇳🇱", "Netherlands": "🇳🇱",
-      "SE": "🇸🇪", "Sweden": "🇸🇪",
-      "NO": "🇳🇴", "Norway": "🇳🇴",
-      "DK": "🇩🇰", "Denmark": "🇩🇰",
-      "FI": "🇫🇮", "Finland": "🇫🇮",
-      "PL": "🇵🇱", "Poland": "🇵🇱",
-      "IE": "🇮🇪", "Ireland": "🇮🇪",
-      "CH": "🇨🇭", "Switzerland": "🇨🇭",
-      "AT": "🇦🇹", "Austria": "🇦🇹",
-      "BE": "🇧🇪", "Belgium": "🇧🇪",
-      "PT": "🇵🇹", "Portugal": "🇵🇹",
-      "GR": "🇬🇷", "Greece": "🇬🇷",
-      "NZ": "🇳🇿", "New Zealand": "🇳🇿",
-      "SG": "🇸🇬", "Singapore": "🇸🇬",
-      "ZA": "🇿🇦", "South Africa": "🇿🇦",
-      "AR": "🇦🇷", "Argentina": "🇦🇷",
-      "CL": "🇨🇱", "Chile": "🇨🇱",
-      "CO": "🇨🇴", "Colombia": "🇨🇴",
-      "PE": "🇵🇪", "Peru": "🇵🇪",
-      "IL": "🇮🇱", "Israel": "🇮🇱",
-      "AE": "🇦🇪", "UAE": "🇦🇪",
-      "SA": "🇸🇦", "Saudi Arabia": "🇸🇦",
-      "TR": "🇹🇷", "Turkey": "🇹🇷",
-      "TH": "🇹🇭", "Thailand": "🇹🇭",
-      "VN": "🇻🇳", "Vietnam": "🇻🇳",
-      "PH": "🇵🇭", "Philippines": "🇵🇭",
-      "ID": "🇮🇩", "Indonesia": "🇮🇩",
-      "MY": "🇲🇾", "Malaysia": "🇲🇾",
-      "EG": "🇪🇬", "Egypt": "🇪🇬",
-      "NG": "🇳🇬", "Nigeria": "🇳🇬",
-      "KE": "🇰🇪", "Kenya": "🇰🇪",
-      "Other": "🌍"
-    };
-    const key = (countryName || "").trim();
-    if (!key) return "🌍";
-    return flags[key] || flags[key.toUpperCase()] || flags[key.charAt(0).toUpperCase() + key.slice(1).toLowerCase()] || "🌍";
-  };
-
   const getInitials = (handle: string | null) => {
     if (!handle) return "DG";
     return handle.slice(0, 2).toUpperCase();
@@ -1661,15 +1706,6 @@ const DiggerDetail = () => {
       />
 
       <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 py-4 sm:py-6 md:py-8 lg:py-12">
-        <div className="sticky top-14 sm:top-16 z-10 bg-background py-2 sm:py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 -mt-4 sm:-mt-6 md:-mt-8 lg:-mt-12 mb-3 sm:mb-4">
-          <Breadcrumb 
-            items={[
-              { label: "Browse Diggers", href: "/browse-diggers" },
-              { label: digger.business_name, href: getDiggerProfileUrl(digger) }
-            ]} 
-          />
-        </div>
-        
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 sm:gap-8 lg:gap-10">
           {/* Main content - Himalayas-style left column */}
           <div className="lg:col-span-7 space-y-6 order-2 lg:order-1 min-w-0">
@@ -2203,22 +2239,41 @@ const DiggerDetail = () => {
                       className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm text-left ${isOwnProfile ? "hover:border-primary/50 hover:bg-muted/50 cursor-pointer" : "cursor-default"}`}
                       onClick={() => isOwnProfile && openSectionModal("availability")}
                     >
-                      <span className={`h-2 w-2 rounded-full shrink-0 ${isOnline ? "bg-green-500" : "bg-gray-400"}`} />
-                      {isOnline ? "Open to opportunities" : getAvailabilityLabel(digger.availability)}
+                      <span className={`h-2 w-2 rounded-full shrink-0 ${isOnline ? "bg-green-500" : "bg-gray-400"}`} title={isOnline ? "Online now" : "Offline"} />
+                      <span>{getAvailabilityLabel(digger.availability)}</span>
+                      {isOnline && <span className="text-xs text-green-600 dark:text-green-400 font-medium"> · Online now</span>}
                     </button>
                   </div>
                   <div>
                     <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                        {(digger.country || getServiceLocationCountry()) && (
-                          <span className="text-base">{getFlagForCountryName(digger.country || getServiceLocationCountry() || "") || getCountryFlag(digger.country || getServiceLocationCountry() || "")}</span>
-                        )}
-                        Location
-                      </p>
+                      <p className="text-xs font-semibold text-muted-foreground">Location</p>
                     </div>
-                    <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
-                      <span className="text-base">{getFlagForCountryName(digger.country || getServiceLocationCountry() || "") || getCountryFlag(digger.country || getServiceLocationCountry() || "")}</span>
-                      {getBaseLocationDisplay() || "Not specified"}
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const locationCountry = digger.country || getServiceLocationCountry() || "";
+                        const locationCode = getCodeForCountryName(locationCountry?.trim() || "") || (locationCountry?.trim().length === 2 ? locationCountry.trim().toUpperCase() : "");
+                        return locationCode ? (
+                          <img
+                            src={`https://flagcdn.com/w40/${locationCode.toLowerCase()}.png`}
+                            alt=""
+                            width={32}
+                            height={24}
+                            className="h-6 w-8 shrink-0 rounded object-cover"
+                            loading="lazy"
+                            title="Location"
+                          />
+                        ) : (
+                          <CountryFlagIcon
+                            countryNameOrCode={locationCountry}
+                            size="md"
+                            title="Location"
+                            className="shrink-0"
+                          />
+                        );
+                      })()}
+                      <p className="text-sm font-medium text-foreground min-w-0">
+                        {getBaseLocationDisplay() || "Not specified"}
+                      </p>
                     </div>
                   </div>
                   <div>
@@ -2231,18 +2286,35 @@ const DiggerDetail = () => {
                       )}
                     </div>
                     {((digger.service_countries?.length ?? 0) > 0 || (digger.country && (!digger.service_countries || digger.service_countries.length === 0))) ? (
-                      <button
-                        type="button"
-                        className={`flex flex-wrap gap-1.5 ${isOwnProfile ? "cursor-pointer" : "cursor-default"}`}
-                        onClick={() => isOwnProfile && openSectionModal("service_location")}
-                      >
-                        {((digger.service_countries?.length ?? 0) > 0 ? digger.service_countries! : [digger.country!]).map((c, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-sm">
-                            <span className="text-base">{getFlagForCountryName(c)}</span>
-                            {c}
-                          </span>
-                        ))}
-                      </button>
+                      <div className="space-y-2">
+                        {((digger.service_countries?.length ?? 0) > 0 ? digger.service_countries! : [digger.country!]).map((c, idx) => {
+                          const serviceCountryCode = getCodeForCountryName(c?.trim() || "") || (c?.trim().length === 2 ? c.trim().toUpperCase() : "");
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              className={`flex w-full items-center gap-3 text-left ${isOwnProfile ? "cursor-pointer hover:bg-muted/50 rounded-md -mx-1 px-1 py-0.5" : "cursor-default"}`}
+                              onClick={() => isOwnProfile && openSectionModal("service_location")}
+                            >
+                              {serviceCountryCode ? (
+                                <img
+                                  src={`https://flagcdn.com/w40/${serviceCountryCode.toLowerCase()}.png`}
+                                  alt=""
+                                  width={32}
+                                  height={24}
+                                  className="h-6 w-8 shrink-0 rounded object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <CountryFlagIcon countryNameOrCode={c} size="md" className="shrink-0" />
+                              )}
+                              <p className="text-sm font-medium text-foreground">
+                                {c}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
                     ) : (
                       <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => isOwnProfile && openSectionModal("service_location")}>
                         <Plus className="h-4 w-4 shrink-0" /> Add service location
@@ -2459,17 +2531,43 @@ const DiggerDetail = () => {
                 <>
                   <Card>
                     <CardContent className="p-4 space-y-3">
-                      <div className={`flex items-center gap-2 text-sm font-medium ${isOnline ? "text-green-700 dark:text-green-400" : "text-gray-600 dark:text-gray-400"}`}>
-                        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online" : "Offline"} />
-                        <span>
-                          {isOnline ? "Open to opportunities" : "Currently offline"}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <div className={`flex items-center gap-2 font-medium ${isOnline ? "text-green-700 dark:text-green-400" : "text-muted-foreground"}`}>
+                          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-400 dark:bg-gray-500"}`} title={isOnline ? "Online now" : "Offline"} />
+                          <span>{getAvailabilityLabel(digger.availability)}</span>
+                        </div>
+                        {isOnline && <span className="text-xs font-medium text-green-600 dark:text-green-400">Online now</span>}
                       </div>
                       {getBaseLocationDisplay() && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-4 w-4 shrink-0" />
-                          <span className="text-lg">{getFlagForCountryName(digger.country || "") || getCountryFlag(getServiceLocationCountry() || "")}</span>
-                          <span>{getBaseLocationDisplay()}</span>
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Location</p>
+                          <div className="flex items-center gap-3 text-sm">
+                            {(() => {
+                              const locationCountry = digger.country || getServiceLocationCountry() || "";
+                              const locationCode = getCodeForCountryName(locationCountry?.trim() || "") || (locationCountry?.trim().length === 2 ? locationCountry.trim().toUpperCase() : "");
+                              return locationCode ? (
+                                <img
+                                  src={`https://flagcdn.com/w40/${locationCode.toLowerCase()}.png`}
+                                  alt=""
+                                  width={32}
+                                  height={24}
+                                  className="h-6 w-8 shrink-0 rounded object-cover"
+                                  loading="lazy"
+                                  title="Location"
+                                />
+                              ) : (
+                                <CountryFlagIcon
+                                  countryNameOrCode={locationCountry}
+                                  size="md"
+                                  title="Location"
+                                  className="shrink-0"
+                                />
+                              );
+                            })()}
+                            <p className="font-medium text-foreground min-w-0">
+                              {getBaseLocationDisplay()}
+                            </p>
+                          </div>
                         </div>
                       )}
                       {digger.website_url && (
@@ -2664,6 +2762,29 @@ const DiggerDetail = () => {
             {sectionEditor.section === "skills" && (
               <>
                 <p className="text-sm text-muted-foreground">Select the skills you want to showcase on your profile.</p>
+                {selectedSkillsDraft.length > 0 && (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">Selected ({selectedSkillsDraft.length}) — click to remove</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSkillsDraft.map((skillName) => (
+                        <span
+                          key={skillName}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background pl-2.5 pr-1.5 py-1 text-sm"
+                        >
+                          <span>{skillName}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSkillsDraft((prev) => prev.filter((x) => x !== skillName))}
+                            className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                            aria-label={`Remove ${skillName}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="max-h-[360px] overflow-y-auto space-y-3 border rounded-md p-3">
                   {skillsLoading ? (
                     <p className="text-sm text-muted-foreground">Loading skills...</p>
@@ -2749,6 +2870,29 @@ const DiggerDetail = () => {
             {sectionEditor.section === "profession" && (
               <>
                 <p className="text-sm text-muted-foreground">Select the profession items you want to showcase on your profile.</p>
+                {selectedProfessionsDraft.length > 0 && (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">Selected ({selectedProfessionsDraft.length}) — click to remove</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProfessionsDraft.map((professionName) => (
+                        <span
+                          key={professionName}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background pl-2.5 pr-1.5 py-1 text-sm"
+                        >
+                          <span>{professionName}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProfessionsDraft((prev) => prev.filter((x) => x !== professionName))}
+                            className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                            aria-label={`Remove ${professionName}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="max-h-[360px] overflow-y-auto space-y-3 border rounded-md p-3">
                   {dbProfessionGroups.map((group) => (
                     <details key={group.category} className="rounded border border-border/70 bg-background/30">
@@ -2852,7 +2996,7 @@ const DiggerDetail = () => {
             {sectionEditor.section === "availability" && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Tell clients when you can start new projects. This helps them find pros who match their timeline.
+                  Set when you can start new projects. Giggers will see this so they know your real availability. &quot;Online now&quot; appears when you&apos;re on the site.
                 </p>
                 <Select value={availabilityDraft || "none"} onValueChange={(v) => setAvailabilityDraft(v === "none" ? "" : v)}>
                   <SelectTrigger>
@@ -2863,6 +3007,7 @@ const DiggerDetail = () => {
                     <SelectItem value="immediate">Immediate — Ready to start right away</SelectItem>
                     <SelectItem value="this_week">This week — Available within a few days</SelectItem>
                     <SelectItem value="this_month">This month — Available within the next few weeks</SelectItem>
+                    <SelectItem value="not_available">Not available — Not taking new work right now</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="flex justify-end">
@@ -2875,6 +3020,27 @@ const DiggerDetail = () => {
             {sectionEditor.section === "location" && (
               <>
                 <p className="text-sm text-muted-foreground">Search and select your base country and city.</p>
+                {(locationDraft || locationStateDraft || locationCityDraft) && (
+                  <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+                    <span className="text-xs font-semibold text-muted-foreground shrink-0">Current location:</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {[locationCityDraft, locationStateDraft, locationDraft].filter(Boolean).join(", ") || "Not specified"}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        setLocationDraft("");
+                        setLocationStateDraft("");
+                        setLocationCityDraft("");
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                )}
                 <Input
                   value={locationSearchDraft}
                   onChange={(e) => setLocationSearchDraft(e.target.value)}
@@ -2902,7 +3068,7 @@ const DiggerDetail = () => {
                         }
                       }}
                     >
-                      <span className="text-base">{c.flag}</span>
+                      <CountryFlagIcon countryNameOrCode={c.code} size="sm" />
                       <span>{c.name}</span>
                     </button>
                   ))}
@@ -2965,6 +3131,30 @@ const DiggerDetail = () => {
             {sectionEditor.section === "service_location" && (
               <>
                 <p className="text-sm text-muted-foreground">Search and select countries where you offer services.</p>
+                {serviceLocationDraft.length > 0 && (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">Selected ({serviceLocationDraft.length}) — click to remove</p>
+                    <div className="flex flex-wrap gap-2">
+                      {serviceLocationDraft.map((countryName) => (
+                        <span
+                          key={countryName}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background pl-2.5 pr-1.5 py-1 text-sm"
+                        >
+                          <CountryFlagIcon countryNameOrCode={countryName} size="sm" />
+                          <span>{countryName}</span>
+                          <button
+                            type="button"
+                            onClick={() => setServiceLocationDraft((prev) => prev.filter((x) => x !== countryName))}
+                            className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                            aria-label={`Remove ${countryName}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <Input
                   value={serviceLocationSearchDraft}
                   onChange={(e) => setServiceLocationSearchDraft(e.target.value)}
@@ -2987,7 +3177,7 @@ const DiggerDetail = () => {
                                 onChange={() => setServiceLocationDraft((prev) => (checked ? prev.filter((x) => x !== c.name) : [...prev, c.name]))}
                                 className="rounded"
                               />
-                              <span className="text-base">{c.flag}</span>
+                              <CountryFlagIcon countryNameOrCode={c.code} size="sm" />
                               <span>{c.name}</span>
                             </label>
                           );
@@ -3025,41 +3215,66 @@ const DiggerDetail = () => {
             {sectionEditor.section === "social" && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Let Giggers find and connect with you. Add your profile links—they’ll appear on your Digger profile with the platform’s icon. Connect GitHub from the GitHub row on your profile.
+                  Let Giggers find and connect with you. Add your profile links—they’ll appear on your Digger profile with the platform’s icon. Sign-in with each platform when available, or add your profile link manually. Connect GitHub from the GitHub row on your profile.
                 </p>
-                <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                  {socialPlatforms.filter((p) => p.key !== "github").map((platform) => (
-                    <div
-                      key={platform.key}
-                      className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50"
-                    >
-                      <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-background ring-2 ring-border overflow-hidden">
-                        <img
-                          src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(platform.domain)}&sz=32`}
-                          alt=""
-                          className="h-6 w-6 object-contain"
-                        />
+                <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
+                  {socialPlatforms.filter((p) => p.key !== "github").map((platform) => {
+                    const useOAuth = SOCIAL_OAUTH_PROVIDERS.includes(platform.key as (typeof SOCIAL_OAUTH_PROVIDERS)[number]);
+                    const isLinking = socialLinkingPlatform === platform.key;
+                    return (
+                      <div
+                        key={platform.key}
+                        className="rounded-xl border border-border bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50 space-y-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-background ring-2 ring-border overflow-hidden">
+                            <img
+                              src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(platform.domain)}&sz=32`}
+                              alt=""
+                              className="h-6 w-6 object-contain"
+                            />
+                          </div>
+                          <span className="text-sm font-medium text-foreground">{platform.label}</span>
+                        </div>
+                        {useOAuth && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full h-9 text-sm"
+                            onClick={() => handleConnectWithSocial(platform.key)}
+                            disabled={isLinking || isSectionSaving}
+                          >
+                            {isLinking ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Redirecting…
+                              </>
+                            ) : (
+                              <>Connect with {platform.label}</>
+                            )}
+                          </Button>
+                        )}
+                        <div className="space-y-1">
+                          <label htmlFor={`social-${platform.key}`} className="text-xs font-medium text-muted-foreground">
+                            {useOAuth ? "Or add link manually" : "Profile URL"}
+                          </label>
+                          <Input
+                            id={`social-${platform.key}`}
+                            type="url"
+                            value={socialLinksDraft[platform.key] || ""}
+                            onChange={(e) =>
+                              setSocialLinksDraft((prev) => ({
+                                ...prev,
+                                [platform.key]: e.target.value,
+                              }))
+                            }
+                            placeholder={platform.placeholder}
+                            className="h-9 text-sm"
+                          />
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <label htmlFor={`social-${platform.key}`} className="text-sm font-medium text-foreground">
-                          {platform.label}
-                        </label>
-                        <Input
-                          id={`social-${platform.key}`}
-                          type="url"
-                          value={socialLinksDraft[platform.key] || ""}
-                          onChange={(e) =>
-                            setSocialLinksDraft((prev) => ({
-                              ...prev,
-                              [platform.key]: e.target.value,
-                            }))
-                          }
-                          placeholder={platform.placeholder}
-                          className="h-9 text-sm"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" onClick={() => setSectionEditor({ open: false, section: null })}>

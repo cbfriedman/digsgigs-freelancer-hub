@@ -20,8 +20,6 @@ import { useProfessions } from "@/hooks/useProfessions";
 import { MapView } from "@/components/MapView";
 import { SavedSearchesList } from "@/components/SavedSearchesList";
 import SEOHead from "@/components/SEOHead";
-import { generateBreadcrumbSchema } from "@/components/StructuredData";
-import { Breadcrumb } from "@/components/Breadcrumb";
 import { formatSelectionDisplay, getFlagForCountryName, getCodeForCountryName } from "@/config/regionOptions";
 
 /** Names used when posting gigs (PostGig) – show these first in filters so they match project categories. */
@@ -448,17 +446,11 @@ const BrowseGigs = () => {
         title="Browse Local Service Gigs - Find Projects & Jobs"
         description="Discover open gigs posted by Giggers. Search by category, location, and budget. Bid or buy leads—get awarded and keep the rest."
         keywords="service gigs, local jobs, contractor projects, freelance gigs, home service jobs, find work, service opportunities"
-        structuredData={generateBreadcrumbSchema([
-          { name: "Home", url: "https://digsandgigs.com" },
-          { name: "Browse Gigs", url: "https://digsandgigs.com/browse-gigs" }
-        ])}
       />
       
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
       <div className="container mx-auto px-4 py-12">
-        <Breadcrumb items={[{ label: "Browse Gigs", href: "/browse-gigs" }]} />
-        
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Browse Gigs</h1>
           <p className="text-muted-foreground text-lg">Find projects that match your skills. See budget, location &amp; skills at a glance — bid free or buy the lead to unlock contact.</p>
