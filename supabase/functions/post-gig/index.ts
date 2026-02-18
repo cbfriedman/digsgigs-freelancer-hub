@@ -21,6 +21,7 @@ interface PostGigPayload {
   category_id?: string | null;
   preferred_regions?: string[] | null;
   skills_required?: string[] | null;
+  contact_preferences?: string | null;
 }
 
 serve(async (req) => {
@@ -58,6 +59,7 @@ serve(async (req) => {
       category_id = null,
       preferred_regions = null,
       skills_required = null,
+      contact_preferences = null,
     } = body;
 
     if (!title?.trim() || !description?.trim()) {
@@ -124,6 +126,7 @@ serve(async (req) => {
         confirmed_at: new Date().toISOString(),
         preferred_regions: Array.isArray(preferred_regions) && preferred_regions.length > 0 ? preferred_regions : null,
         skills_required: Array.isArray(skills_required) && skills_required.length > 0 ? skills_required.filter((s): s is string => typeof s === "string" && s.trim().length > 0).map(s => s.trim()) : null,
+        contact_preferences: typeof contact_preferences === "string" && contact_preferences.trim() ? contact_preferences.trim() : null,
       })
       .select()
       .single();

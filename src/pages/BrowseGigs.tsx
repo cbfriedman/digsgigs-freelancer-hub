@@ -170,8 +170,8 @@ const BrowseGigs = () => {
               .from("gigs")
               .select(
                 `
-                *,
-                poster_country,
+                id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
+                preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count,
                 categories (name),
                 profiles!gigs_consumer_id_fkey (full_name),
                 gig_skills (skills (name))
@@ -295,8 +295,8 @@ const BrowseGigs = () => {
     let query = supabase
       .from("gigs")
       .select(`
-        *,
-        poster_country,
+        id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
+        preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count,
         categories (name),
         profiles!gigs_consumer_id_fkey (full_name),
         gig_skills (skills (name))

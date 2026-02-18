@@ -85,7 +85,7 @@ export default function RoleDashboard() {
         try {
           const { data: diggerProfiles, error: profilesError } = await supabase
             .from('digger_profiles')
-            .select('id, handle, business_name, profession, bio, profile_image_url, work_photos, hourly_rate, hourly_rate_min, hourly_rate_max, pricing_model, certifications, country, service_countries, portfolio_url, portfolio_urls, website_url, social_links, digger_skills (skills (name)), digger_categories (categories (name))')
+            .select('id, handle, business_name, profession, bio, profile_image_url, work_photos, hourly_rate, hourly_rate_min, hourly_rate_max, pricing_model, certifications, country, service_countries, portfolio_url, portfolio_urls, website_url, social_links, digger_skills (skills (name)), digger_categories (categories (name)), profiles!digger_profiles_user_id_fkey (avatar_url)')
             .eq('user_id', user.id)
             .order('is_primary', { ascending: false })
             .order('created_at', { ascending: true })

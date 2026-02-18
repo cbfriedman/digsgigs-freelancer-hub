@@ -29,6 +29,11 @@ import {
   CreditCard
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import {
+  GIGGER_CONTACT_METHODS,
+  parseContactPreferences,
+  getContactLink,
+} from "@/config/giggerContactMethods";
 
 interface Lead {
   id: string;
@@ -44,6 +49,7 @@ interface Lead {
   client_name: string | null;
   consumer_email: string | null;
   consumer_phone: string | null;
+  contact_preferences?: string | null;
 }
 
 type PricingOption = "pay_per_lead" | "success_based";
@@ -409,6 +415,24 @@ export default function LeadUnlock() {
                       </a>
                     </div>
                   )}
+                  {parseContactPreferences(lead.contact_preferences ?? null).map((item, i) => {
+                    const method = GIGGER_CONTACT_METHODS.find((m) => m.id === item.type);
+                    const link = getContactLink(item);
+                    return (
+                      <div key={i} className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-muted-foreground shrink-0">
+                          {method?.label ?? item.type}:
+                        </span>
+                        {link ? (
+                          <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            {item.value}
+                          </a>
+                        ) : (
+                          <span>{item.value}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 
                 {/* Subscriber upgrade prompt */}

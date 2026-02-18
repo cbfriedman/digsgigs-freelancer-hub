@@ -20,6 +20,11 @@ import { CATEGORY_IDS, checkHighRiskKeywords, TECH_CATEGORIES } from "@/config/t
 import { PROBLEM_OPTIONS, TIMELINE_OPTIONS, getProblemById, getInternalMapping, isCustomProblem } from "@/config/giggerProblems";
 import { formatSelectionDisplay } from "@/config/regionOptions";
 import { normalizeSkillInput, isSkillDuplicate } from "@/config/suggestedSkillsForGigs";
+import {
+  GIGGER_CONTACT_METHODS,
+  type ContactItem,
+  serializeContactPreferences,
+} from "@/config/giggerContactMethods";
 import { useSkillsByCategory } from "@/hooks/useSkills";
 import PageLayout from "@/components/layout/PageLayout";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -50,20 +55,37 @@ const PostGig = () => {
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [posterCountry, setPosterCountry] = useState("");
+  /** Account contact (name, email, phone) from profile – used for authenticated giggers so they don't re-enter */
+  const [accountContact, setAccountContact] = useState<{ full_name: string | null; email: string | null; phone: string | null } | null>(null);
+  /** Additional contact methods (WhatsApp, Telegram, Teams, etc.) – multi-select with value per method */
+  const [contactItems, setContactItems] = useState<ContactItem[]>([]);
+  const [contactAddType, setContactAddType] = useState<string>("");
+  const [contactAddValue, setContactAddValue] = useState("");
   const [customProjectLabel, setCustomProjectLabel] = useState("");
   const [skillsRequired, setSkillsRequired] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const [skillSearchQuery, setSkillSearchQuery] = useState("");
   const { skillsByCategory, allSkills } = useSkillsByCategory();
 
-  // Set poster_country from gigger's profile so nationality shows on gig cards for diggers
+  // Load gigger's profile: country (for poster_country) and contact (name, email, phone) so we use account data instead of asking again
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
-      const { data } = await supabase.from("profiles").select("country").eq("id", user.id).single();
+      const { data } = await supabase
+        .from("profiles")
+        .select("country, full_name, email, phone")
+        .eq("id", user.id)
+        .single();
       if (data?.country?.trim()) setPosterCountry(data.country.trim());
+      if (data) {
+        setAccountContact({
+          full_name: (data as any).full_name?.trim() || null,
+          email: (data as any).email?.trim() || user?.email?.trim() || null,
+          phone: (data as any).phone?.trim() || null,
+        });
+      }
     })();
-  }, [user?.id]);
+  }, [user?.id, user?.email]);
 
   // High-risk warning state
   const [showWarningDialog, setShowWarningDialog] = useState(false);
@@ -126,13 +148,22 @@ const PostGig = () => {
       toast.error("Please select a timeline");
       return false;
     }
-    if (!clientName.trim()) {
-      toast.error("Please enter your name");
-      return false;
-    }
-    if (!clientEmail.trim()) {
-      toast.error("Please enter your email address");
-      return false;
+    // When authenticated we use account contact; no need to re-enter name/email
+    if (!user?.id) {
+      if (!clientName.trim()) {
+        toast.error("Please enter your name");
+        return false;
+      }
+      if (!clientEmail.trim()) {
+        toast.error("Please enter your email address");
+        return false;
+      }
+    } else {
+      const hasEmail = accountContact?.email?.trim() || user?.email;
+      if (!hasEmail) {
+        toast.error("Your account has no email. Please add one in your profile or account settings.");
+        return false;
+      }
     }
     return true;
   };
@@ -199,12 +230,19 @@ const PostGig = () => {
       const finalBudgetMin = parseCurrency(budgetMin);
       const finalBudgetMax = parseCurrency(budgetMax);
       const finalTimeline = timeline;
-      const finalClientName = clientName;
-      const finalClientEmail = clientEmail;
-      const finalClientPhone = clientPhone;
       const finalClarifyingAnswers = clarifyingAnswers;
+      // Use account contact for authenticated giggers so they don't re-enter name/email/phone
+      const finalClientName = user?.id && accountContact
+        ? (accountContact.full_name || user.email?.split("@")[0] || "Client").trim()
+        : clientName.trim();
+      const finalClientEmail = user?.id
+        ? (accountContact?.email || user.email || "").trim()
+        : clientEmail.trim();
+      const finalClientPhone = user?.id
+        ? (accountContact?.phone || null) || (clientPhone.trim() || null)
+        : (clientPhone.trim() || null);
 
-      const consumerId = null;
+      const consumerId = user?.id ?? null;
 
       const mapping = getInternalMapping(finalProblemId);
       const category = TECH_CATEGORIES.find(c => c.id === mapping?.categoryId);
@@ -246,6 +284,8 @@ const PostGig = () => {
         ? (customLabel || problem?.label || 'Custom project')
         : `${problem?.label || 'Project'}${clarifyingLabels ? ` - ${clarifyingLabels}` : ''}`.trim();
 
+      const contactPreferencesJson = serializeContactPreferences(contactItems);
+
       // Use edge function so the gig is stored (bypasses RLS) and we get the row back for anon or any user
       const response = await invokeEdgeFunction<{ data: { id: string; [key: string]: unknown } }>(supabase, "post-gig", {
         body: {
@@ -264,6 +304,7 @@ const PostGig = () => {
           preferred_regions: preferredRegions.length > 0 ? preferredRegions : null,
           skills_required: skillsRequired.length > 0 ? skillsRequired : null,
           consumer_id: consumerId,
+          contact_preferences: contactPreferencesJson,
         },
       });
 
@@ -719,71 +760,160 @@ const PostGig = () => {
                 </div>
               </div>
 
-              {/* Contact Information */}
-              <div className="space-y-6 pt-6 border-t border-border/50">
-                <div>
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <User className="h-5 w-5 text-primary" />
-                    Your Contact Information
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Freelancers will use this to contact you about your project.
-                  </p>
-                </div>
-                
-                <div className="grid gap-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="clientName" className="text-sm font-medium flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      Your Name <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="clientName"
-                      placeholder="John Smith"
-                      value={clientName}
-                      onChange={(e) => setClientName(e.target.value)}
-                      className="h-12 rounded-xl border-border/50 text-base"
-                      required
-                    />
+              {/* Contact: use account details for signed-in giggers; no need to re-enter name/email/phone */}
+              <div className="space-y-4 pt-6 border-t border-border/50">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  Contact for this project
+                </h3>
+                {user?.id ? (
+                  <div className="space-y-4">
+                    <div className="rounded-xl bg-muted/30 border border-border/50 p-4">
+                      <p className="text-sm text-muted-foreground">
+                        We'll use your account details (name and email{accountContact?.phone ? ", and phone" : ""}) so you don't have to enter them again. Diggers can contact you after they unlock the lead or get awarded.
+                      </p>
+                      {(accountContact?.full_name || accountContact?.email) && (
+                        <p className="text-sm font-medium mt-2 text-foreground">
+                          {accountContact.full_name || "—"}, {accountContact.email || user?.email || "—"}
+                          {accountContact.phone ? ` · ${accountContact.phone}` : ""}
+                        </p>
+                      )}
+                    </div>
+                    {/* Multiple contact methods: WhatsApp, Telegram, Teams, etc. */}
+                    <div className="space-y-3 pt-2 border-t border-border/50">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Add more ways for Diggers to contact you (optional)
+                      </p>
+                      {contactItems.map((item, index) => {
+                        const method = GIGGER_CONTACT_METHODS.find((m) => m.id === item.type);
+                        return (
+                          <div key={`${item.type}-${index}`} className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-medium shrink-0">{method?.label ?? item.type}:</span>
+                            <Input
+                              value={item.value}
+                              onChange={(e) =>
+                                setContactItems((prev) =>
+                                  prev.map((x, i) => (i === index ? { ...x, value: e.target.value } : x))
+                                )
+                              }
+                              placeholder={method?.placeholder}
+                              type={method?.inputType ?? "text"}
+                              className="h-9 flex-1 min-w-[140px] rounded-lg text-sm"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => setContactItems((prev) => prev.filter((_, i) => i !== index))}
+                              aria-label="Remove"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select
+                          value={contactAddType}
+                          onValueChange={setContactAddType}
+                        >
+                          <SelectTrigger className="h-9 w-[180px] rounded-lg text-sm">
+                            <SelectValue placeholder="Add contact method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {GIGGER_CONTACT_METHODS.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>
+                                {m.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          value={contactAddValue}
+                          onChange={(e) => setContactAddValue(e.target.value)}
+                          placeholder={
+                            GIGGER_CONTACT_METHODS.find((m) => m.id === contactAddType)?.placeholder ?? "Value"
+                          }
+                          type={GIGGER_CONTACT_METHODS.find((m) => m.id === contactAddType)?.inputType ?? "text"}
+                          className="h-9 flex-1 min-w-[160px] rounded-lg text-sm"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              if (contactAddType && contactAddValue.trim()) {
+                                setContactItems((prev) => [...prev, { type: contactAddType, value: contactAddValue.trim() }]);
+                                setContactAddValue("");
+                              }
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 shrink-0"
+                          onClick={() => {
+                            if (contactAddType && contactAddValue.trim()) {
+                              setContactItems((prev) => [...prev, { type: contactAddType, value: contactAddValue.trim() }]);
+                              setContactAddValue("");
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="clientEmail" className="text-sm font-medium flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      Email Address <span className="text-destructive">*</span>
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      We'll send a confirmation email to verify your project.
+                ) : (
+                  <div className="grid gap-5">
+                    <p className="text-sm text-muted-foreground">
+                      Sign in to post a project; we'll use your account details so you don't have to re-enter them.
                     </p>
-                    <Input
-                      id="clientEmail"
-                      type="email"
-                      placeholder="john@example.com"
-                      value={clientEmail}
-                      onChange={(e) => setClientEmail(e.target.value)}
-                      className="h-12 rounded-xl border-border/50 text-base"
-                      required
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="clientName" className="text-sm font-medium flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        Your Name <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="clientName"
+                        placeholder="John Smith"
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        className="h-12 rounded-xl border-border/50 text-base"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientEmail" className="text-sm font-medium flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        Email Address <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="clientEmail"
+                        type="email"
+                        placeholder="john@example.com"
+                        value={clientEmail}
+                        onChange={(e) => setClientEmail(e.target.value)}
+                        className="h-12 rounded-xl border-border/50 text-base"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientPhone" className="text-sm font-medium flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        Phone Number <span className="text-muted-foreground text-xs">(optional)</span>
+                      </Label>
+                      <Input
+                        id="clientPhone"
+                        type="tel"
+                        placeholder="(555) 123-4567"
+                        value={clientPhone}
+                        onChange={(e) => setClientPhone(e.target.value)}
+                        className="h-12 rounded-xl border-border/50 text-base"
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="clientPhone" className="text-sm font-medium flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      Phone Number <span className="text-muted-foreground text-xs">(optional)</span>
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Add your phone if you'd like Diggers to call you directly.
-                    </p>
-                    <Input
-                      id="clientPhone"
-                      type="tel"
-                      placeholder="(555) 123-4567"
-                      value={clientPhone}
-                      onChange={(e) => setClientPhone(e.target.value)}
-                      className="h-12 rounded-xl border-border/50 text-base"
-                    />
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Lead Price Preview */}

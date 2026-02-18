@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, Calendar, DollarSign, Mail, AlertCircle, Lock, Zap, UserPlus, FileText } from "lucide-react";
+import { Loader2, MapPin, Calendar, DollarSign, Mail, Phone, AlertCircle, Lock, Zap, UserPlus, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -14,6 +14,11 @@ import { LeadReturnDialog } from "@/components/LeadReturnDialog";
 // LeadExclusivityExtension removed - exclusivity feature deprecated
 import { LeadCountdownTimer } from "@/components/LeadCountdownTimer";
 import { formatDistanceToNow } from "date-fns";
+import {
+  GIGGER_CONTACT_METHODS,
+  parseContactPreferences,
+  getContactLink,
+} from "@/config/giggerContactMethods";
 
 export default function MyLeads() {
   const { user } = useAuth();
@@ -107,8 +112,12 @@ export default function MyLeads() {
             deadline,
             lead_source,
             awarded_at,
+            consumer_email,
+            consumer_phone,
+            contact_preferences,
             profiles!gigs_consumer_id_fkey (
-              full_name
+              full_name,
+              email
             )
           ),
           digger_profiles!lead_purchases_digger_id_fkey (
@@ -405,26 +414,50 @@ export default function MyLeads() {
                         </div>
 
                         {/* Consumer Contact Info (only for exclusive/awarded leads) */}
-                        {(isExclusive || lead.awarded_at) && consumer && (
+                        {(isExclusive || lead.awarded_at) && (consumer || gig?.consumer_email || gig?.consumer_phone || (gig?.contact_preferences && parseContactPreferences(gig.contact_preferences).length > 0)) && (
                           <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                             <h4 className="font-medium mb-2 text-sm">
                               {isExclusive ? "Contact Information (Exclusive Access)" : "Contact Information"}
                             </h4>
                             <div className="grid gap-2 text-sm">
-                              {consumer.full_name && (
+                              {consumer?.full_name && (
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium">Name:</span>
                                   <span>{consumer.full_name}</span>
                                 </div>
                               )}
-                              {consumer.email && (
+                              {(consumer?.email || gig?.consumer_email) && (
                                 <div className="flex items-center gap-2">
                                   <Mail className="h-3 w-3 text-muted-foreground" />
-                                  <a href={`mailto:${consumer.email}`} className="text-primary hover:underline">
-                                    {consumer.email}
+                                  <a href={`mailto:${consumer?.email || gig?.consumer_email}`} className="text-primary hover:underline">
+                                    {consumer?.email || gig?.consumer_email}
                                   </a>
                                 </div>
                               )}
+                              {gig?.consumer_phone && (
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-3 w-3 text-muted-foreground" />
+                                  <a href={`tel:${gig.consumer_phone}`} className="text-primary hover:underline">
+                                    {gig.consumer_phone}
+                                  </a>
+                                </div>
+                              )}
+                              {gig?.contact_preferences && parseContactPreferences(gig.contact_preferences).map((item: { type: string; value: string }, i: number) => {
+                                const method = GIGGER_CONTACT_METHODS.find((m) => m.id === item.type);
+                                const link = getContactLink(item);
+                                return (
+                                  <div key={i} className="flex items-center gap-2">
+                                    <span className="font-medium text-muted-foreground shrink-0">{method?.label ?? item.type}:</span>
+                                    {link ? (
+                                      <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                        {item.value}
+                                      </a>
+                                    ) : (
+                                      <span>{item.value}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

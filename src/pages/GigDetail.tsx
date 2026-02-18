@@ -73,6 +73,8 @@ const GigDetail = () => {
   const [isDigger, setIsDigger] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [diggerId, setDiggerId] = useState<string | null>(null);
+  /** Diggers can bid only after they have profile photo and hourly rate set ("at rest" minimum). */
+  const [diggerCanBid, setDiggerCanBid] = useState(false);
   const [existingBid, setExistingBid] = useState<any>(null);
   const [canSeeBudget, setCanSeeBudget] = useState(false);
   const [hasLeadPurchase, setHasLeadPurchase] = useState(false);
@@ -181,24 +183,61 @@ const GigDetail = () => {
       // Treat as digger if profiles.user_type is "digger" OR user has digger role (user_roles table)
       const userIsDigger = profile?.user_type === "digger" || (userRoles && userRoles.includes("digger"));
       setIsDigger(userIsDigger);
+      if (!userIsDigger) setDiggerCanBid(false);
 
       if (userIsDigger) {
-        const { data: diggerProfile } = await supabase
+        let diggerProfileRow: { id: string } | null = null;
+        const { data: existingProfile } = await supabase
           .from("digger_profiles" as any)
           .select("id")
           .eq("user_id", session.user.id)
-          .single();
+          .maybeSingle();
+        diggerProfileRow = existingProfile as { id: string } | null;
 
-        if (diggerProfile) {
-          setDiggerId((diggerProfile as any)?.id);
+        // Create minimal digger profile if none exists so they can complete photo + rate and then bid
+        if (!diggerProfileRow) {
+          const { data: profileRow } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", session.user.id)
+            .single();
+          const businessName = (profileRow?.full_name && String(profileRow.full_name).trim()) || "My Business";
+          const { data: created } = await supabase
+            .from("digger_profiles" as any)
+            .insert({
+              user_id: session.user.id,
+              business_name: businessName,
+              location: "Not set",
+              phone: "Not set",
+            } as any)
+            .select("id")
+            .single();
+          diggerProfileRow = created as { id: string } | null;
+        }
+
+        if (diggerProfileRow) {
+          setDiggerId(diggerProfileRow.id);
+
+          // At-rest minimum to bid: profile photo and hourly rate (then they can bid)
+          const { data: diggerDetail } = await supabase
+            .from("digger_profiles" as any)
+            .select("id, profile_image_url, hourly_rate, hourly_rate_min, hourly_rate_max, profiles!digger_profiles_user_id_fkey(avatar_url)")
+            .eq("id", diggerProfileRow.id)
+            .single();
+          const dp = diggerDetail as { profile_image_url?: string | null; hourly_rate?: number | null; hourly_rate_min?: number | null; hourly_rate_max?: number | null; profiles?: { avatar_url?: string | null } | null } | null;
+          const hasPhoto = !!(dp?.profile_image_url?.trim()) || !!(dp?.profiles?.avatar_url?.trim());
+          const hasHourlyRate =
+            (dp?.hourly_rate != null && Number(dp.hourly_rate) > 0) ||
+            (dp?.hourly_rate_min != null && dp?.hourly_rate_max != null);
+          setDiggerCanBid(!!(hasPhoto && hasHourlyRate));
 
           // Check for existing bid
           const { data: bid } = await supabase
             .from("bids" as any)
             .select("*")
             .eq("gig_id", id)
-            .eq("digger_id", (diggerProfile as any)?.id)
-            .single();
+            .eq("digger_id", diggerProfileRow.id)
+            .maybeSingle();
 
           setExistingBid(bid as any);
 
@@ -207,14 +246,16 @@ const GigDetail = () => {
             .from("lead_purchases")
             .select("id")
             .eq("gig_id", id)
-            .eq("digger_id", (diggerProfile as any)?.id)
+            .eq("digger_id", diggerProfileRow.id)
             .eq("status", "completed")
-            .single();
+            .maybeSingle();
 
           setHasLeadPurchase(!!leadPurchase);
 
           // Diggers can see budget so they can tailor their proposal and bid within range
           setCanSeeBudget(true);
+        } else {
+          setDiggerCanBid(false);
         }
       } else {
         // Non-diggers (consumers) can always see budget
@@ -222,10 +263,14 @@ const GigDetail = () => {
       }
     }
 
+    // Do not request contact fields here so diggers never receive gigger contact info; owner fetches them separately
     const { data: gigData, error: gigError } = await supabase
       .from("gigs")
       .select(`
-        *,
+        id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id, requirements,
+        preferred_regions, status, confirmation_status, is_confirmed_lead, confirmed_at, created_at, updated_at,
+        purchase_count, calculated_price_cents, bumped_at, deadline, poster_country, skills_required,
+        awarded_at, awarded_bid_id, awarded_digger_id,
         categories (name, description),
         profiles!gigs_consumer_id_fkey (full_name, avatar_url, country, timezone, email_verified, phone_verified, payment_verified, id_verified, social_verified),
         gig_skills (skills (name))
@@ -242,8 +287,22 @@ const GigDetail = () => {
       return;
     }
 
-    setGig(gigData);
-    setIsOwner(session?.user?.id === gigData.consumer_id);
+    setGig(gigData as Gig);
+    const isOwner = session?.user?.id === gigData.consumer_id;
+    setIsOwner(isOwner);
+
+    // Only the gig owner should receive contact fields (for edit/manage); diggers get them only after unlock/award
+    if (isOwner && session?.user?.id) {
+      const { data: contactRow } = await supabase
+        .from("gigs")
+        .select("client_name, consumer_email, consumer_phone")
+        .eq("id", id)
+        .eq("consumer_id", session.user.id)
+        .single();
+      if (contactRow) {
+        setGig((prev) => prev ? { ...prev, ...contactRow } : prev);
+      }
+    }
 
     // Fetch client (Gigger) project counts for "About the client" card
     if (gigData.consumer_id) {
@@ -682,8 +741,8 @@ const GigDetail = () => {
               </Card>
             )}
 
-            {/* Submit or edit proposal */}
-            {showDiggerContent && diggerId && gig.status === 'open' && !existingBid && (
+            {/* Submit or edit proposal — only when profile has photo + hourly rate (at-rest minimum) */}
+            {showDiggerContent && diggerId && diggerCanBid && gig.status === 'open' && !existingBid && (
               <div id="bid">
                 <BidSubmissionTemplate
                   gigId={id!}
@@ -876,6 +935,18 @@ const GigDetail = () => {
                   </p>
                   <Button className="w-full" onClick={() => navigate('/role-dashboard')}>
                     Go to Dashboard
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {showDiggerContent && diggerId && !diggerCanBid && !existingBid && gig.status === 'open' && (
+              <Card id="bid">
+                <CardContent className="pt-6 space-y-4">
+                  <p className="text-center text-muted-foreground">
+                    To place a bid, add a <strong>profile photo</strong> and <strong>hourly rate</strong> to your Digger profile.
+                  </p>
+                  <Button className="w-full" onClick={() => navigate('/role-dashboard')}>
+                    Complete profile
                   </Button>
                 </CardContent>
               </Card>
