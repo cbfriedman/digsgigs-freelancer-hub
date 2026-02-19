@@ -351,27 +351,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cities: {
-        Row: { id: string; country_id: string; region_id: string | null; name: string }
-        Insert: { id?: string; country_id: string; region_id?: string | null; name: string }
-        Update: { id?: string; country_id?: string; region_id?: string | null; name?: string }
-        Relationships: [
-          { foreignKeyName: "cities_country_id_fkey"; columns: ["country_id"]; referencedRelation: "countries"; referencedColumns: ["id"] },
-          { foreignKeyName: "cities_region_id_fkey"; columns: ["region_id"]; referencedRelation: "regions"; referencedColumns: ["id"] }
-        ]
-      }
-      countries: {
-        Row: { id: string; code_alpha2: string; name: string }
-        Insert: { id?: string; code_alpha2: string; name: string }
-        Update: { id?: string; code_alpha2?: string; name?: string }
-        Relationships: []
-      }
-      regions: {
-        Row: { id: string; country_id: string; code: string | null; name: string; type: string | null }
-        Insert: { id?: string; country_id: string; code?: string | null; name: string; type?: string | null }
-        Update: { id?: string; country_id?: string; code?: string | null; name?: string; type?: string | null }
-        Relationships: [{ foreignKeyName: "regions_country_id_fkey"; columns: ["country_id"]; referencedRelation: "countries"; referencedColumns: ["id"] }]
-      }
       blog_generation_history: {
         Row: {
           error_message: string | null
@@ -1381,11 +1360,9 @@ export type Database = {
           business_name: string
           certifications: string[] | null
           city: string | null
-          city_id: string | null
           company_name: string | null
           completion_rate: number | null
           country: string | null
-          country_id: string | null
           created_at: string
           custom_occupation_title: string | null
           expected_lead_period: string | null
@@ -1438,7 +1415,6 @@ export type Database = {
           sic_code: string[] | null
           skills: string[] | null
           state: string | null
-          region_id: string | null
           stripe_connect_account_id: string | null
           stripe_connect_charges_enabled: boolean | null
           stripe_connect_onboarded: boolean | null
@@ -1467,11 +1443,9 @@ export type Database = {
           business_name: string
           certifications?: string[] | null
           city?: string | null
-          city_id?: string | null
           company_name?: string | null
           completion_rate?: number | null
           country?: string | null
-          country_id?: string | null
           created_at?: string
           custom_occupation_title?: string | null
           expected_lead_period?: string | null
@@ -1517,7 +1491,6 @@ export type Database = {
           profile_name?: string | null
           profile_number?: number | null
           registration_status?: string | null
-          region_id?: string | null
           response_time_hours?: number | null
           service_radius_center?: string | null
           service_radius_miles?: number | null
@@ -1601,7 +1574,6 @@ export type Database = {
           profile_name?: string | null
           profile_number?: number | null
           registration_status?: string | null
-          region_id?: string | null
           response_time_hours?: number | null
           service_radius_center?: string | null
           service_radius_miles?: number | null
@@ -3912,51 +3884,33 @@ export type Database = {
         Row: {
           about_me: string | null
           avatar_url: string | null
-          country: string | null
-          country_id: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
           phone: string | null
-          profile_title: string | null
-          region_id: string | null
-          state: string | null
-          city: string | null
           updated_at: string
           user_type: string | null
         }
         Insert: {
           about_me?: string | null
           avatar_url?: string | null
-          country?: string | null
-          country_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
-          profile_title?: string | null
-          region_id?: string | null
-          state?: string | null
-          city?: string | null
           updated_at?: string
           user_type?: string | null
         }
         Update: {
           about_me?: string | null
           avatar_url?: string | null
-          country?: string | null
-          country_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
-          profile_title?: string | null
-          region_id?: string | null
-          state?: string | null
-          city?: string | null
           updated_at?: string
           user_type?: string | null
         }

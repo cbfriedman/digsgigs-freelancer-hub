@@ -129,7 +129,7 @@ const GigDetail = () => {
         .select("id")
         .eq("user_id", session.user.id)
         .maybeSingle();
-      const row = existingProfile as { id: string } | null;
+      const row = existingProfile as unknown as { id: string } | null;
       if (cancelled || !row) return;
       setIsDigger(true);
       setDiggerId(row.id);
@@ -256,7 +256,7 @@ const GigDetail = () => {
           .select("id")
           .eq("user_id", session.user.id)
           .maybeSingle();
-        diggerProfileRow = existingProfile as { id: string } | null;
+        diggerProfileRow = existingProfile as unknown as { id: string } | null;
 
         // Create minimal digger profile if none exists so they can complete photo + rate and then bid
         if (!diggerProfileRow) {
@@ -276,7 +276,7 @@ const GigDetail = () => {
             } as any)
             .select("id")
             .single();
-          diggerProfileRow = created as { id: string } | null;
+          diggerProfileRow = created as unknown as { id: string } | null;
         }
 
         if (diggerProfileRow) {
@@ -331,8 +331,8 @@ const GigDetail = () => {
     }
 
     // Do not request contact fields here so diggers never receive gigger contact info; owner fetches them separately
-    const { data: gigData, error: gigError } = await supabase
-      .from("gigs")
+    const { data: gigData, error: gigError } = await (supabase
+      .from("gigs") as any)
       .select(`
         id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id, requirements,
         preferred_regions, status, confirmation_status, is_confirmed_lead, confirmed_at, created_at, updated_at,

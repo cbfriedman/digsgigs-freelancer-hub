@@ -1768,12 +1768,12 @@ export default function Messages() {
                                     {format(new Date(conv.updated_at), "M/d/yy")}
                                   </span>
                                   <div className="flex items-center gap-1 text-muted-foreground ml-1">
-                                    {isStarred && <Star className="h-3.5 w-3.5" title="Favorite" />}
-                                    {isPinned && <Pin className="h-3.5 w-3.5" title="Pinned" />}
-                                    {isMuted && <BellOff className="h-3.5 w-3.5" title="Muted" />}
-                                    {isBlocked && <Ban className="h-3.5 w-3.5" title="Blocked" />}
-                                    {isHidden && <EyeOff className="h-3.5 w-3.5" title="Hidden" />}
-                                    {hasUnread && <Mail className="h-3.5 w-3.5" title="Unread" />}
+                                    {isStarred && <Star className="h-3.5 w-3.5" aria-label="Favorite" />}
+                                    {isPinned && <Pin className="h-3.5 w-3.5" aria-label="Pinned" />}
+                                    {isMuted && <BellOff className="h-3.5 w-3.5" aria-label="Muted" />}
+                                    {isBlocked && <Ban className="h-3.5 w-3.5" aria-label="Blocked" />}
+                                    {isHidden && <EyeOff className="h-3.5 w-3.5" aria-label="Hidden" />}
+                                    {hasUnread && <Mail className="h-3.5 w-3.5" aria-label="Unread" />}
                                   </div>
                                   {hasUnread && (
                                     <span
@@ -2146,12 +2146,12 @@ export default function Messages() {
                                   <div className="flex items-center gap-0.5">
                                     <span className="text-xs text-muted-foreground">{format(new Date(conv.updated_at), "M/d/yy")}</span>
                                     <div className="flex items-center gap-1 text-muted-foreground ml-1">
-                                      {isStarred && <Star className="h-3.5 w-3.5" title="Favorite" />}
-                                      {isPinned && <Pin className="h-3.5 w-3.5" title="Pinned" />}
-                                      {isMuted && <BellOff className="h-3.5 w-3.5" title="Muted" />}
-                                      {isBlocked && <Ban className="h-3.5 w-3.5" title="Blocked" />}
-                                      {isHidden && <EyeOff className="h-3.5 w-3.5" title="Hidden" />}
-                                      {hasUnread && <Mail className="h-3.5 w-3.5" title="Unread" />}
+                                      {isStarred && <Star className="h-3.5 w-3.5" aria-label="Favorite" />}
+                                      {isPinned && <Pin className="h-3.5 w-3.5" aria-label="Pinned" />}
+                                      {isMuted && <BellOff className="h-3.5 w-3.5" aria-label="Muted" />}
+                                      {isBlocked && <Ban className="h-3.5 w-3.5" aria-label="Blocked" />}
+                                      {isHidden && <EyeOff className="h-3.5 w-3.5" aria-label="Hidden" />}
+                                      {hasUnread && <Mail className="h-3.5 w-3.5" aria-label="Unread" />}
                                     </div>
                                     {hasUnread && <span className="h-5 min-w-[1.25rem] px-1 rounded-md bg-primary text-[10px] font-semibold text-primary-foreground flex items-center justify-center shrink-0" title={`${unreadCount} unread`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
                                   </div>

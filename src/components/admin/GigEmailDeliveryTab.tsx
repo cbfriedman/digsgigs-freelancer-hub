@@ -69,11 +69,9 @@ export default function GigEmailDeliveryTab() {
         supabase
           .from("digger_profiles")
           .select("id, user_id, business_name, profiles!inner(email, full_name)"),
-        supabase
-          .from("gig_digger_email_deliveries")
+        (supabase.from("gig_digger_email_deliveries" as any))
           .select("gig_id, digger_id, sent_at, sent_by"),
-        supabase
-          .from("gig_email_delivery_settings")
+        (supabase.from("gig_email_delivery_settings" as any))
           .select("mode, selected_digger_ids")
           .eq("id", GIG_EMAIL_SETTINGS_ID)
           .maybeSingle(),
@@ -94,9 +92,9 @@ export default function GigEmailDeliveryTab() {
       }));
       setDiggers(diggerList.filter((d) => d.email));
 
-      setDeliveries((deliveriesRes.data || []) as DeliveryRow[]);
+      setDeliveries((deliveriesRes.data || []) as unknown as DeliveryRow[]);
 
-      const settings = settingsRes.data as { mode: SettingsMode; selected_digger_ids: string[] } | null;
+      const settings = settingsRes.data as unknown as { mode: SettingsMode; selected_digger_ids: string[] } | null;
       if (settings) {
         setSettingsMode(settings.mode);
         setSettingsSelectedIds(new Set(settings.selected_digger_ids || []));
@@ -116,8 +114,8 @@ export default function GigEmailDeliveryTab() {
   const saveSettings = async (mode: SettingsMode, selectedIds: Set<string>) => {
     setSettingsSaving(true);
     try {
-      const { error } = await supabase
-        .from("gig_email_delivery_settings")
+      const { error } = await (supabase
+        .from("gig_email_delivery_settings" as any))
         .update({
           mode,
           selected_digger_ids: Array.from(selectedIds),

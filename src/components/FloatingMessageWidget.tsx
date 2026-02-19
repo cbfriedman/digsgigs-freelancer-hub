@@ -78,7 +78,7 @@ interface Message {
 
 const MESSAGES_PAGE = "/messages";
 const CHAT_BOX_WIDTH = "w-[340px]";
-const MAX_OPEN_CHATS = 4;
+const MAX_OPEN_CHATS = 2;
 
 export function FloatingMessageWidget() {
   const navigate = useNavigate();
@@ -1602,9 +1602,9 @@ export function FloatingMessageWidget() {
                               </span>
                               <div className="flex items-center gap-2 shrink-0">
                                 <div className="flex items-center gap-1 text-muted-foreground">
-                                  {isBlocked && <Ban className="h-3.5 w-3.5" title="Blocked" />}
-                                  {isMuted && <BellOff className="h-3.5 w-3.5" title="Muted" />}
-                                  {unreadTotal > 0 && <EyeOff className="h-3.5 w-3.5" title="Unread" />}
+                                  {isBlocked && <Ban className="h-3.5 w-3.5" aria-label="Blocked" />}
+                                  {isMuted && <BellOff className="h-3.5 w-3.5" aria-label="Muted" />}
+                                  {unreadTotal > 0 && <EyeOff className="h-3.5 w-3.5" aria-label="Unread" />}
                                 </div>
                                 {unreadTotal > 0 && (
                                   <span

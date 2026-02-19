@@ -102,8 +102,8 @@ export default function ProfileDashboard() {
 
       // Load profile, lead credits, and lead purchases in parallel
       const [profileResult, creditsResult, purchasesResult] = await Promise.all([
-        supabase
-          .from("digger_profiles")
+        (supabase
+          .from("digger_profiles") as any)
           .select("id, handle, profile_name, business_name, profession, profile_image_url, keywords, location, state, city, country, bio, work_photos, hourly_rate_min, hourly_rate_max, pricing_model, certifications, service_countries, digger_skills (skills (name))")
           .eq("id", profileId)
           .eq("user_id", user.id)
@@ -136,7 +136,7 @@ export default function ProfileDashboard() {
         return;
       }
 
-      setProfile(profileResult.data);
+      setProfile(profileResult.data as any);
       setLeadCredits(creditsResult.data || []);
       setLeadPurchases(purchasesResult.data?.map(p => ({
         ...p,

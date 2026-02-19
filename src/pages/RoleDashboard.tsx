@@ -83,8 +83,8 @@ export default function RoleDashboard() {
         let primaryDiggerProfileId: string | null = null;
         let primaryDiggerProfileHandle: string | null = null;
         try {
-          const { data: diggerProfiles, error: profilesError } = await supabase
-            .from('digger_profiles')
+          const { data: diggerProfiles, error: profilesError } = await (supabase
+            .from('digger_profiles') as any)
             .select('id, handle, business_name, profession, bio, profile_image_url, work_photos, hourly_rate, hourly_rate_min, hourly_rate_max, pricing_model, certifications, country, service_countries, portfolio_url, portfolio_urls, website_url, social_links, digger_skills (skills (name)), digger_categories (categories (name)), profiles!digger_profiles_user_id_fkey (avatar_url)')
             .eq('user_id', user.id)
             .order('is_primary', { ascending: false })
@@ -105,12 +105,12 @@ export default function RoleDashboard() {
             primaryDiggerProfileId = primary?.id ?? null;
             primaryDiggerProfileHandle = primary?.handle ?? null;
             profilesCount = primaryDiggerProfileId ? 1 : 0;
-            setDiggerProfileForCompletion(primary ? (primary as Record<string, unknown>) : null);
+            setDiggerProfileForCompletion(primary ? (primary as unknown as Record<string, unknown>) : null);
             if (primaryDiggerProfileId) {
               try {
                 const [portfolioRes, experienceRes] = await Promise.all([
-                  supabase.from('digger_portfolio_items').select('id', { count: 'exact', head: true }).eq('digger_profile_id', primaryDiggerProfileId),
-                  supabase.from('digger_experience').select('id', { count: 'exact', head: true }).eq('digger_profile_id', primaryDiggerProfileId),
+                  (supabase.from('digger_portfolio_items' as any)).select('id', { count: 'exact', head: true }).eq('digger_profile_id', primaryDiggerProfileId),
+                  (supabase.from('digger_experience' as any)).select('id', { count: 'exact', head: true }).eq('digger_profile_id', primaryDiggerProfileId),
                 ]);
                 setDiggerPortfolioCount(portfolioRes.count ?? 0);
                 setDiggerExperienceCount(experienceRes.count ?? 0);

@@ -134,7 +134,7 @@ serve(async (req: Request): Promise<Response> => {
       await resend.emails.send({
         from: "Digs and Gigs Contact <noreply@digsandgigs.net>",
         to: [supportEmail],
-        replyTo: email,
+        reply_to: email,
         subject: emailSubject,
         html: `
           <p><strong>From:</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</p>

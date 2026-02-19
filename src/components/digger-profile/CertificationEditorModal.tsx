@@ -244,7 +244,7 @@ export const CertificationEditorModal = ({
         if (cert?.evidence_path) {
           await supabase.storage.from("certification-evidence").remove([cert.evidence_path]);
         }
-        await supabase.from("digger_certifications").delete().eq("id", id);
+        await (supabase.from("digger_certifications" as any)).delete().eq("id", id);
       }
 
       for (let i = 0; i < valid.length; i++) {
@@ -266,9 +266,9 @@ export const CertificationEditorModal = ({
           sort_order: i,
         };
         if (item.id && !item.id.startsWith("draft-") && existingIds.has(item.id)) {
-          await supabase.from("digger_certifications").update(payload).eq("id", item.id);
+          await (supabase.from("digger_certifications" as any)).update(payload).eq("id", item.id);
         } else {
-          await supabase.from("digger_certifications").insert({
+          await (supabase.from("digger_certifications" as any)).insert({
             digger_profile_id: diggerProfileId,
             ...payload,
           });

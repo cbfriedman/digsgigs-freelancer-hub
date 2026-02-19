@@ -342,7 +342,7 @@ export const BidsList = ({
         .eq("gig_id", gigId)
         .not("digger_id", "is", null);
       if (cancelled || error) return;
-      const ids = new Set((data || []).map((r: { digger_id: string }) => r.digger_id));
+      const ids = new Set((data || []).map((r: any) => r.digger_id));
       if (!cancelled) setConversationDiggerIds(ids);
     })();
     return () => { cancelled = true; };

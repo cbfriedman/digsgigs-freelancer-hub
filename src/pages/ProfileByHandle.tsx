@@ -105,7 +105,7 @@ export default function ProfileByHandle() {
             .eq("id", handle)
             .maybeSingle();
           if (byId) {
-            const p = byId as PublicProfileData;
+            const p = byId as unknown as PublicProfileData;
             const normalizedHandle = normalizeHandle((p as any).handle);
             if (normalizedHandle && normalizedHandle !== handle.toLowerCase()) {
               const target = `/profile/${normalizedHandle}${safeRole === "overview" ? "" : `/${safeRole}`}`;
@@ -171,14 +171,14 @@ export default function ProfileByHandle() {
           const owner = sessionData.session?.user?.id === row.user_id;
           setIsOwner(owner);
           setResolved(row);
-          setProfile((pData as PublicProfileData) || null);
+          setProfile((pData as unknown as PublicProfileData) || null);
           const diggerData = dData as DiggerCardData | null;
           setDigger(diggerData || null);
           setRecentGigs((gData as GiggerGigData[]) || []);
           if (owner && diggerData?.id) {
             Promise.all([
-              supabase.from("digger_portfolio_items").select("id", { count: "exact", head: true }).eq("digger_profile_id", diggerData.id),
-              supabase.from("digger_experience").select("id", { count: "exact", head: true }).eq("digger_profile_id", diggerData.id),
+              (supabase.from("digger_portfolio_items" as any)).select("id", { count: "exact", head: true }).eq("digger_profile_id", diggerData.id),
+              (supabase.from("digger_experience" as any)).select("id", { count: "exact", head: true }).eq("digger_profile_id", diggerData.id),
             ]).then(([pRes, eRes]) => {
               if (!cancelled) {
                 setDiggerPortfolioCount(pRes.count ?? 0);
