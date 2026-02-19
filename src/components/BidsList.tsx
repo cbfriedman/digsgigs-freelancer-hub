@@ -50,6 +50,27 @@ export const BID_SORT_OPTIONS: { value: BidSortOption; label: string }[] = [
   { value: "rating", label: "Highest rating" },
 ];
 
+const PINNED_BIDS_STORAGE_KEY = "gig-pinned-bids";
+
+function getPinnedBidIdsForGig(gigId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(`${PINNED_BIDS_STORAGE_KEY}-${gigId}`);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? new Set(arr.filter((id: unknown) => typeof id === "string")) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function setPinnedBidIdsForGig(gigId: string, bidIds: string[]) {
+  try {
+    localStorage.setItem(`${PINNED_BIDS_STORAGE_KEY}-${gigId}`, JSON.stringify(bidIds));
+  } catch {
+    // ignore
+  }
+}
+
 interface Bid {
   id: string;
   amount: number;
@@ -182,38 +203,69 @@ export const BidsList = ({
   const { toast } = useToast();
   const { onlineDiggers } = useDiggerPresence();
   const [bids, setBids] = useState<Bid[]>([]);
-  const rawDisplayed = isOwner ? bids : (currentDiggerId ? bids.filter((b) => (b as any).digger_id === currentDiggerId) : bids);
-  const filtered = useMemo(
-    () => (isOwner && onFilterChange ? applyBidFilters(rawDisplayed, filterState) : rawDisplayed),
-    [isOwner, rawDisplayed, filterState, onFilterChange]
-  );
-  const displayedBids = useMemo(() => {
-    if (sortBy === "newest") {
-      return [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }
-    if (sortBy === "rating") {
-      return [...filtered].sort((a, b) => (b.digger_profiles?.average_rating ?? 0) - (a.digger_profiles?.average_rating ?? 0));
-    }
-    if (sortBy === "highest_price") {
-      return [...filtered].sort((a, b) => {
-        const amax = b.amount_max ?? b.amount;
-        const bmax = a.amount_max ?? a.amount;
-        return amax - bmax;
-      });
-    }
-    // lowest_price (default): already ordered by amount from API; re-apply by min amount
-    return [...filtered].sort((a, b) => {
-      const amin = a.amount_min ?? a.amount;
-      const bmin = b.amount_min ?? b.amount;
-      return amin - bmin;
-    });
-  }, [filtered, sortBy]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [escrowDialogOpen, setEscrowDialogOpen] = useState(false);
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
   /** Digger profile IDs that have an active conversation for this gig (for "Chatting" badge). */
   const [conversationDiggerIds, setConversationDiggerIds] = useState<Set<string>>(new Set());
+  /** Bid IDs pinned by the Gigger for this gig (persisted in localStorage). */
+  const [pinnedBidIds, setPinnedBidIds] = useState<Set<string>>(() => getPinnedBidIdsForGig(gigId));
+
+  useEffect(() => {
+    if (!gigId) return;
+    setPinnedBidIds(getPinnedBidIdsForGig(gigId));
+  }, [gigId]);
+
+  const togglePin = useCallback(
+    (bidId: string) => {
+      setPinnedBidIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(bidId)) next.delete(bidId);
+        else next.add(bidId);
+        setPinnedBidIdsForGig(gigId, [...next]);
+        return next;
+      });
+    },
+    [gigId]
+  );
+
+  const rawDisplayed = isOwner ? bids : (currentDiggerId ? bids.filter((b) => (b as any).digger_id === currentDiggerId) : bids);
+  const filtered = useMemo(
+    () => (isOwner && onFilterChange ? applyBidFilters(rawDisplayed, filterState) : rawDisplayed),
+    [isOwner, rawDisplayed, filterState, onFilterChange]
+  );
+  const displayedBids = useMemo(() => {
+    let sorted: Bid[];
+    if (sortBy === "newest") {
+      sorted = [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (sortBy === "rating") {
+      sorted = [...filtered].sort((a, b) => (b.digger_profiles?.average_rating ?? 0) - (a.digger_profiles?.average_rating ?? 0));
+    } else if (sortBy === "highest_price") {
+      sorted = [...filtered].sort((a, b) => {
+        const amax = b.amount_max ?? b.amount;
+        const bmax = a.amount_max ?? a.amount;
+        return amax - bmax;
+      });
+    } else {
+      sorted = [...filtered].sort((a, b) => {
+        const amin = a.amount_min ?? a.amount;
+        const bmin = b.amount_min ?? b.amount;
+        return amin - bmin;
+      });
+    }
+    // Pinned first for Giggers
+    if (isOwner && pinnedBidIds.size > 0) {
+      return [...sorted].sort((a, b) => {
+        const aPin = pinnedBidIds.has(a.id);
+        const bPin = pinnedBidIds.has(b.id);
+        if (aPin && !bPin) return -1;
+        if (!aPin && bPin) return 1;
+        return 0;
+      });
+    }
+    return sorted;
+  }, [filtered, sortBy, isOwner, pinnedBidIds]);
 
   const loadBids = useCallback(async () => {
     try {
@@ -517,6 +569,8 @@ export const BidsList = ({
               isFixedPrice={isFixedPrice}
               isOnline={onlineDiggers.has(bid.digger_profiles.id)}
               hasActiveChat={conversationDiggerIds.has(bid.digger_profiles.id)}
+              isPinned={pinnedBidIds.has(bid.id)}
+              onPinToggle={() => togglePin(bid.id)}
               onAccept={() => handleAcceptBid(bid.id)}
               onConfirmHire={loadBids}
               onCompleteWork={loadBids}

@@ -16,6 +16,8 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
@@ -98,6 +100,10 @@ interface DiggerProposalCardProps {
   isOnline?: boolean;
   /** When true, show "Chatting" / In progress badge (conversation exists for this gig + digger). */
   hasActiveChat?: boolean;
+  /** When true, card is pinned to top by Gigger. */
+  isPinned?: boolean;
+  /** Callback to toggle pin (Gigger only). */
+  onPinToggle?: () => void;
   onAccept?: () => void;
   onConfirmHire?: () => void;
   onCompleteWork?: () => void;
@@ -114,6 +120,8 @@ export function DiggerProposalCard({
   isFixedPrice = false,
   isOnline = false,
   hasActiveChat = false,
+  isPinned = false,
+  onPinToggle,
   onAccept,
   onConfirmHire,
   onCompleteWork,
@@ -158,7 +166,12 @@ export function DiggerProposalCard({
   };
 
   return (
-    <Card className="overflow-hidden border border-border/60 shadow-sm hover:shadow-md transition-shadow">
+    <Card
+      className={cn(
+        "overflow-hidden border border-border/60 shadow-sm hover:shadow-md transition-shadow",
+        isPinned && "border-l-4 border-l-primary"
+      )}
+    >
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           {/* Left: Digger info — bigger avatar with online/offline, real name + username, headline, location + flag */}
@@ -315,6 +328,12 @@ export function DiggerProposalCard({
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/50">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
             <div className="flex flex-wrap items-center gap-2">
+              {isPinned && (
+                <Badge variant="outline" className="gap-1 border-primary/50 text-primary font-medium">
+                  <Pin className="h-3 w-3" />
+                  Pinned
+                </Badge>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-flex cursor-default">
@@ -375,7 +394,28 @@ export function DiggerProposalCard({
               ) : null)}
           </div>
           {isOwner && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {onPinToggle && (
+                <Button
+                  variant={isPinned ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={onPinToggle}
+                  className={cn("gap-1.5", isPinned && "bg-primary/10 text-primary hover:bg-primary/20")}
+                  title={isPinned ? "Unpin from top" : "Pin to top"}
+                >
+                  {isPinned ? (
+                    <>
+                      <PinOff className="h-4 w-4" />
+                      Unpin
+                    </>
+                  ) : (
+                    <>
+                      <Pin className="h-4 w-4" />
+                      Pin
+                    </>
+                  )}
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleChat} className="gap-1.5">
                 <MessageSquare className="h-4 w-4" />
                 Chat
