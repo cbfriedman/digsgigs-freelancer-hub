@@ -7,12 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
-import { BidsList, defaultBidFilters, type BidFilters, type BidStats } from "@/components/BidsList";
+import { BidsList, defaultBidFilters, BID_SORT_OPTIONS, type BidFilters, type BidStats, type BidSortOption } from "@/components/BidsList";
 import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
+import { Footer } from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import { generateJobPostingSchema } from "@/components/StructuredData";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
@@ -90,6 +92,26 @@ const GigDetail = () => {
   const [bidStats, setBidStats] = useState<BidStats | null>(null);
   /** Bids filters (when owner) */
   const [bidFilters, setBidFilters] = useState<BidFilters>(defaultBidFilters);
+  /** Bids sort order (when owner) */
+  const [bidSortBy, setBidSortBy] = useState<BidSortOption>("lowest_price");
+
+  const hasActiveFilters =
+    (bidFilters.search?.trim() ?? "") !== "" ||
+    (bidFilters.priceMin?.trim() ?? "") !== "" ||
+    (bidFilters.priceMax?.trim() ?? "") !== "" ||
+    (bidFilters.timeline?.trim() ?? "") !== "" ||
+    (bidFilters.minRating?.trim() ?? "") !== "" ||
+    (bidFilters.location?.trim() ?? "") !== "" ||
+    bidFilters.verifiedOnly;
+  const activeFilterCount = [
+    bidFilters.search?.trim(),
+    bidFilters.priceMin?.trim(),
+    bidFilters.priceMax?.trim(),
+    bidFilters.timeline?.trim(),
+    bidFilters.minRating?.trim(),
+    bidFilters.location?.trim(),
+    bidFilters.verifiedOnly,
+  ].filter(Boolean).length;
 
   useEffect(() => {
     loadData();
@@ -1025,6 +1047,8 @@ const GigDetail = () => {
                 onFilterChange={setBidFilters}
                 onStats={setBidStats}
                 statsInSidebar={isOwner}
+                sortBy={bidSortBy}
+                onClearFilters={() => setBidFilters(defaultBidFilters)}
               />
             )}
           </div>
@@ -1033,6 +1057,34 @@ const GigDetail = () => {
           <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-4 lg:self-start">
             {isOwner && (
               <>
+                {/* Showing X of Y + sort */}
+                <div className="flex flex-col gap-2">
+                  {bidStats && (
+                    <p className="text-sm text-muted-foreground">
+                      Showing <span className="font-medium text-foreground">{bidStats.totalBids}</span>
+                      {bidStats.totalUnfiltered != null && bidStats.totalUnfiltered !== bidStats.totalBids && (
+                        <> of <span className="font-medium text-foreground">{bidStats.totalUnfiltered}</span></>
+                      )}
+                      {" "}bid{(bidStats.totalBids === 1 ? "" : "s")}
+                      {hasActiveFilters && (
+                        <span className="ml-1.5 text-xs text-primary">({activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active)</span>
+                      )}
+                    </p>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Sort by</Label>
+                    <Select value={bidSortBy} onValueChange={(v) => setBidSortBy(v as BidSortOption)}>
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BID_SORT_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 {/* Bids stats */}
                 <Card className="border-border/60 bg-card">
                   <CardHeader className="pb-2">
@@ -1060,6 +1112,33 @@ const GigDetail = () => {
                     </div>
                   </CardContent>
                 </Card>
+                {/* Quick filters */}
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    variant={bidFilters.minRating === "4" ? "secondary" : "outline"}
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setBidFilters((f) => ({ ...f, minRating: f.minRating === "4" ? "" : "4" }))}
+                  >
+                    4+ stars
+                  </Button>
+                  <Button
+                    variant={bidFilters.verifiedOnly ? "secondary" : "outline"}
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setBidFilters((f) => ({ ...f, verifiedOnly: !f.verifiedOnly }))}
+                  >
+                    Verified
+                  </Button>
+                  <Button
+                    variant={bidFilters.priceMax === "5000" ? "secondary" : "outline"}
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setBidFilters((f) => ({ ...f, priceMax: f.priceMax === "5000" ? "" : "5000" }))}
+                  >
+                    Under $5k
+                  </Button>
+                </div>
                 {/* Filters */}
                 <Card className="border-border/60 bg-card">
                   <CardHeader className="pb-2">
@@ -1298,6 +1377,7 @@ const GigDetail = () => {
           </aside>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

@@ -9,7 +9,7 @@ import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
 import { DiggerProposalCard } from "@/components/DiggerProposalCard";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
-import { TrendingUp, DollarSign, FileText } from "lucide-react";
+import { TrendingUp, DollarSign, FileText, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
@@ -20,6 +20,7 @@ export interface BidFilters {
   timeline: string;
   minRating: string;
   location: string;
+  verifiedOnly: boolean;
 }
 
 export const defaultBidFilters: BidFilters = {
@@ -29,14 +30,25 @@ export const defaultBidFilters: BidFilters = {
   timeline: "",
   minRating: "",
   location: "",
+  verifiedOnly: false,
 };
 
 export interface BidStats {
   totalBids: number;
+  totalUnfiltered: number;
   avgPrice: number;
   lowestAmount: number;
   highestAmount: number;
 }
+
+export type BidSortOption = "lowest_price" | "highest_price" | "newest" | "rating";
+
+export const BID_SORT_OPTIONS: { value: BidSortOption; label: string }[] = [
+  { value: "lowest_price", label: "Lowest price" },
+  { value: "highest_price", label: "Highest price" },
+  { value: "newest", label: "Newest first" },
+  { value: "rating", label: "Highest rating" },
+];
 
 interface Bid {
   id: string;
@@ -129,6 +141,7 @@ function applyBidFilters(bids: Bid[], filters: BidFilters): Bid[] {
         .toLowerCase();
       if (!diggerLoc.includes(loc)) return false;
     }
+    if (filters.verifiedOnly && !b.digger_profiles?.verified) return false;
     return true;
   });
 }
@@ -147,6 +160,10 @@ interface BidsListProps {
   onStats?: (stats: BidStats) => void;
   /** When true and isOwner, do not render the stats row (stats go in sidebar). */
   statsInSidebar?: boolean;
+  /** Sort order for displayed bids (owner only). */
+  sortBy?: BidSortOption;
+  /** Callback when filters are cleared (e.g. from empty state). */
+  onClearFilters?: () => void;
 }
 
 export const BidsList = ({
@@ -159,19 +176,44 @@ export const BidsList = ({
   onFilterChange,
   onStats,
   statsInSidebar = false,
+  sortBy = "lowest_price",
+  onClearFilters,
 }: BidsListProps) => {
   const { toast } = useToast();
   const { onlineDiggers } = useDiggerPresence();
   const [bids, setBids] = useState<Bid[]>([]);
   const rawDisplayed = isOwner ? bids : (currentDiggerId ? bids.filter((b) => (b as any).digger_id === currentDiggerId) : bids);
-  const displayedBids = useMemo(
+  const filtered = useMemo(
     () => (isOwner && onFilterChange ? applyBidFilters(rawDisplayed, filterState) : rawDisplayed),
     [isOwner, rawDisplayed, filterState, onFilterChange]
   );
+  const displayedBids = useMemo(() => {
+    if (sortBy === "newest") {
+      return [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    if (sortBy === "rating") {
+      return [...filtered].sort((a, b) => (b.digger_profiles?.average_rating ?? 0) - (a.digger_profiles?.average_rating ?? 0));
+    }
+    if (sortBy === "highest_price") {
+      return [...filtered].sort((a, b) => {
+        const amax = b.amount_max ?? b.amount;
+        const bmax = a.amount_max ?? a.amount;
+        return amax - bmax;
+      });
+    }
+    // lowest_price (default): already ordered by amount from API; re-apply by min amount
+    return [...filtered].sort((a, b) => {
+      const amin = a.amount_min ?? a.amount;
+      const bmin = b.amount_min ?? b.amount;
+      return amin - bmin;
+    });
+  }, [filtered, sortBy]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [escrowDialogOpen, setEscrowDialogOpen] = useState(false);
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
+  /** Digger profile IDs that have an active conversation for this gig (for "Chatting" badge). */
+  const [conversationDiggerIds, setConversationDiggerIds] = useState<Set<string>>(new Set());
 
   const loadBids = useCallback(async () => {
     try {
@@ -234,10 +276,31 @@ export const BidsList = ({
     loadBids();
   }, [loadBids]);
 
+  // Fetch which diggers have a conversation for this gig (for "Chatting" / In progress indicator)
+  useEffect(() => {
+    if (!isOwner || !gigId) {
+      setConversationDiggerIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("conversations" as any)
+        .select("digger_id")
+        .eq("gig_id", gigId)
+        .not("digger_id", "is", null);
+      if (cancelled || error) return;
+      const ids = new Set((data || []).map((r: { digger_id: string }) => r.digger_id));
+      if (!cancelled) setConversationDiggerIds(ids);
+    })();
+    return () => { cancelled = true; };
+  }, [isOwner, gigId]);
+
   // Report stats for sidebar when owner and statsInSidebar
   useEffect(() => {
     if (!isOwner || !onStats || !statsInSidebar) return;
     const totalBids = displayedBids.length;
+    const totalUnfiltered = rawDisplayed.length;
     const avgPrice =
       totalBids > 0
         ? displayedBids.reduce((sum, b) => {
@@ -249,8 +312,8 @@ export const BidsList = ({
     const lowestAmount = lowestBid ? (lowestBid.amount_min ?? lowestBid.amount) : 0;
     const highestBid = displayedBids[displayedBids.length - 1];
     const highestAmount = highestBid ? (highestBid.amount_max ?? highestBid.amount) : 0;
-    onStats({ totalBids, avgPrice, lowestAmount, highestAmount });
-  }, [isOwner, onStats, statsInSidebar, displayedBids]);
+    onStats({ totalBids, totalUnfiltered, avgPrice, lowestAmount, highestAmount });
+  }, [isOwner, onStats, statsInSidebar, displayedBids, rawDisplayed.length]);
 
   // Real-time: refresh bids when new proposals arrive or bids are updated
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -358,6 +421,28 @@ export const BidsList = ({
   }
 
   if (displayedBids.length === 0) {
+    if (isOwner && statsInSidebar && rawDisplayed.length > 0 && onClearFilters) {
+      return (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-xl font-semibold">Bids</h3>
+            <p className="text-sm text-muted-foreground mt-1">Review bids below. New bids appear in real time.</p>
+          </div>
+          <Card className="border-dashed">
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground font-medium">No bids match your filters</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Try loosening your filters or clear them to see all {rawDisplayed.length} bid{rawDisplayed.length === 1 ? "" : "s"}.
+              </p>
+              <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onClearFilters}>
+                <X className="h-4 w-4" />
+                Clear all filters
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
@@ -431,6 +516,7 @@ export const BidsList = ({
               isOwner={true}
               isFixedPrice={isFixedPrice}
               isOnline={onlineDiggers.has(bid.digger_profiles.id)}
+              hasActiveChat={conversationDiggerIds.has(bid.digger_profiles.id)}
               onAccept={() => handleAcceptBid(bid.id)}
               onConfirmHire={loadBids}
               onCompleteWork={loadBids}

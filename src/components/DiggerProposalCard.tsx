@@ -15,12 +15,46 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  Info,
 } from "lucide-react";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatRealName, getDiggerProfileUrl } from "@/pages/DiggerDetail/utils";
 import { getCodeForCountryName } from "@/config/regionOptions";
 import { cn } from "@/lib/utils";
+
+/** User-friendly status label, tooltip, and optional next-step reminder for Giggers. */
+const BID_STATUS_CONFIG: Record<
+  string,
+  { label: string; tooltip: string; variant: "default" | "secondary" | "destructive" | "outline"; reminder?: string }
+> = {
+  pending: {
+    label: "Under review",
+    tooltip: "Awaiting your decision. Chat to clarify, then Award when ready.",
+    variant: "secondary",
+  },
+  accepted: {
+    label: "Accepted",
+    tooltip: "You awarded this bid. Confirm hire to start, or mark work complete when done.",
+    variant: "default",
+  },
+  rejected: {
+    label: "Declined",
+    tooltip: "This bid was not selected for this gig.",
+    variant: "destructive",
+  },
+  withdrawn: {
+    label: "Withdrawn",
+    tooltip: "The freelancer withdrew this bid.",
+    variant: "outline",
+  },
+  completed: {
+    label: "Completed",
+    tooltip: "Work has been marked complete.",
+    variant: "default",
+  },
+};
 
 const PROPOSAL_PREVIEW_LENGTH = 280;
 
@@ -62,6 +96,8 @@ interface DiggerProposalCardProps {
   isOwner: boolean;
   isFixedPrice?: boolean;
   isOnline?: boolean;
+  /** When true, show "Chatting" / In progress badge (conversation exists for this gig + digger). */
+  hasActiveChat?: boolean;
   onAccept?: () => void;
   onConfirmHire?: () => void;
   onCompleteWork?: () => void;
@@ -77,6 +113,7 @@ export function DiggerProposalCard({
   isOwner,
   isFixedPrice = false,
   isOnline = false,
+  hasActiveChat = false,
   onAccept,
   onConfirmHire,
   onCompleteWork,
@@ -274,25 +311,68 @@ export function DiggerProposalCard({
           )}
         </div>
 
-        {/* Status & actions */}
+        {/* Status & actions — clear labels, tooltips, reminders, and Chatting indicator */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/50">
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={
-                bid.status === "accepted"
-                  ? "default"
-                  : bid.status === "rejected"
-                    ? "destructive"
-                    : bid.status === "withdrawn"
-                      ? "outline"
-                      : "secondary"
-              }
-            >
-              {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
-            </Badge>
-            {bid.awarded && (
-              <Badge className="bg-green-600">Hired ✓</Badge>
-            )}
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex cursor-default">
+                    <Badge
+                      variant={
+                        bid.status === "accepted" && bid.awarded
+                          ? "default"
+                          : (BID_STATUS_CONFIG[bid.status]?.variant ?? "secondary")
+                      }
+                      className={cn(
+                        bid.status === "accepted" && bid.awarded && "bg-green-600 hover:bg-green-600"
+                      )}
+                    >
+                      {bid.awarded ? "Hired ✓" : (BID_STATUS_CONFIG[bid.status]?.label ?? bid.status)}
+                    </Badge>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[240px]">
+                  <p className="text-xs">
+                    {bid.awarded
+                      ? "Freelancer is hired. Mark work complete when done."
+                      : BID_STATUS_CONFIG[bid.status]?.tooltip ?? `Status: ${bid.status}`}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+              {bid.status === "pending" && hasActiveChat && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex cursor-default">
+                      <Badge variant="outline" className="gap-1 border-primary/50 text-primary font-medium">
+                        <MessageSquare className="h-3 w-3" />
+                        Chatting
+                      </Badge>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[220px]">
+                    <p className="text-xs">You’re in conversation. Award when you’re ready to hire.</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            {isOwner &&
+              (bid.status === "pending" && hasActiveChat ? (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3.5 w-3.5 shrink-0" />
+                  In conversation — award when ready.
+                </p>
+              ) : bid.status === "accepted" && !bid.awarded ? (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3.5 w-3.5 shrink-0" />
+                  Next: Confirm hire to start the project.
+                </p>
+              ) : bid.status === "accepted" && bid.awarded && !isFixedPrice ? (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3.5 w-3.5 shrink-0" />
+                  Mark work complete when the job is done.
+                </p>
+              ) : null)}
           </div>
           {isOwner && (
             <div className="flex gap-2">
