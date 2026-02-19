@@ -318,26 +318,26 @@ const DiggerDetail = () => {
 
     setReferences((referencesData || []) as Reference[]);
 
-    const { data: certsData } = await supabase
-      .from("digger_certifications")
+    const { data: certsData } = await (supabase
+      .from("digger_certifications" as any))
       .select("*")
       .eq("digger_profile_id", profileId)
       .order("sort_order", { ascending: true });
-    setCertifications((certsData || []) as DiggerCertification[]);
+    setCertifications((certsData || []) as unknown as DiggerCertification[]);
 
-    const { data: expData } = await supabase
-      .from("digger_experience")
+    const { data: expData } = await (supabase
+      .from("digger_experience" as any))
       .select("*")
       .eq("digger_profile_id", profileId)
       .order("sort_order", { ascending: true });
-    setExperiences((expData || []) as DiggerExperience[]);
+    setExperiences((expData || []) as unknown as DiggerExperience[]);
 
-    const { data: portfolioData } = await supabase
-      .from("digger_portfolio_items")
+    const { data: portfolioData } = await (supabase
+      .from("digger_portfolio_items" as any))
       .select("*")
       .eq("digger_profile_id", profileId)
       .order("sort_order", { ascending: true });
-    setPortfolioItems((portfolioData as DiggerPortfolioItem[]) || []);
+    setPortfolioItems((portfolioData as unknown as DiggerPortfolioItem[]) || []);
 
     setLoading(false);
 
@@ -390,7 +390,7 @@ const DiggerDetail = () => {
         const current = (digger.social_links && typeof digger.social_links === "object" ? { ...(digger.social_links as Record<string, string>) } : {}) as Record<string, string>;
         current.github = profileUrl;
         const nextLinks = Object.fromEntries(Object.entries(current).filter(([, v]) => Boolean(String(v).trim())));
-        await supabase.from("digger_profiles").update({ social_links: nextLinks }).eq("id", digger.id);
+        await (supabase.from("digger_profiles") as any).update({ social_links: nextLinks }).eq("id", digger.id);
         await loadData();
         setGithubModalOpen(false);
         toast.success("GitHub profile connected.");
@@ -433,7 +433,7 @@ const DiggerDetail = () => {
         const current = (digger.social_links && typeof digger.social_links === "object" ? { ...(digger.social_links as Record<string, string>) } : {}) as Record<string, string>;
         current[platform] = profileUrl;
         const nextLinks = Object.fromEntries(Object.entries(current).filter(([, v]) => Boolean(String(v).trim())));
-        await supabase.from("digger_profiles").update({ social_links: nextLinks }).eq("id", digger.id);
+        await (supabase.from("digger_profiles") as any).update({ social_links: nextLinks }).eq("id", digger.id);
         await loadData();
         setSectionEditor({ open: false, section: null });
         const label = platform === "twitter" ? "X / Twitter" : platform.charAt(0).toUpperCase() + platform.slice(1);
@@ -811,7 +811,7 @@ const DiggerDetail = () => {
         delete current.github;
       }
       const nextLinks = Object.fromEntries(Object.entries(current).filter(([, v]) => Boolean(String(v).trim())));
-      await supabase.from("digger_profiles").update({ social_links: Object.keys(nextLinks).length ? nextLinks : null }).eq("id", digger.id);
+      await (supabase.from("digger_profiles") as any).update({ social_links: Object.keys(nextLinks).length ? nextLinks : null }).eq("id", digger.id);
       await loadData();
       setGithubModalOpen(false);
       toast.success(trimmed ? "GitHub profile connected." : "GitHub link removed.");
@@ -828,10 +828,10 @@ const DiggerDetail = () => {
     try {
       sessionStorage.setItem(SOCIAL_CONNECT_STORAGE_KEY, JSON.stringify({ diggerId: digger.id, platform }));
       const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search || ""}`;
-      const { error } = await supabase.auth.linkIdentity({
+      const { error } = await (supabase.auth as any).linkIdentity({
         provider: platform,
         options: { redirectTo },
-      });
+      } as any);
       if (error) {
         sessionStorage.removeItem(SOCIAL_CONNECT_STORAGE_KEY);
         const msg = error.message || "";
@@ -877,12 +877,12 @@ const DiggerDetail = () => {
         const nextNames = Array.from(new Set(removeBlockedSkills(selectedSkillsDraft.map((s) => s.trim()).filter(Boolean))));
         const dbNames = nextNames.filter((n) => dbSkillNameSet.has(n));
         const customNames = nextNames.filter((n) => !dbSkillNameSet.has(n));
-        const { data: skillRows } = await supabase.from("skills").select("id").in("name", dbNames);
-        const skillIds = (skillRows || []).map((r) => r.id);
-        await supabase.from("digger_skills").delete().eq("digger_profile_id", digger.id);
+        const { data: skillRows } = await (supabase.from("skills" as any)).select("id").in("name", dbNames);
+        const skillIds = (skillRows || []).map((r: any) => r.id);
+        await (supabase.from("digger_skills" as any)).delete().eq("digger_profile_id", digger.id);
         if (skillIds.length > 0) {
-          await supabase.from("digger_skills").insert(
-            skillIds.map((skill_id) => ({ digger_profile_id: digger.id, skill_id }))
+          await (supabase.from("digger_skills" as any)).insert(
+            skillIds.map((skill_id: string) => ({ digger_profile_id: digger.id, skill_id }))
           );
         }
         await supabase
@@ -953,20 +953,20 @@ const DiggerDetail = () => {
         // Keep base location shared across all profiles for this digger user.
         await supabase
           .from("digger_profiles")
-          .update({ country: countryVal, city: cityVal, state: stateVal, location: locationText })
+          .update({ country: countryVal, city: cityVal, state: stateVal, location: locationText } as any)
           .eq("user_id", digger.user_id);
         // Also sync shared identity location used by Gigger + header.
-        await supabase
-          .from("profiles")
+        await (supabase
+          .from("profiles") as any)
           .update({ country: countryVal, city: cityVal, state: stateVal })
           .eq("id", digger.user_id);
       } else if (sectionEditor.section === "service_location") {
-        await supabase.from("digger_profiles").update({ service_countries: serviceLocationDraft.length ? serviceLocationDraft : null }).eq("id", digger.id);
+        await (supabase.from("digger_profiles") as any).update({ service_countries: serviceLocationDraft.length ? serviceLocationDraft : null }).eq("id", digger.id);
       } else if (sectionEditor.section === "website") {
-        await supabase.from("digger_profiles").update({ website_url: websiteDraft.trim() || null }).eq("id", digger.id);
+        await (supabase.from("digger_profiles") as any).update({ website_url: websiteDraft.trim() || null }).eq("id", digger.id);
       } else if (sectionEditor.section === "social") {
         const nextLinks = sanitizeSocialLinks(socialLinksDraft);
-        await supabase.from("digger_profiles").update({ social_links: Object.keys(nextLinks).length ? nextLinks : null }).eq("id", digger.id);
+        await (supabase.from("digger_profiles") as any).update({ social_links: Object.keys(nextLinks).length ? nextLinks : null }).eq("id", digger.id);
       }
 
       if (["about", "skills", "profession", "work", "portfolio", "availability", "location", "service_location", "website", "social"].includes(sectionEditor.section)) {
@@ -996,30 +996,30 @@ const DiggerDetail = () => {
         sort_order: i,
       };
       if (d.id && !String(d.id).startsWith("draft-")) {
-        const { error } = await supabase.from("digger_portfolio_items").update(payload).eq("id", d.id).eq("digger_profile_id", digger.id);
+        const { error } = await (supabase.from("digger_portfolio_items" as any)).update(payload).eq("id", d.id).eq("digger_profile_id", digger.id);
         if (error) throw error;
         savedIds.push(d.id);
       } else {
-        const { data, error } = await supabase
-          .from("digger_portfolio_items")
+        const { data, error } = await (supabase
+          .from("digger_portfolio_items" as any))
           .insert({ digger_profile_id: digger.id, ...payload })
           .select("id")
           .single();
         if (error) throw error;
-        if (data?.id) savedIds.push(data.id);
+        if ((data as any)?.id) savedIds.push((data as any).id);
       }
     }
-    const { data: existing } = await supabase.from("digger_portfolio_items").select("id").eq("digger_profile_id", digger.id);
-    const toDelete = (existing || []).filter((r) => !savedIds.includes(r.id)).map((r) => r.id);
+    const { data: existing } = await (supabase.from("digger_portfolio_items" as any)).select("id").eq("digger_profile_id", digger.id);
+    const toDelete = (existing || []).filter((r: any) => !savedIds.includes(r.id)).map((r: any) => r.id);
     if (toDelete.length > 0) {
-      await supabase.from("digger_portfolio_items").delete().in("id", toDelete);
+      await (supabase.from("digger_portfolio_items" as any)).delete().in("id", toDelete);
     }
-    const { data: updated } = await supabase
-      .from("digger_portfolio_items")
+    const { data: updated } = await (supabase
+      .from("digger_portfolio_items" as any))
       .select("*")
       .eq("digger_profile_id", digger.id)
       .order("sort_order", { ascending: true });
-    setPortfolioItems((updated as DiggerPortfolioItem[]) || []);
+    setPortfolioItems((updated as unknown as DiggerPortfolioItem[]) || []);
     setSectionEditor({ open: false, section: null });
     toast.success("Portfolio saved");
     await loadData();
@@ -2223,12 +2223,12 @@ const DiggerDetail = () => {
                 certifications={certifications}
                 scrollToCertificationId={certificationEditId}
                 onSaved={async () => {
-                  const { data } = await supabase
-                    .from("digger_certifications")
+                  const { data } = await (supabase
+                    .from("digger_certifications" as any))
                     .select("*")
                     .eq("digger_profile_id", digger.id)
                     .order("sort_order", { ascending: true });
-                  setCertifications((data || []) as DiggerCertification[]);
+                  setCertifications((data || []) as unknown as DiggerCertification[]);
                 }}
               />
             )}
@@ -2243,12 +2243,12 @@ const DiggerDetail = () => {
                 experiences={experiences}
                 scrollToExperienceId={experienceEditId}
                 onSaved={async () => {
-                  const { data } = await supabase
-                    .from("digger_experience")
+                  const { data } = await (supabase
+                    .from("digger_experience" as any))
                     .select("*")
                     .eq("digger_profile_id", digger.id)
                     .order("sort_order", { ascending: true });
-                  setExperiences((data || []) as DiggerExperience[]);
+                  setExperiences((data || []) as unknown as DiggerExperience[]);
                 }}
               />
             )}
@@ -3631,7 +3631,7 @@ const DiggerDetail = () => {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => (githubDraft.trim() ? requestConfirmLink("github") : handleSaveGithub())}
+                  onClick={() => handleSaveGithub()}
                   disabled={githubSaving}
                 >
                   {githubSaving ? "Saving..." : "Save link"}

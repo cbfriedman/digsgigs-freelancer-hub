@@ -318,15 +318,15 @@ export function DiggerInlineProfileEditor({
       if (error) throw error;
 
       if (effectiveProfileId && skills.length > 0) {
-        const { data: skillRows } = await supabase.from("skills").select("id").in("name", skills);
+        const { data: skillRows } = await (supabase.from("skills" as any)).select("id").in("name", skills);
         if (skillRows?.length) {
-          await supabase.from("digger_skills").delete().eq("digger_profile_id", effectiveProfileId);
-          await supabase.from("digger_skills").insert(
-            skillRows.map((r) => ({ digger_profile_id: effectiveProfileId, skill_id: r.id }))
+          await (supabase.from("digger_skills" as any)).delete().eq("digger_profile_id", effectiveProfileId);
+          await (supabase.from("digger_skills" as any)).insert(
+            skillRows.map((r: any) => ({ digger_profile_id: effectiveProfileId, skill_id: r.id }))
           );
         }
       } else if (effectiveProfileId && skills.length === 0) {
-        await supabase.from("digger_skills").delete().eq("digger_profile_id", effectiveProfileId);
+        await (supabase.from("digger_skills" as any)).delete().eq("digger_profile_id", effectiveProfileId);
       }
 
       const { error: deleteAssignmentsError } = await supabase

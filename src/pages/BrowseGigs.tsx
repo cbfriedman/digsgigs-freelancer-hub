@@ -166,8 +166,8 @@ const BrowseGigs = () => {
           const row = payload.new as { id: string; status: string };
           if (row?.status !== "open") return;
           try {
-            const { data: newGig, error } = await supabase
-              .from("gigs")
+            const { data: newGig, error } = await (supabase
+              .from("gigs") as any)
               .select(
                 `
                 id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
@@ -180,8 +180,8 @@ const BrowseGigs = () => {
               .eq("id", row.id)
               .single();
             if (error || !newGig) return;
-            setGigs((prev) => {
-              if (prev.some((g) => g.id === newGig.id)) return prev;
+            setGigs((prev: any) => {
+              if (prev.some((g: any) => g.id === newGig.id)) return prev;
               return [newGig as Gig, ...prev];
             });
           } catch {
@@ -292,8 +292,8 @@ const BrowseGigs = () => {
     const allList = categoriesData || [];
     setAllCategories(sortCategoriesForDisplay(allList));
 
-    let query = supabase
-      .from("gigs")
+    let query = (supabase
+      .from("gigs") as any)
       .select(`
         id, consumer_id, title, description, budget_min, budget_max, timeline, location, category_id,
         preferred_regions, status, created_at, bumped_at, deadline, poster_country, skills_required, purchase_count,
@@ -678,10 +678,10 @@ const BrowseGigs = () => {
                             <span>Due {new Date(gig.deadline).toLocaleDateString()}</span>
                           </div>
                         )}
-                        {(gig.poster_country ?? (gig as Record<string, unknown>).poster_country) && (
-                          <div className="flex items-center gap-1.5" title={String(gig.poster_country ?? (gig as Record<string, unknown>).poster_country ?? "").trim()}>
+                        {(gig.poster_country ?? (gig as unknown as Record<string, unknown>).poster_country) && (
+                          <div className="flex items-center gap-1.5" title={String(gig.poster_country ?? (gig as unknown as Record<string, unknown>).poster_country ?? "").trim()}>
                             {(() => {
-                              const country = String(gig.poster_country ?? (gig as Record<string, unknown>).poster_country ?? "").trim();
+                              const country = String(gig.poster_country ?? (gig as unknown as Record<string, unknown>).poster_country ?? "").trim();
                               const code = country ? getCodeForCountryName(country) : "";
                               const flagEmoji = country ? getFlagForCountryName(country) : "";
                               return (

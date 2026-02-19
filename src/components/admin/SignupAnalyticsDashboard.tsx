@@ -151,7 +151,7 @@ export const SignupAnalyticsDashboard = () => {
             "gigger_registered",
             "signup_started",
           ])
-          .order("created_at", { ascending: false })) as Promise<{ data: SignupData[] | null; error: any }>,
+          .order("created_at", { ascending: false })) as unknown as Promise<{ data: SignupData[] | null; error: any }>,
         supabase.from("admin_blocked_ips" as any).select("id, ip_address").order("ip_address"),
       ]) as [{ data: SignupData[] | null; error: any }, { data: { id: string; ip_address: string }[] | null; error: any }];
 

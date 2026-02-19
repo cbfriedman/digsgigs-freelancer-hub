@@ -166,14 +166,14 @@ export default function GiggerDetail() {
       let gigList: (GigRow & { awarded_at?: string | null })[] = [];
       const fetchAll = async () => {
         const [profileRes, giggerRes, diggerRes, gigsRes] = await Promise.all([
-          supabase.from("profiles").select("id, full_name, avatar_url, about_me, cover_photo_url, country, timezone, email, phone, email_verified, phone_verified, payment_verified, id_verified, social_verified, handle, created_at, profile_title, state, city").eq("id", userId).maybeSingle(),
-          supabase.from("gigger_profiles").select("user_id, show_to_diggers").eq("user_id", userId).maybeSingle(),
+          (supabase.from("profiles") as any).select("id, full_name, avatar_url, about_me, cover_photo_url, country, timezone, email, phone, email_verified, phone_verified, payment_verified, id_verified, social_verified, handle, created_at, profile_title, state, city").eq("id", userId).maybeSingle(),
+          (supabase.from("gigger_profiles" as any)).select("user_id, show_to_diggers").eq("user_id", userId).maybeSingle(),
           supabase.from("digger_profiles").select("profile_image_url, country, location").eq("user_id", userId).order("created_at", { ascending: true }).limit(1).maybeSingle(),
           supabase.from("gigs").select("id, title, status, budget_min, budget_max, location, created_at, awarded_at").eq("consumer_id", userId).order("created_at", { ascending: false }),
         ]);
         return {
-          profileData: profileRes.data as ProfileRow | null,
-          giggerData: giggerRes.data as GiggerProfileRow | null,
+          profileData: profileRes.data as unknown as ProfileRow | null,
+          giggerData: giggerRes.data as unknown as GiggerProfileRow | null,
           diggerData: diggerRes.data as DiggerFallbackRow | null,
           gigList: (gigsRes.data ?? []) as (GigRow & { awarded_at?: string | null })[],
         };
@@ -348,7 +348,7 @@ export default function GiggerDetail() {
       const { error: uploadError } = await supabase.storage.from("profile-photos").upload(fileName, file, { cacheControl: "3600", upsert: false });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from("profile-photos").getPublicUrl(fileName);
-      const { error } = await supabase.from("profiles").update({ cover_photo_url: publicUrl }).eq("id", userId);
+      const { error } = await (supabase.from("profiles") as any).update({ cover_photo_url: publicUrl }).eq("id", userId);
       if (error) throw error;
       setProfile((p) => (p ? { ...p, cover_photo_url: publicUrl } : null));
       setCoverPhotoDialogOpen(false);
@@ -367,7 +367,7 @@ export default function GiggerDetail() {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser) await ensureProfileFromAuth(authUser);
       }
-      const { error } = await supabase.from("profiles").update({ cover_photo_url: null }).eq("id", userId);
+      const { error } = await (supabase.from("profiles") as any).update({ cover_photo_url: null }).eq("id", userId);
       if (error) throw error;
       setProfile((p) => (p ? { ...p, cover_photo_url: null } : null));
       setCoverPhotoDialogOpen(false);
@@ -426,8 +426,8 @@ export default function GiggerDetail() {
         city: cityVal,
       };
 
-      const { error: fullSaveError } = await supabase
-        .from("profiles")
+      const { error: fullSaveError } = await (supabase
+        .from("profiles") as any)
         .update(updatePayload)
         .eq("id", userId);
 
@@ -439,8 +439,8 @@ export default function GiggerDetail() {
       if (fullSaveError && !isMissingStateCityColumn) throw fullSaveError;
 
       if (isMissingStateCityColumn) {
-        const { error: fallbackError } = await supabase
-          .from("profiles")
+        const { error: fallbackError } = await (supabase
+          .from("profiles") as any)
           .update({ country: countryVal })
           .eq("id", userId);
         if (fallbackError) throw fallbackError;

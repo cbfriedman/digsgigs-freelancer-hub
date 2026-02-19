@@ -127,7 +127,8 @@ serve(async (req) => {
     }
 
     // Get or create conversation
-    const { data: conversation, error: convError } = await supabase
+    let conversation: any;
+    const { data: existingConv, error: convError } = await supabase
       .from('pre_award_conversations')
       .select('id')
       .eq('gig_id', gigId)
@@ -137,6 +138,8 @@ serve(async (req) => {
     if (convError && convError.code !== 'PGRST116') {
       throw convError;
     }
+
+    conversation = existingConv;
 
     if (!conversation) {
       const { data: newConv, error: createError } = await supabase

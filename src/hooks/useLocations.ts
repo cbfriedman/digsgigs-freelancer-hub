@@ -27,8 +27,8 @@ export function useCountriesSearch(query: string) {
   return useQuery({
     queryKey: [COUNTRIES_QUERY_KEY, query],
     queryFn: async (): Promise<CountryRow[]> => {
-      let q = supabase
-        .from("countries")
+      let q = (supabase
+        .from("countries" as any))
         .select("id, code_alpha2, name")
         .order("name");
       const trimmed = query.trim();
@@ -37,7 +37,7 @@ export function useCountriesSearch(query: string) {
       }
       const { data, error } = await q.limit(300);
       if (error) throw error;
-      return (data ?? []) as CountryRow[];
+      return (data ?? []) as unknown as CountryRow[];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -49,8 +49,8 @@ export function useRegionsByCountry(countryId: string | null, query: string) {
     queryKey: [REGIONS_QUERY_KEY, countryId, query],
     queryFn: async (): Promise<RegionRow[]> => {
       if (!countryId) return [];
-      let q = supabase
-        .from("regions")
+      let q = (supabase
+        .from("regions" as any))
         .select("id, name, type")
         .eq("country_id", countryId)
         .order("name");
@@ -60,7 +60,7 @@ export function useRegionsByCountry(countryId: string | null, query: string) {
       }
       const { data, error } = await q.limit(200);
       if (error) throw error;
-      return (data ?? []) as RegionRow[];
+      return (data ?? []) as unknown as RegionRow[];
     },
     enabled: !!countryId,
     staleTime: 5 * 60 * 1000,
@@ -77,8 +77,8 @@ export function useCitiesByLocation(
     queryKey: [CITIES_QUERY_KEY, countryId, regionId, query],
     queryFn: async (): Promise<CityRow[]> => {
       if (!countryId) return [];
-      let q = supabase
-        .from("cities")
+      let q = (supabase
+        .from("cities" as any))
         .select("id, name")
         .eq("country_id", countryId)
         .order("name");
@@ -93,7 +93,7 @@ export function useCitiesByLocation(
       }
       const { data, error } = await q.limit(200);
       if (error) throw error;
-      return (data ?? []) as CityRow[];
+      return (data ?? []) as unknown as CityRow[];
     },
     enabled: !!countryId,
     staleTime: 5 * 60 * 1000,
