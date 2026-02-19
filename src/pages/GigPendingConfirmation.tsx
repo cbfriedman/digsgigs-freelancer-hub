@@ -78,7 +78,7 @@ const GigPendingConfirmation = () => {
           location: gig.location || "Remote",
           budgetMin: gig.budget_min,
           budgetMax: gig.budget_max,
-          keywords: gig.skills_required ?? [],
+          keywords: (gig as any).skills_required ?? [],
         },
       });
 

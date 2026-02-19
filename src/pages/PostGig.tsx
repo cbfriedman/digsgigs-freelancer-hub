@@ -71,8 +71,8 @@ const PostGig = () => {
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
-      const { data } = await supabase
-        .from("profiles")
+      const { data } = await (supabase
+        .from("profiles") as any)
         .select("country, full_name, email, phone")
         .eq("id", user.id)
         .single();
@@ -313,10 +313,10 @@ const PostGig = () => {
 
       // Sync skills to gig_skills junction table
       if (skillsRequired.length > 0) {
-        const { data: skillRows } = await supabase.from("skills").select("id").in("name", skillsRequired);
+        const { data: skillRows } = await (supabase.from("skills" as any)).select("id").in("name", skillsRequired);
         if (skillRows?.length) {
-          await supabase.from("gig_skills").insert(
-            skillRows.map((r) => ({ gig_id: gigData.id, skill_id: r.id }))
+          await (supabase.from("gig_skills" as any)).insert(
+            (skillRows as any[]).map((r: any) => ({ gig_id: gigData.id, skill_id: r.id }))
           );
         }
       }

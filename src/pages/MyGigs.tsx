@@ -123,12 +123,12 @@ const MyGigs = () => {
       setPlatformRefGigIds(new Set());
       return;
     }
-    const { data: refs } = await supabase
-      .from("references")
+    const { data: refs } = await (supabase
+      .from("references" as any))
       .select("gig_id")
       .in("gig_id", completedWithDigger.map((g) => g.id))
       .eq("verification_tier", "platform");
-    const ids = new Set((refs || []).map((r: { gig_id: string }) => r.gig_id));
+    const ids = new Set((refs || []).map((r: any) => r.gig_id));
     setPlatformRefGigIds(ids);
   };
 

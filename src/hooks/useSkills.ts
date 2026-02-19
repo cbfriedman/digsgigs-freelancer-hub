@@ -20,8 +20,8 @@ export function useSkills() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from("skills")
+      const { data, error } = await (supabase
+        .from("skills" as any))
         .select(`
           id,
           name,
@@ -33,7 +33,7 @@ export function useSkills() {
         .order("display_order", { ascending: true })
         .order("name", { ascending: true });
 
-      if (!error) setSkills((data as SkillWithCategory[]) || []);
+      if (!error) setSkills(((data as any) as SkillWithCategory[]) || []);
       setLoading(false);
     })();
   }, []);

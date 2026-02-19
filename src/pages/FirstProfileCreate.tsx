@@ -153,8 +153,8 @@ export default function FirstProfileCreate() {
 
         let giggerProfileExists = false;
         if (hasGigger) {
-          const { data: gp } = await supabase.from("gigger_profiles").select("user_id").eq("user_id", user.id).limit(1).maybeSingle();
-          giggerProfileExists = !!gp?.user_id;
+          const { data: gp } = await (supabase.from("gigger_profiles" as any)).select("user_id").eq("user_id", user.id).limit(1).maybeSingle();
+          giggerProfileExists = !!(gp as any)?.user_id;
         }
 
         const needDiggerSetup = hasDigger && !diggerProfileExists;
@@ -196,12 +196,12 @@ export default function FirstProfileCreate() {
           .limit(1)
           .maybeSingle();
         if (diggerLoc?.country) {
-          setGiggerCountry(diggerLoc.country);
-          if (diggerLoc.state) setGiggerState(diggerLoc.state);
+          setGiggerLocationValue((prev) => ({ ...prev, countryName: diggerLoc.country }));
+          if (diggerLoc.state) setGiggerLocationValue((prev) => ({ ...prev, regionName: diggerLoc.state }));
           setLocationLocked(true);
         } else if (profile?.country) {
-          setGiggerCountry(profile.country);
-          if (profile.state) setGiggerState(profile.state);
+          setGiggerLocationValue((prev) => ({ ...prev, countryName: profile.country }));
+          if (profile.state) setGiggerLocationValue((prev) => ({ ...prev, regionName: profile.state }));
         }
       } catch {
         /* ignore */
@@ -220,8 +220,8 @@ export default function FirstProfileCreate() {
           .eq("id", user.id)
           .single();
         if (data?.country) {
-          setCountry(data.country);
-          if (data.state) setSelectedState(data.state);
+          setLocationValue((prev) => ({ ...prev, countryName: data.country }));
+          if (data.state) setLocationValue((prev) => ({ ...prev, regionName: data.state }));
           setLocationLocked(true);
         }
       } catch {
@@ -312,8 +312,8 @@ export default function FirstProfileCreate() {
       toast.success("Profile created! Complete your profile to attract more clients.");
       const { data: rolesAfter } = await (supabase.rpc as any)("get_user_app_roles_safe", { _user_id: user.id });
       const hasGigger = Array.isArray(rolesAfter) && rolesAfter.some((r: { app_role: string }) => r.app_role === "gigger");
-      const { data: gp } = await supabase.from("gigger_profiles").select("user_id").eq("user_id", user.id).limit(1).maybeSingle();
-      const needGiggerSetup = hasGigger && !gp?.user_id;
+      const { data: gp } = await (supabase.from("gigger_profiles" as any)).select("user_id").eq("user_id", user.id).limit(1).maybeSingle();
+      const needGiggerSetup = hasGigger && !(gp as any)?.user_id;
       if (needGiggerSetup) {
         setDiggerCompleted(true);
         setHasDiggerProfile(true);
