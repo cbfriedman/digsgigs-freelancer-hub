@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,35 @@ import { EscrowContractDialog } from "@/components/EscrowContractDialog";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
 import { DiggerProposalCard } from "@/components/DiggerProposalCard";
+import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import { TrendingUp, DollarSign, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+
+export interface BidFilters {
+  search: string;
+  priceMin: string;
+  priceMax: string;
+  timeline: string;
+  minRating: string;
+  location: string;
+}
+
+export const defaultBidFilters: BidFilters = {
+  search: "",
+  priceMin: "",
+  priceMax: "",
+  timeline: "",
+  minRating: "",
+  location: "",
+};
+
+export interface BidStats {
+  totalBids: number;
+  avgPrice: number;
+  lowestAmount: number;
+  highestAmount: number;
+}
 
 interface Bid {
   id: string;
@@ -43,9 +69,68 @@ interface Bid {
     certifications?: string[];
     city?: string;
     state?: string;
+    country?: string | null;
+    custom_occupation_title?: string | null;
+    profile_name?: string | null;
     offers_free_estimates?: boolean;
+    profiles?: { full_name: string | null } | null;
   };
   reference_count?: number;
+}
+
+function applyBidFilters(bids: Bid[], filters: BidFilters): Bid[] {
+  return bids.filter((b) => {
+    const search = (filters.search || "").trim().toLowerCase();
+    if (search) {
+      const proposal = (b.proposal || "").toLowerCase();
+      const name = (b.digger_profiles?.profiles?.full_name || "").toLowerCase();
+      const headline =
+        [b.digger_profiles?.custom_occupation_title, b.digger_profiles?.profile_name, b.digger_profiles?.profession]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+      const handle = (b.digger_profiles?.handle || "").toLowerCase();
+      const location = [b.digger_profiles?.city, b.digger_profiles?.state, b.digger_profiles?.country]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const match =
+        proposal.includes(search) ||
+        name.includes(search) ||
+        headline.includes(search) ||
+        handle.includes(search.replace(/^@/, "")) ||
+        location.includes(search);
+      if (!match) return false;
+    }
+    const priceMin = filters.priceMin.trim() ? parseFloat(filters.priceMin) : null;
+    const priceMax = filters.priceMax.trim() ? parseFloat(filters.priceMax) : null;
+    if (priceMin != null && !isNaN(priceMin)) {
+      const bidMax = b.amount_max ?? b.amount;
+      if (bidMax < priceMin) return false;
+    }
+    if (priceMax != null && !isNaN(priceMax)) {
+      const bidMin = b.amount_min ?? b.amount;
+      if (bidMin > priceMax) return false;
+    }
+    if ((filters.timeline || "").trim()) {
+      const t = (b.timeline || "").toLowerCase();
+      if (!t.includes(filters.timeline.trim().toLowerCase())) return false;
+    }
+    const minRating = filters.minRating.trim() ? parseFloat(filters.minRating) : null;
+    if (minRating != null && !isNaN(minRating)) {
+      const r = b.digger_profiles?.average_rating ?? 0;
+      if (r < minRating) return false;
+    }
+    const loc = (filters.location || "").trim().toLowerCase();
+    if (loc) {
+      const diggerLoc = [b.digger_profiles?.city, b.digger_profiles?.state, b.digger_profiles?.country]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!diggerLoc.includes(loc)) return false;
+    }
+    return true;
+  });
 }
 
 interface BidsListProps {
@@ -55,12 +140,34 @@ interface BidsListProps {
   isFixedPrice?: boolean;
   /** When viewer is a digger (not owner), pass their digger profile id so only their bid(s) are shown. */
   currentDiggerId?: string | null;
+  /** For Gigger: filter state (owned by parent so sidebar can show filters). */
+  filterState?: BidFilters;
+  onFilterChange?: (filters: BidFilters) => void;
+  /** For Gigger: report stats for the right sidebar (filtered list). */
+  onStats?: (stats: BidStats) => void;
+  /** When true and isOwner, do not render the stats row (stats go in sidebar). */
+  statsInSidebar?: boolean;
 }
 
-export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, currentDiggerId }: BidsListProps) => {
+export const BidsList = ({
+  gigId,
+  gigTitle,
+  isOwner,
+  isFixedPrice = false,
+  currentDiggerId,
+  filterState = defaultBidFilters,
+  onFilterChange,
+  onStats,
+  statsInSidebar = false,
+}: BidsListProps) => {
   const { toast } = useToast();
+  const { onlineDiggers } = useDiggerPresence();
   const [bids, setBids] = useState<Bid[]>([]);
-  const displayedBids = isOwner ? bids : (currentDiggerId ? bids.filter((b) => (b as any).digger_id === currentDiggerId) : bids);
+  const rawDisplayed = isOwner ? bids : (currentDiggerId ? bids.filter((b) => (b as any).digger_id === currentDiggerId) : bids);
+  const displayedBids = useMemo(
+    () => (isOwner && onFilterChange ? applyBidFilters(rawDisplayed, filterState) : rawDisplayed),
+    [isOwner, rawDisplayed, filterState, onFilterChange]
+  );
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [escrowDialogOpen, setEscrowDialogOpen] = useState(false);
@@ -91,7 +198,11 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, curre
             certifications,
             city,
             state,
-            offers_free_estimates
+            country,
+            custom_occupation_title,
+            profile_name,
+            offers_free_estimates,
+            profiles:profiles!digger_profiles_user_id_fkey ( full_name )
           )
         `)
         .eq('gig_id', gigId)
@@ -122,6 +233,24 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, curre
   useEffect(() => {
     loadBids();
   }, [loadBids]);
+
+  // Report stats for sidebar when owner and statsInSidebar
+  useEffect(() => {
+    if (!isOwner || !onStats || !statsInSidebar) return;
+    const totalBids = displayedBids.length;
+    const avgPrice =
+      totalBids > 0
+        ? displayedBids.reduce((sum, b) => {
+            if (b.amount_min != null && b.amount_max != null) return sum + (b.amount_min + b.amount_max) / 2;
+            return sum + (b.amount_min ?? b.amount_max ?? b.amount);
+          }, 0) / totalBids
+        : 0;
+    const lowestBid = displayedBids[0];
+    const lowestAmount = lowestBid ? (lowestBid.amount_min ?? lowestBid.amount) : 0;
+    const highestBid = displayedBids[displayedBids.length - 1];
+    const highestAmount = highestBid ? (highestBid.amount_max ?? highestBid.amount) : 0;
+    onStats({ totalBids, avgPrice, lowestAmount, highestAmount });
+  }, [isOwner, onStats, statsInSidebar, displayedBids]);
 
   // Real-time: refresh bids when new proposals arrive or bids are updated
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -240,19 +369,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, curre
     );
   }
 
-  // Stats: for owner show all bids; for digger show only their bid(s)
   const totalBids = displayedBids.length;
-  const avgPrice =
-    totalBids > 0
-      ? displayedBids.reduce((sum, b) => {
-          if (b.amount_min != null && b.amount_max != null) return sum + (b.amount_min + b.amount_max) / 2;
-          return sum + (b.amount_min ?? b.amount_max ?? b.amount);
-        }, 0) / totalBids
-      : 0;
-  const lowestBid = displayedBids[0];
-  const lowestAmount = lowestBid ? (lowestBid.amount_min ?? lowestBid.amount) : 0;
-  const highestBid = displayedBids[displayedBids.length - 1];
-  const highestAmount = highestBid ? (highestBid.amount_max ?? highestBid.amount) : 0;
 
   return (
     <div className="space-y-6">
@@ -267,7 +384,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, curre
               : "Bids are anonymous until you award or unlock contact info."}
           </p>
         </div>
-        {totalBids > 0 && (
+        {totalBids > 0 && !statsInSidebar && (
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -277,13 +394,23 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, curre
             <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
               <DollarSign className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Avg</span>
-              <span className="font-semibold tabular-nums">${Math.round(avgPrice).toLocaleString()}</span>
+              <span className="font-semibold tabular-nums">
+                $
+                {Math.round(
+                  displayedBids.reduce((sum, b) => {
+                    if (b.amount_min != null && b.amount_max != null) return sum + (b.amount_min + b.amount_max) / 2;
+                    return sum + (b.amount_min ?? b.amount_max ?? b.amount);
+                  }, 0) / totalBids
+                ).toLocaleString()}
+              </span>
             </div>
-            {lowestAmount > 0 && (
+            {displayedBids[0] && (
               <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2">
                 <TrendingUp className="h-4 w-4 text-green-600" />
                 <span className="text-sm font-medium">Lowest</span>
-                <span className="font-semibold tabular-nums text-green-600">${lowestAmount.toLocaleString()}</span>
+                <span className="font-semibold tabular-nums text-green-600">
+                  ${(displayedBids[0].amount_min ?? displayedBids[0].amount).toLocaleString()}
+                </span>
               </div>
             )}
           </div>
@@ -303,6 +430,7 @@ export const BidsList = ({ gigId, gigTitle, isOwner, isFixedPrice = false, curre
               referenceCount={bid.reference_count}
               isOwner={true}
               isFixedPrice={isFixedPrice}
+              isOnline={onlineDiggers.has(bid.digger_profiles.id)}
               onAccept={() => handleAcceptBid(bid.id)}
               onConfirmHire={loadBids}
               onCompleteWork={loadBids}

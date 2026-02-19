@@ -28,6 +28,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { useRecentConversations } from "@/hooks/useRecentConversations";
 import { useRecentGigs } from "@/hooks/useRecentGigs";
+import { useRecentPostedGigs } from "@/hooks/useRecentPostedGigs";
 import { usePlatformCounts } from "@/hooks/usePlatformCounts";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -101,20 +102,13 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
   const [openNavMenu, setOpenNavMenu] = useState<string | null>(null);
   const [openUserMenu, setOpenUserMenu] = useState(false);
-  const [recentBids, setRecentBids] = useState<Array<{
-    id: string;
-    created_at: string;
-    status: string;
-    gig_id: string | null;
-    gig_title: string;
-  }>>([]);
-  const [recentBidsLoading, setRecentBidsLoading] = useState(false);
   const isDiggerMode = activeRole === "digger";
   const isGiggerMode = activeRole === "gigger";
   const hasProjectShortcut = userRoles.includes("gigger") || userRoles.includes("digger");
-  const projectMenuPath = isDiggerMode ? "/my-bids" : "/my-gigs";
-  const projectMenuTitle = isDiggerMode ? "My Bids" : "My Projects";
-  const projectEmptyLabel = isDiggerMode ? "No bids yet" : "No projects yet";
+  const { gigs: recentPostedGigs, loading: recentPostedGigsLoading } = useRecentPostedGigs(isDiggerMode && hasProjectShortcut);
+  const projectMenuPath = isDiggerMode ? "/browse-gigs" : "/my-gigs";
+  const projectMenuTitle = isDiggerMode ? "Recent posted gigs" : "My Projects";
+  const projectEmptyLabel = isDiggerMode ? "No recent gigs" : "No projects yet";
 
   // Fetch user profile photo and display name (header avatar synced with profile photo)
   useEffect(() => {
@@ -163,70 +157,6 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    if (!user?.id || !userRoles.includes("digger")) {
-      setRecentBids([]);
-      setRecentBidsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    const loadRecentBids = async () => {
-      setRecentBidsLoading(true);
-      try {
-        const { data: diggerProfile } = await supabase
-          .from("digger_profiles")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (!diggerProfile?.id) {
-          if (!cancelled) setRecentBids([]);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from("bids")
-          .select(`
-            id,
-            created_at,
-            status,
-            gig_id,
-            gigs!gig_id (
-              title
-            )
-          `)
-          .eq("digger_id", diggerProfile.id)
-          .order("created_at", { ascending: false })
-          .limit(8);
-
-        if (error) throw error;
-        const mapped = ((data as Array<{
-          id: string;
-          created_at: string;
-          status: string;
-          gig_id: string | null;
-          gigs?: { title?: string | null } | null;
-        }> | null) ?? []).map((b) => ({
-          id: b.id,
-          created_at: b.created_at,
-          status: b.status,
-          gig_id: b.gig_id,
-          gig_title: b.gigs?.title?.trim() || "Project",
-        }));
-        if (!cancelled) setRecentBids(mapped);
-      } catch {
-        if (!cancelled) setRecentBids([]);
-      } finally {
-        if (!cancelled) setRecentBidsLoading(false);
-      }
-    };
-
-    loadRecentBids();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, userRoles]);
 
   const navLinkClass = "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 px-3 py-2 rounded-md hover:bg-accent/50";
   const navLinkActiveClass = "text-foreground bg-accent/50";
@@ -642,28 +572,29 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       <ScrollArea className="h-[320px] w-full min-w-0 max-w-full overflow-hidden">
                           <div className="w-full min-w-0 max-w-full overflow-hidden pr-5">
                             {isDiggerMode ? (
-                              recentBidsLoading ? (
+                              recentPostedGigsLoading ? (
                                 <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
-                              ) : recentBids.length === 0 ? (
+                              ) : recentPostedGigs.length === 0 ? (
                                 <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
                               ) : (
                                 <ul className="py-1 w-full min-w-0 list-none">
-                                  {recentBids.map((b) => {
-                                    const timeLabel = format(new Date(b.created_at), "MMM d, yyyy");
+                                  {recentPostedGigs.map((g) => {
+                                    const timeLabel = format(new Date(g.created_at), "MMM d, yyyy");
+                                    const title = g.title || "Untitled gig";
+                                    const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                     return (
-                                      <li key={b.id} className="w-full min-w-0 overflow-hidden border-b-0">
+                                      <li key={g.id} className="w-full min-w-0 overflow-hidden border-b-0">
                                         <button
                                           type="button"
                                           className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 transition-colors overflow-hidden box-border"
                                           onClick={(e) => {
                                             e.preventDefault();
-                                            if (b.gig_id) navigate(`/gig/${b.gig_id}`);
-                                            else navigate("/my-bids");
+                                            navigate(`/gig/${g.id}`);
                                           }}
                                         >
                                           <div className="w-full min-w-0 flex items-center justify-between gap-2">
-                                            <span className="font-medium text-sm truncate min-w-0 flex-1" title={b.gig_title}>{b.gig_title}</span>
-                                            <Badge variant={b.status === "accepted" ? "default" : b.status === "rejected" ? "destructive" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{b.status}</Badge>
+                                            <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
+                                            <Badge variant="default" className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
                                           </div>
                                           <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                         </button>
@@ -998,28 +929,29 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       <ScrollArea className="h-[320px] w-full min-w-0 max-w-full overflow-hidden">
                         <div className="w-full min-w-0 max-w-full overflow-hidden pr-5">
                           {isDiggerMode ? (
-                            recentBidsLoading ? (
+                            recentPostedGigsLoading ? (
                               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">Loading...</div>
-                            ) : recentBids.length === 0 ? (
+                            ) : recentPostedGigs.length === 0 ? (
                               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">{projectEmptyLabel}</div>
                             ) : (
                               <ul className="py-1 w-full min-w-0 list-none">
-                                {recentBids.map((b) => {
-                                  const timeLabel = format(new Date(b.created_at), "MMM d, yyyy");
+                                {recentPostedGigs.map((g) => {
+                                  const timeLabel = format(new Date(g.created_at), "MMM d, yyyy");
+                                  const title = g.title || "Untitled gig";
+                                  const displayTitle = title.length > 42 ? title.slice(0, 42).trim() + "…" : title;
                                   return (
-                                    <li key={b.id} className="w-full min-w-0 overflow-hidden">
+                                    <li key={g.id} className="w-full min-w-0 overflow-hidden">
                                       <button
                                         type="button"
                                         className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border"
                                         onClick={(e) => {
                                           e.preventDefault();
-                                          if (b.gig_id) navigate(`/gig/${b.gig_id}`);
-                                          else navigate("/my-bids");
+                                          navigate(`/gig/${g.id}`);
                                         }}
                                       >
                                         <div className="w-full min-w-0 flex items-center justify-between gap-2">
-                                          <span className="font-medium text-sm truncate min-w-0 flex-1" title={b.gig_title}>{b.gig_title}</span>
-                                          <Badge variant={b.status === "accepted" ? "default" : b.status === "rejected" ? "destructive" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{b.status}</Badge>
+                                          <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
+                                          <Badge variant="default" className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
                                         </div>
                                         <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                       </button>

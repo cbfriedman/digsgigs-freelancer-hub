@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock } from "lucide-react";
+import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
-import { BidsList } from "@/components/BidsList";
+import { BidsList, defaultBidFilters, type BidFilters, type BidStats } from "@/components/BidsList";
 import { FreeEstimateDiggers } from "@/components/FreeEstimateDiggers";
 import SEOHead from "@/components/SEOHead";
 import { generateJobPostingSchema } from "@/components/StructuredData";
@@ -84,6 +86,10 @@ const GigDetail = () => {
   const { userRoles, activeRole } = useAuth();
   /** In gigger mode we hide digger-only content (bid form, budget analysis, etc.); in digger mode or no role we show it for diggers */
   const showDiggerContent = isDigger && (activeRole !== "gigger");
+  /** Bids stats for right sidebar (when owner) */
+  const [bidStats, setBidStats] = useState<BidStats | null>(null);
+  /** Bids filters (when owner) */
+  const [bidFilters, setBidFilters] = useState<BidFilters>(defaultBidFilters);
 
   useEffect(() => {
     loadData();
@@ -591,8 +597,8 @@ const GigDetail = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid lg:grid-cols-10 gap-6 lg:gap-8">
+          <div className="lg:col-span-7 space-y-6">
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
@@ -1009,19 +1015,150 @@ const GigDetail = () => {
 
             {/* Bids Section: owner sees full list; digger sees header + stats only (no bid cards) */}
             {(isOwner || showDiggerContent) && (
-              <BidsList 
-                gigId={id!} 
-                gigTitle={gig.title} 
+              <BidsList
+                gigId={id!}
+                gigTitle={gig.title}
                 isOwner={isOwner}
                 isFixedPrice={!!(gig.budget_min && gig.budget_max)}
                 currentDiggerId={diggerId}
+                filterState={bidFilters}
+                onFilterChange={setBidFilters}
+                onStats={setBidStats}
+                statsInSidebar={isOwner}
               />
             )}
           </div>
 
-          {/* Right sidebar: client info — hidden in Gigger mode; for Diggers viewing the gig */}
-          <div className="space-y-6 lg:min-w-[280px] lg:sticky lg:top-4 lg:self-start">
-            {activeRole !== "gigger" && (
+          {/* Right sidebar (3 cols): for owner = bids stats + filters; for Diggers = client info */}
+          <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-4 lg:self-start">
+            {isOwner && (
+              <>
+                {/* Bids stats */}
+                <Card className="border-border/60 bg-card">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      Bid summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Total bids</span>
+                      <span className="font-semibold tabular-nums">{bidStats?.totalBids ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Avg price</span>
+                      <span className="font-semibold tabular-nums text-primary">
+                        ${(bidStats ? Math.round(bidStats.avgPrice) : 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Lowest</span>
+                      <span className="font-semibold tabular-nums text-green-600">
+                        ${(bidStats?.lowestAmount ?? 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+                {/* Filters */}
+                <Card className="border-border/60 bg-card">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-primary" />
+                      Filter Diggers
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Narrow bids by proposal, price, timeline, rating, or location.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bid-filter-search" className="text-xs">Search</Label>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="bid-filter-search"
+                          placeholder="Name, @handle, proposal, location..."
+                          value={bidFilters.search}
+                          onChange={(e) => setBidFilters((f) => ({ ...f, search: e.target.value }))}
+                          className="pl-8 h-9 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="bid-filter-pricemin" className="text-xs">Min $</Label>
+                        <Input
+                          id="bid-filter-pricemin"
+                          type="number"
+                          min={0}
+                          placeholder="0"
+                          value={bidFilters.priceMin}
+                          onChange={(e) => setBidFilters((f) => ({ ...f, priceMin: e.target.value }))}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="bid-filter-pricemax" className="text-xs">Max $</Label>
+                        <Input
+                          id="bid-filter-pricemax"
+                          type="number"
+                          min={0}
+                          placeholder="Any"
+                          value={bidFilters.priceMax}
+                          onChange={(e) => setBidFilters((f) => ({ ...f, priceMax: e.target.value }))}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bid-filter-timeline" className="text-xs">Timeline</Label>
+                      <Input
+                        id="bid-filter-timeline"
+                        placeholder="e.g. 2 weeks"
+                        value={bidFilters.timeline}
+                        onChange={(e) => setBidFilters((f) => ({ ...f, timeline: e.target.value }))}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bid-filter-rating" className="text-xs">Min rating</Label>
+                      <Input
+                        id="bid-filter-rating"
+                        type="number"
+                        min={0}
+                        max={5}
+                        step={0.5}
+                        placeholder="Any"
+                        value={bidFilters.minRating}
+                        onChange={(e) => setBidFilters((f) => ({ ...f, minRating: e.target.value }))}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bid-filter-location" className="text-xs">Location</Label>
+                      <Input
+                        id="bid-filter-location"
+                        placeholder="Country, state, or city"
+                        value={bidFilters.location}
+                        onChange={(e) => setBidFilters((f) => ({ ...f, location: e.target.value }))}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-1.5 mt-1"
+                      onClick={() => setBidFilters(defaultBidFilters)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Clear filters
+                    </Button>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+            {!isOwner && activeRole !== "gigger" && (
               <Card className="border-muted/50 bg-muted/20">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -1152,13 +1289,13 @@ const GigDetail = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    When you’re awarded the gig, we charge an <strong>8% referral fee</strong> (from the client’s deposit). 
+                    When you’re awarded the gig, we charge an <strong>8% referral fee</strong> (from the client's deposit). 
                     You can also buy the lead upfront to unlock contact. No subscription required.
                   </p>
                 </CardContent>
               </Card>
             )}
-          </div>
+          </aside>
         </div>
       </main>
     </div>
