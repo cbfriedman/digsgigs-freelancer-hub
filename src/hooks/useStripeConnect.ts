@@ -42,15 +42,38 @@ export const useStripeConnect = () => {
       const data = await invokeEdgeFunction<{ url?: string }>(supabase, "create-connect-account");
 
       if (data?.url) {
-        window.location.href = data.url;
+        // Redirect the top-level window so Stripe never loads inside a frame (avoids frame-ancestors errors). Essential if the app is embedded (e.g. in an editor preview).
+        try {
+          if (window.top && window.top !== window) {
+            window.top.location.href = data.url;
+          } else {
+            window.location.href = data.url;
+          }
+        } catch {
+          // Cross-origin iframe: can't set top. Open in same window via link with target="_top"
+          const a = document.createElement("a");
+          a.href = data.url;
+          a.rel = "noopener noreferrer";
+          (a as HTMLAnchorElement).target = "_top";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
       } else {
         throw new Error("No redirect URL returned");
       }
     } catch (error: any) {
       console.error("Error creating Connect account:", error);
+      const raw = error?.message || "Failed to create Stripe Connect account";
+      const isConnectNotEnabled =
+        typeof raw === "string" &&
+        (raw.includes("signed up for Connect") || raw.includes("stripe.com/docs/connect"));
+      const description = isConnectNotEnabled
+        ? "Payment setup is not complete yet. The platform needs to enable Stripe Connect in the Stripe Dashboard (Connect → Get started). Please try again later or contact support."
+        : raw;
       toast({
         title: "Error",
-        description: error?.message || "Failed to create Stripe Connect account",
+        description,
         variant: "destructive",
       });
       setCreating(false);

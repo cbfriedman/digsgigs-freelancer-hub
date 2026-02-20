@@ -13,7 +13,7 @@ const corsHeaders = {
 };
 
 interface BidNotificationRequest {
-  type: 'submitted' | 'accepted';
+  type: 'submitted' | 'accepted' | 'awarded';
   bidId: string;
   gigId: string;
   diggerId: string;
@@ -87,12 +87,12 @@ const handler = async (req: Request): Promise<Response> => {
           { status: 403, headers: corsHeaders }
         );
       }
-    } else if (type === 'accepted') {
-      // For accepted notifications: verify caller is the gig owner
+    } else if (type === 'accepted' || type === 'awarded') {
+      // For accepted/awarded notifications: verify caller is the gig owner
       if (gig.consumer_id !== user.id) {
         console.error('Unauthorized: User is not the gig owner', { userId: user.id, gigOwnerId: gig.consumer_id });
         return new Response(
-          JSON.stringify({ error: 'Unauthorized: You can only accept bids on your own gigs' }),
+          JSON.stringify({ error: 'Unauthorized: You can only accept or award bids on your own gigs' }),
           { status: 403, headers: corsHeaders }
         );
       }
@@ -161,8 +161,38 @@ const handler = async (req: Request): Promise<Response> => {
           `,
         });
       }
+    } else if (type === 'awarded') {
+      // Notify digger they've been awarded — they need to accept or decline
+      const diggerEmail = (digger.profiles as any)?.email;
+      const gigLink = `https://digsandgigs.net/gig/${gigId}`;
+      if (diggerEmail) {
+        emailResponse = await resend.emails.send({
+          from: "Digs and Gigs <noreply@digsandgigs.net>",
+          to: [diggerEmail],
+          subject: `You've been awarded: "${gig.title}" – Accept or decline`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="margin: 0; font-size: 24px;">You've been awarded this gig</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">The client chose your proposal — accept or decline</p>
+              </div>
+              <div style="padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+                <p>Hey @${digger.handle}! 👋</p>
+                <p>The client has awarded <strong>"${gig.title}"</strong> to you. Your quoted amount: <strong>$${amount.toFixed(2)}</strong>, timeline: ${timeline}.</p>
+                <div style="text-align: center; margin: 25px 0;">
+                  <a href="${gigLink}" style="display: inline-block; background: #4caf50; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-right: 10px;">Accept</a>
+                  <a href="${gigLink}" style="display: inline-block; background: #666; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px;">View &amp; decline</a>
+                </div>
+                <p style="color: #666; font-size: 14px;">If you accept, the contract is on and you or the client can set up the payment contract (milestones). If you decline, the award is released so they can choose someone else.</p>
+                <hr style="border: 1px solid #eee; margin: 25px 0;" />
+                <p style="color: #666; font-size: 12px; text-align: center;">© 2025 Digs and Gigs. All rights reserved.</p>
+              </div>
+            </div>
+          `,
+        });
+      }
     } else if (type === 'accepted') {
-      // Notify digger about accepted bid
+      // Notify digger about accepted bid (after they clicked Accept on the award)
       const diggerEmail = (digger.profiles as any)?.email;
       
       if (diggerEmail) {

@@ -39,6 +39,7 @@ import { getRegionsForCountry } from "@/config/locationData";
 import { getLocalTimeForCountry, formatJoinDate, formatRealName } from "@/pages/DiggerDetail/utils";
 import { ensureGiggerProfile } from "@/lib/ensureGiggerProfile";
 import { ensureProfileFromAuth } from "@/lib/ensureProfileFromAuth";
+import { GiggerRatingsList } from "@/components/GiggerRatingsList";
 
 const DEFAULT_AVATAR = "/default-avatar.svg";
 
@@ -73,6 +74,8 @@ interface DiggerFallbackRow {
 interface GiggerProfileRow {
   user_id: string;
   show_to_diggers: boolean;
+  average_rating?: number | null;
+  total_ratings?: number | null;
 }
 
 interface GigRow {
@@ -167,7 +170,7 @@ export default function GiggerDetail() {
       const fetchAll = async () => {
         const [profileRes, giggerRes, diggerRes, gigsRes] = await Promise.all([
           (supabase.from("profiles") as any).select("id, full_name, avatar_url, about_me, cover_photo_url, country, timezone, email, phone, email_verified, phone_verified, payment_verified, id_verified, social_verified, handle, created_at, profile_title, state, city").eq("id", userId).maybeSingle(),
-          (supabase.from("gigger_profiles" as any)).select("user_id, show_to_diggers").eq("user_id", userId).maybeSingle(),
+          (supabase.from("gigger_profiles" as any)).select("user_id, show_to_diggers, average_rating, total_ratings").eq("user_id", userId).maybeSingle(),
           supabase.from("digger_profiles").select("profile_image_url, country, location").eq("user_id", userId).order("created_at", { ascending: true }).limit(1).maybeSingle(),
           supabase.from("gigs").select("id, title, status, budget_min, budget_max, location, created_at, awarded_at").eq("consumer_id", userId).order("created_at", { ascending: false }),
         ]);
@@ -700,6 +703,14 @@ export default function GiggerDetail() {
                 )}
               </CardContent>
             </Card>
+            {userId && (
+              <GiggerRatingsList
+                consumerId={userId}
+                averageRating={giggerProfile?.average_rating}
+                totalRatings={giggerProfile?.total_ratings}
+                title="Reviews from professionals"
+              />
+            )}
           </div>
           <div className="lg:col-span-3 order-1 lg:order-2 min-w-0 w-full">
             <div className="space-y-4 sm:space-y-6 sticky top-20 sm:top-24 z-10 bg-background pb-4 lg:pb-0">

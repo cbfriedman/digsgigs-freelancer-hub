@@ -51,13 +51,10 @@ const TIMELINE_UNITS = [
   { value: "weeks", label: "Weeks" },
   { value: "months", label: "Months" },
 ];
-// SECURITY: Input validation schema
+// SECURITY: Input validation schema - single bid amount (no range)
 const bidSchema = z.object({
-  amountMin: z.number()
-    .positive("Minimum amount must be greater than 0")
-    .max(1000000, "Amount must be less than $1,000,000"),
-  amountMax: z.number()
-    .positive("Maximum amount must be greater than 0")
+  amount: z.number()
+    .positive("Amount must be greater than 0")
     .max(1000000, "Amount must be less than $1,000,000"),
   timeline: z.string()
     .trim()
@@ -67,9 +64,6 @@ const bidSchema = z.object({
     .trim()
     .min(50, "Proposal must be at least 50 characters")
     .max(5000, "Proposal must be less than 5000 characters"),
-}).refine(data => data.amountMax >= data.amountMin, {
-  message: "Maximum amount must be greater than or equal to minimum amount",
-  path: ["amountMax"],
 });
 
 // Referral fee configuration - must match edge function
@@ -99,8 +93,9 @@ const PAYMENT_METHOD_OPTIONS = [
 export interface ExistingBidForEdit {
   id: string;
   proposal: string;
-  amount_min: number;
-  amount_max: number;
+  amount: number;
+  amount_min?: number | null;
+  amount_max?: number | null;
   timeline: string;
   payment_terms?: string | null;
   milestones?: { description: string; amount: number }[] | null;
@@ -125,8 +120,7 @@ export const BidSubmissionTemplate = ({
   const isEditMode = !!existingBid?.id;
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [amountMin, setAmountMin] = useState("");
-  const [amountMax, setAmountMax] = useState("");
+  const [amount, setAmount] = useState("");
   const [timeline, setTimeline] = useState("");
   const [proposal, setProposal] = useState("");
   const [pricingModel] = useState<"pay_per_lead" | "success_based">(initialPricingModel);
@@ -142,11 +136,13 @@ export const BidSubmissionTemplate = ({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [dragOver, setDragOver] = useState(false);
 
-  // Pre-fill form when editing an existing bid
+  // Pre-fill form when editing an existing bid (single amount: use amount or derive from min/max)
   useEffect(() => {
     if (!existingBid?.id) return;
-    setAmountMin(String(existingBid.amount_min));
-    setAmountMax(String(existingBid.amount_max));
+    const initialAmount = existingBid.amount ?? (existingBid.amount_min != null && existingBid.amount_max != null
+      ? (existingBid.amount_min + existingBid.amount_max) / 2
+      : existingBid.amount_min ?? existingBid.amount_max ?? 0);
+    setAmount(initialAmount ? String(initialAmount) : "");
     setTimeline(existingBid.timeline || "");
     setProposal(existingBid.proposal || "");
     setPaymentTerms(existingBid.payment_terms?.trim() || "Payments are due when milestones are met and before the work continues.");
@@ -172,23 +168,18 @@ export const BidSubmissionTemplate = ({
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const timelineValue = timeline.trim() || (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "");
-    if (!amountMin || !amountMax || !timelineValue || !proposal) {
+    if (!amount || !timelineValue || !proposal) {
       toast({ title: "Missing fields", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      const parsedMin = parseFloat(amountMin);
-      const parsedMax = parseFloat(amountMax);
+      const parsedAmount = parseFloat(amount);
       const validated = bidSchema.parse({
-        amountMin: parsedMin,
-        amountMax: parsedMax,
+        amount: parsedAmount,
         timeline: timelineValue,
         proposal: proposal,
       });
-
-      // Calculate midpoint for the main amount field
-      const midpointAmount = (validated.amountMin + validated.amountMax) / 2;
 
       // Prepare milestones data
       const milestonesData = milestones
@@ -199,9 +190,9 @@ export const BidSubmissionTemplate = ({
         }));
 
       const bidData: any = {
-        amount: midpointAmount,
-        amount_min: validated.amountMin,
-        amount_max: validated.amountMax,
+        amount: validated.amount,
+        amount_min: null,
+        amount_max: null,
         timeline: validated.timeline,
         proposal: validated.proposal,
         milestones: milestonesData.length > 0 ? milestonesData : null,
@@ -244,9 +235,7 @@ export const BidSubmissionTemplate = ({
             bidId: (insertedBid as any)?.id,
             gigId,
             diggerId,
-            amount: midpointAmount,
-            amountMin: validated.amountMin,
-            amountMax: validated.amountMax,
+            amount: validated.amount,
             timeline: validated.timeline,
             pricingModel,
           },
@@ -269,8 +258,7 @@ export const BidSubmissionTemplate = ({
             bid_id: (insertedBid as any)?.id,
             gig_id: gigId,
             digger_id: diggerId,
-            amount_min: validated.amountMin,
-            amount_max: validated.amountMax,
+            amount: validated.amount,
             currency: 'USD',
             pricing_model: pricingModel,
           });
@@ -302,10 +290,8 @@ export const BidSubmissionTemplate = ({
     }
   };
 
-  const parsedMin = parseFloat(amountMin) || 0;
-  const parsedMax = parseFloat(amountMax) || 0;
-  const estimatedFeeMin = calculateReferralFee(parsedMin);
-  const estimatedFeeMax = calculateReferralFee(parsedMax);
+  const parsedAmount = parseFloat(amount) || 0;
+  const estimatedFee = calculateReferralFee(parsedAmount);
 
   // Build timeline string from number + unit for submission
   const timelineDisplay = timeline.trim() || (timelineNumber && timelineUnit ? `${timelineNumber} ${timelineUnit}` : "");
@@ -314,15 +300,13 @@ export const BidSubmissionTemplate = ({
   // Real-time validation
   const validation = useMemo(() => {
     const err: Record<string, string> = {};
-    if (!amountMin || parsedMin <= 0) err.amountMin = "Enter a valid minimum amount";
-    if (!amountMax || parsedMax <= 0) err.amountMax = "Enter a valid maximum amount";
-    if (parsedMax < parsedMin) err.amountMax = "Max must be ≥ min";
+    if (!amount || parsedAmount <= 0) err.amount = "Enter a valid bid amount";
     if (proposal.length < COVER_LETTER_MIN) err.proposal = `Cover letter must be at least ${COVER_LETTER_MIN} characters`;
     if (proposal.length > COVER_LETTER_MAX) err.proposal = `Maximum ${COVER_LETTER_MAX} characters`;
     const hasTimeline = timeline.trim() || (timelineNumber && timelineUnit);
     if (!hasTimeline) err.timeline = "Select delivery time";
     return err;
-  }, [amountMin, amountMax, parsedMin, parsedMax, proposal.length, timeline, timelineNumber, timelineUnit]);
+  }, [amount, parsedAmount, proposal.length, timeline, timelineNumber, timelineUnit]);
 
   const isFormValid = Object.keys(validation).length === 0 && proposal.length >= COVER_LETTER_MIN && (timeline.trim() || (timelineNumber && timelineUnit));
 
@@ -468,35 +452,24 @@ export const BidSubmissionTemplate = ({
             {/* B. Bid Details */}
             <section className="space-y-4" aria-labelledby="bid-details-heading">
               <h2 id="bid-details-heading" className="text-lg font-semibold">Bid details</h2>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amountMin">Minimum amount (USD) <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="amountMin"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="1,000"
-                    value={amountMin}
-                    onChange={(e) => { setAmountMin(e.target.value); setFieldErrors((prev) => ({ ...prev, amountMin: "", amountMax: "" })); }}
-                    className={cn("rounded-xl", fieldErrors.amountMin && "border-destructive")}
-                  />
-                  {fieldErrors.amountMin && <p className="text-sm text-destructive">{fieldErrors.amountMin}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amountMax">Maximum amount (USD) <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="amountMax"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="2,500"
-                    value={amountMax}
-                    onChange={(e) => { setAmountMax(e.target.value); setFieldErrors((prev) => ({ ...prev, amountMax: "" })); }}
-                    className={cn("rounded-xl", fieldErrors.amountMax && "border-destructive")}
-                  />
-                  {fieldErrors.amountMax && <p className="text-sm text-destructive">{fieldErrors.amountMax}</p>}
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="amount">Your bid amount (USD) <span className="text-destructive">*</span></Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="e.g. 1,500"
+                  value={amount}
+                  onChange={(e) => { setAmount(e.target.value); setFieldErrors((prev) => ({ ...prev, amount: "" })); }}
+                  className={cn("rounded-xl max-w-xs", fieldErrors.amount && "border-destructive")}
+                />
+                {fieldErrors.amount && <p className="text-sm text-destructive">{fieldErrors.amount}</p>}
+                {pricingModel === "success_based" && parsedAmount > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Referral fee if selected: ${estimatedFee.toFixed(2)}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Delivery time <span className="text-destructive">*</span></Label>

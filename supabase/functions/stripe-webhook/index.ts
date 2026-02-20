@@ -79,6 +79,29 @@ serve(async (req) => {
 
     logStep('Webhook event received', { type: event.type });
 
+    // Stripe Connect: when a connected account completes onboarding or is updated.
+    // In Stripe Dashboard → Developers → Webhooks, add event "account.updated" (and enable "Listen to events on Connected accounts" if using a separate Connect endpoint).
+    if (event.type === 'account.updated') {
+      const account = event.data.object as Stripe.Account;
+      logStep('Processing account.updated (Connect)', { accountId: account.id, charges_enabled: account.charges_enabled, details_submitted: account.details_submitted });
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      const { error: updateError } = await supabaseClient
+        .from('digger_profiles')
+        .update({
+          stripe_connect_onboarded: !!account.details_submitted,
+          stripe_connect_charges_enabled: !!account.charges_enabled,
+        })
+        .eq('stripe_connect_account_id', account.id);
+      if (updateError) {
+        logStep('ERROR: Failed to update digger_profiles for Connect account', { error: updateError, accountId: account.id });
+      } else {
+        logStep('Updated digger_profiles for Connect account', { accountId: account.id });
+      }
+    }
+
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata || {};

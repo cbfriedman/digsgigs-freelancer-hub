@@ -45,10 +45,19 @@ const MyBids = () => {
     const withdrawal = searchParams.get("withdrawal");
     if (withdrawal === "success") {
       toast.success("Bid withdrawn successfully. The penalty has been paid.");
-      // Clear params
       window.history.replaceState({}, "", "/my-bids");
     } else if (withdrawal === "cancelled") {
       toast.info("Withdrawal cancelled. Your bid remains active.");
+      window.history.replaceState({}, "", "/my-bids");
+    }
+
+    // Stripe Connect return: user completed or refreshed onboarding
+    const connectSuccess = searchParams.get("success");
+    const connectRefresh = searchParams.get("refresh");
+    if (connectSuccess === "true") {
+      toast.success("Stripe Connect setup complete. Your account is being verified—you’ll be able to receive payments once verification is done.");
+      window.history.replaceState({}, "", "/my-bids");
+    } else if (connectRefresh === "true") {
       window.history.replaceState({}, "", "/my-bids");
     }
 

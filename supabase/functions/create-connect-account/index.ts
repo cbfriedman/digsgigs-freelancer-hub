@@ -65,11 +65,15 @@ serve(async (req) => {
         .eq("id", diggerProfile.id);
     }
 
-    // Create account link for onboarding
+    // Base URL for return/refresh: prefer SITE_URL (env) so it works from any client (e.g. mobile or serverless)
+    const baseUrl =
+      Deno.env.get("SITE_URL")?.replace(/\/$/, "") ||
+      req.headers.get("origin") ||
+      "https://digsandgigs.net";
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${req.headers.get("origin")}/my-bids?refresh=true`,
-      return_url: `${req.headers.get("origin")}/my-bids?success=true`,
+      refresh_url: `${baseUrl}/my-bids?refresh=true`,
+      return_url: `${baseUrl}/my-bids?success=true`,
       type: "account_onboarding",
     });
 
@@ -79,8 +83,21 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error:", error);
+    const rawMessage =
+      (error && typeof error === "object" && "message" in error && typeof (error as { message: unknown }).message === "string")
+        ? (error as { message: string }).message
+        : error instanceof Error
+          ? error.message
+          : "Unknown error";
+    // Stripe returns this when the platform account has not enabled Connect in the Dashboard
+    const isConnectNotEnabled =
+      typeof rawMessage === "string" &&
+      (rawMessage.includes("signed up for Connect") || rawMessage.includes("stripe.com/docs/connect"));
+    const userMessage = isConnectNotEnabled
+      ? "Payment setup is not complete yet. The platform needs to enable Stripe Connect in the Stripe Dashboard (Connect → Get started). Please try again later or contact support."
+      : rawMessage;
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: userMessage }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     );
   }

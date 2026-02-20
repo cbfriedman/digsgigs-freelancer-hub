@@ -145,13 +145,17 @@ serve(async (req) => {
       throw new Error(`Failed to update bid: ${updateError.message}`);
     }
 
-    // Update gig status to active
-    await supabaseClient
+    // Update gig status to in_progress (contract is on; either party can create payment contract)
+    const { error: gigUpdateError } = await supabaseClient
       .from("gigs")
       .update({
-        status: "active",
+        status: "in_progress",
       })
       .eq("id", gigId);
+
+    if (gigUpdateError) {
+      throw new Error(`Failed to update gig: ${gigUpdateError.message}`);
+    }
 
     // Release deposit to Digger if there's a paid deposit
     // NEW MODEL: 15% deposit, 8% referral fee retained, remaining released to Digger

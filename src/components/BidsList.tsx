@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
-import { EscrowContractDialog } from "@/components/EscrowContractDialog";
+import { PaymentContractDialog } from "@/components/PaymentContractDialog";
+import { ContractMilestonesCard } from "@/components/ContractMilestonesCard";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
 import { DiggerProposalCard } from "@/components/DiggerProposalCard";
@@ -185,6 +186,12 @@ interface BidsListProps {
   sortBy?: BidSortOption;
   /** Callback when filters are cleared (e.g. from empty state). */
   onClearFilters?: () => void;
+  /** Current user id (for payment contract / milestones). */
+  currentUserId?: string | null;
+  /** Called after Gigger awards a bid so parent can refetch gig (e.g. status → 'awarded'). */
+  onAwardSuccess?: () => void;
+  /** Gig status so ContractMilestonesCard can hide when status is 'awarded' (Digger sees Accept/Decline on page). */
+  gigStatus?: string | null;
 }
 
 export const BidsList = ({
@@ -199,14 +206,18 @@ export const BidsList = ({
   statsInSidebar = false,
   sortBy = "lowest_price",
   onClearFilters,
+  currentUserId,
+  onAwardSuccess,
+  gigStatus,
 }: BidsListProps) => {
   const { toast } = useToast();
   const { onlineDiggers } = useDiggerPresence();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
-  const [escrowDialogOpen, setEscrowDialogOpen] = useState(false);
+  const [paymentContractDialogOpen, setPaymentContractDialogOpen] = useState(false);
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
+  const [contractCardKey, setContractCardKey] = useState(0);
   /** Digger profile IDs that have an active conversation for this gig (for "Chatting" badge). */
   const [conversationDiggerIds, setConversationDiggerIds] = useState<Set<string>>(new Set());
   /** Bid IDs pinned by the Gigger for this gig (persisted in localStorage). */
@@ -392,11 +403,10 @@ export const BidsList = ({
     };
   }, [gigId, loadBids]);
 
-  const handleAcceptBid = async (bidId: string) => {
+  /** Gigger awards a bid: gig goes to "awarded", Digger is notified and can Accept or Decline. */
+  const handleAwardBid = async (bidId: string) => {
     setAccepting(bidId);
-    
     try {
-      // Get bid details before updating
       const { data: bidData, error: bidError } = await supabase
         .from('bids' as any)
         .select('amount, timeline, digger_id')
@@ -405,24 +415,40 @@ export const BidsList = ({
 
       if (bidError) throw bidError;
 
-      const { error } = await supabase
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const diggerId = (bidData as any)?.digger_id;
+
+      // Mark bid as awarded only (do not set status to 'accepted' — Digger must accept)
+      const { error: bidUpdateError } = await supabase
         .from('bids' as any)
-        .update({ status: 'accepted' })
+        .update({
+          awarded: true,
+          awarded_at: new Date().toISOString(),
+          awarded_by: authUser?.id ?? null,
+        })
         .eq('id', bidId);
 
-      if (error) throw error;
+      if (bidUpdateError) throw bidUpdateError;
 
-      // Update gig status to in_progress
-      await supabase
+      // Update gig: status 'awarded' so Digger sees "Accept or decline"
+      const gigUpdate: Record<string, unknown> = {
+        status: 'awarded',
+        awarded_bid_id: bidId,
+        awarded_at: new Date().toISOString(),
+      };
+      if (diggerId) gigUpdate.awarded_digger_id = diggerId;
+
+      const { error: gigError } = await supabase
         .from('gigs' as any)
-        .update({ status: 'in_progress' })
+        .update(gigUpdate)
         .eq('id', gigId);
 
-      // Send email notification
+      if (gigError) throw gigError;
+
       try {
         await supabase.functions.invoke('send-bid-notification', {
           body: {
-            type: 'accepted',
+            type: 'awarded',
             bidId,
             gigId,
             diggerId: (bidData as any)?.digger_id,
@@ -431,32 +457,21 @@ export const BidsList = ({
           },
         });
       } catch (emailError) {
-        console.error('Failed to send email notification:', emailError);
-        // Don't fail the acceptance if email fails
+        console.error('Failed to send award notification:', emailError);
       }
 
       toast({
-        title: "Bid accepted!",
-        description: isFixedPrice 
-          ? "Now set up the escrow contract with milestones."
-          : "The digger has been notified.",
+        title: "Bid awarded",
+        description: "The professional has been notified. They can accept or decline; once they accept, you can set up the payment contract.",
       });
 
       loadBids();
-
-      // If fixed price, open escrow dialog
-      if (isFixedPrice) {
-        const acceptedBid = bids.find(b => b.id === bidId);
-        if (acceptedBid) {
-          setSelectedBid(acceptedBid);
-          setEscrowDialogOpen(true);
-        }
-      }
+      onAwardSuccess?.();
     } catch (error: any) {
-      console.error('Error accepting bid:', error);
+      console.error('Error awarding bid:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to accept bid",
+        description: error.message || "Failed to award bid",
         variant: "destructive",
       });
     } finally {
@@ -554,6 +569,39 @@ export const BidsList = ({
         )}
       </div>
 
+      {/* Payment contract & milestones: show when user is owner or awarded digger */}
+      {(isOwner || currentDiggerId) && currentUserId && (
+        <ContractMilestonesCard
+          key={contractCardKey}
+          gigId={gigId}
+          currentUserId={currentUserId}
+          currentDiggerProfileId={currentDiggerId ?? null}
+          onUpdate={() => setContractCardKey((k) => k + 1)}
+          gigStatus={gigStatus}
+          onSetupContractClick={
+            isOwner && isFixedPrice
+              ? () => {
+                  const accepted = bids.find((b) => b.status === "accepted");
+                  if (accepted) {
+                    setSelectedBid(accepted);
+                    setPaymentContractDialogOpen(true);
+                  }
+                }
+              : currentDiggerId
+                ? () => {
+                    const diggerAccepted = bids.find(
+                      (b) => (b as any).digger_id === currentDiggerId && b.status === "accepted"
+                    );
+                    if (diggerAccepted) {
+                      setSelectedBid(diggerAccepted);
+                      setPaymentContractDialogOpen(true);
+                    }
+                  }
+                : undefined
+          }
+        />
+      )}
+
       {/* Bid cards: only show for gig owner (Gigger); in Digger mode show header + stats only */}
       {isOwner && (
         <>
@@ -571,23 +619,31 @@ export const BidsList = ({
               hasActiveChat={conversationDiggerIds.has(bid.digger_profiles.id)}
               isPinned={pinnedBidIds.has(bid.id)}
               onPinToggle={() => togglePin(bid.id)}
-              onAccept={() => handleAcceptBid(bid.id)}
+              onAccept={() => handleAwardBid(bid.id)}
               onConfirmHire={loadBids}
               onCompleteWork={loadBids}
               acceptingId={accepting}
+              isAwardedWaitingResponse={!!(bid.awarded && bid.status !== "accepted")}
+              isOtherBidAwarded={displayedBids.some(
+                (b) => b.id !== bid.id && !!b.awarded && b.status !== "accepted"
+              )}
             />
           ))}
         </>
       )}
 
       {selectedBid && (
-        <EscrowContractDialog
-          open={escrowDialogOpen}
-          onOpenChange={setEscrowDialogOpen}
+        <PaymentContractDialog
+          open={paymentContractDialogOpen}
+          onOpenChange={setPaymentContractDialogOpen}
+          gigId={gigId}
           bidId={selectedBid.id}
           bidAmount={selectedBid.amount}
           gigTitle={gigTitle}
-          onComplete={loadBids}
+          onComplete={() => {
+            loadBids();
+            setContractCardKey((k) => k + 1);
+          }}
         />
       )}
     </div>

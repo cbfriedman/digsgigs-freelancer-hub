@@ -38,7 +38,7 @@ const BID_STATUS_CONFIG: Record<
   },
   accepted: {
     label: "Accepted",
-    tooltip: "You awarded this bid. Confirm hire to start, or mark work complete when done.",
+    tooltip: "Digger accepted. Set up payment contract or mark work complete when done.",
     variant: "default",
   },
   rejected: {
@@ -108,6 +108,10 @@ interface DiggerProposalCardProps {
   onConfirmHire?: () => void;
   onCompleteWork?: () => void;
   acceptingId?: string | null;
+  /** This bid is awarded but Digger has not accepted yet. */
+  isAwardedWaitingResponse?: boolean;
+  /** Another bid on this gig is awarded and waiting for response (so Award is disabled). */
+  isOtherBidAwarded?: boolean;
 }
 
 export function DiggerProposalCard({
@@ -126,6 +130,8 @@ export function DiggerProposalCard({
   onConfirmHire,
   onCompleteWork,
   acceptingId,
+  isAwardedWaitingResponse = false,
+  isOtherBidAwarded = false,
 }: DiggerProposalCardProps) {
   const navigate = useNavigate();
   const [showFullProposal, setShowFullProposal] = useState(false);
@@ -341,21 +347,29 @@ export function DiggerProposalCard({
                       variant={
                         bid.status === "accepted" && bid.awarded
                           ? "default"
-                          : (BID_STATUS_CONFIG[bid.status]?.variant ?? "secondary")
+                          : isAwardedWaitingResponse
+                            ? "secondary"
+                            : (BID_STATUS_CONFIG[bid.status]?.variant ?? "secondary")
                       }
                       className={cn(
                         bid.status === "accepted" && bid.awarded && "bg-green-600 hover:bg-green-600"
                       )}
                     >
-                      {bid.awarded ? "Hired ✓" : (BID_STATUS_CONFIG[bid.status]?.label ?? bid.status)}
+                      {bid.status === "accepted" && bid.awarded
+                        ? "Hired ✓"
+                        : isAwardedWaitingResponse
+                          ? "Awarded – waiting for response"
+                          : (BID_STATUS_CONFIG[bid.status]?.label ?? bid.status)}
                     </Badge>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[240px]">
                   <p className="text-xs">
-                    {bid.awarded
+                    {bid.status === "accepted" && bid.awarded
                       ? "Freelancer is hired. Mark work complete when done."
-                      : BID_STATUS_CONFIG[bid.status]?.tooltip ?? `Status: ${bid.status}`}
+                      : isAwardedWaitingResponse
+                        ? "Waiting for this professional to accept or decline the award."
+                        : BID_STATUS_CONFIG[bid.status]?.tooltip ?? `Status: ${bid.status}`}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -380,6 +394,11 @@ export function DiggerProposalCard({
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Info className="h-3.5 w-3.5 shrink-0" />
                   In conversation — award when ready.
+                </p>
+              ) : isAwardedWaitingResponse ? (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3.5 w-3.5 shrink-0" />
+                  Waiting for this professional to accept or decline.
                 </p>
               ) : bid.status === "accepted" && !bid.awarded ? (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -420,22 +439,41 @@ export function DiggerProposalCard({
                 <MessageSquare className="h-4 w-4" />
                 Chat
               </Button>
-              {bid.status === "pending" && onAccept && (
-                <Button
-                  size="sm"
-                  onClick={onAccept}
-                  disabled={acceptingId === bid.id}
-                  className="gap-1.5 bg-green-600 hover:bg-green-700"
-                >
-                  {acceptingId === bid.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Accepting...
-                    </>
-                  ) : (
-                    "Award"
-                  )}
-                </Button>
+              {bid.status === "pending" && onAccept && !isAwardedWaitingResponse && (
+                isOtherBidAwarded ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Button
+                          size="sm"
+                          disabled
+                          className="gap-1.5 bg-green-600/70 hover:bg-green-600/70 cursor-not-allowed"
+                        >
+                          Award
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[220px]">
+                      <p className="text-xs">Another freelancer was awarded; they can accept or decline first.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={onAccept}
+                    disabled={acceptingId === bid.id}
+                    className="gap-1.5 bg-green-600 hover:bg-green-700"
+                  >
+                    {acceptingId === bid.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Awarding...
+                      </>
+                    ) : (
+                      "Award"
+                    )}
+                  </Button>
+                )
               )}
               {bid.status === "accepted" && !bid.awarded && onConfirmHire && (
                 <ConfirmHireDialog

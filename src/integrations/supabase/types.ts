@@ -1972,6 +1972,64 @@ export type Database = {
           },
         ]
       }
+      gigger_ratings: {
+        Row: {
+          id: string
+          digger_id: string
+          consumer_id: string
+          gig_id: string
+          rating: number
+          review_text: string | null
+          gigger_response: string | null
+          responded_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          digger_id: string
+          consumer_id: string
+          gig_id: string
+          rating: number
+          review_text?: string | null
+          gigger_response?: string | null
+          responded_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          digger_id?: string
+          consumer_id?: string
+          gig_id?: string
+          rating?: number
+          review_text?: string | null
+          gigger_response?: string | null
+          responded_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gigger_ratings_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigger_ratings_digger_id_fkey"
+            columns: ["digger_id"]
+            isOneToOne: false
+            referencedRelation: "digger_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigger_ratings_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gigs: {
         Row: {
           ai_matched_codes: boolean | null
@@ -3172,6 +3230,7 @@ export type Database = {
           platform_fee: number
           released_at: string | null
           status: string
+          stripe_payment_intent_id: string | null
           stripe_transfer_id: string | null
         }
         Insert: {
@@ -3187,6 +3246,7 @@ export type Database = {
           platform_fee: number
           released_at?: string | null
           status?: string
+          stripe_payment_intent_id?: string | null
           stripe_transfer_id?: string | null
         }
         Update: {
@@ -3202,6 +3262,7 @@ export type Database = {
           platform_fee?: number
           released_at?: string | null
           status?: string
+          stripe_payment_intent_id?: string | null
           stripe_transfer_id?: string | null
         }
         Relationships: [
@@ -4625,7 +4686,7 @@ export type Database = {
       }
       transactions: {
         Row: {
-          bid_id: string
+          bid_id: string | null
           commission_amount: number
           commission_rate: number
           completed_at: string | null
@@ -4643,7 +4704,7 @@ export type Database = {
           total_amount: number
         }
         Insert: {
-          bid_id: string
+          bid_id?: string | null
           commission_amount: number
           commission_rate: number
           completed_at?: string | null

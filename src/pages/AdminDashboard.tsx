@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, TrendingUp, Users, Clock, CheckCircle2, Lightbulb, MessageSquare, Settings, Shield, Database, FlaskConical, Megaphone, MailPlus, Crown, Search, ShieldAlert, ClipboardCheck, Inbox, Briefcase, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { KeywordAnalyticsDashboard } from "@/components/KeywordAnalyticsDashboard";
@@ -22,6 +22,8 @@ import SupportInboxTab from "@/components/admin/SupportInboxTab";
 import MessageNotificationSettingsTab from "@/components/admin/MessageNotificationSettingsTab";
 import ManageGigsTab from "@/components/admin/ManageGigsTab";
 import GigEmailDeliveryTab from "@/components/admin/GigEmailDeliveryTab";
+import AdminTransactionsDisputesTab from "@/components/admin/AdminTransactionsDisputesTab";
+import AdminChatHistoryTab from "@/components/admin/AdminChatHistoryTab";
 import {
   Sidebar,
   SidebarContent,
@@ -368,6 +370,7 @@ const AdminDashboard = () => {
     { id: "cpc-data", label: "CPC Data", icon: Database },
     { id: "giveaway", label: "Giveaway Report", icon: Crown },
     { id: "manage-gigs", label: "Manage gigs", icon: Briefcase },
+    { id: "transactions-disputes", label: "Transactions & Disputes", icon: Receipt },
     { id: "gig-email-delivery", label: "Gig email delivery", icon: Mail },
     { id: "test-results", label: "QA Test Results", icon: ClipboardCheck },
   ];
@@ -453,11 +456,11 @@ const AdminDashboard = () => {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-            <SidebarGroup>
+                <SidebarGroup>
               <SidebarGroupLabel>Data & Reports</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {menuItems.slice(7, 12).map((item) => {
+                  {menuItems.slice(7, 13).map((item) => {
                     const Icon = item.icon;
                     return (
                       <SidebarMenuItem key={item.id}>
@@ -479,6 +482,16 @@ const AdminDashboard = () => {
               <SidebarGroupLabel>Support</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab("chat-history")}
+                      isActive={activeTab === "chat-history"}
+                      tooltip="Chat history"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Chat history</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={() => setActiveTab("support-inbox")}
@@ -597,6 +610,14 @@ const AdminDashboard = () => {
 
                 {activeTab === "manage-gigs" && (
                   <ManageGigsTab />
+                )}
+
+                {activeTab === "transactions-disputes" && (
+                  <AdminTransactionsDisputesTab />
+                )}
+
+                {activeTab === "chat-history" && (
+                  <AdminChatHistoryTab />
                 )}
 
                 {activeTab === "gig-email-delivery" && (

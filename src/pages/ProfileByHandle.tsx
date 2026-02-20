@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, User, Briefcase, ArrowRight, MapPin, Star, Clock3 } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
+import { GiggerRatingsList } from "@/components/GiggerRatingsList";
 import { getCanonicalDiggerProfilePath, getCanonicalGiggerProfilePath, normalizeHandle } from "@/lib/profileUrls";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
 
@@ -433,6 +434,13 @@ export default function ProfileByHandle() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {showGigger && resolved.has_gigger && resolved.user_id && (
+          <GiggerRatingsList
+            consumerId={resolved.user_id}
+            title="Reviews from professionals"
+          />
         )}
       </div>
     </div>

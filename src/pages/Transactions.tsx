@@ -21,10 +21,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings, Star } from "lucide-react";
+import { DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings, Star, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { exportToCSV, exportToPDF } from "@/utils/exportTransactions";
 import { RatingDialog } from "@/components/RatingDialog";
+import { GiggerRatingDialog } from "@/components/GiggerRatingDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Transaction {
   id: string;
@@ -36,17 +48,20 @@ interface Transaction {
   created_at: string;
   completed_at: string | null;
   digger_id: string;
+  milestone_payment_id?: string | null;
   gigs: {
     id: string;
     title: string;
     consumer_id: string;
   };
-  bids: {
+  bids?: {
     amount: number;
-  };
-  profiles: {
+  } | null;
+  profiles?: {
     full_name: string | null;
-  };
+  } | null;
+  /** When true, this row is from paid milestones (fallback when transaction row missing) */
+  fromMilestone?: boolean;
 }
 
 const Transactions = () => {
@@ -74,6 +89,40 @@ const Transactions = () => {
     diggerId: "",
     gigId: "",
     gigTitle: "",
+  });
+  const [giggerRatingDialog, setGiggerRatingDialog] = useState<{
+    open: boolean;
+    consumerId: string;
+    gigId: string;
+    diggerId: string;
+    gigTitle: string;
+  }>({
+    open: false,
+    consumerId: "",
+    gigId: "",
+    diggerId: "",
+    gigTitle: "",
+  });
+  const checkContractCompleted = async (gigId: string, diggerId: string): Promise<boolean> => {
+    const { data, error } = await supabase.rpc("is_contract_fully_completed_rpc" as any, {
+      p_gig_id: gigId,
+      p_digger_id: diggerId,
+    });
+    if (error) return false;
+    return !!data;
+  };
+  const [disputeDialog, setDisputeDialog] = useState<{
+    open: boolean;
+    transaction: Transaction | null;
+    subject: string;
+    description: string;
+    submitting: boolean;
+  }>({
+    open: false,
+    transaction: null,
+    subject: "",
+    description: "",
+    submitting: false,
   });
 
   useEffect(() => {
@@ -136,7 +185,21 @@ const Transactions = () => {
         return;
       }
 
-      // Check user type
+      // Prefer digger view if user has a digger profile (so Diggers always see their earnings, even when profile.user_type is consumer/gigger)
+      const { data: diggerProfile, error: diggerError } = await supabase
+        .from('digger_profiles')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (!diggerError && diggerProfile?.id) {
+        setUserType('digger');
+        setDiggerId(diggerProfile.id);
+        await loadTransactions(session.user.id, 'digger', diggerProfile.id);
+        return;
+      }
+
+      // Otherwise load as consumer (Gigger) – require profile for redirect
       const { data: profile } = await supabase
         .from('profiles')
         .select('user_type')
@@ -153,27 +216,8 @@ const Transactions = () => {
         return;
       }
 
-      setUserType(profile.user_type as 'digger' | 'consumer');
-
-      if (profile.user_type === 'digger') {
-        // Get digger profile ID
-        const { data: diggerProfile, error: diggerError } = await supabase
-          .from('digger_profiles')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (diggerError) {
-          throw diggerError;
-        }
-
-        if (diggerProfile?.id) {
-          setDiggerId(diggerProfile.id);
-          await loadTransactions(session.user.id, 'digger', diggerProfile.id);
-        }
-      } else {
-        await loadTransactions(session.user.id, 'consumer', null);
-      }
+      setUserType('consumer');
+      await loadTransactions(session.user.id, 'consumer', null);
     } catch (error: any) {
       // Error already handled with toast in loadTransactions
       // Only log if it's an auth error
@@ -221,12 +265,63 @@ const Transactions = () => {
 
       if (error) throw error;
 
-      setTransactions(data || []);
+      let list: Transaction[] = (data || []).map((row: any) => ({
+        ...row,
+        bids: row.bids ?? null,
+        profiles: row.profiles ?? null,
+      }));
+
+      // Diggers: include paid milestones that may have no transaction row (so they always see earnings)
+      if (type === 'digger' && diggerId) {
+        const existingMilestoneIds = new Set((list as any[]).map((t: any) => t.milestone_payment_id).filter(Boolean));
+        const { data: paidMilestones } = await supabase
+          .from('milestone_payments')
+          .select(`
+            id,
+            amount,
+            digger_payout,
+            platform_fee,
+            released_at,
+            created_at,
+            escrow_contract_id,
+            escrow_contracts!inner(digger_id, gig_id, consumer_id, gigs(id, title, consumer_id))
+          `)
+          .eq('status', 'paid')
+          .not('stripe_payment_intent_id', 'is', null);
+
+        const milestones = paidMilestones || [];
+        for (const m of milestones) {
+          const contract = (m as any).escrow_contracts;
+          const gigs = contract?.gigs;
+          if (!contract || contract.digger_id !== diggerId || existingMilestoneIds.has(m.id)) continue;
+          existingMilestoneIds.add(m.id);
+          const totalAmount = Number(m.amount) + Number(m.platform_fee || 0);
+          list.push({
+            id: `milestone-${m.id}`,
+            total_amount: totalAmount,
+            commission_rate: 0.03,
+            commission_amount: Number(m.platform_fee || 0),
+            digger_payout: Number(m.digger_payout),
+            status: 'completed',
+            created_at: m.created_at,
+            completed_at: m.released_at || m.created_at,
+            digger_id: contract.digger_id,
+            milestone_payment_id: m.id,
+            gigs: gigs ? { id: gigs.id, title: gigs.title || 'Milestone', consumer_id: gigs.consumer_id } : { id: '', title: 'Milestone', consumer_id: '' },
+            bids: null,
+            profiles: null,
+            fromMilestone: true,
+          });
+        }
+        list.sort((a, b) => new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime());
+      }
+
+      setTransactions(list);
 
       // Calculate totals for diggers
       if (type === 'digger') {
-        const earnings = (data || []).reduce((sum: number, tx: any) => sum + (tx.digger_payout || 0), 0);
-        const commission = (data || []).reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
+        const earnings = list.reduce((sum: number, tx: any) => sum + (tx.digger_payout || 0), 0);
+        const commission = list.reduce((sum: number, tx: any) => sum + (tx.commission_amount || 0), 0);
         setTotalEarnings(earnings);
         setTotalCommission(commission);
       }
@@ -293,6 +388,58 @@ const Transactions = () => {
       title: "Export successful",
       description: `Downloaded ${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} as PDF`,
     });
+  };
+
+  const openDisputeDialog = (transaction: Transaction) => {
+    setDisputeDialog({
+      open: true,
+      transaction,
+      subject: "",
+      description: "",
+      submitting: false,
+    });
+  };
+
+  const submitDispute = async () => {
+    const { transaction, subject, description } = disputeDialog;
+    if (!transaction || !subject.trim()) {
+      toast({
+        title: "Subject required",
+        description: "Please enter a short subject for the dispute",
+        variant: "destructive",
+      });
+      return;
+    }
+    setDisputeDialog((prev) => ({ ...prev, submitting: true }));
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+
+      const { error } = await supabase.from("disputes").insert({
+        gig_id: transaction.gigs.id,
+        transaction_id: transaction.fromMilestone ? null : transaction.id,
+        milestone_payment_id: transaction.milestone_payment_id ?? null,
+        raised_by_user_id: user.id,
+        subject: subject.trim(),
+        description: description.trim() || null,
+        status: "open",
+      });
+
+      if (error) throw error;
+      toast({
+        title: "Dispute reported",
+        description: "Our team will review and get back to you.",
+      });
+      setDisputeDialog({ open: false, transaction: null, subject: "", description: "", submitting: false });
+    } catch (e: any) {
+      toast({
+        title: "Failed to submit dispute",
+        description: e?.message ?? "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setDisputeDialog((prev) => ({ ...prev, submitting: false }));
+    }
   };
 
   const handleEmailReport = async () => {
@@ -384,7 +531,7 @@ const Transactions = () => {
                 <h1 className="text-4xl font-bold mb-2">Transaction History</h1>
                 <p className="text-muted-foreground">
                   {userType === 'digger' 
-                    ? 'View your completed work and earnings breakdown'
+                    ? 'View your completed work, milestone payments, and earnings. All payouts you receive appear here.'
                     : 'View your payment history for completed gigs'}
                 </p>
               </div>
@@ -642,9 +789,14 @@ const Transactions = () => {
                           )}
                         </CardDescription>
                       </div>
-                      <Badge variant="default">
-                        {transaction.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        {transaction.fromMilestone && (
+                          <Badge variant="secondary">Milestone</Badge>
+                        )}
+                        <Badge variant="default">
+                          {transaction.status}
+                        </Badge>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -692,14 +844,16 @@ const Transactions = () => {
                         <div className="flex items-center gap-2">
                           <DollarSign className="w-4 h-4 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            Original bid: ${transaction.bids?.amount?.toFixed(2) || '0.00'}
+                            {transaction.fromMilestone
+                              ? 'Milestone payment'
+                              : `Original bid: $${transaction.bids?.amount?.toFixed(2) || '0.00'}`}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Commission Breakdown for Diggers */}
-                    {userType === 'digger' && transaction.commission_rate > 0 && (
+                    {/* Commission Breakdown for Diggers (skip for milestone-only rows) */}
+                    {userType === 'digger' && !transaction.fromMilestone && transaction.commission_rate > 0 && (
                       <div className="p-3 bg-muted rounded-lg">
                         <p className="text-sm text-muted-foreground">
                           💡 Tip: With a{' '}
@@ -715,20 +869,91 @@ const Transactions = () => {
                       </div>
                     )}
 
-                    {/* Rating Button for Consumers */}
+                    {/* Rating and Dispute for Consumers */}
                     {userType === 'consumer' && transaction.status === 'completed' && (
-                      <div className="pt-4 border-t">
+                      <div className="pt-4 border-t flex flex-wrap gap-2">
                         <Button
                           variant="outline"
-                          onClick={() => setRatingDialog({
-                            open: true,
-                            diggerId: transaction.digger_id,
-                            gigId: transaction.gigs.id,
-                            gigTitle: transaction.gigs.title,
-                          })}
+                          onClick={async () => {
+                            const completed = await checkContractCompleted(transaction.gigs.id, transaction.digger_id);
+                            if (!completed) {
+                              toast({
+                                title: "Contract not fully completed",
+                                description: "You can leave a review once the contract is fully completed (all milestones paid).",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            setRatingDialog({
+                              open: true,
+                              diggerId: transaction.digger_id,
+                              gigId: transaction.gigs.id,
+                              gigTitle: transaction.gigs.title,
+                            });
+                          }}
                         >
                           <Star className="mr-2 h-4 w-4" />
                           Rate Professional
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => openDisputeDialog(transaction)}
+                          className="text-amber-600 hover:text-amber-700 border-amber-200"
+                        >
+                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          Report dispute
+                        </Button>
+                      </div>
+                    )}
+                    {/* Rating and Dispute for Diggers */}
+                    {userType === 'digger' && transaction.status === 'completed' && (
+                      <div className="pt-4 border-t flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            const completed = await checkContractCompleted(transaction.gigs.id, transaction.digger_id);
+                            if (!completed) {
+                              toast({
+                                title: "Contract not fully completed",
+                                description: "You can leave a review once the contract is fully completed (all milestones paid).",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            setGiggerRatingDialog({
+                              open: true,
+                              consumerId: transaction.gigs.consumer_id,
+                              gigId: transaction.gigs.id,
+                              diggerId: transaction.digger_id,
+                              gigTitle: transaction.gigs.title,
+                            });
+                          }}
+                        >
+                          <Star className="mr-2 h-4 w-4" />
+                          Rate Client
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDisputeDialog(transaction)}
+                          className="text-amber-600 hover:text-amber-700 border-amber-200"
+                        >
+                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          Report dispute
+                        </Button>
+                      </div>
+                    )}
+                    {userType === 'digger' && transaction.status !== 'completed' && (
+                      <div className="pt-4 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDisputeDialog(transaction)}
+                          className="text-amber-600 hover:text-amber-700 border-amber-200"
+                        >
+                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          Report dispute
                         </Button>
                       </div>
                     )}
@@ -748,11 +973,72 @@ const Transactions = () => {
         gigTitle={ratingDialog.gigTitle}
         onSuccess={() => {
           toast({
-            title: "Rating submitted",
-            description: "Thank you for your feedback!",
+            title: "Review submitted",
+            description: "Thank you for your feedback! It will appear on the professional’s profile.",
           });
         }}
       />
+      <GiggerRatingDialog
+        open={giggerRatingDialog.open}
+        onOpenChange={(open) => setGiggerRatingDialog({ ...giggerRatingDialog, open })}
+        consumerId={giggerRatingDialog.consumerId}
+        gigId={giggerRatingDialog.gigId}
+        diggerId={giggerRatingDialog.diggerId}
+        gigTitle={giggerRatingDialog.gigTitle}
+        onSuccess={() => {
+          toast({
+            title: "Review submitted",
+            description: "Thanks! Your review helps other professionals and will be visible to the client after they review you.",
+          });
+        }}
+      />
+
+      <Dialog open={disputeDialog.open} onOpenChange={(open) => !open && setDisputeDialog({ open: false, transaction: null, subject: "", description: "", submitting: false })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report a dispute</DialogTitle>
+            <DialogDescription>
+              Describe the issue with this transaction. An admin will review and resolve it.
+              {disputeDialog.transaction && (
+                <span className="block mt-1 text-muted-foreground">
+                  Gig: {disputeDialog.transaction.gigs.title}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="dispute-subject">Subject</Label>
+              <Input
+                id="dispute-subject"
+                placeholder="e.g. Payment not received / Work not as agreed"
+                value={disputeDialog.subject}
+                onChange={(e) => setDisputeDialog((p) => ({ ...p, subject: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="dispute-description">Details (optional)</Label>
+              <Textarea
+                id="dispute-description"
+                placeholder="Add any details that help us resolve this."
+                value={disputeDialog.description}
+                onChange={(e) => setDisputeDialog((p) => ({ ...p, description: e.target.value }))}
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisputeDialog({ open: false, transaction: null, subject: "", description: "", submitting: false })}>
+              Cancel
+            </Button>
+            <Button onClick={submitDispute} disabled={disputeDialog.submitting}>
+              {disputeDialog.submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit dispute"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

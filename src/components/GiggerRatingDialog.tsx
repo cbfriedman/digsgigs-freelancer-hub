@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Star } from "lucide-react";
+import { Star, User } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,56 +7,52 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RatingForm } from "./RatingForm";
+import { GiggerRatingForm } from "./GiggerRatingForm";
 import { supabase } from "@/integrations/supabase/client";
 
-interface RatingDialogProps {
+interface GiggerRatingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  diggerId: string;
+  consumerId: string;
   gigId: string;
+  diggerId: string;
   gigTitle: string;
   onSuccess?: () => void;
 }
 
-export const RatingDialog = ({
+export const GiggerRatingDialog = ({
   open,
   onOpenChange,
-  diggerId,
+  consumerId,
   gigId,
+  diggerId,
   gigTitle,
   onSuccess,
-}: RatingDialogProps) => {
+}: GiggerRatingDialogProps) => {
   const [existingRating, setExistingRating] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkExistingRating = useCallback(async () => {
+  const checkExisting = useCallback(async () => {
+    if (!gigId || !diggerId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
-        .from("ratings")
+        .from("gigger_ratings")
         .select("*")
-        .eq("digger_id", diggerId)
         .eq("gig_id", gigId)
-        .eq("consumer_id", user.id)
+        .eq("digger_id", diggerId)
         .maybeSingle();
-
       if (error) throw error;
       setExistingRating(data);
-    } catch (error) {
-      console.error("Error checking existing rating:", error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [diggerId, gigId]);
+  }, [gigId, diggerId]);
 
   useEffect(() => {
-    if (open) {
-      checkExistingRating();
-    }
-  }, [open, checkExistingRating]);
+    if (open) checkExisting();
+  }, [open, checkExisting]);
 
   const handleSuccess = () => {
     onSuccess?.();
@@ -68,22 +64,21 @@ export const RatingDialog = ({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5 text-yellow-400" />
-            {existingRating ? "Update Your Rating" : "Rate This Professional"}
+            <User className="h-5 w-5 text-muted-foreground" />
+            {existingRating ? "Update your review of this client" : "Rate this client"}
           </DialogTitle>
           <DialogDescription>
-            One review per gig. Leave your review after the contract is fully completed (all milestones paid). How was your experience working with this professional on &quot;{gigTitle}&quot;?
+            How was your experience working with the client on &quot;{gigTitle}&quot;? One review per gig.
           </DialogDescription>
         </DialogHeader>
-
         {loading ? (
-          <div className="py-8 text-center text-muted-foreground">
-            Loading...
-          </div>
+          <div className="py-8 text-center text-muted-foreground">Loading...</div>
         ) : (
-          <RatingForm
-            diggerId={diggerId}
+          <GiggerRatingForm
+            consumerId={consumerId}
             gigId={gigId}
+            diggerId={diggerId}
+            gigTitle={gigTitle}
             existingRating={existingRating}
             onSuccess={handleSuccess}
           />

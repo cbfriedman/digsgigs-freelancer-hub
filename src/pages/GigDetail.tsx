@@ -21,6 +21,16 @@ import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatSelectionDisplay, getCodeForCountryName } from "@/config/regionOptions";
 import { computeDiggerProfileDetailCompletion } from "@/lib/profileCompletion";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Gig {
   id: string;
@@ -43,6 +53,9 @@ interface Gig {
   consumer_email?: string | null;
   consumer_phone?: string | null;
   poster_country?: string | null;
+  awarded_at?: string | null;
+  awarded_bid_id?: string | null;
+  awarded_digger_id?: string | null;
   categories: {
     name: string;
     description: string | null;
@@ -94,6 +107,11 @@ const GigDetail = () => {
   const [bidFilters, setBidFilters] = useState<BidFilters>(defaultBidFilters);
   /** Bids sort order (when owner) */
   const [bidSortBy, setBidSortBy] = useState<BidSortOption>("lowest_price");
+  /** Award response: accept/decline loading and decline dialog */
+  const [acceptAwardLoading, setAcceptAwardLoading] = useState(false);
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [declineLoading, setDeclineLoading] = useState(false);
 
   const hasActiveFilters =
     (bidFilters.search?.trim() ?? "") !== "" ||
@@ -513,6 +531,73 @@ const GigDetail = () => {
     navigate("/my-gigs");
   };
 
+  /** Digger accepts the award: bid → accepted, gig → in_progress, fee/deposit logic runs, Gigger notified. */
+  const handleAcceptAward = async () => {
+    if (!id || !gig || !diggerId || !existingBid?.id) return;
+    setAcceptAwardLoading(true);
+    try {
+      const data = await invokeEdgeFunction<{
+        success?: boolean;
+        alreadyAccepted?: boolean;
+        requiresPayment?: boolean;
+        checkoutUrl?: string;
+        message?: string;
+      }>(supabase, "digger-accept-award", {
+        body: { bidId: existingBid.id, gigId: id, diggerId },
+      });
+      if (data?.requiresPayment && data?.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+      if (data?.success || data?.alreadyAccepted) {
+        toast({
+          title: data?.alreadyAccepted ? "Already accepted" : "You accepted the job!",
+          description: "The client has been notified. You or they can set up the payment contract (milestones) next.",
+        });
+        loadData();
+      }
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Failed to accept the award.",
+        variant: "destructive",
+      });
+    } finally {
+      setAcceptAwardLoading(false);
+    }
+  };
+
+  /** Digger declines the award: release award so Gigger can re-award or pick another bid. */
+  const handleDeclineAward = async () => {
+    if (!id || !diggerId || !existingBid?.id) return;
+    setDeclineLoading(true);
+    try {
+      await invokeEdgeFunction(supabase, "digger-decline-award", {
+        body: {
+          bidId: existingBid.id,
+          gigId: id,
+          diggerId,
+          reason: declineReason.trim() || undefined,
+        },
+      });
+      toast({
+        title: "Award declined",
+        description: "The client can award another bid. You can still browse and bid on other gigs.",
+      });
+      setDeclineDialogOpen(false);
+      setDeclineReason("");
+      loadData();
+    } catch (e) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Failed to decline.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeclineLoading(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!currentUser) {
       toast({
@@ -836,8 +921,11 @@ const GigDetail = () => {
                   existingBid={{
                     id: existingBid.id,
                     proposal: existingBid.proposal || "",
-                    amount_min: existingBid.amount_min ?? existingBid.amount ?? 0,
-                    amount_max: existingBid.amount_max ?? existingBid.amount ?? 0,
+                    amount: existingBid.amount ?? (existingBid.amount_min != null && existingBid.amount_max != null
+                      ? (existingBid.amount_min + existingBid.amount_max) / 2
+                      : existingBid.amount_min ?? existingBid.amount_max ?? 0),
+                    amount_min: existingBid.amount_min ?? undefined,
+                    amount_max: existingBid.amount_max ?? undefined,
                     timeline: existingBid.timeline || "",
                     payment_terms: existingBid.payment_terms ?? undefined,
                     milestones: existingBid.milestones ?? undefined,
@@ -855,6 +943,85 @@ const GigDetail = () => {
                 </Button>
               </div>
             )}
+            {/* Digger: You've been awarded – Accept or decline (before contract is on) */}
+            {showDiggerContent &&
+              diggerId &&
+              gig?.status === "awarded" &&
+              gig.awarded_digger_id === diggerId &&
+              existingBid?.awarded &&
+              existingBid?.status !== "accepted" && (
+                <Card id="award-response" className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/10 to-background">
+                  <CardHeader>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                        <Award className="h-6 w-6" aria-hidden />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-xl">You&apos;ve been awarded this gig</CardTitle>
+                        <CardDescription className="mt-1">
+                          The client chose your proposal. Accept to start the job (contract is on; you or they can set up the payment contract next), or decline to release the award so they can pick someone else.
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={handleAcceptAward}
+                      disabled={acceptAwardLoading}
+                      className="gap-2 bg-green-600 hover:bg-green-700"
+                    >
+                      {acceptAwardLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Accepting...
+                        </>
+                      ) : (
+                        "Accept"
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDeclineDialogOpen(true)}
+                      disabled={acceptAwardLoading}
+                      className="gap-2"
+                    >
+                      Decline
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            <Dialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Decline this award?</DialogTitle>
+                  <DialogDescription>
+                    The award will be released and the client can choose another professional or re-award you later. You can optionally give a short reason (e.g. &quot;Not available&quot;, &quot;Terms changed&quot;).
+                  </DialogDescription>
+                </DialogHeader>
+                <Textarea
+                  placeholder="Reason (optional)"
+                  value={declineReason}
+                  onChange={(e) => setDeclineReason(e.target.value)}
+                  className="min-h-[80px] resize-y"
+                  maxLength={500}
+                />
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDeclineDialogOpen(false)} disabled={declineLoading}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={handleDeclineAward} disabled={declineLoading}>
+                    {declineLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Declining...
+                      </>
+                    ) : (
+                      "Decline award"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             {existingBid && showDiggerContent && !editingProposal && (
               <Card id="bid" className="overflow-hidden rounded-2xl border shadow-sm bg-gradient-to-b from-primary/5 to-background">
                 <CardHeader className="pb-2">
@@ -880,11 +1047,21 @@ const GigDetail = () => {
                           ? "default"
                           : existingBid.status === "rejected"
                             ? "destructive"
-                            : "secondary"
+                            : gig?.status === "awarded" && existingBid?.awarded
+                              ? "secondary"
+                              : "secondary"
                       }
                       className="capitalize"
                     >
-                      {existingBid.status === "pending" ? "Under review" : existingBid.status}
+                      {existingBid.status === "accepted"
+                        ? "Accepted"
+                        : existingBid.status === "rejected"
+                          ? "Declined"
+                          : gig?.status === "awarded" && existingBid?.awarded
+                            ? "Awarded – accept or decline"
+                            : existingBid.status === "pending"
+                              ? "Under review"
+                              : existingBid.status}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -1043,12 +1220,15 @@ const GigDetail = () => {
                 isOwner={isOwner}
                 isFixedPrice={!!(gig.budget_min && gig.budget_max)}
                 currentDiggerId={diggerId}
+                currentUserId={currentUser?.id}
                 filterState={bidFilters}
                 onFilterChange={setBidFilters}
                 onStats={setBidStats}
                 statsInSidebar={isOwner}
                 sortBy={bidSortBy}
                 onClearFilters={() => setBidFilters(defaultBidFilters)}
+                onAwardSuccess={loadData}
+                gigStatus={gig?.status}
               />
             )}
           </div>
