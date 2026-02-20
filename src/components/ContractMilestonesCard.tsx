@@ -234,7 +234,7 @@ export function ContractMilestonesCard({
               Payment & milestones
             </CardTitle>
             <CardDescription>
-              Set up the payment contract so you can pay per milestone when you approve the work. You’re only charged when you click “Approve & pay” (3% transaction fee per payment; Digger receives milestone minus 8% platform fee). Secure and reliable.
+              Set up the payment contract (milestones) so you can pay per milestone when you approve the work. Funds are held in escrow until you approve—you’re only charged when you click “Approve & pay” (3% per payment; Digger receives milestone minus 8% platform fee). Secure and reliable.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -254,7 +254,7 @@ export function ContractMilestonesCard({
               You’ve been awarded this gig
             </CardTitle>
             <CardDescription>
-              The client is setting up the payment contract. Once it’s ready, you’ll see milestones here and can submit each one when that part of the work is done. You get paid when they approve—no fees from your payout.
+              The client is setting up the payment contract. Once it’s ready, you’ll see milestones here and can submit each one when that part of the work is done. Funds are held in escrow until the client approves—you get paid when they approve each milestone (minus 8% platform fee).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -292,7 +292,7 @@ export function ContractMilestonesCard({
               <span className="block">Submit each milestone when that part of the work is done. You receive the milestone amount minus 8% platform fee when the client approves.</span>
               <span className="block text-xs flex items-center gap-1.5 mt-2">
                 <Shield className="h-3.5 w-3.5 shrink-0" />
-                Secure payouts via Stripe. Ensure your payout account is set up in Settings or My Bids to get paid.
+                Secure payouts via Stripe. Set up your payout account in Account or My Bids to get paid.
               </span>
             </>
           )}

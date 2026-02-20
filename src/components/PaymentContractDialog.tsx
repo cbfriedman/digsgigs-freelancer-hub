@@ -172,7 +172,7 @@ export function PaymentContractDialog({
           <DialogTitle>Set up payment contract</DialogTitle>
           <DialogDescription className="space-y-2">
             <span className="block">
-              All payments go through our platform—secure and reliable. You pay a <strong>3% transaction fee</strong> per milestone when you approve (Gigger total = milestone + 3%). The Digger receives the milestone amount minus an <strong>8% platform fee</strong> (paid by Digger). No upfront charge; you pay only when you’re satisfied with the work.
+              All payments go through our platform—secure and reliable. Funds are held in escrow until you approve each milestone. You pay a <strong>3% transaction fee</strong> per milestone when you approve (Gigger total = milestone + 3%). The Digger receives the milestone amount minus an <strong>8% platform fee</strong> (paid by Digger). No upfront charge; you pay only when you’re satisfied with the work.
             </span>
             <span className="block text-xs text-muted-foreground mt-2 flex items-start gap-1.5">
               <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />

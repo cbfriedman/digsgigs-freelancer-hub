@@ -74,6 +74,17 @@ serve(async (req) => {
     if (!bid) throw new Error("Bid not found");
     if (bid.digger_id !== gig.awarded_digger_id) throw new Error("Bid digger does not match awarded digger");
 
+    // One contract per gig: first to create wins (principle 3)
+    const { data: existingContract } = await supabaseAdmin
+      .from("escrow_contracts")
+      .select("id")
+      .eq("gig_id", gigId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (existingContract) {
+      throw new Error("A payment contract already exists for this gig. You can view and use it on the gig page.");
+    }
+
     // digger_id in gigs is digger_profiles.id (FK). bid.digger_id might be user_id or digger_profiles.id - types say bids.digger_id -> digger_profiles
     const diggerProfileId = gig.awarded_digger_id;
 

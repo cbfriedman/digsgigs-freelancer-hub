@@ -1,9 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const PENALTY_RATE = 0.08; // 8%
+const PENALTY_MAX_CENTS = 50000; // $500 max
+
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  console.log(`[DIGGER-DECLINE-AWARD] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
 };
 
 serve(async (req) => {
@@ -37,10 +45,9 @@ serve(async (req) => {
       throw new Error("bidId, gigId, and diggerId are required");
     }
 
-    // Verify the digger owns this bid
     const { data: diggerProfile, error: profileError } = await supabaseClient
       .from("digger_profiles")
-      .select("id, user_id")
+      .select("id, user_id, stripe_customer_id")
       .eq("id", diggerId)
       .single();
 
@@ -54,7 +61,7 @@ serve(async (req) => {
 
     const { data: bid, error: bidError } = await supabaseClient
       .from("bids")
-      .select("id, digger_id, awarded")
+      .select("id, digger_id, awarded, amount")
       .eq("id", bidId)
       .single();
 
@@ -80,13 +87,95 @@ serve(async (req) => {
       throw new Error("Gig not found");
     }
 
-    if (gig.status !== "awarded" || gig.awarded_bid_id !== bidId) {
-      throw new Error("This gig is not in awarded state for this bid");
+    if (gig.awarded_bid_id !== bidId) {
+      throw new Error("This gig is not awarded to this bid");
+    }
+
+    const allowedStatuses = ["awarded", "in_progress"];
+    if (!allowedStatuses.includes(gig.status)) {
+      throw new Error("This gig is not in a state that can be declined");
     }
 
     const now = new Date().toISOString();
+    let refunded = false;
+    let penaltyCents: number | null = null;
 
-    // Clear bid award
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (stripeSecretKey) {
+      const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-08-27.basil" });
+
+      const { data: deposit } = await supabaseClient
+        .from("gigger_deposits")
+        .select("id, status, stripe_payment_intent_id, deposit_amount_cents")
+        .eq("bid_id", bidId)
+        .eq("status", "paid")
+        .is("refunded_at", null)
+        .maybeSingle();
+
+      if (deposit?.stripe_payment_intent_id) {
+        try {
+          await stripe.refunds.create({
+            payment_intent: deposit.stripe_payment_intent_id,
+            reason: "requested_by_customer",
+          });
+          logStep("Gigger deposit refunded", { depositId: deposit.id });
+
+          await supabaseClient
+            .from("gigger_deposits")
+            .update({
+              status: "refunded",
+              refunded_at: now,
+              refund_reason: "digger_declined_award",
+            })
+            .eq("id", deposit.id);
+
+          refunded = true;
+        } catch (refundErr) {
+          logStep("Refund failed", { error: refundErr instanceof Error ? refundErr.message : String(refundErr) });
+        }
+
+        const bidAmountCents = Math.round(Number(bid.amount) * 100);
+        const calculated = Math.round(bidAmountCents * PENALTY_RATE);
+        penaltyCents = Math.min(calculated, PENALTY_MAX_CENTS);
+
+        if (penaltyCents > 0 && diggerProfile.stripe_customer_id) {
+          try {
+            const customer = await stripe.customers.retrieve(diggerProfile.stripe_customer_id) as Stripe.Customer;
+            const defaultPm = customer.invoice_settings?.default_payment_method;
+            if (defaultPm) {
+              await stripe.paymentIntents.create({
+                amount: penaltyCents,
+                currency: "usd",
+                customer: diggerProfile.stripe_customer_id,
+                payment_method: defaultPm as string,
+                off_session: true,
+                confirm: true,
+                description: `Declined award penalty - ${gig.title}`,
+                metadata: {
+                  type: "decline_award_penalty",
+                  bid_id: bidId,
+                  gig_id: gigId,
+                  digger_id: diggerId,
+                },
+              });
+              logStep("Digger penalty charged", { penaltyCents });
+              await supabaseClient
+                .from("bids")
+                .update({
+                  referral_fee_cents: penaltyCents,
+                  referral_fee_charged_at: now,
+                })
+                .eq("id", bidId);
+            } else {
+              logStep("No payment method for penalty", { diggerId });
+            }
+          } catch (chargeErr) {
+            logStep("Penalty charge failed", { error: chargeErr instanceof Error ? chargeErr.message : String(chargeErr) });
+          }
+        }
+      }
+    }
+
     await supabaseClient
       .from("bids")
       .update({
@@ -95,11 +184,11 @@ serve(async (req) => {
         awarded_by: null,
         award_declined_at: now,
         award_decline_reason: typeof reason === "string" ? reason.trim().slice(0, 500) : null,
+        status: "pending",
         updated_at: now,
       })
       .eq("id", bidId);
 
-    // Release gig award: back to open so Gigger can re-award or pick another bid
     await supabaseClient
       .from("gigs")
       .update({
@@ -111,7 +200,6 @@ serve(async (req) => {
       })
       .eq("id", gigId);
 
-    // Notify Gigger
     if (gig.consumer_id) {
       await supabaseClient
         .from("notifications")
@@ -119,13 +207,16 @@ serve(async (req) => {
           user_id: gig.consumer_id,
           type: "digger_declined_award",
           title: "Award declined",
-          message: `The professional declined the award for "${gig.title}". You can award another bid or re-award later.`,
+          message: refunded
+            ? `The professional declined the award for "${gig.title}". Your 15% deposit has been refunded. You can award another bid.`
+            : `The professional declined the award for "${gig.title}". You can award another bid or re-award later.`,
           link: `/gig/${gigId}`,
           metadata: {
             gig_id: gigId,
             bid_id: bidId,
             digger_id: diggerId,
             reason: typeof reason === "string" ? reason.trim().slice(0, 500) : null,
+            refunded,
           },
         });
     }
@@ -134,6 +225,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: "Award declined. The client can award another bid.",
+        refunded: !!refunded,
+        penaltyCharged: penaltyCents != null && penaltyCents > 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

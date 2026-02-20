@@ -106,9 +106,11 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
   const isDiggerMode = activeRole === "digger";
   const isGiggerMode = activeRole === "gigger";
   const hasProjectShortcut = userRoles.includes("gigger") || userRoles.includes("digger");
-  const { gigs: recentPostedGigs, loading: recentPostedGigsLoading } = useRecentPostedGigs(isDiggerMode && hasProjectShortcut);
+  const { gigs: recentPostedGigs, totalOpenCount, loading: recentPostedGigsLoading } = useRecentPostedGigs(isDiggerMode && hasProjectShortcut);
   const projectMenuPath = isDiggerMode ? "/browse-gigs" : "/my-gigs";
-  const projectMenuTitle = isDiggerMode ? "Recent posted gigs" : "My Projects";
+  const projectMenuTitle = isDiggerMode
+    ? (totalOpenCount > 0 ? `Recent posted gigs (${totalOpenCount})` : "Recent posted gigs")
+    : "My Projects";
   const projectEmptyLabel = isDiggerMode ? "No recent gigs" : "No projects yet";
 
   // Fetch user profile photo and display name (header avatar synced with profile photo)
@@ -563,11 +565,16 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+                        className="relative h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
                         onClick={() => navigate(projectMenuPath)}
                         title={projectMenuTitle}
                       >
                         <FolderOpen className="h-4 w-4" />
+                        {isDiggerMode && totalOpenCount > 0 && (
+                          <span className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
+                            {totalOpenCount > 99 ? "99+" : totalOpenCount}
+                          </span>
+                        )}
                       </Button>
                     </HoverCardTrigger>
                     <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">
@@ -924,11 +931,16 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                      className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
                       onClick={() => navigate(projectMenuPath)}
                       title={projectMenuTitle}
                     >
                       <FolderOpen className="h-4 w-4" />
+                      {isDiggerMode && totalOpenCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
+                          {totalOpenCount > 99 ? "99+" : totalOpenCount}
+                        </span>
+                      )}
                     </Button>
                   </HoverCardTrigger>
                   <HoverCardContent side="bottom" align="end" className="w-96 min-w-[320px] max-w-[calc(100vw-2rem)] p-0 bg-popover border shadow-xl z-[10000] overflow-hidden">

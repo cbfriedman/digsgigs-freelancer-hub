@@ -12,9 +12,8 @@ const logStep = (step: string, details?: any) => {
   console.log(`[PROCESS-EXPIRED-AWARDS] ${step}${detailsStr}`);
 };
 
-// Referral fee configuration for non-acceptance penalty
+// Penalty for non-acceptance / decline: 8% of bid, max $500 (no minimum)
 const REFERRAL_FEE_RATE = 0.08; // 8%
-const REFERRAL_FEE_MIN_CENTS = 10000; // $100 minimum
 const REFERRAL_FEE_MAX_CENTS = 50000; // $500 maximum
 
 serve(async (req) => {
@@ -115,17 +114,15 @@ serve(async (req) => {
           })
           .eq("id", deposit.id);
 
-        // 2. Calculate the referral fee (8%, min $100, max $500)
+        // 2. Calculate the penalty (8% of bid, max $500)
         const bidAmountCents = Math.round(bid.amount * 100);
         const calculatedFee = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
-        const feeCents = Math.max(REFERRAL_FEE_MIN_CENTS, Math.min(calculatedFee, REFERRAL_FEE_MAX_CENTS));
+        const feeCents = Math.min(calculatedFee, REFERRAL_FEE_MAX_CENTS);
 
-        logStep("Charging Digger referral fee", { 
+        logStep("Charging Digger penalty", { 
           diggerId: diggerProfile.id, 
           calculatedFee,
           feeCents,
-          appliedMin: calculatedFee < REFERRAL_FEE_MIN_CENTS,
-          appliedMax: calculatedFee > REFERRAL_FEE_MAX_CENTS
         });
 
         let penaltyCollected = false;

@@ -197,20 +197,38 @@ serve(async (req) => {
 
     const gigAppLink = `/gig/${gigId}`;
     const titleSnippet = (gig.title || "").substring(0, 60) + ((gig.title?.length || 0) > 60 ? "…" : "");
-    for (const rec of recipientsToSend) {
-      try {
-        await supabase.rpc("create_notification", {
-          p_user_id: rec.user_id,
-          p_type: "new_gig",
-          p_title: "New project posted",
-          p_message: `A new project is live: "${titleSnippet}"`,
-          p_link: gigAppLink,
-          p_metadata: { gig_id: gigId },
-        });
-      } catch (notifErr: unknown) {
-        console.warn("[send-gig-email-by-settings] In-app notification failed for", rec.user_id, notifErr);
+
+    // In-app notification: send to ALL diggers who have lead notifications enabled (so every digger sees the alert)
+    const { data: allDiggers, error: allDiggersErr } = await supabase
+      .from("digger_profiles")
+      .select("id, user_id");
+    if (!allDiggersErr && allDiggers?.length) {
+      const allUserIds = allDiggers.map((x: { user_id: string }) => x.user_id);
+      const { data: appPrefs } = await supabase
+        .from("email_preferences")
+        .select("user_id, lead_notifications_enabled, enabled")
+        .in("user_id", allUserIds);
+      const appPrefsMap = new Map(
+        (appPrefs || []).map((p: any) => [p.user_id, p.lead_notifications_enabled !== false && p.enabled !== false])
+      );
+      for (const d of allDiggers) {
+        if (appPrefsMap.get(d.user_id) === false) continue;
+        try {
+          await supabase.rpc("create_notification", {
+            p_user_id: d.user_id,
+            p_type: "new_gig",
+            p_title: "New project posted",
+            p_message: `A new project is live: "${titleSnippet}"`,
+            p_link: gigAppLink,
+            p_metadata: { gig_id: gigId },
+          });
+        } catch (notifErr: unknown) {
+          console.warn("[send-gig-email-by-settings] In-app notification failed for", d.user_id, notifErr);
+        }
       }
     }
+
+    // Email: send only to recipients per admin settings (all / selected / manual)
 
     const resend = new Resend(resendApiKey);
     const subject = (gig.title?.length || 0) > 45 ? `New lead: ${gig.title.substring(0, 45)}…` : `New lead: ${gig.title}`;

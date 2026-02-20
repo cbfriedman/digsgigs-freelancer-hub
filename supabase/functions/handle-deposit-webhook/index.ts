@@ -84,27 +84,26 @@ serve(async (req) => {
 
       logStep("Deposit marked as paid", { depositId });
 
-      // Now actually award the lead
+      // Award = hire: no accept step; set bid accepted and gig in_progress
       const awardedAt = new Date().toISOString();
 
-      // Update bid as awarded
       await supabaseClient
         .from("bids")
         .update({
           awarded: true,
           awarded_at: awardedAt,
           award_method: "consumer_hire",
+          status: "accepted",
         })
         .eq("id", bidId);
 
-      // Update gig status
       await supabaseClient
         .from("gigs")
         .update({
           awarded_at: awardedAt,
           awarded_digger_id: diggerId,
           awarded_bid_id: bidId,
-          status: "awarded",
+          status: "in_progress",
         })
         .eq("id", gigId);
 
@@ -130,25 +129,19 @@ serve(async (req) => {
         .single();
 
       if (diggerProfile) {
-        // Calculate amounts for notification: 15% deposit with 8% fee retained
-        const releasedAmount = ((deposit?.base_rate_amount_cents || 0) - (deposit?.lead_cost_amount_cents || 0)) / 100;
-        
-        // Notify the awarded digger with 24-hour deadline
         await supabaseClient
           .from("notifications")
           .insert({
             user_id: diggerProfile.user_id,
             type: "lead_awarded_exclusive",
-            title: "🎉 Exclusive Job Award!",
-            message: `You've been exclusively awarded "${gig?.title || 'a project'}". Accept within 24 hours to receive $${releasedAmount.toFixed(0)} from the Gigger's 15% deposit (after 8% referral fee is retained)!`,
+            title: "You’re hired",
+            message: `You've been awarded "${gig?.title || 'this gig'}". If you can't take it, decline within 24 hours—declining may incur an 8% penalty (max $500); the client gets their deposit back.`,
             link: `/gig/${gigId}`,
             metadata: {
               gig_id: gigId,
               bid_id: bidId,
               deposit_id: depositId,
               acceptance_deadline: deposit?.acceptance_deadline,
-              deposit_amount_cents: deposit?.base_rate_amount_cents,
-              referral_fee_cents: deposit?.lead_cost_amount_cents,
             },
           });
 

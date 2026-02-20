@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings, Star, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useStripeConnect } from "@/hooks/useStripeConnect";
+import { DollarSign, TrendingUp, Calendar, Loader2, Receipt, SlidersHorizontal, ArrowUpDown, Download, FileText, FileSpreadsheet, Mail, Settings, Star, AlertTriangle, Wallet } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { exportToCSV, exportToPDF } from "@/utils/exportTransactions";
 import { RatingDialog } from "@/components/RatingDialog";
@@ -67,6 +69,7 @@ interface Transaction {
 const Transactions = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loading: payoutLoading, canReceivePayments } = useStripeConnect();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [userType, setUserType] = useState<'digger' | 'consumer' | null>(null);
@@ -295,12 +298,14 @@ const Transactions = () => {
           const gigs = contract?.gigs;
           if (!contract || contract.digger_id !== diggerId || existingMilestoneIds.has(m.id)) continue;
           existingMilestoneIds.add(m.id);
-          const totalAmount = Number(m.amount) + Number(m.platform_fee || 0);
+          const gross = Number(m.amount);
+          const giggerPaid = Math.round(gross * 1.03 * 100) / 100; // Gigger pays gross + 3%
+          const platformFeeDigger = Math.round((gross - Number(m.digger_payout)) * 100) / 100; // 8% paid by Digger
           list.push({
             id: `milestone-${m.id}`,
-            total_amount: totalAmount,
-            commission_rate: 0.03,
-            commission_amount: Number(m.platform_fee || 0),
+            total_amount: giggerPaid,
+            commission_rate: 0.08,
+            commission_amount: platformFeeDigger,
             digger_payout: Number(m.digger_payout),
             status: 'completed',
             created_at: m.created_at,
@@ -601,6 +606,19 @@ const Transactions = () => {
               )}
             </div>
 
+          {/* Digger: payout account status + link to Account */}
+          {userType === 'digger' && !payoutLoading && !canReceivePayments && (
+            <Alert className="border-amber-500/30 bg-amber-500/10">
+              <Wallet className="h-4 w-4 text-amber-600" />
+              <AlertDescription>
+                Set up your payout account in Account to receive milestone payments.{" "}
+                <Button variant="link" className="h-auto p-0 font-medium" onClick={() => navigate("/account#payout-account")}>
+                  Go to Account
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Stats for Diggers */}
           {userType === 'digger' && (
             <div className="grid md:grid-cols-3 gap-4">
@@ -733,7 +751,7 @@ const Transactions = () => {
                 </p>
                 {filteredTransactions.length > 0 && (
                   <p className="text-xs">
-                    💡 Export as CSV/PDF or email the report to yourself
+                    💡 Export as CSV/PDF or email the report to yourself. Need help? <Link to="/contact" className="text-primary underline hover:no-underline">Contact support</Link>.
                   </p>
                 )}
               </div>
@@ -809,18 +827,36 @@ const Transactions = () => {
                         </div>
                         {userType === 'digger' && (
                           <>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                Commission ({(transaction.commission_rate * 100).toFixed(0)}%
-                                {' - '}
-                                <span className={getCommissionTierColor(transaction.commission_rate)}>
-                                  {getCommissionTierName(transaction.commission_rate)}
-                                </span>):
-                              </span>
-                              <span className="font-semibold text-destructive">
-                                -${transaction.commission_amount.toFixed(2)}
-                              </span>
-                            </div>
+                            {(transaction.fromMilestone || transaction.milestone_payment_id) && (
+                              <>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">Gross (milestone amount):</span>
+                                  <span className="font-medium">
+                                    ${(transaction.total_amount / 1.03).toFixed(2)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">Platform fee (8%, paid by you):</span>
+                                  <span className="font-semibold text-destructive">
+                                    -${(transaction.total_amount / 1.03 - transaction.digger_payout).toFixed(2)}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {!transaction.fromMilestone && !transaction.milestone_payment_id && transaction.commission_rate > 0 && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  Commission ({(transaction.commission_rate * 100).toFixed(0)}%
+                                  {' - '}
+                                  <span className={getCommissionTierColor(transaction.commission_rate)}>
+                                    {getCommissionTierName(transaction.commission_rate)}
+                                  </span>):
+                                </span>
+                                <span className="font-semibold text-destructive">
+                                  -${transaction.commission_amount.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
                             <Separator />
                             <div className="flex items-center justify-between">
                               <span className="font-semibold">Your Payout:</span>
@@ -844,8 +880,8 @@ const Transactions = () => {
                         <div className="flex items-center gap-2">
                           <DollarSign className="w-4 h-4 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            {transaction.fromMilestone
-                              ? 'Milestone payment'
+                            {(transaction.fromMilestone || transaction.milestone_payment_id)
+                              ? `Gross: $${(transaction.total_amount / 1.03).toFixed(2)}`
                               : `Original bid: $${transaction.bids?.amount?.toFixed(2) || '0.00'}`}
                           </span>
                         </div>
@@ -853,7 +889,7 @@ const Transactions = () => {
                     </div>
 
                     {/* Commission Breakdown for Diggers (skip for milestone-only rows) */}
-                    {userType === 'digger' && !transaction.fromMilestone && transaction.commission_rate > 0 && (
+                    {userType === 'digger' && !transaction.fromMilestone && !transaction.milestone_payment_id && transaction.commission_rate > 0 && (
                       <div className="p-3 bg-muted rounded-lg">
                         <p className="text-sm text-muted-foreground">
                           💡 Tip: With a{' '}
@@ -998,12 +1034,15 @@ const Transactions = () => {
           <DialogHeader>
             <DialogTitle>Report a dispute</DialogTitle>
             <DialogDescription>
-              Describe the issue with this transaction. An admin will review and resolve it.
+              Describe the issue with this transaction. Our team will review and follow our dispute process.
               {disputeDialog.transaction && (
                 <span className="block mt-1 text-muted-foreground">
                   Gig: {disputeDialog.transaction.gigs.title}
                 </span>
               )}
+              <span className="block mt-2 text-sm">
+                Need help? <Link to="/contact" className="text-primary underline hover:no-underline">Contact support</Link>.
+              </span>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">

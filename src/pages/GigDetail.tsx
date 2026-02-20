@@ -567,22 +567,28 @@ const GigDetail = () => {
     }
   };
 
-  /** Digger declines the award: release award so Gigger can re-award or pick another bid. */
+  /** Digger declines: release award; if there was a deposit, Gigger is refunded and Digger may be charged 8% (max $500). */
   const handleDeclineAward = async () => {
     if (!id || !diggerId || !existingBid?.id) return;
     setDeclineLoading(true);
     try {
-      await invokeEdgeFunction(supabase, "digger-decline-award", {
-        body: {
-          bidId: existingBid.id,
-          gigId: id,
-          diggerId,
-          reason: declineReason.trim() || undefined,
-        },
-      });
+      const data = await invokeEdgeFunction<{ success?: boolean; refunded?: boolean; penaltyCharged?: boolean }>(
+        supabase,
+        "digger-decline-award",
+        {
+          body: {
+            bidId: existingBid.id,
+            gigId: id,
+            diggerId,
+            reason: declineReason.trim() || undefined,
+          },
+        }
+      );
       toast({
         title: "Award declined",
-        description: "The client can award another bid. You can still browse and bid on other gigs.",
+        description: data?.refunded
+          ? "The client will get their deposit back. You may have been charged an 8% penalty (max $500). You can still browse and bid on other gigs."
+          : "The client can award another bid. You can still browse and bid on other gigs.",
       });
       setDeclineDialogOpen(false);
       setDeclineReason("");
@@ -930,6 +936,7 @@ const GigDetail = () => {
                     payment_terms: existingBid.payment_terms ?? undefined,
                     milestones: existingBid.milestones ?? undefined,
                     accepted_payment_methods: existingBid.accepted_payment_methods ?? undefined,
+                    pricing_model: existingBid.pricing_model === "success_based" || existingBid.pricing_model === "pay_per_lead" ? existingBid.pricing_model : undefined,
                   }}
                   onSuccess={() => {
                     setEditingProposal(false);
@@ -943,13 +950,12 @@ const GigDetail = () => {
                 </Button>
               </div>
             )}
-            {/* Digger: You've been awarded – Accept or decline (before contract is on) */}
+            {/* Digger: You're hired – only option is to decline if they can't take it */}
             {showDiggerContent &&
               diggerId &&
-              gig?.status === "awarded" &&
+              (gig?.status === "awarded" || gig?.status === "in_progress") &&
               gig.awarded_digger_id === diggerId &&
-              existingBid?.awarded &&
-              existingBid?.status !== "accepted" && (
+              existingBid?.awarded && (
                 <Card id="award-response" className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/10 to-background">
                   <CardHeader>
                     <div className="flex items-start gap-3">
@@ -957,35 +963,20 @@ const GigDetail = () => {
                         <Award className="h-6 w-6" aria-hidden />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-xl">You&apos;ve been awarded this gig</CardTitle>
-                        <CardDescription className="mt-1">
-                          The client chose your proposal. Accept to start the job (contract is on; you or they can set up the payment contract next), or decline to release the award so they can pick someone else.
+                        <CardTitle className="text-xl">You&apos;re hired for this gig</CardTitle>
+                        <CardDescription className="mt-1 space-y-1">
+                          <span className="block">The client awarded you. You or they can set up the payment contract (milestones) next. If you can&apos;t take this job, decline—the client gets their deposit back and an 8% penalty (max $500) may apply to you.</span>
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="flex flex-wrap gap-3">
                     <Button
-                      onClick={handleAcceptAward}
-                      disabled={acceptAwardLoading}
-                      className="gap-2 bg-green-600 hover:bg-green-700"
-                    >
-                      {acceptAwardLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Accepting...
-                        </>
-                      ) : (
-                        "Accept"
-                      )}
-                    </Button>
-                    <Button
                       variant="outline"
                       onClick={() => setDeclineDialogOpen(true)}
-                      disabled={acceptAwardLoading}
                       className="gap-2"
                     >
-                      Decline
+                      Can&apos;t take this job? Decline
                     </Button>
                   </CardContent>
                 </Card>
@@ -993,9 +984,9 @@ const GigDetail = () => {
             <Dialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Decline this award?</DialogTitle>
+                  <DialogTitle>Decline this job?</DialogTitle>
                   <DialogDescription>
-                    The award will be released and the client can choose another professional or re-award you later. You can optionally give a short reason (e.g. &quot;Not available&quot;, &quot;Terms changed&quot;).
+                    The award will be released and the client can choose someone else. If they paid a 15% deposit, they get a full refund and you may be charged an 8% penalty (max $500). You can optionally give a short reason.
                   </DialogDescription>
                 </DialogHeader>
                 <Textarea
@@ -1114,7 +1105,9 @@ const GigDetail = () => {
                   )}
                   <Separator />
                   <p className="text-xs text-muted-foreground">
-                    What happens next: The client may message you with questions or to award the gig. You can message them from here or from Messages.
+                    {gig?.awarded_digger_id === diggerId
+                      ? "You can message the client directly from here or from Messages to coordinate."
+                      : "What happens next: The client may message you with questions or to award the gig. You can message them from here or from Messages."}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {gig.status === "open" && (
@@ -1133,8 +1126,14 @@ const GigDetail = () => {
                         size="sm"
                         className="gap-2"
                         onClick={handleSendMessage}
-                        disabled={!hasClientSentMessage}
-                        title={hasClientSentMessage ? "Open conversation with the client" : "You can reply after the client sends you a message first"}
+                        disabled={!hasClientSentMessage && gig?.awarded_digger_id !== diggerId}
+                        title={
+                          gig?.awarded_digger_id === diggerId
+                            ? "Open conversation with the client"
+                            : hasClientSentMessage
+                              ? "Open conversation with the client"
+                              : "You can reply after the client sends you a message first"
+                        }
                       >
                         <MessageSquare className="h-3.5 w-3.5" />
                         Message client

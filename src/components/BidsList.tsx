@@ -13,6 +13,16 @@ import { useDiggerPresence } from "@/hooks/useDiggerPresence";
 import { TrendingUp, DollarSign, FileText, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export interface BidFilters {
   search: string;
@@ -218,6 +228,14 @@ export const BidsList = ({
   const [paymentContractDialogOpen, setPaymentContractDialogOpen] = useState(false);
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
   const [contractCardKey, setContractCardKey] = useState(0);
+  /** When set, show confirmation modal before awarding this bid. */
+  const [bidToAward, setBidToAward] = useState<{
+    id: string;
+    diggerDisplayName: string;
+    diggerId: string;
+    amount: number;
+    pricing_model?: string;
+  } | null>(null);
   /** Digger profile IDs that have an active conversation for this gig (for "Chatting" badge). */
   const [conversationDiggerIds, setConversationDiggerIds] = useState<Set<string>>(new Set());
   /** Bid IDs pinned by the Gigger for this gig (persisted in localStorage). */
@@ -403,8 +421,9 @@ export const BidsList = ({
     };
   }, [gigId, loadBids]);
 
-  /** Gigger awards a bid: gig goes to "awarded", Digger is notified and can Accept or Decline. */
+  /** Gigger awards a bid: award = hire. Non-exclusive: DB update only. Exclusive: payment flow is handled in confirm dialog (charge-gigger-deposit → webhook sets in_progress). */
   const handleAwardBid = async (bidId: string) => {
+    setBidToAward(null);
     setAccepting(bidId);
     try {
       const { data: bidData, error: bidError } = await supabase
@@ -417,24 +436,24 @@ export const BidsList = ({
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const diggerId = (bidData as any)?.digger_id;
+      const now = new Date().toISOString();
 
-      // Mark bid as awarded only (do not set status to 'accepted' — Digger must accept)
       const { error: bidUpdateError } = await supabase
         .from('bids' as any)
         .update({
           awarded: true,
-          awarded_at: new Date().toISOString(),
+          awarded_at: now,
           awarded_by: authUser?.id ?? null,
+          status: 'accepted',
         })
         .eq('id', bidId);
 
       if (bidUpdateError) throw bidUpdateError;
 
-      // Update gig: status 'awarded' so Digger sees "Accept or decline"
       const gigUpdate: Record<string, unknown> = {
-        status: 'awarded',
+        status: 'in_progress',
         awarded_bid_id: bidId,
-        awarded_at: new Date().toISOString(),
+        awarded_at: now,
       };
       if (diggerId) gigUpdate.awarded_digger_id = diggerId;
 
@@ -462,7 +481,7 @@ export const BidsList = ({
 
       toast({
         title: "Bid awarded",
-        description: "The professional has been notified. They can accept or decline; once they accept, you can set up the payment contract.",
+        description: "The professional has been hired and notified. You can set up the payment contract (milestones) next.",
       });
 
       loadBids();
@@ -477,6 +496,58 @@ export const BidsList = ({
     } finally {
       setAccepting(null);
     }
+  };
+
+  /** Confirm award: for exclusive, start 15% payment flow; for non-exclusive, award = hire (handleAwardBid). */
+  const handleConfirmAward = async () => {
+    if (!bidToAward) return;
+    const { id, diggerId, amount, pricing_model } = bidToAward;
+    const isExclusive = pricing_model === "success_based";
+
+    if (isExclusive) {
+      setAccepting(id);
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const { data, error } = await supabase.functions.invoke<{
+          requiresPayment?: boolean;
+          checkoutUrl?: string;
+          error?: string;
+        }>("charge-gigger-deposit", {
+          body: {
+            bidId: id,
+            gigId,
+            giggerId: authUser?.id ?? null,
+            diggerId,
+            origin: window.location.origin,
+          },
+        });
+        if (error) throw new Error(typeof error === "string" ? error : (error as Error)?.message);
+        if (data?.error) throw new Error(data.error);
+        if (data?.requiresPayment && data?.checkoutUrl) {
+          setBidToAward(null);
+          window.open(data.checkoutUrl, "_blank");
+          toast({
+            title: "Complete payment",
+            description: "Finish the 15% deposit in the new tab to award this gig. You'll be refunded if the professional declines.",
+          });
+          loadBids();
+          onAwardSuccess?.();
+          return;
+        }
+      } catch (e: any) {
+        toast({
+          title: "Error",
+          description: e?.message || "Failed to start payment",
+          variant: "destructive",
+        });
+      } finally {
+        setAccepting(null);
+        setBidToAward(null);
+      }
+      return;
+    }
+
+    await handleAwardBid(id);
   };
 
   if (loading) {
@@ -619,7 +690,21 @@ export const BidsList = ({
               hasActiveChat={conversationDiggerIds.has(bid.digger_profiles.id)}
               isPinned={pinnedBidIds.has(bid.id)}
               onPinToggle={() => togglePin(bid.id)}
-              onAccept={() => handleAwardBid(bid.id)}
+              onAccept={() => {
+                const name =
+                  (bid.digger_profiles as any)?.profiles?.full_name ||
+                  (bid.digger_profiles as any)?.business_name ||
+                  (bid.digger_profiles as any)?.profile_name ||
+                  (bid.digger_profiles as any)?.profession ||
+                  "This professional";
+                setBidToAward({
+                  id: bid.id,
+                  diggerDisplayName: String(name).trim() || "This professional",
+                  diggerId: (bid as any).digger_id ?? (bid as any).digger_profiles?.id ?? "",
+                  amount: bid.amount ?? 0,
+                  pricing_model: bid.pricing_model,
+                });
+              }}
               onConfirmHire={loadBids}
               onCompleteWork={loadBids}
               acceptingId={accepting}
@@ -631,6 +716,42 @@ export const BidsList = ({
           ))}
         </>
       )}
+
+      <AlertDialog open={!!bidToAward} onOpenChange={(open) => !open && setBidToAward(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Award this bid?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bidToAward && (
+                <>
+                  {bidToAward.pricing_model === "success_based" ? (
+                    <>
+                      You&apos;ll be charged <strong>15% (${((bidToAward.amount * 0.15)).toFixed(0)})</strong> to award this gig to <strong>{bidToAward.diggerDisplayName}</strong>. They&apos;re hired once you pay. If they can&apos;t take the job, you get a full refund and they may be charged an 8% penalty (max $500).
+                    </>
+                  ) : (
+                    <>
+                      Award this gig to <strong>{bidToAward.diggerDisplayName}</strong>. They&apos;ll be hired and notified. You can set up the payment contract (milestones) next.
+                    </>
+                  )}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!accepting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmAward();
+              }}
+              disabled={!!accepting}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {accepting ? "Awarding..." : bidToAward?.pricing_model === "success_based" ? "Pay 15% & award" : "Award"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {selectedBid && (
         <PaymentContractDialog

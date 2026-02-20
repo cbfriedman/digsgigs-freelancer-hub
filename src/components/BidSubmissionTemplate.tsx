@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Percent, CreditCard, AlertCircle, DollarSign, Lightbulb, Plus, Trash2, Milestone, Sparkles, Upload, X, CheckCircle2 } from "lucide-react";
+import { Loader2, Percent, CreditCard, AlertCircle, DollarSign, Lightbulb, Plus, Trash2, Milestone, Sparkles, Upload, X, CheckCircle2, Shield } from "lucide-react";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 
@@ -100,6 +100,7 @@ export interface ExistingBidForEdit {
   payment_terms?: string | null;
   milestones?: { description: string; amount: number }[] | null;
   accepted_payment_methods?: string[] | null;
+  pricing_model?: "pay_per_lead" | "success_based" | null;
 }
 
 interface BidSubmissionTemplateProps {
@@ -123,7 +124,9 @@ export const BidSubmissionTemplate = ({
   const [amount, setAmount] = useState("");
   const [timeline, setTimeline] = useState("");
   const [proposal, setProposal] = useState("");
-  const [pricingModel] = useState<"pay_per_lead" | "success_based">(initialPricingModel);
+  const [pricingModel, setPricingModel] = useState<"pay_per_lead" | "success_based">(
+    existingBid?.pricing_model === "success_based" ? "success_based" : initialPricingModel
+  );
   // New fields for milestones, payment methods, and payment terms
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
   const [acceptedPaymentMethods, setAcceptedPaymentMethods] = useState<string[]>([]);
@@ -146,6 +149,9 @@ export const BidSubmissionTemplate = ({
     setTimeline(existingBid.timeline || "");
     setProposal(existingBid.proposal || "");
     setPaymentTerms(existingBid.payment_terms?.trim() || "Payments are due when milestones are met and before the work continues.");
+    if (existingBid.pricing_model === "success_based" || existingBid.pricing_model === "pay_per_lead") {
+      setPricingModel(existingBid.pricing_model);
+    }
     if (Array.isArray(existingBid.milestones) && existingBid.milestones.length > 0) {
       setMilestones(
         existingBid.milestones.map((m) => ({
@@ -202,6 +208,8 @@ export const BidSubmissionTemplate = ({
       };
 
       if (isEditMode && existingBid?.id) {
+        bidData.pricing_model = pricingModel;
+        if (pricingModel === "success_based") bidData.referral_fee_rate = REFERRAL_FEE_RATE;
         const { error } = await supabase
           .from('bids' as any)
           .update(bidData)
@@ -375,6 +383,54 @@ export const BidSubmissionTemplate = ({
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
+          {/* Digger chooses: Non-exclusive (recommended) or Exclusive */}
+          <section className="mb-6 space-y-3" aria-labelledby="pricing-type-heading">
+            <h2 id="pricing-type-heading" className="text-lg font-semibold">How do you want to offer this bid?</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPricingModel("pay_per_lead")}
+                className={cn(
+                  "flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-colors",
+                  pricingModel === "pay_per_lead"
+                    ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-green-600" />
+                  <span className="font-semibold">Non-exclusive</span>
+                  <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Client awards with no upfront deposit. You get paid per milestone when they approve—funds held in escrow until then.
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingModel("success_based")}
+                className={cn(
+                  "flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-colors",
+                  pricingModel === "success_based"
+                    ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20 ring-2 ring-orange-500/30"
+                    : "border-border hover:border-orange-500/50 hover:bg-muted/50"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Percent className="h-5 w-5 text-orange-600" />
+                  <span className="font-semibold">Exclusive (Pay on Award)</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Client pays 15% deposit to award you. If you decline, they get a refund and you may be charged 8% (max $500).
+                </p>
+              </button>
+            </div>
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Shield className="h-4 w-4 shrink-0 text-primary" />
+              You&apos;re paid when the client approves each milestone. Funds are held in escrow until then.
+            </p>
+          </section>
+
           {pricingModel === "success_based" && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
               <div className="flex items-start gap-3">
@@ -385,7 +441,7 @@ export const BidSubmissionTemplate = ({
                   </p>
                   <p className="text-orange-700 dark:text-orange-300">
                     You pay nothing upfront. An 8% referral fee (${REFERRAL_FEE_MIN} minimum) 
-                    will be charged only if you're awarded and accept the job.
+                    will be charged only if you&apos;re awarded. If you decline, the client gets their deposit back and you may be charged 8% (max $500).
                   </p>
                 </div>
               </div>

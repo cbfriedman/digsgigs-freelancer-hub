@@ -358,17 +358,17 @@ export function DiggerProposalCard({
                       {bid.status === "accepted" && bid.awarded
                         ? "Hired ✓"
                         : isAwardedWaitingResponse
-                          ? "Awarded – waiting for response"
-                          : (BID_STATUS_CONFIG[bid.status]?.label ?? bid.status)}
+                        ? "Hired"
+                        : (BID_STATUS_CONFIG[bid.status]?.label ?? bid.status)}
                     </Badge>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[240px]">
                   <p className="text-xs">
                     {bid.status === "accepted" && bid.awarded
-                      ? "Freelancer is hired. Mark work complete when done."
-                      : isAwardedWaitingResponse
-                        ? "Waiting for this professional to accept or decline the award."
+                        ? "Freelancer is hired. Mark work complete when done."
+                        : isAwardedWaitingResponse
+                        ? "Hired. They can decline if they can't take the job."
                         : BID_STATUS_CONFIG[bid.status]?.tooltip ?? `Status: ${bid.status}`}
                   </p>
                 </TooltipContent>
@@ -398,7 +398,7 @@ export function DiggerProposalCard({
               ) : isAwardedWaitingResponse ? (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Info className="h-3.5 w-3.5 shrink-0" />
-                  Waiting for this professional to accept or decline.
+                  Hired. They can decline if they can&apos;t take the job. Chat to coordinate.
                 </p>
               ) : bid.status === "accepted" && !bid.awarded ? (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">

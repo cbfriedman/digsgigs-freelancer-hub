@@ -26,8 +26,8 @@ export const useStripeConnect = () => {
         .single();
 
       if (profile) {
-        setIsOnboarded(profile.stripe_connect_onboarded || false);
-        setCanReceivePayments(profile.stripe_connect_charges_enabled || false);
+        setIsOnboarded(!!(profile.stripe_connect_onboarded || profile.stripe_connect_account_id));
+        setCanReceivePayments(!!profile.stripe_connect_charges_enabled);
       }
     } catch (error) {
       console.error("Error checking Connect status:", error);
