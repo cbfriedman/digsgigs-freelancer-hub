@@ -811,10 +811,12 @@ const GigDetail = () => {
                       {reposting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4 mr-1" />}
                       Repost
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/gig/${id}/edit`)} title="Edit gig details">
-                      <Pencil className="h-4 w-4" />
-                      Edit gig
-                    </Button>
+                    {gig.status !== "completed" && (
+                      <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate(`/gig/${id}/edit`)} title="Edit gig details">
+                        <Pencil className="h-4 w-4" />
+                        Edit gig
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => navigate("/my-gigs")}>
                       Manage in My Gigs
                     </Button>

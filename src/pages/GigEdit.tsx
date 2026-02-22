@@ -78,6 +78,13 @@ const GigEdit = () => {
           return;
         }
 
+        if (gig.status === "completed") {
+          toast.error("Completed gigs can't be edited.");
+          navigate(`/gig/${id}`);
+          setLoading(false);
+          return;
+        }
+
         setAuthorized(true);
         
         // Populate form

@@ -182,8 +182,13 @@ const MyGigs = () => {
   };
 
   const toggleGigStatus = async (gigId: string, currentStatus: string) => {
+    // Only allow open <-> closed; never reopen in_progress / awarded / completed
+    if (currentStatus !== "open" && currentStatus !== "closed") {
+      toast.error("This gig can't be reopened once it's in progress or completed.");
+      return;
+    }
     const newStatus = currentStatus === "open" ? "closed" : "open";
-    
+
     const { error } = await supabase
       .from("gigs")
       .update({ status: newStatus })
@@ -319,6 +324,16 @@ const MyGigs = () => {
         is_verified: true,
       });
       if (error) throw error;
+
+      // Notify the digger that they received a reference (edge function uses service role to insert)
+      try {
+        await supabase.functions.invoke("notify-digger-reference-received", {
+          body: { gigId: leaveRefGig.id },
+        });
+      } catch (_) {
+        // Non-blocking: reference was saved; notification is best-effort
+      }
+
       toast.success("Reference added. It will show as \"Verified on DigsandGigs\" on the Digger's profile.");
       setLeaveRefGig(null);
       setLeaveRefDescription("");
@@ -486,14 +501,28 @@ const MyGigs = () => {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <Label htmlFor={`status-${gig.id}`} className="text-sm whitespace-nowrap">
-                        {gig.status === "open" ? "Active" : "Closed"}
-                      </Label>
-                      <Switch
-                        id={`status-${gig.id}`}
-                        checked={gig.status === "open"}
-                        onCheckedChange={() => toggleGigStatus(gig.id, gig.status)}
-                      />
+                      {(gig.status === "open" || gig.status === "closed") ? (
+                        <>
+                          <Label htmlFor={`status-${gig.id}`} className="text-sm whitespace-nowrap">
+                            {gig.status === "open" ? "Active" : "Closed"}
+                          </Label>
+                          <Switch
+                            id={`status-${gig.id}`}
+                            checked={gig.status === "open"}
+                            onCheckedChange={() => toggleGigStatus(gig.id, gig.status)}
+                          />
+                        </>
+                      ) : (
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
+                          {gig.status === "completed"
+                            ? "Completed"
+                            : gig.status === "in_progress"
+                              ? "In progress"
+                              : gig.status === "awarded"
+                                ? "Awarded"
+                                : gig.status}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -506,15 +535,17 @@ const MyGigs = () => {
                       <FileText className="mr-2 h-4 w-4" />
                       {bidStatsByGigId[gig.id]?.count ? "View bids" : "View gig"}
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate(`/gig/${gig.id}/edit`)}
-                      className="min-w-0"
-                      title="Edit gig details"
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
-                    </Button>
+                    {gig.status !== "completed" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => navigate(`/gig/${gig.id}/edit`)}
+                        className="min-w-0"
+                        title="Edit gig details"
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                      </Button>
+                    )}
                     {gig.status === "completed" &&
                       (gig as Gig & { awarded_digger_id?: string | null }).awarded_digger_id &&
                       !platformRefGigIds.has(gig.id) && (

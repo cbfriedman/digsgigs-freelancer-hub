@@ -301,6 +301,39 @@ export function ContractMilestonesCard({
     }
   }, [contract?.status, contract?.id]);
 
+  // Realtime: when the other party leaves a review, show it without refresh (gigger sees digger's review, digger sees gigger's review)
+  useEffect(() => {
+    if (!contract || contract.status !== "completed" || !gigId) return;
+
+    const channel = supabase
+      .channel(`contract-reviews:${gigId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "ratings", filter: `gig_id=eq.${gigId}` },
+        () => fetchCompletedReviewsRef.current(false)
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "ratings", filter: `gig_id=eq.${gigId}` },
+        () => fetchCompletedReviewsRef.current(false)
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "gigger_ratings", filter: `gig_id=eq.${gigId}` },
+        () => fetchCompletedReviewsRef.current(false)
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "gigger_ratings", filter: `gig_id=eq.${gigId}` },
+        () => fetchCompletedReviewsRef.current(false)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [contract?.status, gigId]);
+
   const handleSubmitMilestone = async (milestoneId: string) => {
     setSubmittingId(milestoneId);
     try {
@@ -708,9 +741,18 @@ export function ContractMilestonesCard({
                     </span>
                   )}
                 </p>
-                {exclusiveWithDeposit && m.milestone_number === 1 && (
+                {exclusiveWithDeposit && m.milestone_number === 1 && m.status === "paid" && (
+                  <p className="text-xs text-green-700 dark:text-green-400 mt-0.5 font-medium">
+                    {isDigger
+                      ? `You received $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (milestone + 7% deposit)`
+                      : `Professional received $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} (milestone + 7% deposit)`}
+                  </p>
+                )}
+                {exclusiveWithDeposit && m.milestone_number === 1 && m.status !== "paid" && (
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Professional receives ${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} on approval (milestone + 7% deposit)
+                    {isDigger
+                      ? `You receive $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} on approval (milestone + 7% deposit)`
+                      : `Professional receives $${(Number(m.amount) + exclusiveWithDeposit.bidAmount * 0.07).toFixed(2)} on approval (milestone + 7% deposit)`}
                   </p>
                 )}
               </div>

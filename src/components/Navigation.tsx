@@ -607,7 +607,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                         >
                                           <div className="w-full min-w-0 flex items-center justify-between gap-2">
                                             <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
-                                            <Badge variant="default" className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
+                                            <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{g.status}</Badge>
                                           </div>
                                           <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                         </button>
@@ -636,7 +636,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                       >
                                         <div className="w-full min-w-0 flex items-center justify-between gap-2">
                                           <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
-                                          <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
+                                          <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{g.status}</Badge>
                                         </div>
                                         <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                       </button>
@@ -973,7 +973,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                       >
                                         <div className="w-full min-w-0 flex items-center justify-between gap-2">
                                           <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
-                                          <Badge variant="default" className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
+                                          <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{g.status}</Badge>
                                         </div>
                                         <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                       </button>
@@ -997,7 +997,7 @@ export function Navigation({ showBackButton = false, backTo = "/", backLabel = "
                                     <button type="button" className="w-full min-w-0 max-w-full flex flex-col items-start gap-0.5 px-4 py-2.5 text-left hover:bg-muted/60 overflow-hidden box-border" onClick={(e) => { e.preventDefault(); navigate(projectMenuPath); }}>
                                       <div className="w-full min-w-0 flex items-center justify-between gap-2">
                                         <span className="font-medium text-sm truncate min-w-0 flex-1" title={title}>{displayTitle}</span>
-                                        <Badge variant={g.status === "open" ? "default" : "secondary"} className="text-[10px] shrink-0 whitespace-nowrap">{g.status}</Badge>
+                                        <Badge variant={g.status === "open" ? "default" : g.status === "completed" ? "outline" : "secondary"} className={cn("text-[10px] shrink-0 whitespace-nowrap", g.status === "completed" && "border-green-600 bg-green-600/15 text-green-700 dark:bg-green-500/20 dark:text-green-400")}>{g.status}</Badge>
                                       </div>
                                       <p className="text-xs text-muted-foreground truncate w-full min-w-0">{timeLabel}</p>
                                     </button>

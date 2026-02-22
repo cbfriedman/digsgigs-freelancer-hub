@@ -60,7 +60,7 @@ export function useRecentGigs(userId: string | undefined) {
     };
   }, [userId]);
 
-  // Realtime: when this user posts a new gig, refresh the list so the header dropdown updates promptly
+  // Realtime: when this user's gigs change (new gig or status update), refresh the list so the header dropdown reflects project status
   useEffect(() => {
     if (!userId) return;
 
@@ -74,9 +74,17 @@ export function useRecentGigs(userId: string | undefined) {
           table: "gigs",
           filter: `consumer_id=eq.${userId}`,
         },
-        () => {
-          refetch();
-        }
+        () => refetch()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "gigs",
+          filter: `consumer_id=eq.${userId}`,
+        },
+        () => refetch()
       )
       .subscribe();
 
