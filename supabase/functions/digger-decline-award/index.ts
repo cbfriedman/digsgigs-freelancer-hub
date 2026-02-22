@@ -7,8 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PENALTY_RATE = 0.08; // 8%
-const PENALTY_MAX_CENTS = 50000; // $500 max
+const PENALTY_CENTS = 10000; // $100 flat penalty for decline
 
 const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[DIGGER-DECLINE-AWARD] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
@@ -134,11 +133,9 @@ serve(async (req) => {
           logStep("Refund failed", { error: refundErr instanceof Error ? refundErr.message : String(refundErr) });
         }
 
-        const bidAmountCents = Math.round(Number(bid.amount) * 100);
-        const calculated = Math.round(bidAmountCents * PENALTY_RATE);
-        penaltyCents = Math.min(calculated, PENALTY_MAX_CENTS);
+        penaltyCents = PENALTY_CENTS;
 
-        if (penaltyCents > 0 && diggerProfile.stripe_customer_id) {
+        if (diggerProfile.stripe_customer_id) {
           try {
             const customer = await stripe.customers.retrieve(diggerProfile.stripe_customer_id) as Stripe.Customer;
             const defaultPm = customer.invoice_settings?.default_payment_method;
@@ -150,7 +147,7 @@ serve(async (req) => {
                 payment_method: defaultPm as string,
                 off_session: true,
                 confirm: true,
-                description: `Declined award penalty - ${gig.title}`,
+                description: `$100 declined award penalty - ${gig.title}`,
                 metadata: {
                   type: "decline_award_penalty",
                   bid_id: bidId,

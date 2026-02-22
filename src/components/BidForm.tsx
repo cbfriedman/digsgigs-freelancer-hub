@@ -29,7 +29,7 @@ const bidSchema = z.object({
 
 // Referral fee configuration - must match edge function
 const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
-const REFERRAL_FEE_MIN = 50; // $50 minimum (no cap)
+const REFERRAL_FEE_MIN = 99; // $99 minimum (no cap)
 // Non-exclusive pricing for deposit calculation
 const NON_EXCLUSIVE_RATE = 0.02; // 2%
 const NON_EXCLUSIVE_MIN = 3; // $3 minimum
@@ -56,7 +56,7 @@ export const BidForm = ({ gigId, diggerId, onSuccess, initialPricingModel = "pay
 
   const calculateReferralFee = (bidAmount: number): number => {
     const fee = bidAmount * REFERRAL_FEE_RATE;
-    // Apply $50 min, no cap
+    // Apply $99 min, no cap
     return Math.max(REFERRAL_FEE_MIN, fee);
   };
 

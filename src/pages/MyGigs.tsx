@@ -434,8 +434,17 @@ const MyGigs = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-3">
                         <h3 className="text-xl font-semibold">{gig.title}</h3>
-                        <Badge variant={gig.status === "open" ? "secondary" : "outline"}>
-                          {gig.status}
+                        <Badge
+                          variant={gig.status === "open" ? "secondary" : gig.status === "completed" ? "default" : "outline"}
+                          className={gig.status === "completed" ? "bg-green-600 hover:bg-green-600" : ""}
+                        >
+                          {gig.status === "completed"
+                            ? "Completed"
+                            : gig.status === "in_progress"
+                              ? "In progress"
+                              : gig.status === "awarded"
+                                ? "Awarded"
+                                : gig.status}
                         </Badge>
                         {gig.purchase_count > 0 && (
                           <Badge variant="outline" className="flex items-center gap-1">

@@ -202,8 +202,11 @@ export const AnonymizedBidCard = ({
             </Badge>
             
             {bid.awarded && (
-              <Badge variant="default" className="bg-green-600">
-                Hired ✓
+              <Badge
+                variant={bid.status === "accepted" ? "default" : "secondary"}
+                className={bid.status === "accepted" ? "bg-green-600" : ""}
+              >
+                {bid.status === "accepted" ? "Hired ✓" : "Awarded"}
               </Badge>
             )}
           </div>

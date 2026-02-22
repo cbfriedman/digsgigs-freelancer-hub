@@ -80,7 +80,7 @@ serve(async (req) => {
     }
 
     // Check if already accepted
-    if (bid.status === "accepted" || bid.referral_fee_charged_at) {
+    if (bid.status === "accepted") {
       logStep("Bid already accepted", { status: bid.status });
       return new Response(
         JSON.stringify({ 
@@ -92,45 +92,21 @@ serve(async (req) => {
       );
     }
 
-    // For success-based (exclusive) bids, charge the referral fee
-    if (bid.pricing_model === "success_based") {
-      logStep("Charging referral fee for exclusive bid acceptance", {
-        bidId,
-        amount: bid.amount
-      });
+    // Require gig to be in "awarded" state (waiting for Digger to accept)
+    const { data: gigCheck, error: gigCheckError } = await supabaseClient
+      .from("gigs")
+      .select("id, status")
+      .eq("id", gigId)
+      .single();
 
-      // Invoke the charge-referral-fee function
-      const { data: feeResult, error: feeError } = await supabaseClient.functions.invoke(
-        "charge-referral-fee",
-        {
-          body: { bidId, gigId, diggerId }
-        }
-      );
-
-      if (feeError) {
-        throw new Error(`Payment failed: ${feeError.message}`);
-      }
-
-      logStep("Referral fee result", feeResult);
-
-      // If payment requires checkout session
-      if (feeResult?.requiresPayment && feeResult?.checkoutUrl) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            requiresPayment: true,
-            checkoutUrl: feeResult.checkoutUrl,
-            feeCents: feeResult.feeCents,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // If payment failed
-      if (!feeResult?.success && !feeResult?.skipped) {
-        throw new Error("Payment failed. Please try again or add a payment method.");
-      }
+    if (gigCheckError || !gigCheck) {
+      throw new Error("Gig not found");
     }
+    if (gigCheck.status !== "awarded") {
+      throw new Error("This award is not pending your acceptance");
+    }
+
+    // Exclusive: 8% referral fee is retained from Gigger's 15% deposit; no charge to Digger on accept
 
     // Update bid status to accepted
     const { error: updateError } = await supabaseClient
@@ -167,10 +143,10 @@ serve(async (req) => {
       .single();
 
     if (deposit && !depositError) {
-      // Calculate amounts: 8% referral fee is retained, rest goes to Digger
+      // Calculate amounts: 8% referral fee retained (min $99), rest goes to Digger
       const bidAmount = bid.amount || ((bid.amount_min || 0) + (bid.amount_max || 0)) / 2;
       const bidAmountCents = Math.round(bidAmount * 100);
-      const referralFeeCents = Math.round(bidAmountCents * 0.08); // 8% referral fee
+      const referralFeeCents = Math.max(9900, Math.round(bidAmountCents * 0.08)); // 8% with $99 minimum
       const releasedToDiggerCents = deposit.deposit_amount_cents - referralFeeCents;
 
       logStep("Processing deposit release", {

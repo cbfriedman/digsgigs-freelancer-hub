@@ -68,7 +68,7 @@ const bidSchema = z.object({
 
 // Referral fee configuration - must match edge function
 const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
-const REFERRAL_FEE_MIN = 50; // $50 minimum (no cap)
+const REFERRAL_FEE_MIN = 99; // $99 minimum (no cap)
 // Non-exclusive pricing for deposit calculation
 const NON_EXCLUSIVE_RATE = 0.02; // 2%
 const NON_EXCLUSIVE_MIN = 3; // $3 minimum
@@ -109,6 +109,10 @@ interface BidSubmissionTemplateProps {
   onSuccess: () => void;
   initialPricingModel?: "pay_per_lead" | "success_based";
   existingBid?: ExistingBidForEdit | null;
+  /** When set, clicking "Buy the lead" navigates to payment (e.g. lead unlock). After payment the Digger sees contact info. */
+  onBuyLeadClick?: () => void;
+  /** When set, clicking "Exclusive" scrolls to the proposal form (e.g. #bid). */
+  onExclusiveClick?: () => void;
 }
 
 export const BidSubmissionTemplate = ({ 
@@ -117,6 +121,8 @@ export const BidSubmissionTemplate = ({
   onSuccess, 
   initialPricingModel = "pay_per_lead",
   existingBid = null,
+  onBuyLeadClick,
+  onExclusiveClick,
 }: BidSubmissionTemplateProps) => {
   const isEditMode = !!existingBid?.id;
   const { toast } = useToast();
@@ -125,7 +131,11 @@ export const BidSubmissionTemplate = ({
   const [timeline, setTimeline] = useState("");
   const [proposal, setProposal] = useState("");
   const [pricingModel, setPricingModel] = useState<"pay_per_lead" | "success_based">(
-    existingBid?.pricing_model === "success_based" ? "success_based" : initialPricingModel
+    existingBid?.pricing_model === "success_based"
+      ? "success_based"
+      : existingBid?.pricing_model === "pay_per_lead"
+        ? "pay_per_lead"
+        : (onBuyLeadClick ? "success_based" : initialPricingModel)
   );
   // New fields for milestones, payment methods, and payment terms
   const [milestones, setMilestones] = useState<MilestoneItem[]>([]);
@@ -168,7 +178,7 @@ export const BidSubmissionTemplate = ({
 
   const calculateReferralFee = (amount: number): number => {
     const fee = amount * REFERRAL_FEE_RATE;
-    return Math.max(REFERRAL_FEE_MIN, fee); // 8% with $50 minimum, no cap
+    return Math.max(REFERRAL_FEE_MIN, fee); // 8% with $99 minimum, no cap
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -377,21 +387,24 @@ export const BidSubmissionTemplate = ({
             ) : (
               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                 <CreditCard className="w-3 h-3 mr-1" />
-                Non-Exclusive
+                Buy the lead
               </Badge>
             )}
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
-          {/* Digger chooses: Non-exclusive (recommended) or Exclusive */}
+          {/* Digger chooses: when onBuyLeadClick set, only proposal type (Non-exclusive vs Exclusive); otherwise Buy the lead vs Exclusive */}
           <section className="mb-6 space-y-3" aria-labelledby="pricing-type-heading">
-            <h2 id="pricing-type-heading" className="text-lg font-semibold">How do you want to offer this bid?</h2>
+            <h2 id="pricing-type-heading" className="text-lg font-semibold">
+              {onBuyLeadClick ? "Proposal type" : "What would you like to do with this lead?"}
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {!onBuyLeadClick && (
               <button
                 type="button"
                 onClick={() => setPricingModel("pay_per_lead")}
                 className={cn(
-                  "flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-colors",
+                  "flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-colors cursor-pointer",
                   pricingModel === "pay_per_lead"
                     ? "border-primary bg-primary/10 ring-2 ring-primary/30"
                     : "border-border hover:border-primary/50 hover:bg-muted/50"
@@ -399,18 +412,30 @@ export const BidSubmissionTemplate = ({
               >
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5 text-green-600" />
-                  <span className="font-semibold">Non-exclusive</span>
-                  <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                  <span className="font-semibold">Buy the lead</span>
+                </div>
+                <div className="text-base font-semibold text-primary">
+                  {parsedAmount > 0 ? (
+                    <>Lead price: ${Math.min(NON_EXCLUSIVE_MAX, Math.max(NON_EXCLUSIVE_MIN, Math.round(parsedAmount * NON_EXCLUSIVE_RATE * 100) / 100)).toFixed(2)}</>
+                  ) : (
+                    <>Lead price: $3–$49</>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Client awards with no upfront deposit. You get paid per milestone when they approve—funds held in escrow until then.
+                  {parsedAmount > 0
+                    ? "2% of your bid amount. Client awards with no upfront deposit. You get paid per milestone when they approve—funds are held by the platform until then."
+                    : "2% of your bid (enter your bid amount below to see your exact price). Client awards with no upfront deposit. You get paid per milestone when they approve."}
                 </p>
               </button>
+              )}
               <button
                 type="button"
-                onClick={() => setPricingModel("success_based")}
+                onClick={() => {
+                  setPricingModel("success_based");
+                  onExclusiveClick?.();
+                }}
                 className={cn(
-                  "flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-colors",
+                  "flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-colors cursor-pointer",
                   pricingModel === "success_based"
                     ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20 ring-2 ring-orange-500/30"
                     : "border-border hover:border-orange-500/50 hover:bg-muted/50"
@@ -420,14 +445,19 @@ export const BidSubmissionTemplate = ({
                   <Percent className="h-5 w-5 text-orange-600" />
                   <span className="font-semibold">Exclusive (Pay on Award)</span>
                 </div>
+                {parsedAmount > 0 && (
+                  <div className="text-base font-semibold text-orange-600 dark:text-orange-400">
+                    Referral fee when awarded: ${Math.max(REFERRAL_FEE_MIN, Math.round(parsedAmount * REFERRAL_FEE_RATE)).toLocaleString()} (8%, ${REFERRAL_FEE_MIN} min)
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground">
-                  Client pays 15% deposit to award you. If you decline, they get a refund and you may be charged 8% (max $500).
+                  Client pays 15% deposit to award you. You pay an 8% referral fee (${REFERRAL_FEE_MIN} minimum) when awarded—deducted from their deposit. You must accept within 24 hours or you'll be charged a $100 penalty. If you decline, you'll be charged a $100 penalty.
                 </p>
               </button>
             </div>
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Shield className="h-4 w-4 shrink-0 text-primary" />
-              You&apos;re paid when the client approves each milestone. Funds are held in escrow until then.
+              You&apos;re paid when the client approves each milestone. Funds are held by the platform until then.
             </p>
           </section>
 
@@ -441,7 +471,7 @@ export const BidSubmissionTemplate = ({
                   </p>
                   <p className="text-orange-700 dark:text-orange-300">
                     You pay nothing upfront. An 8% referral fee (${REFERRAL_FEE_MIN} minimum) 
-                    will be charged only if you&apos;re awarded. If you decline, the client gets their deposit back and you may be charged 8% (max $500).
+                    will be charged only if you&apos;re awarded and accept. You must accept within 24 hours or you&apos;ll be charged a $100 penalty. If you decline, you&apos;ll be charged a $100 penalty.
                   </p>
                 </div>
               </div>

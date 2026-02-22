@@ -139,12 +139,12 @@ const Transactions = () => {
   const applyFiltersAndSort = () => {
     let filtered = [...transactions];
 
-    // Apply date range filter
+    // Apply date range filter (use completed_at for payment date when available)
     if (dateRange !== 'all') {
       const daysAgo = parseInt(dateRange);
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
-      filtered = filtered.filter(tx => new Date(tx.created_at) >= cutoffDate);
+      filtered = filtered.filter(tx => new Date(tx.completed_at || tx.created_at) >= cutoffDate);
     }
 
     // Apply status filter
@@ -152,13 +152,14 @@ const Transactions = () => {
       filtered = filtered.filter(tx => tx.status === filterStatus);
     }
 
-    // Apply sorting
+    // Apply sorting (use completed_at for payment date when available)
+    const dateOf = (tx: Transaction) => new Date(tx.completed_at || tx.created_at).getTime();
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'date-desc':
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return dateOf(b) - dateOf(a);
         case 'date-asc':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return dateOf(a) - dateOf(b);
         case 'amount-desc':
           return b.total_amount - a.total_amount;
         case 'amount-asc':

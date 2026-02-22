@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X } from "lucide-react";
+import { DollarSign, Calendar, Tag, User, Loader2, Award, MessageSquare, RefreshCw, Copy, MapPin, CheckCircle2, FileText, ArrowRight, ChevronDown, ChevronUp, Trash2, Pencil, Mail, Phone, CreditCard, IdCard, Share2, Clock, Search, Filter, X, Unlock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { BidSubmissionTemplate } from "@/components/BidSubmissionTemplate";
 import { BidsList, defaultBidFilters, BID_SORT_OPTIONS, type BidFilters, type BidStats, type BidSortOption } from "@/components/BidsList";
@@ -84,6 +84,7 @@ interface ClientGigStats {
 const GigDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [gig, setGig] = useState<Gig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,6 +113,15 @@ const GigDetail = () => {
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
   const [declineLoading, setDeclineLoading] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+
+  const DESCRIPTION_PREVIEW_LENGTH = 280;
+  const descriptionNeedsToggle = (gig?.description?.length ?? 0) > DESCRIPTION_PREVIEW_LENGTH;
+  const descriptionDisplay = gig
+    ? descriptionExpanded || !descriptionNeedsToggle
+      ? gig.description
+      : `${gig.description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}${gig.description.length > DESCRIPTION_PREVIEW_LENGTH ? "…" : ""}`
+    : "";
 
   const hasActiveFilters =
     (bidFilters.search?.trim() ?? "") !== "" ||
@@ -134,6 +144,38 @@ const GigDetail = () => {
   useEffect(() => {
     loadData();
   }, [id, userRoles]);
+
+  // After Gigger returns from Stripe: confirm session and mark Digger as hired (fallback if webhook didn't run)
+  useEffect(() => {
+    const depositPaid = searchParams.get("deposit_paid");
+    const sessionId = searchParams.get("session_id");
+    if (depositPaid !== "true" || !sessionId || !id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await invokeEdgeFunction<{ success?: boolean; alreadyCompleted?: boolean; error?: string }>(
+          supabase,
+          "confirm-deposit-session",
+          { body: { session_id: sessionId } }
+        );
+        if (cancelled) return;
+        if (result?.success) {
+          await loadData();
+          setSearchParams({}, { replace: true });
+          if (!result.alreadyCompleted) {
+            toast({ title: "Payment confirmed", description: "The professional has been awarded this gig." });
+          }
+        } else if (result?.error) {
+          toast({ title: "Could not confirm payment", description: result.error, variant: "destructive" });
+        }
+      } catch {
+        if (!cancelled) {
+          toast({ title: "Could not confirm payment", description: "Please refresh the page. If you paid, the hire will still complete.", variant: "destructive" });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id, searchParams, setSearchParams, toast]);
 
   // If user has digger role but diggerId never set (e.g. roles loaded after first run), load digger profile so they can bid
   useEffect(() => {
@@ -567,7 +609,7 @@ const GigDetail = () => {
     }
   };
 
-  /** Digger declines: release award; if there was a deposit, Gigger is refunded and Digger may be charged 8% (max $500). */
+  /** Digger declines: release award; Gigger is refunded and Digger is charged $100 penalty. */
   const handleDeclineAward = async () => {
     if (!id || !diggerId || !existingBid?.id) return;
     setDeclineLoading(true);
@@ -587,7 +629,7 @@ const GigDetail = () => {
       toast({
         title: "Award declined",
         description: data?.refunded
-          ? "The client will get their deposit back. You may have been charged an 8% penalty (max $500). You can still browse and bid on other gigs."
+          ? "The client will get their deposit back. You have been charged a $100 penalty. You can still browse and bid on other gigs."
           : "The client can award another bid. You can still browse and bid on other gigs.",
       });
       setDeclineDialogOpen(false);
@@ -715,14 +757,36 @@ const GigDetail = () => {
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between mb-2">
-                  <Badge variant={gig.status === 'open' ? 'default' : 'secondary'}>
-                    {gig.status}
+                  <Badge
+                    variant={
+                      gig.status === "completed"
+                        ? "default"
+                        : gig.status === "open"
+                          ? "default"
+                          : "secondary"
+                    }
+                    className={gig.status === "completed" ? "bg-green-600 hover:bg-green-600" : ""}
+                  >
+                    {gig.status === "completed"
+                      ? "Completed"
+                      : gig.status === "in_progress"
+                        ? "In progress"
+                        : gig.status === "awarded"
+                          ? "Awarded"
+                          : gig.status === "open"
+                            ? "Open"
+                            : gig.status}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
                     Posted {formatDistanceToNow(new Date(gig.created_at), { addSuffix: true })}
                   </span>
                 </div>
                 <CardTitle className="text-3xl">{gig.title}</CardTitle>
+                {gig.status === "completed" && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This job is completed. Payment & milestones and reviews are below.
+                  </p>
+                )}
                 {isOwner && (
                   <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t">
                     {gig.status === "open" && (
@@ -771,7 +835,16 @@ const GigDetail = () => {
               <CardContent className="space-y-6">
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Description</h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{gig.description}</p>
+                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{descriptionDisplay}</p>
+                  {descriptionNeedsToggle && (
+                    <Button
+                      variant="link"
+                      className="h-auto p-0 text-primary mt-1 font-medium"
+                      onClick={() => setDescriptionExpanded((e) => !e)}
+                    >
+                      {descriptionExpanded ? "View less" : "View more"}
+                    </Button>
+                  )}
                 </div>
 
                 {getGigSkillNames(gig).length > 0 && (
@@ -899,6 +972,39 @@ const GigDetail = () => {
               </Card>
             )}
 
+            {/* Buy the lead — separate from proposal form so Diggers can unlock contact without submitting a proposal */}
+            {showDiggerContent && diggerId && diggerCanBid && gig.status === 'open' && !existingBid && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    Contact the client now
+                  </CardTitle>
+                  <CardDescription>
+                    Pay once to unlock contact information. After payment clears, you&apos;ll see the client&apos;s details and can reach out directly—no proposal required.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <p className="text-2xl font-bold text-primary">
+                      {(() => {
+                        const mid = gig.budget_min != null && gig.budget_max != null
+                          ? (gig.budget_min + gig.budget_max) / 2
+                          : gig.budget_min ?? gig.budget_max ?? 0;
+                        const price = mid > 0 ? Math.min(49, Math.max(3, Math.round(mid * 0.02 * 100) / 100)) : null;
+                        return price != null ? `Lead price: $${price}` : "Lead price: $3–$49";
+                      })()}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">2% of project budget ($3–$49). Bogus leads fully refundable.</p>
+                  </div>
+                  <Button onClick={() => navigate(`/lead/${id}/unlock`)} className="gap-2 shrink-0">
+                    <Unlock className="h-4 w-4" />
+                    Unlock lead
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Submit or edit proposal — only when profile has photo + hourly rate (at-rest minimum) */}
             {showDiggerContent && diggerId && diggerCanBid && gig.status === 'open' && !existingBid && (
               <div id="bid">
@@ -916,6 +1022,8 @@ const GigDetail = () => {
                       }, 150);
                     });
                   }}
+                  onBuyLeadClick={() => navigate(`/lead/${id}/unlock`)}
+                  onExclusiveClick={() => document.getElementById("bid")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 />
               </div>
             )}
@@ -944,16 +1052,18 @@ const GigDetail = () => {
                     toast({ title: "Proposal updated", description: "Your changes have been saved." });
                     setTimeout(() => document.getElementById("bid")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
                   }}
+                  onBuyLeadClick={() => navigate(`/lead/${id}/unlock`)}
+                  onExclusiveClick={() => document.getElementById("bid")?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 />
                 <Button variant="ghost" size="sm" className="mt-3" onClick={() => setEditingProposal(false)}>
                   Cancel
                 </Button>
               </div>
             )}
-            {/* Digger: You're hired – only option is to decline if they can't take it */}
+            {/* Digger: Awarded – must accept within 24h or $100 penalty; decline = $100 penalty */}
             {showDiggerContent &&
               diggerId &&
-              (gig?.status === "awarded" || gig?.status === "in_progress") &&
+              gig?.status === "awarded" &&
               gig.awarded_digger_id === diggerId &&
               existingBid?.awarded && (
                 <Card id="award-response" className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/10 to-background">
@@ -963,22 +1073,58 @@ const GigDetail = () => {
                         <Award className="h-6 w-6" aria-hidden />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-xl">You&apos;re hired for this gig</CardTitle>
+                        <CardTitle className="text-xl">You&apos;re awarded</CardTitle>
                         <CardDescription className="mt-1 space-y-1">
-                          <span className="block">The client awarded you. You or they can set up the payment contract (milestones) next. If you can&apos;t take this job, decline—the client gets their deposit back and an 8% penalty (max $500) may apply to you.</span>
+                          <span className="block">The client awarded you this gig. Accept within 24 hours or you&apos;ll be charged a $100 penalty. If you decline, you&apos;ll be charged a $100 penalty and the client gets their deposit back.</span>
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="flex flex-wrap gap-3">
                     <Button
+                      onClick={handleAcceptAward}
+                      disabled={acceptAwardLoading}
+                      className="gap-2"
+                    >
+                      {acceptAwardLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Accepting...
+                        </>
+                      ) : (
+                        "Accept award"
+                      )}
+                    </Button>
+                    <Button
                       variant="outline"
                       onClick={() => setDeclineDialogOpen(true)}
                       className="gap-2"
                     >
-                      Can&apos;t take this job? Decline
+                      Decline
                     </Button>
                   </CardContent>
+                </Card>
+              )}
+            {/* Digger: Already accepted – You're hired; cannot decline or cancel */}
+            {showDiggerContent &&
+              diggerId &&
+              gig?.status === "in_progress" &&
+              gig.awarded_digger_id === diggerId &&
+              existingBid?.awarded && existingBid?.status === "accepted" && (
+                <Card id="award-response" className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/10 to-background">
+                  <CardHeader>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                        <Award className="h-6 w-6" aria-hidden />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-xl">You&apos;re hired for this gig</CardTitle>
+                        <CardDescription className="mt-1 space-y-1">
+                          <span className="block">You accepted the award. You or the client can set up the payment contract (milestones) next.</span>
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
                 </Card>
               )}
             <Dialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
@@ -986,7 +1132,7 @@ const GigDetail = () => {
                 <DialogHeader>
                   <DialogTitle>Decline this job?</DialogTitle>
                   <DialogDescription>
-                    The award will be released and the client can choose someone else. If they paid a 15% deposit, they get a full refund and you may be charged an 8% penalty (max $500). You can optionally give a short reason.
+                    The award will be released and the client can choose someone else. If they paid a 15% deposit, they get a full refund. If you decline, you will be charged a $100 penalty. You can optionally give a short reason.
                   </DialogDescription>
                 </DialogHeader>
                 <Textarea

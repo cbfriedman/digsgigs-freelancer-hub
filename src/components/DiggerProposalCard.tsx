@@ -112,6 +112,8 @@ interface DiggerProposalCardProps {
   isAwardedWaitingResponse?: boolean;
   /** Another bid on this gig is awarded and waiting for response (so Award is disabled). */
   isOtherBidAwarded?: boolean;
+  /** Another bid on this gig is hired (accepted); Gigger cannot hire another digger. */
+  isOtherBidHired?: boolean;
 }
 
 export function DiggerProposalCard({
@@ -132,6 +134,7 @@ export function DiggerProposalCard({
   acceptingId,
   isAwardedWaitingResponse = false,
   isOtherBidAwarded = false,
+  isOtherBidHired = false,
 }: DiggerProposalCardProps) {
   const navigate = useNavigate();
   const [showFullProposal, setShowFullProposal] = useState(false);
@@ -233,8 +236,10 @@ export function DiggerProposalCard({
                     <CheckCircle2 className="h-3 w-3" /> Verified
                   </Badge>
                 )}
-                {bid.pricing_model === "success_based" && (
-                  <Badge variant="outline" className="text-xs">Exclusive</Badge>
+                {bid.pricing_model === "success_based" ? (
+                  <Badge variant="outline" className="text-xs">Exclusive (Pay on Award)</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800">Buy the lead</Badge>
                 )}
               </div>
               {professionalHeadline && (
@@ -358,7 +363,7 @@ export function DiggerProposalCard({
                       {bid.status === "accepted" && bid.awarded
                         ? "Hired ✓"
                         : isAwardedWaitingResponse
-                        ? "Hired"
+                        ? "Awarded"
                         : (BID_STATUS_CONFIG[bid.status]?.label ?? bid.status)}
                     </Badge>
                   </span>
@@ -368,7 +373,7 @@ export function DiggerProposalCard({
                     {bid.status === "accepted" && bid.awarded
                         ? "Freelancer is hired. Mark work complete when done."
                         : isAwardedWaitingResponse
-                        ? "Hired. They can decline if they can't take the job."
+                        ? "Awarded. They can accept or decline within 24 hours."
                         : BID_STATUS_CONFIG[bid.status]?.tooltip ?? `Status: ${bid.status}`}
                   </p>
                 </TooltipContent>
@@ -398,7 +403,7 @@ export function DiggerProposalCard({
               ) : isAwardedWaitingResponse ? (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Info className="h-3.5 w-3.5 shrink-0" />
-                  Hired. They can decline if they can&apos;t take the job. Chat to coordinate.
+                  Awarded. They can accept or decline within 24 hours. Chat to coordinate.
                 </p>
               ) : bid.status === "accepted" && !bid.awarded ? (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -440,7 +445,7 @@ export function DiggerProposalCard({
                 Chat
               </Button>
               {bid.status === "pending" && onAccept && !isAwardedWaitingResponse && (
-                isOtherBidAwarded ? (
+                (isOtherBidAwarded || isOtherBidHired) ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="inline-flex">
@@ -454,7 +459,11 @@ export function DiggerProposalCard({
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[220px]">
-                      <p className="text-xs">Another freelancer was awarded; they can accept or decline first.</p>
+                      <p className="text-xs">
+                        {isOtherBidHired
+                          ? "A freelancer has been hired for this gig."
+                          : "Another freelancer was awarded; they can accept or decline first."}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 ) : (

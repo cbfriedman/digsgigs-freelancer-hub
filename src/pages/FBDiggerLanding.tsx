@@ -381,7 +381,7 @@ const FBDiggerLanding = () => {
               <AccordionItem value="cost">
                 <AccordionTrigger className="text-left">How much do projects cost?</AccordionTrigger>
                 <AccordionContent>
-                  Non-exclusive projects range from $20 to $69 depending on the project size (3% of the project midpoint, min $20, max $69). For exclusive awards, there's an 8% referral fee ($50 minimum) that comes from the client's deposit—not your pocket.
+                  Non-exclusive projects range from $20 to $69 depending on the project size (3% of the project midpoint, min $20, max $69). For exclusive awards, there's an 8% referral fee ($99 minimum) that comes from the client's deposit—not your pocket.
                 </AccordionContent>
               </AccordionItem>
               

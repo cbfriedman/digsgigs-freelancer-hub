@@ -12,8 +12,9 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHARGE-REFERRAL-FEE] ${step}${detailsStr}`);
 };
 
-// Fee configuration - NEW MODEL: 8% with no caps
-const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive (no caps)
+// Fee configuration: 8% with $99 minimum (no cap)
+const REFERRAL_FEE_RATE = 0.08; // 8% for exclusive
+const REFERRAL_FEE_MIN_CENTS = 9900; // $99 minimum
 
 // Deposit configuration: 15% deposit from Gigger
 const DEPOSIT_RATE = 0.15; // 15% deposit
@@ -88,9 +89,10 @@ serve(async (req) => {
       );
     }
 
-    // Calculate the referral fee (8% with no caps)
+    // Calculate the referral fee (8% with $99 minimum)
     const bidAmountCents = Math.round(bid.amount * 100);
-    const feeCents = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
+    const calculatedFee = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
+    const feeCents = Math.max(REFERRAL_FEE_MIN_CENTS, calculatedFee);
 
     // Calculate Gigger deposit for reference: 15% of bid
     const depositCents = Math.round(bidAmountCents * DEPOSIT_RATE);

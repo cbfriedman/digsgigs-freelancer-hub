@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Briefcase, MoreHorizontal, RefreshCw, Search, Trash2, User, Eye, PauseCircle, PlayCircle, Edit3 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -64,6 +65,9 @@ export default function ManageGigsTab() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkRemoveOpen, setBulkRemoveOpen] = useState(false);
+  const [bulkRemoving, setBulkRemoving] = useState(false);
   const [statusEditId, setStatusEditId] = useState<string | null>(null);
   const [statusEditValue, setStatusEditValue] = useState("");
   const [actioning, setActioning] = useState<string | null>(null);
@@ -156,12 +160,59 @@ export default function ManageGigsTab() {
       const { error } = await supabase.from("gigs").delete().eq("id", gigId);
       if (error) throw error;
       setGigs((prev) => prev.filter((g) => g.id !== gigId));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(gigId);
+        return next;
+      });
       setDeleteId(null);
       toast.success("Gig removed");
     } catch (e) {
       toast.error("Failed to delete gig");
     } finally {
       setActioning(null);
+    }
+  };
+
+  const toggleSelect = (gigId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(gigId)) next.delete(gigId);
+      else next.add(gigId);
+      return next;
+    });
+  };
+
+  const selectAllOnPage = () => {
+    const filteredIds = new Set(filtered.map((g) => g.id));
+    const allSelected = filtered.length > 0 && filtered.every((g) => selectedIds.has(g.id));
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        filteredIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => new Set([...prev, ...filteredIds]));
+    }
+  };
+
+  const bulkRemoveGigs = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBulkRemoving(true);
+    try {
+      const { error } = await supabase.from("gigs").delete().in("id", ids);
+      if (error) throw error;
+      setGigs((prev) => prev.filter((g) => !selectedIds.has(g.id)));
+      setSelectedIds(new Set());
+      setBulkRemoveOpen(false);
+      toast.success(`${ids.length} gig${ids.length === 1 ? "" : "s"} removed`);
+    } catch (e) {
+      console.error("Bulk remove error:", e);
+      toast.error("Failed to remove selected gigs");
+    } finally {
+      setBulkRemoving(false);
     }
   };
 
@@ -188,7 +239,18 @@ export default function ManageGigsTab() {
               <Briefcase className="h-5 w-5" />
               Gigs ({filtered.length}{statusFilter !== "all" || searchQuery ? ` of ${gigs.length}` : ""})
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBulkRemoveOpen(true)}
+                  disabled={bulkRemoving}
+                >
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  Remove selected ({selectedIds.size})
+                </Button>
+              )}
               <div className="relative flex-1 sm:w-48">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -214,7 +276,7 @@ export default function ManageGigsTab() {
               </Button>
             </div>
           </div>
-          <CardDescription>Click row actions to suspend, change status, or delete.</CardDescription>
+          <CardDescription>Select multiple gigs with checkboxes, then use &quot;Remove selected&quot; to delete them at once. Or use row actions to suspend, change status, or delete a single gig.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -225,6 +287,13 @@ export default function ManageGigsTab() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[48px]">
+                    <Checkbox
+                      checked={filtered.length > 0 && filtered.every((g) => selectedIds.has(g.id))}
+                      onCheckedChange={selectAllOnPage}
+                      aria-label="Select all on page"
+                    />
+                  </TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Who</TableHead>
@@ -238,13 +307,20 @@ export default function ManageGigsTab() {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No gigs match.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filtered.map((g) => (
                     <TableRow key={g.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(g.id)}
+                          onCheckedChange={() => toggleSelect(g.id)}
+                          aria-label={`Select ${g.title}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium max-w-[200px] truncate" title={g.title}>
                           {g.title}
@@ -335,6 +411,27 @@ export default function ManageGigsTab() {
               onClick={() => deleteId && deleteGig(deleteId)}
             >
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkRemoveOpen} onOpenChange={setBulkRemoveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {selectedIds.size} gig{selectedIds.size === 1 ? "" : "s"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the selected gig(s) and can affect related leads and conversations. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkRemoving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={bulkRemoveGigs}
+              disabled={bulkRemoving}
+            >
+              {bulkRemoving ? "Removing…" : "Remove all"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

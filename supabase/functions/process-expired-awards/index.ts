@@ -12,9 +12,8 @@ const logStep = (step: string, details?: any) => {
   console.log(`[PROCESS-EXPIRED-AWARDS] ${step}${detailsStr}`);
 };
 
-// Penalty for non-acceptance / decline: 8% of bid, max $500 (no minimum)
-const REFERRAL_FEE_RATE = 0.08; // 8%
-const REFERRAL_FEE_MAX_CENTS = 50000; // $500 maximum
+// Penalty for not accepting within 24h: $100 flat
+const PENALTY_CENTS = 10000; // $100
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -39,7 +38,7 @@ serve(async (req) => {
 
     logStep("Checking for expired awards");
 
-    // Find deposits that are paid but past their acceptance deadline
+    // Find deposits that are paid, past acceptance deadline, and gig still "awarded" (Digger never accepted)
     const { data: expiredDeposits, error: fetchError } = await supabaseClient
       .from("gigger_deposits")
       .select(`
@@ -54,7 +53,8 @@ serve(async (req) => {
         gigs!inner(
           id,
           title,
-          consumer_id
+          consumer_id,
+          status
         ),
         digger_profiles!inner(
           id,
@@ -85,10 +85,15 @@ serve(async (req) => {
 
     for (const deposit of expiredDeposits) {
       try {
+        const gig = deposit.gigs;
+        if (gig.status !== "awarded") {
+          logStep("Skipping deposit - gig no longer awarded", { depositId: deposit.id, gigStatus: gig.status });
+          continue;
+        }
+
         logStep("Processing expired deposit", { depositId: deposit.id });
 
         const bid = deposit.bids;
-        const gig = deposit.gigs;
         const diggerProfile = deposit.digger_profiles;
 
         // 1. Refund the Gigger's deposit
@@ -114,16 +119,10 @@ serve(async (req) => {
           })
           .eq("id", deposit.id);
 
-        // 2. Calculate the penalty (8% of bid, max $500)
-        const bidAmountCents = Math.round(bid.amount * 100);
-        const calculatedFee = Math.round(bidAmountCents * REFERRAL_FEE_RATE);
-        const feeCents = Math.min(calculatedFee, REFERRAL_FEE_MAX_CENTS);
+        // 2. $100 penalty for not accepting within 24h
+        const feeCents = PENALTY_CENTS;
 
-        logStep("Charging Digger penalty", { 
-          diggerId: diggerProfile.id, 
-          calculatedFee,
-          feeCents,
-        });
+        logStep("Charging Digger penalty", { diggerId: diggerProfile.id, feeCents });
 
         let penaltyCollected = false;
         let chargeError: string | null = null;
@@ -137,14 +136,14 @@ serve(async (req) => {
 
             if (defaultPaymentMethod) {
               // Charge the card on file
-              const paymentIntent = await stripe.paymentIntents.create({
+              const paymentIntent =               await stripe.paymentIntents.create({
                 amount: feeCents,
                 currency: "usd",
                 customer: diggerProfile.stripe_customer_id,
                 payment_method: defaultPaymentMethod as string,
                 off_session: true,
                 confirm: true,
-                description: `Non-acceptance penalty for expired exclusive award - ${gig.title}`,
+                description: `$100 penalty - did not accept exclusive award within 24h - ${gig.title}`,
                 metadata: {
                   type: "expired_award_referral_fee",
                   deposit_id: deposit.id,
@@ -163,7 +162,10 @@ serve(async (req) => {
                 .update({
                   referral_fee_cents: feeCents,
                   referral_fee_charged_at: new Date().toISOString(),
-                  status: "expired",
+                  awarded: false,
+                  awarded_at: null,
+                  awarded_by: null,
+                  status: "pending",
                 })
                 .eq("id", bid.id);
             } else {
@@ -212,7 +214,10 @@ serve(async (req) => {
             .from("bids")
             .update({
               referral_fee_cents: feeCents,
-              status: "expired",
+              awarded: false,
+              awarded_at: null,
+              awarded_by: null,
+              status: "pending",
             })
             .eq("id", bid.id);
 
@@ -230,12 +235,14 @@ serve(async (req) => {
           })
           .eq("id", gig.id);
 
-        // 5. Update bid status
+        // 5. Update bid (if not already updated above)
         await supabaseClient
           .from("bids")
           .update({
             awarded: false,
-            status: "expired",
+            awarded_at: null,
+            awarded_by: null,
+            status: "pending",
           })
           .eq("id", bid.id);
 

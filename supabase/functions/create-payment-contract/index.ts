@@ -66,13 +66,32 @@ serve(async (req) => {
 
     const { data: bid } = await supabaseAdmin
       .from("bids")
-      .select("id, amount, digger_id")
+      .select("id, amount, digger_id, pricing_model")
       .eq("id", bidId)
       .eq("gig_id", gigId)
       .single();
 
     if (!bid) throw new Error("Bid not found");
     if (bid.digger_id !== gig.awarded_digger_id) throw new Error("Bid digger does not match awarded digger");
+
+    // For exclusive gigs: contract amount = bid - 15% deposit (milestone budget). 8% platform fee taken from deposit; digger gets full milestone amount.
+    const DEPOSIT_RATE = 0.15;
+    let expectedMilestoneTotal = bid.amount;
+    let isExclusiveWithDeposit = false;
+    if (bid.pricing_model === "success_based") {
+      const { data: paidDeposit } = await supabaseAdmin
+        .from("gigger_deposits")
+        .select("deposit_amount_cents")
+        .eq("bid_id", bidId)
+        .eq("status", "paid")
+        .maybeSingle();
+      const depositAmount =
+        paidDeposit?.deposit_amount_cents != null
+          ? paidDeposit.deposit_amount_cents / 100
+          : bid.amount * DEPOSIT_RATE;
+      expectedMilestoneTotal = Math.max(0, bid.amount - depositAmount);
+      isExclusiveWithDeposit = true; // exclusive gigs use 15% deposit; 8% platform fee from deposit, 7% to digger on first milestone
+    }
 
     // One contract per gig: first to create wins (principle 3)
     const { data: existingContract } = await supabaseAdmin
@@ -89,8 +108,10 @@ serve(async (req) => {
     const diggerProfileId = gig.awarded_digger_id;
 
     const totalAmount = milestones.reduce((sum, m) => sum + (m.amount || 0), 0);
-    if (Math.abs(totalAmount - bid.amount) > 0.01) {
-      throw new Error(`Milestone total ($${totalAmount.toFixed(2)}) must equal bid amount ($${bid.amount.toFixed(2)})`);
+    if (Math.abs(totalAmount - expectedMilestoneTotal) > 0.01) {
+      throw new Error(
+        `Milestone total ($${totalAmount.toFixed(2)}) must equal contract amount ($${expectedMilestoneTotal.toFixed(2)}${expectedMilestoneTotal !== bid.amount ? ` = bid minus 15% deposit` : ""})`
+      );
     }
 
     for (const m of milestones) {
@@ -100,12 +121,13 @@ serve(async (req) => {
     }
 
     // Gigger must have at least one payment method
-    const { data: paymentMethods } = await supabaseAdmin
+    // Payment method optional - gigger can approve milestones via Checkout without saving a card
+    const _paymentMethodsCheck = await supabaseAdmin
       .from("payment_methods")
       .select("id")
       .eq("user_id", user.id)
       .limit(1);
-    if (!paymentMethods?.length) {
+    if (false && !_paymentMethodsCheck.data?.length) {
       throw new Error("Add a payment method first (you can do it in this dialog or in Settings → Payment methods). You’re only charged when you approve each milestone.");
     }
 
@@ -122,7 +144,9 @@ serve(async (req) => {
       throw new Error("The Digger’s payout account is still being verified. Ask them to finish the payout setup in their account; it usually takes a few minutes.");
     }
 
-    const platformFeeAmount = totalAmount * (PLATFORM_FEE_PERCENT / 100); // 8% Digger fee (total)
+    // For exclusive: 8% platform fee from deposit at award; digger gets full milestone. For non-exclusive: 8% per milestone.
+    const platformFeeAmount = isExclusiveWithDeposit ? 0 : totalAmount * (PLATFORM_FEE_PERCENT / 100);
+    const platformFeePct = isExclusiveWithDeposit ? 0 : PLATFORM_FEE_PERCENT;
 
     const { data: contract, error: contractError } = await supabaseAdmin
       .from("escrow_contracts")
@@ -131,7 +155,7 @@ serve(async (req) => {
         consumer_id: user.id,
         digger_id: diggerProfileId,
         total_amount: totalAmount,
-        platform_fee_percentage: PLATFORM_FEE_PERCENT,
+        platform_fee_percentage: platformFeePct,
         platform_fee_amount: platformFeeAmount,
         status: "active",
         contract_type: "milestone",
@@ -147,8 +171,8 @@ serve(async (req) => {
     for (let i = 0; i < milestones.length; i++) {
       const m = milestones[i];
       const amount = Number(m.amount); // gross
-      const platformFee = Math.round(amount * (PLATFORM_FEE_PERCENT / 100) * 100) / 100; // 8% from Digger
-      const diggerPayout = Math.round((amount - platformFee) * 100) / 100; // Net to Digger = gross - 8%
+      const platformFee = isExclusiveWithDeposit ? 0 : Math.round(amount * (PLATFORM_FEE_PERCENT / 100) * 100) / 100;
+      const diggerPayout = isExclusiveWithDeposit ? amount : Math.round((amount - platformFee) * 100) / 100;
       const { error: mpError } = await supabaseAdmin
         .from("milestone_payments")
         .insert({
@@ -174,7 +198,9 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         contractId: contract.id,
-        message: "Payment contract created. You'll pay 3% transaction fee per milestone when you approve each one; the Digger receives the milestone amount minus 8% platform fee.",
+        message: isExclusiveWithDeposit
+          ? "Payment contract created. You'll pay 3% transaction fee per milestone when you approve. The Digger receives the full milestone amount (8% platform fee was from your 15% deposit). On first milestone approval, the Digger also receives the 7% deposit advance."
+          : "Payment contract created. You'll pay 3% transaction fee per milestone when you approve each one; the Digger receives the milestone amount minus 8% platform fee.",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );

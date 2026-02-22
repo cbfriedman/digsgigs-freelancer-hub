@@ -38,7 +38,7 @@ export default function Pricing() {
     <>
       <Helmet>
         <title>Simple, Fair Pricing — Based on Project Size | Digs & Gigs</title>
-        <meta name="description" content="Two pricing options: Pay-per-lead (3% of budget, $20-$69) or exclusive jobs (8% referral fee, $50 minimum). Gigger pays 15% deposit. No subscriptions. Bogus leads refundable. Prices subject to change." />
+        <meta name="description" content="Two pricing options: Pay-per-lead (3% of budget, $20-$69) or exclusive jobs (8% referral fee, $99 minimum). Gigger pays 15% deposit. No subscriptions. Bogus leads refundable. Prices subject to change." />
       </Helmet>
       
       <PageLayout showNav={true} showFooter={true} maxWidth="full" padded={false}>
@@ -171,7 +171,7 @@ export default function Pricing() {
 
                     <div className="flex justify-center">
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-accent">$50 Minimum</div>
+                        <div className="text-3xl font-bold text-accent">$99 Minimum</div>
                         <div className="text-xs text-muted-foreground font-medium">Deducted from Gigger deposit</div>
                       </div>
                     </div>
@@ -336,7 +336,7 @@ export default function Pricing() {
                 <div className="mt-8 p-6 bg-destructive/5 border border-destructive/20 rounded-xl text-center">
                   <div className="text-sm font-semibold text-destructive mb-2">Non-Acceptance Penalty</div>
                   <p className="text-sm text-muted-foreground">
-                    If you don't accept an awarded job within 24 hours, you'll be charged <span className="font-semibold">8% of the bid amount ($100 min, $500 max)</span>.
+                    If you don't accept an awarded job within 24 hours, or if you decline, you'll be charged a <span className="font-semibold">$100 penalty</span>.
                   </p>
                 </div>
               </div>

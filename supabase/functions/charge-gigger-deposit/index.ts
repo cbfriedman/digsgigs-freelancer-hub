@@ -54,7 +54,8 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const { bidId, gigId, giggerId, diggerId, origin } = await req.json();
+    const body = (await req.json()) as { bidId: string; gigId: string; giggerId: string; diggerId: string; origin?: string; useCheckout?: boolean };
+    const { bidId, gigId, giggerId, diggerId, origin, useCheckout } = body;
 
     if (!bidId || !gigId || !giggerId || !diggerId) {
       throw new Error("bidId, gigId, giggerId, and diggerId are required");
@@ -157,12 +158,140 @@ serve(async (req) => {
 
     logStep("Deposit record created", { depositId: deposit.id });
 
-    // Create Stripe Checkout Session for the deposit
     const checkoutOrigin = origin || "https://digsgigs-freelancer-hub.lovable.app";
-    
+
+    // Saved card flow: use PaymentIntent if useCheckout=false and gigger has a payment method
+    let pmToUse = (await supabaseClient
+      .from("payment_methods")
+      .select("stripe_payment_method_id, stripe_customer_id")
+      .eq("user_id", giggerId)
+      .eq("is_default", true)
+      .limit(1)
+      .maybeSingle()).data;
+
+    if (!pmToUse) {
+      const { data: firstPm } = await supabaseClient
+        .from("payment_methods")
+        .select("stripe_payment_method_id, stripe_customer_id")
+        .eq("user_id", giggerId)
+        .limit(1)
+        .maybeSingle();
+      pmToUse = firstPm ?? undefined;
+    }
+
+    const useCheckoutFlow = useCheckout === true || !pmToUse;
+
+    if (!useCheckoutFlow && pmToUse) {
+      // Saved card: create PaymentIntent and confirm
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: depositDetails.total,
+        currency: "usd",
+        customer: pmToUse.stripe_customer_id,
+        payment_method: pmToUse.stripe_payment_method_id,
+        confirm: true,
+        description: "Exclusive Award Deposit (15%)",
+        metadata: {
+          deposit_id: deposit.id,
+          gig_id: gigId,
+          bid_id: bidId,
+          gigger_id: giggerId,
+          digger_id: diggerId,
+          type: "gigger_deposit",
+        },
+        return_url: `${checkoutOrigin}/gig/${gigId}?deposit_paid=true`,
+      });
+
+      if (paymentIntent.status === "requires_action") {
+        logStep("Payment requires action (3DS)", { paymentIntentId: paymentIntent.id });
+        return new Response(
+          JSON.stringify({
+            success: false,
+            requiresAction: true,
+            clientSecret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (paymentIntent.status === "succeeded") {
+        // Update deposit and award bid/gig (same logic as handle-deposit-webhook)
+        await supabaseClient
+          .from("gigger_deposits")
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            stripe_payment_intent_id: paymentIntent.id,
+          })
+          .eq("id", deposit.id);
+
+        const awardedAt = new Date().toISOString();
+        await supabaseClient.from("bids").update({
+          awarded: true,
+          awarded_at: awardedAt,
+          award_method: "consumer_hire",
+          status: "pending",
+        }).eq("id", bidId);
+
+        await supabaseClient.from("gigs").update({
+          awarded_at: awardedAt,
+          awarded_digger_id: diggerId,
+          awarded_bid_id: bidId,
+          status: "awarded",
+        }).eq("id", gigId);
+
+        const { data: diggerProfile } = await supabaseClient
+          .from("digger_profiles")
+          .select("user_id")
+          .eq("id", diggerId)
+          .single();
+
+        const { data: gig } = await supabaseClient
+          .from("gigs")
+          .select("title")
+          .eq("id", gigId)
+          .single();
+
+        const { data: depositRow } = await supabaseClient
+          .from("gigger_deposits")
+          .select("acceptance_deadline")
+          .eq("id", deposit.id)
+          .single();
+
+        if (diggerProfile?.user_id) {
+          await supabaseClient.from("notifications").insert({
+            user_id: diggerProfile.user_id,
+            type: "lead_awarded_exclusive",
+            title: "You're awarded",
+            message: `You've been awarded "${gig?.title || "this gig"}". Accept within 24 hours or you'll be charged a $100 penalty. If you decline, you'll be charged a $100 penalty and the client gets their deposit back.`,
+            link: `/gig/${gigId}`,
+            metadata: {
+              gig_id: gigId,
+              bid_id: bidId,
+              deposit_id: deposit.id,
+              acceptance_deadline: depositRow?.acceptance_deadline,
+            },
+          });
+        }
+
+        logStep("Deposit paid via saved card, award completed");
+        return new Response(
+          JSON.stringify({
+            success: true,
+            depositId: deposit.id,
+            acceptanceDeadline,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      throw new Error(`Payment did not succeed: ${paymentIntent.status}`);
+    }
+
+    // Checkout flow: create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : giggerProfile?.email,
+      customer: customerId ?? undefined,
+      customer_email: customerId ? undefined : giggerProfile?.email ?? undefined,
       line_items: [
         {
           price_data: {

@@ -116,7 +116,84 @@ serve(async (req) => {
       // Check purchase type
       const { purchase_type, penalty_id, bid_id, digger_id, pending_purchase_id } = metadata;
 
-      if (purchase_type === 'keyword_bulk' && pending_purchase_id) {
+      // Milestone payment via Checkout (no saved payment method)
+      if (metadata.type === 'milestone_payment') {
+        const milestonePaymentId = metadata.milestone_payment_id;
+        const escrowContractId = metadata.escrow_contract_id;
+        const consumerId = metadata.consumer_id;
+        const diggerIdMeta = metadata.digger_id;
+        const gigIdMeta = metadata.gig_id;
+
+        if (milestonePaymentId && escrowContractId && diggerIdMeta && gigIdMeta) {
+          logStep('Processing milestone payment from Checkout', { milestonePaymentId, gigId: gigIdMeta });
+
+          const { data: milestone } = await supabaseClient
+            .from('milestone_payments')
+            .select('id, milestone_number, amount, digger_payout, status, stripe_payment_intent_id')
+            .eq('id', milestonePaymentId)
+            .single();
+
+          if (milestone && milestone.status !== 'paid' && !milestone.stripe_payment_intent_id) {
+            const paymentIntentId = session.payment_intent as string;
+            // Destination charge: Stripe already sent funds to digger's Connect account via payment_intent_data.transfer_data
+            await supabaseClient
+              .from('milestone_payments')
+              .update({
+                status: 'paid',
+                stripe_payment_intent_id: paymentIntentId,
+                released_at: new Date().toISOString(),
+              })
+              .eq('id', milestonePaymentId);
+
+            logStep('Milestone marked paid (destination charge - digger received funds at charge time)');
+
+            let bidId = (await supabaseClient.from('gigs').select('awarded_bid_id').eq('id', gigIdMeta).single()).data?.awarded_bid_id;
+            if (!bidId) {
+              const bidRow = await supabaseClient
+                .from('bids')
+                .select('id')
+                .eq('gig_id', gigIdMeta)
+                .eq('digger_id', diggerIdMeta)
+                .eq('status', 'accepted')
+                .limit(1)
+                .maybeSingle();
+              bidId = bidRow.data?.id ?? null;
+            }
+
+            let diggerPayout = Number(milestone.digger_payout);
+            if (milestone.milestone_number === 1 && bidId) {
+              const { data: bidRow } = await supabaseClient.from('bids').select('amount').eq('id', bidId).single();
+              const { data: depositRow } = await supabaseClient.from('gigger_deposits').select('id').eq('bid_id', bidId).eq('status', 'paid').maybeSingle();
+              if (bidRow?.amount != null && depositRow) {
+                diggerPayout += Math.round(Number(bidRow.amount) * 0.07 * 100) / 100;
+              }
+            }
+
+            const amountCents = Math.round(Number(milestone.amount) * 100);
+            const transactionFeeCents = Math.round(amountCents * 0.03);
+            await supabaseClient.from('transactions').insert({
+              gig_id: gigIdMeta,
+              bid_id: bidId ?? null,
+              consumer_id: consumerId,
+              digger_id: diggerIdMeta,
+              total_amount: (amountCents + transactionFeeCents) / 100,
+              commission_rate: 0.03,
+              commission_amount: transactionFeeCents / 100,
+              digger_payout: diggerPayout,
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              stripe_payment_intent_id: paymentIntentId,
+              escrow_contract_id: escrowContractId,
+              milestone_payment_id: milestonePaymentId,
+              is_escrow: false,
+            });
+
+            logStep('Milestone payment completed via Checkout webhook');
+          }
+        } else {
+          logStep('Milestone payment metadata incomplete', metadata);
+        }
+      } else if (purchase_type === 'keyword_bulk' && pending_purchase_id) {
         // Handle bulk lead credit purchase
         logStep('Processing keyword_bulk purchase', { pendingPurchaseId: pending_purchase_id });
 

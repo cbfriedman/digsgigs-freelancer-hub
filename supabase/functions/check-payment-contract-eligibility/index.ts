@@ -67,7 +67,7 @@ serve(async (req) => {
 
     const { data: bid } = await supabaseAdmin
       .from("bids")
-      .select("id, digger_id")
+      .select("id, digger_id, amount, pricing_model")
       .eq("id", bidId)
       .eq("gig_id", gigId)
       .single();
@@ -79,18 +79,22 @@ serve(async (req) => {
       );
     }
 
-    // Gigger must have at least one payment method
-    const { data: paymentMethods } = await supabaseAdmin
-      .from("payment_methods")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1);
-    if (!paymentMethods?.length) {
-      return new Response(
-        JSON.stringify({ eligible: false, reason: "payment_method_required" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+    // For exclusive gigs with paid deposit: milestone total = bid - deposit
+    let milestoneTotal = bid.amount;
+    if (bid.pricing_model === "success_based") {
+      const { data: paidDeposit } = await supabaseAdmin
+        .from("gigger_deposits")
+        .select("deposit_amount_cents")
+        .eq("bid_id", bidId)
+        .eq("status", "paid")
+        .maybeSingle();
+      if (paidDeposit?.deposit_amount_cents != null) {
+        const depositAmount = paidDeposit.deposit_amount_cents / 100;
+        milestoneTotal = Math.max(0, bid.amount - depositAmount);
+      }
     }
+
+    // Payment method optional: gigger can approve milestones via Checkout
 
     // Digger must have Stripe Connect set up
     let { data: diggerProfile } = await supabaseAdmin
@@ -101,7 +105,7 @@ serve(async (req) => {
 
     if (!diggerProfile?.stripe_connect_account_id) {
       return new Response(
-        JSON.stringify({ eligible: false, reason: "digger_payouts_not_set_up" }),
+        JSON.stringify({ eligible: false, reason: "digger_payouts_not_set_up", bidAmount: bid.amount, milestoneTotal }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
@@ -131,13 +135,17 @@ serve(async (req) => {
 
     if (!diggerProfile.stripe_connect_charges_enabled) {
       return new Response(
-        JSON.stringify({ eligible: false, reason: "digger_payouts_pending_verification" }),
+        JSON.stringify({ eligible: false, reason: "digger_payouts_pending_verification", bidAmount: bid.amount, milestoneTotal }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
     return new Response(
-      JSON.stringify({ eligible: true }),
+      JSON.stringify({
+        eligible: true,
+        bidAmount: bid.amount,
+        milestoneTotal,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (err) {

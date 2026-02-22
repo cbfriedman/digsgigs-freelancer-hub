@@ -1,16 +1,33 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CompleteWorkDialog } from "@/components/CompleteWorkDialog";
 import { PaymentContractDialog } from "@/components/PaymentContractDialog";
+import { SuggestMilestonePlanDialog } from "@/components/SuggestMilestonePlanDialog";
 import { ContractMilestonesCard } from "@/components/ContractMilestonesCard";
 import { ConfirmHireDialog } from "@/components/ConfirmHireDialog";
 import { AnonymizedBidCard } from "@/components/AnonymizedBidCard";
 import { DiggerProposalCard } from "@/components/DiggerProposalCard";
 import { useDiggerPresence } from "@/hooks/useDiggerPresence";
-import { TrendingUp, DollarSign, FileText, X } from "lucide-react";
+import { TrendingUp, DollarSign, FileText, X, CreditCard, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { PaymentMethodForm } from "@/components/PaymentMethodForm";
+import { loadStripe } from "@stripe/stripe-js";
+
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  : null;
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import {
@@ -226,6 +243,7 @@ export const BidsList = ({
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
   const [paymentContractDialogOpen, setPaymentContractDialogOpen] = useState(false);
+  const [suggestPlanDialogOpen, setSuggestPlanDialogOpen] = useState(false);
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
   const [contractCardKey, setContractCardKey] = useState(0);
   /** When set, show confirmation modal before awarding this bid. */
@@ -236,6 +254,10 @@ export const BidsList = ({
     amount: number;
     pricing_model?: string;
   } | null>(null);
+  /** Whether Gigger has a saved payment method (for exclusive award options). */
+  const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
+  /** Show add-payment dialog inside Award flow (when no PM). */
+  const [showAddPaymentInAward, setShowAddPaymentInAward] = useState(false);
   /** Digger profile IDs that have an active conversation for this gig (for "Chatting" badge). */
   const [conversationDiggerIds, setConversationDiggerIds] = useState<Set<string>>(new Set());
   /** Bid IDs pinned by the Gigger for this gig (persisted in localStorage). */
@@ -245,6 +267,23 @@ export const BidsList = ({
     if (!gigId) return;
     setPinnedBidIds(getPinnedBidIdsForGig(gigId));
   }, [gigId]);
+
+  // Fetch hasPaymentMethod when Award dialog opens for exclusive bid
+  useEffect(() => {
+    if (!bidToAward || bidToAward.pricing_model !== "success_based") {
+      setHasPaymentMethod(null);
+      return;
+    }
+    let cancelled = false;
+    invokeEdgeFunction<{ paymentMethods?: unknown[] }>(supabase, "manage-payment-methods", { method: "GET" })
+      .then((data) => {
+        if (!cancelled) setHasPaymentMethod((data?.paymentMethods?.length ?? 0) > 0);
+      })
+      .catch(() => {
+        if (!cancelled) setHasPaymentMethod(false);
+      });
+    return () => { cancelled = true; };
+  }, [bidToAward?.id, bidToAward?.pricing_model]);
 
   const togglePin = useCallback(
     (bidId: string) => {
@@ -281,6 +320,16 @@ export const BidsList = ({
         const amin = a.amount_min ?? a.amount;
         const bmin = b.amount_min ?? b.amount;
         return amin - bmin;
+      });
+    }
+    // Awarded bids first for Giggers
+    if (isOwner) {
+      sorted = [...sorted].sort((a, b) => {
+        const aAwarded = !!(a.awarded);
+        const bAwarded = !!(b.awarded);
+        if (aAwarded && !bAwarded) return -1;
+        if (!aAwarded && bAwarded) return 1;
+        return 0;
       });
     }
     // Pinned first for Giggers
@@ -498,41 +547,67 @@ export const BidsList = ({
     }
   };
 
-  /** Confirm award: for exclusive, start 15% payment flow; for non-exclusive, award = hire (handleAwardBid). */
-  const handleConfirmAward = async () => {
+  /** Confirm award: for exclusive, start 15% payment flow (saved card or Checkout); for non-exclusive, award = hire (handleAwardBid). */
+  const handleConfirmAward = async (useCheckout?: boolean) => {
     if (!bidToAward) return;
-    const { id, diggerId, amount, pricing_model } = bidToAward;
+    const { id, diggerId, pricing_model } = bidToAward;
     const isExclusive = pricing_model === "success_based";
 
     if (isExclusive) {
       setAccepting(id);
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        const { data, error } = await supabase.functions.invoke<{
+        const data = await invokeEdgeFunction<{
+          success?: boolean;
           requiresPayment?: boolean;
           checkoutUrl?: string;
+          requiresAction?: boolean;
+          clientSecret?: string;
           error?: string;
-        }>("charge-gigger-deposit", {
+        }>(supabase, "charge-gigger-deposit", {
           body: {
             bidId: id,
             gigId,
             giggerId: authUser?.id ?? null,
             diggerId,
             origin: window.location.origin,
+            useCheckout: useCheckout ?? false,
           },
         });
-        if (error) throw new Error(typeof error === "string" ? error : (error as Error)?.message);
-        if (data?.error) throw new Error(data.error);
+
         if (data?.requiresPayment && data?.checkoutUrl) {
           setBidToAward(null);
-          window.open(data.checkoutUrl, "_blank");
+          setAccepting(null);
           toast({
-            title: "Complete payment",
-            description: "Finish the 15% deposit in the new tab to award this gig. You'll be refunded if the professional declines.",
+            title: "Redirecting to payment",
+            description: "Complete the 15% deposit on the next page. You'll return here when done.",
           });
+          window.location.href = data.checkoutUrl;
           loadBids();
           onAwardSuccess?.();
           return;
+        }
+
+        if (data?.requiresAction && data?.clientSecret && stripePromise) {
+          const stripe = await stripePromise;
+          if (!stripe) throw new Error("Stripe not loaded");
+          const { error } = await stripe.confirmCardPayment(data.clientSecret);
+          if (error) throw error;
+          toast({ title: "Payment confirmed", description: "The professional has been awarded. They have 24 hours to accept." });
+          setBidToAward(null);
+          loadBids();
+          onAwardSuccess?.();
+          setAccepting(null);
+          return;
+        }
+
+        if (data?.success) {
+          toast({ title: "Payment confirmed", description: "The professional has been awarded. They have 24 hours to accept." });
+          setBidToAward(null);
+          loadBids();
+          onAwardSuccess?.();
+        } else if (data?.error) {
+          throw new Error(data.error);
         }
       } catch (e: any) {
         toast({
@@ -645,10 +720,23 @@ export const BidsList = ({
         <ContractMilestonesCard
           key={contractCardKey}
           gigId={gigId}
+          gigTitle={gigTitle}
           currentUserId={currentUserId}
           currentDiggerProfileId={currentDiggerId ?? null}
-          onUpdate={() => setContractCardKey((k) => k + 1)}
+          onUpdate={() => {
+            setContractCardKey((k) => k + 1);
+            onAwardSuccess?.();
+          }}
           gigStatus={gigStatus}
+          suggestedMilestonesFromBid={
+            (() => {
+              const accepted = isOwner
+                ? bids.find((b) => b.status === "accepted")
+                : bids.find((b) => (b as any).digger_id === currentDiggerId && b.status === "accepted");
+              const raw = (accepted as any)?.suggested_milestones;
+              return Array.isArray(raw) && raw.length > 0 ? raw : null;
+            })()
+          }
           onSetupContractClick={
             isOwner && isFixedPrice
               ? () => {
@@ -658,17 +746,20 @@ export const BidsList = ({
                     setPaymentContractDialogOpen(true);
                   }
                 }
-              : currentDiggerId
-                ? () => {
-                    const diggerAccepted = bids.find(
-                      (b) => (b as any).digger_id === currentDiggerId && b.status === "accepted"
-                    );
-                    if (diggerAccepted) {
-                      setSelectedBid(diggerAccepted);
-                      setPaymentContractDialogOpen(true);
-                    }
+              : undefined
+          }
+          onSuggestMilestoneClick={
+            currentDiggerId && !isOwner
+              ? () => {
+                  const diggerAccepted = bids.find(
+                    (b) => (b as any).digger_id === currentDiggerId && b.status === "accepted"
+                  );
+                  if (diggerAccepted) {
+                    setSelectedBid(diggerAccepted);
+                    setSuggestPlanDialogOpen(true);
                   }
-                : undefined
+                }
+              : undefined
           }
         />
       )}
@@ -712,6 +803,9 @@ export const BidsList = ({
               isOtherBidAwarded={displayedBids.some(
                 (b) => b.id !== bid.id && !!b.awarded && b.status !== "accepted"
               )}
+              isOtherBidHired={displayedBids.some(
+                (b) => b.id !== bid.id && !!b.awarded && b.status === "accepted"
+              )}
             />
           ))}
         </>
@@ -726,7 +820,7 @@ export const BidsList = ({
                 <>
                   {bidToAward.pricing_model === "success_based" ? (
                     <>
-                      You&apos;ll be charged <strong>15% (${((bidToAward.amount * 0.15)).toFixed(0)})</strong> to award this gig to <strong>{bidToAward.diggerDisplayName}</strong>. They&apos;re hired once you pay. If they can&apos;t take the job, you get a full refund and they may be charged an 8% penalty (max $500).
+                      You&apos;ll be charged <strong>15% (${((bidToAward.amount * 0.15)).toFixed(0)})</strong> to award this gig to <strong>{bidToAward.diggerDisplayName}</strong>. They must accept within 24 hours or the award expires (you get a full refund; they may be charged a $100 penalty). If they decline, you get a full refund and they&apos;re charged a $100 penalty.
                     </>
                   ) : (
                     <>
@@ -737,35 +831,147 @@ export const BidsList = ({
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-wrap gap-2">
             <AlertDialogCancel disabled={!!accepting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleConfirmAward();
-              }}
-              disabled={!!accepting}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {accepting ? "Awarding..." : bidToAward?.pricing_model === "success_based" ? "Pay 15% & award" : "Award"}
-            </AlertDialogAction>
+            {bidToAward?.pricing_model === "success_based" ? (
+              hasPaymentMethod === false ? (
+                <div className="flex flex-col gap-3 w-full">
+                  <p className="text-sm text-muted-foreground">
+                    Add a payment method below to pay directly, or pay via Stripe Checkout.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleConfirmAward(true);
+                      }}
+                      disabled={!!accepting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {accepting ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <CreditCard className="h-4 w-4 mr-2" />
+                      )}
+                      Pay 15% & award (Checkout)
+                    </Button>
+                    <Dialog open={showAddPaymentInAward} onOpenChange={setShowAddPaymentInAward}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Add payment method first
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Add payment method</DialogTitle>
+                          <DialogDescription>
+                            Your card is stored securely by Stripe. You can then pay the deposit directly without leaving this page.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <PaymentMethodForm
+                          onSuccess={() => {
+                            setShowAddPaymentInAward(false);
+                            setHasPaymentMethod(true);
+                            toast({ title: "Payment method added", description: "You can now pay the deposit with your saved card." });
+                          }}
+                          onCancel={() => setShowAddPaymentInAward(false)}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                    <span className="text-muted-foreground text-xs">or</span>
+                    <Button size="sm" variant="ghost" className="h-auto py-1 px-2 text-xs" asChild>
+                      <Link to="/payment-methods" onClick={() => setBidToAward(null)}>
+                        Add in Settings
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {hasPaymentMethod && (
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleConfirmAward(false);
+                      }}
+                      disabled={!!accepting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {accepting ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <CreditCard className="h-4 w-4 mr-2" />
+                      )}
+                      Pay with saved card
+                      <span className="ml-1.5 text-xs opacity-90">(Recommended)</span>
+                    </Button>
+                  )}
+                  <Button
+                    variant={hasPaymentMethod ? "outline" : "default"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleConfirmAward(true);
+                    }}
+                    disabled={!!accepting}
+                    className={!hasPaymentMethod ? "bg-green-600 hover:bg-green-700" : ""}
+                  >
+                    {accepting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <CreditCard className="h-4 w-4 mr-2" />
+                    )}
+                    {hasPaymentMethod ? "Pay with new card (Checkout)" : "Pay 15% & award"}
+                  </Button>
+                </>
+              )
+            ) : (
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleConfirmAward();
+                }}
+                disabled={!!accepting}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {accepting ? "Awarding..." : "Award"}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {selectedBid && (
-        <PaymentContractDialog
-          open={paymentContractDialogOpen}
-          onOpenChange={setPaymentContractDialogOpen}
-          gigId={gigId}
-          bidId={selectedBid.id}
-          bidAmount={selectedBid.amount}
-          gigTitle={gigTitle}
-          onComplete={() => {
-            loadBids();
-            setContractCardKey((k) => k + 1);
-          }}
-        />
+        <>
+          <PaymentContractDialog
+            open={paymentContractDialogOpen}
+            onOpenChange={setPaymentContractDialogOpen}
+            gigId={gigId}
+            bidId={selectedBid.id}
+            bidAmount={selectedBid.amount}
+            gigTitle={gigTitle}
+            pricingModel={selectedBid.pricing_model}
+            suggestedMilestones={(selectedBid as any).suggested_milestones}
+            onComplete={() => {
+              loadBids();
+              setContractCardKey((k) => k + 1);
+            }}
+          />
+          <SuggestMilestonePlanDialog
+            open={suggestPlanDialogOpen}
+            onOpenChange={setSuggestPlanDialogOpen}
+            gigId={gigId}
+            bidId={selectedBid.id}
+            bidAmount={selectedBid.amount}
+            gigTitle={gigTitle}
+            pricingModel={selectedBid.pricing_model}
+            suggestedMilestones={Array.isArray((selectedBid as any).suggested_milestones) ? (selectedBid as any).suggested_milestones : null}
+            onComplete={() => {
+              loadBids();
+              setContractCardKey((k) => k + 1);
+            }}
+          />
+        </>
       )}
     </div>
   );

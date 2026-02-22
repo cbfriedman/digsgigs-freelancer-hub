@@ -27,6 +27,8 @@ interface Milestone {
   amount: number;
 }
 
+const DEPOSIT_RATE = 0.15; // 15% deposit for exclusive gigs
+
 interface PaymentContractDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,6 +36,10 @@ interface PaymentContractDialogProps {
   bidId: string;
   bidAmount: number;
   gigTitle: string;
+  /** If success_based, milestone budget = bid - 15% deposit */
+  pricingModel?: string | null;
+  /** Pre-fill from Digger's suggested plan (when gigger accepts). */
+  suggestedMilestones?: { description: string; amount: number }[] | null;
   onComplete?: () => void;
 }
 
@@ -44,9 +50,17 @@ export function PaymentContractDialog({
   bidId,
   bidAmount,
   gigTitle,
+  pricingModel,
+  suggestedMilestones,
   onComplete,
 }: PaymentContractDialogProps) {
   const { toast } = useToast();
+  const isExclusive = pricingModel === "success_based";
+  // Contract amount = bid - 15% deposit for exclusive gigs; otherwise full bid
+  const contractAmount = isExclusive
+    ? Math.round(bidAmount * (1 - DEPOSIT_RATE) * 100) / 100
+    : bidAmount;
+
   const [loading, setLoading] = useState(false);
   const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean | null>(null);
   const [diggerEligibility, setDiggerEligibility] = useState<
@@ -54,8 +68,10 @@ export function PaymentContractDialog({
   >(null);
   const [showAddPaymentDialog, setShowAddPaymentDialog] = useState(false);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
+  /** Milestone total = contract amount (bid minus 15% deposit for exclusive gigs). */
+  const [milestoneTotal, setMilestoneTotal] = useState<number>(contractAmount);
   const [milestones, setMilestones] = useState<Milestone[]>([
-    { description: "", amount: bidAmount },
+    { description: "", amount: contractAmount },
   ]);
 
   const fetchEligibility = useCallback(async () => {
@@ -67,11 +83,22 @@ export function PaymentContractDialog({
           "manage-payment-methods",
           { method: "GET" }
         ).catch(() => ({ paymentMethods: [] })),
-        invokeEdgeFunction<{ eligible?: boolean; reason?: string }>(supabase, "check-payment-contract-eligibility", {
+        invokeEdgeFunction<{ eligible?: boolean; reason?: string; milestoneTotal?: number }>(supabase, "check-payment-contract-eligibility", {
           body: { gigId, bidId },
         }).catch(() => ({ eligible: false, reason: "unknown" })),
       ]);
       setHasPaymentMethod((paymentData?.paymentMethods?.length ?? 0) > 0);
+      const apiMt = typeof eligibilityData?.milestoneTotal === "number" ? eligibilityData.milestoneTotal : null;
+      // For exclusive gigs: contract amount is always bid - 15%; use API value only if it matches (avoids API returning full bid when deposit not in DB)
+      const mt =
+        isExclusive
+          ? (apiMt != null && apiMt < bidAmount ? apiMt : contractAmount)
+          : (apiMt ?? contractAmount);
+      setMilestoneTotal(mt);
+      // Don't overwrite milestones when the gigger opened with a suggested plan (keep the pre-filled form)
+      if (!suggestedMilestones || suggestedMilestones.length === 0) {
+        setMilestones((prev) => [{ description: prev[0]?.description ?? "", amount: mt }]);
+      }
       if (eligibilityData?.eligible) {
         setDiggerEligibility("ok");
       } else if (eligibilityData?.reason === "digger_payouts_pending_verification") {
@@ -87,15 +114,26 @@ export function PaymentContractDialog({
     } finally {
       setCheckingEligibility(false);
     }
-  }, [gigId, bidId]);
+  }, [gigId, bidId, contractAmount, isExclusive, bidAmount, suggestedMilestones]);
 
   useEffect(() => {
     if (!open) return;
+    const suggested = suggestedMilestones && Array.isArray(suggestedMilestones) && suggestedMilestones.length > 0;
+    if (suggested) {
+      const total = suggestedMilestones!.reduce((s, m) => s + (m.amount ?? 0), 0);
+      setMilestoneTotal(total);
+      setMilestones(suggestedMilestones!.map((m) => ({ description: m.description ?? "", amount: m.amount ?? 0 })));
+    } else {
+      setMilestoneTotal(contractAmount);
+      setMilestones([{ description: "", amount: contractAmount }]);
+    }
     fetchEligibility();
-  }, [open, fetchEligibility]);
+  }, [open, bidId, contractAmount, fetchEligibility, suggestedMilestones]);
 
   const addMilestone = () => {
-    setMilestones([...milestones, { description: "", amount: 0 }]);
+    const sumExisting = milestones.reduce((s, m) => s + (m.amount || 0), 0);
+    const remainder = Math.max(0, milestoneTotal - sumExisting);
+    setMilestones([...milestones, { description: "", amount: remainder }]);
   };
 
   const removeMilestone = (index: number) => {
@@ -105,6 +143,16 @@ export function PaymentContractDialog({
   const updateMilestone = (index: number, field: keyof Milestone, value: string | number) => {
     const updated = [...milestones];
     updated[index] = { ...updated[index], [field]: value };
+    // When any non-last milestone amount changes, auto-fill last with remaining budget
+    if (field === "amount" && index < milestones.length - 1 && milestones.length >= 2) {
+      const amount = typeof value === "number" ? value : parseFloat(String(value)) || 0;
+      const sumOthers = updated
+        .map((m, i) => (i === index ? amount : m.amount || 0))
+        .slice(0, -1)
+        .reduce((s, a) => s + a, 0);
+      const lastIdx = updated.length - 1;
+      updated[lastIdx] = { ...updated[lastIdx], amount: Math.max(0, milestoneTotal - sumOthers) };
+    }
     setMilestones(updated);
   };
 
@@ -129,19 +177,32 @@ export function PaymentContractDialog({
       });
       return;
     }
-    if (Math.abs(totalMilestoneAmount - bidAmount) > 0.01) {
+    if (Math.abs(totalMilestoneAmount - milestoneTotal) > 0.01) {
       toast({
         title: "Amount mismatch",
-        description: `Milestone total ($${totalMilestoneAmount.toFixed(2)}) must equal contract amount ($${bidAmount.toFixed(2)}).`,
+        description: `Milestone total ($${totalMilestoneAmount.toFixed(2)}) must equal contract amount ($${milestoneTotal.toFixed(2)}${milestoneTotal !== bidAmount ? " = bid minus 15% deposit" : ""}).`,
         variant: "destructive",
       });
       return;
     }
 
+    // Ensure last milestone amount equals remaining budget (sum of all = contract amount)
+    const milestonesToSend =
+      milestones.length >= 2
+        ? milestones.map((m, i) =>
+            i === milestones.length - 1
+              ? {
+                  ...m,
+                  amount: Math.round((milestoneTotal - milestones.slice(0, -1).reduce((s, x) => s + (x.amount || 0), 0)) * 100) / 100,
+                }
+              : m
+          )
+        : milestones;
+
     setLoading(true);
     try {
       await invokeEdgeFunction(supabase, "create-payment-contract", {
-        body: { gigId, bidId, milestones },
+        body: { gigId, bidId, milestones: milestonesToSend },
       });
       toast({
         title: "Contract created",
@@ -172,7 +233,7 @@ export function PaymentContractDialog({
           <DialogTitle>Set up payment contract</DialogTitle>
           <DialogDescription className="space-y-2">
             <span className="block">
-              All payments go through our platform—secure and reliable. Funds are held in escrow until you approve each milestone. You pay a <strong>3% transaction fee</strong> per milestone when you approve (Gigger total = milestone + 3%). The Digger receives the milestone amount minus an <strong>8% platform fee</strong> (paid by Digger). No upfront charge; you pay only when you’re satisfied with the work.
+              All payments go through our platform—secure and reliable. Funds are held by the platform until you approve each milestone. You pay a <strong>3% transaction fee</strong> per milestone when you approve (Gigger total = milestone + 3%). The Digger receives the milestone amount minus an <strong>8% platform fee</strong> (paid by Digger). No upfront charge; you pay only when you’re satisfied with the work.
             </span>
             <span className="block text-xs text-muted-foreground mt-2 flex items-start gap-1.5">
               <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
@@ -182,6 +243,14 @@ export function PaymentContractDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {suggestedMilestones && suggestedMilestones.length > 0 && (
+            <Alert className="border-green-500/30 bg-green-500/5">
+              <Info className="h-4 w-4 text-green-600" />
+              <AlertDescription>
+                The professional suggested the milestone plan below. You can edit any description or amount before creating the contract.
+              </AlertDescription>
+            </Alert>
+          )}
           {diggerEligibility === "digger_payouts_not_set_up" && (
             <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10">
               <AlertCircle className="h-4 w-4" />
@@ -229,17 +298,17 @@ export function PaymentContractDialog({
             </Alert>
           )}
           {hasPaymentMethod === false && (
-            <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10">
-              <CreditCard className="h-4 w-4" />
+            <Alert className="border-blue-500/30 bg-blue-500/5">
+              <CreditCard className="h-4 w-4 text-blue-600" />
               <AlertDescription className="space-y-2">
                 <p className="text-sm">
-                  Add a payment method first. You’ll use it only when you approve each milestone—secure and reliable (Stripe).
+                  No saved payment method. You can still create the contract. You’ll pay via Stripe Checkout when you approve each milestone.
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <Dialog open={showAddPaymentDialog} onOpenChange={setShowAddPaymentDialog}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="secondary" className="shrink-0">
-                        Add payment method here
+                        Add payment method (optional)
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
@@ -275,8 +344,22 @@ export function PaymentContractDialog({
             <Input value={gigTitle} disabled />
           </div>
           <div className="grid gap-2">
-            <Label>Contract amount</Label>
-            <Input value={`$${bidAmount.toFixed(2)}`} disabled />
+            <Label>Contract amount (milestone budget)</Label>
+            <Input value={`$${milestoneTotal.toFixed(2)}`} disabled />
+            {milestoneTotal !== bidAmount ? (
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>
+                  Bid ${bidAmount.toFixed(2)} − 15% deposit (paid at award) = ${milestoneTotal.toFixed(2)}. The total of all milestone amounts must equal this.
+                </p>
+                <p>
+                  <strong>7% of the deposit</strong> is transferred to the Digger when the first milestone is completed (with that milestone payment).
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                The total of all milestone amounts must equal the contract amount.
+              </p>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -310,21 +393,36 @@ export function PaymentContractDialog({
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Amount ($)</Label>
+                    <Label className="text-xs">
+                      Amount ($)
+                      {milestones.length >= 2 && index === milestones.length - 1 && (
+                        <span className="text-muted-foreground font-normal ml-1">(remaining budget)</span>
+                      )}
+                    </Label>
                     <Input
                       type="number"
                       step="0.01"
                       min="0"
                       placeholder="0.00"
-                      value={m.amount || ""}
+                      value={
+                        milestones.length >= 2 && index === milestones.length - 1
+                          ? Math.max(
+                              0,
+                              milestoneTotal -
+                                milestones
+                                  .slice(0, -1)
+                                  .reduce((s, x) => s + (x.amount || 0), 0)
+                            ).toFixed(2)
+                          : m.amount || ""
+                      }
                       onChange={(e) =>
                         updateMilestone(index, "amount", parseFloat(e.target.value) || 0)
                       }
-                      disabled={loading}
+                      disabled={loading || (milestones.length >= 2 && index === milestones.length - 1)}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    You pay: ${((m.amount || 0) * (1 + TRANSACTION_FEE_PERCENT / 100)).toFixed(2)} (incl. 3% transaction fee) · Digger receives: ${((m.amount || 0) * (1 - PLATFORM_FEE_PERCENT / 100)).toFixed(2)} (after 8% platform fee)
+                    You pay: ${((m.amount || 0) * (1 + TRANSACTION_FEE_PERCENT / 100)).toFixed(2)} (incl. 3% transaction fee) · Digger receives: ${isExclusive ? (index === 0 ? ((m.amount || 0) + bidAmount * 0.07).toFixed(2) : (m.amount || 0).toFixed(2)) : ((m.amount || 0) * (1 - PLATFORM_FEE_PERCENT / 100)).toFixed(2)}${isExclusive ? (index === 0 ? " (milestone + 7% deposit)" : " (full amount; 8% from deposit)") : " (after 8% platform fee)"}
                   </p>
                 </div>
                 {milestones.length > 1 && (
@@ -345,7 +443,7 @@ export function PaymentContractDialog({
           <div className="border-t pt-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span>Total milestones</span>
-              <span className={Math.abs(totalMilestoneAmount - bidAmount) > 0.01 ? "text-destructive" : ""}>
+              <span className={Math.abs(totalMilestoneAmount - milestoneTotal) > 0.01 ? "text-destructive" : ""}>
                 ${totalMilestoneAmount.toFixed(2)}
               </span>
             </div>
@@ -371,27 +469,19 @@ export function PaymentContractDialog({
               onClick={handleCreateContract}
               disabled={
                 loading ||
-                hasPaymentMethod === false ||
                 diggerEligibility === "digger_payouts_not_set_up" ||
                 diggerEligibility === "digger_payouts_pending_verification"
               }
               title={
-                hasPaymentMethod === false
-                  ? "Add a payment method first"
-                  : diggerEligibility === "digger_payouts_not_set_up" || diggerEligibility === "digger_payouts_pending_verification"
-                    ? "The Digger must complete payout setup first"
-                    : undefined
+                diggerEligibility === "digger_payouts_not_set_up" || diggerEligibility === "digger_payouts_pending_verification"
+                  ? "The Digger must complete payout setup first"
+                  : undefined
               }
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create contract
             </Button>
           </div>
-          {hasPaymentMethod === false && (
-            <p className="text-sm text-muted-foreground text-right">
-              Add a payment method above to enable Create contract.
-            </p>
-          )}
           {(diggerEligibility === "digger_payouts_not_set_up" ||
             diggerEligibility === "digger_payouts_pending_verification") && (
             <p className="text-sm text-muted-foreground text-right">

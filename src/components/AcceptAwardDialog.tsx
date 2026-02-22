@@ -16,7 +16,7 @@ import { Loader2, CheckCircle, AlertTriangle, CreditCard } from "lucide-react";
 
 // Referral fee configuration
 const REFERRAL_FEE_RATE = 0.08; // 8%
-const REFERRAL_FEE_MIN = 50; // $50 minimum (no cap)
+const REFERRAL_FEE_MIN = 99; // $99 minimum (no cap)
 const DEPOSIT_RATE = 0.05; // 5% deposit from Gigger when Digger accepts
 
 interface AcceptAwardDialogProps {
@@ -40,7 +40,7 @@ export function AcceptAwardDialog({
 }: AcceptAwardDialogProps) {
   const isExclusive = pricingModel === "success_based";
   const calculatedFee = bidAmount * REFERRAL_FEE_RATE;
-  const referralFee = Math.max(REFERRAL_FEE_MIN, calculatedFee); // 8% with $50 minimum, no cap
+  const referralFee = Math.max(REFERRAL_FEE_MIN, calculatedFee); // 8% with $99 minimum, no cap
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
